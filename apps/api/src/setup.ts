@@ -1,4 +1,5 @@
 import { execSync } from "child_process"
+import { cpSync, existsSync } from "fs"
 
 console.log("[setup] started")
 
@@ -10,6 +11,14 @@ try {
   console.log("[setup] Database setup complete.")
 } catch (err) {
   console.error("[setup] Database setup failed (continuing anyway):", err)
+}
+
+// Copy Prisma client from src/generated/ to dist/generated/ so ESM imports resolve
+const src = "src/generated/prisma"
+const dest = "dist/generated/prisma"
+if (existsSync(src)) {
+  cpSync(src, dest, { recursive: true })
+  console.log("[setup] copied prisma client to dist/generated/prisma")
 }
 
 console.log("[setup] complete")
