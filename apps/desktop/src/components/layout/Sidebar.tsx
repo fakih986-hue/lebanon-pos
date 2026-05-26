@@ -1,4 +1,4 @@
-﻿import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation } from "react-router"
 import {
   Calculator,
   CircleDollarSign,
@@ -35,6 +35,7 @@ type MenuItem = {
   path: string
   icon: LucideIcon
   permission: Permission
+  group: "Command" | "Retail" | "Operations" | "Admin"
 }
 
 export const menuItems: MenuItem[] = [
@@ -44,6 +45,7 @@ export const menuItems: MenuItem[] = [
     path: "/dashboard",
     icon: Gauge,
     permission: "reports.view",
+    group: "Command",
   },
   {
     label: "POS",
@@ -51,6 +53,7 @@ export const menuItems: MenuItem[] = [
     path: "/",
     icon: LayoutDashboard,
     permission: "sales.checkout",
+    group: "Retail",
   },
   {
     label: "Products",
@@ -58,6 +61,7 @@ export const menuItems: MenuItem[] = [
     path: "/products",
     icon: PackageSearch,
     permission: "inventory.manage",
+    group: "Retail",
   },
   {
     label: "Sales",
@@ -65,6 +69,7 @@ export const menuItems: MenuItem[] = [
     path: "/sales",
     icon: ReceiptText,
     permission: "reports.view",
+    group: "Retail",
   },
   {
     label: "Receiving",
@@ -72,6 +77,7 @@ export const menuItems: MenuItem[] = [
     path: "/products/new",
     icon: ClipboardPlus,
     permission: "inventory.manage",
+    group: "Retail",
   },
   {
     label: "Customers",
@@ -79,6 +85,7 @@ export const menuItems: MenuItem[] = [
     path: "/customers",
     icon: UsersRound,
     permission: "customers.manage",
+    group: "Retail",
   },
   {
     label: "Suppliers",
@@ -86,6 +93,7 @@ export const menuItems: MenuItem[] = [
     path: "/suppliers",
     icon: Truck,
     permission: "accounting.manage",
+    group: "Operations",
   },
   {
     label: "Accounting",
@@ -93,6 +101,7 @@ export const menuItems: MenuItem[] = [
     path: "/accounting",
     icon: Calculator,
     permission: "accounting.manage",
+    group: "Operations",
   },
   {
     label: "Staff",
@@ -100,6 +109,7 @@ export const menuItems: MenuItem[] = [
     path: "/staff",
     icon: ShieldCheck,
     permission: "staff.manage",
+    group: "Admin",
   },
   {
     label: "Settings",
@@ -107,7 +117,15 @@ export const menuItems: MenuItem[] = [
     path: "/settings",
     icon: Settings,
     permission: "settings.manage",
+    group: "Admin",
   },
+]
+
+const menuGroups: MenuItem["group"][] = [
+  "Command",
+  "Retail",
+  "Operations",
+  "Admin",
 ]
 
 function isActivePath(pathname: string, path: string) {
@@ -195,47 +213,72 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2 [scrollbar-width:thin]">
-        {visibleMenuItems.map((item) => {
-          const active = isActivePath(location.pathname, item.path)
-          const Icon = item.icon
+      <nav className="min-h-0 flex-1 overflow-y-auto p-2 [scrollbar-width:thin]">
+        {menuGroups.map((group) => {
+          const groupItems = visibleMenuItems.filter((item) => item.group === group)
+
+          if (groupItems.length === 0) {
+            return null
+          }
 
           return (
-            <Link
-              key={item.path}
-              to={item.path}
-              aria-label={item.label}
-              className={`
-                flex items-center gap-3 rounded-lg border p-3 transition ${
-                  expanded ? "justify-start" : "justify-center"
-                }
-                ${
-                  active
-                    ? "border-emerald-300 bg-white text-zinc-950 shadow-sm"
-                    : "border-white/10 bg-white/5 text-zinc-300 hover:border-white/20 hover:bg-white/10 hover:text-white"
-                }
-              `}
-            >
-              <span
-                className={`
-                  flex h-10 w-10 shrink-0 items-center justify-center rounded-lg
-                  ${active ? "bg-emerald-100 text-emerald-700" : "bg-white/10"}
-                `}
-              >
-                <Icon size={20} />
-              </span>
-
+            <div key={group} className={expanded ? "mb-4" : "mb-2"}>
               {expanded ? (
-                <span className="min-w-0">
-                  <span className="block font-semibold leading-tight">
-                    {item.label}
-                  </span>
-                  <span className="block text-sm text-zinc-500">
-                    {item.detail}
-                  </span>
-                </span>
+                <p className="mb-2 px-3 text-[0.68rem] font-black uppercase tracking-[0.18em] text-zinc-500">
+                  {group}
+                </p>
               ) : null}
-            </Link>
+
+              <div className="space-y-2">
+                {groupItems.map((item) => {
+                  const active = isActivePath(location.pathname, item.path)
+                  const Icon = item.icon
+
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      aria-label={item.label}
+                      title={expanded ? undefined : item.label}
+                      className={`
+                        flex items-center gap-3 rounded-lg border p-3 transition ${
+                          expanded ? "justify-start" : "justify-center"
+                        }
+                        ${
+                          active
+                            ? "border-emerald-300 bg-white text-zinc-950 shadow-sm"
+                            : "border-white/10 bg-white/5 text-zinc-300 hover:border-white/20 hover:bg-white/10 hover:text-white"
+                        }
+                      `}
+                    >
+                      <span
+                        className={`
+                          flex h-10 w-10 shrink-0 items-center justify-center rounded-lg
+                          ${
+                            active
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-white/10"
+                          }
+                        `}
+                      >
+                        <Icon size={20} />
+                      </span>
+
+                      {expanded ? (
+                        <span className="min-w-0">
+                          <span className="block font-semibold leading-tight">
+                            {item.label}
+                          </span>
+                          <span className="block text-sm text-zinc-500">
+                            {item.detail}
+                          </span>
+                        </span>
+                      ) : null}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
           )
         })}
       </nav>

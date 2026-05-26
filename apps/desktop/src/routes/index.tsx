@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react"
-import { createBrowserRouter, RouterProvider } from "react-router-dom"
+import { createBrowserRouter, RouterProvider, useLocation } from "react-router"
+import { AnimatePresence, motion } from "framer-motion"
 
 import { runMigration } from "../features/pos/services/migration.service"
 import AppLayout from "../layouts/AppLayout"
@@ -18,6 +19,7 @@ import {
   userCan,
   type Permission,
 } from "../features/pos/services/security.service"
+import { setupBackgroundSync, stopBackgroundSync } from "../features/pos/services/sync.service"
 import LoginScreen from "../pages/auth/LoginScreen"
 import AccountingPage from "../pages/accounting/AccountingPage"
 import CustomersPage from "../pages/customers/CustomersPage"
@@ -32,11 +34,14 @@ import SuppliersPage from "../pages/suppliers/SuppliersPage"
 const AUTO_LOCK_MS = 10 * 60 * 1000
 
 function Shell({ children }: { children: ReactNode }) {
+  const location = useLocation()
   const [, setSecurityVersion] = useState(0)
   const toasts = useToastStore((state) => state.toasts)
   const dismiss = useToastStore((state) => state.dismiss)
 
   useEffect(() => { runMigration() }, [])
+
+  useEffect(() => { setupBackgroundSync(); return stopBackgroundSync }, [])
 
   useEffect(
     () => subscribeSecurity(() => setSecurityVersion((version) => version + 1)),
@@ -76,9 +81,20 @@ function Shell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col pb-20">
         <Topbar />
-        <ErrorBoundary>
-          <div className="animate-fade-in">{children}</div>
-        </ErrorBoundary>
+          <ErrorBoundary>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="flex min-h-0 flex-1 flex-col"
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
+          </ErrorBoundary>
       </div>
 
       <BottomNav />

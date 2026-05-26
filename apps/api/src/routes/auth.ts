@@ -1,24 +1,166 @@
 import { Router } from "express"
+import type { IncomingMessage, ServerResponse } from "node:http"
+import bcrypt from "bcryptjs"
+import { createHash } from "crypto"
 import prisma from "../lib/prisma.js"
 
 import { signToken, type AuthRequest, requireAuth } from "../middleware/auth.js"
 const router = Router()
 
-router.post("/login", async (req, res) => {
+function hashSha256Pin(pin: string) {
+  return createHash("sha256").update(pin).digest("base64")
+}
+
+router.post("/tenant/setup", async (req: IncomingMessage & { body?: unknown }, res: ServerResponse) => {
   try {
-    const { pin, tenantSubdomain } = req.body
-    if (!pin) {
-      res.status(400).json({ error: "PIN is required" })
+    const {
+      storeName,
+      subdomain,
+      adminName,
+      adminMobile,
+      adminPin,
+    } = req.body as {
+      storeName?: string
+      subdomain?: string
+      adminName?: string
+      adminMobile?: string
+      adminPin?: string
+    }
+    const cleanStoreName = storeName?.trim()
+    const cleanSubdomain = subdomain
+      ?.trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "")
+    const cleanAdminName = adminName?.trim()
+    const cleanAdminMobile = adminMobile?.trim()
+    const cleanAdminPin = adminPin?.trim()
+
+    if (
+      !cleanStoreName ||
+      !cleanSubdomain ||
+      !cleanAdminName ||
+      !cleanAdminMobile ||
+      !cleanAdminPin
+    ) {
+      res.statusCode = 400; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Store, subdomain, admin, mobile, and PIN are required" }))
       return
     }
 
-    const user = await prisma.staffUser.findFirst({
-      where: { pin, active: true },
+    if (cleanSubdomain.length < 3 || cleanAdminPin.length < 4) {
+      res.statusCode = 400; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Subdomain must be 3+ chars and PIN must be 4+ chars" }))
+      return
+    }
+
+    const existingTenant = await prisma.tenant.findUnique({
+      where: { subdomain: cleanSubdomain },
+    })
+
+    if (existingTenant) {
+      res.statusCode = 409; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Subdomain is already taken" }))
+      return
+    }
+
+    const result = await prisma.$transaction(async (tx: any) => {
+      const tenant = await tx.tenant.create({
+        data: { name: cleanStoreName, subdomain: cleanSubdomain },
+      })
+      const user = await tx.staffUser.create({
+        data: {
+          tenantId: tenant.id,
+          name: cleanAdminName,
+          mobile: cleanAdminMobile,
+          pin: await bcrypt.hash(cleanAdminPin, 10),
+          role: "Admin",
+          active: true,
+        },
+      })
+
+      await tx.appSettings.create({
+        data: {
+          tenantId: tenant.id,
+          storeName: cleanStoreName,
+          branchName: "Main Branch",
+          phone: cleanAdminMobile,
+          address: "",
+          vatRate: 0.11,
+          usdToLbpRate: 89500,
+          receiptFooter: "Thank you for your visit!",
+          lowStockThreshold: 10,
+        },
+      })
+
+      return { tenant, user }
+    })
+
+    const token = signToken({
+      userId: result.user.id,
+      tenantId: result.tenant.id,
+      role: result.user.role,
+    })
+
+    res.statusCode = 201; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({
+      token,
+      tenant: result.tenant,
+      user: {
+        id: result.user.id,
+        name: result.user.name,
+        role: result.user.role,
+        tenantId: result.user.tenantId,
+        tenantName: result.tenant.name,
+      },
+    }))
+  } catch (err) {
+    console.error("Tenant setup error:", err)
+    res.statusCode = 500; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Tenant setup failed" }))
+  }
+})
+
+router.post("/login", async (req: IncomingMessage & { body?: unknown }, res: ServerResponse) => {
+  try {
+    const { pin, tenantSubdomain } = req.body as { pin?: string; tenantSubdomain?: string }
+    if (!pin) {
+      res.statusCode = 400; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "PIN is required" }))
+      return
+    }
+    const cleanTenantSubdomain =
+      typeof tenantSubdomain === "string"
+        ? tenantSubdomain.trim().toLowerCase()
+        : ""
+
+    if (!cleanTenantSubdomain) {
+      const tenantCount = await prisma.tenant.count()
+
+      if (tenantCount > 1) {
+        res.statusCode = 400; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Store subdomain is required" }))
+        return
+      }
+    }
+
+    const users = await prisma.staffUser.findMany({
+      where: {
+        active: true,
+        tenant: cleanTenantSubdomain
+          ? { subdomain: cleanTenantSubdomain }
+          : undefined,
+      },
       include: { tenant: true },
     })
 
+    let user: (typeof users)[number] | null = null
+
+    for (const candidate of users) {
+      const pinMatches = candidate.pin.startsWith("$2")
+        ? await bcrypt.compare(pin, candidate.pin)
+        : candidate.pin === pin || candidate.pin === hashSha256Pin(pin)
+
+      if (pinMatches) {
+        user = candidate
+        break
+      }
+    }
+
     if (!user) {
-      res.status(401).json({ error: "Invalid credentials" })
+      res.statusCode = 401; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Invalid credentials" }))
       return
     }
 
@@ -28,7 +170,7 @@ router.post("/login", async (req, res) => {
       role: user.role,
     })
 
-    res.json({
+    res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({
       token,
       user: {
         id: user.id,
@@ -37,23 +179,23 @@ router.post("/login", async (req, res) => {
         tenantId: user.tenantId,
         tenantName: user.tenant.name,
       },
-    })
+    }))
   } catch (err) {
     console.error("Login error:", err)
-    res.status(500).json({ error: "Login failed" })
+    res.statusCode = 500; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Login failed" }))
   }
 })
 
-router.get("/me", requireAuth, async (req: AuthRequest, res) => {
+router.get("/me", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   const user = await prisma.staffUser.findUnique({
     where: { id: req.auth!.userId },
     select: { id: true, name: true, mobile: true, role: true, active: true, tenantId: true },
   })
   if (!user) {
-    res.status(404).json({ error: "User not found" })
+    res.statusCode = 404; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "User not found" }))
     return
   }
-  res.json(user)
+  res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(user))
 })
 
 export default router

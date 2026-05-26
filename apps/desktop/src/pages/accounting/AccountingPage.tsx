@@ -48,6 +48,7 @@ import {
 import { showToast } from "../../features/pos/services/toast.service"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import Spinner from "../../components/ui/Spinner"
+import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
 type ExpenseForm = {
   vendor: string
@@ -73,6 +74,8 @@ type AccountingSummary = {
   cashOut: number
   cashNet: number
 }
+
+type AccountingWorkspace = "Close day" | "Expenses" | "Cash flow" | "History"
 
 const expenseCategories: ExpenseCategory[] = [
   "Supplier",
@@ -258,6 +261,8 @@ export default function AccountingPage() {
   const [closeNote, setCloseNote] = useState("")
   const canManageAccounting = userCan("accounting.manage")
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
+  const [activeWorkspace, setActiveWorkspace] =
+    useState<AccountingWorkspace>("Close day")
 
   useEffect(() => {
     setIsLoading(false)
@@ -303,9 +308,22 @@ export default function AccountingPage() {
     }))
   }
 
+  const [expenseErrors, setExpenseErrors] = useState<Partial<Record<string, string>>>({})
+
   function handleCreateExpense() {
     if (!canManageAccounting) {
       showToast("Manager or admin permission required.", "error")
+      return
+    }
+
+    const errors: Record<string, string> = {}
+    if (!expenseForm.vendor.trim()) errors.vendor = "Vendor is required"
+    if (!expenseForm.category) errors.category = "Category is required"
+    if (!expenseForm.amount || parseMoney(expenseForm.amount) <= 0) errors.amount = "Amount must be greater than 0"
+
+    setExpenseErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      showToast("Please fix the highlighted fields.", "error")
       return
     }
 
@@ -320,6 +338,7 @@ export default function AccountingPage() {
       })
 
       setExpenseForm(emptyExpenseForm)
+      setExpenseErrors({})
       showToast(`${expense.expenseNumber} recorded.`)
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Expense not saved.", "error")
@@ -422,8 +441,21 @@ export default function AccountingPage() {
         </div>
       </section>
 
+      <WorkspaceTabs<AccountingWorkspace>
+        className="mt-5"
+        active={activeWorkspace}
+        onChange={setActiveWorkspace}
+        tabs={[
+          { label: "Close day", count: todayClose ? 1 : 0 },
+          { label: "Expenses", count: todayExpenses.length },
+          { label: "Cash flow" },
+          { label: "History", count: dailyCloses.length },
+        ]}
+      />
+
       <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
         <div className="space-y-5">
+          {activeWorkspace === "Close day" ? (
           <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
             <div className="border-b border-zinc-200 p-4">
               <div className="flex items-center gap-3">
@@ -529,7 +561,62 @@ export default function AccountingPage() {
               </div>
             </div>
           </section>
+          ) : null}
 
+          {activeWorkspace === "Cash flow" ? (
+          <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
+            <div className="border-b border-zinc-200 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
+                  <Building2 size={21} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-zinc-950">
+                    Cash flow
+                  </h2>
+                  <p className="text-sm text-zinc-500">
+                    {formatDateKey(summary.dateKey)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 p-4">
+              <div className="rounded-lg bg-zinc-50 p-4">
+                <div className="flex justify-between gap-3">
+                  <span className="text-zinc-500">Cash in</span>
+                  <strong className="text-lg">{formatCurrency(summary.cashIn)}</strong>
+                </div>
+                <div className="mt-3 flex justify-between gap-3 text-rose-700">
+                  <span>Cash out</span>
+                  <strong className="text-lg">-{formatCurrency(summary.cashOut)}</strong>
+                </div>
+                <div className="mt-3 flex justify-between gap-3 text-zinc-500">
+                  <span>Supplier payments</span>
+                  <strong className="text-lg text-zinc-900">{formatCurrency(summary.supplierPayments)}</strong>
+                </div>
+                <div className="mt-3 flex justify-between gap-3 border-t border-zinc-200 pt-3 font-bold">
+                  <span>Net cash movement</span>
+                  <span className="text-lg">{formatCurrency(summary.cashNet)}</span>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-zinc-200 p-4">
+                <h3 className="font-bold text-zinc-950">Expense mix today</h3>
+                <div className="mt-3 space-y-2">
+                  {categoryTotals.map((item) => (
+                    <div key={item.category} className="flex items-center justify-between text-sm">
+                      <span className="font-semibold text-zinc-700">{item.category}</span>
+                      <strong className="text-zinc-950">{formatCurrency(item.total)}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+          ) : null}
+
+          {activeWorkspace === "Expenses" ? (
           <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
             <div className="border-b border-zinc-200 p-4">
               <h2 className="text-xl font-bold text-zinc-950">
@@ -583,9 +670,11 @@ export default function AccountingPage() {
               ))}
             </div>
           </section>
+          ) : null}
         </div>
 
         <aside className="space-y-5">
+          {activeWorkspace === "Expenses" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
@@ -606,12 +695,20 @@ export default function AccountingPage() {
                 Vendor
                 <input
                   value={expenseForm.vendor}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     updateExpenseForm({ vendor: event.target.value })
-                  }
+                    setExpenseErrors((prev) => ({ ...prev, vendor: undefined }))
+                  }}
                   placeholder="Supplier name"
-                  className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  className={`mt-2 h-11 w-full rounded-lg border px-3 outline-none focus:ring-4 ${
+                    expenseErrors.vendor
+                      ? "border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-100"
+                      : "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-emerald-100"
+                  }`}
                 />
+                {expenseErrors.vendor ? (
+                  <p className="mt-1 text-xs font-medium text-rose-600">{expenseErrors.vendor}</p>
+                ) : null}
               </label>
 
               <div className="grid grid-cols-2 gap-2">
@@ -638,11 +735,19 @@ export default function AccountingPage() {
                   min="0"
                   step="0.01"
                   value={expenseForm.amount}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     updateExpenseForm({ amount: event.target.value })
-                  }
-                  className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                    setExpenseErrors((prev) => ({ ...prev, amount: undefined }))
+                  }}
+                  className={`mt-2 h-11 w-full rounded-lg border px-3 outline-none focus:ring-4 ${
+                    expenseErrors.amount
+                      ? "border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-100"
+                      : "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-emerald-100"
+                  }`}
                 />
+                {expenseErrors.amount ? (
+                  <p className="mt-1 text-xs font-medium text-rose-600">{expenseErrors.amount}</p>
+                ) : null}
               </label>
 
               <div className="grid grid-cols-2 gap-2">
@@ -699,7 +804,62 @@ export default function AccountingPage() {
               </button>
             </div>
           </section>
+          ) : null}
 
+          {activeWorkspace === "History" ? (
+          <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
+            <div className="border-b border-zinc-200 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                  <CheckCircle2 size={21} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-zinc-950">
+                    Close history
+                  </h2>
+                  <p className="text-sm text-zinc-500">Daily profit snapshots.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 p-4">
+              {dailyCloses.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm font-medium text-zinc-500">
+                  No closed days yet.
+                </p>
+              ) : null}
+
+              {dailyCloses.slice(0, 20).map((dailyClose) => (
+                <article
+                  key={dailyClose.id}
+                  className="rounded-lg border border-zinc-200 p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-zinc-950">
+                        {formatDateKey(dailyClose.dateKey)}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-500">
+                        {dailyClose.closedBy}
+                      </p>
+                    </div>
+                    <strong
+                      className={
+                        dailyClose.netProfit >= 0
+                          ? "text-emerald-700"
+                          : "text-rose-700"
+                      }
+                    >
+                      {formatCurrency(dailyClose.netProfit)}
+                    </strong>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+          ) : null}
+
+          {activeWorkspace === "Expenses" || activeWorkspace === "Cash flow" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
@@ -729,7 +889,9 @@ export default function AccountingPage() {
               ))}
             </div>
           </section>
+          ) : null}
 
+          {activeWorkspace === "History" || activeWorkspace === "Close day" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
@@ -778,6 +940,7 @@ export default function AccountingPage() {
               ))}
             </div>
           </section>
+          ) : null}
         </aside>
       </section>
       <ConfirmDialog

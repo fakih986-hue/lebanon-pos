@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useDebounce } from "../../hooks/useDebounce"
+import { useHotkeys } from "../../hooks/useHotkey"
 import {
   Banknote,
   Building2,
@@ -31,6 +33,7 @@ import { deleteSupplier } from "../../features/pos/services/supplier.service"
 import { showToast } from "../../features/pos/services/toast.service"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import Spinner from "../../components/ui/Spinner"
+import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
 type SupplierForm = {
   name: string
@@ -47,6 +50,8 @@ type PaymentForm = {
   method: SupplierPaymentMethod
   reference: string
 }
+
+type SupplierWorkspace = "Accounts" | "Orders" | "Pay supplier" | "Add supplier" | "Activity"
 
 const emptySupplierForm: SupplierForm = {
   name: "",
@@ -106,6 +111,9 @@ export default function SuppliersPage() {
   const [totals, setTotals] = useState(getSupplierTotals())
   const [selectedSupplierId, setSelectedSupplierId] = useState("")
   const [search, setSearch] = useState("")
+  const searchRef = useRef<HTMLInputElement>(null)
+  useHotkeys([{ key: "f", modifiers: ["ctrl"], handler: () => searchRef.current?.focus() }])
+  const debouncedSearch = useDebounce(search, 200)
   const [supplierForm, setSupplierForm] =
     useState<SupplierForm>(emptySupplierForm)
   const [payment, setPayment] = useState<PaymentForm>({
@@ -117,6 +125,8 @@ export default function SuppliersPage() {
   })
   const [formErrors, setFormErrors] = useState<Partial<Record<"name" | "mobile", string>>>({})
   const [deleteSupplierId, setDeleteSupplierId] = useState<string | null>(null)
+  const [activeWorkspace, setActiveWorkspace] =
+    useState<SupplierWorkspace>("Accounts")
 
   function refreshSuppliers(preferredSupplierId?: string) {
     const nextSuppliers = getSupplierLedger()
@@ -160,7 +170,7 @@ export default function SuppliersPage() {
         supplier.mobile.includes(query) ||
         supplier.contact.toLowerCase().includes(query)
     )
-  }, [search, suppliers])
+      }, [debouncedSearch, suppliers])
   const selectedSupplier = suppliers.find(
     (supplier) => supplier.id === selectedSupplierId
   )
@@ -243,6 +253,7 @@ export default function SuppliersPage() {
           supplierPayment.supplierName
         }.`
       )
+      setActiveWorkspace("Activity")
       refreshSuppliers(supplier.id)
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Payment not saved.", "error")
@@ -286,8 +297,38 @@ export default function SuppliersPage() {
             </div>
           </div>
 
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <WorkspaceTabs<SupplierWorkspace>
+              active={activeWorkspace}
+              onChange={setActiveWorkspace}
+              tabs={[
+                { label: "Accounts", count: filteredSuppliers.length },
+                { label: "Orders", count: purchaseOrders.length },
+                { label: "Pay supplier", count: selectedOpenOrders.length },
+                { label: "Add supplier" },
+                { label: "Activity", count: selectedActivity.length },
+              ]}
+            />
+
+            <label className="relative w-full sm:w-64">
+              <span className="sr-only">Search suppliers</span>
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+              />
+              <input
+                ref={searchRef}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search supplier, contact, mobile"
+                className="h-10 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+          </div>
+
+          {activeWorkspace === "Accounts" ? (
           <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-            <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="border-b border-zinc-200 p-4">
               <div>
                 <h2 className="text-xl font-bold text-zinc-950">
                   Supplier accounts
@@ -296,20 +337,6 @@ export default function SuppliersPage() {
                   Purchases from receiving and later payments stay connected.
                 </p>
               </div>
-
-              <label className="relative w-full xl:w-80">
-                <span className="sr-only">Search suppliers</span>
-                <Search
-                  size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
-                />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search supplier, contact, mobile"
-                  className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-10 pr-3 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                />
-              </label>
             </div>
 
             <div className="overflow-x-auto">
@@ -334,6 +361,9 @@ export default function SuppliersPage() {
                     <th className="border-b border-zinc-200 px-4 py-3">
                       Last activity
                     </th>
+                    <th className="border-b border-zinc-200 px-4 py-3">
+                      <span className="sr-only">Delete</span>
+                    </th>
                   </tr>
                 </thead>
 
@@ -341,7 +371,7 @@ export default function SuppliersPage() {
                   {filteredSuppliers.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="px-4 py-12 text-center text-sm font-medium text-zinc-500"
                       >
                         No suppliers found
@@ -423,7 +453,9 @@ export default function SuppliersPage() {
               </table>
             </div>
           </section>
+          ) : null}
 
+          {activeWorkspace === "Orders" ? (
           <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
             <div className="border-b border-zinc-200 p-4">
               <h2 className="text-xl font-bold text-zinc-950">
@@ -479,9 +511,11 @@ export default function SuppliersPage() {
               ))}
             </div>
           </section>
+          ) : null}
         </section>
 
         <aside className="space-y-5">
+          {activeWorkspace === "Add supplier" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
@@ -567,7 +601,9 @@ export default function SuppliersPage() {
               </button>
             </div>
           </section>
+          ) : null}
 
+          {activeWorkspace === "Pay supplier" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
@@ -688,7 +724,9 @@ export default function SuppliersPage() {
               </button>
             </div>
           </section>
+          ) : null}
 
+          {activeWorkspace === "Activity" || activeWorkspace === "Accounts" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
@@ -761,6 +799,7 @@ export default function SuppliersPage() {
               ))}
             </div>
           </section>
+          ) : null}
         </aside>
       </div>
       <ConfirmDialog

@@ -6,6 +6,27 @@ const SYNC_EVENT = "lebanonpos-sync-changed"
 const API_URL_KEY = "lebanonpos.api-url"
 const AUTH_TOKEN_KEY = "lebanonpos.auth-token"
 
+const PULL_TARGETS: Record<string, { key: string; event: string }> = {
+  products: { key: "lebanonpos.products.v1", event: "lebanonpos-products-changed" },
+  sales: { key: "lebanonpos.sales.v1", event: "lebanonpos-sales-changed" },
+  refunds: { key: "lebanonpos.refunds.v1", event: "lebanonpos-refunds-changed" },
+  customers: { key: "lebanonpos.customers.v1", event: "lebanonpos-ledger-changed" },
+  debtSales: { key: "lebanonpos.debt-sales.v1", event: "lebanonpos-ledger-changed" },
+  debtPayments: { key: "lebanonpos.debt-payments.v1", event: "lebanonpos-ledger-changed" },
+  suppliers: { key: "lebanonpos.suppliers.v1", event: "lebanonpos-suppliers-changed" },
+  purchaseOrders: { key: "lebanonpos.purchase-orders.v1", event: "lebanonpos-suppliers-changed" },
+  supplierPayments: { key: "lebanonpos.supplier-payments.v1", event: "lebanonpos-suppliers-changed" },
+  users: { key: "lebanonpos.users.v1", event: "lebanonpos-security-changed" },
+  shifts: { key: "lebanonpos.shifts.v1", event: "lebanonpos-security-changed" },
+  auditEvents: { key: "lebanonpos.audit.v1", event: "lebanonpos-security-changed" },
+  settings: { key: "lebanonpos.settings.v1", event: "lebanonpos-settings-changed" },
+  expenses: { key: "lebanonpos.expenses.v1", event: "lebanonpos-expenses-changed" },
+  batches: { key: "lebanonpos.inventory-batches.v1", event: "lebanonpos-inventory-batches-changed" },
+  adjustments: { key: "lebanonpos.inventory-adjustments.v1", event: "lebanonpos-inventory-adjustments-changed" },
+  stockCounts: { key: "lebanonpos.stock-counts.v1", event: "lebanonpos-stock-counts-changed" },
+  dailyCloses: { key: "lebanonpos.daily-closes.v1", event: "lebanonpos-daily-closes-changed" },
+}
+
 export function getApiUrl(): string | null {
   return localStorage.getItem(API_URL_KEY)
 }
@@ -298,6 +319,15 @@ export async function pullFromServer() {
   const token = getAuthToken()
   if (!apiUrl || !token) return
 
+  const hasUnsyncedLocalWork = getSyncQueue().some(
+    (operation) => operation.status !== "Synced"
+  )
+
+  if (hasUnsyncedLocalWork) {
+    dispatchSyncChanged()
+    return
+  }
+
   try {
     const lastSync = readLastSyncedAt()
     const url = lastSync
@@ -313,15 +343,19 @@ export async function pullFromServer() {
     const data = await response.json()
     const now = new Date().toISOString()
 
-    // Write pulled data to localStorage for each entity
-    for (const [key, items] of Object.entries(data)) {
-      if (Array.isArray(items) && items.length > 0) {
-        const storageKey = `lebanonpos-pulled-${key}`
-        localStorage.setItem(storageKey, JSON.stringify(items))
+    for (const [key, value] of Object.entries(data)) {
+      const target = PULL_TARGETS[key]
+
+      if (!target || value === null || value === undefined) {
+        continue
       }
+
+      localStorage.setItem(target.key, JSON.stringify(value))
+      window.dispatchEvent(new Event(target.event))
     }
 
     writeLastSyncedAt(now)
+    dispatchSyncChanged()
   } catch (err) {
     console.warn("[sync] Pull failed:", err)
   }
@@ -339,26 +373,48 @@ export function retryFailedSync() {
 }
 
 export function subscribeSync(callback: () => void) {
-  if (typeof window === "undefined") {
-    return () => undefined
+  if (typeof window === "undefined") return () => undefined
+  function handleSyncChanged() { callback() }
+  function handleOnlineSync() {
+    scheduleAutoFlush()
+    pullFromServer()
   }
-
-  function handleSyncChanged() {
-    callback()
-  }
-
   window.addEventListener(SYNC_EVENT, handleSyncChanged)
   window.addEventListener("storage", handleSyncChanged)
   window.addEventListener("online", handleSyncChanged)
   window.addEventListener("offline", handleSyncChanged)
-  window.addEventListener("online", () => { scheduleAutoFlush(); pullFromServer() })
-
+  window.addEventListener("online", handleOnlineSync)
   return () => {
     window.removeEventListener(SYNC_EVENT, handleSyncChanged)
     window.removeEventListener("storage", handleSyncChanged)
     window.removeEventListener("online", handleSyncChanged)
     window.removeEventListener("offline", handleSyncChanged)
-    window.removeEventListener("online", scheduleAutoFlush)
-    window.removeEventListener("online", () => { scheduleAutoFlush(); pullFromServer() })
+    window.removeEventListener("online", handleOnlineSync)
   }
+}
+
+const BACKGROUND_SYNC_MS = 30_000
+const BACKGROUND_PULL_MS = 120_000
+let bgSyncInterval: ReturnType<typeof setInterval> | undefined
+let bgPullInterval: ReturnType<typeof setInterval> | undefined
+
+export function setupBackgroundSync() {
+  if (typeof window === "undefined") return
+  stopBackgroundSync()
+  bgSyncInterval = window.setInterval(() => {
+    if (isBrowserOnline() && getApiUrl() && getAuthToken()) {
+      flushSyncQueue().catch(() => {})
+    }
+  }, BACKGROUND_SYNC_MS)
+  bgPullInterval = window.setInterval(() => {
+    if (isBrowserOnline() && getApiUrl() && getAuthToken()) {
+      pullFromServer().catch(() => {})
+    }
+  }, BACKGROUND_PULL_MS)
+}
+
+export function stopBackgroundSync() {
+  if (bgSyncInterval) { clearInterval(bgSyncInterval); bgSyncInterval = undefined }
+  if (bgPullInterval) { clearInterval(bgPullInterval); bgPullInterval = undefined }
+  clearTimeout(autoFlushTimer)
 }

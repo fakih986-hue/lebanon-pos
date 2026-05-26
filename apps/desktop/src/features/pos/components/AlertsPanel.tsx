@@ -1,5 +1,5 @@
 import { CalendarClock, Copy, MessageCircle, PackageX, Star, Tag, Truck } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link } from "react-router"
 
 import { formatCurrency, formatNumber } from "../lib/currency"
 import type { DeadStockItem, ExpiryAlert, PromoSuggestion, ReorderSuggestion } from "../services/stock.service"

@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useDebounce } from "../../hooks/useDebounce"
+import { useHotkeys } from "../../hooks/useHotkey"
+import { useSearchParams } from "react-router"
 import { BarChart3, ReceiptText, Search } from "lucide-react"
 
 import { formatCurrency } from "../../features/pos/lib/currency"
@@ -34,6 +36,7 @@ import ReceiptList from "../../features/pos/components/ReceiptList"
 import ReceiptPreview from "../../features/pos/components/ReceiptPreview"
 import SalesKpiCards from "../../features/pos/components/SalesKpiCards"
 import ConfirmDialog from "../../components/ConfirmDialog"
+import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
 type SalesTab = "Receipts" | "Insights"
 
@@ -42,6 +45,7 @@ export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>(getSales())
   const [refunds, setRefunds] = useState<SaleRefund[]>(getRefunds())
   const [search, setSearch] = useState("")
+  const debouncedSearch = useDebounce(search, 200)
   const [paymentFilter, setPaymentFilter] = useState<"All" | SalePaymentMethod>(
     "All"
   )
@@ -70,6 +74,8 @@ export default function SalesPage() {
     setActiveTab(searchParams.get("tab") === "insights" ? "Insights" : "Receipts")
   }, [searchParams])
 
+  const searchRef = useRef<HTMLInputElement>(null)
+  useHotkeys([{ key: "f", modifiers: ["ctrl"], handler: () => searchRef.current?.focus() }])
   const settings = getSettings()
   const metrics = useMemo(() => getSalesMetrics(), [sales, refunds])
   const paymentMix = useMemo(() => getPaymentMix(), [sales, refunds])
@@ -87,7 +93,7 @@ export default function SalesPage() {
 
       return matchesPayment && matchesSearch
     })
-  }, [paymentFilter, sales, search])
+  }, [paymentFilter, sales, debouncedSearch])
 
   const selectedSale =
     sales.find((sale) => sale.id === selectedSaleId) ?? filteredSales[0]
@@ -231,75 +237,47 @@ export default function SalesPage() {
     <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
       <SalesKpiCards metrics={metrics} />
 
-      <section className="mt-4 rounded-lg border border-zinc-200 bg-white p-1 shadow-sm">
-        <div className="grid grid-cols-2 gap-1">
-          {(["Receipts", "Insights"] as SalesTab[]).map((tab) => {
-            const active = activeTab === tab
-            const Icon = tab === "Receipts" ? ReceiptText : BarChart3
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <WorkspaceTabs<SalesTab>
+          active={activeTab}
+          onChange={selectTab}
+          tabs={[
+            { label: "Receipts", icon: <ReceiptText size={18} />, count: sales.length },
+            { label: "Insights", icon: <BarChart3 size={18} /> },
+          ]}
+        />
 
-            return (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => selectTab(tab)}
-                className={`flex h-12 items-center justify-center gap-2 rounded-lg text-sm font-bold transition ${
-                  active
-                    ? "bg-zinc-950 text-white"
-                    : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-950"
-                }`}
-              >
-                <Icon size={18} />
-                {tab === "Receipts" ? "Receipt History" : "Sales Insights"}
-              </button>
-            )
-          })}
+        <div className="flex gap-2">
+          <label className="relative w-full sm:w-64">
+            <span className="sr-only">Search sales</span>
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+            />
+            <input
+              ref={searchRef}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search receipt, customer, item"
+              className="h-10 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            />
+          </label>
+
+          <select
+            value={paymentFilter}
+            onChange={(event) =>
+              setPaymentFilter(event.target.value as "All" | SalePaymentMethod)
+            }
+            className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-700 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+          >
+            <option value="All">All payments</option>
+            <option value="Cash">Cash</option>
+            <option value="Card">Card</option>
+            <option value="Wallet">Wallet</option>
+            <option value="Debt">Debt</option>
+          </select>
         </div>
-      </section>
-
-      <section className="mt-4 rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-zinc-200 p-3 sm:p-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-zinc-950">
-              {activeTab === "Receipts" ? "Receipt history" : "Sales ledger"}
-            </h2>
-            <p className="text-sm text-zinc-500">
-              {activeTab === "Receipts"
-                ? "Every completed sale stays available for lookup and reprint."
-                : "Filter the complete transaction ledger by payment and item."}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <label className="relative w-full sm:w-80">
-              <span className="sr-only">Search sales</span>
-              <Search
-                size={18}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
-              />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search receipt, customer, item"
-                className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-10 pr-3 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              />
-            </label>
-
-            <select
-              value={paymentFilter}
-              onChange={(event) =>
-                setPaymentFilter(event.target.value as "All" | SalePaymentMethod)
-              }
-              className="h-11 rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-semibold text-zinc-700 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-            >
-              <option value="All">All payments</option>
-              <option value="Cash">Cash</option>
-              <option value="Card">Card</option>
-              <option value="Wallet">Wallet</option>
-              <option value="Debt">Debt</option>
-            </select>
-          </div>
-        </div>
-      </section>
+      </div>
 
       {activeTab === "Receipts" ? (
         <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(320px,430px)_minmax(0,1fr)]">

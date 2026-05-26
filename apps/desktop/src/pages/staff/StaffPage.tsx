@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   BadgeCheck,
   Calculator,
@@ -7,6 +7,7 @@ import {
   LockKeyhole,
   Plus,
   ReceiptText,
+  Search,
   ShieldCheck,
   Store,
   UserCog,
@@ -51,8 +52,13 @@ import {
   type SupplierPayment,
 } from "../../features/pos/services/supplier.service"
 import { showToast } from "../../features/pos/services/toast.service"
+import { useDebounce } from "../../hooks/useDebounce"
+import { useHotkeys } from "../../hooks/useHotkey"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import Spinner from "../../components/ui/Spinner"
+import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
+
+type StaffWorkspace = "Team" | "Shifts" | "Audit"
 
 const roleLabels: Record<UserRole, string> = {
   Admin: "Full control",
@@ -245,6 +251,12 @@ export default function StaffPage() {
     confirmDestructive?: boolean
     onConfirm: () => void
   } | null>(null)
+  const [activeWorkspace, setActiveWorkspace] =
+    useState<StaffWorkspace>("Team")
+  const [search, setSearch] = useState("")
+  const searchRef = useRef<HTMLInputElement>(null)
+  useHotkeys([{ key: "f", modifiers: ["ctrl"], handler: () => searchRef.current?.focus() }])
+  const debouncedSearch = useDebounce(search, 200)
 
   useEffect(() => {
     setIsLoading(false)
@@ -303,6 +315,38 @@ export default function StaffPage() {
     0
   )
   const closingDifference = parseMoney(closingCash) - expectedCash
+
+  const searchQuery = debouncedSearch.trim().toLowerCase()
+
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery) return users
+    return users.filter(
+      (u) =>
+        u.name.toLowerCase().includes(searchQuery) ||
+        u.mobile.includes(searchQuery) ||
+        u.role.toLowerCase().includes(searchQuery)
+    )
+  }, [users, searchQuery])
+
+  const filteredShifts = useMemo(() => {
+    if (!searchQuery) return shifts
+    return shifts.filter(
+      (s) =>
+        s.shiftNumber.toLowerCase().includes(searchQuery) ||
+        (s.openedByName ?? "").toLowerCase().includes(searchQuery) ||
+        s.status.toLowerCase().includes(searchQuery)
+    )
+  }, [shifts, searchQuery])
+
+  const filteredAuditEvents = useMemo(() => {
+    if (!searchQuery) return auditEvents
+    return auditEvents.filter(
+      (e) =>
+        e.summary.toLowerCase().includes(searchQuery) ||
+        e.userName.toLowerCase().includes(searchQuery) ||
+        e.action.toLowerCase().includes(searchQuery)
+    )
+  }, [auditEvents, searchQuery])
 
   async function handleCreateUser() {
     if (!name.trim() || !mobile.trim() || !pin.trim()) {
@@ -431,7 +475,48 @@ export default function StaffPage() {
         </div>
       </section>
 
-      <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]">
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <WorkspaceTabs<StaffWorkspace>
+          active={activeWorkspace}
+          onChange={setActiveWorkspace}
+          tabs={[
+            { label: "Team", count: users.length },
+            { label: "Shifts", count: shifts.length },
+            { label: "Audit", count: auditEvents.length },
+          ]}
+        />
+
+        <label className="relative w-full sm:w-64">
+          <span className="sr-only">Search</span>
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+          />
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={
+              activeWorkspace === "Team"
+                ? "Search name, mobile, role"
+                : activeWorkspace === "Shifts"
+                  ? "Search shift, cashier, status"
+                  : "Search events, user"
+            }
+            className="h-10 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+          />
+        </label>
+      </div>
+
+      {activeWorkspace !== "Audit" ? (
+      <section
+        className={`mt-5 grid grid-cols-1 gap-5 ${
+          activeWorkspace === "Team"
+            ? "xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]"
+            : "xl:max-w-2xl"
+        }`}
+      >
+        {activeWorkspace === "Team" ? (
         <div className="space-y-5">
           <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
             <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 lg:flex-row lg:items-center lg:justify-between">
@@ -465,7 +550,11 @@ export default function StaffPage() {
             </div>
 
             <div className="grid gap-4 p-4 lg:grid-cols-2">
-              {users.map((user) => (
+              {filteredUsers.length === 0 ? (
+                <div className="col-span-full py-8 text-center text-sm text-zinc-500">
+                  {search ? "No staff match your search." : "No staff users yet. Add one to get started."}
+                </div>
+              ) : filteredUsers.map((user) => (
                 <article
                   key={user.id}
                   className={`rounded-lg border p-4 ${
@@ -602,8 +691,10 @@ export default function StaffPage() {
             </div>
           </section>
         </div>
+        ) : null}
 
         <aside className="space-y-5">
+          {activeWorkspace === "Shifts" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-950 text-white">
@@ -758,7 +849,9 @@ export default function StaffPage() {
               </div>
             )}
           </section>
+          ) : null}
 
+          {activeWorkspace === "Team" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
@@ -797,10 +890,14 @@ export default function StaffPage() {
               ))}
             </div>
           </section>
+          ) : null}
         </aside>
       </section>
+      ) : null}
 
-      <section className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.7fr)]">
+      {activeWorkspace !== "Team" ? (
+      <section className="mt-5">
+        {activeWorkspace === "Audit" ? (
         <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
           <div className="border-b border-zinc-200 p-4">
             <h2 className="text-xl font-bold text-zinc-950">Audit trail</h2>
@@ -809,12 +906,18 @@ export default function StaffPage() {
             </p>
           </div>
           <div className="max-h-[520px] space-y-3 overflow-y-auto bg-zinc-50 p-4">
-            {auditEvents.slice(0, 60).map((event) => (
+            {filteredAuditEvents.length === 0 ? (
+              <div className="py-8 text-center text-sm text-zinc-500">
+                {search ? "No events match your search." : "No events recorded yet."}
+              </div>
+            ) : filteredAuditEvents.slice(0, 60).map((event) => (
               <AuditRow key={event.id} event={event} />
             ))}
           </div>
         </div>
+        ) : null}
 
+        {activeWorkspace === "Shifts" ? (
         <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
           <div className="border-b border-zinc-200 p-4">
             <h2 className="text-xl font-bold text-zinc-950">Shift history</h2>
@@ -823,7 +926,11 @@ export default function StaffPage() {
             </p>
           </div>
           <div className="max-h-[520px] space-y-3 overflow-y-auto p-4">
-            {shifts.map((shift) => (
+            {filteredShifts.length === 0 ? (
+              <div className="py-8 text-center text-sm text-zinc-500">
+                {search ? "No shifts match your search." : "No shifts recorded yet."}
+              </div>
+            ) : filteredShifts.map((shift) => (
               <article
                 key={shift.id}
                 className="rounded-lg border border-zinc-200 bg-white p-3"
@@ -893,7 +1000,9 @@ export default function StaffPage() {
             ))}
           </div>
         </div>
+        ) : null}
       </section>
+      ) : null}
       {confirmAction && (
         <ConfirmDialog
           open={!!confirmAction}

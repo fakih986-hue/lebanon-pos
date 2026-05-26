@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Bell, PackagePlus, X } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link } from "react-router"
 
 import {
   getProductsSync,

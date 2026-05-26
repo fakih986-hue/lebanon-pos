@@ -1,6 +1,13 @@
-import { Request, Response, NextFunction } from "express"
+import type { IncomingMessage, ServerResponse } from "node:http"
 
-export function errorHandler(err: Error, _req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(
+  err: Error,
+  _req: IncomingMessage,
+  res: ServerResponse,
+  _next: (err?: unknown) => void
+) {
   console.error("API Error:", err.message, err.stack)
-  res.status(500).json({ error: err.message || "Internal server error" })
+  res.statusCode = 500
+  res.setHeader("Content-Type", "application/json")
+  res.end(JSON.stringify({ error: err.message || "Internal server error" }))
 }

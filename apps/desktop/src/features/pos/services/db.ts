@@ -9,73 +9,73 @@ function getDb(): Promise<IDBPDatabase> {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
       upgrade(db) {
-        if (!db.objectStoreNames.has("products")) {
+        if (!db.objectStoreNames.contains("products")) {
           db.createObjectStore("products", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("sales")) {
+        if (!db.objectStoreNames.contains("sales")) {
           db.createObjectStore("sales", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("refunds")) {
+        if (!db.objectStoreNames.contains("refunds")) {
           db.createObjectStore("refunds", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("customers")) {
+        if (!db.objectStoreNames.contains("customers")) {
           db.createObjectStore("customers", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("debt-sales")) {
+        if (!db.objectStoreNames.contains("debt-sales")) {
           db.createObjectStore("debt-sales", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("debt-payments")) {
+        if (!db.objectStoreNames.contains("debt-payments")) {
           db.createObjectStore("debt-payments", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("suppliers")) {
+        if (!db.objectStoreNames.contains("suppliers")) {
           db.createObjectStore("suppliers", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("purchase-orders")) {
+        if (!db.objectStoreNames.contains("purchase-orders")) {
           db.createObjectStore("purchase-orders", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("supplier-payments")) {
+        if (!db.objectStoreNames.contains("supplier-payments")) {
           db.createObjectStore("supplier-payments", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("users")) {
+        if (!db.objectStoreNames.contains("users")) {
           db.createObjectStore("users", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("shifts")) {
+        if (!db.objectStoreNames.contains("shifts")) {
           db.createObjectStore("shifts", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("audit")) {
+        if (!db.objectStoreNames.contains("audit")) {
           db.createObjectStore("audit", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("settings")) {
+        if (!db.objectStoreNames.contains("settings")) {
           db.createObjectStore("settings", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("expenses")) {
+        if (!db.objectStoreNames.contains("expenses")) {
           db.createObjectStore("expenses", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("stock-counts")) {
+        if (!db.objectStoreNames.contains("stock-counts")) {
           db.createObjectStore("stock-counts", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("inventory-batches")) {
+        if (!db.objectStoreNames.contains("inventory-batches")) {
           db.createObjectStore("inventory-batches", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("inventory-adjustments")) {
+        if (!db.objectStoreNames.contains("inventory-adjustments")) {
           db.createObjectStore("inventory-adjustments", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("held-sales")) {
+        if (!db.objectStoreNames.contains("held-sales")) {
           db.createObjectStore("held-sales", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("daily-closes")) {
+        if (!db.objectStoreNames.contains("daily-closes")) {
           db.createObjectStore("daily-closes", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("sync-queue")) {
+        if (!db.objectStoreNames.contains("sync-queue")) {
           db.createObjectStore("sync-queue", { keyPath: "id" })
         }
-        if (!db.objectStoreNames.has("session")) {
+        if (!db.objectStoreNames.contains("session")) {
           db.createObjectStore("session")
         }
-        if (!db.objectStoreNames.has("current-user")) {
+        if (!db.objectStoreNames.contains("current-user")) {
           db.createObjectStore("current-user")
         }
-        if (!db.objectStoreNames.has("lebanonpos-migration")) {
+        if (!db.objectStoreNames.contains("lebanonpos-migration")) {
           db.createObjectStore("lebanonpos-migration", { keyPath: "key" })
         }
       },

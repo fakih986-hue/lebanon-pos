@@ -1,5 +1,5 @@
 import { Barcode, Hash, Plus, Search, SlidersHorizontal, Star, X } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link } from "react-router"
 
 import { formatCurrency, formatNumber } from "../lib/currency"
 import type { Product } from "../types/product"
@@ -138,6 +138,9 @@ export default function ProductTable({
               <th className="border-b border-zinc-200 px-4 py-3">
                 POS
               </th>
+              <th className="border-b border-zinc-200 px-4 py-3">
+                <span className="sr-only">Delete</span>
+              </th>
             </tr>
           </thead>
 
@@ -145,7 +148,7 @@ export default function ProductTable({
             {filteredProducts.length === 0 ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   className="px-4 py-12 text-center text-sm font-medium text-zinc-500"
                 >
                   No products found

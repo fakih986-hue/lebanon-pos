@@ -1,7 +1,16 @@
-import { Request, Response, NextFunction } from "express"
-import jwt from "jsonwebtoken"
+import type { IncomingMessage, ServerResponse } from "node:http"
+import jwt, { type SignOptions } from "jsonwebtoken"
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production"
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN ||
+  "30d") as SignOptions["expiresIn"]
+
+if (
+  process.env.NODE_ENV === "production" &&
+  JWT_SECRET === "dev-secret-change-in-production"
+) {
+  throw new Error("JWT_SECRET must be configured in production")
+}
 
 export interface AuthPayload {
   userId: string
@@ -9,14 +18,24 @@ export interface AuthPayload {
   role: string
 }
 
-export interface AuthRequest extends Request {
+export interface AuthRequest extends IncomingMessage {
   auth?: AuthPayload
+  body?: unknown
+  query: Record<string, string | string[] | undefined>
 }
 
-export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
+type Handler = (
+  req: AuthRequest,
+  res: ServerResponse,
+  next: (err?: unknown) => void
+) => void
+
+export const requireAuth: Handler = (req, res, next) => {
   const header = req.headers.authorization
   if (!header?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Missing or invalid authorization header" })
+    res.statusCode = 401
+    res.setHeader("Content-Type", "application/json")
+    res.end(JSON.stringify({ error: "Missing or invalid authorization header" }))
     return
   }
 
@@ -26,10 +45,12 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
     req.auth = payload
     next()
   } catch {
-    res.status(401).json({ error: "Invalid or expired token" })
+    res.statusCode = 401
+    res.setHeader("Content-Type", "application/json")
+    res.end(JSON.stringify({ error: "Invalid or expired token" }))
   }
 }
 
 export function signToken(payload: AuthPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" })
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
 }

@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useDebounce } from "../../hooks/useDebounce"
+import { useHotkeys } from "../../hooks/useHotkey"
 import {
   CalendarClock,
   CreditCard,
@@ -28,6 +30,7 @@ import {
 import { showToast } from "../../features/pos/services/toast.service"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import Spinner from "../../components/ui/Spinner"
+import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
 type NewCustomerForm = {
   name: string
@@ -94,6 +97,9 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<CustomerLedger[]>([])
   const [totals, setTotals] = useState(getLedgerTotals())
   const [search, setSearch] = useState("")
+  const searchRef = useRef<HTMLInputElement>(null)
+  useHotkeys([{ key: "f", modifiers: ["ctrl"], handler: () => searchRef.current?.focus() }])
+  const debouncedSearch = useDebounce(search, 200)
   const [selectedCustomerId, setSelectedCustomerId] = useState("")
   const [newCustomer, setNewCustomer] =
     useState<NewCustomerForm>(emptyCustomerForm)
@@ -147,7 +153,7 @@ export default function CustomersPage() {
         customer.name.toLowerCase().includes(query) ||
         customer.mobile.includes(query)
     )
-  }, [customers, search])
+      }, [customers, debouncedSearch])
 
   const selectedCustomer = customers.find(
     (customer) => customer.id === selectedCustomerId
@@ -192,12 +198,12 @@ export default function CustomersPage() {
     }
 
     if (!payment.customerId) {
-      setFormErrors({ name: "Please select a customer" })
+      showToast("Please select a customer.", "error")
       return
     }
 
     if (payment.amount <= 0) {
-      setFormErrors({ name: "Payment amount must be greater than 0" })
+      showToast("Payment amount must be greater than 0.", "error")
       return
     }
 
@@ -225,16 +231,14 @@ export default function CustomersPage() {
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
       {isLoading ? (
         <div className="flex min-h-[400px] items-center justify-center p-6">
           <Spinner label="Loading customers..." />
         </div>
       ) : (
       <>
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
-        <section className="min-w-0 space-y-5">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+      <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
             <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
               <p className="text-sm font-medium text-zinc-500">Customers</p>
               <p className="mt-2 text-2xl font-bold text-zinc-950">
@@ -262,35 +266,38 @@ export default function CustomersPage() {
                 {formatCurrency(totals.paidTotal)}
               </p>
             </div>
-          </div>
+      </section>
 
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <WorkspaceTabs<CustomerPanel>
+          active={activePanel}
+          onChange={setActivePanel}
+          tabs={[
+            { label: "Ledger", count: filteredCustomers.length },
+            { label: "Pay debt", count: customers.filter((customer) => customer.balance > 0).length },
+            { label: "Add customer" },
+          ]}
+        />
+
+        <label className="relative w-full sm:w-64">
+          <span className="sr-only">Search customers</span>
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+          />
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search name or mobile"
+            className="h-10 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+          />
+        </label>
+      </div>
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
+        <section className="min-w-0 space-y-5">
           <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-            <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 xl:flex-row xl:items-center xl:justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-zinc-950">
-                  Customer accounts
-                </h2>
-                <p className="text-sm text-zinc-500">
-                  Customer balances update automatically from POS debt sales and
-                  later payments.
-                </p>
-              </div>
-
-              <label className="relative w-full xl:w-80">
-                <span className="sr-only">Search customers</span>
-                <Search
-                  size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
-                />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search name or mobile"
-                  className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-10 pr-3 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                />
-              </label>
-            </div>
-
             <div className="overflow-x-auto">
               <table className="min-w-full border-separate border-spacing-0 text-sm">
                 <thead>
@@ -403,31 +410,6 @@ export default function CustomersPage() {
         </section>
 
         <aside className="space-y-5">
-          <section className="rounded-lg border border-zinc-200 bg-white p-2 shadow-sm">
-            <div className="grid grid-cols-3 gap-2">
-              {(["Ledger", "Pay debt", "Add customer"] as CustomerPanel[]).map(
-                (panel) => {
-                  const active = activePanel === panel
-
-                  return (
-                    <button
-                      key={panel}
-                      type="button"
-                      onClick={() => setActivePanel(panel)}
-                      className={`h-10 rounded-lg px-2 text-xs font-bold transition sm:text-sm ${
-                        active
-                          ? "bg-zinc-950 text-white"
-                          : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
-                      }`}
-                    >
-                      {panel}
-                    </button>
-                  )
-                }
-              )}
-            </div>
-          </section>
-
           {activePanel === "Add customer" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">

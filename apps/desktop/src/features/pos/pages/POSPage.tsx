@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useDebounce } from "../../../hooks/useDebounce"
+import { useHotkeys } from "../../../hooks/useHotkey"
 import type { ChangeEvent } from "react"
 import {
   Candy,
@@ -18,6 +20,8 @@ import {
 import type { LucideIcon } from "lucide-react"
 
 import ConfirmDialog from "../../../components/ConfirmDialog"
+import Spinner from "../../../components/ui/Spinner"
+import EmptyState from "../../../components/ui/EmptyState"
 import ProductCard from "../components/ProductCard"
 import DepartmentTabs from "../components/DepartmentTabs"
 import LastSaleBanner from "../components/LastSaleBanner"
@@ -30,6 +34,7 @@ import {
   lbpToUsd,
   usdToLbp,
 } from "../lib/currency"
+import { escapeHtml } from "../lib/salesHelpers"
 import {
   createBarcodeDetector,
   createHtml5Qrcode,
@@ -74,7 +79,6 @@ import type { Product } from "../types/product"
 
 type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
 type TenderMode = "USD" | "LBP" | "Mixed"
-type ChangeCurrency = "USD" | "LBP"
 type DiscountMode = "USD" | "Percent"
 
 type CartItem = Product & {
@@ -233,25 +237,18 @@ function formatVatRate(value: number) {
   return Number.isInteger(rate) ? `${rate}%` : `${rate.toFixed(2)}%`
 }
 
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;")
-}
-
 export default function POSPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [items, setItems] = useState<CartItem[]>([])
   const [heldSales, setHeldSales] = useState<HeldSale[]>(getHeldSales())
   const [customers, setCustomers] = useState<CustomerLedger[]>([])
+  const scanInputRef = useRef<HTMLInputElement>(null)
   const [settings, setSettings] = useState<AppSettings>(getSettings())
   const [selectedCustomerId, setSelectedCustomerId] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [search, setSearch] = useState("")
+  const debouncedSearch = useDebounce(search, 200)
   const [scanCode, setScanCode] = useState("")
   const [scannerStatus, setScannerStatus] = useState("Scanner ready.")
   const [cameraActive, setCameraActive] = useState(false)
@@ -262,8 +259,6 @@ export default function POSPage() {
   const [paidLbp, setPaidLbp] = useState("")
   const [discountMode, setDiscountMode] = useState<DiscountMode>("USD")
   const [discountValue, setDiscountValue] = useState("")
-  const [changeCurrency, setChangeCurrency] =
-    useState<ChangeCurrency>("USD")
   const [lastSale, setLastSale] = useState<LastSaleSummary | null>(null)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [cameraEngine, setCameraEngine] = useState<"native" | "html5" | null>(
@@ -291,12 +286,16 @@ export default function POSPage() {
   useEffect(() => {
     let active = true
 
-    getProducts().then((data) => {
-      if (active) {
-        setProducts(data)
-        setIsLoading(false)
-      }
-    })
+    getProducts()
+      .then((data) => {
+        if (active) {
+          setProducts(data)
+          setIsLoading(false)
+        }
+      })
+      .catch(() => {
+        if (active) setIsLoading(false)
+      })
 
     const unsubscribe = subscribeProducts((data) => {
       if (active) {
@@ -349,6 +348,24 @@ export default function POSPage() {
     }
   }, [])
 
+  useHotkeys([
+    {
+      key: "f",
+      modifiers: ["ctrl"],
+      handler: () => scanInputRef.current?.focus(),
+    },
+    {
+      key: "f8",
+      handler: () => {
+        if (items.length > 0) setIsCartOpen(true)
+      },
+    },
+    {
+      key: "Escape",
+      handler: () => { if (isCartOpen) setIsCartOpen(false) },
+    },
+  ])
+
   const departmentSummaries = useMemo(() => {
     const categoryNames = [
       "All",
@@ -384,7 +401,7 @@ export default function POSPage() {
   }, [products])
 
   const filteredProducts = useMemo(() => {
-    const query = (search || scanCode).trim().toLowerCase()
+    const query = (debouncedSearch || scanCode).trim().toLowerCase()
 
     return products.filter((product) => {
       const matchesCategory =
@@ -615,7 +632,6 @@ export default function POSPage() {
     setPaidUsd("")
     setPaidLbp("")
     setTenderMode("USD")
-    setChangeCurrency("USD")
   }
 
   function resetDiscount() {
@@ -768,14 +784,12 @@ export default function POSPage() {
       setTenderMode("USD")
       setPaidUsd(total.toFixed(2))
       setPaidLbp("")
-      setChangeCurrency("USD")
       return
     }
 
     setTenderMode("LBP")
     setPaidUsd("")
     setPaidLbp(String(Math.round(totalLbp)))
-    setChangeCurrency("LBP")
   }
 
   async function startCameraScanner() {
@@ -1004,7 +1018,6 @@ export default function POSPage() {
             paidTotalLbp,
             changeUsd: cashChangeUsd,
             changeLbp: cashChangeLbp,
-            changeCurrency,
           }
         : undefined
     const customerBalanceBefore = selectedCustomer?.balance ?? 0
@@ -1132,7 +1145,6 @@ export default function POSPage() {
         <tr><td>Change LBP</td><td>${formatLbpCurrency(
           lastSale.tender.changeLbp
         )}</td></tr>
-        <tr><td>Return change as</td><td>${lastSale.tender.changeCurrency}</td></tr>
       `
       : ""
     const customerRows =
@@ -1241,6 +1253,7 @@ export default function POSPage() {
                 className="pointer-events-none absolute bottom-4 left-4 text-zinc-400"
               />
               <input
+                ref={scanInputRef}
                 autoFocus
                 value={scanCode}
                 onChange={(event) => setScanCode(event.target.value)}
@@ -1363,10 +1376,7 @@ export default function POSPage() {
         <div className="min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
           {isLoading ? (
             <div className="flex h-full min-h-80 items-center justify-center">
-              <div className="text-center">
-                <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-zinc-950" />
-                <p className="mt-4 text-sm font-medium text-zinc-500">Loading products...</p>
-              </div>
+              <Spinner label="Loading products..." />
             </div>
           ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 pb-4 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] xl:gap-4">
@@ -1380,20 +1390,12 @@ export default function POSPage() {
               ))}
             </div>
           ) : (
-            <div className="flex h-full min-h-80 items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-white">
-              <div className="text-center">
-                <PackageSearch
-                  size={42}
-                  className="mx-auto text-zinc-300"
-                />
-                <p className="mt-3 font-bold text-zinc-900">
-                  No products found
-                </p>
-                <p className="mt-1 text-sm text-zinc-500">
-                  Try another search or category.
-                </p>
-              </div>
-            </div>
+            <EmptyState
+              icon={PackageSearch}
+              title="No products found"
+              description="Try another search or category."
+              className="min-h-80 bg-white"
+            />
           )}
         </div>
       </section>
@@ -1456,8 +1458,6 @@ export default function POSPage() {
         discountValue={discountValue}
         onDiscountModeChange={setDiscountMode}
         onDiscountValueChange={setDiscountValue}
-        changeCurrency={changeCurrency}
-        onChangeCurrencyChange={setChangeCurrency}
         onHold={holdCurrentSale}
         onClean={cleanSale}
         onCompleteSale={completeSale}

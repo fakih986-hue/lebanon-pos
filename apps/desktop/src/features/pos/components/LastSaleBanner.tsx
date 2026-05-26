@@ -1,5 +1,5 @@
 import { CheckCircle2, Eraser, Printer, ReceiptText } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link } from "react-router"
 
 import { formatCurrency, formatLbpCurrency } from "../lib/currency"
 
@@ -42,7 +42,7 @@ export default function LastSaleBanner({
         <button
           type="button"
           onClick={onNewSale}
-          className="flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-bold transition hover:bg-emerald-100"
+          className="flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white transition hover:bg-emerald-500"
         >
           <Eraser size={16} />
           New Sale

@@ -1,7 +1,9 @@
 import { useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
 import {
   BadgeDollarSign,
   BadgePercent,
+  ChevronDown,
   CreditCard,
   Eraser,
   HandCoins,
@@ -14,7 +16,7 @@ import {
   X,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link } from "react-router"
 
 import CartItemCard from "./CartItemCard"
 import {
@@ -28,7 +30,6 @@ import type { CustomerLedger } from "../services/customer.service"
 
 type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
 type TenderMode = "USD" | "LBP" | "Mixed"
-type ChangeCurrency = "USD" | "LBP"
 type DiscountMode = "USD" | "Percent"
 
 type PaymentOption = {
@@ -127,9 +128,6 @@ interface Props {
   onDiscountModeChange: (mode: DiscountMode) => void
   onDiscountValueChange: (value: string) => void
 
-  changeCurrency: ChangeCurrency
-  onChangeCurrencyChange: (currency: ChangeCurrency) => void
-
   onHold: () => void
   onClean: () => void
   onCompleteSale: () => void
@@ -183,8 +181,6 @@ export default function CartDrawer({
   discountValue,
   onDiscountModeChange,
   onDiscountValueChange,
-  changeCurrency,
-  onChangeCurrencyChange,
   onHold,
   onClean,
   onCompleteSale,
@@ -208,25 +204,35 @@ export default function CartDrawer({
   heldSalesItemCount,
   canApplyDiscount,
 }: Props) {
-  const [formErrors, setFormErrors] = useState<Partial<Record<"payment" | "customer" | "discount", string>>>({})
+  const [discountOpen, setDiscountOpen] = useState(false)
+  const [heldSalesOpen, setHeldSalesOpen] = useState(false)
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex justify-end ${isOpen ? "" : "pointer-events-none"}`}
-      onKeyDown={(e) => { if (e.key === "Escape") onClose() }}
-      tabIndex={0}
-    >
-      <div
-        className={`fixed inset-0 bg-black/20 transition-opacity duration-300 ${isOpen ? "opacity-100" : "opacity-0"}`}
-        onClick={onClose}
-      />
+    <AnimatePresence>
+      {isOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex justify-end"
+          onKeyDown={(e) => { if (e.key === "Escape") onClose() }}
+          tabIndex={0}
+        >
+          <motion.div
+            className="fixed inset-0 bg-black/20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
 
-      <aside
-        role="dialog"
-        aria-modal="true"
-        aria-label="Current sale checkout"
-        className={`relative z-10 flex h-full w-full max-w-xl flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 sm:rounded-xl ${isOpen ? "translate-x-0" : "translate-x-full"}`}
-      >
+          <motion.aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Current sale checkout"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            className="relative z-10 flex h-full w-full max-w-xl flex-col overflow-hidden bg-white shadow-2xl sm:rounded-xl"
+          >
         <div className="border-b border-zinc-200 p-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -308,66 +314,81 @@ export default function CartDrawer({
 
         <div className="max-h-[58vh] overflow-y-auto border-t border-zinc-200 p-4">
           {heldSales.length > 0 ? (
-            <div className="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm font-bold text-sky-950">
-                  <PauseCircle size={17} />
+            <div className="mb-4 rounded-lg border border-zinc-200 bg-white p-3">
+              <button
+                type="button"
+                onClick={() => setHeldSalesOpen(!heldSalesOpen)}
+                className="flex w-full items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-2 text-sm font-bold text-zinc-800">
+                  <PauseCircle size={16} />
                   Held sales
                 </div>
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-sky-800 ring-1 ring-sky-200">
-                  {formatNumber(heldSales.length)} holds /{" "}
-                  {formatNumber(heldSalesItemCount)} items
-                </span>
-              </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-bold text-zinc-600">
+                    {formatNumber(heldSales.length)} holds /{" "}
+                    {formatNumber(heldSalesItemCount)} items
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className={`text-zinc-400 transition ${heldSalesOpen ? "rotate-180" : ""}`}
+                  />
+                </div>
+              </button>
 
-              <div className="space-y-2">
-                {heldSales.slice(0, 4).map((heldSale) => (
-                  <div
-                    key={heldSale.id}
-                    className="rounded-lg border border-sky-100 bg-white p-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-bold text-zinc-950">
-                          {heldSale.holdNumber}
-                        </p>
-                        <p className="mt-1 truncate text-xs font-semibold text-zinc-500">
-                          {heldSale.note} -{" "}
-                          {formatNumber(getHeldSaleItemCount(heldSale))} items
+              {heldSalesOpen ? (
+                <div className="mt-3 space-y-2">
+                  {heldSales.slice(0, 4).map((heldSale) => (
+                    <div
+                      key={heldSale.id}
+                      className="rounded-lg border border-zinc-100 bg-zinc-50 p-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-bold text-zinc-950">
+                            {heldSale.holdNumber}
+                          </p>
+                          <p className="mt-1 truncate text-xs font-semibold text-zinc-500">
+                            {heldSale.note} -{" "}
+                            {formatNumber(getHeldSaleItemCount(heldSale))} items
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-sm font-bold text-zinc-950">
+                          {formatCurrency(
+                            getHeldSaleTotal(heldSale, vatRate)
+                          )}
                         </p>
                       </div>
-                      <p className="shrink-0 text-sm font-bold text-zinc-950">
-                        {formatCurrency(
-                          getHeldSaleTotal(heldSale, vatRate)
-                        )}
-                      </p>
-                    </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onResumeHeld(heldSale)}
-                        disabled={items.length > 0}
-                        className="flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:bg-zinc-300 disabled:text-zinc-500"
-                      >
-                        <PlayCircle size={16} />
-                        Resume
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDiscardHeld(heldSale)}
-                        className="flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
-                      >
-                        <Eraser size={15} />
-                        Discard
-                      </button>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onResumeHeld(heldSale)}
+                          disabled={items.length > 0}
+                          className="flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:bg-zinc-300 disabled:text-zinc-500"
+                        >
+                          <PlayCircle size={16} />
+                          Resume
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDiscardHeld(heldSale)}
+                          className="flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+                        >
+                          <Eraser size={15} />
+                          Discard
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
 
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            Payment method
+          </p>
           <div className="mb-4 grid grid-cols-2 gap-2">
             {paymentOptions.map((option) => {
               const Icon = option.icon
@@ -379,117 +400,107 @@ export default function CartDrawer({
                   type="button"
                   onClick={() => onSelectPayment(option.label)}
                   className={`
-                    flex h-12 items-center justify-center gap-2 rounded-lg border text-sm font-bold transition
+                    flex h-14 items-center justify-center gap-2 rounded-lg border text-sm font-bold transition
                     ${
                       active
-                        ? "border-emerald-600 bg-emerald-50 text-emerald-800"
-                        : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+                        ? "border-emerald-600 bg-emerald-50 text-emerald-800 shadow-sm"
+                        : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300"
                     }
                   `}
                 >
-                  <Icon size={17} />
+                  <Icon size={18} />
                   {option.label}
                 </button>
               )
             })}
           </div>
 
-          <div className="mb-4 rounded-lg border border-violet-200 bg-violet-50 p-3">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm font-bold text-violet-950">
-                <BadgePercent size={17} />
-                Cart discount
+          <div className="mb-4 rounded-lg border border-zinc-200 p-3">
+            <button
+              type="button"
+              onClick={() => setDiscountOpen(!discountOpen)}
+              className="flex w-full items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-2 text-sm font-bold text-zinc-700">
+                <BadgePercent size={16} />
+                Discount
               </div>
-              {hasDiscount ? (
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-violet-800 ring-1 ring-violet-200">
-                  -{formatCurrency(discountTotal)}
-                </span>
-              ) : null}
-            </div>
-
-            {canApplyDiscount ? (
-              <>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["USD", "Percent"] as DiscountMode[]).map((mode) => {
-                    const active = discountMode === mode
-
-                    return (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => onDiscountModeChange(mode)}
-                        className={`h-10 rounded-lg border text-sm font-bold transition ${
-                          active
-                            ? "border-violet-700 bg-violet-700 text-white"
-                            : "border-violet-200 bg-white text-violet-800 hover:bg-violet-100"
-                        }`}
-                      >
-                        {mode === "USD" ? "$ off" : "% off"}
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <label className="mt-3 block text-sm font-bold text-violet-950">
-                  Discount value
-                  <input
-                    type="number"
-                    min="0"
-                    max={discountMode === "Percent" ? 100 : undefined}
-                    step={discountMode === "Percent" ? 1 : 0.01}
-                    value={discountValue}
-                    onChange={(event) =>
-                      onDiscountValueChange(event.target.value)
-                    }
-                    placeholder={
-                      discountMode === "Percent" ? "10" : "1.00"
-                    }
-                    className={`mt-2 h-11 w-full rounded-lg border bg-white px-3 text-zinc-900 outline-none focus:ring-4 ${
-                      !discountValue
-                        ? "border-rose-300 focus:border-rose-400 focus:ring-rose-100"
-                        : "border-violet-200 focus:border-violet-400 focus:ring-violet-100"
-                    }`}
-                  />
-                </label>
-                {!discountValue ? (
-                  <p className="mt-1 text-xs font-medium text-rose-500">
-                    Enter a discount amount
-                  </p>
+              <div className="flex items-center gap-2">
+                {hasDiscount ? (
+                  <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-bold text-zinc-600">
+                    -{formatCurrency(discountTotal)}
+                  </span>
                 ) : null}
+                <ChevronDown
+                  size={16}
+                  className={`text-zinc-400 transition ${discountOpen ? "rotate-180" : ""}`}
+                />
+              </div>
+            </button>
 
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  {discountMode === "Percent"
-                    ? [5, 10, 15].map((value) => (
+            {discountOpen ? (
+              canApplyDiscount ? (
+                <div className="mt-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {(["USD", "Percent"] as DiscountMode[]).map((mode) => {
+                      const active = discountMode === mode
+
+                      return (
                         <button
-                          key={value}
+                          key={mode}
                           type="button"
-                          onClick={() =>
-                            onDiscountValueChange(String(value))
-                          }
-                          className="h-9 rounded-lg border border-violet-200 bg-white text-xs font-bold text-violet-800 transition hover:bg-violet-100"
+                          onClick={() => onDiscountModeChange(mode)}
+                          className={`h-9 rounded-lg border text-xs font-bold transition ${
+                            active
+                              ? "border-zinc-950 bg-zinc-950 text-white"
+                              : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                          }`}
                         >
-                          {value}%
+                          {mode === "USD" ? "$ off" : "% off"}
                         </button>
-                      ))
-                    : [1, 5, 10].map((value) => (
+                      )
+                    })}
+                  </div>
+
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <input
+                        type="number"
+                        min="0"
+                        max={discountMode === "Percent" ? 100 : undefined}
+                        step={discountMode === "Percent" ? 1 : 0.01}
+                        value={discountValue}
+                        onChange={(event) =>
+                          onDiscountValueChange(event.target.value)
+                        }
+                        placeholder={
+                          discountMode === "Percent" ? "10" : "1.00"
+                        }
+                        className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
+                      />
+                    </div>
+                    <div className="flex gap-1.5">
+                      {(discountMode === "Percent" ? [5, 10, 15] : [1, 5, 10]).map((value) => (
                         <button
                           key={value}
                           type="button"
                           onClick={() =>
                             onDiscountValueChange(String(value))
                           }
-                          className="h-9 rounded-lg border border-violet-200 bg-white text-xs font-bold text-violet-800 transition hover:bg-violet-100"
+                          className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50"
                         >
-                          ${value}
+                          {discountMode === "Percent" ? `${value}%` : `$${value}`}
                         </button>
                       ))}
+                    </div>
+                  </div>
                 </div>
-              </>
-            ) : (
-              <p className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-violet-900 ring-1 ring-violet-100">
-                Manager or admin permission required.
-              </p>
-            )}
+              ) : (
+                <p className="mt-3 text-xs font-semibold text-zinc-500">
+                  Manager or admin permission required.
+                </p>
+              )
+            ) : null}
           </div>
 
           {paymentMethod === "Cash" ? (
@@ -608,27 +619,6 @@ export default function CartDrawer({
                   </span>
                 </div>
               </div>
-
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {(["USD", "LBP"] as ChangeCurrency[]).map((currency) => {
-                  const active = changeCurrency === currency
-
-                  return (
-                    <button
-                      key={currency}
-                      type="button"
-                      onClick={() => onChangeCurrencyChange(currency)}
-                      className={`h-10 rounded-lg border text-sm font-bold transition ${
-                        active
-                          ? "border-zinc-950 bg-zinc-950 text-white"
-                          : "border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-100"
-                      }`}
-                    >
-                      Return {currency}
-                    </button>
-                  )
-                })}
-              </div>
             </div>
           ) : null}
 
@@ -702,7 +692,7 @@ export default function CartDrawer({
             </div>
           ) : null}
 
-          <div className="space-y-2 rounded-lg border border-zinc-200 bg-white p-3 text-sm">
+          <div className="space-y-2.5 rounded-lg border border-zinc-200 bg-white p-4 text-sm">
             {hasDiscount ? (
               <>
                 <div className="flex justify-between text-zinc-500">
@@ -711,7 +701,7 @@ export default function CartDrawer({
                     {formatCurrency(grossSubtotal)}
                   </span>
                 </div>
-                <div className="flex justify-between text-violet-700">
+                <div className="flex justify-between text-zinc-700">
                   <span>Discount</span>
                   <span className="font-bold">
                     -{formatCurrency(discountTotal)}
@@ -731,11 +721,11 @@ export default function CartDrawer({
                 {formatCurrency(tax)}
               </span>
             </div>
-            <div className="flex justify-between border-t border-zinc-200 pt-3 text-xl font-bold text-zinc-950">
+            <div className="flex justify-between border-t-2 border-zinc-900 pt-3 text-2xl font-bold tracking-tight text-zinc-950">
               <span>Total USD</span>
               <span>{formatCurrency(total)}</span>
             </div>
-            <div className="flex justify-between text-sm font-bold text-zinc-600">
+            <div className="flex justify-between text-base font-bold text-zinc-600">
               <span>Total LBP</span>
               <span>{formatLbpCurrency(totalLbp)}</span>
             </div>
@@ -745,7 +735,7 @@ export default function CartDrawer({
             type="button"
             onClick={onCompleteSale}
             disabled={checkoutBlocked}
-            className="mt-4 h-12 w-full rounded-lg bg-emerald-600 px-4 text-base font-bold text-white shadow-sm transition hover:bg-emerald-500 disabled:bg-zinc-300 disabled:text-zinc-500"
+            className="mt-4 h-14 w-full rounded-xl bg-emerald-600 px-4 text-lg font-bold text-white shadow-md transition hover:bg-emerald-500 active:scale-[0.97] disabled:bg-zinc-300 disabled:text-zinc-500 disabled:active:scale-100"
           >
             {creditLimitExceeded
               ? "Credit Limit Exceeded"
@@ -756,7 +746,9 @@ export default function CartDrawer({
                   : "Complete Sale"}
           </button>
         </div>
-      </aside>
-    </div>
+          </motion.aside>
+        </div>
+      ) : null}
+    </AnimatePresence>
   )
 }

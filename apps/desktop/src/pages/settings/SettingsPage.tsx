@@ -25,6 +25,7 @@ import {
   getSyncStatus,
   getApiUrl,
   getAuthToken,
+  pullFromServer,
   setApiUrl,
   setAuthToken,
   clearAuthToken,
@@ -35,6 +36,9 @@ import {
 } from "../../features/pos/services/sync.service"
 import { restoreIndexedDBToLocal } from "../../features/pos/services/storage.service"
 import { showToast } from "../../features/pos/services/toast.service"
+import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
+
+type SettingsWorkspace = "Business" | "Cloud sync" | "Security" | "Backup"
 
 function normalizeNumber(value: string) {
   const parsedValue = Number(value)
@@ -74,6 +78,8 @@ export default function SettingsPage() {
   const [syncQueue, setSyncQueue] = useState<SyncOperation[]>(getSyncQueue())
   const [apiUrl, setApiUrlState] = useState(getApiUrl() ?? "")
   const [authToken, setAuthTokenState] = useState(getAuthToken() ?? "")
+  const [activeWorkspace, setActiveWorkspace] =
+    useState<SettingsWorkspace>("Business")
 
   useEffect(() => {
     setIsLoading(false)
@@ -95,7 +101,22 @@ export default function SettingsPage() {
     }))
   }
 
+  const [settingsErrors, setSettingsErrors] = useState<Partial<Record<string, string>>>({})
+
   function handleSave() {
+    const errors: Record<string, string> = {}
+    if (!settings.storeName.trim()) errors.storeName = "Store name is required"
+    if (!settings.branchName.trim()) errors.branchName = "Branch name is required"
+    if (!settings.phone.trim()) errors.phone = "Phone is required"
+    if (settings.vatRate < 0 || settings.vatRate > 1) errors.vatRate = "VAT rate must be between 0% and 100%"
+    if (settings.usdToLbpRate < 1) errors.usdToLbpRate = "Exchange rate must be at least 1"
+
+    setSettingsErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      showToast("Please fix the highlighted fields.", "error")
+      return
+    }
+
     saveSettings(settings)
     recordAuditEvent({
       action: "settings.save",
@@ -110,7 +131,8 @@ export default function SettingsPage() {
   }
 
   function handleSyncNow() {
-    flushSyncQueue().then((result) => {
+    flushSyncQueue().then(async (result) => {
+      await pullFromServer()
       setSyncStatus(getSyncStatus())
       setSyncQueue(getSyncQueue())
       showToast(
@@ -141,13 +163,6 @@ export default function SettingsPage() {
   async function handleRestoreFromIndexedDB() {
     const count = await restoreIndexedDBToLocal()
     showToast(count > 0 ? `Restored ${count} stores from IndexedDB.` : "No stores needed restoring.")
-  }
-
-  function handleRetryFailed() {
-    retryFailedSync()
-    setSyncStatus(getSyncStatus())
-    setSyncQueue(getSyncQueue())
-    showToast("Failed sync items moved back to pending.")
   }
 
   function exportData() {
@@ -196,14 +211,27 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
       {isLoading ? (
         <div className="flex min-h-[400px] items-center justify-center p-6">
           <Spinner label="Loading settings..." />
         </div>
       ) : (
       <>
+      <WorkspaceTabs<SettingsWorkspace>
+        className="mb-5"
+        active={activeWorkspace}
+        onChange={setActiveWorkspace}
+        tabs={[
+          { label: "Business" },
+          { label: "Cloud sync", count: syncStatus.pending + syncStatus.failed },
+          { label: "Security" },
+          { label: "Backup" },
+        ]}
+      />
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        {activeWorkspace === "Business" ? (
         <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
           <div className="border-b border-zinc-200 p-4">
             <div className="flex items-center gap-3">
@@ -226,31 +254,57 @@ export default function SettingsPage() {
               Store name
               <input
                 value={settings.storeName}
-                onChange={(event) =>
+                onChange={(event) => {
                   updateSettings({ storeName: event.target.value })
-                }
-                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  setSettingsErrors((prev) => ({ ...prev, storeName: undefined }))
+                }}
+                className={`mt-2 h-11 w-full rounded-lg border px-3 font-medium outline-none focus:ring-4 ${
+                  settingsErrors.storeName
+                    ? "border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-100"
+                    : "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-emerald-100"
+                }`}
               />
+              {settingsErrors.storeName ? (
+                <p className="mt-1 text-xs font-medium text-rose-600">{settingsErrors.storeName}</p>
+              ) : null}
             </label>
 
             <label className="block text-sm font-bold text-zinc-700">
               Branch
               <input
                 value={settings.branchName}
-                onChange={(event) =>
+                onChange={(event) => {
                   updateSettings({ branchName: event.target.value })
-                }
-                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  setSettingsErrors((prev) => ({ ...prev, branchName: undefined }))
+                }}
+                className={`mt-2 h-11 w-full rounded-lg border px-3 font-medium outline-none focus:ring-4 ${
+                  settingsErrors.branchName
+                    ? "border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-100"
+                    : "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-emerald-100"
+                }`}
               />
+              {settingsErrors.branchName ? (
+                <p className="mt-1 text-xs font-medium text-rose-600">{settingsErrors.branchName}</p>
+              ) : null}
             </label>
 
             <label className="block text-sm font-bold text-zinc-700">
               Phone
               <input
                 value={settings.phone}
-                onChange={(event) => updateSettings({ phone: event.target.value })}
-                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                onChange={(event) => {
+                  updateSettings({ phone: event.target.value })
+                  setSettingsErrors((prev) => ({ ...prev, phone: undefined }))
+                }}
+                className={`mt-2 h-11 w-full rounded-lg border px-3 font-medium outline-none focus:ring-4 ${
+                  settingsErrors.phone
+                    ? "border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-100"
+                    : "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-emerald-100"
+                }`}
               />
+              {settingsErrors.phone ? (
+                <p className="mt-1 text-xs font-medium text-rose-600">{settingsErrors.phone}</p>
+              ) : null}
             </label>
 
             <label className="block text-sm font-bold text-zinc-700">
@@ -258,13 +312,22 @@ export default function SettingsPage() {
               <input
                 type="number"
                 min="0"
+                max="1"
                 step="0.01"
                 value={settings.vatRate}
-                onChange={(event) =>
+                onChange={(event) => {
                   updateSettings({ vatRate: normalizeNumber(event.target.value) })
-                }
-                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  setSettingsErrors((prev) => ({ ...prev, vatRate: undefined }))
+                }}
+                className={`mt-2 h-11 w-full rounded-lg border px-3 font-medium outline-none focus:ring-4 ${
+                  settingsErrors.vatRate
+                    ? "border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-100"
+                    : "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-emerald-100"
+                }`}
               />
+              {settingsErrors.vatRate ? (
+                <p className="mt-1 text-xs font-medium text-rose-600">{settingsErrors.vatRate}</p>
+              ) : null}
             </label>
 
             <label className="block text-sm font-bold text-zinc-700">
@@ -274,16 +337,24 @@ export default function SettingsPage() {
                 min="1"
                 step="500"
                 value={settings.usdToLbpRate}
-                onChange={(event) =>
+                onChange={(event) => {
                   updateSettings({
                     usdToLbpRate: Math.max(
                       1,
                       normalizeNumber(event.target.value)
                     ),
                   })
-                }
-                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  setSettingsErrors((prev) => ({ ...prev, usdToLbpRate: undefined }))
+                }}
+                className={`mt-2 h-11 w-full rounded-lg border px-3 font-medium outline-none focus:ring-4 ${
+                  settingsErrors.usdToLbpRate
+                    ? "border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-100"
+                    : "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-emerald-100"
+                }`}
               />
+              {settingsErrors.usdToLbpRate ? (
+                <p className="mt-1 text-xs font-medium text-rose-600">{settingsErrors.usdToLbpRate}</p>
+              ) : null}
             </label>
 
             <label className="block text-sm font-bold text-zinc-700">
@@ -345,8 +416,72 @@ export default function SettingsPage() {
             </button>
           </div>
         </section>
+        ) : null}
+
+        {activeWorkspace === "Security" ? (
+        <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
+          <div className="border-b border-zinc-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-rose-100 text-rose-700">
+                <Settings size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-zinc-950">
+                  Production security
+                </h2>
+                <p className="text-sm text-zinc-500">
+                  The register is protected locally and ready for stricter cloud controls.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-3 p-4 md:grid-cols-2">
+            {[
+              {
+                title: "Auto-lock register",
+                detail: "The register locks after idle time and requires PIN unlock.",
+                status: "Active",
+              },
+              {
+                title: "Role-based permissions",
+                detail: "Checkout, refunds, inventory, accounting, staff, and settings are gated by role.",
+                status: "Active",
+              },
+              {
+                title: "Cloud token",
+                detail: authToken ? "This device has an auth token saved for sync." : "No auth token is saved on this device.",
+                status: authToken ? "Connected" : "Action needed",
+              },
+              {
+                title: "PIN hardening",
+                detail: "Next production step: hashed PINs and forced PIN change for seeded users.",
+                status: "Planned",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="rounded-lg border border-zinc-200 bg-zinc-50 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-zinc-950">{item.title}</p>
+                    <p className="mt-1 text-sm font-medium text-zinc-500">
+                      {item.detail}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-zinc-700 ring-1 ring-zinc-200">
+                    {item.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+        ) : null}
 
         <aside className="space-y-5">
+          {activeWorkspace === "Cloud sync" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -457,7 +592,9 @@ export default function SettingsPage() {
               ) : null}
             </div>
           </section>
+          ) : null}
 
+          {activeWorkspace === "Cloud sync" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
@@ -497,8 +634,15 @@ export default function SettingsPage() {
               <Save size={16} />
               Save Connection
             </button>
-          </section>
 
+            <div className="mt-3 rounded-lg border border-sky-100 bg-sky-50 p-3 text-sm font-medium text-sky-900">
+              Cloud is the shared company record. This register stays fast
+              offline, queues work locally, then syncs when the token and API are valid.
+            </div>
+          </section>
+          ) : null}
+
+          {activeWorkspace === "Backup" || activeWorkspace === "Security" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-950 text-white">
@@ -537,6 +681,7 @@ export default function SettingsPage() {
               can already export clean JSON data for migration.
             </div>
           </section>
+          ) : null}
         </aside>
       </div>
       </>

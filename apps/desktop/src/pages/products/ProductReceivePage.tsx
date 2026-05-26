@@ -17,7 +17,7 @@ import {
   Trash2,
   WalletCards,
 } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link } from "react-router"
 import Spinner from "../../components/ui/Spinner"
 
 import { renderCode128Svg } from "../../features/pos/lib/barcode"
@@ -811,19 +811,6 @@ export default function ProductReceivePage() {
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-3">
                           <input
-                            type="date"
-                            value={row.expiryDate}
-                            onChange={(event) =>
-                              updateRow(row.id, {
-                                expiryDate: event.target.value,
-                              })
-                            }
-                            title="Optional product expiry date"
-                            className="h-10 w-36 rounded-lg border border-zinc-200 bg-white px-3 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-                          />
-                        </td>
-                        <td className="border-b border-zinc-100 px-4 py-3">
-                          <input
                             value={row.category}
                             list="product-categories"
                             onChange={(event) =>
@@ -890,6 +877,19 @@ export default function ProductReceivePage() {
                             }
                             title="Notify when stock reaches this quantity"
                             className="h-10 w-24 rounded-lg border border-amber-200 bg-amber-50 px-3 text-right font-semibold text-amber-950 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
+                          />
+                        </td>
+                        <td className="border-b border-zinc-100 px-4 py-3">
+                          <input
+                            type="date"
+                            value={row.expiryDate}
+                            onChange={(event) =>
+                              updateRow(row.id, {
+                                expiryDate: event.target.value,
+                              })
+                            }
+                            title="Optional product expiry date"
+                            className="h-10 w-36 rounded-lg border border-zinc-200 bg-white px-3 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                           />
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-3">

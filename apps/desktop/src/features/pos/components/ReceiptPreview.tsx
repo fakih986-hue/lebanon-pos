@@ -228,12 +228,12 @@ export default function ReceiptPreview({
               </strong>
             </div>
             <div className="mt-2 flex justify-between gap-3">
-              <span>Change returned</span>
-              <strong>
-                {sale.tender.changeCurrency === "USD"
-                  ? formatCurrency(sale.tender.changeUsd)
-                  : formatLbpCurrency(sale.tender.changeLbp)}
-              </strong>
+              <span>Change USD</span>
+              <strong>{formatCurrency(sale.tender.changeUsd)}</strong>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span>Change LBP</span>
+              <strong>{formatLbpCurrency(sale.tender.changeLbp)}</strong>
             </div>
           </div>
         ) : null}

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
@@ -17,7 +18,9 @@ async function main() {
   for (const s of staff) {
     const existing = await prisma.staffUser.findFirst({ where: { tenantId: tenant.id, mobile: s.mobile } })
     if (!existing) {
-      await prisma.staffUser.create({ data: { tenantId: tenant.id, ...s } })
+      await prisma.staffUser.create({
+        data: { tenantId: tenant.id, ...s, pin: await bcrypt.hash(s.pin, 10) },
+      })
     }
   }
 

@@ -13,6 +13,8 @@ import {
 } from "lucide-react"
 
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
+import Spinner from "../../components/ui/Spinner"
+import EmptyState from "../../components/ui/EmptyState"
 import {
   getCustomerLedger,
   getLedgerTotals,
@@ -66,20 +68,32 @@ export default function DashboardPage() {
   useEffect(() => {
     let active = true
 
-    getProducts().then((data) => {
-      if (active) {
-        setProducts(data)
-        setIsLoading(false)
-      }
-    })
+    getProducts()
+      .then((data) => {
+        if (active) {
+          setProducts(data)
+          setIsLoading(false)
+        }
+      })
+      .catch(() => {
+        if (active) setIsLoading(false)
+      })
 
-    const unsubscribeProducts = subscribeProducts((data) => setProducts(data))
-    const unsubscribeSales = subscribeSales(setSales)
-    const unsubscribeExpenses = subscribeExpenses(setExpenses)
-    const unsubscribeLedger = subscribeLedger(() =>
-      setLedgerVersion((version) => version + 1)
-    )
-    const unsubscribeSettings = subscribeSettings(setSettings)
+    const unsubscribeProducts = subscribeProducts((data) => {
+      if (active) setProducts(data)
+    })
+    const unsubscribeSales = subscribeSales((data) => {
+      if (active) setSales(data)
+    })
+    const unsubscribeExpenses = subscribeExpenses((data) => {
+      if (active) setExpenses(data)
+    })
+    const unsubscribeLedger = subscribeLedger(() => {
+      if (active) setLedgerVersion((version) => version + 1)
+    })
+    const unsubscribeSettings = subscribeSettings((data) => {
+      if (active) setSettings(data)
+    })
 
     return () => {
       active = false
@@ -146,16 +160,13 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <main className="flex min-h-0 flex-1 items-center justify-center bg-[#eef3f2] p-6">
-        <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-zinc-950" />
-          <p className="mt-4 text-sm font-medium text-zinc-500">Loading dashboard...</p>
-        </div>
+        <Spinner label="Loading dashboard..." />
       </main>
     )
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
       <section className="mb-5 rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-3">
@@ -283,9 +294,7 @@ export default function DashboardPage() {
                 Top products
               </div>
               {topProducts.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm font-medium text-zinc-500">
-                  Sales will appear here.
-                </p>
+                <EmptyState icon={PackageSearch} title="Sales will appear here." className="border-0 bg-transparent py-6" />
               ) : null}
               {topProducts.map((product) => (
                 <div
@@ -321,9 +330,7 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2 p-4">
               {lowStockProducts.length === 0 && riskyCustomers.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm font-medium text-zinc-500">
-                  No urgent work right now.
-                </p>
+                <EmptyState icon={AlertTriangle} title="No urgent work right now." className="border-0 bg-transparent py-6" />
               ) : null}
               {lowStockProducts.map((product) => (
                 <div
@@ -361,9 +368,7 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-2 p-4">
               {recentSales.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm font-medium text-zinc-500">
-                  No sales yet.
-                </p>
+                <EmptyState icon={ReceiptText} title="No sales yet." className="border-0 bg-transparent py-6" />
               ) : null}
               {recentSales.map((sale) => (
                 <div

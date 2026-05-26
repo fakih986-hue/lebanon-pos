@@ -129,11 +129,12 @@ export function printSaleReceipt(
                 <div class="row"><span>Paid</span><strong>${formatCurrency(
                   sale.tender.paidTotalUsd
                 )}</strong></div>
-                <div class="row"><span>Change</span><strong>${
-                  sale.tender.changeCurrency === "USD"
-                    ? formatCurrency(sale.tender.changeUsd)
-                    : formatLbpCurrency(sale.tender.changeLbp)
-                }</strong></div>
+                <div class="row"><span>Change USD</span><strong>${formatCurrency(
+                  sale.tender.changeUsd
+                )}</strong></div>
+                <div class="row"><span>Change LBP</span><strong>${formatLbpCurrency(
+                  sale.tender.changeLbp
+                )}</strong></div>
               `
               : ""
           }

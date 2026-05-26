@@ -1,10 +1,12 @@
 import { Router } from "express"
+import type { Response } from "express"
+import bcrypt from "bcryptjs"
 import prisma from "../lib/prisma.js"
 
 import { requireAuth, type AuthRequest } from "../middleware/auth.js"
 const router = Router()
 
-router.post("/push", requireAuth, async (req: AuthRequest, res) => {
+router.post("/push", requireAuth, async (req: AuthRequest, res: Response) => {
   const { operations } = req.body as { operations: Array<{
     id: string
     entity: string
@@ -22,29 +24,81 @@ router.post("/push", requireAuth, async (req: AuthRequest, res) => {
 
   for (const op of operations) {
     try {
-      await processOperation(tenantId, op.entity, op.action, op.payload)
-      await prisma.syncOperation.create({
-        data: {
-          id: op.id,
-          tenantId,
-          entity: op.entity,
-          action: op.action,
-          summary: `${op.action} ${op.entity}`,
-          payload: (op.payload ?? {}) as any,
-          status: "Synced",
-          syncedAt: new Date(),
-        },
+      const existingOperation = await prisma.syncOperation.findFirst({
+        where: { id: op.id, tenantId },
+        select: { id: true, status: true },
       })
+
+      if (existingOperation?.status === "Synced") {
+        results.push({ id: op.id, status: "ok" })
+        continue
+      }
+
+      await processOperation(tenantId, op.entity, op.action, op.payload)
+
+      const operationData = {
+        entity: op.entity,
+        action: op.action,
+        summary: `${op.action} ${op.entity}`,
+        payload: (op.payload ?? {}) as any,
+        status: "Synced",
+        syncedAt: new Date(),
+        lastAttemptAt: new Date(),
+        error: null,
+      }
+
+      if (existingOperation) {
+        await prisma.syncOperation.update({
+          where: { id: op.id },
+          data: operationData,
+        })
+      } else {
+        await prisma.syncOperation.create({
+          data: {
+            id: op.id,
+            tenantId,
+            ...operationData,
+          },
+        })
+      }
       results.push({ id: op.id, status: "ok" })
     } catch (err) {
-      results.push({ id: op.id, status: "error", error: (err as Error).message })
+      const errorMessage = (err as Error).message
+
+      await prisma.syncOperation
+        .upsert({
+          where: { id: op.id },
+          create: {
+            id: op.id,
+            tenantId,
+            entity: op.entity,
+            action: op.action,
+            summary: `${op.action} ${op.entity}`,
+            payload: (op.payload ?? {}) as any,
+            status: "Failed",
+            attempts: 1,
+            lastAttemptAt: new Date(),
+            error: errorMessage,
+          },
+          update: {
+            status: "Failed",
+            attempts: { increment: 1 },
+            lastAttemptAt: new Date(),
+            error: errorMessage,
+          },
+        })
+        .catch((syncLogError: unknown) => {
+          console.error("Failed to record sync error:", syncLogError)
+        })
+
+      results.push({ id: op.id, status: "error", error: errorMessage })
     }
   }
 
   res.json({ results })
 })
 
-router.get("/pull", requireAuth, async (req: AuthRequest, res) => {
+router.get("/pull", requireAuth, async (req: AuthRequest, res: Response) => {
   const tenantId = req.auth!.tenantId
   const since = req.query.since as string | undefined
 
@@ -210,10 +264,12 @@ async function processOperation(
     }
     case "staff": {
       if (action === "create" || action === "update") {
+        const securePayload = await hashStaffPayload(payload)
+
         await prisma.staffUser.upsert({
           where: { id: payload?.id as string },
-          create: { ...payload, tenantId } as any,
-          update: { ...payload } as any,
+          create: { ...securePayload, tenantId } as any,
+          update: { ...securePayload } as any,
         })
       }
       break
@@ -308,6 +364,21 @@ async function processOperation(
     default:
       console.warn(`Unknown sync entity: ${entity}`)
   }
+}
+
+async function hashStaffPayload(payload?: Record<string, unknown>) {
+  const data = { ...(payload ?? {}) }
+  const pin = typeof data.pin === "string" ? data.pin : ""
+
+  if (pin && !pin.startsWith("$2") && !isSha256Base64(pin)) {
+    data.pin = await bcrypt.hash(pin, 10)
+  }
+
+  return data
+}
+
+function isSha256Base64(value: string) {
+  return /^[A-Za-z0-9+/]{43}=$/.test(value)
 }
 
 export default router

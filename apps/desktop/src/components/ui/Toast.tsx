@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { X } from "lucide-react"
+import { CheckCircle, Info, X, XCircle, AlertTriangle } from "lucide-react"
 import { cn } from "../../lib/utils"
 
 export type ToastType = "success" | "error" | "info" | "warning"
@@ -17,6 +17,13 @@ const styles: Record<ToastType, string> = {
   warning: "border-amber-200 bg-amber-50 text-amber-800",
 }
 
+const icons: Record<ToastType, typeof CheckCircle> = {
+  success: CheckCircle,
+  error: XCircle,
+  info: Info,
+  warning: AlertTriangle,
+}
+
 interface ToastItemProps {
   toast: ToastMessage
   onDismiss: (id: string) => void
@@ -24,6 +31,7 @@ interface ToastItemProps {
 
 function ToastItem({ toast, onDismiss }: ToastItemProps) {
   const [visible, setVisible] = useState(false)
+  const Icon = icons[toast.type]
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(true))
@@ -47,6 +55,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
         visible ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
       )}
     >
+      <Icon size={18} className="shrink-0" />
       <p className="flex-1 text-sm font-semibold">{toast.message}</p>
       <button
         type="button"

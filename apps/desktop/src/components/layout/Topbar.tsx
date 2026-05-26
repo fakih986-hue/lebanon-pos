@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { CalendarClock, LockKeyhole, ShieldCheck, UserRound } from "lucide-react"
-import { useLocation } from "react-router-dom"
+import { useLocation } from "react-router"
 
 import {
   getActiveShift,

@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react"
+import { useDebounce } from "../../hooks/useDebounce"
 import type { Product } from "../../features/pos/types/product"
 import KpiCards from "../../features/pos/components/KpiCards"
 import AlertsPanel from "../../features/pos/components/AlertsPanel"
@@ -6,6 +7,7 @@ import StockControlPanel from "../../features/pos/components/StockControlPanel"
 import ProductSetupForm from "../../features/pos/components/ProductSetupForm"
 import ProductTable from "../../features/pos/components/ProductTable"
 import Spinner from "../../components/ui/Spinner"
+import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import {
@@ -86,6 +88,7 @@ export default function ProductsPage() {
   const [suppliers, setSuppliers] =
     useState<SupplierLedger[]>(getSupplierLedger())
   const [search, setSearch] = useState("")
+  const debouncedSearch = useDebounce(search, 200)
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
   const [productCategory, setProductCategory] = useState("")
@@ -110,6 +113,7 @@ export default function ProductsPage() {
   const [stockCounts, setStockCounts] =
     useState<StockCountSession[]>(getStockCounts())
   const [countSearch, setCountSearch] = useState("")
+  const debouncedCountSearch = useDebounce(countSearch, 200)
   const [countProductId, setCountProductId] = useState<number | null>(null)
   const [countedQuantity, setCountedQuantity] = useState("")
   const [activeProductView, setActiveProductView] =
@@ -121,12 +125,16 @@ export default function ProductsPage() {
   useEffect(() => {
     let active = true
 
-    getProducts().then((data) => {
-      if (active) {
-        setProducts(data)
-        setIsLoading(false)
-      }
-    })
+    getProducts()
+      .then((data) => {
+        if (active) {
+          setProducts(data)
+          setIsLoading(false)
+        }
+      })
+      .catch(() => {
+        if (active) setIsLoading(false)
+      })
 
     const unsubscribe = subscribeProducts((data) => {
       if (active) {
@@ -181,7 +189,7 @@ export default function ProductsPage() {
 
       return matchesCategory && matchesSearch
     })
-  }, [products, search, selectedCategory])
+  }, [products, debouncedSearch, selectedCategory])
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? products[0]
   const adjustmentProduct =
@@ -212,7 +220,7 @@ export default function ProductsPage() {
           line.category.toLowerCase().includes(query)
       )
       .slice(0, 7)
-  }, [activeStockCount, countSearch])
+      }, [activeStockCount, debouncedCountSearch])
   const reorderGroups = useMemo(
     () => groupReorderSuggestionsBySupplier(reorderSuggestions),
     [reorderSuggestions]
@@ -476,7 +484,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
       {isLoading ? (
         <div className="flex min-h-[400px] items-center justify-center p-6">
           <Spinner label="Loading inventory..." />
@@ -490,39 +498,12 @@ export default function ProductsPage() {
         urgentReorderCount={urgentReorders.length}
       />
 
-      <section className="mt-5 rounded-lg border border-zinc-200 bg-white p-2 shadow-sm">
-        <div className="flex gap-2 overflow-x-auto [scrollbar-width:thin]">
-          {productViews.map((view) => {
-            const active = activeProductView === view.label
-
-            return (
-              <button
-                key={view.label}
-                type="button"
-                onClick={() => setActiveProductView(view.label)}
-                className={`flex h-11 min-w-32 items-center justify-center gap-2 rounded-lg px-4 text-sm font-bold transition ${
-                  active
-                    ? "bg-zinc-950 text-white"
-                    : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950"
-                }`}
-              >
-                {view.label}
-                {typeof view.count === "number" ? (
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${
-                      active
-                        ? "bg-white/15 text-white"
-                        : "bg-zinc-100 text-zinc-600"
-                    }`}
-                  >
-                    {formatNumber(view.count)}
-                  </span>
-                ) : null}
-              </button>
-            )
-          })}
-        </div>
-      </section>
+      <WorkspaceTabs<ProductWorkspaceView>
+        className="mt-5"
+        active={activeProductView}
+        onChange={setActiveProductView}
+        tabs={productViews}
+      />
 
       {activeProductView === "Lots" ? (
       <section className="mt-5 rounded-lg border border-zinc-200 bg-white shadow-sm">
