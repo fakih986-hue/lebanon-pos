@@ -1,6 +1,28 @@
 const SYNC_QUEUE_KEY = "lebanonpos.sync-queue.v1"
 const LAST_SYNC_KEY = "lebanonpos.sync-last.v1"
 const SYNC_EVENT = "lebanonpos-sync-changed"
+const API_URL_KEY = "lebanonpos.api-url"
+const AUTH_TOKEN_KEY = "lebanonpos.auth-token"
+
+function getApiUrl(): string | null {
+  return localStorage.getItem(API_URL_KEY)
+}
+
+function getAuthToken(): string | null {
+  return localStorage.getItem(AUTH_TOKEN_KEY)
+}
+
+export function setApiUrl(url: string) {
+  localStorage.setItem(API_URL_KEY, url)
+}
+
+export function setAuthToken(token: string) {
+  localStorage.setItem(AUTH_TOKEN_KEY, token)
+}
+
+export function clearAuthToken() {
+  localStorage.removeItem(AUTH_TOKEN_KEY)
+}
 
 export type SyncEntity =
   | "sale"
@@ -146,7 +168,7 @@ function scheduleAutoFlush() {
 
   window.clearTimeout(autoFlushTimer)
   autoFlushTimer = window.setTimeout(() => {
-    flushSyncQueue()
+    flushSyncQueue().catch(() => {})
   }, 900)
 }
 
@@ -189,10 +211,12 @@ export function enqueueSyncOperation(input: EnqueueSyncInput) {
   return operation
 }
 
-export function flushSyncQueue() {
+export async function flushSyncQueue() {
   const queue = getSyncQueue()
+  const apiUrl = getApiUrl()
+  const token = getAuthToken()
 
-  if (!isBrowserOnline()) {
+  if (!isBrowserOnline() || !apiUrl || !token) {
     dispatchSyncChanged()
     return {
       synced: 0,
@@ -200,32 +224,104 @@ export function flushSyncQueue() {
     }
   }
 
-  const now = new Date().toISOString()
-  let synced = 0
-  const nextQueue = queue.map((operation) => {
-    if (operation.status === "Synced") {
-      return operation
-    }
-
-    synced += 1
-
-    return {
-      ...operation,
-      status: "Synced" as const,
-      attempts: operation.attempts + 1,
-      lastAttemptAt: now,
-      syncedAt: now,
-      error: undefined,
-    }
-  })
-
-  if (synced > 0) {
-    writeLastSyncedAt(now)
+  const pending = queue.filter((op) => op.status === "Pending")
+  if (pending.length === 0) {
+    return { synced: 0, skipped: 0 }
   }
 
-  writeQueue(nextQueue)
+  try {
+    const response = await fetch(`${apiUrl}/api/sync/push`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        operations: pending.map((op) => ({
+          id: op.id,
+          entity: op.entity,
+          action: op.action,
+          payload: op.payload,
+        })),
+      }),
+    })
 
-  return { synced, skipped: 0 }
+    if (!response.ok) {
+      throw new Error(`Sync push failed: ${response.status}`)
+    }
+
+    const result = await response.json()
+    const now = new Date().toISOString()
+    let synced = 0
+
+    const nextQueue = queue.map((op) => {
+      if (op.status !== "Pending") return op
+
+      const syncResult = result.results?.find((r: { id: string }) => r.id === op.id)
+      if (syncResult?.status === "ok") {
+        synced += 1
+        return {
+          ...op,
+          status: "Synced" as const,
+          attempts: op.attempts + 1,
+          lastAttemptAt: now,
+          syncedAt: now,
+          error: undefined,
+        }
+      }
+
+      return {
+        ...op,
+        status: "Failed" as const,
+        attempts: op.attempts + 1,
+        lastAttemptAt: now,
+        error: syncResult?.error ?? "Unknown error",
+      }
+    })
+
+    if (synced > 0) writeLastSyncedAt(now)
+    writeQueue(nextQueue)
+
+    return { synced, skipped: pending.length - synced }
+  } catch (err) {
+    console.warn("[sync] Push failed:", err)
+    dispatchSyncChanged()
+    return { synced: 0, skipped: pending.length }
+  }
+}
+
+export async function pullFromServer() {
+  const apiUrl = getApiUrl()
+  const token = getAuthToken()
+  if (!apiUrl || !token) return
+
+  try {
+    const lastSync = readLastSyncedAt()
+    const url = lastSync
+      ? `${apiUrl}/api/sync/pull?since=${encodeURIComponent(lastSync)}`
+      : `${apiUrl}/api/sync/pull`
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+
+    if (!response.ok) throw new Error(`Sync pull failed: ${response.status}`)
+
+    const data = await response.json()
+    const now = new Date().toISOString()
+
+    // Write pulled data to localStorage for each entity
+    for (const [key, items] of Object.entries(data)) {
+      if (Array.isArray(items) && items.length > 0) {
+        const storageKey = `lebanonpos-pulled-${key}`
+        localStorage.setItem(storageKey, JSON.stringify(items))
+      }
+    }
+
+    writeLastSyncedAt(now)
+  } catch (err) {
+    console.warn("[sync] Pull failed:", err)
+  }
 }
 
 export function retryFailedSync() {
@@ -252,7 +348,7 @@ export function subscribeSync(callback: () => void) {
   window.addEventListener("storage", handleSyncChanged)
   window.addEventListener("online", handleSyncChanged)
   window.addEventListener("offline", handleSyncChanged)
-  window.addEventListener("online", scheduleAutoFlush)
+  window.addEventListener("online", () => { scheduleAutoFlush(); pullFromServer() })
 
   return () => {
     window.removeEventListener(SYNC_EVENT, handleSyncChanged)
@@ -260,5 +356,6 @@ export function subscribeSync(callback: () => void) {
     window.removeEventListener("online", handleSyncChanged)
     window.removeEventListener("offline", handleSyncChanged)
     window.removeEventListener("online", scheduleAutoFlush)
+    window.removeEventListener("online", () => { scheduleAutoFlush(); pullFromServer() })
   }
 }

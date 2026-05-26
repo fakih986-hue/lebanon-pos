@@ -1,0 +1,543 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  Admin
+  Manager
+  Cashier
+}
+
+enum ShiftStatus {
+  Open
+  Closed
+}
+
+enum SaleStatus {
+  Completed
+  Debt
+  Voided
+}
+
+enum SalePaymentMethod {
+  Cash
+  Card
+  Wallet
+  Debt
+}
+
+enum RefundMethod {
+  Cash
+  Card
+  Wallet
+  Debt_Credit
+}
+
+enum PurchaseOrderStatus {
+  Draft
+  Received
+  Closed
+}
+
+enum PaymentStatus {
+  Unpaid
+  Partial
+  Paid
+}
+
+enum InventoryBatchStatus {
+  Open
+  Consumed
+  Expired
+}
+
+enum StockCountStatus {
+  Draft
+  Completed
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  subdomain String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users          StaffUser[]
+  products       Product[]
+  sales          Sale[]
+  refunds        SaleRefund[]
+  customers      Customer[]
+  debtSales      DebtSale[]
+  debtPayments   DebtPayment[]
+  suppliers      Supplier[]
+  purchaseOrders PurchaseOrder[]
+  supplierPayments SupplierPayment[]
+  shifts         Shift[]
+  auditEvents    AuditEvent[]
+  settings       AppSettings?
+  expenses       Expense[]
+  inventoryBatches   InventoryBatch[]
+  stockAdjustments  StockAdjustment[]
+  stockCounts       StockCountSession[]
+  dailyCloses       DailyClose[]
+  syncOperations    SyncOperation[]
+}
+
+model StaffUser {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  mobile    String
+  pin       String
+  role      UserRole
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  openedShifts Shift[]          @relation("ShiftOpener")
+  closedShifts Shift[]          @relation("ShiftCloser")
+  expenses     Expense[]
+}
+
+model AppSettings {
+  id               String @id @default(uuid())
+  tenantId         String @unique
+  tenant           Tenant @relation(fields: [tenantId], references: [id])
+  storeName        String
+  branchName       String
+  phone            String
+  address          String
+  vatRate          Float
+  usdToLbpRate     Float
+  receiptFooter    String
+  lowStockThreshold Int
+}
+
+model Product {
+  id              Int       @id @default(autoincrement())
+  tenantId        String
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  name            String
+  price           Float
+  cost            Float     @default(0)
+  stock           Float     @default(0)
+  barcode         String?
+  barcodeAliases  String[]
+  category        String
+  accent          String    @default("emerald")
+  favorite        Boolean   @default(false)
+  reorderPoint    Int?
+  reorderQuantity Int?
+  supplierId      String?
+  supplierName    String?
+  expiryDate      String?
+  image           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  batches       InventoryBatch[]
+  adjustments   StockAdjustment[]
+  stockCountLines StockCountLine[]
+
+  @@unique([tenantId, barcode])
+  @@index([tenantId, category])
+  @@index([tenantId, name])
+}
+
+model Sale {
+  id            String           @id @default(uuid())
+  tenantId      String
+  tenant        Tenant           @relation(fields: [tenantId], references: [id])
+  saleNumber    String
+  paymentMethod SalePaymentMethod
+  customerId    String?
+  customerName  String?
+  subtotal      Float
+  discountTotal Float?
+  tax           Float
+  total         Float
+  cost          Float            @default(0)
+  profit        Float            @default(0)
+  cashier       String
+  cashierId     String?
+  shiftId       String?
+  shiftNumber   String?
+  status        SaleStatus       @default(Completed)
+  createdAt     DateTime         @default(now())
+
+  items      SaleItem[]
+  refunds    SaleRefund[]
+  tender     SaleTender?
+
+  @@unique([tenantId, saleNumber])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, customerId])
+}
+
+model SaleItem {
+  id       String  @id @default(uuid())
+  saleId   String
+  sale     Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId Int
+  productName String
+  barcode   String
+  quantity  Float
+  unitPrice Float
+  total     Float
+  cost      Float   @default(0)
+}
+
+model SaleTender {
+  id             String  @id @default(uuid())
+  saleId         String  @unique
+  sale           Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  currency       String
+  exchangeRate   Float
+  paidUsd        Float   @default(0)
+  paidLbp        Float   @default(0)
+  paidTotalUsd   Float
+  paidTotalLbp   Float
+  changeUsd      Float   @default(0)
+  changeLbp      Float   @default(0)
+  changeCurrency String
+}
+
+model SaleRefund {
+  id           String       @id @default(uuid())
+  tenantId     String
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  refundNumber String
+  saleId       String
+  sale         Sale         @relation(fields: [saleId], references: [id])
+  saleNumber   String
+  customerId   String?
+  customerName String?
+  method       RefundMethod
+  reason       String
+  total        Float
+  cashier      String
+  cashierId    String?
+  shiftId      String?
+  shiftNumber  String?
+  createdAt    DateTime     @default(now())
+
+  items RefundItem[]
+
+  @@unique([tenantId, refundNumber])
+  @@index([tenantId, saleId])
+}
+
+model RefundItem {
+  id          String     @id @default(uuid())
+  refundId    String
+  refund      SaleRefund @relation(fields: [refundId], references: [id], onDelete: Cascade)
+  productId   Int
+  productName String
+  barcode     String
+  quantity    Float
+  unitPrice   Float
+  cost        Float?
+  total       Float
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  name        String
+  mobile      String
+  creditLimit Float    @default(0)
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  debtSales    DebtSale[]
+  debtPayments DebtPayment[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, mobile])
+}
+
+model DebtSale {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  saleNumber  String
+  subtotal    Float
+  discountTotal Float?
+  tax         Float
+  total       Float
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, customerId])
+}
+
+model DebtPayment {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  amount      Float
+  method      String
+  reference   String   @default("")
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, customerId])
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  mobile    String   @default("")
+  contact   String   @default("")
+  address   String   @default("")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchaseOrders  PurchaseOrder[]
+  supplierPayments SupplierPayment[]
+  inventoryBatches InventoryBatch[]
+
+  @@unique([tenantId, name])
+}
+
+model PurchaseOrder {
+  id            String              @id @default(uuid())
+  tenantId      String
+  tenant        Tenant              @relation(fields: [tenantId], references: [id])
+  poNumber      String
+  supplierId    String
+  supplier      Supplier            @relation(fields: [supplierId], references: [id])
+  supplierName  String
+  status        PurchaseOrderStatus @default(Draft)
+  paymentStatus PaymentStatus       @default(Unpaid)
+  invoiceNumber String              @default("")
+  note          String              @default("")
+  total         Float
+  paidTotal     Float               @default(0)
+  createdBy     String
+  shiftId       String?
+  shiftNumber   String?
+  createdAt     DateTime            @default(now())
+  receivedAt    DateTime?
+
+  @@unique([tenantId, poNumber])
+  @@index([tenantId, supplierId])
+}
+
+model SupplierPayment {
+  id                  String   @id @default(uuid())
+  tenantId            String
+  tenant              Tenant   @relation(fields: [tenantId], references: [id])
+  supplierId          String
+  supplier            Supplier @relation(fields: [supplierId], references: [id])
+  supplierName        String
+  purchaseOrderId     String?
+  purchaseOrderNumber String?
+  amount              Float
+  method              String
+  reference           String   @default("")
+  recordedBy          String
+  shiftId             String?
+  shiftNumber         String?
+  createdAt           DateTime @default(now())
+
+  @@index([tenantId, supplierId])
+}
+
+model Shift {
+  id                String      @id @default(uuid())
+  tenantId          String
+  tenant            Tenant      @relation(fields: [tenantId], references: [id])
+  shiftNumber       String
+  status            ShiftStatus @default(Open)
+  openedAt          DateTime    @default(now())
+  closedAt          DateTime?
+  openingFloatUsd   Float       @default(0)
+  cashSalesUsd      Float?
+  cashRefundsUsd    Float?
+  cashExpensesUsd   Float?
+  supplierPaymentsUsd Float?
+  expectedCashUsd   Float?
+  closingCashUsd    Float?
+  differenceUsd     Float?
+  openedById        String
+  openedByName      String
+  openedBy          StaffUser   @relation("ShiftOpener", fields: [openedById], references: [id])
+  closedById        String?
+  closedByName      String?
+  closedBy          StaffUser?  @relation("ShiftCloser", fields: [closedById], references: [id])
+  notes             String?
+
+  @@unique([tenantId, shiftNumber])
+}
+
+model AuditEvent {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  action    String
+  entity    String
+  summary   String
+  metadata  Json?
+  userId    String
+  userName  String
+  userRole  UserRole
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entity])
+}
+
+model Expense {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  expenseNumber String
+  vendor        String
+  category      String
+  amount        Float
+  paymentMethod String
+  invoiceNumber String   @default("")
+  note          String   @default("")
+  recordedBy    String
+  recordedById  String?
+  recordedByUser StaffUser? @relation(fields: [recordedById], references: [id])
+  shiftId       String?
+  shiftNumber   String?
+  createdAt     DateTime @default(now())
+
+  @@unique([tenantId, expenseNumber])
+}
+
+model InventoryBatch {
+  id                  String               @id @default(uuid())
+  tenantId            String
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  batchNumber         String
+  productId           Int
+  product             Product              @relation(fields: [productId], references: [id])
+  productName         String
+  barcode             String
+  initialQuantity     Float
+  quantityRemaining   Float
+  unitCost            Float
+  unitPrice           Float
+  expiryDate          String?
+  supplierId          String?
+  supplier            Supplier?            @relation(fields: [supplierId], references: [id])
+  supplierName        String?
+  purchaseOrderNumber String?
+  receivedAt          DateTime             @default(now())
+  status              InventoryBatchStatus @default(Open)
+
+  @@index([tenantId, productId])
+  @@index([tenantId, status])
+}
+
+model StockAdjustment {
+  id                String   @id @default(uuid())
+  tenantId          String
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+  adjustmentNumber  String
+  productId         Int
+  product           Product  @relation(fields: [productId], references: [id])
+  productName       String
+  barcode           String
+  quantityBefore    Float
+  quantityChange    Float
+  quantityAfter     Float
+  reason            String
+  note              String?
+  batchId           String?
+  valueImpact       Float
+  createdAt         DateTime @default(now())
+
+  @@unique([tenantId, adjustmentNumber])
+  @@index([tenantId, productId])
+}
+
+model StockCountSession {
+  id              String           @id @default(uuid())
+  tenantId        String
+  tenant          Tenant           @relation(fields: [tenantId], references: [id])
+  countNumber     String
+  status          StockCountStatus @default(Draft)
+  createdAt       DateTime         @default(now())
+  completedAt     DateTime?
+  totalVariance   Float            @default(0)
+  totalValueImpact Float           @default(0)
+
+  lines StockCountLine[]
+
+  @@unique([tenantId, countNumber])
+}
+
+model StockCountLine {
+  id               String           @id @default(uuid())
+  sessionId        String
+  session          StockCountSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  productId        Int
+  product          Product          @relation(fields: [productId], references: [id])
+  productName      String
+  barcode          String
+  category         String
+  expectedQuantity Float
+  countedQuantity  Float?
+  variance         Float            @default(0)
+  valueImpact      Float            @default(0)
+}
+
+model DailyClose {
+  id              String   @id @default(uuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  dateKey         String
+  grossSales      Float
+  refunds         Float    @default(0)
+  netSales        Float
+  costOfGoods     Float    @default(0)
+  returnedCost    Float    @default(0)
+  grossMargin     Float    @default(0)
+  expenses        Float    @default(0)
+  supplierPayments Float?
+  netProfit       Float    @default(0)
+  cashIn          Float    @default(0)
+  cashOut         Float    @default(0)
+  note            String   @default("")
+  closedBy        String
+  createdAt       DateTime @default(now())
+
+  @@unique([tenantId, dateKey])
+}
+
+model SyncOperation {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  entity        String
+  action        String
+  summary       String
+  payload       Json?
+  status        String   @default("Pending")
+  attempts      Int      @default(0)
+  createdAt     DateTime @default(now())
+  lastAttemptAt DateTime?
+  syncedAt      DateTime?
+  error         String?
+
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+}
