@@ -1,5 +1,7 @@
 import type { Product } from "../types/product"
 
+import { writeLocalWithIndexedDB } from "./storage.service"
+
 const HELD_SALES_KEY = "lebanonpos.held-sales.v1"
 const HELD_SALES_EVENT = "lebanonpos-held-sales-changed"
 
@@ -49,7 +51,7 @@ function writeHeldSales(heldSales: HeldSale[]) {
     return
   }
 
-  window.localStorage.setItem(HELD_SALES_KEY, JSON.stringify(heldSales))
+  writeLocalWithIndexedDB(HELD_SALES_KEY, heldSales)
   window.dispatchEvent(new Event(HELD_SALES_EVENT))
 }
 

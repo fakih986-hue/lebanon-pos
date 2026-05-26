@@ -1,5 +1,6 @@
 import { getCurrentUser, recordAuditEvent } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
+import { writeLocalWithIndexedDB } from "./storage.service"
 
 const DAILY_CLOSES_KEY = "lebanonpos.daily-closes.v1"
 const DAILY_CLOSES_EVENT = "lebanonpos-daily-closes-changed"
@@ -66,7 +67,7 @@ function writeDailyCloses(dailyCloses: DailyClose[]) {
     return
   }
 
-  window.localStorage.setItem(DAILY_CLOSES_KEY, JSON.stringify(dailyCloses))
+  writeLocalWithIndexedDB(DAILY_CLOSES_KEY, dailyCloses)
   window.dispatchEvent(new Event(DAILY_CLOSES_EVENT))
 }
 

@@ -4,6 +4,7 @@ import {
   recordAuditEvent,
 } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
+import { writeLocalWithIndexedDB } from "./storage.service"
 
 const SUPPLIERS_KEY = "lebanonpos.suppliers.v1"
 const PURCHASE_ORDERS_KEY = "lebanonpos.purchase-orders.v1"
@@ -147,7 +148,7 @@ function writeCollection<T>(key: string, value: T[]) {
     return
   }
 
-  window.localStorage.setItem(key, JSON.stringify(value))
+  writeLocalWithIndexedDB(key, value)
   window.dispatchEvent(new Event(SUPPLIER_EVENT))
 }
 

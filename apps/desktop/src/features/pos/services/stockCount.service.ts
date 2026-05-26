@@ -5,6 +5,7 @@ import {
 import { getProductsSync } from "./product.service"
 import { recordAuditEvent } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
+import { writeLocalWithIndexedDB } from "./storage.service"
 
 const STOCK_COUNTS_KEY = "lebanonpos.stock-counts.v1"
 const STOCK_COUNTS_EVENT = "lebanonpos-stock-counts-changed"
@@ -71,7 +72,7 @@ function writeCounts(counts: StockCountSession[]) {
     return
   }
 
-  window.localStorage.setItem(STOCK_COUNTS_KEY, JSON.stringify(counts))
+  writeLocalWithIndexedDB(STOCK_COUNTS_KEY, counts)
   window.dispatchEvent(new Event(STOCK_COUNTS_EVENT))
 }
 

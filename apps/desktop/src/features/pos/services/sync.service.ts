@@ -1,14 +1,16 @@
+import { putMany } from "./db"
+
 const SYNC_QUEUE_KEY = "lebanonpos.sync-queue.v1"
 const LAST_SYNC_KEY = "lebanonpos.sync-last.v1"
 const SYNC_EVENT = "lebanonpos-sync-changed"
 const API_URL_KEY = "lebanonpos.api-url"
 const AUTH_TOKEN_KEY = "lebanonpos.auth-token"
 
-function getApiUrl(): string | null {
+export function getApiUrl(): string | null {
   return localStorage.getItem(API_URL_KEY)
 }
 
-function getAuthToken(): string | null {
+export function getAuthToken(): string | null {
   return localStorage.getItem(AUTH_TOKEN_KEY)
 }
 
@@ -142,6 +144,7 @@ function writeQueue(queue: SyncOperation[]) {
   }
 
   window.localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue.slice(0, 300)))
+  putMany("sync-queue", queue.slice(0, 300)).catch(() => {})
   dispatchSyncChanged()
 }
 

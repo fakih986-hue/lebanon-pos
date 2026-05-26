@@ -1,4 +1,5 @@
 import { enqueueSyncOperation } from "./sync.service"
+import { writeLocalWithIndexedDB } from "./storage.service"
 
 const BATCHES_KEY = "lebanonpos.inventory-batches.v1"
 const BATCHES_EVENT = "lebanonpos-inventory-batches-changed"
@@ -105,7 +106,7 @@ function writeBatches(batches: InventoryBatch[]) {
     return
   }
 
-  window.localStorage.setItem(BATCHES_KEY, JSON.stringify(batches))
+  writeLocalWithIndexedDB(BATCHES_KEY, batches)
   window.dispatchEvent(new Event(BATCHES_EVENT))
 }
 

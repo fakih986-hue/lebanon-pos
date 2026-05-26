@@ -1,6 +1,7 @@
 const SETTINGS_KEY = "lebanonpos.settings.v1"
 const SETTINGS_EVENT = "lebanonpos-settings-changed"
 
+import { put } from "./db"
 import { enqueueSyncOperation } from "./sync.service"
 
 export type AppSettings = {
@@ -57,6 +58,7 @@ export function saveSettings(settings: AppSettings) {
   }
 
   window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+  put("settings", { id: "app", ...settings }).catch(() => {})
   window.dispatchEvent(new Event(SETTINGS_EVENT))
   enqueueSyncOperation({
     entity: "settings",

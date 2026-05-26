@@ -9,6 +9,7 @@ import {
 } from "./product.service"
 import { recordAuditEvent } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
+import { writeLocalWithIndexedDB } from "./storage.service"
 
 const ADJUSTMENTS_KEY = "lebanonpos.inventory-adjustments.v1"
 const ADJUSTMENTS_EVENT = "lebanonpos-inventory-adjustments-changed"
@@ -89,7 +90,7 @@ function writeAdjustments(adjustments: StockAdjustment[]) {
     return
   }
 
-  window.localStorage.setItem(ADJUSTMENTS_KEY, JSON.stringify(adjustments))
+  writeLocalWithIndexedDB(ADJUSTMENTS_KEY, adjustments)
   window.dispatchEvent(new Event(ADJUSTMENTS_EVENT))
 }
 

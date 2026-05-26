@@ -1,5 +1,6 @@
 import type { Product } from "../types/product"
 import { enqueueSyncOperation } from "./sync.service"
+import { writeLocalWithIndexedDB } from "./storage.service"
 
 const CUSTOMERS_KEY = "lebanonpos.customers.v1"
 const DEBT_SALES_KEY = "lebanonpos.debt-sales.v1"
@@ -103,7 +104,7 @@ function writeCollection<T>(key: string, value: T[]) {
     return
   }
 
-  window.localStorage.setItem(key, JSON.stringify(value))
+  writeLocalWithIndexedDB(key, value)
   window.dispatchEvent(new Event(LEDGER_EVENT))
 }
 

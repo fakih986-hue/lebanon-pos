@@ -7,6 +7,7 @@ import {
   recordAuditEvent,
 } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
+import { writeLocalWithIndexedDB } from "./storage.service"
 
 const SALES_KEY = "lebanonpos.sales.v1"
 const REFUNDS_KEY = "lebanonpos.refunds.v1"
@@ -136,7 +137,7 @@ function writeSales(sales: Sale[]) {
     return
   }
 
-  window.localStorage.setItem(SALES_KEY, JSON.stringify(sales))
+  writeLocalWithIndexedDB(SALES_KEY, sales)
   window.dispatchEvent(new Event(SALES_EVENT))
 }
 
@@ -166,7 +167,7 @@ function writeRefunds(refunds: SaleRefund[]) {
     return
   }
 
-  window.localStorage.setItem(REFUNDS_KEY, JSON.stringify(refunds))
+  writeLocalWithIndexedDB(REFUNDS_KEY, refunds)
   window.dispatchEvent(new Event(REFUNDS_EVENT))
   window.dispatchEvent(new Event(SALES_EVENT))
 }

@@ -23,11 +23,17 @@ import {
   flushSyncQueue,
   getSyncQueue,
   getSyncStatus,
+  getApiUrl,
+  getAuthToken,
+  setApiUrl,
+  setAuthToken,
+  clearAuthToken,
   retryFailedSync,
   subscribeSync,
   type SyncOperation,
   type SyncStatus,
 } from "../../features/pos/services/sync.service"
+import { restoreIndexedDBToLocal } from "../../features/pos/services/storage.service"
 import { showToast } from "../../features/pos/services/toast.service"
 
 function normalizeNumber(value: string) {
@@ -66,6 +72,8 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(getSettings())
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(getSyncStatus())
   const [syncQueue, setSyncQueue] = useState<SyncOperation[]>(getSyncQueue())
+  const [apiUrl, setApiUrlState] = useState(getApiUrl() ?? "")
+  const [authToken, setAuthTokenState] = useState(getAuthToken() ?? "")
 
   useEffect(() => {
     setIsLoading(false)
@@ -102,15 +110,37 @@ export default function SettingsPage() {
   }
 
   function handleSyncNow() {
-    const result = flushSyncQueue()
+    flushSyncQueue().then((result) => {
+      setSyncStatus(getSyncStatus())
+      setSyncQueue(getSyncQueue())
+      showToast(
+        result.synced > 0
+          ? `${result.synced} item${result.synced === 1 ? "" : "s"} synced.`
+          : "No pending sync work."
+      )
+    })
+  }
 
+  function handleRetryFailed() {
+    retryFailedSync()
     setSyncStatus(getSyncStatus())
     setSyncQueue(getSyncQueue())
-    showToast(
-      result.synced > 0
-        ? `${result.synced} item${result.synced === 1 ? "" : "s"} synced.`
-        : "No pending sync work."
-    )
+    showToast("Failed sync items moved back to pending.")
+  }
+
+  function handleSaveServer() {
+    setApiUrl(apiUrl)
+    if (authToken) {
+      setAuthToken(authToken)
+    } else {
+      clearAuthToken()
+    }
+    showToast("Server connection saved.")
+  }
+
+  async function handleRestoreFromIndexedDB() {
+    const count = await restoreIndexedDBToLocal()
+    showToast(count > 0 ? `Restored ${count} stores from IndexedDB.` : "No stores needed restoring.")
   }
 
   function handleRetryFailed() {
@@ -430,6 +460,47 @@ export default function SettingsPage() {
 
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
+                <Cloud size={21} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-zinc-950">Server connection</h2>
+                <p className="text-sm text-zinc-500">API endpoint and authentication for cloud sync.</p>
+              </div>
+            </div>
+
+            <label className="mt-4 block text-sm font-bold text-zinc-700">
+              API URL
+              <input
+                value={apiUrl}
+                onChange={(e) => setApiUrlState(e.target.value)}
+                placeholder="https://api.example.com"
+                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+
+            <label className="mt-3 block text-sm font-bold text-zinc-700">
+              Auth token
+              <input
+                value={authToken}
+                onChange={(e) => setAuthTokenState(e.target.value)}
+                placeholder="Paste your JWT token here"
+                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-mono text-xs outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={handleSaveServer}
+              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-3 text-sm font-bold text-white transition hover:bg-sky-500"
+            >
+              <Save size={16} />
+              Save Connection
+            </button>
+          </section>
+
+          <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-950 text-white">
                 <Settings size={21} />
               </div>
@@ -446,6 +517,15 @@ export default function SettingsPage() {
             >
               <Download size={17} />
               Export Backup
+            </button>
+
+            <button
+              type="button"
+              onClick={handleRestoreFromIndexedDB}
+              className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+            >
+              <Upload size={16} />
+              Restore from IndexedDB
             </button>
 
             <div className="mt-3 rounded-lg border border-dashed border-zinc-300 p-4 text-sm font-medium text-zinc-500">

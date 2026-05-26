@@ -2,6 +2,7 @@ import { products } from "../data/products"
 import type { Product, ProductAccent } from "../types/product"
 import { receiveInventoryBatches } from "./inventoryBatch.service"
 import { enqueueSyncOperation } from "./sync.service"
+import { writeLocalWithIndexedDB } from "./storage.service"
 
 const STORAGE_KEY = "lebanonpos.products.v1"
 const PRODUCT_EVENT = "lebanonpos-products-changed"
@@ -84,7 +85,7 @@ function writeProducts(nextProducts: Product[]) {
     return
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextProducts))
+  writeLocalWithIndexedDB(STORAGE_KEY, nextProducts)
   window.dispatchEvent(new Event(PRODUCT_EVENT))
 }
 

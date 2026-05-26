@@ -1,4 +1,5 @@
 import { enqueueSyncOperation } from "./sync.service"
+import { writeLocalWithIndexedDB } from "./storage.service"
 
 const USERS_KEY = "lebanonpos.users.v1"
 const CURRENT_USER_KEY = "lebanonpos.current-user.v1"
@@ -190,7 +191,7 @@ function writeCollection<T>(key: string, value: T[]) {
     return
   }
 
-  window.localStorage.setItem(key, JSON.stringify(value))
+  writeLocalWithIndexedDB(key, value)
   dispatchSecurityChanged()
 }
 

@@ -4,6 +4,7 @@ import {
   recordAuditEvent,
 } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
+import { writeLocalWithIndexedDB } from "./storage.service"
 
 const EXPENSES_KEY = "lebanonpos.expenses.v1"
 const EXPENSES_EVENT = "lebanonpos-expenses-changed"
@@ -82,7 +83,7 @@ function writeExpenses(expenses: Expense[]) {
     return
   }
 
-  window.localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses))
+  writeLocalWithIndexedDB(EXPENSES_KEY, expenses)
   window.dispatchEvent(new Event(EXPENSES_EVENT))
 }
 
