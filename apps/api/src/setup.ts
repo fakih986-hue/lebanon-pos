@@ -13,12 +13,21 @@ try {
   console.error("[setup] Database setup failed (continuing anyway):", err)
 }
 
+// Ensure Prisma client is generated (db push may skip generate if it fails early)
+try {
+  execSync("npx prisma generate", { stdio: "inherit", env: { ...process.env, NO_COLOR: "1" }, timeout: 30_000 })
+} catch {
+  console.error("[setup] prisma generate failed (will try copy from src/)")
+}
+
 // Copy Prisma client from src/generated/ to dist/generated/ so ESM imports resolve
-const src = "src/generated/prisma"
-const dest = "dist/generated/prisma"
-if (existsSync(src)) {
-  cpSync(src, dest, { recursive: true })
+const srcDir = "src/generated/prisma"
+const destDir = "dist/generated/prisma"
+if (existsSync(srcDir)) {
+  cpSync(srcDir, destDir, { recursive: true })
   console.log("[setup] copied prisma client to dist/generated/prisma")
+} else {
+  console.error("[setup] prisma client not found at", srcDir)
 }
 
 console.log("[setup] complete")

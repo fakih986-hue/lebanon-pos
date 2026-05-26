@@ -8,7 +8,9 @@ RUN npx prisma generate && npx tsc
 FROM node:22-alpine
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src/generated ./dist/generated
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/public ./public
 EXPOSE 3001
 CMD ["node", "dist/index.js"]
