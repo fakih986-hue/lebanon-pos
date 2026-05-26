@@ -1,7 +1,7 @@
 import { Router } from "express"
-import prisma from "../lib/prisma"
-import { requireAuth, type AuthRequest } from "../middleware/auth"
+import prisma from "../lib/prisma.js"
 
+import { requireAuth, type AuthRequest } from "../middleware/auth.js"
 const router = Router()
 
 router.post("/push", requireAuth, async (req: AuthRequest, res) => {
@@ -115,25 +115,70 @@ async function processOperation(
     case "sale": {
       if (action === "create") {
         const data = payload as any
-        await prisma.sale.create({
-          data: {
-            ...data,
-            tenantId,
-            items: { create: data.items ?? [] },
-            tender: data.tender ? { create: data.tender } : undefined,
-          } as any,
-        })
+        // Transform items from desktop format to Prisma SaleItem format
+        const prismaItems = (data.items ?? []).map((item: any) => ({
+          productId: Number(item.id),
+          productName: item.name,
+          barcode: item.barcode,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total,
+          cost: item.cost ?? 0,
+        }))
+        // Strip saleId from tender (auto-filled by Prisma relation)
+        const { saleId: _s, ...prismaTender } = data.tender ?? {}
+        // Exclude items/tender from spread to avoid conflicts with nested create
+        const { items: _i, tender: _t, ...saleData } = data
+        try {
+          await prisma.sale.create({
+            data: {
+              ...saleData,
+              tenantId,
+              items: { create: prismaItems },
+              tender: prismaTender ? { create: prismaTender } : undefined,
+            } as any,
+          })
+        } catch {
+          // Retry without optional FK fields (customerId, shiftId)
+          const { customerId, shiftId, ...safeData } = saleData
+          await prisma.sale.create({
+            data: {
+              ...safeData,
+              tenantId,
+              items: { create: prismaItems },
+              tender: prismaTender ? { create: prismaTender } : undefined,
+            } as any,
+          })
+        }
       }
       break
     }
     case "refund": {
       if (action === "create") {
         const data = payload as any
+        // Map desktop refund method names to Prisma enum
+        const methodMap: Record<string, string> = {
+          "Debt Credit": "Debt_Credit",
+          "Refund Credit": "Debt_Credit",
+        }
+        // Transform items from desktop format to Prisma RefundItem format
+        const prismaItems = (data.items ?? []).map((item: any) => ({
+          productId: Number(item.id),
+          productName: item.name,
+          barcode: item.barcode,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total,
+          cost: item.cost ?? 0,
+        }))
+        // Exclude items array from spread (use nested create instead)
+        const { items: _i, ...refundData } = data
         await prisma.saleRefund.create({
           data: {
-            ...data,
+            ...refundData,
+            method: methodMap[refundData.method as string] ?? refundData.method,
             tenantId,
-            items: { create: data.items ?? [] },
+            items: { create: prismaItems },
           } as any,
         })
       }
@@ -179,9 +224,57 @@ async function processOperation(
       }
       break
     }
+    case "debt": {
+      if (action === "create") {
+        const { items: _i, ...debtData } = payload ?? {}
+        await prisma.debtSale.create({ data: { ...debtData, tenantId } as any })
+      } else if (action === "payment") {
+        await prisma.debtPayment.create({ data: { ...payload, tenantId } as any })
+      }
+      break
+    }
     case "inventory": {
       if (action === "receive") {
         await prisma.inventoryBatch.create({ data: { ...payload, tenantId } as any })
+      } else if (action === "adjust") {
+        await prisma.stockAdjustment.create({ data: { ...payload, tenantId } as any })
+      } else if (action === "count") {
+        const data = payload as any
+        const { lines: _l, ...sessionData } = data
+        const prismaLines = (data.lines ?? []).map((line: any) => ({
+          productId: Number(line.productId ?? line.id),
+          productName: line.productName ?? line.name,
+          barcode: line.barcode,
+          category: line.category ?? "",
+          expectedQuantity: line.expectedQuantity ?? 0,
+          countedQuantity: line.countedQuantity ?? null,
+          variance: line.variance ?? 0,
+          valueImpact: line.valueImpact ?? 0,
+        }))
+        await prisma.stockCountSession.create({
+          data: {
+            ...sessionData,
+            tenantId,
+            lines: { create: prismaLines },
+          } as any,
+        })
+      }
+      break
+    }
+    case "purchase-order": {
+      if (action === "create" || action === "update") {
+        const { items: _i, ...poData } = payload ?? {}
+        await prisma.purchaseOrder.upsert({
+          where: { id: payload?.id as string },
+          create: { ...poData, tenantId } as any,
+          update: { ...poData } as any,
+        })
+      }
+      break
+    }
+    case "supplier-payment": {
+      if (action === "payment" || action === "create") {
+        await prisma.supplierPayment.create({ data: { ...payload, tenantId } as any })
       }
       break
     }

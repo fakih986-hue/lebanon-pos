@@ -1,7 +1,7 @@
 import { Router } from "express"
-import prisma from "../lib/prisma"
-import { signToken, type AuthRequest, requireAuth } from "../middleware/auth"
+import prisma from "../lib/prisma.js"
 
+import { signToken, type AuthRequest, requireAuth } from "../middleware/auth.js"
 const router = Router()
 
 router.post("/login", async (req, res) => {

@@ -1,8 +1,8 @@
 import express from "express"
 import cors from "cors"
-import authRoutes from "./routes/auth"
-import syncRoutes from "./routes/sync"
-import { errorHandler } from "./middleware/errorHandler"
+import authRoutes from "./routes/auth.js"
+import syncRoutes from "./routes/sync.js"
+import { errorHandler } from "./middleware/errorHandler.js"
 
 const app = express()
 
