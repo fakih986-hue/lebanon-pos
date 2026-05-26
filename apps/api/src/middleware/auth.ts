@@ -22,6 +22,7 @@ export interface AuthRequest extends IncomingMessage {
   auth?: AuthPayload
   body?: unknown
   query: Record<string, string | string[] | undefined>
+  params?: Record<string, string>
 }
 
 type Handler = (

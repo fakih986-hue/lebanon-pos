@@ -1,4 +1,5 @@
-import { Barcode, Hash, Plus, Search, SlidersHorizontal, Star, X } from "lucide-react"
+import { Fragment, useState } from "react"
+import { Barcode, ChevronDown, ChevronRight, Hash, Plus, Search, SlidersHorizontal, Star, X } from "lucide-react"
 import { Link } from "react-router"
 
 import { formatCurrency, formatNumber } from "../lib/currency"
@@ -50,6 +51,27 @@ export default function ProductTable({
   onToggleFavorite,
   onDeleteClick,
 }: Props) {
+  const [expandedParents, setExpandedParents] = useState<Set<number>>(
+    () => new Set()
+  )
+
+  function toggleParent(id: number) {
+    setExpandedParents((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const parents = filteredProducts.filter((p) => !p.parentId)
+  const variants = filteredProducts.filter((p) => p.parentId)
+  const variantMap = new Map<number, Product[]>()
+  for (const v of variants) {
+    if (!variantMap.has(v.parentId!)) variantMap.set(v.parentId!, [])
+    variantMap.get(v.parentId!)!.push(v)
+  }
+
   return (
     <section className="mt-5 rounded-lg border border-zinc-200 bg-white shadow-sm">
       <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 xl:flex-row xl:items-center xl:justify-between">
@@ -156,87 +178,280 @@ export default function ProductTable({
               </tr>
             ) : null}
 
-            {filteredProducts.map((product) => {
+            {parents.map((product) => {
               const status = getStockStatus(product)
+              const childVariants = variantMap.get(product.id) ?? []
+              const expanded = expandedParents.has(product.id)
 
               return (
-                <tr key={product.id} className="hover:bg-zinc-50">
-                  <td className="border-b border-zinc-100 px-4 py-4">
-                    <div className="font-bold text-zinc-950">
-                      {product.name}
-                    </div>
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
-                    {product.category}
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
-                    {product.supplierName ?? "-"}
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4">
-                    <div className="space-y-1 text-zinc-500">
-                      <span className="inline-flex items-center gap-2">
-                        <Barcode size={15} />
-                        {product.barcode}
-                      </span>
-                      {(product.barcodeAliases?.length ?? 0) > 0 ? (
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 px-2 py-1 text-xs font-bold text-zinc-600">
-                          <Hash size={12} />
-                          {formatNumber(product.barcodeAliases?.length ?? 0)}{" "}
-                          extra
+                <Fragment key={product.id}>
+                  <tr className="hover:bg-zinc-50">
+                    <td className="border-b border-zinc-100 px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        {childVariants.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleParent(product.id)}
+                            className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+                          >
+                            {expanded ? (
+                              <ChevronDown size={16} />
+                            ) : (
+                              <ChevronRight size={16} />
+                            )}
+                          </button>
+                        ) : (
+                          <span className="w-6" />
+                        )}
+                        <span className="font-bold text-zinc-950">
+                          {product.name}
                         </span>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-right font-bold text-zinc-950">
-                    {formatCurrency(product.price)}
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-right text-zinc-600">
-                    {formatCurrency(product.cost)}
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-right font-semibold text-zinc-800">
-                    {formatNumber(product.stock)}
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4">
-                    <span
-                      className={`inline-flex rounded-lg border px-2.5 py-1 text-xs font-bold ${status.className}`}
-                    >
-                      {status.label}
-                    </span>
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4">
-                    <button
-                      type="button"
-                      onClick={() => onToggleFavorite(product)}
-                      className={`flex h-9 w-9 items-center justify-center rounded-lg border transition ${
-                        product.favorite
-                          ? "border-amber-200 bg-amber-50 text-amber-600"
-                          : "border-zinc-200 text-zinc-500 hover:bg-zinc-50"
-                      }`}
-                      aria-label={
-                        product.favorite
-                          ? `Remove ${product.name} from favorites`
-                          : `Add ${product.name} to favorites`
-                      }
-                    >
-                      <Star
-                        size={16}
-                        fill={product.favorite ? "currentColor" : "none"}
-                      />
-                    </button>
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4">
-                    <button
-                      type="button"
-                      onClick={() => onDeleteClick(product.id)}
-                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                      aria-label={`Delete ${product.name}`}
-                    >
-                      <X size={15} />
-                    </button>
-                  </td>
-                </tr>
+                      </div>
+                    </td>
+                    <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                      {product.category}
+                    </td>
+                    <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                      {product.supplierName ?? "-"}
+                    </td>
+                    <td className="border-b border-zinc-100 px-4 py-4">
+                      <div className="space-y-1 text-zinc-500">
+                        <span className="inline-flex items-center gap-2">
+                          <Barcode size={15} />
+                          {product.barcode}
+                        </span>
+                        {(product.barcodeAliases?.length ?? 0) > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 px-2 py-1 text-xs font-bold text-zinc-600">
+                            <Hash size={12} />
+                            {formatNumber(product.barcodeAliases?.length ?? 0)}{" "}
+                            extra
+                          </span>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="border-b border-zinc-100 px-4 py-4 text-right font-bold text-zinc-950">
+                      {formatCurrency(product.price)}
+                    </td>
+                    <td className="border-b border-zinc-100 px-4 py-4 text-right text-zinc-600">
+                      {formatCurrency(product.cost)}
+                    </td>
+                    <td className="border-b border-zinc-100 px-4 py-4 text-right font-semibold text-zinc-800">
+                      {formatNumber(product.stock)}
+                    </td>
+                    <td className="border-b border-zinc-100 px-4 py-4">
+                      <span
+                        className={`inline-flex rounded-lg border px-2.5 py-1 text-xs font-bold ${status.className}`}
+                      >
+                        {status.label}
+                      </span>
+                    </td>
+                    <td className="border-b border-zinc-100 px-4 py-4">
+                      <button
+                        type="button"
+                        onClick={() => onToggleFavorite(product)}
+                        className={`flex h-9 w-9 items-center justify-center rounded-lg border transition ${
+                          product.favorite
+                            ? "border-amber-200 bg-amber-50 text-amber-600"
+                            : "border-zinc-200 text-zinc-500 hover:bg-zinc-50"
+                        }`}
+                        aria-label={
+                          product.favorite
+                            ? `Remove ${product.name} from favorites`
+                            : `Add ${product.name} to favorites`
+                        }
+                      >
+                        <Star
+                          size={16}
+                          fill={product.favorite ? "currentColor" : "none"}
+                        />
+                      </button>
+                    </td>
+                    <td className="border-b border-zinc-100 px-4 py-4">
+                      <button
+                        type="button"
+                        onClick={() => onDeleteClick(product.id)}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                        aria-label={`Delete ${product.name}`}
+                      >
+                        <X size={15} />
+                      </button>
+                    </td>
+                  </tr>
+
+                  {expanded
+                    ? childVariants.map((variant) => {
+                        const vStatus = getStockStatus(variant)
+
+                        return (
+                          <tr
+                            key={variant.id}
+                            className="bg-zinc-50/50 hover:bg-zinc-100/50"
+                          >
+                            <td className="border-b border-zinc-100 px-4 py-4 pl-12">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-flex items-center gap-1 rounded bg-zinc-200 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-zinc-600">
+                                  Variant
+                                </span>
+                                <span className="font-semibold text-zinc-900">
+                                  {variant.variantName ?? variant.name}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                              {variant.category}
+                            </td>
+                            <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                              {variant.supplierName ?? "-"}
+                            </td>
+                            <td className="border-b border-zinc-100 px-4 py-4">
+                              <div className="space-y-1 text-zinc-500">
+                                <span className="inline-flex items-center gap-2">
+                                  <Barcode size={15} />
+                                  {variant.barcode}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="border-b border-zinc-100 px-4 py-4 text-right font-bold text-zinc-950">
+                              {formatCurrency(variant.price)}
+                            </td>
+                            <td className="border-b border-zinc-100 px-4 py-4 text-right text-zinc-600">
+                              {formatCurrency(variant.cost)}
+                            </td>
+                            <td className="border-b border-zinc-100 px-4 py-4 text-right font-semibold text-zinc-800">
+                              {formatNumber(variant.stock)}
+                            </td>
+                            <td className="border-b border-zinc-100 px-4 py-4">
+                              <span
+                                className={`inline-flex rounded-lg border px-2.5 py-1 text-xs font-bold ${vStatus.className}`}
+                              >
+                                {vStatus.label}
+                              </span>
+                            </td>
+                            <td className="border-b border-zinc-100 px-4 py-4">
+                              <button
+                                type="button"
+                                onClick={() => onToggleFavorite(variant)}
+                                className={`flex h-9 w-9 items-center justify-center rounded-lg border transition ${
+                                  variant.favorite
+                                    ? "border-amber-200 bg-amber-50 text-amber-600"
+                                    : "border-zinc-200 text-zinc-500 hover:bg-zinc-50"
+                                }`}
+                                aria-label={
+                                  variant.favorite
+                                    ? `Remove ${variant.name} from favorites`
+                                    : `Add ${variant.name} to favorites`
+                                }
+                              >
+                                <Star
+                                  size={16}
+                                  fill={
+                                    variant.favorite
+                                      ? "currentColor"
+                                      : "none"
+                                  }
+                                />
+                              </button>
+                            </td>
+                            <td className="border-b border-zinc-100 px-4 py-4">
+                              <button
+                                type="button"
+                                onClick={() => onDeleteClick(variant.id)}
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                                aria-label={`Delete ${variant.name}`}
+                              >
+                                <X size={15} />
+                              </button>
+                            </td>
+                          </tr>
+                        )
+                      })
+                    : null}
+                </Fragment>
               )
             })}
+
+            {parents.length === 0 && filteredProducts.length > 0
+              ? filteredProducts.map((variant) => {
+                  const vStatus = getStockStatus(variant)
+                  return (
+                    <tr key={variant.id} className="hover:bg-zinc-50">
+                      <td className="border-b border-zinc-100 px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded bg-zinc-200 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-zinc-600">
+                            Variant
+                          </span>
+                          <span className="font-bold text-zinc-950">
+                            {variant.variantName ?? variant.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                        {variant.category}
+                      </td>
+                      <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                        {variant.supplierName ?? "-"}
+                      </td>
+                      <td className="border-b border-zinc-100 px-4 py-4">
+                        <div className="space-y-1 text-zinc-500">
+                          <span className="inline-flex items-center gap-2">
+                            <Barcode size={15} />
+                            {variant.barcode}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="border-b border-zinc-100 px-4 py-4 text-right font-bold text-zinc-950">
+                        {formatCurrency(variant.price)}
+                      </td>
+                      <td className="border-b border-zinc-100 px-4 py-4 text-right text-zinc-600">
+                        {formatCurrency(variant.cost)}
+                      </td>
+                      <td className="border-b border-zinc-100 px-4 py-4 text-right font-semibold text-zinc-800">
+                        {formatNumber(variant.stock)}
+                      </td>
+                      <td className="border-b border-zinc-100 px-4 py-4">
+                        <span
+                          className={`inline-flex rounded-lg border px-2.5 py-1 text-xs font-bold ${vStatus.className}`}
+                        >
+                          {vStatus.label}
+                        </span>
+                      </td>
+                      <td className="border-b border-zinc-100 px-4 py-4">
+                        <button
+                          type="button"
+                          onClick={() => onToggleFavorite(variant)}
+                          className={`flex h-9 w-9 items-center justify-center rounded-lg border transition ${
+                            variant.favorite
+                              ? "border-amber-200 bg-amber-50 text-amber-600"
+                              : "border-zinc-200 text-zinc-500 hover:bg-zinc-50"
+                          }`}
+                          aria-label={
+                            variant.favorite
+                              ? `Remove ${variant.name} from favorites`
+                              : `Add ${variant.name} to favorites`
+                          }
+                        >
+                          <Star
+                            size={16}
+                            fill={
+                              variant.favorite ? "currentColor" : "none"
+                            }
+                          />
+                        </button>
+                      </td>
+                      <td className="border-b border-zinc-100 px-4 py-4">
+                        <button
+                          type="button"
+                          onClick={() => onDeleteClick(variant.id)}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                          aria-label={`Delete ${variant.name}`}
+                        >
+                          <X size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })
+              : null}
           </tbody>
         </table>
       </div>

@@ -22,6 +22,7 @@ export type Permission =
   | "settings.manage"
   | "staff.manage"
   | "shifts.manage"
+  | "delivery.manage"
 
 export type StaffUser = {
   id: string

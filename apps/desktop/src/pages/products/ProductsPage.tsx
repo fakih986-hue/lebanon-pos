@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react"
 import { useDebounce } from "../../hooks/useDebounce"
 import type { Product } from "../../features/pos/types/product"
+import { Plus, X } from "lucide-react"
 import KpiCards from "../../features/pos/components/KpiCards"
 import AlertsPanel from "../../features/pos/components/AlertsPanel"
 import StockControlPanel from "../../features/pos/components/StockControlPanel"
@@ -21,6 +22,7 @@ import {
 type StockAdjustmentReason,
 } from "../../features/pos/services/inventoryAdjustment.service"
 import {
+  createProduct,
   deleteProduct,
   getProducts,
   productMatchesSearch,
@@ -121,6 +123,13 @@ export default function ProductsPage() {
   const [batchVersion, setBatchVersion] = useState(0)
   const [controlVersion, setControlVersion] = useState(0)
   const [deleteProductId, setDeleteProductId] = useState<number | null>(null)
+  const [isParent, setIsParent] = useState(false)
+  const [variantName, setVariantName] = useState("")
+  const [newVariantName, setNewVariantName] = useState("")
+  const [newVariantPrice, setNewVariantPrice] = useState("")
+  const [newVariantStock, setNewVariantStock] = useState("")
+  const [newVariantBarcode, setNewVariantBarcode] = useState("")
+  const [deleteVariantId, setDeleteVariantId] = useState<number | null>(null)
 
   useEffect(() => {
     let active = true
@@ -225,6 +234,10 @@ export default function ProductsPage() {
     () => groupReorderSuggestionsBySupplier(reorderSuggestions),
     [reorderSuggestions]
   )
+  const parentVariants = useMemo(
+    () => products.filter((p) => p.parentId === selectedProduct?.id),
+    [products, selectedProduct?.id]
+  )
   const expiryAlerts = useMemo(() => getExpiryAlerts(products, 30), [products])
   const deadStockItems = useMemo(() => getDeadStockItems(products, 60), [products])
   const promoSuggestions = useMemo(() => getPromoSuggestions(products), [products])
@@ -296,6 +309,8 @@ export default function ProductsPage() {
     setReorderQuantity(String(selectedProduct.reorderQuantity ?? 20))
     setExpiryDate(selectedProduct.expiryDate ?? "")
     setBarcodeAliases((selectedProduct.barcodeAliases ?? []).join("\n"))
+    setIsParent(selectedProduct.isParent ?? false)
+    setVariantName(selectedProduct.variantName ?? "")
     setAdjustmentProductId((currentId) => currentId ?? selectedProduct.id)
     setCountProductId((currentId) => currentId ?? selectedProduct.id)
   }, [selectedProduct])
@@ -364,6 +379,8 @@ export default function ProductsPage() {
       reorderQuantity: normalizeNumber(reorderQuantity),
       expiryDate,
       barcodeAliases: aliases,
+      isParent: !!isParent,
+      variantName: variantName?.trim() || undefined,
     })
     showToast(`${selectedProduct.name} setup saved.`)
   }
@@ -377,6 +394,44 @@ export default function ProductsPage() {
         ? `${product.name} removed from POS favorites.`
         : `${product.name} added to POS favorites.`
     )
+  }
+
+  function addVariant() {
+    if (!selectedProduct) return
+    const name = newVariantName.trim()
+    const price = normalizeNumber(newVariantPrice)
+    const stock = normalizeNumber(newVariantStock)
+    const barcode = normalizeBarcode(newVariantBarcode)
+
+    if (!name) {
+      showToast("Variant name is required.", "error")
+      return
+    }
+    if (!barcode) {
+      showToast("Barcode is required.", "error")
+      return
+    }
+    if (products.some((p) => p.barcode === barcode || (p.barcodeAliases ?? []).includes(barcode))) {
+      showToast(`Barcode ${barcode} already exists.`, "error")
+      return
+    }
+
+    createProduct({
+      name: `${selectedProduct.name} - ${name}`,
+      price,
+      cost: selectedProduct.cost,
+      stock,
+      barcode,
+      category: selectedProduct.category,
+      accent: selectedProduct.accent,
+      parentId: selectedProduct.id,
+      variantName: name,
+    })
+    setNewVariantName("")
+    setNewVariantPrice("")
+    setNewVariantStock("")
+    setNewVariantBarcode("")
+    showToast(`Variant ${name} added.`)
   }
 
   function saveCategoryRename() {
@@ -619,6 +674,7 @@ export default function ProductsPage() {
       ) : null}
 
       {activeProductView === "Setup" ? (
+      <>
       <ProductSetupForm
         selectedProduct={selectedProduct}
         setSelectedProductId={setSelectedProductId}
@@ -645,6 +701,141 @@ export default function ProductsPage() {
         onSaveProductSetup={saveProductSetup}
         onSaveCategoryRename={saveCategoryRename}
       />
+
+      {selectedProduct && !selectedProduct.parentId ? (
+      <section className="mt-5 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            checked={isParent}
+            onChange={(event) => setIsParent(event.target.checked)}
+            className="mt-0.5 h-5 w-5 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950"
+          />
+          <div>
+            <span className="font-bold text-zinc-950">This product has variants</span>
+            <p className="text-sm text-zinc-500">
+              Enable to add versions like different sizes, colours, or flavours.
+            </p>
+          </div>
+        </label>
+      </section>
+      ) : null}
+
+      {selectedProduct?.parentId ? (
+      <section className="mt-5 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+        <h3 className="mb-3 text-lg font-bold text-zinc-950">Variant settings</h3>
+        <label className="block text-sm font-bold text-zinc-700">
+          Variant name
+          <input
+            value={variantName}
+            onChange={(event) => setVariantName(event.target.value)}
+            placeholder="e.g. Small, Red, 1L"
+            className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+          />
+        </label>
+        <p className="mt-1 text-xs text-zinc-500">
+          Save the product setup to apply the variant name change.
+        </p>
+      </section>
+      ) : null}
+
+      {(isParent || selectedProduct?.isParent) && selectedProduct ? (
+      <section className="mt-5 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+        <h3 className="mb-3 text-lg font-bold text-zinc-950">Variants</h3>
+
+        {parentVariants.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs font-bold uppercase text-zinc-500">
+                <th className="border-b border-zinc-200 px-3 py-2">Name</th>
+                <th className="border-b border-zinc-200 px-3 py-2 text-right">Price</th>
+                <th className="border-b border-zinc-200 px-3 py-2 text-right">Stock</th>
+                <th className="border-b border-zinc-200 px-3 py-2">Barcode</th>
+                <th className="border-b border-zinc-200 px-3 py-2">
+                  <span className="sr-only">Remove</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {parentVariants.map((variant) => (
+                <tr key={variant.id} className="hover:bg-zinc-50">
+                  <td className="border-b border-zinc-100 px-3 py-2 font-medium text-zinc-950">
+                    {variant.variantName}
+                  </td>
+                  <td className="border-b border-zinc-100 px-3 py-2 text-right text-zinc-800">
+                    {formatCurrency(variant.price)}
+                  </td>
+                  <td className="border-b border-zinc-100 px-3 py-2 text-right text-zinc-800">
+                    {formatNumber(variant.stock)}
+                  </td>
+                  <td className="border-b border-zinc-100 px-3 py-2 text-zinc-600">
+                    {variant.barcode}
+                  </td>
+                  <td className="border-b border-zinc-100 px-3 py-2">
+                    <button
+                      onClick={() => setDeleteVariantId(variant.id)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                      aria-label={`Remove ${variant.variantName}`}
+                    >
+                      <X size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        ) : (
+        <p className="text-sm text-zinc-500">No variants yet. Add one below.</p>
+        )}
+
+        <div className="mt-4 border-t border-zinc-200 pt-4">
+          <h4 className="mb-3 text-sm font-bold text-zinc-700">Add variant</h4>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <input
+              value={newVariantName}
+              onChange={(event) => setNewVariantName(event.target.value)}
+              placeholder="Variant name"
+              className="h-11 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+            />
+            <input
+              type="number"
+              min="0"
+              value={newVariantPrice}
+              onChange={(event) => setNewVariantPrice(event.target.value)}
+              placeholder="Price"
+              className="h-11 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+            />
+            <input
+              type="number"
+              min="0"
+              value={newVariantStock}
+              onChange={(event) => setNewVariantStock(event.target.value)}
+              placeholder="Stock"
+              className="h-11 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+            />
+            <div className="flex gap-2">
+              <input
+                value={newVariantBarcode}
+                onChange={(event) => setNewVariantBarcode(event.target.value)}
+                placeholder="Barcode"
+                className="h-11 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              />
+              <button
+                type="button"
+                onClick={addVariant}
+                className="flex h-11 items-center gap-2 rounded-lg bg-zinc-950 px-4 text-sm font-bold text-white transition hover:bg-zinc-800"
+              >
+                <Plus size={16} />
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      ) : null}
+      </>
       ) : null}
 
       <datalist id="catalog-categories">
@@ -683,6 +874,22 @@ export default function ProductsPage() {
         onCancel={() => setDeleteProductId(null)}
       >
         <p>Delete this product? This cannot be undone.</p>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={deleteVariantId !== null}
+        title="Remove variant"
+        confirmLabel="Remove"
+        confirmDestructive
+        onConfirm={() => {
+          if (deleteVariantId !== null) {
+            deleteProduct(deleteVariantId)
+            setDeleteVariantId(null)
+          }
+        }}
+        onCancel={() => setDeleteVariantId(null)}
+      >
+        <p>Remove this variant? This cannot be undone.</p>
       </ConfirmDialog>
       </>
       )}

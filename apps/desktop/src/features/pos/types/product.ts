@@ -8,6 +8,10 @@
 
 export type Product = {
   id: number
+  parentId?: number | null
+  isParent?: boolean
+  variantName?: string
+  variants?: Product[]
   name: string
   price: number
   cost: number

@@ -308,17 +308,51 @@ export function updateProduct(productId: number, patch: Partial<Product>) {
   return updatedProduct
 }
 
+export function createProduct(input: {
+  name: string
+  price: number
+  cost: number
+  stock: number
+  barcode: string
+  category: string
+  accent?: ProductAccent
+  parentId?: number | null
+  variantName?: string
+}): Product {
+  const currentProducts = getProductsSync()
+  const nextId = currentProducts.reduce((max, p) => Math.max(max, p.id), 0) + 1
+  const product: Product = {
+    id: nextId,
+    name: normalizeName(input.name),
+    price: input.price,
+    cost: input.cost,
+    stock: input.stock,
+    barcode: normalizeBarcode(input.barcode),
+    category: normalizeName(input.category),
+    accent: input.accent ?? chooseAccent(input.category, nextId),
+    parentId: input.parentId ?? null,
+    variantName: input.variantName ?? undefined,
+    barcodeAliases: [],
+  }
+  const nextProducts = [...currentProducts, product]
+  writeProducts(nextProducts)
+  return product
+}
+
 export function deleteProduct(productId: number) {
   const products = getProductsSync()
   const product = products.find((item) => item.id === productId)
   if (!product) return
 
-  writeProducts(products.filter((item) => item.id !== productId))
-  enqueueSyncOperation({
-    entity: "product",
-    action: "delete",
-    summary: `${product.name} deleted.`,
-    payload: { id: productId },
+  const idsToDelete = [productId, ...products.filter(p => p.parentId === productId).map(p => p.id)]
+  writeProducts(products.filter((item) => !idsToDelete.includes(item.id)))
+  idsToDelete.forEach(id => {
+    enqueueSyncOperation({
+      entity: "product",
+      action: "delete",
+      summary: `Product ${id} deleted.`,
+      payload: { id },
+    })
   })
 }
 

@@ -3,6 +3,8 @@ import cors from "cors"
 import authRoutes from "./routes/auth.js"
 import syncRoutes from "./routes/sync.js"
 import dashboardRoutes from "./routes/dashboard.js"
+import deliveryRoutes from "./routes/delivery.js"
+import imageRoutes from "./routes/image.js"
 import { errorHandler } from "./middleware/errorHandler.js"
 import {
   getCorsOptions,
@@ -23,6 +25,8 @@ app.use("/api/sync", rateLimit({ windowMs: 60_000, max: 240, bucket: "sync" }))
 app.use("/api/auth", authRoutes)
 app.use("/api/sync", syncRoutes)
 app.use("/api/dashboard", dashboardRoutes)
+app.use("/api/delivery", deliveryRoutes)
+app.use("/api/images", imageRoutes)
 
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() })

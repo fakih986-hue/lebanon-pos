@@ -30,6 +30,7 @@ import SalesPage from "../pages/sales/SalesPage"
 import StaffPage from "../pages/staff/StaffPage"
 import SettingsPage from "../pages/settings/SettingsPage"
 import SuppliersPage from "../pages/suppliers/SuppliersPage"
+import DeliveryPage from "../pages/delivery/DeliveryPage"
 
 const AUTO_LOCK_MS = 10 * 60 * 1000
 
@@ -212,6 +213,17 @@ const router = createBrowserRouter([
       <Shell>
         <RequirePermission permission="settings.manage">
           <SettingsPage />
+        </RequirePermission>
+      </Shell>
+    ),
+  },
+
+  {
+    path: "/delivery",
+    element: (
+      <Shell>
+        <RequirePermission permission="delivery.manage">
+          <DeliveryPage />
         </RequirePermission>
       </Shell>
     ),

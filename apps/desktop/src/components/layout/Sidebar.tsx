@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router"
 import {
   Calculator,
   CircleDollarSign,
+  ClipboardList,
   ClipboardPlus,
   Gauge,
   LayoutDashboard,
@@ -88,10 +89,18 @@ export const menuItems: MenuItem[] = [
     group: "Retail",
   },
   {
+    label: "Delivery",
+    detail: "Orders",
+    path: "/delivery",
+    icon: Truck,
+    permission: "delivery.manage",
+    group: "Retail",
+  },
+  {
     label: "Suppliers",
     detail: "Payables",
     path: "/suppliers",
-    icon: Truck,
+    icon: ClipboardList,
     permission: "accounting.manage",
     group: "Operations",
   },

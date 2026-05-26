@@ -88,6 +88,7 @@ model Tenant {
   stockCounts       StockCountSession[]
   dailyCloses       DailyClose[]
   syncOperations    SyncOperation[]
+  deliveryOrders    DeliveryOrder[]
 }
 
 model StaffUser {
@@ -124,6 +125,11 @@ model Product {
   id              Int       @id @default(autoincrement())
   tenantId        String
   tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  parentId        Int?
+  parent          Product?  @relation("ProductVariants", fields: [parentId], references: [id])
+  variants        Product[] @relation("ProductVariants")
+  isParent        Boolean   @default(false)
+  variantName     String?
   name            String
   price           Float
   cost            Float     @default(0)
@@ -149,6 +155,7 @@ model Product {
   @@unique([tenantId, barcode])
   @@index([tenantId, category])
   @@index([tenantId, name])
+  @@index([tenantId, parentId])
 }
 
 model Sale {
@@ -499,6 +506,62 @@ model StockCountLine {
   countedQuantity  Float?
   variance         Float            @default(0)
   valueImpact      Float            @default(0)
+}
+
+enum DeliveryOrderStatus {
+  Pending
+  Confirmed
+  Preparing
+  OutForDelivery
+  Delivered
+  Cancelled
+}
+
+model DeliveryOrder {
+  id              String               @id @default(uuid())
+  tenantId        String
+  tenant          Tenant               @relation(fields: [tenantId], references: [id])
+  orderNumber     String
+  status          DeliveryOrderStatus  @default(Pending)
+  customerId      String?
+  customerName    String
+  customerPhone   String
+  address         String
+  locationLat     Float?
+  locationLng     Float?
+  deliveryNote    String               @default("")
+  itemsTotal      Float
+  deliveryFee     Float                @default(0)
+  total           Float
+  paymentMethod   String               @default("CashOnDelivery")
+  paidAmount      Float                @default(0)
+  changeRequired  Float                @default(0)
+  assignedTo      String?
+  assignedName    String?
+  notes           String               @default("")
+  cancelledReason String               @default("")
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  deliveredAt     DateTime?
+  cancelledAt     DateTime?
+
+  items DeliveryOrderItem[]
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+}
+
+model DeliveryOrderItem {
+  id              String        @id @default(uuid())
+  deliveryOrderId String
+  deliveryOrder   DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
+  productId       Int
+  productName     String
+  barcode         String
+  quantity        Float
+  unitPrice       Float
+  total           Float
 }
 
 model DailyClose {
