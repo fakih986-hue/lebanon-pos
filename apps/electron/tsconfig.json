@@ -1,0 +1,9 @@
+{
+  "name": "lebanonpos",
+  "private": true,
+  "scripts": {
+    "web": "pnpm --dir apps/desktop dev",
+    "electron:build": "tsc -p apps/electron",
+    "electron:start": "electron apps/electron/dist/main.js"
+  }
+}

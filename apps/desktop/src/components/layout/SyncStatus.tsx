@@ -1,0 +1,60 @@
+import { useEffect, useState } from "react"
+import { Cloud, CloudOff, RotateCw } from "lucide-react"
+
+import {
+  flushSyncQueue,
+  getSyncStatus,
+  subscribeSync,
+  type SyncStatus as RegisterSyncStatus,
+} from "../../features/pos/services/sync.service"
+
+function getLabel(status: RegisterSyncStatus) {
+  if (!status.online) {
+    return `${status.pending + status.failed} offline`
+  }
+
+  if (status.pending > 0) {
+    return `${status.pending} pending`
+  }
+
+  if (status.failed > 0) {
+    return `${status.failed} failed`
+  }
+
+  return "Synced"
+}
+
+export default function SyncStatus() {
+  const [status, setStatus] = useState<RegisterSyncStatus>(getSyncStatus())
+
+  useEffect(
+    () => subscribeSync(() => setStatus(getSyncStatus())),
+    []
+  )
+
+  function handleSyncNow() {
+    flushSyncQueue()
+    setStatus(getSyncStatus())
+  }
+
+  const hasWork = status.pending > 0 || status.failed > 0
+
+  return (
+    <button
+      type="button"
+      onClick={handleSyncNow}
+      className={`hidden h-11 items-center gap-2 rounded-lg border px-3 text-sm font-semibold transition lg:flex ${
+        status.online
+          ? hasWork
+            ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+            : "border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100"
+          : "border-rose-200 bg-rose-50 text-rose-800"
+      }`}
+      title="Sync now"
+    >
+      {status.online ? <Cloud size={17} /> : <CloudOff size={17} />}
+      <span>{getLabel(status)}</span>
+      {hasWork ? <RotateCw size={15} /> : null}
+    </button>
+  )
+}

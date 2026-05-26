@@ -1,0 +1,19 @@
+{
+  "name": "lebanonpos",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --dir apps/desktop dev",
+    "web": "pnpm --dir apps/desktop dev",
+    "build": "pnpm --dir apps/desktop build",
+    "lint": "pnpm --dir apps/desktop lint",
+    "electron:build": "tsc -p apps/electron",
+    "electron:start": "electron apps/electron/dist/main.js"
+  },
+  "devDependencies": {
+    "@types/electron": "^1.6.12",
+    "@types/node": "^24.12.4",
+    "electron": "42.2.0",
+    "tsx": "^4.22.3",
+    "typescript": "~6.0.3"
+  }
+}
