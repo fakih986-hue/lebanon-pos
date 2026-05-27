@@ -18,7 +18,7 @@ router.get("/kpi", requireAuth, async (req: AuthRequest, res: Response) => {
 
   const completed = { tenantId, status: "Completed" as const }
 
-  const [todaySales, weekSales, monthSales, trendSales, paymentSales, topProductsData, recentSalesData] =
+  const [todaySales, weekSales, monthSales, trendSales, paymentSales, topProductsData, recentSalesData, lowStockData, topCustomersData, hourlySalesData] =
     await Promise.all([
       prisma.sale.findMany({ where: { ...completed, createdAt: { gte: todayStart } } }),
       prisma.sale.findMany({ where: { ...completed, createdAt: { gte: weekStart } } }),
@@ -53,6 +53,26 @@ router.get("/kpi", requireAuth, async (req: AuthRequest, res: Response) => {
           items: { select: { id: true } },
         },
       }),
+      prisma.product.findMany({
+        where: { tenantId, stock: { lte: 5 }, isParent: false },
+        select: { name: true, barcode: true, stock: true, category: true },
+        orderBy: { stock: "asc" },
+        take: 10,
+      }),
+      // Top customers: group sales by customer name if available
+      prisma.sale.groupBy({
+        by: ["customerName"],
+        where: { tenantId, status: "Completed", customerName: { not: null } },
+        _sum: { total: true },
+        _count: { id: true },
+        orderBy: { _sum: { total: "desc" } },
+        take: 5,
+      }),
+      // Hourly distribution: count sales by hour of day (today)
+      prisma.sale.findMany({
+        where: { ...completed, createdAt: { gte: todayStart } },
+        select: { createdAt: true },
+      }),
     ])
 
   const aggregate = (sales: Array<{ total: number; profit?: number }>) => ({
@@ -76,6 +96,15 @@ router.get("/kpi", requireAuth, async (req: AuthRequest, res: Response) => {
     }
   }
   const salesTrend = Array.from(trendMap.entries()).map(([date, data]) => ({ date, ...data }))
+
+  // Hourly sales distribution
+  const hourlyMap = new Map<number, number>()
+  for (let h = 0; h < 24; h++) hourlyMap.set(h, 0)
+  for (const s of hourlySalesData) {
+    const hour = s.createdAt.getHours()
+    hourlyMap.set(hour, (hourlyMap.get(hour) ?? 0) + 1)
+  }
+  const hourlyDistribution = Array.from(hourlyMap.entries()).map(([hour, count]) => ({ hour, count }))
 
   ;(res as any).json({
     today: aggregate(todaySales),
@@ -101,6 +130,18 @@ router.get("/kpi", requireAuth, async (req: AuthRequest, res: Response) => {
       time: s.createdAt.toISOString(),
       items: s.items.length,
     })),
+    lowStock: lowStockData.map((p: any) => ({
+      name: p.name,
+      barcode: p.barcode,
+      stock: p.stock,
+      category: p.category,
+    })),
+    topCustomers: topCustomersData.map((c: any) => ({
+      name: c.customerName,
+      total: c._sum.total ?? 0,
+      count: c._count.id,
+    })),
+    hourlyDistribution,
   })
 })
 
