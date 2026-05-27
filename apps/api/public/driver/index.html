@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Driver - Lebanon POS</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{font-size:18px;font-family:system-ui,-apple-system,sans-serif}
+  body{background:#f4f4f5;color:#18181b;min-height:100dvh;padding-bottom:80px}
+  .header{position:sticky;top:0;z-index:10;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;padding:16px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.15)}
+  .header h1{font-size:1.3rem;font-weight:700}
+  .header p{font-size:.75rem;opacity:.85;margin-top:2px}
+  .logout-btn{position:absolute;right:12px;top:14px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:.65rem;padding:6px 12px;border-radius:20px;cursor:pointer}
+  .page{padding:16px}
+  .hidden{display:none!important}
+  .login-box{background:#fff;border-radius:16px;padding:24px;margin-top:40px;box-shadow:0 2px 16px rgba(0,0,0,.08)}
+  .login-box h2{font-size:1.1rem;margin-bottom:4px}
+  .login-box p{font-size:.75rem;color:#71717a;margin-bottom:16px}
+  input[type=text]{width:100%;padding:14px 16px;font-size:1rem;border:2px solid #e4e4e7;border-radius:12px;outline:none;transition:border .2s}
+  input[type=text]:focus{border-color:#3b82f6}
+  .btn{display:block;width:100%;padding:16px;font-size:1rem;font-weight:600;border:none;border-radius:12px;cursor:pointer;transition:transform .1s, opacity .2s;text-align:center}
+  .btn:active{transform:scale(.97)}
+  .btn-primary{background:#3b82f6;color:#fff}
+  .btn-primary:hover{opacity:.9}
+  .btn-success{background:#10b981;color:#fff}
+  .btn-warning{background:#f59e0b;color:#fff}
+  .btn-danger{background:#ef4444;color:#fff}
+  .btn-outline{background:transparent;color:#3b82f6;border:2px solid #3b82f6}
+  .card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.06);cursor:pointer;transition:box-shadow .2s}
+  .card:active{box-shadow:0 1px 3px rgba(0,0,0,.1)}
+  .order-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .order-number{font-weight:700;font-size:.95rem}
+  .badge{font-size:.6rem;font-weight:600;padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px}
+  .badge-Pending{background:#fef3c7;color:#b45309}
+  .badge-Confirmed{background:#dbeafe;color:#1d4ed8}
+  .badge-Preparing{background:#e0e7ff;color:#4338ca}
+  .badge-OutForDelivery{background:#f3e8ff;color:#7c3aed}
+  .badge-Delivered{background:#d1fae5;color:#047857}
+  .badge-Cancelled{background:#fce4ec;color:#c62828}
+  .order-customer{font-size:.75rem;color:#71717a;margin-bottom:4px}
+  .order-address{font-size:.7rem;color:#a1a1aa;display:flex;align-items:center;gap:4px}
+  .order-total{font-size:.8rem;font-weight:600;color:#18181b;margin-top:4px}
+  .order-count{background:#e4e4e7;border-radius:10px;padding:0 8px;font-size:.65rem;font-weight:600;color:#52525b;margin-left:6px}
+  .empty-state{text-align:center;padding:60px 20px;color:#a1a1aa}
+  .empty-state span{font-size:3rem;display:block;margin-bottom:12px}
+  .empty-state p{font-size:.85rem}
+  .detail-back{display:inline-flex;align-items:center;gap:6px;color:#3b82f6;font-size:.8rem;font-weight:600;margin-bottom:16px;cursor:pointer;padding:8px 0}
+  .detail-label{font-size:.65rem;color:#a1a1aa;text-transform:uppercase;letter-spacing:.5px;margin-top:12px;margin-bottom:4px}
+  .detail-value{font-size:.9rem;color:#18181b;font-weight:500}
+  .detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f4f4f5;font-size:.8rem}
+  .action-buttons{display:flex;flex-direction:column;gap:12px;margin-top:20px}
+  .action-buttons .btn{padding:18px;font-size:1.1rem}
+  .error-msg{background:#fef2f2;color:#dc2626;padding:12px;border-radius:10px;font-size:.75rem;margin-bottom:12px;text-align:center}
+  .success-msg{background:#f0fdf4;color:#16a34a;padding:12px;border-radius:10px;font-size:.75rem;margin-bottom:12px;text-align:center}
+  .loading{text-align:center;padding:40px;color:#a1a1aa}
+  .loading::after{content:"";display:block;width:32px;height:32px;margin:12px auto;border:3px solid #e4e4e7;border-top-color:#3b82f6;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .refresh-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e4e4e7;padding:12px 16px;display:flex;gap:10px}
+  .refresh-bar .btn{font-size:.8rem;padding:12px}
+  .refresh-bar .btn-secondary{background:#e4e4e7;color:#18181b}
+  .phone-link{color:#3b82f6;text-decoration:none;font-weight:500}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="header">
+    <h1>🚚 Driver Delivery</h1>
+    <p id="headerSub">Tap your name to see assigned orders</p>
+    <button class="logout-btn hidden" id="logoutBtn" onclick="logout()">Logout</button>
+  </div>
+
+  <!-- Login Page -->
+  <div class="page" id="pageLogin">
+    <div class="login-box">
+      <h2>👋 Welcome</h2>
+      <p>Enter your name to see your delivery orders</p>
+      <input type="text" id="nameInput" placeholder="Your name" autocomplete="off" />
+      <button class="btn btn-primary" style="margin-top:16px" onclick="login()">Show My Orders →</button>
+    </div>
+  </div>
+
+  <!-- Orders List -->
+  <div class="page hidden" id="pageOrders">
+    <div id="ordersList"></div>
+  </div>
+
+  <!-- Order Detail -->
+  <div class="page hidden" id="pageDetail">
+    <div class="detail-back" onclick="showOrders()">← Back to orders</div>
+    <div id="orderDetail"></div>
+  </div>
+</div>
+
+<div class="refresh-bar hidden" id="refreshBar">
+  <button class="btn btn-secondary" onclick="logout()" style="flex:0 0 auto;width:auto">←</button>
+  <div style="flex:1;display:flex;gap:8px">
+    <button class="btn btn-primary" onclick="refreshOrders()" style="flex:1">⟳ Refresh</button>
+    <span id="autoRefreshBadge" style="font-size:.6rem;color:#a1a1aa;align-self:center"></span>
+  </div>
+</div>
+
+<script>
+let state = { driverName: "", orders: [], orderId: null }
+let autoRefreshTimer = null
+
+function show(ids) {
+  document.querySelectorAll(".page").forEach(el => el.classList.add("hidden"))
+  ids.forEach(id => document.getElementById(id).classList.remove("hidden"))
+}
+
+function logout() {
+  clearInterval(autoRefreshTimer)
+  document.getElementById("nameInput").value = ""
+  state.driverName = ""
+  document.getElementById("headerSub").textContent = "Tap your name to see assigned orders"
+  document.getElementById("logoutBtn").classList.add("hidden")
+  document.getElementById("refreshBar").classList.add("hidden")
+  show(["pageLogin"])
+}
+
+function login() {
+  const name = document.getElementById("nameInput").value.trim()
+  if (!name) {
+    document.getElementById("nameInput").style.borderColor = "#ef4444"
+    setTimeout(() => document.getElementById("nameInput").style.borderColor = "", 1500)
+    return
+  }
+  state.driverName = name
+  document.getElementById("headerSub").textContent = `Orders for ${name}`
+  document.getElementById("logoutBtn").classList.remove("hidden")
+  document.getElementById("refreshBar").classList.remove("hidden")
+  show(["pageOrders"])
+  startAutoRefresh()
+  refreshOrders()
+}
+
+async function refreshOrders() {
+  if (!state.driverName) return
+  const list = document.getElementById("ordersList")
+  list.innerHTML = '<div class="loading">Loading...</div>'
+  try {
+    const res = await fetch(`/api/delivery/driver/${encodeURIComponent(state.driverName)}/orders`)
+    if (!res.ok) throw new Error("Failed to load")
+    const orders = await res.json()
+    state.orders = orders
+    renderOrders(orders)
+  } catch (e) {
+    list.innerHTML = `<div class="error-msg">Could not load orders. Check your connection.</div>`
+  }
+}
+
+function renderOrders(orders) {
+  const list = document.getElementById("ordersList")
+  if (!orders.length) {
+    list.innerHTML = `<div class="empty-state"><span>📭</span><p>No orders assigned to you yet.<br>Ask the admin to assign you.</p></div>`
+    return
+  }
+  list.innerHTML = orders.map(o => `
+    <div class="card" onclick="showDetail('${o.id}')">
+      <div class="order-header">
+        <span class="order-number">${o.orderNumber}</span>
+        <span class="badge badge-${o.status}">${statusLabel(o.status)}</span>
+      </div>
+      <div class="order-customer">👤 ${esc(o.customerName)} · 📞 ${esc(o.customerPhone)}</div>
+      <div class="order-address">📍 ${esc(o.address)}</div>
+      <div class="order-total">$${o.total.toFixed(2)} <span class="order-count">${o.items?.length || 0} items</span></div>
+    </div>
+  `).join("")
+}
+
+function statusLabel(s) {
+  const map = { Pending:"Pending", Confirmed:"Confirmed", Preparing:"Preparing", OutForDelivery:"On the way", Delivered:"Delivered ✅", Cancelled:"Cancelled" }
+  return map[s] || s
+}
+
+async function showDetail(orderId) {
+  state.orderId = orderId
+  const o = state.orders.find(x => x.id === orderId)
+  if (!o) return
+  const canMarkOut = o.status === "Preparing" || o.status === "Confirmed" || o.status === "Pending"
+  const canMarkDelivered = o.status === "OutForDelivery"
+  const isDone = o.status === "Delivered" || o.status === "Cancelled"
+
+  const itemsHtml = (o.items || []).map(i => `
+    <div class="detail-row">
+      <span>${esc(i.productName)} × ${i.quantity}</span>
+      <span>$${i.total.toFixed(2)}</span>
+    </div>
+  `).join("")
+
+  document.getElementById("orderDetail").innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <h2 style="font-size:1.1rem">${o.orderNumber}</h2>
+      <span class="badge badge-${o.status}" style="font-size:.7rem">${statusLabel(o.status)}</span>
+    </div>
+
+    <div class="detail-label">Customer</div>
+    <div class="detail-value">👤 ${esc(o.customerName)}</div>
+    <a class="detail-value phone-link" href="tel:${esc(o.customerPhone)}">📞 ${esc(o.customerPhone)}</a>
+
+    <div class="detail-label">Delivery Address</div>
+    <div class="detail-value" style="margin-bottom:4px">📍 ${esc(o.address)}</div>
+    ${o.deliveryNote ? `<div class="detail-value" style="font-size:.8rem;color:#71717a">📝 ${esc(o.deliveryNote)}</div>` : ""}
+    ${o.locationLat ? `<div style="margin-top:8px"><a class="btn btn-outline" href="https://maps.google.com/maps?q=${o.locationLat},${o.locationLng}" target="_blank" style="font-size:.75rem;padding:10px">Open in Maps</a></div>` : ""}
+
+    <div class="detail-label" style="margin-top:16px">Items (${itemsHtml ? o.items.length : 0})</div>
+    ${itemsHtml || '<div style="font-size:.8rem;color:#a1a1aa">No items</div>'}
+
+    <div class="detail-row" style="border-bottom:none;font-weight:700;font-size:.9rem">
+      <span>Total</span>
+      <span>$${o.total.toFixed(2)}</span>
+    </div>
+    ${o.deliveryFee > 0 ? `<div class="detail-row" style="font-size:.7rem;color:#71717a"><span>Delivery fee</span><span>$${o.deliveryFee.toFixed(2)}</span></div>` : ""}
+    ${o.paymentMethod ? `<div class="detail-row" style="font-size:.7rem;color:#71717a"><span>Payment</span><span>${o.paymentMethod}</span></div>` : ""}
+    ${o.notes ? `<div class="detail-label">Notes</div><div style="font-size:.8rem">${esc(o.notes)}</div>` : ""}
+
+    <div class="action-buttons" id="actionButtons">
+      ${canMarkOut ? `<button class="btn btn-warning" onclick="updateOrderStatus('${o.id}','OutForDelivery')">🚚 I'm on my way!</button>` : ""}
+      ${canMarkDelivered ? `<button class="btn btn-success" onclick="updateOrderStatus('${o.id}','Delivered')">✅ Delivered!</button>` : ""}
+      ${isDone ? '<div style="text-align:center;padding:16px;color:#a1a1aa;font-size:.8rem">✔ Order completed</div>' : ""}
+    </div>
+    <div id="orderActionFeedback"></div>
+  `
+  show(["pageDetail"])
+}
+
+async function updateOrderStatus(orderId, newStatus) {
+  const btnArea = document.getElementById("actionButtons")
+  const feedback = document.getElementById("orderActionFeedback")
+  if (!btnArea || !feedback) return
+  btnArea.innerHTML = '<div class="loading" style="padding:20px">Updating...</div>'
+  feedback.innerHTML = ""
+  try {
+    const res = await fetch(`/api/delivery/driver/${encodeURIComponent(state.driverName)}/orders/${orderId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus })
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Update failed" }))
+      throw new Error(err.error)
+    }
+    const updated = await res.json()
+    state.orders = state.orders.map(o => o.id === orderId ? updated : o)
+    feedback.innerHTML = `<div class="success-msg">✅ Status updated!</div>`
+    setTimeout(() => showDetail(orderId), 600)
+    renderOrders(state.orders)
+  } catch (e) {
+    feedback.innerHTML = `<div class="error-msg">${esc(e.message)}</div>`
+    setTimeout(() => showDetail(orderId), 1500)
+  }
+}
+
+function startAutoRefresh() {
+  clearInterval(autoRefreshTimer)
+  const badge = document.getElementById("autoRefreshBadge")
+  badge.textContent = "auto-refreshing every 20s"
+  autoRefreshTimer = setInterval(() => {
+    if (document.getElementById("pageOrders").classList.contains("hidden")) return
+    refreshOrders()
+  }, 20000)
+}
+
+function esc(s) { return String(s || "").replace(/[&<>"']/g, function(m) { const map = {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}; return map[m] }) }
+
+function showOrders() {
+  renderOrders(state.orders)
+  show(["pageOrders"])
+}
+</script>
+</body>
+</html>

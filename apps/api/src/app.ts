@@ -48,16 +48,29 @@ app.get("/api/health", (_req: Req, res: Res) => {
 
 app.use(express.static("public", { extensions: ["html"] }))
 
-// Admin SPA: serve index.html for all /admin paths (client-side routing)
+function serveHtml(relativePath: string) {
+  const html = fs.readFileSync(path.join(__dirname, relativePath), "utf-8")
+  return (_req: Req, res: Res) => {
+    res.setHeader("Content-Type", "text/html")
+    res.end(html)
+  }
+}
+
+// Admin SPA
 const adminHtml = fs.readFileSync(
   path.join(__dirname, "..", "public", "admin", "index.html"),
   "utf-8"
 )
-// Match /admin or /admin/* — compatible with path-to-regexp v8 (Express 5)
 app.get(/^\/admin(?:\/.*)?$/, (_req: Req, res: Res) => {
   res.setHeader("Content-Type", "text/html")
   res.end(adminHtml)
 })
+
+// Driver mobile app (no-auth, name-based)
+app.get(/^\/driver(?:\/.*)?$/, serveHtml("../public/driver/index.html"))
+
+// Customer ordering page (no-auth, public)
+app.get(/^\/order(?:\/.*)?$/, serveHtml("../public/order/index.html"))
 
 app.use(errorHandler)
 

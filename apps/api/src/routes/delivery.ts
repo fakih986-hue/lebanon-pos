@@ -98,6 +98,29 @@ router.get("/order/:orderNumber/status", async (req: Req, res: ServerResponse) =
   }
 })
 
+// Customer-facing: lookup tenant by subdomain
+router.get("/tenant", async (req: Req, res: ServerResponse) => {
+  try {
+    const subdomain = (req.query as Record<string, string>)?.subdomain
+    if (!subdomain) {
+      json(res, { error: "subdomain query param required" }, 400)
+      return
+    }
+    const tenant = await prisma.tenant.findUnique({
+      where: { subdomain },
+      select: { id: true, name: true },
+    })
+    if (!tenant) {
+      json(res, { error: "Store not found" }, 404)
+      return
+    }
+    json(res, tenant)
+  } catch (err) {
+    console.error("Tenant lookup error:", err)
+    json(res, { error: "Failed to find store" }, 500)
+  }
+})
+
 // Customer-facing: list products for ordering
 router.get("/products", async (req: Req, res: ServerResponse) => {
   try {
@@ -174,6 +197,72 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerRes
     json(res, order)
   } catch (err) {
     console.error("Delivery order update error:", err)
+    json(res, { error: "Failed to update order" }, 500)
+  }
+})
+
+// ── Driver app endpoints (no auth, name-based lookup) ──
+
+// Get orders assigned to a driver by name
+router.get("/driver/:name/orders", async (req: Req, res: ServerResponse) => {
+  try {
+    const name = (req.params as Record<string, string>)?.name
+    if (!name) {
+      json(res, { error: "Driver name required" }, 400)
+      return
+    }
+    const orders = await prisma.deliveryOrder.findMany({
+      where: { assignedName: { contains: name, mode: "insensitive" } },
+      include: { items: true },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    })
+    json(res, orders)
+  } catch (err) {
+    console.error("Driver orders error:", err)
+    json(res, { error: "Failed to fetch orders" }, 500)
+  }
+})
+
+// Driver updates order status (simple status: OutForDelivery, Delivered)
+router.patch("/driver/:name/orders/:id", async (req: Req, res: ServerResponse) => {
+  try {
+    const params = req.params as Record<string, string>
+    const name = params.name
+    const id = params.id
+    const body = req.body as { status?: string }
+
+    const order = await prisma.deliveryOrder.findUnique({
+      where: { id },
+      select: { id: true, assignedName: true, tenantId: true },
+    })
+    if (!order) {
+      json(res, { error: "Order not found" }, 404)
+      return
+    }
+    if (!order.assignedName || !order.assignedName.toLowerCase().includes(name.toLowerCase())) {
+      json(res, { error: "Order not assigned to you" }, 403)
+      return
+    }
+
+    const allowedStatuses = ["OutForDelivery", "Delivered"]
+    const newStatus = body.status
+    if (!newStatus || !allowedStatuses.includes(newStatus)) {
+      json(res, { error: "You can only set OutForDelivery or Delivered" }, 400)
+      return
+    }
+
+    const updateData: Record<string, unknown> = { status: newStatus }
+    if (newStatus === "Delivered") updateData.deliveredAt = new Date()
+
+    const updated = await prisma.deliveryOrder.update({
+      where: { id },
+      data: updateData as any,
+      include: { items: true },
+    })
+    json(res, updated)
+  } catch (err) {
+    console.error("Driver order update error:", err)
     json(res, { error: "Failed to update order" }, 500)
   }
 })

@@ -36,6 +36,7 @@ export function DeliveryPage() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState("All")
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [assignInputs, setAssignInputs] = useState<Record<string, string>>({})
 
   useEffect(() => { load() }, [])
 
@@ -59,6 +60,19 @@ export function DeliveryPage() {
     } catch { /* ignore */ }
   }
 
+  async function assignDriver(id: string) {
+    const name = assignInputs[id]?.trim()
+    if (!name) return
+    try {
+      const updated = await api<DeliveryOrder>(`/api/delivery/orders/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ assignedName: name }),
+      })
+      setOrders(orders.map(o => o.id === id ? updated : o))
+      setAssignInputs(prev => ({ ...prev, [id]: "" }))
+    } catch { /* ignore */ }
+  }
+
   const nextStatus = (current: string) => {
     const idx = STATUS_ORDER.indexOf(current)
     if (idx >= STATUS_ORDER.length - 2) return null
@@ -67,9 +81,17 @@ export function DeliveryPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-bold">Delivery Orders</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <a href="/driver" target="_blank"
+            className="text-xs px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 font-medium no-underline">
+            Driver App ↗
+          </a>
+          <a href="/order" target="_blank"
+            className="text-xs px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 font-medium no-underline">
+            Customer Order ↗
+          </a>
           <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); load() }}
             className="text-sm border border-zinc-300 rounded-lg px-2 py-1.5">
             <option value="All">All</option>
@@ -106,9 +128,28 @@ export function DeliveryPage() {
                     <span className="text-zinc-500">Delivery Fee: ${order.deliveryFee.toFixed(2)}</span>
                     <span className="text-zinc-500">Payment: {order.paymentMethod}</span>
                     <span className="text-zinc-500">Paid: ${order.paidAmount.toFixed(2)}</span>
-                    {order.assignedName && <span className="text-zinc-500">Driver: {order.assignedName}</span>}
+                    {order.assignedName && <span className="text-zinc-500">Driver: <strong>{order.assignedName}</strong></span>}
                     {order.deliveryNote && <span className="col-span-2 text-zinc-500">Note: {order.deliveryNote}</span>}
                   </div>
+
+                  {/* Assign driver */}
+                  {order.status !== "Delivered" && order.status !== "Cancelled" && (
+                    <div className="flex gap-2 items-center">
+                      <input
+                        value={assignInputs[order.id] ?? ""}
+                        onChange={e => setAssignInputs(prev => ({ ...prev, [order.id]: e.target.value }))}
+                        placeholder="Driver name..."
+                        className="flex-1 px-3 py-1.5 border border-zinc-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        onClick={() => assignDriver(order.id)}
+                        disabled={!assignInputs[order.id]?.trim()}
+                        className="text-sm px-3 py-1.5 bg-zinc-800 text-white rounded-lg hover:bg-zinc-700 disabled:opacity-50 whitespace-nowrap"
+                      >
+                        Assign Driver
+                      </button>
+                    </div>
+                  )}
 
                   <table className="w-full text-sm">
                     <thead><tr className="text-zinc-500 border-b"><th className="text-left py-1">Item</th><th className="text-right py-1">Qty</th><th className="text-right py-1">Price</th><th className="text-right py-1">Total</th></tr></thead>

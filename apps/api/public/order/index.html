@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Order Delivery - Lebanon POS</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{font-size:17px;font-family:system-ui,-apple-system,sans-serif}
+  body{background:#f4f4f5;color:#18181b;min-height:100dvh;padding-bottom:100px}
+  .header{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#10b981,#047857);color:#fff;padding:16px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.15)}
+  .header h1{font-size:1.2rem;font-weight:700}
+  .header p{font-size:.7rem;opacity:.85;margin-top:2px}
+  .page{padding:16px}
+  .hidden{display:none!important}
+  .card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.06)}
+  .card-sm{padding:12px}
+  input{width:100%;padding:12px 14px;font-size:.9rem;border:2px solid #e4e4e7;border-radius:10px;outline:none;transition:border .2s;background:#fff}
+  input:focus{border-color:#10b981}
+  textarea{width:100%;padding:12px 14px;font-size:.9rem;border:2px solid #e4e4e7;border-radius:10px;outline:none;resize:none;font-family:inherit;transition:border .2s}
+  textarea:focus{border-color:#10b981}
+  .btn{display:block;width:100%;padding:14px;font-size:.95rem;font-weight:600;border:none;border-radius:12px;cursor:pointer;transition:transform .1s,opacity .2s;text-align:center}
+  .btn:active{transform:scale(.97)}
+  .btn-primary{background:#10b981;color:#fff}
+  .btn-primary:hover{opacity:.9}
+  .btn-secondary{background:#e4e4e7;color:#18181b}
+  .btn-danger{background:#ef4444;color:#fff}
+  .btn-outline{background:transparent;color:#10b981;border:2px solid #10b981}
+  .btn-sm{padding:10px;font-size:.8rem;width:auto;display:inline-block}
+  .btn-icon{width:36px;height:36px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700}
+  .store-box{text-align:center;padding:40px 20px}
+  .store-box .icon{font-size:3rem;margin-bottom:12px}
+  .store-box h2{font-size:1.1rem;margin-bottom:4px}
+  .store-box p{font-size:.75rem;color:#71717a;margin-bottom:16px}
+  .category-row{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;-webkit-overflow-scrolling:touch}
+  .category-row::-webkit-scrollbar{display:none}
+  .cat-btn{white-space:nowrap;padding:8px 16px;border-radius:20px;border:1.5px solid #e4e4e7;background:#fff;font-size:.75rem;font-weight:500;cursor:pointer;transition:all .2s;flex-shrink:0}
+  .cat-btn.active{background:#10b981;color:#fff;border-color:#10b981}
+  .product-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .product-card{background:#fff;border-radius:12px;padding:12px;border:1.5px solid #e4e4e7;cursor:pointer;transition:all .2s;position:relative}
+  .product-card:active{border-color:#10b981;transform:scale(.98)}
+  .product-name{font-size:.8rem;font-weight:600;margin-bottom:2px;line-height:1.2}
+  .product-category{font-size:.6rem;color:#a1a1aa;margin-bottom:4px}
+  .product-price{font-size:.9rem;font-weight:700;color:#10b981}
+  .product-stock{font-size:.6rem;color:#a1a1aa}
+  .product-add{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:#10b981;color:#fff;border:none;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;line-height:1}
+  .cart-float{position:fixed;bottom:16px;left:16px;right:16px;z-index:30}
+  .cart-bar{background:#18181b;color:#fff;border-radius:16px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 24px rgba(0,0,0,.25);cursor:pointer}
+  .cart-bar .count{background:#10b981;border-radius:10px;padding:2px 10px;font-size:.7rem;font-weight:700}
+  .cart-bar .total{font-weight:700;font-size:1rem}
+  .cart-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f4f4f5;font-size:.8rem}
+  .cart-item:last-child{border-bottom:none}
+  .cart-qty{display:flex;align-items:center;gap:8px}
+  .cart-qty button{width:28px;height:28px;border-radius:50%;border:1.5px solid #e4e4e7;background:#fff;cursor:pointer;font-size:.85rem;font-weight:600;display:flex;align-items:center;justify-content:center}
+  .cart-qty span{font-weight:600;min-width:20px;text-align:center}
+  .order-summary{padding:12px 0;border-top:2px solid #e4e4e7;margin-top:8px}
+  .order-summary div{display:flex;justify-content:space-between;padding:4px 0;font-size:.8rem}
+  .order-summary .grand{font-weight:700;font-size:.95rem;border-top:1px solid #e4e4e7;padding-top:8px;margin-top:4px}
+  .success-page{text-align:center;padding:60px 20px}
+  .success-page .icon{font-size:4rem;margin-bottom:16px}
+  .success-page h2{font-size:1.2rem;margin-bottom:8px}
+  .success-page p{font-size:.8rem;color:#71717a;margin-bottom:4px}
+  .success-page .order-num{font-size:1.1rem;font-weight:700;color:#10b981;margin:12px 0}
+  .error-msg{background:#fef2f2;color:#dc2626;padding:10px;border-radius:10px;font-size:.75rem;margin-bottom:12px;text-align:center}
+  .loading{text-align:center;padding:40px;color:#a1a1aa}
+  .loading::after{content:"";display:block;width:28px;height:28px;margin:10px auto;border:3px solid #e4e4e7;border-top-color:#10b981;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .flex{display:flex}
+  .flex-1{flex:1}
+  .gap-8{gap:8px}
+  .gap-12{gap:12px}
+  .mt-8{margin-top:8px}
+  .mt-12{margin-top:12px}
+  .mt-16{margin-top:16px}
+  .mb-8{margin-bottom:8px}
+  .mb-12{margin-bottom:12px}
+  .text-center{text-align:center}
+  .text-sm{font-size:.75rem}
+  .text-zinc{color:#71717a}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="header">
+    <h1 id="storeTitle">🛵 Order Delivery</h1>
+    <p id="storeSub">Find your store and place an order</p>
+  </div>
+
+  <!-- Find Store -->
+  <div class="page" id="pageFind">
+    <div class="card store-box">
+      <div class="icon">🏪</div>
+      <h2>Find Your Store</h2>
+      <p>Enter your store's subdomain to start ordering</p>
+      <input type="text" id="subdomainInput" placeholder="my-store" style="text-align:center;font-size:1.1rem" autocomplete="off" />
+      <button class="btn btn-primary mt-12" onclick="findStore()">Find Store →</button>
+      <div id="findError" class="error-msg hidden mt-12"></div>
+    </div>
+  </div>
+
+  <!-- Menu -->
+  <div class="page hidden" id="pageMenu">
+    <div id="categoryRow" class="category-row"></div>
+    <div id="productGrid" class="product-grid"></div>
+    <div id="menuLoading" class="loading hidden">Loading menu...</div>
+  </div>
+
+  <!-- Cart Overlay -->
+  <div class="cart-float hidden" id="cartFloat">
+    <div class="cart-bar" onclick="toggleCart()">
+      <span>🛒 <span class="count" id="cartCount">0</span></span>
+      <span>View Cart · <span class="total" id="cartTotal">$0.00</span></span>
+    </div>
+  </div>
+
+  <!-- Cart Page -->
+  <div class="page hidden" id="pageCart">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <button class="btn btn-sm btn-secondary" onclick="showMenu()">← Back</button>
+      <h2 style="font-size:1rem;font-weight:700">Your Cart</h2>
+    </div>
+    <div class="card" id="cartItems"></div>
+    <div class="card mt-8">
+      <h3 style="font-size:.85rem;font-weight:600;margin-bottom:12px">Your Details</h3>
+      <div class="flex gap-8 mb-8">
+        <input type="text" id="custName" placeholder="Your name" class="flex-1" />
+        <input type="text" id="custPhone" placeholder="Phone number" class="flex-1" />
+      </div>
+      <textarea id="custAddress" rows="2" placeholder="Delivery address"></textarea>
+      <input type="text" id="custNote" placeholder="Delivery note (optional)" class="mt-8" />
+      <button class="btn btn-primary mt-16" onclick="placeOrder()">🛵 Place Order</button>
+      <div id="orderError" class="error-msg hidden mt-8"></div>
+      <div id="orderLoading" class="loading hidden">Placing order...</div>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div class="page hidden" id="pageSuccess">
+    <div class="card success-page">
+      <div class="icon">🎉</div>
+      <h2>Order Placed!</h2>
+      <p>Your order number is</p>
+      <div class="order-num" id="successOrderNum">DEL-000001</div>
+      <p>We'll deliver to you soon!</p>
+      <button class="btn btn-primary mt-16" onclick="resetOrder()">Order Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let state = {
+  tenantId: "",
+  tenantName: "",
+  products: [],
+  categories: [],
+  activeCategory: "All",
+  cart: [], // { product, quantity }
+  selectedProduct: null
+}
+
+function esc(s) { return String(s || "").replace(/[&<>"']/g, function(m) { const map = {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}; return map[m] }) }
+
+function $(id) { return document.getElementById(id) }
+
+function show(ids) {
+  document.querySelectorAll(".page").forEach(el => el.classList.add("hidden"))
+  ids.forEach(id => $(id).classList.remove("hidden"))
+}
+
+function showError(id, msg) {
+  const el = $(id)
+  el.textContent = msg
+  el.classList.remove("hidden")
+  setTimeout(() => el.classList.add("hidden"), 4000)
+}
+
+// ── Find Store ──
+async function findStore() {
+  const sub = $("subdomainInput").value.trim().toLowerCase()
+  if (!sub) return
+  try {
+    const res = await fetch(`/api/delivery/tenant?subdomain=${encodeURIComponent(sub)}`)
+    if (!res.ok) throw new Error("Store not found")
+    const t = await res.json()
+    state.tenantId = t.id
+    state.tenantName = t.name
+    $("storeTitle").textContent = `🛵 ${esc(t.name)}`
+    $("storeSub").textContent = "Browse our menu and place your order"
+    showMenu()
+    show(["pageMenu"])
+    loadMenu()
+  } catch (e) {
+    showError("findError", "Store not found. Check the subdomain and try again.")
+  }
+}
+
+// ── Menu ──
+async function loadMenu() {
+  $("menuLoading").classList.remove("hidden")
+  try {
+    const res = await fetch(`/api/delivery/products?tenantId=${encodeURIComponent(state.tenantId)}`)
+    if (!res.ok) throw new Error("Failed to load")
+    state.products = await res.json()
+    const cats = [...new Set(state.products.map(p => p.category).filter(Boolean))]
+    state.categories = ["All", ...cats]
+    renderCategories()
+    renderProducts()
+    updateCartFloat()
+  } catch (e) {
+    $("productGrid").innerHTML = `<p class="text-center text-zinc" style="grid-column:1/-1;padding:40px">Could not load menu. Try again later.</p>`
+  }
+  $("menuLoading").classList.add("hidden")
+}
+
+function renderCategories() {
+  $("categoryRow").innerHTML = state.categories.map(c =>
+    `<button class="cat-btn ${c === state.activeCategory ? 'active' : ''}" onclick="setCategory('${esc(c)}')">${esc(c)}</button>`
+  ).join("")
+}
+
+function setCategory(cat) {
+  state.activeCategory = cat
+  renderCategories()
+  renderProducts()
+}
+
+function renderProducts() {
+  const filtered = state.activeCategory === "All"
+    ? state.products
+    : state.products.filter(p => p.category === state.activeCategory)
+  if (!filtered.length) {
+    $("productGrid").innerHTML = `<p class="text-center text-zinc" style="grid-column:1/-1;padding:30px">No products in this category</p>`
+    return
+  }
+  $("productGrid").innerHTML = filtered.map(p => {
+    const inCart = state.cart.find(c => c.product.id === p.id)
+    return `<div class="product-card" onclick="addToCart(${p.id})">
+      <div class="product-name">${esc(p.name)}${p.variantName ? ` (${esc(p.variantName)})` : ""}</div>
+      <div class="product-category">${esc(p.category)}</div>
+      <div class="product-price">$${p.price.toFixed(2)}</div>
+      <div class="product-stock">${p.stock > 0 ? `${p.stock} in stock` : "Out of stock"}</div>
+      ${inCart ? `<div style="position:absolute;top:8px;right:8px;background:#10b981;color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">${inCart.quantity}</div>` : '<button class="product-add" onclick="event.stopPropagation();addToCart(' + p.id + ')">+</button>'}
+    </div>`
+  }).join("")
+}
+
+function addToCart(productId) {
+  const product = state.products.find(p => p.id === productId)
+  if (!product || product.stock <= 0) return
+  const existing = state.cart.find(c => c.product.id === productId)
+  if (existing) {
+    existing.quantity++
+  } else {
+    state.cart.push({ product, quantity: 1 })
+  }
+  renderProducts()
+  updateCartFloat()
+}
+
+function changeQty(productId, delta) {
+  const item = state.cart.find(c => c.product.id === productId)
+  if (!item) return
+  item.quantity += delta
+  if (item.quantity <= 0) state.cart = state.cart.filter(c => c.product.id !== productId)
+  renderCart()
+  renderProducts()
+  updateCartFloat()
+}
+
+function updateCartFloat() {
+  const count = state.cart.reduce((s, c) => s + c.quantity, 0)
+  const total = state.cart.reduce((s, c) => s + c.quantity * c.product.price, 0)
+  $("cartCount").textContent = count
+  $("cartTotal").textContent = `$${total.toFixed(2)}`
+  if (count > 0) {
+    $("cartFloat").classList.remove("hidden")
+  } else {
+    $("cartFloat").classList.add("hidden")
+  }
+}
+
+function toggleCart() {
+  if (state.cart.length === 0) return
+  renderCart()
+  show(["pageCart"])
+  $("cartFloat").classList.add("hidden")
+}
+
+function showMenu() {
+  $("cartFloat").classList.remove("hidden")
+  show(["pageMenu"])
+}
+
+function renderCart() {
+  if (!state.cart.length) {
+    $("cartItems").innerHTML = '<p class="text-center text-zinc" style="padding:20px">Your cart is empty</p>'
+    return
+  }
+  const subtotal = state.cart.reduce((s, c) => s + c.quantity * c.product.price, 0)
+  const delivery = 2.00
+  $("cartItems").innerHTML = state.cart.map(c => `
+    <div class="cart-item">
+      <div>
+        <div style="font-weight:600">${esc(c.product.name)}</div>
+        <div style="font-size:.7rem;color:#a1a1aa">$${c.product.price.toFixed(2)} each</div>
+      </div>
+      <div class="cart-qty">
+        <button onclick="changeQty(${c.product.id}, -1)">−</button>
+        <span>${c.quantity}</span>
+        <button onclick="changeQty(${c.product.id}, 1)">+</button>
+      </div>
+    </div>
+  `).join("") + `
+    <div class="order-summary">
+      <div><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+      <div><span>Delivery fee</span><span>$${delivery.toFixed(2)}</span></div>
+      <div class="grand"><span>Total</span><span>$${(subtotal + delivery).toFixed(2)}</span></div>
+    </div>
+  `
+}
+
+async function placeOrder() {
+  const name = $("custName").value.trim()
+  const phone = $("custPhone").value.trim()
+  const address = $("custAddress").value.trim()
+  if (!name || !phone || !address) {
+    showError("orderError", "Please fill in name, phone, and address")
+    return
+  }
+  if (state.cart.length === 0) {
+    showError("orderError", "Your cart is empty")
+    return
+  }
+
+  $("orderLoading").classList.remove("hidden")
+  $("orderError").classList.add("hidden")
+
+  const subtotal = state.cart.reduce((s, c) => s + c.quantity * c.product.price, 0)
+  const deliveryFee = 2.00
+
+  try {
+    const res = await fetch("/api/delivery/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tenantId: state.tenantId,
+        customerName: name,
+        customerPhone: phone,
+        address,
+        deliveryNote: $("custNote").value.trim(),
+        deliveryFee,
+        items: state.cart.map(c => ({
+          productId: c.product.id,
+          productName: c.product.name,
+          barcode: c.product.barcode || "",
+          quantity: c.quantity,
+          unitPrice: c.product.price,
+        })),
+      }),
+    })
+    if (!res.ok) throw new Error("Order failed")
+    const data = await res.json()
+    $("successOrderNum").textContent = data.order.orderNumber
+    $("orderLoading").classList.add("hidden")
+    show(["pageSuccess"])
+    $("cartFloat").classList.add("hidden")
+  } catch (e) {
+    $("orderLoading").classList.add("hidden")
+    showError("orderError", "Failed to place order. Please try again.")
+  }
+}
+
+function resetOrder() {
+  state.cart = []
+  state.products = []
+  $("subdomainInput").value = ""
+  $("custName").value = ""
+  $("custPhone").value = ""
+  $("custAddress").value = ""
+  $("custNote").value = ""
+  $("storeTitle").textContent = "🛵 Order Delivery"
+  $("storeSub").textContent = "Find your store and place an order"
+  show(["pageFind"])
+}
+</script>
+</body>
+</html>
