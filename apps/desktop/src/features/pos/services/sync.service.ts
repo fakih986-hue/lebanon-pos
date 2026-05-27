@@ -25,6 +25,7 @@ const PULL_TARGETS: Record<string, { key: string; event: string }> = {
   adjustments: { key: "lebanonpos.inventory-adjustments.v1", event: "lebanonpos-inventory-adjustments-changed" },
   stockCounts: { key: "lebanonpos.stock-counts.v1", event: "lebanonpos-stock-counts-changed" },
   dailyCloses: { key: "lebanonpos.daily-closes.v1", event: "lebanonpos-daily-closes-changed" },
+  deliveryOrders: { key: "lebanonpos.delivery-orders.v1", event: "lebanonpos-delivery-changed" },
 }
 
 export function getApiUrl(): string | null {

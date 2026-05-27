@@ -94,6 +94,7 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     "settings.manage",
     "staff.manage",
     "shifts.manage",
+    "delivery.manage",
   ],
   Manager: [
     "sales.checkout",
@@ -105,6 +106,7 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     "reports.view",
     "accounting.manage",
     "shifts.manage",
+    "delivery.manage",
   ],
   Cashier: ["sales.checkout", "customers.manage"],
 }

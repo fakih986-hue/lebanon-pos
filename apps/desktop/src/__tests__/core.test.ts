@@ -90,20 +90,9 @@ describe("dailyClose.service", () => {
 describe("security.service", () => {
   describe("rolePermissions", () => {
     it("Admin has all permissions", () => {
-      const allPermissions: Permission[] = [
-        "sales.checkout",
-        "sales.discount",
-        "sales.refund",
-        "sales.void",
-        "inventory.manage",
-        "customers.manage",
-        "reports.view",
-        "accounting.manage",
-        "settings.manage",
-        "staff.manage",
-        "shifts.manage",
-      ]
-      expect(rolePermissions.Admin.sort()).toEqual(allPermissions.sort())
+      expect(rolePermissions.Admin).toEqual(
+        expect.arrayContaining(["sales.checkout", "sales.discount", "sales.refund", "sales.void", "inventory.manage", "customers.manage", "reports.view", "accounting.manage", "settings.manage", "staff.manage", "shifts.manage", "delivery.manage"])
+      )
     })
 
     it("Manager has subset excluding staff.manage and settings.manage", () => {

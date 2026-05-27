@@ -117,10 +117,10 @@ router.get("/pull", requireAuth, async (req: AuthRequest, res: Response) => {
   }
 
   const [
-    products, sales, refunds, customers, debtSales, debtPayments,
+    products,     sales, refunds, customers, debtSales, debtPayments,
     suppliers, purchaseOrders, supplierPayments, users, shifts,
     auditEvents, settings, expenses, batches, adjustments,
-    counts, dailyCloses,
+    counts, dailyCloses, deliveryOrders,
   ] = await Promise.all([
     prisma.product.findMany({ where: { tenantId } }),
     prisma.sale.findMany({ where: { tenantId }, include: { items: true, tender: true } }),
@@ -140,13 +140,14 @@ router.get("/pull", requireAuth, async (req: AuthRequest, res: Response) => {
     prisma.stockAdjustment.findMany({ where: { tenantId } }),
     prisma.stockCountSession.findMany({ where: { tenantId }, include: { lines: true } }),
     prisma.dailyClose.findMany({ where: { tenantId } }),
+    prisma.deliveryOrder.findMany({ where: { tenantId }, include: { items: true } }),
   ])
 
   res.json({
     products, sales, refunds, customers, debtSales, debtPayments,
     suppliers, purchaseOrders, supplierPayments, users, shifts,
     auditEvents, settings: settings ?? null, expenses, batches,
-    adjustments, stockCounts: counts, dailyCloses,
+    adjustments, stockCounts: counts, dailyCloses, deliveryOrders,
   })
 })
 
@@ -435,6 +436,35 @@ async function processOperation(
           where: { id: payload?.id as string },
           update: payload as any,
           create: { ...payload, tenantId } as any,
+        })
+      }
+      break
+    }
+    case "delivery-order": {
+      if (action === "create") {
+        const data = payload as any
+        const { items: _i, ...orderData } = data
+        const prismaItems = (data.items ?? []).map((item: any) => ({
+          productId: Number(item.productId ?? item.id),
+          productName: item.productName ?? item.name,
+          barcode: item.barcode,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total ?? item.quantity * item.unitPrice,
+        }))
+        await prisma.deliveryOrder.upsert({
+          where: { id: orderData.id as string },
+          update: orderData,
+          create: {
+            ...orderData,
+            tenantId,
+            items: { create: prismaItems },
+          } as any,
+        })
+      } else if (action === "update") {
+        await prisma.deliveryOrder.update({
+          where: { id: payload?.id as string },
+          data: payload as any,
         })
       }
       break
