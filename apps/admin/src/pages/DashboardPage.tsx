@@ -2,13 +2,13 @@ import { useEffect, useState } from "react"
 import { api } from "../app/api"
 
 type KpiData = {
-  today: { grossSales: number; netSales: number; transactions: number }
-  week: { grossSales: number; netSales: number; transactions: number }
-  month: { grossSales: number; netSales: number; transactions: number }
+  today: { count: number; revenue: number; profit: number }
+  week: { count: number; revenue: number; profit: number }
+  month: { count: number; revenue: number; profit: number }
   paymentBreakdown: Array<{ method: string; total: number; count: number }>
-  topProducts: Array<{ productName: string; total: number; quantity: number }>
-  recentSales: Array<{ orderNumber: string; total: number; paymentMethod: string; createdAt: string }>
-  trend: Array<{ date: string; grossSales: number; netSales: number }>
+  topProducts: Array<{ name: string; barcode: string; quantity: number; total: number }>
+  recentSales: Array<{ number: string; total: number; paymentMethod: string; cashier: string; time: string; items: number }>
+  salesTrend: Array<{ date: string; total: number; count: number }>
 }
 
 export function DashboardPage() {
@@ -41,8 +41,8 @@ export function DashboardPage() {
         {periods.map(p => (
           <div key={p.label} className="bg-white p-5 rounded-xl border border-zinc-200">
             <p className="text-sm text-zinc-500">{p.label}</p>
-            <p className="text-2xl font-bold mt-1">${p.grossSales.toFixed(2)}</p>
-            <p className="text-xs text-zinc-400">{p.transactions} transactions · ${p.netSales.toFixed(2)} net</p>
+            <p className="text-2xl font-bold mt-1">${p.revenue.toFixed(2)}</p>
+            <p className="text-xs text-zinc-400">{p.count} transactions · ${p.profit.toFixed(2)} profit</p>
           </div>
         ))}
       </div>
@@ -64,8 +64,8 @@ export function DashboardPage() {
           <h2 className="font-semibold mb-3">Top Products</h2>
           <div className="space-y-2">
             {data.topProducts.slice(0, 5).map(p => (
-              <div key={p.productName} className="flex items-center justify-between text-sm">
-                <span className="text-zinc-600 truncate">{p.productName}</span>
+              <div key={p.name} className="flex items-center justify-between text-sm">
+                <span className="text-zinc-600 truncate">{p.name}</span>
                 <span className="font-medium">${p.total.toFixed(2)}</span>
               </div>
             ))}
@@ -76,14 +76,15 @@ export function DashboardPage() {
       <div className="bg-white p-5 rounded-xl border border-zinc-200">
         <h2 className="font-semibold mb-3">Recent Sales</h2>
         <table className="w-full text-sm">
-          <thead><tr className="text-zinc-500 border-b"><th className="text-left py-2">Order</th><th className="text-right py-2">Total</th><th className="text-right py-2">Payment</th><th className="text-right py-2">Time</th></tr></thead>
+          <thead><tr className="text-zinc-500 border-b"><th className="text-left py-2">Order</th><th className="text-right py-2">Total</th><th className="text-right py-2">Payment</th><th className="text-right py-2">Cashier</th><th className="text-right py-2">Time</th></tr></thead>
           <tbody>
             {data.recentSales.map(s => (
-              <tr key={s.orderNumber} className="border-b border-zinc-50">
-                <td className="py-2">{s.orderNumber}</td>
+              <tr key={s.number} className="border-b border-zinc-50">
+                <td className="py-2">{s.number}</td>
                 <td className="text-right py-2">${s.total.toFixed(2)}</td>
                 <td className="text-right py-2">{s.paymentMethod}</td>
-                <td className="text-right py-2 text-zinc-400">{new Date(s.createdAt).toLocaleString()}</td>
+                <td className="text-right py-2">{s.cashier}</td>
+                <td className="text-right py-2 text-zinc-400">{new Date(s.time).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
