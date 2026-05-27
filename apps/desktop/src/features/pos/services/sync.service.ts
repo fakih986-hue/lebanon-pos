@@ -248,7 +248,7 @@ export async function flushSyncQueue() {
     }
   }
 
-  const pending = queue.filter((op) => op.status === "Pending")
+  const pending = queue.filter((op) => op.status === "Pending" || op.status === "Failed")
   if (pending.length === 0) {
     return { synced: 0, skipped: 0 }
   }
@@ -279,7 +279,7 @@ export async function flushSyncQueue() {
     let synced = 0
 
     const nextQueue = queue.map((op) => {
-      if (op.status !== "Pending") return op
+      if (op.status !== "Pending" && op.status !== "Failed") return op
 
       const syncResult = result.results?.find((r: { id: string }) => r.id === op.id)
       if (syncResult?.status === "ok") {

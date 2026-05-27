@@ -20,6 +20,15 @@ router.post("/push", requireAuth, async (req: AuthRequest, res: Response) => {
     return
   }
 
+  // Log incoming operations for debugging
+  for (const op of operations) {
+    if (op.entity === "sale") {
+      console.log("[sync] incoming sale op:", op.id, "action:", op.action)
+      console.log("[sync] payload keys:", Object.keys(op.payload ?? {}).join(","))
+      console.log("[sync] has items:", Array.isArray((op.payload as any)?.items), "has tender:", "tender" in (op.payload ?? {}))
+    }
+  }
+
   const results: Array<{ id: string; status: "ok" | "error"; error?: string }> = []
 
   for (const op of operations) {
@@ -167,7 +176,15 @@ async function processOperation(
       break
     }
     case "sale": {
-      if (action === "create") {
+      if (action === "void") {
+        const id = payload?.id as string
+        if (id) {
+          await prisma.sale.update({
+            where: { id },
+            data: { status: "Voided" },
+          })
+        }
+      } else if (action === "create") {
         const data = payload as any
         // Transform items from desktop format to Prisma SaleItem format
         const prismaItems = (data.items ?? []).map((item: any) => ({
@@ -181,28 +198,52 @@ async function processOperation(
         }))
         // Strip saleId from tender (auto-filled by Prisma relation)
         const { saleId: _s, ...prismaTender } = data.tender ?? {}
+        const hasTender = Object.keys(prismaTender).length > 0
         // Exclude items/tender from spread to avoid conflicts with nested create
         const { items: _i, tender: _t, ...saleData } = data
         try {
-          await prisma.sale.create({
-            data: {
+          await prisma.sale.upsert({
+            where: { id: saleData.id },
+            update: saleData,
+            create: {
               ...saleData,
               tenantId,
               items: { create: prismaItems },
-              tender: prismaTender ? { create: prismaTender } : undefined,
+              tender: hasTender ? { create: prismaTender } : undefined,
             } as any,
           })
-        } catch {
-          // Retry without optional FK fields (customerId, shiftId)
-          const { customerId, shiftId, ...safeData } = saleData
-          await prisma.sale.create({
-            data: {
-              ...safeData,
-              tenantId,
-              items: { create: prismaItems },
-              tender: prismaTender ? { create: prismaTender } : undefined,
-            } as any,
-          })
+        } catch (e1) {
+          console.error("[sync] sale upsert failed:", e1)
+          // Upsert failed, retry without optional FK fields (customerId, shiftId)
+          const { customerId: _c, shiftId: _s2, ...safeData } = saleData
+          try {
+            await prisma.sale.upsert({
+              where: { id: safeData.id },
+              update: safeData,
+              create: {
+                ...safeData,
+                tenantId,
+                items: { create: prismaItems },
+                tender: hasTender ? { create: prismaTender } : undefined,
+              } as any,
+            })
+          } catch (e2) {
+            console.error("[sync] sale second upsert failed:", e2)
+            try {
+              // Last resort: create without FK fields
+              await prisma.sale.upsert({
+                where: { id: safeData.id },
+                update: safeData,
+                create: {
+                  ...safeData,
+                  tenantId,
+                } as any,
+              })
+            } catch (e3) {
+              console.error("[sync] sale final create failed:", e3)
+              throw e3
+            }
+          }
         }
       }
       break
@@ -227,8 +268,10 @@ async function processOperation(
         }))
         // Exclude items array from spread (use nested create instead)
         const { items: _i, ...refundData } = data
-        await prisma.saleRefund.create({
-          data: {
+        await prisma.saleRefund.upsert({
+          where: { id: refundData.id as string },
+          update: refundData,
+          create: {
             ...refundData,
             method: methodMap[refundData.method as string] ?? refundData.method,
             tenantId,
@@ -276,24 +319,45 @@ async function processOperation(
     }
     case "expense": {
       if (action === "create") {
-        await prisma.expense.create({ data: { ...payload, tenantId } as any })
+        await prisma.expense.upsert({
+          where: { id: payload?.id as string },
+          update: payload as any,
+          create: { ...payload, tenantId } as any,
+        })
       }
       break
     }
     case "debt": {
       if (action === "create") {
         const { items: _i, ...debtData } = payload ?? {}
-        await prisma.debtSale.create({ data: { ...debtData, tenantId } as any })
+        await prisma.debtSale.upsert({
+          where: { id: debtData.id as string },
+          update: debtData,
+          create: { ...debtData, tenantId } as any,
+        })
       } else if (action === "payment") {
-        await prisma.debtPayment.create({ data: { ...payload, tenantId } as any })
+        await prisma.debtPayment.upsert({
+          where: { id: payload?.id as string },
+          update: payload as any,
+          create: { ...payload, tenantId } as any,
+        })
       }
       break
     }
     case "inventory": {
       if (action === "receive") {
-        await prisma.inventoryBatch.create({ data: { ...payload, tenantId } as any })
+        const { id: batchId, ...batchData } = payload ?? {}
+        await prisma.inventoryBatch.upsert({
+          where: { id: batchId as string },
+          update: batchData,
+          create: { ...payload, tenantId } as any,
+        })
       } else if (action === "adjust") {
-        await prisma.stockAdjustment.create({ data: { ...payload, tenantId } as any })
+        await prisma.stockAdjustment.upsert({
+          where: { id: payload?.id as string },
+          update: payload as any,
+          create: { ...payload, tenantId } as any,
+        })
       } else if (action === "count") {
         const data = payload as any
         const { lines: _l, ...sessionData } = data
@@ -307,8 +371,10 @@ async function processOperation(
           variance: line.variance ?? 0,
           valueImpact: line.valueImpact ?? 0,
         }))
-        await prisma.stockCountSession.create({
-          data: {
+        await prisma.stockCountSession.upsert({
+          where: { id: sessionData.id as string },
+          update: sessionData,
+          create: {
             ...sessionData,
             tenantId,
             lines: { create: prismaLines },
@@ -330,13 +396,21 @@ async function processOperation(
     }
     case "supplier-payment": {
       if (action === "payment" || action === "create") {
-        await prisma.supplierPayment.create({ data: { ...payload, tenantId } as any })
+        await prisma.supplierPayment.upsert({
+          where: { id: payload?.id as string },
+          update: payload as any,
+          create: { ...payload, tenantId } as any,
+        })
       }
       break
     }
     case "shift": {
       if (action === "open") {
-        await prisma.shift.create({ data: { ...payload, tenantId } as any })
+        await prisma.shift.upsert({
+          where: { id: payload?.id as string },
+          update: payload as any,
+          create: { ...payload, tenantId } as any,
+        })
       } else if (action === "close") {
         await prisma.shift.update({
           where: { id: payload?.id as string },
@@ -357,7 +431,11 @@ async function processOperation(
     }
     case "daily-close": {
       if (action === "close") {
-        await prisma.dailyClose.create({ data: { ...payload, tenantId } as any })
+        await prisma.dailyClose.upsert({
+          where: { id: payload?.id as string },
+          update: payload as any,
+          create: { ...payload, tenantId } as any,
+        })
       }
       break
     }

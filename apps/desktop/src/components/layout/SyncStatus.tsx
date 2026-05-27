@@ -5,6 +5,7 @@ import {
   flushSyncQueue,
   getSyncStatus,
   pullFromServer,
+  retryFailedSync,
   subscribeSync,
   type SyncStatus as RegisterSyncStatus,
 } from "../../features/pos/services/sync.service"
@@ -34,6 +35,7 @@ export default function SyncStatus() {
   )
 
   async function handleSyncNow() {
+    retryFailedSync()
     await flushSyncQueue()
     await pullFromServer()
     setStatus(getSyncStatus())
