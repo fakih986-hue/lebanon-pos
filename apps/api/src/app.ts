@@ -53,12 +53,8 @@ const adminHtml = fs.readFileSync(
   path.join(__dirname, "..", "public", "admin", "index.html"),
   "utf-8"
 )
-app.get("/admin", (_req: Req, res: Res) => {
-  res.statusCode = 302
-  res.setHeader("Location", "/admin/")
-  res.end()
-})
-app.get("/admin/*", (_req: Req, res: Res) => {
+// Match /admin or /admin/* — compatible with path-to-regexp v8 (Express 5)
+app.get(/^\/admin(?:\/.*)?$/, (_req: Req, res: Res) => {
   res.setHeader("Content-Type", "text/html")
   res.end(adminHtml)
 })
