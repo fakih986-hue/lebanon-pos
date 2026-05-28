@@ -181,12 +181,12 @@ export function MenuPage() {
             {customerId ? (
               <button onClick={() => navigate(`/order/${tenantSubdomain}/orders`)}
                 className="text-[10px] text-secondary hover:text-primary bg-glass px-2 py-1.5 rounded-lg transition-all">
-                My Orders
+                {t("ordering.my_orders")}
               </button>
             ) : (
               <button onClick={() => navigate(`/order/${tenantSubdomain}/login`)}
                 className="text-[10px] text-secondary hover:text-primary bg-glass px-2 py-1.5 rounded-lg transition-all">
-                Sign In
+                {t("ordering.sign_in")}
               </button>
             )}
             <button onClick={() => setLocale(locale === "en" ? "ar" : "en")}

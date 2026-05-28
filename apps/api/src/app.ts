@@ -46,37 +46,27 @@ app.get("/api/health", (_req: Req, res: Res) => {
   json(res, { status: "ok", timestamp: new Date().toISOString() })
 })
 
-app.use(express.static("public", { extensions: ["html"] }))
+app.use(express.static("public"))
 
-// Admin SPA
-const adminHtml = fs.readFileSync(
-  path.join(__dirname, "..", "public", "admin", "index.html"),
-  "utf-8"
-)
-app.get(/^\/admin(?:\/.*)?$/, (_req: Req, res: Res) => {
-  res.setHeader("Content-Type", "text/html")
-  res.end(adminHtml)
-})
+function spaHandler(publicDir: string) {
+  return (_req: Req, res: Res) => {
+    try {
+      const html = fs.readFileSync(
+        path.join(__dirname, "..", "public", publicDir, "index.html"),
+        "utf-8"
+      )
+      res.setHeader("Content-Type", "text/html")
+      res.end(html)
+    } catch {
+      json(res, { error: `${publicDir} app not found` }, 503)
+    }
+  }
+}
 
-// Driver SPA (React, mobile-first)
-const driverHtml = fs.readFileSync(
-  path.join(__dirname, "..", "public", "driver", "index.html"),
-  "utf-8"
-)
-app.get(/^\/driver(?:\/.*)?$/, (_req: Req, res: Res) => {
-  res.setHeader("Content-Type", "text/html")
-  res.end(driverHtml)
-})
-
-// Customer ordering SPA (React)
-const orderHtml = fs.readFileSync(
-  path.join(__dirname, "..", "public", "order", "index.html"),
-  "utf-8"
-)
-app.get(/^\/order(?:\/.*)?$/, (_req: Req, res: Res) => {
-  res.setHeader("Content-Type", "text/html")
-  res.end(orderHtml)
-})
+// SPA routes — match only paths without file extensions (assets are served by express.static)
+app.get(/^\/admin(?:\/[^.]*)?$/, spaHandler("admin"))
+app.get(/^\/driver(?:\/[^.]*)?$/, spaHandler("driver"))
+app.get(/^\/order(?:\/[^.]*)?$/, spaHandler("order"))
 
 app.use(errorHandler)
 

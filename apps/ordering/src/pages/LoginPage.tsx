@@ -27,9 +27,9 @@ export function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
-    if (mode === "register" && !name.trim()) { setError("Name is required"); return }
-    if (!mobile.trim() || !pin.trim()) { setError("Phone and PIN are required"); return }
-    if (!tenantId) { setError("Store not found"); return }
+    if (mode === "register" && !name.trim()) { setError(t("ordering.name_required")); return }
+    if (!mobile.trim() || !pin.trim()) { setError(t("ordering.phone_pin_required")); return }
+    if (!tenantId) { setError(t("ordering.store_not_found")); return }
     setLoading(true)
     try {
       if (mode === "register") {
@@ -48,7 +48,7 @@ export function LoginPage() {
       localStorage.setItem("customer_mobile", data.customer.mobile)
       navigate(`/order/${tenantSubdomain}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
+      setError(err instanceof Error ? err.message : t("ordering.something_went_wrong"))
     } finally { setLoading(false) }
   }
 
@@ -56,16 +56,16 @@ export function LoginPage() {
     <div className="min-h-dvh flex items-center justify-center bg-gradient-page p-4">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-center mb-6">
-          {mode === "login" ? "Sign In" : "Create Account"}
+          {mode === "login" ? t("ordering.sign_in") : t("ordering.create_account")}
         </h1>
         {isLoggedIn ? (
           <div className="text-center space-y-3">
-            <p className="text-secondary">You are signed in as <strong>{localStorage.getItem("customer_name")}</strong></p>
+            <p className="text-secondary">{t("ordering.signed_in_as", { name: localStorage.getItem("customer_name") })}</p>
             <button onClick={() => { localStorage.removeItem("customer_token"); localStorage.removeItem("customer_id"); localStorage.removeItem("customer_name"); localStorage.removeItem("customer_mobile"); setMode("login"); }}
-              className="text-sm text-rose-400 hover:underline">Sign out</button>
+              className="text-sm text-rose-400 hover:underline">{t("ordering.sign_out")}</button>
             <button onClick={() => navigate(`/order/${tenantSubdomain}`)}
               className="block w-full h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold">
-              Back to Menu
+              {t("ordering.back_to_menu")}
             </button>
           </div>
         ) : (
@@ -73,28 +73,28 @@ export function LoginPage() {
             <div className="flex mb-6 bg-white/5 rounded-xl p-1">
               <button onClick={() => setMode("login")}
                 className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${mode === "login" ? "bg-white/10 text-primary" : "text-secondary"}`}>
-                Sign In
+                {t("ordering.sign_in")}
               </button>
               <button onClick={() => setMode("register")}
                 className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${mode === "register" ? "bg-white/10 text-primary" : "text-secondary"}`}>
-                Register
+                {t("ordering.register")}
               </button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-3">
               {mode === "register" && (
-                <input value={name} onChange={e => setName(e.target.value)} placeholder="Full Name" autoFocus
+                <input value={name} onChange={e => setName(e.target.value)} placeholder={t("ordering.full_name")} autoFocus
                   className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
               )}
-              <input value={mobile} onChange={e => setMobile(e.target.value)} placeholder="Phone Number" inputMode="tel" autoFocus={mode === "login"}
+              <input value={mobile} onChange={e => setMobile(e.target.value)} placeholder={t("ordering.phone_number")} inputMode="tel" autoFocus={mode === "login"}
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
-              <input type="password" value={pin} onChange={e => setPin(e.target.value)} placeholder="PIN (4+ digits)" inputMode="numeric"
+              <input type="password" value={pin} onChange={e => setPin(e.target.value)} placeholder={t("ordering.pin_placeholder")} inputMode="numeric"
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
               {error && (
                 <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl">{error}</div>
               )}
               <button type="submit" disabled={loading}
                 className="w-full h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold disabled:opacity-50">
-                {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+                {loading ? t("ordering.please_wait") : mode === "login" ? t("ordering.sign_in") : t("ordering.create_account")}
               </button>
             </form>
           </>
