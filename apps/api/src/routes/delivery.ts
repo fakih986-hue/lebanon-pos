@@ -465,7 +465,7 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
       return
     }
 
-    const allowedStatuses = ["Preparing", "OutForDelivery", "Delivered"]
+    const allowedStatuses = ["OutForDelivery", "Delivered"]
     const { status: newStatus, paidAmount } = req.body as { status?: string; paidAmount?: number }
     if (!newStatus || !allowedStatuses.includes(newStatus)) {
       json(res, { error: "You can only set OutForDelivery or Delivered" }, 400)

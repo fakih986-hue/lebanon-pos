@@ -30,7 +30,6 @@ type OrderDetail = {
 const STEPS: { status: Status; icon: string; labelKey: string; descKey: string }[] = [
   { status: "Pending",        icon: "📋", labelKey: "ordering.order_placed",    descKey: "ordering.step_pending_desc" },
   { status: "Confirmed",      icon: "✅", labelKey: "ordering.confirmed",        descKey: "ordering.step_confirmed_desc" },
-  { status: "Preparing",      icon: "🔄", labelKey: "ordering.preparing",        descKey: "ordering.step_preparing_desc" },
   { status: "OutForDelivery", icon: "🛵", labelKey: "ordering.out_for_delivery", descKey: "ordering.step_otd_desc" },
   { status: "Delivered",      icon: "🎉", labelKey: "ordering.delivered",        descKey: "ordering.step_delivered_desc" },
 ]

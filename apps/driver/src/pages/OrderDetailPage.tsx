@@ -264,16 +264,10 @@ export function OrderDetailPage() {
 
         {/* Action buttons */}
         <div className="space-y-3 pt-2">
-          {!isTerminal && order.status === "Confirmed" && (
-            <button onClick={() => handleStatusUpdate("Preparing")} disabled={actionLoading}
-              className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-lg font-semibold shadow-lg shadow-amber-600/20 transition-all hover:from-amber-400 hover:to-orange-400 disabled:opacity-50">
-              {actionLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><span>🍳</span> {t("driver.start_preparing") || "Start Preparing"}</>}
-            </button>
-          )}
-          {!isTerminal && order.status === "Preparing" && (
+          {!isTerminal && (order.status === "Confirmed" || order.status === "Preparing") && (
             <button onClick={() => handleStatusUpdate("OutForDelivery")} disabled={actionLoading}
               className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-lg font-semibold shadow-lg shadow-indigo-600/20 transition-all hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50">
-              {actionLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><span>📦</span> {t("driver.picked_up")}</>}
+              {actionLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><span>🛵</span> {t("driver.start_delivery") || "Start Delivery"}</>}
             </button>
           )}
           {!isTerminal && order.status === "OutForDelivery" && (
