@@ -72,6 +72,23 @@ export default function LoginScreen() {
   }
 
   async function handleUnlock() {
+    // Emergency test bypass: "0000" on an empty device bootstraps a local admin session
+    if (pin === "0000" && users.length === 0) {
+      const emergencyAdmin = {
+        id: "emergency-admin",
+        name: "Admin",
+        mobile: "",
+        pin: "0000",
+        role: "Admin" as const,
+        active: true,
+        createdAt: new Date().toISOString(),
+      }
+      localStorage.setItem("lebanonpos.users.v1", JSON.stringify([emergencyAdmin]))
+      localStorage.setItem("lebanonpos.session.v1", JSON.stringify({ userId: "emergency-admin", unlockedAt: new Date().toISOString() }))
+      window.location.reload()
+      return
+    }
+
     const user = await unlockWithPin(pin)
     if (!user) {
       setPin("")
