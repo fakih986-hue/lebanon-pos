@@ -87,14 +87,13 @@ export function getLiveCameraIssue() {
     return "Camera is not available during server rendering."
   }
 
-  if (!window.isSecureContext && !isLocalHostname(window.location.hostname)) {
-    return "Live camera needs HTTPS on phones and tablets. Use HTTPS in production or scanner capture."
-  }
-
   if (!navigator.mediaDevices?.getUserMedia) {
+    // No getUserMedia at all — must use file capture
     return "Live camera is not available in this browser. Use scanner capture or another browser."
   }
 
+  // Note: we no longer block on HTTP. Many Android browsers allow getUserMedia
+  // over local HTTP. If it fails, the caller catches the error and falls back.
   return ""
 }
 

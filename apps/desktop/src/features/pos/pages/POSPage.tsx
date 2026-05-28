@@ -717,7 +717,8 @@ export default function POSPage() {
     const liveCameraIssue = getLiveCameraIssue()
 
     if (liveCameraIssue) {
-      setScannerStatus(`${liveCameraIssue} Opening scanner capture instead.`)
+      // No getUserMedia at all — fall back to file/photo capture
+      setScannerStatus("📷 Point camera at barcode, then take a photo.")
       scanCaptureInputRef.current?.click()
       return
     }
@@ -829,33 +830,36 @@ export default function POSPage() {
       cameraFrameRef.current = window.requestAnimationFrame(scanFrame)
     } catch (error) {
       stopCameraScanner()
-      setScannerStatus(
-        `${getCameraErrorMessage(error)} Try USB scan or manual entry.`
-      )
+      // On HTTP (non-secure context), getUserMedia may throw SecurityError.
+      // Fall back to file/photo capture which works everywhere.
+      const isSecurityError = error instanceof DOMException &&
+        (error.name === "SecurityError" || error.name === "NotAllowedError")
+      if (isSecurityError) {
+        setScannerStatus("📷 Live camera needs HTTPS. Point camera at barcode and take a photo.")
+        scanCaptureInputRef.current?.click()
+      } else {
+        setScannerStatus(`${getCameraErrorMessage(error)} Try USB scan or photo capture.`)
+      }
     }
   }
 
   async function handleScanCapture(event: ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0]
-
     event.currentTarget.value = ""
-
-    if (!file) {
-      return
-    }
+    if (!file) return
 
     try {
-      setScannerStatus("Reading barcode...")
+      setScannerStatus("🔍 Reading barcode from photo…")
       const barcode = await detectBarcodeFromImageFile(file)
 
       if (!barcode) {
-        setScannerStatus("No barcode found. Try closer and brighter.")
+        setScannerStatus("❌ No barcode found. Hold phone steady, get closer, ensure good lighting, then tap Scan again.")
         return
       }
 
       handleScannedBarcode(barcode)
     } catch {
-      setScannerStatus("Scanner capture could not read this image.")
+      setScannerStatus("❌ Could not read image. Try again with better lighting.")
     }
   }
 
