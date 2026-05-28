@@ -130,7 +130,7 @@ export default function SalesPage() {
         query.length === 0 ||
         sale.saleNumber.toLowerCase().includes(query) ||
         sale.customerName?.toLowerCase().includes(query) ||
-        sale.items.some((item) => item.name.toLowerCase().includes(query))
+        sale.items.some((item) => ((item as any).name ?? (item as any).productName ?? "").toLowerCase().includes(query))
       const matchesDate = !rangeStart || new Date(sale.createdAt) >= rangeStart
 
       return matchesPayment && matchesSearch && matchesDate

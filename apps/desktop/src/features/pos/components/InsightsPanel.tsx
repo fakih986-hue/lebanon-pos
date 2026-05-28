@@ -70,7 +70,8 @@ export default function InsightsPanel({
     const map = new Map<string, number>()
     for (const sale of filteredSales) {
       for (const item of sale.items) {
-        map.set(item.name, (map.get(item.name) ?? 0) + item.total)
+        const name = (item as any).name ?? (item as any).productName ?? "Unknown"
+        map.set(name, (map.get(name) ?? 0) + item.total)
       }
     }
     return Array.from(map.entries())
