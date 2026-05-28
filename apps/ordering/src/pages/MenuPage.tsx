@@ -25,6 +25,7 @@ export function MenuPage() {
   const [address, setAddress] = useState("")
   const [deliveryNote, setDeliveryNote] = useState("")
   const [deliveryFee, setDeliveryFee] = useState(2.0)
+  const [orderError, setOrderError] = useState<string | null>(null)
   const cartRef = useRef<HTMLDivElement>(null)
   const customerId = localStorage.getItem("customer_id") || undefined
 
@@ -65,6 +66,7 @@ export function MenuPage() {
 
   const placeOrder = useCallback(async () => {
     if (!tenantId) return
+    setOrderError(null)
     setSubmitting(true)
     try {
       const payload: OrderPayload = {
@@ -73,10 +75,10 @@ export function MenuPage() {
         customerId,
         items: cart.map((item) => ({ productId: item.product.id, productName: item.product.name, barcode: item.product.barcode, quantity: item.quantity, unitPrice: item.product.price })),
       }
-      const result = await api<{ orderNumber: string }>("/api/delivery/order", { method: "POST", body: JSON.stringify(payload) })
-      navigate(`/order/${tenantSubdomain}/track/${result.orderNumber}`)
-    } catch (err: any) { setError(err.message); setSubmitting(false) }
-  }, [tenantId, customerName, customerPhone, address, deliveryNote, cart, tenantSubdomain, navigate])
+      const result = await api<{ order: { orderNumber: string } }>("/api/delivery/order", { method: "POST", body: JSON.stringify(payload) })
+      navigate(`/order/${tenantSubdomain}/track/${result.order.orderNumber}`)
+    } catch (err: any) { setOrderError(err.message); setSubmitting(false) }
+  }, [tenantId, customerName, customerPhone, address, deliveryNote, deliveryFee, cart, tenantSubdomain, navigate, customerId])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -110,13 +112,13 @@ export function MenuPage() {
 
   if (showCart) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-gradient-page">
+      <div ref={cartRef} className="fixed inset-0 z-50 flex flex-col bg-gradient-page">
         <div className="flex items-center justify-between px-4 py-4 border-b border-glass">
           <button onClick={() => setShowCart(false)} className="text-secondary hover:text-primary transition-colors font-medium">← {t("ordering.back_to_menu")}</button>
           <h2 className="text-lg font-semibold text-primary">{t("ordering.your_cart")} ({cartCount})</h2>
           <div className="w-20" />
         </div>
-        <div ref={cartRef} className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4">
           {cart.length === 0 ? (
             <div className="mt-20 text-center">
               <div className="text-5xl mb-2">🛒</div>
@@ -150,6 +152,9 @@ export function MenuPage() {
         {cart.length > 0 && (
           <div className="border-t border-glass p-4">
             <div className="max-w-md mx-auto space-y-3">
+              {orderError && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl text-center">{orderError}</div>
+              )}
               <input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder={t("ordering.your_name")}
                 className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-glass text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all" />
               <input type="tel" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder={t("ordering.phone_number")}
@@ -193,7 +198,7 @@ export function MenuPage() {
               className="text-[10px] text-secondary hover:text-primary bg-glass px-2 py-1.5 rounded-lg transition-all">
               {locale === "en" ? "ع" : "EN"}
             </button>
-            <button onClick={() => setShowCart(true)}
+            <button onClick={() => { setOrderError(null); setShowCart(true) }}
               className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-glass border border-glass">
               <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
               {cartCount > 0 && (

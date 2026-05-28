@@ -13,6 +13,7 @@ export function DriversPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [name, setName] = useState("")
   const [mobile, setMobile] = useState("")
+  const [code, setCode] = useState("")
   const [pin, setPin] = useState("")
 
   useEffect(() => { load(); fetchOnline() }, [])
@@ -31,18 +32,18 @@ export function DriversPage() {
     setLoading(false)
   }
 
-  function resetForm() { setName(""); setMobile(""); setPin(""); setEditingId(null); setShowForm(false) }
+  function resetForm() { setName(""); setMobile(""); setCode(""); setPin(""); setEditingId(null); setShowForm(false) }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || !code.trim()) return
     try {
       if (editingId) {
-        const body: Record<string, unknown> = { name: name.trim(), mobile: mobile.trim() }
+        const body: Record<string, unknown> = { name: name.trim(), mobile: mobile.trim(), code: code.trim() }
         if (pin) body.pin = pin
         await api(`/api/delivery/drivers/${editingId}`, { method: "PATCH", body: JSON.stringify(body) })
       } else {
-        await api("/api/delivery/drivers", { method: "POST", body: JSON.stringify({ name: name.trim(), mobile: mobile.trim(), pin }) })
+        await api("/api/delivery/drivers", { method: "POST", body: JSON.stringify({ name: name.trim(), mobile: mobile.trim(), code: code.trim(), pin }) })
       }
       resetForm(); load()
     } catch { }
@@ -78,17 +79,21 @@ export function DriversPage() {
       {showForm && (
         <form onSubmit={handleSubmit} className="data-card animate-slide-up">
           <h2 className="font-semibold mb-4" style={{ color: "var(--text-primary)" }}>{editingId ? t("drivers.edit") : t("drivers.new")}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
               <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>{t("drivers.name")} *</label>
               <input value={name} onChange={e => setName(e.target.value)} placeholder={t("drivers.name_placeholder")} required className="input-field text-sm" />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>{t("drivers.code_label")} *</label>
+              <input value={code} onChange={e => setCode(e.target.value)} placeholder={t("drivers.code_placeholder")} required inputMode="numeric" className="input-field text-sm" />
             </div>
             <div>
               <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>{t("drivers.phone")}</label>
               <input value={mobile} onChange={e => setMobile(e.target.value)} placeholder={t("drivers.phone_placeholder")} className="input-field text-sm" />
             </div>
             <div>
-              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>{editingId ? t("drivers.pin_edit_hint") : t("drivers.pin") + " *"}</label>
+              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-secondary)" }}>{editingId ? t("drivers.pin_label_edit") : t("drivers.pin") + " *"}</label>
               <input value={pin} onChange={e => setPin(e.target.value)} placeholder={t("drivers.pin_placeholder")} required={!editingId} type="password" className="input-field text-sm" />
             </div>
           </div>
