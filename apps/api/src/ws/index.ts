@@ -22,7 +22,7 @@ export function setupWebSocket(server: Server) {
     const info: ClientInfo = { ws, subscribedChannels: new Set() }
     clients.set(ws, info)
 
-    ws.on("message", (raw) => {
+    ws.on("message", (raw: Buffer) => {
       try {
         const msg = JSON.parse(raw.toString())
         handleMessage(ws, info, msg)

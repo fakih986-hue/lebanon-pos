@@ -657,7 +657,7 @@ router.get("/customer/orders", async (req: Req, res: ServerResponse) => {
       json(res, { error: "Authentication required" }, 401)
       return
     }
-    let payload: { customerId?: string; tenantId?: string }
+    let payload: { customerId?: string; tenantId?: string; role?: string }
     try {
       payload = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET || "lebanonpos-secret-key") as any
     } catch {
