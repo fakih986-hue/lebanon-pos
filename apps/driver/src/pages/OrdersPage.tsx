@@ -38,6 +38,21 @@ export function OrdersPage() {
   const payload = token ? decodeTokenPayload(token) : null
   const wsUrl = token ? `${import.meta.env.VITE_API_URL?.replace(/^http/, "ws") || "ws://localhost:3001"}/ws` : ""
 
+  function playAlert() {
+    try {
+      const ctx = new AudioContext()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.frequency.setValueAtTime(880, ctx.currentTime)
+      osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15)
+      gain.gain.setValueAtTime(0.3, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5)
+      osc.start(ctx.currentTime)
+      osc.stop(ctx.currentTime + 0.5)
+    } catch { /* audio not available */ }
+  }
+
   const { isConnected } = useWebSocket({
     url: wsUrl,
     token,
@@ -46,6 +61,7 @@ export function OrdersPage() {
       "order:available": (data: { order: Order }) => {
         setAvailable(prev => {
           if (prev.some(o => o.id === data.order.id)) return prev
+          playAlert()
           return [data.order, ...prev]
         })
       },
@@ -62,6 +78,7 @@ export function OrdersPage() {
             return next
           }
           if (data.order.driverId === payload?.userId) {
+            playAlert()
             return [data.order, ...prev]
           }
           return prev

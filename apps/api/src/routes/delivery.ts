@@ -217,18 +217,46 @@ router.post("/order", async (req: Req, res: ServerResponse) => {
   }
 })
 
-// Customer-facing: check order status
+// Customer-facing: check order status (full details for tracking page)
 router.get("/order/:orderNumber/status", async (req: Req, res: ServerResponse) => {
   try {
     const order = await prisma.deliveryOrder.findFirst({
       where: { orderNumber: req.params?.orderNumber as string },
-      select: { orderNumber: true, status: true, createdAt: true, total: true, customerName: true },
+      include: {
+        items: true,
+        driver: { select: { name: true, mobile: true, code: true } },
+      },
     })
     if (!order) {
       json(res, { error: "Order not found" }, 404)
       return
     }
-    json(res, order)
+    json(res, {
+      orderNumber: order.orderNumber,
+      status: order.status,
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      address: order.address,
+      deliveryNote: order.deliveryNote,
+      itemsTotal: order.itemsTotal,
+      deliveryFee: order.deliveryFee,
+      total: order.total,
+      paymentMethod: order.paymentMethod,
+      paidAmount: order.paidAmount,
+      changeRequired: order.changeRequired,
+      createdAt: order.createdAt,
+      deliveredAt: order.deliveredAt,
+      cancelledAt: order.cancelledAt,
+      cancelledReason: order.cancelledReason,
+      driverName: order.driver?.name ?? order.assignedName ?? null,
+      driverPhone: order.driver?.mobile ?? null,
+      items: order.items.map((i) => ({
+        productName: i.productName,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        total: i.total,
+      })),
+    })
   } catch (err) {
     console.error("Delivery order status error:", err)
     json(res, { error: "Failed to fetch order status" }, 500)
@@ -437,21 +465,30 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
       return
     }
 
-    const allowedStatuses = ["OutForDelivery", "Delivered"]
-    const { status: newStatus } = req.body as { status?: string }
+    const allowedStatuses = ["Preparing", "OutForDelivery", "Delivered"]
+    const { status: newStatus, paidAmount } = req.body as { status?: string; paidAmount?: number }
     if (!newStatus || !allowedStatuses.includes(newStatus)) {
       json(res, { error: "You can only set OutForDelivery or Delivered" }, 400)
       return
     }
 
     const updateData: Record<string, unknown> = { status: newStatus }
-    if (newStatus === "Delivered") updateData.deliveredAt = new Date()
+    if (newStatus === "Delivered") {
+      updateData.deliveredAt = new Date()
+      if (typeof paidAmount === "number") {
+        updateData.paidAmount = paidAmount
+        updateData.changeRequired = Math.max(0, paidAmount - (order as any).total)
+      }
+    }
 
     const updated = await prisma.deliveryOrder.update({
       where: { id: orderId },
       data: updateData as any,
       include: { items: true },
     })
+
+    // Notify tenant and customer tracking page
+    broadcastToTenant(order.tenantId, "order:updated", { order: updated })
 
     json(res, updated)
   } catch (err) {
