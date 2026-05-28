@@ -74,7 +74,7 @@ export function OrdersPage() {
 
   async function fetchAssigned() {
     try {
-      const data = await api<Order[]>("/api/driver/orders")
+      const data = await api<Order[]>("/api/delivery/driver/orders")
       setAssigned(data)
     } catch (err) {
       if (!getToken()) { navigate("/driver/login"); return }
@@ -84,7 +84,7 @@ export function OrdersPage() {
 
   async function fetchAvailable() {
     try {
-      const data = await api<Order[]>("/api/driver/orders/available")
+      const data = await api<Order[]>("/api/delivery/driver/orders/available")
       setAvailable(prev => {
         const existing = new Map(prev.map(o => [o.id, o]))
         for (const o of data) { if (!existing.has(o.id)) existing.set(o.id, o) }
@@ -103,7 +103,7 @@ export function OrdersPage() {
     setAcceptingId(orderId)
     setError("")
     try {
-      const updated = await api<Order>(`/api/driver/orders/${orderId}/accept`, { method: "POST" })
+      const updated = await api<Order>(`/api/delivery/driver/orders/${orderId}/accept`, { method: "POST" })
       setAssigned(prev => [updated, ...prev])
       setAvailable(prev => prev.filter(o => o.id !== orderId))
     } catch (err) {

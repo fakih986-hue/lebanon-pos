@@ -15,6 +15,7 @@ export function DriversPage() {
   const [mobile, setMobile] = useState("")
   const [code, setCode] = useState("")
   const [pin, setPin] = useState("")
+  const [errorMsg, setErrorMsg] = useState("")
 
   useEffect(() => { load(); fetchOnline() }, [])
   useEffect(() => {
@@ -27,16 +28,17 @@ export function DriversPage() {
   }
 
   async function load() {
-    setLoading(true)
-    try { setDrivers(await api<Driver[]>("/api/delivery/drivers")) } catch { }
+    setLoading(true); setErrorMsg("")
+    try { setDrivers(await api<Driver[]>("/api/delivery/drivers")) } catch (e) { setErrorMsg(e instanceof Error ? e.message : "Failed to load drivers") }
     setLoading(false)
   }
 
   function resetForm() { setName(""); setMobile(""); setCode(""); setPin(""); setEditingId(null); setShowForm(false) }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault(); setErrorMsg("")
     if (!name.trim() || !code.trim()) return
+    if (!editingId && !pin.trim()) { setErrorMsg("PIN is required for new drivers"); return }
     try {
       if (editingId) {
         const body: Record<string, unknown> = { name: name.trim(), mobile: mobile.trim(), code: code.trim() }
@@ -46,14 +48,15 @@ export function DriversPage() {
         await api("/api/delivery/drivers", { method: "POST", body: JSON.stringify({ name: name.trim(), mobile: mobile.trim(), code: code.trim(), pin }) })
       }
       resetForm(); load()
-    } catch { }
+    } catch (e) { setErrorMsg(e instanceof Error ? e.message : "Failed to save driver") }
   }
 
   async function toggleActive(driver: Driver) {
+    setErrorMsg("")
     try {
       await api(`/api/delivery/drivers/${driver.id}`, { method: "PATCH", body: JSON.stringify({ active: !driver.active }) })
       load()
-    } catch { }
+    } catch (e) { setErrorMsg(e instanceof Error ? e.message : "Failed to toggle status") }
   }
 
   function startEdit(d: Driver) {
@@ -106,6 +109,12 @@ export function DriversPage() {
         </form>
       )}
 
+      {errorMsg && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2 animate-slide-up">
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          {errorMsg}
+        </div>
+      )}
       {loading ? (
         <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="loading-skeleton h-16 rounded-2xl" />)}</div>
       ) : drivers.length === 0 ? (

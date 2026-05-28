@@ -41,6 +41,7 @@ export function DeliveryPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [driverSearch, setDriverSearch] = useState<Record<string, string>>({})
   const [showDropdown, setShowDropdown] = useState<Record<string, boolean>>({})
+  const [errorMsg, setErrorMsg] = useState("")
   const searchRef = useRef<Record<string, HTMLDivElement | null>>({})
 
   const token = getToken()
@@ -76,26 +77,28 @@ export function DeliveryPage() {
   }
 
   async function load() {
-    setLoading(true)
+    setLoading(true); setErrorMsg("")
     try {
       const params = statusFilter !== "All" ? `?status=${statusFilter}` : ""
       setOrders(await api<DeliveryOrder[]>(`/api/delivery/orders${params}`))
-    } catch { }
+    } catch (e) { setErrorMsg(e instanceof Error ? e.message : "Failed to load orders") }
     setLoading(false)
   }
 
   async function updateStatus(id: string, status: string) {
+    setErrorMsg("")
     try {
       const updated = await api<DeliveryOrder>(`/api/delivery/orders/${id}`, { method: "PATCH", body: JSON.stringify({ status }) })
       setOrders(orders.map(o => o.id === id ? updated : o))
-    } catch { }
+    } catch (e) { setErrorMsg(e instanceof Error ? e.message : "Failed to update order") }
   }
 
   async function assignDriver(orderId: string, driverId: string) {
+    setErrorMsg("")
     try {
       const updated = await api<DeliveryOrder>(`/api/delivery/orders/${orderId}`, { method: "PATCH", body: JSON.stringify({ driverId: driverId || null }) })
       setOrders(orders.map(o => o.id === orderId ? updated : o))
-    } catch { }
+    } catch (e) { setErrorMsg(e instanceof Error ? e.message : "Failed to assign driver") }
   }
 
   const nextStatus = (current: string) => {
@@ -131,6 +134,12 @@ export function DeliveryPage() {
         </div>
       </div>
 
+      {errorMsg && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2 animate-slide-up">
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          {errorMsg}
+        </div>
+      )}
       {loading ? (
         <div className="space-y-3">
           {[1,2,3].map(i => <div key={i} className="loading-skeleton h-24 rounded-2xl" />)}

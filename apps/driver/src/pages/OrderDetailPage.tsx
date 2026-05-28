@@ -54,7 +54,7 @@ export function OrderDetailPage() {
   async function fetchOrder() {
     try {
       setError("")
-      const data = await api<Order[]>("/api/driver/orders")
+      const data = await api<Order[]>("/api/delivery/driver/orders")
       const found = data.find(o => o.id === id)
       found ? setOrder(found) : setError(t("driver.order_not_found"))
     } catch (err) {
@@ -68,7 +68,7 @@ export function OrderDetailPage() {
   async function handleStatusUpdate(status: string) {
     setActionLoading(true); setError(""); setSuccessMsg("")
     try {
-      await api(`/api/driver/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) })
+      await api(`/api/delivery/driver/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) })
       setSuccessMsg(t("driver.status_updated"))
       await fetchOrder()
     } catch (err) {
