@@ -9,34 +9,29 @@ interface EmptyStateProps {
   className?: string
 }
 
-export default function EmptyState({
-  icon: Icon,
-  title,
-  description,
-  action,
-  className,
-}: EmptyStateProps) {
+export default function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
   return (
     <div
-      className={cn(
-        "flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 px-6 py-12 text-center",
-        className
-      )}
+      className={cn("flex flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-12 text-center", className)}
+      style={{ borderColor: "var(--border)" }}
     >
-      <Icon size={40} className="mb-3 text-zinc-300" />
-      <p className="text-sm font-semibold text-zinc-600">{title}</p>
-      {description ? (
-        <p className="mt-1 text-sm text-zinc-400">{description}</p>
-      ) : null}
-      {action ? (
+      <div
+        className="flex h-12 w-12 items-center justify-center rounded-xl mb-4"
+        style={{ background: "var(--surface-2)" }}
+      >
+        <Icon size={22} style={{ color: "var(--text-3)" }} />
+      </div>
+      <p className="text-[14px] font-semibold" style={{ color: "var(--text-2)" }}>{title}</p>
+      {description && <p className="mt-1 text-[13px]" style={{ color: "var(--text-3)" }}>{description}</p>}
+      {action && (
         <button
           type="button"
           onClick={action.onClick}
-          className="mt-4 rounded-lg bg-zinc-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800"
+          className="btn btn-primary btn-md mt-5"
         >
           {action.label}
         </button>
-      ) : null}
+      )}
     </div>
   )
 }

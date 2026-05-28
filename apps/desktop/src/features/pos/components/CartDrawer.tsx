@@ -2,16 +2,15 @@ import { useState } from "react"
 import { useI18n } from "@lebanonpos/shared"
 import { AnimatePresence, motion } from "framer-motion"
 import {
-  BadgeDollarSign,
   BadgePercent,
   ChevronDown,
   CreditCard,
   Eraser,
   HandCoins,
   Landmark,
+  MessageSquare,
   PauseCircle,
   PlayCircle,
-  ReceiptText,
   ShoppingCart,
   WalletCards,
   X,
@@ -29,8 +28,6 @@ import {
 import type { HeldSale } from "../services/heldSale.service"
 import {
   formatVatRate,
-  getHeldSaleDiscountTotal,
-  getHeldSaleGrossSubtotal,
   getHeldSaleItemCount,
   getHeldSaleTotal,
   parseMoney,
@@ -41,49 +38,41 @@ type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
 type TenderMode = "USD" | "LBP" | "Mixed"
 type DiscountMode = "USD" | "Percent"
 
-type PaymentOption = {
-  label: PaymentMethod
-  icon: LucideIcon
-}
+type PaymentOption = { label: PaymentMethod; icon: LucideIcon; color: string }
 
 const paymentOptions: PaymentOption[] = [
-  { label: "Cash", icon: Landmark },
-  { label: "Card", icon: CreditCard },
-  { label: "Wallet", icon: WalletCards },
-  { label: "Debt", icon: HandCoins },
+  { label: "Cash",   icon: Landmark,    color: "emerald" },
+  { label: "Card",   icon: CreditCard,  color: "indigo"  },
+  { label: "Wallet", icon: WalletCards, color: "violet"  },
+  { label: "Debt",   icon: HandCoins,   color: "amber"   },
 ]
 
-interface CartItem {
-  id: number
-  name: string
-  price: number
-  quantity: number
-  stock: number
+const paymentColors: Record<string, { active: string; inactive: string }> = {
+  emerald: { active: "bg-emerald-600 border-emerald-600 text-white shadow-emerald-600/25", inactive: "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)] hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700" },
+  indigo:  { active: "bg-indigo-600 border-indigo-600 text-white shadow-indigo-600/25",   inactive: "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)] hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700" },
+  violet:  { active: "bg-violet-600 border-violet-600 text-white shadow-violet-600/25",   inactive: "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)] hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700" },
+  amber:   { active: "bg-amber-500 border-amber-500 text-white shadow-amber-500/25",      inactive: "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)] hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700" },
 }
+
+interface CartItem { id: number; name: string; price: number; quantity: number; stock: number }
 
 interface Props {
   isOpen: boolean
   onClose: () => void
-
   items: CartItem[]
   onIncreaseQty: (id: number) => void
   onDecreaseQty: (id: number) => void
   onRemoveItem: (id: number) => void
-
   heldSales: HeldSale[]
   onResumeHeld: (sale: HeldSale) => void
   onDiscardHeld: (sale: HeldSale) => void
-
   vatRate: number
-
   customers: CustomerLedger[]
   selectedCustomerId: string
   onSelectCustomer: (id: string) => void
   selectedCustomer: CustomerLedger | undefined
-
   paymentMethod: PaymentMethod
   onSelectPayment: (method: PaymentMethod) => void
-
   tenderMode: TenderMode
   onSelectTenderMode: (mode: TenderMode) => void
   paidUsd: string
@@ -91,21 +80,17 @@ interface Props {
   onPaidUsdChange: (value: string) => void
   onPaidLbpChange: (value: string) => void
   onFillExactTender: (currency: "USD" | "LBP") => void
-
   discountMode: DiscountMode
   discountValue: string
   onDiscountModeChange: (mode: DiscountMode) => void
   onDiscountValueChange: (value: string) => void
-
   onSetQuantity: (id: number, qty: number) => void
   onSetPrice: (id: number, price: number) => void
   saleNote: string
   onSaleNoteChange: (note: string) => void
-
   onHold: () => void
   onClean: () => void
   onCompleteSale: () => void
-
   itemCount: number
   grossSubtotal: number
   discountTotal: number
@@ -128,82 +113,51 @@ interface Props {
 }
 
 export default function CartDrawer({
-  isOpen,
-  onClose,
-  items,
-  onIncreaseQty,
-  onDecreaseQty,
-  onRemoveItem,
-  heldSales,
-  onResumeHeld,
-  onDiscardHeld,
-  vatRate,
-  customers,
-  selectedCustomerId,
-  onSelectCustomer,
-  selectedCustomer,
-  paymentMethod,
-  onSelectPayment,
-  tenderMode,
-  onSelectTenderMode,
-  paidUsd,
-  paidLbp,
-  onPaidUsdChange,
-  onPaidLbpChange,
-  onFillExactTender,
-  discountMode,
-  discountValue,
-  onDiscountModeChange,
-  onDiscountValueChange,
-  onSetQuantity,
-  onSetPrice,
-  saleNote,
-  onSaleNoteChange,
-  onHold,
-  onClean,
-  onCompleteSale,
-  itemCount,
-  grossSubtotal,
-  discountTotal,
-  subtotal,
-  tax,
-  total,
-  totalLbp,
-  exchangeRate,
-  paidTotalUsd,
-  paidTotalLbp,
-  cashChangeUsd,
-  cashChangeLbp,
-  cashStillDueUsd,
-  cashTenderValid,
-  creditLimitExceeded,
-  checkoutBlocked,
-  hasDiscount,
-  heldSalesItemCount,
-  canApplyDiscount,
+  isOpen, onClose,
+  items, onIncreaseQty, onDecreaseQty, onRemoveItem,
+  heldSales, onResumeHeld, onDiscardHeld,
+  vatRate, customers, selectedCustomerId, onSelectCustomer, selectedCustomer,
+  paymentMethod, onSelectPayment,
+  tenderMode, onSelectTenderMode, paidUsd, paidLbp, onPaidUsdChange, onPaidLbpChange, onFillExactTender,
+  discountMode, discountValue, onDiscountModeChange, onDiscountValueChange,
+  onSetQuantity, onSetPrice, saleNote, onSaleNoteChange,
+  onHold, onClean, onCompleteSale,
+  itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
+  paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
+  cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, heldSalesItemCount, canApplyDiscount,
 }: Props) {
   const [discountOpen, setDiscountOpen] = useState(false)
-  const [heldSalesOpen, setHeldSalesOpen] = useState(false)
-
+  const [heldOpen, setHeldOpen] = useState(false)
   const { t, dir } = useI18n()
   const drawerX = dir === "rtl" ? "-100%" : "100%"
 
+  const checkoutLabel = creditLimitExceeded
+    ? t("pos.credit_exceeded")
+    : paymentMethod === "Cash" && !cashTenderValid
+      ? t("pos.enter_amount")
+      : paymentMethod === "Debt"
+        ? t("pos.record_debt")
+        : t("pos.complete_sale")
+
   return (
     <AnimatePresence>
-      {isOpen ? (
+      {isOpen && (
         <div
           className="fixed inset-0 z-50 flex justify-end"
           onKeyDown={(e) => { if (e.key === "Escape") onClose() }}
-          tabIndex={0}
+          tabIndex={-1}
         >
+          {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-black/20"
+            className="fixed inset-0"
+            style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
 
+          {/* Drawer */}
           <motion.aside
             role="dialog"
             aria-modal="true"
@@ -211,540 +165,467 @@ export default function CartDrawer({
             initial={{ x: drawerX }}
             animate={{ x: 0 }}
             exit={{ x: drawerX }}
-            transition={{ type: "spring", damping: 28, stiffness: 300 }}
-            className="relative z-10 flex h-full w-full max-w-xl flex-col overflow-hidden bg-white shadow-2xl sm:rounded-xl"
+            transition={{ type: "spring", damping: 30, stiffness: 320 }}
+            className="relative z-10 flex h-full w-full max-w-[440px] flex-col overflow-hidden sm:rounded-xl"
+            style={{ background: "var(--surface)", boxShadow: "var(--shadow-xl)" }}
           >
-        <div className="border-b border-zinc-200 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-950 text-white">
-                <ShoppingCart size={22} />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-zinc-950">
-                  {t("pos.current_sale")}
-                </h2>
-                <p className="text-sm font-medium text-zinc-500">
-                  {t("pos.items_total", { n: formatNumber(itemCount), total: formatCurrency(total) })}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onHold}
-                disabled={items.length === 0}
-                className="flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-30"
-              >
-                <PauseCircle size={17} />
-                {t("pos.hold")}
-              </button>
-              <button
-                type="button"
-                onClick={onClean}
-                disabled={items.length === 0}
-                title={t("pos.clean_sale")}
-                className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
-                aria-label={t("pos.clean_sale")}
-              >
-                <Eraser size={18} />
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950"
-                aria-label={t("pos.close_checkout")}
-              >
-                <X size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-50 p-4">
-          {items.length > 0 ? (
-            <div className="space-y-3">
-              {items.map((item) => (
-                <CartItemCard
-                  key={item.id}
-                  name={item.name}
-                  quantity={item.quantity}
-                  unitPrice={item.price}
-                  totalPrice={item.price * item.quantity}
-                  onIncrease={() => onIncreaseQty(item.id)}
-                  onDecrease={() => onDecreaseQty(item.id)}
-                  onRemove={() => onRemoveItem(item.id)}
-                  onSetQuantity={(qty) => onSetQuantity(item.id, qty)}
-                  onSetPrice={(price) => onSetPrice(item.id, price)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex h-full min-h-72 items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-white">
-              <div className="px-6 text-center">
-                <ShoppingCart size={44} className="mx-auto text-zinc-300" />
-                <p className="mt-3 font-bold text-zinc-900">
-                  {t("pos.cart_empty")}
-                </p>
-                <p className="mt-1 text-sm text-zinc-500">
-                  {t("pos.cart_empty_hint")}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="max-h-[58vh] overflow-y-auto border-t border-zinc-200 p-4">
-          {heldSales.length > 0 ? (
-            <div className="mb-4 rounded-lg border border-zinc-200 bg-white p-3">
-              <button
-                type="button"
-                onClick={() => setHeldSalesOpen(!heldSalesOpen)}
-                className="flex w-full items-center justify-between gap-3"
-              >
-                <div className="flex items-center gap-2 text-sm font-bold text-zinc-800">
-                  <PauseCircle size={16} />
-                  {t("pos.held_sales")}
+            {/* ── Header ── */}
+            <div
+              className="flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3"
+              style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-xl"
+                  style={{ background: "var(--brand-soft)" }}
+                >
+                  <ShoppingCart size={18} style={{ color: "var(--brand)" }} />
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-bold text-zinc-600">
-                    {t("pos.holds_items", { n: formatNumber(heldSales.length), n2: formatNumber(heldSalesItemCount) })}
-                  </span>
-                  <ChevronDown
-                    size={16}
-                    className={`text-zinc-400 transition ${heldSalesOpen ? "rotate-180" : ""}`}
-                  />
+                <div>
+                  <p className="text-[15px] font-bold leading-tight" style={{ color: "var(--text)" }}>
+                    {t("pos.current_sale")}
+                  </p>
+                  <p className="text-[12px]" style={{ color: "var(--text-3)" }}>
+                    {formatNumber(itemCount)} {t("pos.items_short") || "items"} · {formatCurrency(total)}
+                  </p>
                 </div>
-              </button>
+              </div>
 
-              {heldSalesOpen ? (
-                <div className="mt-3 space-y-2">
-                  {heldSales.slice(0, 4).map((heldSale) => (
-                    <div
-                      key={heldSale.id}
-                      className="rounded-lg border border-zinc-100 bg-zinc-50 p-3"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-bold text-zinc-950">
-                            {heldSale.holdNumber}
-                          </p>
-                          <p className="mt-1 truncate text-xs font-semibold text-zinc-500">
-                            {heldSale.note} -{" "}
-                            {formatNumber(getHeldSaleItemCount(heldSale))} items
-                          </p>
-                        </div>
-                        <p className="shrink-0 text-sm font-bold text-zinc-950">
-                          {formatCurrency(
-                            getHeldSaleTotal(heldSale, vatRate)
-                          )}
-                        </p>
-                      </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={onHold}
+                  disabled={items.length === 0}
+                  className="btn btn-ghost h-8 px-3 text-[12px] gap-1.5 rounded-lg border"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <PauseCircle size={14} />
+                  {t("pos.hold")}
+                </button>
+                <button
+                  type="button"
+                  onClick={onClean}
+                  disabled={items.length === 0}
+                  className="btn btn-ghost btn-icon h-8 w-8 rounded-lg border"
+                  style={{ borderColor: "var(--border)" }}
+                  aria-label={t("pos.clean_sale")}
+                >
+                  <Eraser size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="btn btn-ghost btn-icon h-8 w-8 rounded-lg"
+                  aria-label={t("pos.close_checkout")}
+                >
+                  <X size={17} />
+                </button>
+              </div>
+            </div>
 
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onResumeHeld(heldSale)}
-                          disabled={items.length > 0}
-                          className="flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:bg-zinc-300 disabled:text-zinc-500"
-                        >
-                          <PlayCircle size={16} />
-                          {t("pos.resume")}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onDiscardHeld(heldSale)}
-                          className="flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
-                        >
-                          <Eraser size={15} />
-                          {t("pos.discard")}
-                        </button>
-                      </div>
-                    </div>
+            {/* ── Items ── */}
+            <div className="min-h-0 flex-1 overflow-y-auto p-3" style={{ background: "var(--surface-2)" }}>
+              {items.length > 0 ? (
+                <div className="space-y-2">
+                  {items.map((item) => (
+                    <CartItemCard
+                      key={item.id}
+                      name={item.name}
+                      quantity={item.quantity}
+                      unitPrice={item.price}
+                      totalPrice={item.price * item.quantity}
+                      onIncrease={() => onIncreaseQty(item.id)}
+                      onDecrease={() => onDecreaseQty(item.id)}
+                      onRemove={() => onRemoveItem(item.id)}
+                      onSetQuantity={(qty) => onSetQuantity(item.id, qty)}
+                      onSetPrice={(price) => onSetPrice(item.id, price)}
+                    />
                   ))}
                 </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          <div className="mb-4">
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-zinc-500">
-              {t("pos.sale_note")}
-            </label>
-            <input
-              type="text"
-              value={saleNote}
-              onChange={(e) => onSaleNoteChange(e.target.value)}
-              placeholder={t("pos.sale_note_placeholder")}
-              maxLength={120}
-              className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-800 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-            />
-          </div>
-
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-            {t("pos.payment_method")}
-          </p>
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            {paymentOptions.map((option) => {
-              const Icon = option.icon
-              const active = paymentMethod === option.label
-
-              return (
-                <button
-                  key={option.label}
-                  type="button"
-                  onClick={() => onSelectPayment(option.label)}
-                  className={`
-                    flex h-14 items-center justify-center gap-2 rounded-lg border text-sm font-bold transition
-                    ${
-                      active
-                        ? "border-emerald-600 bg-emerald-50 text-emerald-800 shadow-sm"
-                        : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300"
-                    }
-                  `}
-                >
-                  <Icon size={18} />
-                  {t("pos.payment." + option.label.toLowerCase())}
-                </button>
-              )
-            })}
-          </div>
-
-          <div className="mb-4 rounded-lg border border-zinc-200 p-3">
-            <button
-              type="button"
-              onClick={() => setDiscountOpen(!discountOpen)}
-              className="flex w-full items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-2 text-sm font-bold text-zinc-700">
-                <BadgePercent size={16} />
-                {t("pos.discount")}
-              </div>
-              <div className="flex items-center gap-2">
-                {hasDiscount ? (
-                  <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-bold text-zinc-600">
-                    -{formatCurrency(discountTotal)}
-                  </span>
-                ) : null}
-                <ChevronDown
-                  size={16}
-                  className={`text-zinc-400 transition ${discountOpen ? "rotate-180" : ""}`}
-                />
-              </div>
-            </button>
-
-            {discountOpen ? (
-              canApplyDiscount ? (
-                <div className="mt-3 space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["USD", "Percent"] as DiscountMode[]).map((mode) => {
-                      const active = discountMode === mode
-
-                      return (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => onDiscountModeChange(mode)}
-                          className={`h-9 rounded-lg border text-xs font-bold transition ${
-                            active
-                              ? "border-zinc-950 bg-zinc-950 text-white"
-                              : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-                          }`}
-                        >
-                          {mode === "USD" ? t("pos.dollar_off") : t("pos.percent_off")}
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1">
-                      <input
-                        type="number"
-                        min="0"
-                        max={discountMode === "Percent" ? 100 : undefined}
-                        step={discountMode === "Percent" ? 1 : 0.01}
-                        value={discountValue}
-                        onChange={(event) =>
-                          onDiscountValueChange(event.target.value)
-                        }
-                        placeholder={
-                          discountMode === "Percent" ? "10" : "1.00"
-                        }
-                        className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
-                      />
-                    </div>
-                    <div className="flex gap-1.5">
-                      {(discountMode === "Percent" ? [5, 10, 15] : [1, 5, 10]).map((value) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() =>
-                            onDiscountValueChange(String(value))
-                          }
-                          className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-600 transition hover:bg-zinc-50"
-                        >
-                          {discountMode === "Percent" ? `${value}%` : `$${value}`}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
               ) : (
-                <p className="mt-3 text-xs font-semibold text-zinc-500">
-                  {t("pos.permission_required")}
-                </p>
-              )
-            ) : null}
-          </div>
-
-          {paymentMethod === "Cash" ? (
-            <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-              <div className="mb-3 flex items-center gap-2 text-sm font-bold text-emerald-900">
-                <BadgeDollarSign size={17} />
-                {t("pos.cash_tender")}
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                {(["USD", "LBP", "Mixed"] as TenderMode[]).map((mode) => {
-                  const active = tenderMode === mode
-
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => onSelectTenderMode(mode)}
-                      className={`h-10 rounded-lg border text-sm font-bold transition ${
-                        active
-                          ? "border-emerald-700 bg-emerald-700 text-white"
-                          : "border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-100"
-                      }`}
-                    >
-                      {mode === "Mixed" ? t("pos.tender.both") : t("pos.tender." + mode.toLowerCase())}
-                    </button>
-                  )
-                })}
-              </div>
-
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {tenderMode !== "LBP" ? (
-                  <label className="block text-sm font-bold text-emerald-900">
-                    {t("pos.paid_usd")}
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={paidUsd}
-                      onChange={(event) =>
-                        onPaidUsdChange(event.target.value)
-                      }
-                      className="mt-2 h-11 w-full rounded-lg border border-emerald-200 bg-white px-3 text-zinc-900 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-                    />
-                  </label>
-                ) : null}
-
-                {tenderMode !== "USD" ? (
-                  <label className="block text-sm font-bold text-emerald-900">
-                    {t("pos.paid_lbp")}
-                    <input
-                      type="number"
-                      min="0"
-                      step="1000"
-                      value={paidLbp}
-                      onChange={(event) =>
-                        onPaidLbpChange(event.target.value)
-                      }
-                      className="mt-2 h-11 w-full rounded-lg border border-emerald-200 bg-white px-3 text-zinc-900 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-                    />
-                  </label>
-                ) : null}
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => onFillExactTender("USD")}
-                  disabled={items.length === 0}
-                  className="h-9 rounded-lg border border-emerald-200 bg-white px-3 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-40"
+                <div
+                  className="flex h-full min-h-56 flex-col items-center justify-center rounded-xl border-2 border-dashed gap-3"
+                  style={{ borderColor: "var(--border)", background: "var(--surface)" }}
                 >
-                  {t("pos.exact_usd")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onFillExactTender("LBP")}
-                  disabled={items.length === 0}
-                  className="h-9 rounded-lg border border-emerald-200 bg-white px-3 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-40"
-                >
-                  {t("pos.exact_lbp")}
-                </button>
-              </div>
-
-              {!cashTenderValid ? (
-                <p className="mt-2 text-xs font-medium text-rose-500">
-                  {t("pos.insufficient_payment")}
-                </p>
-              ) : null}
-
-              <div className="mt-3 space-y-2 text-sm text-emerald-950">
-                <div className="flex justify-between gap-3">
-                  <span>{t("pos.paid_total")}</span>
-                  <span className="font-bold">
-                    {formatCurrency(paidTotalUsd)} /{" "}
-                    {formatLbpCurrency(paidTotalLbp)}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <span>
-                    {cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}
-                  </span>
-                  <span
-                    className={`font-bold ${
-                      cashTenderValid ? "" : "text-rose-700"
-                    }`}
-                  >
-                    {cashChangeUsd > 0
-                      ? `${formatCurrency(cashChangeUsd)} / ${formatLbpCurrency(
-                          cashChangeLbp
-                        )}`
-                      : `${formatCurrency(
-                          cashStillDueUsd
-                        )} / ${formatLbpCurrency(
-                          usdToLbp(cashStillDueUsd, exchangeRate)
-                        )}`}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          {paymentMethod === "Debt" ? (
-            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <div className="mb-3 flex items-center gap-2 text-sm font-bold text-amber-900">
-                <ReceiptText size={17} />
-                {t("pos.customer_debt")}
-              </div>
-
-              {customers.length > 0 ? (
-                <>
-                  {!selectedCustomerId ? (
-                    <p className="mb-2 text-xs font-medium text-rose-500">
-                      {t("pos.select_customer_hint")}
-                    </p>
-                  ) : null}
-                  <select
-                    value={selectedCustomerId}
-                    onChange={(event) =>
-                      onSelectCustomer(event.target.value)
-                    }
-                    className="h-11 w-full rounded-lg border border-amber-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
-                  >
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.name} - {customer.mobile}
-                      </option>
-                    ))}
-                  </select>
-
-                  <div className="mt-3 flex justify-between text-sm text-amber-900">
-                    <span>{t("pos.current_balance")}</span>
-                    <span className="font-bold">
-                      {formatCurrency(selectedCustomer?.balance ?? 0)}
-                    </span>
+                  <ShoppingCart size={36} style={{ color: "var(--text-3)" }} />
+                  <div className="text-center">
+                    <p className="text-[14px] font-semibold" style={{ color: "var(--text-2)" }}>{t("pos.cart_empty")}</p>
+                    <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>{t("pos.cart_empty_hint")}</p>
                   </div>
-                  <div className="mt-1 flex justify-between text-sm text-amber-900">
-                    <span>{t("pos.after_sale")}</span>
-                    <span className="font-bold">
-                      {formatCurrency(
-                        (selectedCustomer?.balance ?? 0) + total
-                      )}
-                    </span>
-                  </div>
-                  {(selectedCustomer?.creditLimit ?? 0) > 0 ? (
-                    <div
-                      className={`mt-1 flex justify-between text-sm ${
-                        creditLimitExceeded
-                          ? "text-rose-700"
-                          : "text-amber-900"
-                      }`}
-                    >
-                      <span>{t("pos.credit_limit")}</span>
-                      <span className="font-bold">
-                        {formatCurrency(
-                          selectedCustomer?.creditLimit ?? 0
-                        )}
-                      </span>
-                    </div>
-                  ) : null}
-                </>
-              ) : (
-                <Link
-                  to="/customers"
-                  className="flex h-11 items-center justify-center rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
-                >
-                  {t("pos.add_customer")}
-                </Link>
+                </div>
               )}
             </div>
-          ) : null}
 
-          <div className="space-y-2.5 rounded-lg border border-zinc-200 bg-white p-4 text-sm">
-            {hasDiscount ? (
-              <>
-                <div className="flex justify-between text-zinc-500">
-                  <span>{t("pos.items_subtotal")}</span>
-                  <span className="font-semibold text-zinc-800">
-                    {formatCurrency(grossSubtotal)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-zinc-700">
-                  <span>{t("pos.discount")}</span>
-                  <span className="font-bold">
-                    -{formatCurrency(discountTotal)}
-                  </span>
-                </div>
-              </>
-            ) : null}
-            <div className="flex justify-between text-zinc-500">
-              <span>{t("pos.subtotal")}</span>
-              <span className="font-semibold text-zinc-800">
-                {formatCurrency(subtotal)}
-              </span>
-            </div>
-            <div className="flex justify-between text-zinc-500">
-              <span>{t("pos.vat")} {formatVatRate(vatRate)}</span>
-              <span className="font-semibold text-zinc-800">
-                {formatCurrency(tax)}
-              </span>
-            </div>
-            <div className="flex justify-between border-t-2 border-zinc-900 pt-3 text-2xl font-bold tracking-tight text-zinc-950">
-              <span>{t("pos.total_usd")}</span>
-              <span>{formatCurrency(total)}</span>
-            </div>
-            <div className="flex justify-between text-base font-bold text-zinc-600">
-              <span>{t("pos.total_lbp")}</span>
-              <span>{formatLbpCurrency(totalLbp)}</span>
-            </div>
-          </div>
+            {/* ── Payment panel ── */}
+            <div
+              className="shrink-0 overflow-y-auto border-t p-3 space-y-3"
+              style={{ borderColor: "var(--border)", maxHeight: "62vh" }}
+            >
+              {/* Held sales */}
+              {heldSales.length > 0 && (
+                <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                  <button
+                    type="button"
+                    onClick={() => setHeldOpen(!heldOpen)}
+                    className="flex w-full items-center justify-between gap-3 px-3 py-2.5"
+                    style={{ background: "var(--surface-2)" }}
+                  >
+                    <span className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: "var(--text-2)" }}>
+                      <PauseCircle size={14} />
+                      {t("pos.held_sales")}
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        style={{ background: "var(--surface-3)", color: "var(--text-2)" }}
+                      >
+                        {heldSales.length}
+                      </span>
+                    </span>
+                    <ChevronDown size={14} className={`transition ${heldOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-3)" }} />
+                  </button>
 
-          <button
-            type="button"
-            onClick={onCompleteSale}
-            disabled={checkoutBlocked}
-            className="mt-4 h-14 w-full rounded-xl bg-emerald-600 px-4 text-lg font-bold text-white shadow-md transition hover:bg-emerald-500 active:scale-[0.97] disabled:bg-zinc-300 disabled:text-zinc-500 disabled:active:scale-100"
-          >
-            {creditLimitExceeded
-              ? t("pos.credit_exceeded")
-              : paymentMethod === "Cash" && !cashTenderValid
-                ? t("pos.enter_amount")
-                : paymentMethod === "Debt"
-                  ? t("pos.record_debt")
-                  : t("pos.complete_sale")}
-          </button>
-        </div>
+                  {heldOpen && (
+                    <div className="divide-y p-2 space-y-1.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+                      {heldSales.slice(0, 4).map((sale) => (
+                        <div key={sale.id} className="rounded-lg p-2.5" style={{ background: "var(--surface-2)" }}>
+                          <div className="flex items-center justify-between gap-3 mb-2">
+                            <p className="text-[12px] font-bold" style={{ color: "var(--text)" }}>{sale.holdNumber}</p>
+                            <p className="text-[12px] font-bold" style={{ color: "var(--text)" }}>
+                              {formatCurrency(getHeldSaleTotal(sale, vatRate))}
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => onResumeHeld(sale)}
+                              disabled={items.length > 0}
+                              className="flex h-8 items-center justify-center gap-1.5 rounded-lg text-[12px] font-semibold transition disabled:opacity-30"
+                              style={{ background: "var(--text)", color: "var(--surface)" }}
+                            >
+                              <PlayCircle size={13} />
+                              {t("pos.resume")}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onDiscardHeld(sale)}
+                              className="flex h-8 items-center justify-center gap-1.5 rounded-lg border text-[12px] font-semibold transition hover:opacity-80"
+                              style={{ borderColor: "var(--border)", color: "var(--text-2)" }}
+                            >
+                              <Eraser size={12} />
+                              {t("pos.discard")}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Sale note */}
+              <div>
+                <label className="flex items-center gap-1.5 mb-1.5 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
+                  <MessageSquare size={12} />
+                  {t("pos.sale_note")}
+                </label>
+                <input
+                  type="text"
+                  value={saleNote}
+                  onChange={(e) => onSaleNoteChange(e.target.value)}
+                  placeholder={t("pos.sale_note_placeholder")}
+                  maxLength={120}
+                  className="input w-full"
+                  style={{ height: 36, fontSize: 13 }}
+                />
+              </div>
+
+              {/* Payment method */}
+              <div>
+                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
+                  {t("pos.payment_method")}
+                </p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {paymentOptions.map(({ label, icon: Icon, color }) => {
+                    const active = paymentMethod === label
+                    const colors = paymentColors[color]
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => onSelectPayment(label)}
+                        className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 text-[11px] font-bold transition shadow-sm ${
+                          active ? colors.active : colors.inactive
+                        }`}
+                      >
+                        <Icon size={18} />
+                        {t("pos.payment." + label.toLowerCase())}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Discount */}
+              <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                <button
+                  type="button"
+                  onClick={() => setDiscountOpen(!discountOpen)}
+                  className="flex w-full items-center justify-between gap-3 px-3 py-2.5"
+                  style={{ background: "var(--surface-2)" }}
+                >
+                  <span className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: "var(--text-2)" }}>
+                    <BadgePercent size={14} />
+                    {t("pos.discount")}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {hasDiscount && (
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}
+                      >
+                        -{formatCurrency(discountTotal)}
+                      </span>
+                    )}
+                    <ChevronDown size={14} className={`transition ${discountOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-3)" }} />
+                  </div>
+                </button>
+
+                {discountOpen && (
+                  <div className="px-3 pb-3 pt-2" style={{ background: "var(--surface)" }}>
+                    {canApplyDiscount ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          {(["USD", "Percent"] as DiscountMode[]).map((mode) => (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => onDiscountModeChange(mode)}
+                              className={`h-8 rounded-lg border text-[12px] font-bold transition ${
+                                discountMode === mode
+                                  ? "border-[var(--text)] bg-[var(--text)] text-[var(--surface)]"
+                                  : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)]"
+                              }`}
+                            >
+                              {mode === "USD" ? t("pos.dollar_off") : t("pos.percent_off")}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number" min="0"
+                            max={discountMode === "Percent" ? 100 : undefined}
+                            step={discountMode === "Percent" ? 1 : 0.01}
+                            value={discountValue}
+                            onChange={(e) => onDiscountValueChange(e.target.value)}
+                            placeholder={discountMode === "Percent" ? "10" : "1.00"}
+                            className="input flex-1"
+                            style={{ height: 36, fontSize: 13 }}
+                          />
+                          {(discountMode === "Percent" ? [5, 10, 15] : [1, 5, 10]).map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              onClick={() => onDiscountValueChange(String(v))}
+                              className="h-9 rounded-lg border px-2.5 text-[11px] font-bold transition hover:opacity-80"
+                              style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-2)" }}
+                            >
+                              {discountMode === "Percent" ? `${v}%` : `$${v}`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[12px]" style={{ color: "var(--text-3)" }}>{t("pos.permission_required")}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Cash tender */}
+              {paymentMethod === "Cash" && (
+                <div
+                  className="rounded-xl border p-3 space-y-3"
+                  style={{ borderColor: "var(--brand-border)", background: "var(--brand-soft)" }}
+                >
+                  <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--brand-text)" }}>
+                    {t("pos.cash_tender")}
+                  </p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(["USD", "LBP", "Mixed"] as TenderMode[]).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => onSelectTenderMode(mode)}
+                        className={`h-9 rounded-lg border text-[12px] font-bold transition ${
+                          tenderMode === mode
+                            ? "border-[var(--brand)] bg-[var(--brand)] text-white"
+                            : "border-[var(--brand-border)] bg-white/60 text-[var(--brand-text)]"
+                        }`}
+                      >
+                        {mode === "Mixed" ? t("pos.tender.both") : t("pos.tender." + mode.toLowerCase())}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {tenderMode !== "LBP" && (
+                      <label className="block text-[11px] font-bold" style={{ color: "var(--brand-text)" }}>
+                        {t("pos.paid_usd")}
+                        <input
+                          type="number" min="0" step="0.01"
+                          value={paidUsd}
+                          onChange={(e) => onPaidUsdChange(e.target.value)}
+                          className="input mt-1 w-full"
+                          style={{ height: 40, fontSize: 15, fontWeight: 700 }}
+                        />
+                      </label>
+                    )}
+                    {tenderMode !== "USD" && (
+                      <label className="block text-[11px] font-bold" style={{ color: "var(--brand-text)" }}>
+                        {t("pos.paid_lbp")}
+                        <input
+                          type="number" min="0" step="1000"
+                          value={paidLbp}
+                          onChange={(e) => onPaidLbpChange(e.target.value)}
+                          className="input mt-1 w-full"
+                          style={{ height: 40, fontSize: 15, fontWeight: 700 }}
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => onFillExactTender("USD")} disabled={items.length === 0}
+                      className="h-8 flex-1 rounded-lg border text-[11px] font-bold transition hover:opacity-80 disabled:opacity-30"
+                      style={{ borderColor: "var(--brand-border)", color: "var(--brand-text)", background: "white/40" }}>
+                      {t("pos.exact_usd")}
+                    </button>
+                    <button type="button" onClick={() => onFillExactTender("LBP")} disabled={items.length === 0}
+                      className="h-8 flex-1 rounded-lg border text-[11px] font-bold transition hover:opacity-80 disabled:opacity-30"
+                      style={{ borderColor: "var(--brand-border)", color: "var(--brand-text)", background: "white/40" }}>
+                      {t("pos.exact_lbp")}
+                    </button>
+                  </div>
+
+                  {!cashTenderValid && items.length > 0 && (
+                    <p className="text-[11px] font-semibold" style={{ color: "var(--rose)" }}>{t("pos.insufficient_payment")}</p>
+                  )}
+
+                  {cashTenderValid && paidTotalUsd > 0 && (
+                    <div className="rounded-lg p-2.5 space-y-1" style={{ background: "rgba(255,255,255,0.5)" }}>
+                      <div className="flex justify-between text-[12px]" style={{ color: "var(--brand-text)" }}>
+                        <span>{t("pos.paid_total")}</span>
+                        <span className="font-bold">{formatCurrency(paidTotalUsd)} / {formatLbpCurrency(paidTotalLbp)}</span>
+                      </div>
+                      <div className="flex justify-between text-[12px] font-bold" style={{ color: cashChangeUsd > 0 ? "#059669" : "var(--rose)" }}>
+                        <span>{cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}</span>
+                        <span>
+                          {cashChangeUsd > 0
+                            ? `${formatCurrency(cashChangeUsd)} / ${formatLbpCurrency(cashChangeLbp)}`
+                            : `${formatCurrency(cashStillDueUsd)} / ${formatLbpCurrency(usdToLbp(cashStillDueUsd, exchangeRate))}`
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Debt: customer picker */}
+              {paymentMethod === "Debt" && (
+                <div
+                  className="rounded-xl border p-3 space-y-2"
+                  style={{ borderColor: "var(--amber-soft)", background: "var(--amber-soft)" }}
+                >
+                  <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--amber-text)" }}>
+                    {t("pos.customer_debt")}
+                  </p>
+                  {customers.length > 0 ? (
+                    <>
+                      {!selectedCustomerId && (
+                        <p className="text-[12px] font-semibold" style={{ color: "var(--rose)" }}>{t("pos.select_customer_hint")}</p>
+                      )}
+                      <select
+                        value={selectedCustomerId}
+                        onChange={(e) => onSelectCustomer(e.target.value)}
+                        className="input w-full"
+                        style={{ height: 38, fontSize: 13 }}
+                      >
+                        {customers.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name} — {c.mobile}</option>
+                        ))}
+                      </select>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[12px]" style={{ color: "var(--amber-text)" }}>
+                          <span>{t("pos.current_balance")}</span>
+                          <span className="font-bold">{formatCurrency(selectedCustomer?.balance ?? 0)}</span>
+                        </div>
+                        <div className="flex justify-between text-[12px]" style={{ color: "var(--amber-text)" }}>
+                          <span>{t("pos.after_sale")}</span>
+                          <span className="font-bold">{formatCurrency((selectedCustomer?.balance ?? 0) + total)}</span>
+                        </div>
+                        {(selectedCustomer?.creditLimit ?? 0) > 0 && (
+                          <div className="flex justify-between text-[12px]" style={{ color: creditLimitExceeded ? "var(--rose)" : "var(--amber-text)" }}>
+                            <span>{t("pos.credit_limit")}</span>
+                            <span className="font-bold">{formatCurrency(selectedCustomer!.creditLimit)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <Link to="/customers"
+                      className="flex h-9 w-full items-center justify-center rounded-lg text-[12px] font-bold text-white transition hover:opacity-90"
+                      style={{ background: "var(--text)" }}>
+                      {t("pos.add_customer")}
+                    </Link>
+                  )}
+                </div>
+              )}
+
+              {/* Totals */}
+              <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+                {hasDiscount && (
+                  <>
+                    <div className="flex justify-between text-[13px]" style={{ color: "var(--text-3)" }}>
+                      <span>{t("pos.items_subtotal")}</span>
+                      <span className="font-semibold" style={{ color: "var(--text-2)" }}>{formatCurrency(grossSubtotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-[13px]" style={{ color: "var(--brand-text)" }}>
+                      <span>{t("pos.discount")}</span>
+                      <span className="font-bold">-{formatCurrency(discountTotal)}</span>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between text-[13px]" style={{ color: "var(--text-3)" }}>
+                  <span>{t("pos.subtotal")}</span>
+                  <span className="font-semibold" style={{ color: "var(--text-2)" }}>{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-[13px]" style={{ color: "var(--text-3)" }}>
+                  <span>{t("pos.vat")} {formatVatRate(vatRate)}</span>
+                  <span className="font-semibold" style={{ color: "var(--text-2)" }}>{formatCurrency(tax)}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2" style={{ borderColor: "var(--border)" }}>
+                  <span className="text-[18px] font-bold" style={{ color: "var(--text)" }}>{t("pos.total_usd")}</span>
+                  <span className="text-[22px] font-black tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(total)}</span>
+                </div>
+                <div className="flex justify-between text-[12px]" style={{ color: "var(--text-3)" }}>
+                  <span>{t("pos.total_lbp")}</span>
+                  <span className="font-semibold">{formatLbpCurrency(totalLbp)}</span>
+                </div>
+              </div>
+
+              {/* Checkout button */}
+              <button
+                type="button"
+                onClick={onCompleteSale}
+                disabled={checkoutBlocked}
+                className="btn-checkout w-full h-14 text-[16px] font-black tracking-tight"
+              >
+                {checkoutLabel}
+              </button>
+            </div>
           </motion.aside>
         </div>
-      ) : null}
+      )}
     </AnimatePresence>
   )
 }

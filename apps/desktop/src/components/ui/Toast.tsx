@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react"
 import { CheckCircle, Info, X, XCircle, AlertTriangle } from "lucide-react"
-import { cn } from "../../lib/utils"
 
 export type ToastType = "success" | "error" | "info" | "warning"
 
@@ -10,81 +9,63 @@ export interface ToastMessage {
   message: string
 }
 
-const styles: Record<ToastType, string> = {
-  success: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  error: "border-rose-200 bg-rose-50 text-rose-800",
-  info: "border-sky-200 bg-sky-50 text-sky-800",
-  warning: "border-amber-200 bg-amber-50 text-amber-800",
+const config: Record<ToastType, { icon: typeof CheckCircle; bg: string; text: string; border: string }> = {
+  success: { icon: CheckCircle,   bg: "var(--brand-soft)",  text: "var(--brand-text)",  border: "var(--brand-border)" },
+  error:   { icon: XCircle,      bg: "var(--rose-soft)",   text: "var(--rose-text)",   border: "rgba(244,63,94,0.2)" },
+  info:    { icon: Info,          bg: "var(--accent-soft)", text: "var(--accent-text)", border: "rgba(99,102,241,0.2)" },
+  warning: { icon: AlertTriangle, bg: "var(--amber-soft)",  text: "var(--amber-text)",  border: "rgba(245,158,11,0.2)" },
 }
 
-const icons: Record<ToastType, typeof CheckCircle> = {
-  success: CheckCircle,
-  error: XCircle,
-  info: Info,
-  warning: AlertTriangle,
-}
-
-interface ToastItemProps {
-  toast: ToastMessage
-  onDismiss: (id: string) => void
-}
-
-function ToastItem({ toast, onDismiss }: ToastItemProps) {
+function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: (id: string) => void }) {
   const [visible, setVisible] = useState(false)
-  const Icon = icons[toast.type]
+  const { icon: Icon, bg, text, border } = config[toast.type]
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setVisible(true))
-    return () => cancelAnimationFrame(frame)
+    const f = requestAnimationFrame(() => setVisible(true))
+    return () => cancelAnimationFrame(f)
   }, [])
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const t = setTimeout(() => {
       setVisible(false)
-      setTimeout(() => onDismiss(toast.id), 300)
+      setTimeout(() => onDismiss(toast.id), 250)
     }, 4000)
-    return () => clearTimeout(timer)
+    return () => clearTimeout(t)
   }, [toast.id, onDismiss])
 
   return (
     <div
       role="alert"
-      className={cn(
-        "pointer-events-auto flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg transition-all duration-300",
-        styles[toast.type],
-        visible ? "translate-x-0 opacity-100" : "translate-x-full opacity-0"
-      )}
+      className="pointer-events-auto flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-250"
+      style={{
+        background: bg,
+        borderColor: border,
+        boxShadow: "var(--shadow-lg)",
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateX(0)" : "translateX(24px)",
+      }}
     >
-      <Icon size={18} className="shrink-0" />
-      <p className="flex-1 text-sm font-semibold">{toast.message}</p>
+      <Icon size={16} className="shrink-0" style={{ color: text }} />
+      <p className="flex-1 text-[13px] font-semibold" style={{ color: text }}>{toast.message}</p>
       <button
         type="button"
-        onClick={() => {
-          setVisible(false)
-          setTimeout(() => onDismiss(toast.id), 300)
-        }}
-        className="shrink-0 rounded-md p-1 transition hover:bg-black/5"
+        onClick={() => { setVisible(false); setTimeout(() => onDismiss(toast.id), 250) }}
+        className="shrink-0 rounded-lg p-1 transition hover:opacity-60"
+        style={{ color: text }}
         aria-label="Dismiss"
       >
-        <X size={14} />
+        <X size={13} />
       </button>
     </div>
   )
 }
 
-interface ToastContainerProps {
-  toasts: ToastMessage[]
-  onDismiss: (id: string) => void
-}
-
-export default function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
+export default function ToastContainer({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismiss: (id: string) => void }) {
   if (toasts.length === 0) return null
-
   return (
     <div
       className="pointer-events-none fixed bottom-24 right-4 z-[100] flex flex-col gap-2 sm:bottom-6"
       aria-live="polite"
-      aria-label="Notifications"
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />

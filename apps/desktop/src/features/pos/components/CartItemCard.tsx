@@ -17,15 +17,9 @@ type Props = {
 }
 
 const CartItemCard = memo(function CartItemCard({
-  name,
-  quantity,
-  unitPrice,
-  totalPrice,
-  onIncrease,
-  onDecrease,
-  onRemove,
-  onSetQuantity,
-  onSetPrice,
+  name, quantity, unitPrice, totalPrice,
+  onIncrease, onDecrease, onRemove,
+  onSetQuantity, onSetPrice,
 }: Props) {
   const { t } = useI18n()
   const [editingQty, setEditingQty] = useState(false)
@@ -38,21 +32,18 @@ const CartItemCard = memo(function CartItemCard({
   function openQtyEdit() {
     setQtyInput(String(quantity))
     setEditingQty(true)
-    setTimeout(() => { qtyRef.current?.select() }, 0)
+    setTimeout(() => qtyRef.current?.select(), 0)
   }
-
   function commitQty() {
     const val = parseFloat(qtyInput)
     if (!isNaN(val) && val > 0) onSetQuantity(Math.round(val))
     setEditingQty(false)
   }
-
   function openPriceEdit() {
     setPriceInput(String(unitPrice))
     setEditingPrice(true)
-    setTimeout(() => { priceRef.current?.select() }, 0)
+    setTimeout(() => priceRef.current?.select(), 0)
   }
-
   function commitPrice() {
     const val = parseFloat(priceInput)
     if (!isNaN(val) && val >= 0 && onSetPrice) onSetPrice(val)
@@ -60,95 +51,106 @@ const CartItemCard = memo(function CartItemCard({
   }
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="truncate font-bold text-zinc-950">{name}</h3>
-          {editingPrice && onSetPrice ? (
-            <div className="mt-1 flex items-center gap-1">
-              <span className="text-sm text-zinc-400">$</span>
-              <input
-                ref={priceRef}
-                type="number"
-                min="0"
-                step="0.01"
-                value={priceInput}
-                onChange={(e) => setPriceInput(e.target.value)}
-                onBlur={commitPrice}
-                onKeyDown={(e) => { if (e.key === "Enter") commitPrice(); if (e.key === "Escape") setEditingPrice(false) }}
-                className="w-20 rounded border border-emerald-400 bg-white px-1.5 py-0.5 text-sm font-bold text-zinc-950 outline-none ring-2 ring-emerald-100"
-              />
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={onSetPrice ? openPriceEdit : undefined}
-              title={onSetPrice ? t("pos.cart.edit_price") : undefined}
-              className={`mt-1 text-sm text-zinc-500 ${onSetPrice ? "hover:text-emerald-600 hover:underline cursor-pointer" : "cursor-default"}`}
-            >
-              {formatCurrency(unitPrice)} {t("pos.each")}
-              {onSetPrice && <span className="ml-1 text-xs text-zinc-300">{t("pos.cart.tap_to_edit")}</span>}
-            </button>
-          )}
-        </div>
+    <div
+      className="flex items-center gap-3 rounded-xl px-3 py-3"
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      {/* Info */}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-semibold leading-tight" style={{ color: "var(--text)" }}>
+          {name}
+        </p>
+
+        {editingPrice && onSetPrice ? (
+          <div className="mt-1 flex items-center gap-1">
+            <span className="text-[12px]" style={{ color: "var(--text-3)" }}>$</span>
+            <input
+              ref={priceRef}
+              type="number" min="0" step="0.01"
+              value={priceInput}
+              onChange={(e) => setPriceInput(e.target.value)}
+              onBlur={commitPrice}
+              onKeyDown={(e) => { if (e.key === "Enter") commitPrice(); if (e.key === "Escape") setEditingPrice(false) }}
+              className="w-20 rounded-md border px-1.5 py-0.5 text-[12px] font-bold outline-none"
+              style={{ borderColor: "var(--brand)", boxShadow: "0 0 0 2px var(--brand-soft)", color: "var(--text)", background: "var(--surface)" }}
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onSetPrice ? openPriceEdit : undefined}
+            className={`mt-0.5 text-[12px] font-medium leading-tight ${onSetPrice ? "cursor-pointer hover:underline" : "cursor-default"}`}
+            style={{ color: "var(--text-3)" }}
+          >
+            {formatCurrency(unitPrice)} {t("pos.each")}
+          </button>
+        )}
+      </div>
+
+      {/* Qty controls */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        <button
+          type="button"
+          onClick={onDecrease}
+          className="flex h-7 w-7 items-center justify-center rounded-lg border transition hover:opacity-80"
+          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
+        >
+          <Minus size={13} />
+        </button>
+
+        {editingQty ? (
+          <input
+            ref={qtyRef}
+            type="number" min="1"
+            value={qtyInput}
+            onChange={(e) => setQtyInput(e.target.value)}
+            onBlur={commitQty}
+            onKeyDown={(e) => { if (e.key === "Enter") commitQty(); if (e.key === "Escape") setEditingQty(false) }}
+            className="h-7 w-12 rounded-lg border text-center text-[13px] font-bold outline-none"
+            style={{ borderColor: "var(--brand)", boxShadow: "0 0 0 2px var(--brand-soft)", color: "var(--text)", background: "var(--surface)" }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={openQtyEdit}
+            title={t("pos.cart.set_quantity")}
+            className="h-7 w-10 rounded-lg text-[13px] font-bold transition hover:opacity-80"
+            style={{ background: "var(--surface-3)", color: "var(--text)" }}
+          >
+            {quantity}
+          </button>
+        )}
 
         <button
           type="button"
-          onClick={onRemove}
-          aria-label={t("pos.remove_item", { name })}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600"
+          onClick={onIncrease}
+          className="flex h-7 w-7 items-center justify-center rounded-lg border transition hover:opacity-80"
+          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
         >
-          <Trash2 size={16} />
+          <Plus size={13} />
         </button>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onDecrease}
-            aria-label={t("pos.decrease_item", { name })}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-100"
-          >
-            <Minus size={16} />
-          </button>
+      {/* Total */}
+      <span className="w-[62px] shrink-0 text-right text-[13px] font-bold tabular-nums" style={{ color: "var(--text)" }}>
+        {formatCurrency(totalPrice)}
+      </span>
 
-          {editingQty ? (
-            <input
-              ref={qtyRef}
-              type="number"
-              min="1"
-              value={qtyInput}
-              onChange={(e) => setQtyInput(e.target.value)}
-              onBlur={commitQty}
-              onKeyDown={(e) => { if (e.key === "Enter") commitQty(); if (e.key === "Escape") setEditingQty(false) }}
-              className="flex h-9 w-16 items-center justify-center rounded-lg border border-emerald-400 bg-white text-center text-sm font-bold text-zinc-900 outline-none ring-2 ring-emerald-100"
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={openQtyEdit}
-              title={t("pos.cart.set_quantity")}
-              className="flex h-9 w-10 items-center justify-center rounded-lg bg-zinc-100 text-sm font-bold text-zinc-900 transition hover:bg-emerald-100 hover:text-emerald-800"
-            >
-              {quantity}
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={onIncrease}
-            aria-label={t("pos.increase_item", { name })}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-100"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
-
-        <span className="text-base font-bold text-zinc-950">
-          {formatCurrency(totalPrice)}
-        </span>
-      </div>
+      {/* Remove */}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition"
+        style={{ color: "var(--text-3)" }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--rose)"; e.currentTarget.style.background = "var(--rose-soft)" }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-3)"; e.currentTarget.style.background = "transparent" }}
+        aria-label={t("pos.remove_item", { name })}
+      >
+        <Trash2 size={14} />
+      </button>
     </div>
   )
 })
