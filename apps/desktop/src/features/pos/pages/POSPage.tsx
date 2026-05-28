@@ -244,6 +244,7 @@ export default function POSPage() {
   } | null>(null)
   const [variantPickerProduct, setVariantPickerProduct] =
     useState<Product | null>(null)
+  const [saleNote, setSaleNote] = useState("")
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const productListRef = useRef<HTMLDivElement | null>(null)
@@ -608,6 +609,20 @@ export default function POSPage() {
 
   const removeItem = useCallback(function removeItem(id: number) {
     setItems((currentItems) => currentItems.filter((item) => item.id !== id))
+  }, [])
+
+  const setItemQuantity = useCallback(function setItemQuantity(id: number, qty: number) {
+    setItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === id ? { ...item, quantity: Math.min(qty, item.stock) } : item
+      ).filter((item) => item.quantity > 0)
+    )
+  }, [])
+
+  const setItemPrice = useCallback(function setItemPrice(id: number, price: number) {
+    setItems((currentItems) =>
+      currentItems.map((item) => item.id === id ? { ...item, price } : item)
+    )
   }, [])
 
   function resetTender() {
@@ -1080,6 +1095,7 @@ export default function POSPage() {
     resetDiscount()
     setScanCode("")
     setSearch("")
+    setSaleNote("")
     setIsCartOpen(false)
     setScannerStatus("Sale completed. Scanner ready for the next sale.")
   }, [checkoutBlocked, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, clearCart, resetTender, resetDiscount])
@@ -1283,6 +1299,10 @@ export default function POSPage() {
         onIncreaseQty={increaseQuantity}
         onDecreaseQty={decreaseQuantity}
         onRemoveItem={removeItem}
+        onSetQuantity={setItemQuantity}
+        onSetPrice={setItemPrice}
+        saleNote={saleNote}
+        onSaleNoteChange={setSaleNote}
         heldSales={heldSales}
         onResumeHeld={resumeHeldSale}
         onDiscardHeld={discardHeldSale}

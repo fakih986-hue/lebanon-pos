@@ -97,6 +97,11 @@ interface Props {
   onDiscountModeChange: (mode: DiscountMode) => void
   onDiscountValueChange: (value: string) => void
 
+  onSetQuantity: (id: number, qty: number) => void
+  onSetPrice: (id: number, price: number) => void
+  saleNote: string
+  onSaleNoteChange: (note: string) => void
+
   onHold: () => void
   onClean: () => void
   onCompleteSale: () => void
@@ -150,6 +155,10 @@ export default function CartDrawer({
   discountValue,
   onDiscountModeChange,
   onDiscountValueChange,
+  onSetQuantity,
+  onSetPrice,
+  saleNote,
+  onSaleNoteChange,
   onHold,
   onClean,
   onCompleteSale,
@@ -266,6 +275,8 @@ export default function CartDrawer({
                   onIncrease={() => onIncreaseQty(item.id)}
                   onDecrease={() => onDecreaseQty(item.id)}
                   onRemove={() => onRemoveItem(item.id)}
+                  onSetQuantity={(qty) => onSetQuantity(item.id, qty)}
+                  onSetPrice={(price) => onSetPrice(item.id, price)}
                 />
               ))}
             </div>
@@ -356,6 +367,20 @@ export default function CartDrawer({
               ) : null}
             </div>
           ) : null}
+
+          <div className="mb-4">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              {t("pos.sale_note")}
+            </label>
+            <input
+              type="text"
+              value={saleNote}
+              onChange={(e) => onSaleNoteChange(e.target.value)}
+              placeholder={t("pos.sale_note_placeholder")}
+              maxLength={120}
+              className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-800 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            />
+          </div>
 
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
             {t("pos.payment_method")}

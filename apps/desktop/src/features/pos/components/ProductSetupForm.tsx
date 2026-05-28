@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Save, Star } from "lucide-react"
+import { useRef, useState } from "react"
+import { ImagePlus, Save, Star, Trash2 } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
 import type { SupplierLedger } from "../services/supplier.service"
@@ -27,6 +27,8 @@ type Props = {
   setCategoryFrom: (value: string) => void
   categoryTo: string
   setCategoryTo: (value: string) => void
+  productImage: string
+  onImageChange: (dataUrl: string) => void
   onToggleFavorite: () => void
   onSaveProductSetup: () => void
   onSaveCategoryRename: () => void
@@ -54,11 +56,14 @@ export default function ProductSetupForm({
   setCategoryFrom,
   categoryTo,
   setCategoryTo,
+  productImage,
+  onImageChange,
   onToggleFavorite,
   onSaveProductSetup,
   onSaveCategoryRename,
 }: Props) {
   const { t } = useI18n()
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const [formErrors, setFormErrors] = useState<Partial<Record<"category" | "reorderPoint" | "reorderQuantity", string>>>({})
 
   function handleSave() {
@@ -80,6 +85,26 @@ export default function ProductSetupForm({
     }
     setFormErrors({})
     onSaveProductSetup()
+  }
+
+  function handleImageFile(file: File) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string
+      // Resize to max 300x300 using canvas
+      const img = new Image()
+      img.onload = () => {
+        const MAX = 300
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1)
+        const canvas = document.createElement("canvas")
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height)
+        onImageChange(canvas.toDataURL("image/jpeg", 0.8))
+      }
+      img.src = dataUrl
+    }
+    reader.readAsDataURL(file)
   }
 
   return (
@@ -204,6 +229,45 @@ export default function ProductSetupForm({
               className="mt-2 w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
             />
           </label>
+
+          {/* Image upload */}
+          <div className="xl:col-span-2 flex items-center gap-3">
+            {productImage ? (
+              <img src={productImage} alt="Product" className="h-14 w-14 rounded-lg object-cover border border-zinc-200 shrink-0" />
+            ) : (
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 text-zinc-400">
+                <ImagePlus size={22} />
+              </div>
+            )}
+            <div className="flex flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={!selectedProduct}
+                className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-40"
+              >
+                <ImagePlus size={14} />
+                {t("pos.setup.upload_image")}
+              </button>
+              {productImage && (
+                <button
+                  type="button"
+                  onClick={() => onImageChange("")}
+                  className="flex h-8 items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-bold text-rose-600 transition hover:bg-rose-100"
+                >
+                  <Trash2 size={14} />
+                  {t("pos.setup.remove_image")}
+                </button>
+              )}
+            </div>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageFile(f); e.target.value = "" }}
+            />
+          </div>
 
           <button
             type="button"

@@ -95,6 +95,7 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
   const [productCategory, setProductCategory] = useState("")
+  const [productImage, setProductImage] = useState("")
   const [productSupplierId, setProductSupplierId] = useState("")
   const [reorderPoint, setReorderPoint] = useState("")
   const [reorderQuantity, setReorderQuantity] = useState("")
@@ -124,6 +125,11 @@ export default function ProductsPage() {
   const [batchVersion, setBatchVersion] = useState(0)
   const [controlVersion, setControlVersion] = useState(0)
   const [deleteProductId, setDeleteProductId] = useState<number | null>(null)
+  const [bulkEditOpen, setBulkEditOpen] = useState(false)
+  const [bulkEditCategory, setBulkEditCategory] = useState("All")
+  const [bulkEditField, setBulkEditField] = useState<"price" | "cost">("price")
+  const [bulkEditMode, setBulkEditMode] = useState<"percent" | "fixed">("percent")
+  const [bulkEditValue, setBulkEditValue] = useState("")
   const [isParent, setIsParent] = useState(false)
   const [variantName, setVariantName] = useState("")
   const [newVariantName, setNewVariantName] = useState("")
@@ -306,6 +312,7 @@ export default function ProductsPage() {
 
     setSelectedProductId(selectedProduct.id)
     setProductCategory(selectedProduct.category)
+    setProductImage(selectedProduct.image ?? "")
     setProductSupplierId(selectedProduct.supplierId ?? "")
     setReorderPoint(String(selectedProduct.reorderPoint ?? 10))
     setReorderQuantity(String(selectedProduct.reorderQuantity ?? 20))
@@ -383,8 +390,29 @@ export default function ProductsPage() {
       barcodeAliases: aliases,
       isParent: !!isParent,
       variantName: variantName?.trim() || undefined,
+      image: productImage || undefined,
     })
     showToast(`${selectedProduct.name} setup saved.`)
+  }
+
+  function applyBulkPriceEdit() {
+    const val = parseFloat(bulkEditValue)
+    if (isNaN(val) || val <= 0) { showToast("Enter a valid value.", "error"); return }
+    const targets = products.filter((p) => !p.isParent && (bulkEditCategory === "All" || p.category === bulkEditCategory))
+    for (const p of targets) {
+      const current = bulkEditField === "price" ? p.price : p.cost
+      let next: number
+      if (bulkEditMode === "percent") {
+        next = current * (1 + val / 100)
+      } else {
+        next = current + val
+      }
+      if (next < 0) next = 0
+      updateProduct(p.id, { [bulkEditField]: Math.round(next * 100) / 100 })
+    }
+    showToast(`Updated ${bulkEditField} for ${targets.length} products.`)
+    setBulkEditOpen(false)
+    setBulkEditValue("")
   }
 
   function toggleFavorite(product: Product) {
@@ -699,6 +727,8 @@ export default function ProductsPage() {
         setCategoryFrom={setCategoryFrom}
         categoryTo={categoryTo}
         setCategoryTo={setCategoryTo}
+        productImage={productImage}
+        onImageChange={setProductImage}
         onToggleFavorite={() => selectedProduct && toggleFavorite(selectedProduct)}
         onSaveProductSetup={saveProductSetup}
         onSaveCategoryRename={saveCategoryRename}
@@ -849,6 +879,51 @@ export default function ProductsPage() {
       </datalist>
 
       {activeProductView === "Catalog" ? (
+      <>
+      {bulkEditOpen && (
+        <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+          <h3 className="mb-3 text-sm font-bold text-indigo-900">Bulk Price Edit</h3>
+          <div className="flex flex-wrap gap-3">
+            <select value={bulkEditCategory} onChange={(e) => setBulkEditCategory(e.target.value)}
+              className="h-10 rounded-lg border border-indigo-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none">
+              <option value="All">All Categories</option>
+              {categories.filter((c) => c !== "All").map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select value={bulkEditField} onChange={(e) => setBulkEditField(e.target.value as "price" | "cost")}
+              className="h-10 rounded-lg border border-indigo-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none">
+              <option value="price">Price</option>
+              <option value="cost">Cost</option>
+            </select>
+            <select value={bulkEditMode} onChange={(e) => setBulkEditMode(e.target.value as "percent" | "fixed")}
+              className="h-10 rounded-lg border border-indigo-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none">
+              <option value="percent">% change</option>
+              <option value="fixed">Fixed ± $</option>
+            </select>
+            <input type="number" value={bulkEditValue} onChange={(e) => setBulkEditValue(e.target.value)}
+              placeholder={bulkEditMode === "percent" ? "e.g. 10 = +10%" : "e.g. 0.50"}
+              className="h-10 w-32 rounded-lg border border-indigo-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200" />
+            <button type="button" onClick={applyBulkPriceEdit}
+              className="h-10 rounded-lg bg-indigo-700 px-4 text-sm font-bold text-white transition hover:bg-indigo-600">
+              Apply
+            </button>
+            <button type="button" onClick={() => setBulkEditOpen(false)}
+              className="h-10 rounded-lg border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50">
+              Cancel
+            </button>
+          </div>
+          <p className="mt-2 text-xs text-indigo-700">
+            Affects {products.filter((p) => !p.isParent && (bulkEditCategory === "All" || p.category === bulkEditCategory)).length} products. Changes are applied immediately.
+          </p>
+        </div>
+      )}
+      {!bulkEditOpen && (
+        <div className="mb-3 flex justify-end">
+          <button type="button" onClick={() => setBulkEditOpen(true)}
+            className="flex h-9 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50">
+            ± Bulk Edit Prices
+          </button>
+        </div>
+      )}
       <ProductTable
         filteredProducts={filteredProducts}
         lowStockCount={lowStockCount}
@@ -860,6 +935,7 @@ export default function ProductsPage() {
         onToggleFavorite={toggleFavorite}
         onDeleteClick={setDeleteProductId}
       />
+      </>
       ) : null}
 
       <ConfirmDialog

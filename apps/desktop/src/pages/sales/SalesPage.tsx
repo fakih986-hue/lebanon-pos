@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useDebounce } from "../../hooks/useDebounce"
 import { useHotkeys } from "../../hooks/useHotkey"
 import { useSearchParams } from "react-router"
-import { BarChart3, ReceiptText, Search } from "lucide-react"
+import { BarChart3, Calendar, Download, ReceiptText, Search } from "lucide-react"
 
 import { formatCurrency } from "../../features/pos/lib/currency"
 import { getSettings } from "../../features/pos/services/settings.service"
@@ -40,6 +40,46 @@ import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 import { useI18n } from "@lebanonpos/shared"
 
 type SalesTab = "Receipts" | "Insights"
+type DateRange = "today" | "week" | "month" | "all"
+
+function getDateRangeStart(range: DateRange): Date | null {
+  const now = new Date()
+  if (range === "today") {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  }
+  if (range === "week") {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    d.setDate(d.getDate() - 6)
+    return d
+  }
+  if (range === "month") {
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  }
+  return null
+}
+
+function exportSalesCsv(sales: Sale[]) {
+  const header = ["Sale#", "Date", "Payment", "Customer", "Items", "Subtotal", "Discount", "Tax", "Total"]
+  const rows = sales.map((s) => [
+    s.saleNumber,
+    new Date(s.createdAt).toLocaleString(),
+    s.paymentMethod,
+    s.customerName ?? "",
+    s.items.reduce((sum, i) => sum + i.quantity, 0),
+    s.subtotal.toFixed(2),
+    (s.discountTotal ?? 0).toFixed(2),
+    s.tax.toFixed(2),
+    s.total.toFixed(2),
+  ])
+  const csv = [header, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n")
+  const blob = new Blob([csv], { type: "text/csv" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `sales-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 export default function SalesPage() {
   const { t } = useI18n()
@@ -48,9 +88,8 @@ export default function SalesPage() {
   const [refunds, setRefunds] = useState<SaleRefund[]>(getRefunds())
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebounce(search, 200)
-  const [paymentFilter, setPaymentFilter] = useState<"All" | SalePaymentMethod>(
-    "All"
-  )
+  const [paymentFilter, setPaymentFilter] = useState<"All" | SalePaymentMethod>("All")
+  const [dateRange, setDateRange] = useState<DateRange>("all")
   const [activeTab, setActiveTab] = useState<SalesTab>(
     searchParams.get("tab") === "insights" ? "Insights" : "Receipts"
   )
@@ -83,19 +122,20 @@ export default function SalesPage() {
   const paymentMix = useMemo(() => getPaymentMix(), [sales, refunds])
   const filteredSales = useMemo(() => {
     const query = search.trim().toLowerCase()
+    const rangeStart = getDateRangeStart(dateRange)
 
     return sales.filter((sale) => {
-      const matchesPayment =
-        paymentFilter === "All" || sale.paymentMethod === paymentFilter
+      const matchesPayment = paymentFilter === "All" || sale.paymentMethod === paymentFilter
       const matchesSearch =
         query.length === 0 ||
         sale.saleNumber.toLowerCase().includes(query) ||
         sale.customerName?.toLowerCase().includes(query) ||
         sale.items.some((item) => item.name.toLowerCase().includes(query))
+      const matchesDate = !rangeStart || new Date(sale.createdAt) >= rangeStart
 
-      return matchesPayment && matchesSearch
+      return matchesPayment && matchesSearch && matchesDate
     })
-  }, [paymentFilter, sales, debouncedSearch])
+  }, [paymentFilter, sales, debouncedSearch, dateRange])
 
   const selectedSale =
     sales.find((sale) => sale.id === selectedSaleId) ?? filteredSales[0]
@@ -249,7 +289,28 @@ export default function SalesPage() {
           ]}
         />
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <div className="flex rounded-lg border border-zinc-200 bg-white overflow-hidden text-sm font-semibold">
+            {(["today", "week", "month", "all"] as DateRange[]).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setDateRange(r)}
+                className={`px-3 h-10 transition ${dateRange === r ? "bg-zinc-950 text-white" : "text-zinc-600 hover:bg-zinc-50"}`}
+              >
+                {r === "today" ? t("pos.sales.today") : r === "week" ? t("pos.sales.this_week") : r === "month" ? t("pos.sales.this_month") : t("pos.sales.all_time")}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => exportSalesCsv(filteredSales)}
+            disabled={filteredSales.length === 0}
+            className="flex h-10 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-40"
+          >
+            <Download size={15} />
+            {t("pos.sales.export_csv")}
+          </button>
           <label className="relative w-full sm:w-64">
             <span className="sr-only">{t("pos.sales.search_sales")}</span>
             <Search
@@ -280,6 +341,7 @@ export default function SalesPage() {
           </select>
         </div>
       </div>
+
 
       {activeTab === "Receipts" ? (
         <section className="mt-4 grid gap-4 xl:grid-cols-[minmax(320px,430px)_minmax(0,1fr)]">
@@ -319,6 +381,7 @@ export default function SalesPage() {
           filteredSales={filteredSales}
           paymentMix={paymentMix}
           onViewSale={(sale) => setDrawerSaleId(sale.id)}
+          onExportCsv={() => exportSalesCsv(filteredSales)}
         />
       )}
 

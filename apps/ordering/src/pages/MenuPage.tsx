@@ -14,7 +14,9 @@ export function MenuPage() {
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [storeName, setStoreName] = useState("")
   const [products, setProducts] = useState<Product[]>([])
-  const [cart, setCart] = useState<CartItem[]>([])
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try { return JSON.parse(localStorage.getItem(`cart_${tenantSubdomain}`) ?? "[]") } catch { return [] }
+  })
   const [activeCategory, setActiveCategory] = useState<string>("All")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -26,8 +28,10 @@ export function MenuPage() {
   const [deliveryNote, setDeliveryNote] = useState("")
   const [deliveryFee, setDeliveryFee] = useState(2.0)
   const [orderError, setOrderError] = useState<string | null>(null)
+  const [search, setSearch] = useState("")
   const cartRef = useRef<HTMLDivElement>(null)
   const customerId = localStorage.getItem("customer_id") || undefined
+  const CART_KEY = `cart_${tenantSubdomain}`
 
   useEffect(() => {
     if (!tenantSubdomain) return
@@ -45,8 +49,18 @@ export function MenuPage() {
       .catch((err) => { setError(err.message); setLoading(false) })
   }, [tenantSubdomain])
 
+  // Persist cart to localStorage whenever it changes
+  useEffect(() => {
+    if (tenantSubdomain) localStorage.setItem(`cart_${tenantSubdomain}`, JSON.stringify(cart))
+  }, [cart, tenantSubdomain])
+
   const categories = ["All", ...new Set(products.map((p) => p.category))]
-  const filteredProducts = activeCategory === "All" ? products : products.filter((p) => p.category === activeCategory)
+  const searchQuery = search.trim().toLowerCase()
+  const filteredProducts = products.filter((p) => {
+    const matchCat = activeCategory === "All" || p.category === activeCategory
+    const matchSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery) || p.category.toLowerCase().includes(searchQuery)
+    return matchCat && matchSearch
+  })
   const inStock = filteredProducts.filter((p) => p.stock > 0)
   const outOfStock = filteredProducts.filter((p) => p.stock === 0)
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
@@ -76,6 +90,8 @@ export function MenuPage() {
         items: cart.map((item) => ({ productId: item.product.id, productName: item.product.name, barcode: item.product.barcode, quantity: item.quantity, unitPrice: item.product.price })),
       }
       const result = await api<{ order: { orderNumber: string } }>("/api/delivery/order", { method: "POST", body: JSON.stringify(payload) })
+      setCart([])
+      localStorage.removeItem(`cart_${tenantSubdomain}`)
       navigate(`/order/${tenantSubdomain}/track/${result.order.orderNumber}`)
     } catch (err: any) { setOrderError(err.message); setSubmitting(false) }
   }, [tenantId, customerName, customerPhone, address, deliveryNote, deliveryFee, cart, tenantSubdomain, navigate, customerId])
@@ -210,6 +226,18 @@ export function MenuPage() {
           </div>
         </div>
       </header>
+
+      <div className="border-b border-glass px-4 py-2">
+        <div className="max-w-md mx-auto">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("ordering.search_menu")}
+            className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-glass text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
+          />
+        </div>
+      </div>
 
       <div className="overflow-x-auto border-b border-glass px-4 py-3">
         <div className="flex gap-2 max-w-md mx-auto">

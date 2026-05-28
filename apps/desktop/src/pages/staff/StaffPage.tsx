@@ -219,6 +219,9 @@ export default function StaffPage() {
     confirmDestructive?: boolean
     onConfirm: () => void
   } | null>(null)
+  const [pinChangeUserId, setPinChangeUserId] = useState<string | null>(null)
+  const [newPin, setNewPin] = useState("")
+  const [pinChangeError, setPinChangeError] = useState("")
   const [activeWorkspace, setActiveWorkspace] =
     useState<StaffWorkspace>("Team")
   const [search, setSearch] = useState("")
@@ -395,6 +398,19 @@ export default function StaffPage() {
         }
       },
     })
+  }
+
+  async function handlePinChange() {
+    if (newPin.length < 4) {
+      setPinChangeError(t("pos.staff.pin_too_short"))
+      return
+    }
+    if (!pinChangeUserId) return
+    await updateUser(pinChangeUserId, { pin: newPin })
+    setPinChangeUserId(null)
+    setNewPin("")
+    setPinChangeError("")
+    showToast(t("pos.staff.pin_updated"))
   }
 
   function updateCashCount(denomination: number, value: string) {
@@ -577,7 +593,7 @@ export default function StaffPage() {
 
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="mt-4 grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => setCurrentUser(user.id)}
@@ -607,7 +623,47 @@ export default function StaffPage() {
                       <LockKeyhole size={16} />
                       {user.active ? t("pos.staff.disable") : t("pos.staff.enable")}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPinChangeUserId(user.id); setNewPin(""); setPinChangeError("") }}
+                      className="flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+                    >
+                      <KeyRound size={16} />
+                      {t("pos.staff.change_pin")}
+                    </button>
                   </div>
+
+                  {pinChangeUserId === user.id && (
+                    <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+                      <p className="mb-2 text-xs font-bold text-indigo-800">{t("pos.staff.new_pin_for", { name: user.name })}</p>
+                      <div className="flex gap-2">
+                        <input
+                          type="password"
+                          value={newPin}
+                          onChange={(e) => setNewPin(e.target.value)}
+                          maxLength={8}
+                          placeholder="••••"
+                          className="h-10 w-28 rounded-lg border border-indigo-200 bg-white px-3 text-center text-lg font-bold tracking-widest outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                          onKeyDown={(e) => { if (e.key === "Enter") handlePinChange() }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handlePinChange}
+                          className="flex-1 h-10 rounded-lg bg-indigo-700 text-sm font-bold text-white transition hover:bg-indigo-600"
+                        >
+                          {t("pos.staff.save_pin")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPinChangeUserId(null)}
+                          className="h-10 w-10 rounded-lg border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      {pinChangeError && <p className="mt-1 text-xs text-rose-600">{pinChangeError}</p>}
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

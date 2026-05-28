@@ -35,6 +35,10 @@ app.use(express.json({ limit: "10mb" }))
 
 app.use("/api/auth", rateLimit({ windowMs: 60_000, max: 30, bucket: "auth" }))
 app.use("/api/sync", rateLimit({ windowMs: 60_000, max: 240, bucket: "sync" }))
+// Customer-facing delivery endpoints: order creation + account signup/login
+app.use("/api/delivery/order", rateLimit({ windowMs: 60_000, max: 10, bucket: "delivery-order" }))
+app.use("/api/delivery/customer/signup", rateLimit({ windowMs: 60_000, max: 5, bucket: "customer-signup" }))
+app.use("/api/delivery/customer/login", rateLimit({ windowMs: 60_000, max: 10, bucket: "customer-login" }))
 
 app.use("/api/auth", authRoutes)
 app.use("/api/sync", syncRoutes)

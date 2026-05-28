@@ -69,11 +69,19 @@ const ProductCard = memo(function ProductCard({
         className="flex h-full w-full touch-manipulation flex-col justify-between rounded-lg p-3 text-left transition active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0 sm:p-4"
       >
         <div className="flex items-start justify-between gap-3 pr-9">
-          <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg sm:h-12 sm:w-12 ${styles.icon}`}
-          >
-            <Package size={22} />
-          </div>
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-10 w-10 shrink-0 rounded-lg object-cover sm:h-12 sm:w-12"
+            />
+          ) : (
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg sm:h-12 sm:w-12 ${styles.icon}`}
+            >
+              <Package size={22} />
+            </div>
+          )}
 
           <span
             className={`max-w-28 truncate rounded-lg border px-2 py-1 text-xs font-bold ${styles.badge}`}

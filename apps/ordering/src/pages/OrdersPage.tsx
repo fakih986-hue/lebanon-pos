@@ -55,6 +55,25 @@ export function OrdersPage() {
                     className="text-xs px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30">
                       {t("ordering.track")}
                   </button>
+                  {order.items && order.items.length > 0 && (
+                    <button
+                      onClick={() => {
+                        try {
+                          const existing = JSON.parse(localStorage.getItem(`cart_${tenantSubdomain}`) ?? "[]")
+                          const merged = [...existing]
+                          for (const item of order.items) {
+                            const idx = merged.findIndex((c: any) => c.product?.productName === item.productName)
+                            if (idx >= 0) merged[idx].quantity += item.quantity
+                            else merged.push({ product: { id: Date.now(), name: item.productName, price: item.unitPrice, barcode: "", category: "", stock: 99, variantName: null }, quantity: item.quantity })
+                          }
+                          localStorage.setItem(`cart_${tenantSubdomain}`, JSON.stringify(merged))
+                          navigate(`/order/${tenantSubdomain}`)
+                        } catch {}
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30">
+                      {t("ordering.reorder")}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

@@ -9,6 +9,8 @@ import { DeliveryPage } from "./pages/DeliveryPage"
 import { CustomersPage } from "./pages/CustomersPage"
 import { ProductsPage } from "./pages/ProductsPage"
 import { DriversPage } from "./pages/DriversPage"
+import { StaffPage } from "./pages/StaffPage"
+import { SalesPage } from "./pages/SalesPage"
 import { Layout } from "./app/Layout"
 import "./index.css"
 
@@ -38,6 +40,8 @@ createRoot(document.getElementById("root")!).render(
               <Route path="customers" element={<CustomersPage />} />
               <Route path="products" element={<ProductsPage />} />
               <Route path="drivers" element={<DriversPage />} />
+              <Route path="staff" element={<StaffPage />} />
+              <Route path="sales" element={<SalesPage />} />
             </Route>
           </Routes>
         </ThemeProvider>
