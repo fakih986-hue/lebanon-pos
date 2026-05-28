@@ -13,6 +13,12 @@ export type AppSettings = {
   usdToLbpRate: number
   receiptFooter: string
   lowStockThreshold: number
+  deliveryFee: number
+  whatsAppAdmin: string
+  whatsAppDriverEnabled: boolean
+  assignMode: "manual" | "broadcast"
+  assignTimeout: number
+  defaultDriverId: string
 }
 
 export const defaultSettings: AppSettings = {
@@ -24,6 +30,12 @@ export const defaultSettings: AppSettings = {
   usdToLbpRate: 89500,
   receiptFooter: "Thank you for shopping with us.",
   lowStockThreshold: 10,
+  deliveryFee: 2.0,
+  whatsAppAdmin: "",
+  whatsAppDriverEnabled: false,
+  assignMode: "manual",
+  assignTimeout: 5,
+  defaultDriverId: "",
 }
 
 function canUseStorage() {

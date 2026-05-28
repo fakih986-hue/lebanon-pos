@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { useI18n } from "@lebanonpos/shared"
 import {
   Banknote,
   Building2,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react"
 
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
+import { formatDateTime, parseMoney } from "../../features/pos/lib/helpers"
 import {
   closeBusinessDay,
   getDailyCloses,
@@ -102,21 +104,6 @@ const emptyExpenseForm: ExpenseForm = {
   paymentMethod: "Cash",
   invoiceNumber: "",
   note: "",
-}
-
-function parseMoney(value: string) {
-  const parsedValue = Number(value.replace(/,/g, "").trim())
-
-  return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-LB", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value))
 }
 
 function formatDateKey(value: string) {
@@ -248,6 +235,7 @@ function getAccountingSummary(
 }
 
 export default function AccountingPage() {
+  const { t } = useI18n()
   const [isLoading, setIsLoading] = useState(true)
   const [sales, setSales] = useState<Sale[]>(getSales())
   const [refunds, setRefunds] = useState<SaleRefund[]>(getRefunds())
@@ -294,6 +282,22 @@ export default function AccountingPage() {
   const todayClose = dailyCloses.find(
     (dailyClose) => dailyClose.dateKey === summary.dateKey
   )
+  const categoryLabels: Record<ExpenseCategory, string> = {
+    Supplier: t("pos.accounting.category_supplier"),
+    Rent: t("pos.accounting.category_rent"),
+    Utilities: t("pos.accounting.category_utilities"),
+    Payroll: t("pos.accounting.category_payroll"),
+    Delivery: t("pos.accounting.category_delivery"),
+    Maintenance: t("pos.accounting.category_maintenance"),
+    Other: t("pos.accounting.category_other"),
+  }
+  const paymentMethodLabels: Record<ExpensePaymentMethod, string> = {
+    Cash: t("pos.accounting.payment_cash"),
+    Card: t("pos.accounting.payment_card"),
+    "Bank Transfer": t("pos.accounting.payment_bank_transfer"),
+    Wallet: t("pos.accounting.payment_wallet"),
+    "On Account": t("pos.accounting.payment_on_account"),
+  }
   const categoryTotals = expenseCategories.map((category) => ({
     category,
     total: todayExpenses
@@ -312,18 +316,18 @@ export default function AccountingPage() {
 
   function handleCreateExpense() {
     if (!canManageAccounting) {
-      showToast("Manager or admin permission required.", "error")
+      showToast(t("pos.permission_required"), "error")
       return
     }
 
     const errors: Record<string, string> = {}
-    if (!expenseForm.vendor.trim()) errors.vendor = "Vendor is required"
+    if (!expenseForm.vendor.trim()) errors.vendor = t("pos.accounting.vendor_required")
     if (!expenseForm.category) errors.category = "Category is required"
-    if (!expenseForm.amount || parseMoney(expenseForm.amount) <= 0) errors.amount = "Amount must be greater than 0"
+    if (!expenseForm.amount || parseMoney(expenseForm.amount) <= 0) errors.amount = t("pos.accounting.amount_required")
 
     setExpenseErrors(errors)
     if (Object.keys(errors).length > 0) {
-      showToast("Please fix the highlighted fields.", "error")
+      showToast(t("pos.accounting.fix_fields"), "error")
       return
     }
 
@@ -339,9 +343,9 @@ export default function AccountingPage() {
 
       setExpenseForm(emptyExpenseForm)
       setExpenseErrors({})
-      showToast(`${expense.expenseNumber} recorded.`)
+      showToast(t("pos.accounting.expense_recorded", { number: expense.expenseNumber }))
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Expense not saved.", "error")
+      showToast(error instanceof Error ? error.message : t("pos.accounting.expense_not_saved"), "error")
     }
   }
 
@@ -351,7 +355,7 @@ export default function AccountingPage() {
 
   function confirmCloseDay() {
     if (!canManageAccounting) {
-      showToast("Manager or admin permission required.", "error")
+      showToast(t("pos.permission_required"), "error")
       return
     }
     const close = closeBusinessDay({
@@ -371,35 +375,34 @@ export default function AccountingPage() {
     })
     setCloseNote("")
     setShowCloseConfirm(false)
-    showToast(`${formatDateKey(close.dateKey)} closed.`)
+    showToast(t("pos.accounting.day_closed", { date: formatDateKey(close.dateKey) }))
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
       {isLoading ? (
         <div className="flex min-h-[400px] items-center justify-center p-6">
-          <Spinner label="Loading accounting data..." />
+          <Spinner label={t("pos.accounting.loading")} />
         </div>
       ) : (
       <>
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-zinc-500">Net sales</p>
+            <p className="text-sm font-medium text-zinc-500">{t("pos.accounting.net_sales")}</p>
             <ReceiptText size={20} className="text-emerald-700" />
           </div>
           <p className="mt-3 text-3xl font-bold text-zinc-950">
             {formatCurrency(summary.netSales)}
           </p>
           <p className="mt-1 text-sm text-zinc-500">
-            {formatCurrency(summary.grossSales)} gross -{" "}
-            {formatCurrency(summary.refunds)} returns
+            {t("pos.accounting.gross_breakdown", { gross: formatCurrency(summary.grossSales), returns: formatCurrency(summary.refunds) })}
           </p>
         </div>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-zinc-500">Gross margin</p>
+            <p className="text-sm font-medium text-zinc-500">{t("pos.accounting.gross_margin")}</p>
             <TrendingUp size={20} className="text-indigo-700" />
           </div>
           <p className="mt-3 text-3xl font-bold text-zinc-950">
@@ -484,7 +487,7 @@ export default function AccountingPage() {
                   <strong>-{formatCurrency(summary.refunds)}</strong>
                 </div>
                 <div className="flex justify-between gap-3 border-t border-zinc-200 pt-2">
-                  <span className="text-zinc-500">Net sales</span>
+                  <span className="text-zinc-500">{t("pos.accounting.net_sales")}</span>
                   <strong>{formatCurrency(summary.netSales)}</strong>
                 </div>
                 <div className="flex justify-between gap-3 text-zinc-500">
@@ -494,7 +497,7 @@ export default function AccountingPage() {
                   </strong>
                 </div>
                 <div className="flex justify-between gap-3 border-t border-zinc-200 pt-2 font-bold text-zinc-950">
-                  <span>Gross margin</span>
+                  <span>{t("pos.accounting.gross_margin")}</span>
                   <span>{formatCurrency(summary.grossMargin)}</span>
                 </div>
               </div>
@@ -606,7 +609,7 @@ export default function AccountingPage() {
                 <div className="mt-3 space-y-2">
                   {categoryTotals.map((item) => (
                     <div key={item.category} className="flex items-center justify-between text-sm">
-                      <span className="font-semibold text-zinc-700">{item.category}</span>
+                      <span className="font-semibold text-zinc-700">{categoryLabels[item.category]}</span>
                       <strong className="text-zinc-950">{formatCurrency(item.total)}</strong>
                     </div>
                   ))}
@@ -644,7 +647,7 @@ export default function AccountingPage() {
                         {expense.vendor}
                       </p>
                       <p className="mt-1 text-sm text-zinc-500">
-                        {expense.category} - {formatDateTime(expense.createdAt)}
+                        {categoryLabels[expense.category]} - {formatDateTime(expense.createdAt)}
                       </p>
                     </div>
                     <strong className="shrink-0 text-rose-700">
@@ -653,7 +656,7 @@ export default function AccountingPage() {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
                     <span className="rounded-lg bg-zinc-100 px-2 py-1 text-zinc-700">
-                      {expense.paymentMethod}
+                      {paymentMethodLabels[expense.paymentMethod]}
                     </span>
                     {expense.invoiceNumber ? (
                       <span className="rounded-lg bg-zinc-100 px-2 py-1 text-zinc-700">
@@ -723,7 +726,7 @@ export default function AccountingPage() {
                         : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
                     }`}
                   >
-                    {category}
+                    {categoryLabels[category]}
                   </button>
                 ))}
               </div>
@@ -771,7 +774,7 @@ export default function AccountingPage() {
                     ) : (
                       <FileText size={15} />
                     )}
-                    {method}
+                    {paymentMethodLabels[method]}
                   </button>
                 ))}
               </div>
@@ -880,7 +883,7 @@ export default function AccountingPage() {
                   className="flex items-center justify-between rounded-lg bg-zinc-50 p-3 text-sm"
                 >
                   <span className="font-semibold text-zinc-700">
-                    {item.category}
+                    {categoryLabels[item.category]}
                   </span>
                   <strong className="text-zinc-950">
                     {formatCurrency(item.total)}

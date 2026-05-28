@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lebanonpos/shared": "workspace:*",
     "@hookform/resolvers": "^5.4.0",
     "@tailwindcss/vite": "^4.3.0",
     "class-variance-authority": "^0.7.1",

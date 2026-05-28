@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Bell, PackagePlus, X } from "lucide-react"
 import { Link } from "react-router"
 
+import { useI18n } from "@lebanonpos/shared"
 import {
   getProductsSync,
   subscribeProducts,
@@ -27,6 +28,7 @@ function getSeverityClass(severity: AppNotification["severity"]) {
 }
 
 export default function NotificationCenter() {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [version, setVersion] = useState(0)
   const panelRef = useRef<HTMLDivElement | null>(null)
@@ -78,8 +80,8 @@ export default function NotificationCenter() {
             ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
             : "border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
         }`}
-        aria-label="Open notifications"
-        title="Notifications"
+        aria-label={t("pos.notifications.open")}
+        title={t("pos.notifications.title")}
       >
         <Bell size={18} />
         {notifications.length > 0 ? (
@@ -93,18 +95,18 @@ export default function NotificationCenter() {
         <div className="absolute right-0 top-12 z-50 w-[min(92vw,390px)] overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-2xl">
           <div className="flex items-center justify-between gap-3 border-b border-zinc-200 p-4">
             <div>
-              <h2 className="font-bold text-zinc-950">Notifications</h2>
+              <h2 className="font-bold text-zinc-950">{t("pos.notifications.title")}</h2>
               <p className="text-sm text-zinc-500">
                 {notifications.length === 0
-                  ? "All clear"
-                  : `${notifications.length} active, ${criticalCount} critical`}
+                  ? t("pos.notifications.all_clear")
+                  : t("pos.notifications.count", { active: notifications.length, critical: criticalCount })}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50"
-              aria-label="Close notifications"
+              aria-label={t("pos.notifications.close")}
             >
               <X size={17} />
             </button>
@@ -141,7 +143,7 @@ export default function NotificationCenter() {
 
             {notifications.length === 0 ? (
               <div className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm font-medium text-zinc-500">
-                No low stock or reorder alerts right now.
+                {t("pos.notifications.no_alerts")}
               </div>
             ) : null}
           </div>

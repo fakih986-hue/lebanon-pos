@@ -264,7 +264,7 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
   writeProducts(nextProducts)
   enqueueSyncOperation({
     entity: "product",
-    action: "receive",
+    action: "create",
     summary: `${entries.length} receiving line${
       entries.length === 1 ? "" : "s"
     } queued for sync.`,

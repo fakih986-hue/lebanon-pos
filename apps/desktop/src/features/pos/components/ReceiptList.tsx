@@ -1,5 +1,6 @@
 import { Clock3, Eye, Printer, ReceiptText } from "lucide-react"
 
+import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatNumber } from "../lib/currency"
 import {
   formatDate,
@@ -24,15 +25,16 @@ export default function ReceiptList({
   handlePrint: (sale: Sale) => void
   onViewSale: (sale: Sale) => void
 }) {
+  const { t } = useI18n()
   return (
     <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
       <div className="flex items-center justify-between gap-3 border-b border-zinc-200 p-3 sm:p-4">
         <div>
           <h3 className="font-bold text-zinc-950">
-            {formatNumber(filteredSales.length)} receipts
+            {t("pos.receipt_list.count", { n: filteredSales.length })}
           </h3>
           <p className="text-sm text-zinc-500">
-            Tap one to preview or reprint.
+            {t("pos.receipt_list.tap_hint")}
           </p>
         </div>
         <ReceiptText size={22} className="text-zinc-400" />
@@ -43,10 +45,10 @@ export default function ReceiptList({
           <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center">
             <ReceiptText size={40} className="mx-auto text-zinc-300" />
             <p className="mt-3 font-bold text-zinc-950">
-              No receipts found
+              {t("pos.receipt_list.no_receipts")}
             </p>
             <p className="mt-1 text-sm text-zinc-500">
-              Completed sales will appear here.
+              {t("pos.receipt_list.no_receipts_sub")}
             </p>
           </div>
         ) : null}
@@ -95,14 +97,14 @@ export default function ReceiptList({
                     {sale.paymentMethod}
                   </span>
                   <span className="rounded-lg bg-zinc-100 px-2 py-1 text-zinc-700">
-                    {formatNumber(quantity)} items
+                    {t("pos.receipt_list.items", { n: quantity })}
                   </span>
                   <span className="rounded-lg bg-zinc-100 px-2 py-1 text-zinc-700">
                     {sale.customerName ?? "Walk-in"}
                   </span>
                   {refundedTotal > 0 ? (
                     <span className="rounded-lg bg-rose-100 px-2 py-1 text-rose-700">
-                      Returned {formatCurrency(refundedTotal)}
+                      {t("pos.receipt_list.returned", { amount: formatCurrency(refundedTotal) })}
                     </span>
                   ) : null}
                 </div>
@@ -119,7 +121,7 @@ export default function ReceiptList({
                   className="flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
                 >
                   <Eye size={15} />
-                  View
+                  {t("pos.view")}
                 </button>
                 <button
                   type="button"

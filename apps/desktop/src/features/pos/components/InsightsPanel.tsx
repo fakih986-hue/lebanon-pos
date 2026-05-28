@@ -1,5 +1,6 @@
 import { Eye, ReceiptText } from "lucide-react"
 
+import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatNumber } from "../lib/currency"
 import {
   formatDate,
@@ -17,6 +18,7 @@ export default function InsightsPanel({
   paymentMix: Record<string, number>
   onViewSale: (sale: Sale) => void
 }) {
+  const { t } = useI18n()
   return (
     <section className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
       <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -25,25 +27,25 @@ export default function InsightsPanel({
             <thead>
               <tr className="text-left text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
                 <th className="border-b border-zinc-200 px-4 py-3">
-                  Receipt
+                  {t("pos.insights.receipt")}
                 </th>
                 <th className="border-b border-zinc-200 px-4 py-3">
-                  Payment
+                  {t("pos.insights.payment")}
                 </th>
                 <th className="border-b border-zinc-200 px-4 py-3">
-                  Customer
+                  {t("pos.insights.customer")}
                 </th>
                 <th className="border-b border-zinc-200 px-4 py-3 text-right">
-                  Items
+                  {t("pos.insights.items")}
                 </th>
                 <th className="border-b border-zinc-200 px-4 py-3 text-right">
-                  Total
+                  {t("pos.insights.total")}
                 </th>
                 <th className="border-b border-zinc-200 px-4 py-3">
-                  Time
+                  {t("pos.insights.time")}
                 </th>
                 <th className="border-b border-zinc-200 px-4 py-3 text-right">
-                  Action
+                  {t("pos.insights.action")}
                 </th>
               </tr>
             </thead>
@@ -54,7 +56,7 @@ export default function InsightsPanel({
                     colSpan={7}
                     className="px-4 py-12 text-center text-sm font-medium text-zinc-500"
                   >
-                    No sales recorded yet
+                    {t("pos.insights.no_sales")}
                   </td>
                 </tr>
               ) : null}
@@ -96,7 +98,7 @@ export default function InsightsPanel({
                         className="inline-flex h-9 items-center gap-2 rounded-lg bg-zinc-950 px-3 text-xs font-bold text-white transition hover:bg-zinc-800"
                       >
                         <Eye size={14} />
-                        Receipt
+                        {t("pos.insights.receipt")}
                       </button>
                     </td>
                   </tr>
@@ -109,7 +111,7 @@ export default function InsightsPanel({
 
       <aside className="space-y-4">
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-          <h2 className="text-lg font-bold text-zinc-950">Payment mix</h2>
+          <h2 className="text-lg font-bold text-zinc-950">{t("pos.insights.payment_mix")}</h2>
           <div className="mt-3 space-y-2">
             {Object.entries(paymentMix).map(([method, amount]) => (
               <div

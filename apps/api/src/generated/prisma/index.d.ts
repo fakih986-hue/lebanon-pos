@@ -151,7 +151,8 @@ export namespace $Enums {
   export const UserRole: {
   Admin: 'Admin',
   Manager: 'Manager',
-  Cashier: 'Cashier'
+  Cashier: 'Cashier',
+  Driver: 'Driver'
 };
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole]
@@ -3470,12 +3471,14 @@ export namespace Prisma {
     openedShifts: number
     closedShifts: number
     expenses: number
+    deliveryOrders: number
   }
 
   export type StaffUserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     openedShifts?: boolean | StaffUserCountOutputTypeCountOpenedShiftsArgs
     closedShifts?: boolean | StaffUserCountOutputTypeCountClosedShiftsArgs
     expenses?: boolean | StaffUserCountOutputTypeCountExpensesArgs
+    deliveryOrders?: boolean | StaffUserCountOutputTypeCountDeliveryOrdersArgs
   }
 
   // Custom InputTypes
@@ -3508,6 +3511,13 @@ export namespace Prisma {
    */
   export type StaffUserCountOutputTypeCountExpensesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: ExpenseWhereInput
+  }
+
+  /**
+   * StaffUserCountOutputType without action
+   */
+  export type StaffUserCountOutputTypeCountDeliveryOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DeliveryOrderWhereInput
   }
 
 
@@ -3647,11 +3657,13 @@ export namespace Prisma {
   export type CustomerCountOutputType = {
     debtSales: number
     debtPayments: number
+    deliveryOrders: number
   }
 
   export type CustomerCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     debtSales?: boolean | CustomerCountOutputTypeCountDebtSalesArgs
     debtPayments?: boolean | CustomerCountOutputTypeCountDebtPaymentsArgs
+    deliveryOrders?: boolean | CustomerCountOutputTypeCountDeliveryOrdersArgs
   }
 
   // Custom InputTypes
@@ -3677,6 +3689,13 @@ export namespace Prisma {
    */
   export type CustomerCountOutputTypeCountDebtPaymentsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: DebtPaymentWhereInput
+  }
+
+  /**
+   * CustomerCountOutputType without action
+   */
+  export type CustomerCountOutputTypeCountDeliveryOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DeliveryOrderWhereInput
   }
 
 
@@ -5407,6 +5426,7 @@ export namespace Prisma {
     tenantId: string | null
     name: string | null
     mobile: string | null
+    code: string | null
     pin: string | null
     role: $Enums.UserRole | null
     active: boolean | null
@@ -5418,6 +5438,7 @@ export namespace Prisma {
     tenantId: string | null
     name: string | null
     mobile: string | null
+    code: string | null
     pin: string | null
     role: $Enums.UserRole | null
     active: boolean | null
@@ -5429,6 +5450,7 @@ export namespace Prisma {
     tenantId: number
     name: number
     mobile: number
+    code: number
     pin: number
     role: number
     active: number
@@ -5442,6 +5464,7 @@ export namespace Prisma {
     tenantId?: true
     name?: true
     mobile?: true
+    code?: true
     pin?: true
     role?: true
     active?: true
@@ -5453,6 +5476,7 @@ export namespace Prisma {
     tenantId?: true
     name?: true
     mobile?: true
+    code?: true
     pin?: true
     role?: true
     active?: true
@@ -5464,6 +5488,7 @@ export namespace Prisma {
     tenantId?: true
     name?: true
     mobile?: true
+    code?: true
     pin?: true
     role?: true
     active?: true
@@ -5548,6 +5573,7 @@ export namespace Prisma {
     tenantId: string
     name: string
     mobile: string
+    code: string
     pin: string
     role: $Enums.UserRole
     active: boolean
@@ -5576,6 +5602,7 @@ export namespace Prisma {
     tenantId?: boolean
     name?: boolean
     mobile?: boolean
+    code?: boolean
     pin?: boolean
     role?: boolean
     active?: boolean
@@ -5584,6 +5611,7 @@ export namespace Prisma {
     openedShifts?: boolean | StaffUser$openedShiftsArgs<ExtArgs>
     closedShifts?: boolean | StaffUser$closedShiftsArgs<ExtArgs>
     expenses?: boolean | StaffUser$expensesArgs<ExtArgs>
+    deliveryOrders?: boolean | StaffUser$deliveryOrdersArgs<ExtArgs>
     _count?: boolean | StaffUserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["staffUser"]>
 
@@ -5592,6 +5620,7 @@ export namespace Prisma {
     tenantId?: boolean
     name?: boolean
     mobile?: boolean
+    code?: boolean
     pin?: boolean
     role?: boolean
     active?: boolean
@@ -5604,6 +5633,7 @@ export namespace Prisma {
     tenantId?: boolean
     name?: boolean
     mobile?: boolean
+    code?: boolean
     pin?: boolean
     role?: boolean
     active?: boolean
@@ -5616,18 +5646,20 @@ export namespace Prisma {
     tenantId?: boolean
     name?: boolean
     mobile?: boolean
+    code?: boolean
     pin?: boolean
     role?: boolean
     active?: boolean
     createdAt?: boolean
   }
 
-  export type StaffUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "pin" | "role" | "active" | "createdAt", ExtArgs["result"]["staffUser"]>
+  export type StaffUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "code" | "pin" | "role" | "active" | "createdAt", ExtArgs["result"]["staffUser"]>
   export type StaffUserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedShifts?: boolean | StaffUser$openedShiftsArgs<ExtArgs>
     closedShifts?: boolean | StaffUser$closedShiftsArgs<ExtArgs>
     expenses?: boolean | StaffUser$expensesArgs<ExtArgs>
+    deliveryOrders?: boolean | StaffUser$deliveryOrdersArgs<ExtArgs>
     _count?: boolean | StaffUserCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type StaffUserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5644,12 +5676,14 @@ export namespace Prisma {
       openedShifts: Prisma.$ShiftPayload<ExtArgs>[]
       closedShifts: Prisma.$ShiftPayload<ExtArgs>[]
       expenses: Prisma.$ExpensePayload<ExtArgs>[]
+      deliveryOrders: Prisma.$DeliveryOrderPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       tenantId: string
       name: string
       mobile: string
+      code: string
       pin: string
       role: $Enums.UserRole
       active: boolean
@@ -6052,6 +6086,7 @@ export namespace Prisma {
     openedShifts<T extends StaffUser$openedShiftsArgs<ExtArgs> = {}>(args?: Subset<T, StaffUser$openedShiftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShiftPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     closedShifts<T extends StaffUser$closedShiftsArgs<ExtArgs> = {}>(args?: Subset<T, StaffUser$closedShiftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShiftPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     expenses<T extends StaffUser$expensesArgs<ExtArgs> = {}>(args?: Subset<T, StaffUser$expensesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExpensePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    deliveryOrders<T extends StaffUser$deliveryOrdersArgs<ExtArgs> = {}>(args?: Subset<T, StaffUser$deliveryOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DeliveryOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6085,6 +6120,7 @@ export namespace Prisma {
     readonly tenantId: FieldRef<"StaffUser", 'String'>
     readonly name: FieldRef<"StaffUser", 'String'>
     readonly mobile: FieldRef<"StaffUser", 'String'>
+    readonly code: FieldRef<"StaffUser", 'String'>
     readonly pin: FieldRef<"StaffUser", 'String'>
     readonly role: FieldRef<"StaffUser", 'UserRole'>
     readonly active: FieldRef<"StaffUser", 'Boolean'>
@@ -6557,6 +6593,30 @@ export namespace Prisma {
   }
 
   /**
+   * StaffUser.deliveryOrders
+   */
+  export type StaffUser$deliveryOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliveryOrder
+     */
+    select?: DeliveryOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DeliveryOrder
+     */
+    omit?: DeliveryOrderOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeliveryOrderInclude<ExtArgs> | null
+    where?: DeliveryOrderWhereInput
+    orderBy?: DeliveryOrderOrderByWithRelationInput | DeliveryOrderOrderByWithRelationInput[]
+    cursor?: DeliveryOrderWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DeliveryOrderScalarFieldEnum | DeliveryOrderScalarFieldEnum[]
+  }
+
+  /**
    * StaffUser without action
    */
   export type StaffUserDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6591,12 +6651,16 @@ export namespace Prisma {
     vatRate: number | null
     usdToLbpRate: number | null
     lowStockThreshold: number | null
+    deliveryFee: number | null
+    assignTimeout: number | null
   }
 
   export type AppSettingsSumAggregateOutputType = {
     vatRate: number | null
     usdToLbpRate: number | null
     lowStockThreshold: number | null
+    deliveryFee: number | null
+    assignTimeout: number | null
   }
 
   export type AppSettingsMinAggregateOutputType = {
@@ -6610,6 +6674,12 @@ export namespace Prisma {
     usdToLbpRate: number | null
     receiptFooter: string | null
     lowStockThreshold: number | null
+    deliveryFee: number | null
+    whatsAppAdmin: string | null
+    whatsAppDriverEnabled: boolean | null
+    assignMode: string | null
+    assignTimeout: number | null
+    defaultDriverId: string | null
   }
 
   export type AppSettingsMaxAggregateOutputType = {
@@ -6623,6 +6693,12 @@ export namespace Prisma {
     usdToLbpRate: number | null
     receiptFooter: string | null
     lowStockThreshold: number | null
+    deliveryFee: number | null
+    whatsAppAdmin: string | null
+    whatsAppDriverEnabled: boolean | null
+    assignMode: string | null
+    assignTimeout: number | null
+    defaultDriverId: string | null
   }
 
   export type AppSettingsCountAggregateOutputType = {
@@ -6636,6 +6712,12 @@ export namespace Prisma {
     usdToLbpRate: number
     receiptFooter: number
     lowStockThreshold: number
+    deliveryFee: number
+    whatsAppAdmin: number
+    whatsAppDriverEnabled: number
+    assignMode: number
+    assignTimeout: number
+    defaultDriverId: number
     _all: number
   }
 
@@ -6644,12 +6726,16 @@ export namespace Prisma {
     vatRate?: true
     usdToLbpRate?: true
     lowStockThreshold?: true
+    deliveryFee?: true
+    assignTimeout?: true
   }
 
   export type AppSettingsSumAggregateInputType = {
     vatRate?: true
     usdToLbpRate?: true
     lowStockThreshold?: true
+    deliveryFee?: true
+    assignTimeout?: true
   }
 
   export type AppSettingsMinAggregateInputType = {
@@ -6663,6 +6749,12 @@ export namespace Prisma {
     usdToLbpRate?: true
     receiptFooter?: true
     lowStockThreshold?: true
+    deliveryFee?: true
+    whatsAppAdmin?: true
+    whatsAppDriverEnabled?: true
+    assignMode?: true
+    assignTimeout?: true
+    defaultDriverId?: true
   }
 
   export type AppSettingsMaxAggregateInputType = {
@@ -6676,6 +6768,12 @@ export namespace Prisma {
     usdToLbpRate?: true
     receiptFooter?: true
     lowStockThreshold?: true
+    deliveryFee?: true
+    whatsAppAdmin?: true
+    whatsAppDriverEnabled?: true
+    assignMode?: true
+    assignTimeout?: true
+    defaultDriverId?: true
   }
 
   export type AppSettingsCountAggregateInputType = {
@@ -6689,6 +6787,12 @@ export namespace Prisma {
     usdToLbpRate?: true
     receiptFooter?: true
     lowStockThreshold?: true
+    deliveryFee?: true
+    whatsAppAdmin?: true
+    whatsAppDriverEnabled?: true
+    assignMode?: true
+    assignTimeout?: true
+    defaultDriverId?: true
     _all?: true
   }
 
@@ -6789,6 +6893,12 @@ export namespace Prisma {
     usdToLbpRate: number
     receiptFooter: string
     lowStockThreshold: number
+    deliveryFee: number
+    whatsAppAdmin: string
+    whatsAppDriverEnabled: boolean
+    assignMode: string
+    assignTimeout: number
+    defaultDriverId: string
     _count: AppSettingsCountAggregateOutputType | null
     _avg: AppSettingsAvgAggregateOutputType | null
     _sum: AppSettingsSumAggregateOutputType | null
@@ -6821,6 +6931,12 @@ export namespace Prisma {
     usdToLbpRate?: boolean
     receiptFooter?: boolean
     lowStockThreshold?: boolean
+    deliveryFee?: boolean
+    whatsAppAdmin?: boolean
+    whatsAppDriverEnabled?: boolean
+    assignMode?: boolean
+    assignTimeout?: boolean
+    defaultDriverId?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["appSettings"]>
 
@@ -6835,6 +6951,12 @@ export namespace Prisma {
     usdToLbpRate?: boolean
     receiptFooter?: boolean
     lowStockThreshold?: boolean
+    deliveryFee?: boolean
+    whatsAppAdmin?: boolean
+    whatsAppDriverEnabled?: boolean
+    assignMode?: boolean
+    assignTimeout?: boolean
+    defaultDriverId?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["appSettings"]>
 
@@ -6849,6 +6971,12 @@ export namespace Prisma {
     usdToLbpRate?: boolean
     receiptFooter?: boolean
     lowStockThreshold?: boolean
+    deliveryFee?: boolean
+    whatsAppAdmin?: boolean
+    whatsAppDriverEnabled?: boolean
+    assignMode?: boolean
+    assignTimeout?: boolean
+    defaultDriverId?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["appSettings"]>
 
@@ -6863,9 +6991,15 @@ export namespace Prisma {
     usdToLbpRate?: boolean
     receiptFooter?: boolean
     lowStockThreshold?: boolean
+    deliveryFee?: boolean
+    whatsAppAdmin?: boolean
+    whatsAppDriverEnabled?: boolean
+    assignMode?: boolean
+    assignTimeout?: boolean
+    defaultDriverId?: boolean
   }
 
-  export type AppSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "storeName" | "branchName" | "phone" | "address" | "vatRate" | "usdToLbpRate" | "receiptFooter" | "lowStockThreshold", ExtArgs["result"]["appSettings"]>
+  export type AppSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "storeName" | "branchName" | "phone" | "address" | "vatRate" | "usdToLbpRate" | "receiptFooter" | "lowStockThreshold" | "deliveryFee" | "whatsAppAdmin" | "whatsAppDriverEnabled" | "assignMode" | "assignTimeout" | "defaultDriverId", ExtArgs["result"]["appSettings"]>
   export type AppSettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -6892,6 +7026,12 @@ export namespace Prisma {
       usdToLbpRate: number
       receiptFooter: string
       lowStockThreshold: number
+      deliveryFee: number
+      whatsAppAdmin: string
+      whatsAppDriverEnabled: boolean
+      assignMode: string
+      assignTimeout: number
+      defaultDriverId: string
     }, ExtArgs["result"]["appSettings"]>
     composites: {}
   }
@@ -7326,6 +7466,12 @@ export namespace Prisma {
     readonly usdToLbpRate: FieldRef<"AppSettings", 'Float'>
     readonly receiptFooter: FieldRef<"AppSettings", 'String'>
     readonly lowStockThreshold: FieldRef<"AppSettings", 'Int'>
+    readonly deliveryFee: FieldRef<"AppSettings", 'Float'>
+    readonly whatsAppAdmin: FieldRef<"AppSettings", 'String'>
+    readonly whatsAppDriverEnabled: FieldRef<"AppSettings", 'Boolean'>
+    readonly assignMode: FieldRef<"AppSettings", 'String'>
+    readonly assignTimeout: FieldRef<"AppSettings", 'Int'>
+    readonly defaultDriverId: FieldRef<"AppSettings", 'String'>
   }
     
 
@@ -15375,6 +15521,7 @@ export namespace Prisma {
     tenantId: string | null
     name: string | null
     mobile: string | null
+    pin: string | null
     creditLimit: number | null
     notes: string | null
     createdAt: Date | null
@@ -15386,6 +15533,7 @@ export namespace Prisma {
     tenantId: string | null
     name: string | null
     mobile: string | null
+    pin: string | null
     creditLimit: number | null
     notes: string | null
     createdAt: Date | null
@@ -15397,6 +15545,7 @@ export namespace Prisma {
     tenantId: number
     name: number
     mobile: number
+    pin: number
     creditLimit: number
     notes: number
     createdAt: number
@@ -15418,6 +15567,7 @@ export namespace Prisma {
     tenantId?: true
     name?: true
     mobile?: true
+    pin?: true
     creditLimit?: true
     notes?: true
     createdAt?: true
@@ -15429,6 +15579,7 @@ export namespace Prisma {
     tenantId?: true
     name?: true
     mobile?: true
+    pin?: true
     creditLimit?: true
     notes?: true
     createdAt?: true
@@ -15440,6 +15591,7 @@ export namespace Prisma {
     tenantId?: true
     name?: true
     mobile?: true
+    pin?: true
     creditLimit?: true
     notes?: true
     createdAt?: true
@@ -15538,6 +15690,7 @@ export namespace Prisma {
     tenantId: string
     name: string
     mobile: string
+    pin: string
     creditLimit: number
     notes: string
     createdAt: Date
@@ -15568,6 +15721,7 @@ export namespace Prisma {
     tenantId?: boolean
     name?: boolean
     mobile?: boolean
+    pin?: boolean
     creditLimit?: boolean
     notes?: boolean
     createdAt?: boolean
@@ -15575,6 +15729,7 @@ export namespace Prisma {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     debtSales?: boolean | Customer$debtSalesArgs<ExtArgs>
     debtPayments?: boolean | Customer$debtPaymentsArgs<ExtArgs>
+    deliveryOrders?: boolean | Customer$deliveryOrdersArgs<ExtArgs>
     _count?: boolean | CustomerCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["customer"]>
 
@@ -15583,6 +15738,7 @@ export namespace Prisma {
     tenantId?: boolean
     name?: boolean
     mobile?: boolean
+    pin?: boolean
     creditLimit?: boolean
     notes?: boolean
     createdAt?: boolean
@@ -15595,6 +15751,7 @@ export namespace Prisma {
     tenantId?: boolean
     name?: boolean
     mobile?: boolean
+    pin?: boolean
     creditLimit?: boolean
     notes?: boolean
     createdAt?: boolean
@@ -15607,17 +15764,19 @@ export namespace Prisma {
     tenantId?: boolean
     name?: boolean
     mobile?: boolean
+    pin?: boolean
     creditLimit?: boolean
     notes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type CustomerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "creditLimit" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
+  export type CustomerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "pin" | "creditLimit" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
   export type CustomerInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     debtSales?: boolean | Customer$debtSalesArgs<ExtArgs>
     debtPayments?: boolean | Customer$debtPaymentsArgs<ExtArgs>
+    deliveryOrders?: boolean | Customer$deliveryOrdersArgs<ExtArgs>
     _count?: boolean | CustomerCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type CustomerIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -15633,12 +15792,14 @@ export namespace Prisma {
       tenant: Prisma.$TenantPayload<ExtArgs>
       debtSales: Prisma.$DebtSalePayload<ExtArgs>[]
       debtPayments: Prisma.$DebtPaymentPayload<ExtArgs>[]
+      deliveryOrders: Prisma.$DeliveryOrderPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       tenantId: string
       name: string
       mobile: string
+      pin: string
       creditLimit: number
       notes: string
       createdAt: Date
@@ -16040,6 +16201,7 @@ export namespace Prisma {
     tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     debtSales<T extends Customer$debtSalesArgs<ExtArgs> = {}>(args?: Subset<T, Customer$debtSalesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DebtSalePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     debtPayments<T extends Customer$debtPaymentsArgs<ExtArgs> = {}>(args?: Subset<T, Customer$debtPaymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DebtPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    deliveryOrders<T extends Customer$deliveryOrdersArgs<ExtArgs> = {}>(args?: Subset<T, Customer$deliveryOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DeliveryOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -16073,6 +16235,7 @@ export namespace Prisma {
     readonly tenantId: FieldRef<"Customer", 'String'>
     readonly name: FieldRef<"Customer", 'String'>
     readonly mobile: FieldRef<"Customer", 'String'>
+    readonly pin: FieldRef<"Customer", 'String'>
     readonly creditLimit: FieldRef<"Customer", 'Float'>
     readonly notes: FieldRef<"Customer", 'String'>
     readonly createdAt: FieldRef<"Customer", 'DateTime'>
@@ -16518,6 +16681,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: DebtPaymentScalarFieldEnum | DebtPaymentScalarFieldEnum[]
+  }
+
+  /**
+   * Customer.deliveryOrders
+   */
+  export type Customer$deliveryOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the DeliveryOrder
+     */
+    select?: DeliveryOrderSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the DeliveryOrder
+     */
+    omit?: DeliveryOrderOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeliveryOrderInclude<ExtArgs> | null
+    where?: DeliveryOrderWhereInput
+    orderBy?: DeliveryOrderOrderByWithRelationInput | DeliveryOrderOrderByWithRelationInput[]
+    cursor?: DeliveryOrderWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DeliveryOrderScalarFieldEnum | DeliveryOrderScalarFieldEnum[]
   }
 
   /**
@@ -31085,6 +31272,8 @@ export namespace Prisma {
     changeRequired: number | null
     assignedTo: string | null
     assignedName: string | null
+    driverId: string | null
+    driverAssignedAt: Date | null
     notes: string | null
     cancelledReason: string | null
     createdAt: Date | null
@@ -31113,6 +31302,8 @@ export namespace Prisma {
     changeRequired: number | null
     assignedTo: string | null
     assignedName: string | null
+    driverId: string | null
+    driverAssignedAt: Date | null
     notes: string | null
     cancelledReason: string | null
     createdAt: Date | null
@@ -31141,6 +31332,8 @@ export namespace Prisma {
     changeRequired: number
     assignedTo: number
     assignedName: number
+    driverId: number
+    driverAssignedAt: number
     notes: number
     cancelledReason: number
     createdAt: number
@@ -31191,6 +31384,8 @@ export namespace Prisma {
     changeRequired?: true
     assignedTo?: true
     assignedName?: true
+    driverId?: true
+    driverAssignedAt?: true
     notes?: true
     cancelledReason?: true
     createdAt?: true
@@ -31219,6 +31414,8 @@ export namespace Prisma {
     changeRequired?: true
     assignedTo?: true
     assignedName?: true
+    driverId?: true
+    driverAssignedAt?: true
     notes?: true
     cancelledReason?: true
     createdAt?: true
@@ -31247,6 +31444,8 @@ export namespace Prisma {
     changeRequired?: true
     assignedTo?: true
     assignedName?: true
+    driverId?: true
+    driverAssignedAt?: true
     notes?: true
     cancelledReason?: true
     createdAt?: true
@@ -31362,6 +31561,8 @@ export namespace Prisma {
     changeRequired: number
     assignedTo: string | null
     assignedName: string | null
+    driverId: string | null
+    driverAssignedAt: Date | null
     notes: string
     cancelledReason: string
     createdAt: Date
@@ -31409,6 +31610,8 @@ export namespace Prisma {
     changeRequired?: boolean
     assignedTo?: boolean
     assignedName?: boolean
+    driverId?: boolean
+    driverAssignedAt?: boolean
     notes?: boolean
     cancelledReason?: boolean
     createdAt?: boolean
@@ -31416,6 +31619,8 @@ export namespace Prisma {
     deliveredAt?: boolean
     cancelledAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    customer?: boolean | DeliveryOrder$customerArgs<ExtArgs>
+    driver?: boolean | DeliveryOrder$driverArgs<ExtArgs>
     items?: boolean | DeliveryOrder$itemsArgs<ExtArgs>
     _count?: boolean | DeliveryOrderCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["deliveryOrder"]>
@@ -31440,6 +31645,8 @@ export namespace Prisma {
     changeRequired?: boolean
     assignedTo?: boolean
     assignedName?: boolean
+    driverId?: boolean
+    driverAssignedAt?: boolean
     notes?: boolean
     cancelledReason?: boolean
     createdAt?: boolean
@@ -31447,6 +31654,8 @@ export namespace Prisma {
     deliveredAt?: boolean
     cancelledAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    customer?: boolean | DeliveryOrder$customerArgs<ExtArgs>
+    driver?: boolean | DeliveryOrder$driverArgs<ExtArgs>
   }, ExtArgs["result"]["deliveryOrder"]>
 
   export type DeliveryOrderSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -31469,6 +31678,8 @@ export namespace Prisma {
     changeRequired?: boolean
     assignedTo?: boolean
     assignedName?: boolean
+    driverId?: boolean
+    driverAssignedAt?: boolean
     notes?: boolean
     cancelledReason?: boolean
     createdAt?: boolean
@@ -31476,6 +31687,8 @@ export namespace Prisma {
     deliveredAt?: boolean
     cancelledAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    customer?: boolean | DeliveryOrder$customerArgs<ExtArgs>
+    driver?: boolean | DeliveryOrder$driverArgs<ExtArgs>
   }, ExtArgs["result"]["deliveryOrder"]>
 
   export type DeliveryOrderSelectScalar = {
@@ -31498,6 +31711,8 @@ export namespace Prisma {
     changeRequired?: boolean
     assignedTo?: boolean
     assignedName?: boolean
+    driverId?: boolean
+    driverAssignedAt?: boolean
     notes?: boolean
     cancelledReason?: boolean
     createdAt?: boolean
@@ -31506,23 +31721,31 @@ export namespace Prisma {
     cancelledAt?: boolean
   }
 
-  export type DeliveryOrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "orderNumber" | "status" | "customerId" | "customerName" | "customerPhone" | "address" | "locationLat" | "locationLng" | "deliveryNote" | "itemsTotal" | "deliveryFee" | "total" | "paymentMethod" | "paidAmount" | "changeRequired" | "assignedTo" | "assignedName" | "notes" | "cancelledReason" | "createdAt" | "updatedAt" | "deliveredAt" | "cancelledAt", ExtArgs["result"]["deliveryOrder"]>
+  export type DeliveryOrderOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "orderNumber" | "status" | "customerId" | "customerName" | "customerPhone" | "address" | "locationLat" | "locationLng" | "deliveryNote" | "itemsTotal" | "deliveryFee" | "total" | "paymentMethod" | "paidAmount" | "changeRequired" | "assignedTo" | "assignedName" | "driverId" | "driverAssignedAt" | "notes" | "cancelledReason" | "createdAt" | "updatedAt" | "deliveredAt" | "cancelledAt", ExtArgs["result"]["deliveryOrder"]>
   export type DeliveryOrderInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    customer?: boolean | DeliveryOrder$customerArgs<ExtArgs>
+    driver?: boolean | DeliveryOrder$driverArgs<ExtArgs>
     items?: boolean | DeliveryOrder$itemsArgs<ExtArgs>
     _count?: boolean | DeliveryOrderCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type DeliveryOrderIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    customer?: boolean | DeliveryOrder$customerArgs<ExtArgs>
+    driver?: boolean | DeliveryOrder$driverArgs<ExtArgs>
   }
   export type DeliveryOrderIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    customer?: boolean | DeliveryOrder$customerArgs<ExtArgs>
+    driver?: boolean | DeliveryOrder$driverArgs<ExtArgs>
   }
 
   export type $DeliveryOrderPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "DeliveryOrder"
     objects: {
       tenant: Prisma.$TenantPayload<ExtArgs>
+      customer: Prisma.$CustomerPayload<ExtArgs> | null
+      driver: Prisma.$StaffUserPayload<ExtArgs> | null
       items: Prisma.$DeliveryOrderItemPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -31545,6 +31768,8 @@ export namespace Prisma {
       changeRequired: number
       assignedTo: string | null
       assignedName: string | null
+      driverId: string | null
+      driverAssignedAt: Date | null
       notes: string
       cancelledReason: string
       createdAt: Date
@@ -31946,6 +32171,8 @@ export namespace Prisma {
   export interface Prisma__DeliveryOrderClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    customer<T extends DeliveryOrder$customerArgs<ExtArgs> = {}>(args?: Subset<T, DeliveryOrder$customerArgs<ExtArgs>>): Prisma__CustomerClient<$Result.GetResult<Prisma.$CustomerPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+    driver<T extends DeliveryOrder$driverArgs<ExtArgs> = {}>(args?: Subset<T, DeliveryOrder$driverArgs<ExtArgs>>): Prisma__StaffUserClient<$Result.GetResult<Prisma.$StaffUserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     items<T extends DeliveryOrder$itemsArgs<ExtArgs> = {}>(args?: Subset<T, DeliveryOrder$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DeliveryOrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -31995,6 +32222,8 @@ export namespace Prisma {
     readonly changeRequired: FieldRef<"DeliveryOrder", 'Float'>
     readonly assignedTo: FieldRef<"DeliveryOrder", 'String'>
     readonly assignedName: FieldRef<"DeliveryOrder", 'String'>
+    readonly driverId: FieldRef<"DeliveryOrder", 'String'>
+    readonly driverAssignedAt: FieldRef<"DeliveryOrder", 'DateTime'>
     readonly notes: FieldRef<"DeliveryOrder", 'String'>
     readonly cancelledReason: FieldRef<"DeliveryOrder", 'String'>
     readonly createdAt: FieldRef<"DeliveryOrder", 'DateTime'>
@@ -32394,6 +32623,44 @@ export namespace Prisma {
      * Limit how many DeliveryOrders to delete.
      */
     limit?: number
+  }
+
+  /**
+   * DeliveryOrder.customer
+   */
+  export type DeliveryOrder$customerArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Customer
+     */
+    select?: CustomerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Customer
+     */
+    omit?: CustomerOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CustomerInclude<ExtArgs> | null
+    where?: CustomerWhereInput
+  }
+
+  /**
+   * DeliveryOrder.driver
+   */
+  export type DeliveryOrder$driverArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffUser
+     */
+    select?: StaffUserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffUser
+     */
+    omit?: StaffUserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StaffUserInclude<ExtArgs> | null
+    where?: StaffUserWhereInput
   }
 
   /**
@@ -36079,6 +36346,7 @@ export namespace Prisma {
     tenantId: 'tenantId',
     name: 'name',
     mobile: 'mobile',
+    code: 'code',
     pin: 'pin',
     role: 'role',
     active: 'active',
@@ -36098,7 +36366,13 @@ export namespace Prisma {
     vatRate: 'vatRate',
     usdToLbpRate: 'usdToLbpRate',
     receiptFooter: 'receiptFooter',
-    lowStockThreshold: 'lowStockThreshold'
+    lowStockThreshold: 'lowStockThreshold',
+    deliveryFee: 'deliveryFee',
+    whatsAppAdmin: 'whatsAppAdmin',
+    whatsAppDriverEnabled: 'whatsAppDriverEnabled',
+    assignMode: 'assignMode',
+    assignTimeout: 'assignTimeout',
+    defaultDriverId: 'defaultDriverId'
   };
 
   export type AppSettingsScalarFieldEnum = (typeof AppSettingsScalarFieldEnum)[keyof typeof AppSettingsScalarFieldEnum]
@@ -36229,6 +36503,7 @@ export namespace Prisma {
     tenantId: 'tenantId',
     name: 'name',
     mobile: 'mobile',
+    pin: 'pin',
     creditLimit: 'creditLimit',
     notes: 'notes',
     createdAt: 'createdAt',
@@ -36475,6 +36750,8 @@ export namespace Prisma {
     changeRequired: 'changeRequired',
     assignedTo: 'assignedTo',
     assignedName: 'assignedName',
+    driverId: 'driverId',
+    driverAssignedAt: 'driverAssignedAt',
     notes: 'notes',
     cancelledReason: 'cancelledReason',
     createdAt: 'createdAt',
@@ -36927,6 +37204,7 @@ export namespace Prisma {
     tenantId?: StringFilter<"StaffUser"> | string
     name?: StringFilter<"StaffUser"> | string
     mobile?: StringFilter<"StaffUser"> | string
+    code?: StringFilter<"StaffUser"> | string
     pin?: StringFilter<"StaffUser"> | string
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
@@ -36935,6 +37213,7 @@ export namespace Prisma {
     openedShifts?: ShiftListRelationFilter
     closedShifts?: ShiftListRelationFilter
     expenses?: ExpenseListRelationFilter
+    deliveryOrders?: DeliveryOrderListRelationFilter
   }
 
   export type StaffUserOrderByWithRelationInput = {
@@ -36942,6 +37221,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     name?: SortOrder
     mobile?: SortOrder
+    code?: SortOrder
     pin?: SortOrder
     role?: SortOrder
     active?: SortOrder
@@ -36950,6 +37230,7 @@ export namespace Prisma {
     openedShifts?: ShiftOrderByRelationAggregateInput
     closedShifts?: ShiftOrderByRelationAggregateInput
     expenses?: ExpenseOrderByRelationAggregateInput
+    deliveryOrders?: DeliveryOrderOrderByRelationAggregateInput
   }
 
   export type StaffUserWhereUniqueInput = Prisma.AtLeast<{
@@ -36960,6 +37241,7 @@ export namespace Prisma {
     tenantId?: StringFilter<"StaffUser"> | string
     name?: StringFilter<"StaffUser"> | string
     mobile?: StringFilter<"StaffUser"> | string
+    code?: StringFilter<"StaffUser"> | string
     pin?: StringFilter<"StaffUser"> | string
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
@@ -36968,6 +37250,7 @@ export namespace Prisma {
     openedShifts?: ShiftListRelationFilter
     closedShifts?: ShiftListRelationFilter
     expenses?: ExpenseListRelationFilter
+    deliveryOrders?: DeliveryOrderListRelationFilter
   }, "id">
 
   export type StaffUserOrderByWithAggregationInput = {
@@ -36975,6 +37258,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     name?: SortOrder
     mobile?: SortOrder
+    code?: SortOrder
     pin?: SortOrder
     role?: SortOrder
     active?: SortOrder
@@ -36992,6 +37276,7 @@ export namespace Prisma {
     tenantId?: StringWithAggregatesFilter<"StaffUser"> | string
     name?: StringWithAggregatesFilter<"StaffUser"> | string
     mobile?: StringWithAggregatesFilter<"StaffUser"> | string
+    code?: StringWithAggregatesFilter<"StaffUser"> | string
     pin?: StringWithAggregatesFilter<"StaffUser"> | string
     role?: EnumUserRoleWithAggregatesFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolWithAggregatesFilter<"StaffUser"> | boolean
@@ -37012,6 +37297,12 @@ export namespace Prisma {
     usdToLbpRate?: FloatFilter<"AppSettings"> | number
     receiptFooter?: StringFilter<"AppSettings"> | string
     lowStockThreshold?: IntFilter<"AppSettings"> | number
+    deliveryFee?: FloatFilter<"AppSettings"> | number
+    whatsAppAdmin?: StringFilter<"AppSettings"> | string
+    whatsAppDriverEnabled?: BoolFilter<"AppSettings"> | boolean
+    assignMode?: StringFilter<"AppSettings"> | string
+    assignTimeout?: IntFilter<"AppSettings"> | number
+    defaultDriverId?: StringFilter<"AppSettings"> | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }
 
@@ -37026,6 +37317,12 @@ export namespace Prisma {
     usdToLbpRate?: SortOrder
     receiptFooter?: SortOrder
     lowStockThreshold?: SortOrder
+    deliveryFee?: SortOrder
+    whatsAppAdmin?: SortOrder
+    whatsAppDriverEnabled?: SortOrder
+    assignMode?: SortOrder
+    assignTimeout?: SortOrder
+    defaultDriverId?: SortOrder
     tenant?: TenantOrderByWithRelationInput
   }
 
@@ -37043,6 +37340,12 @@ export namespace Prisma {
     usdToLbpRate?: FloatFilter<"AppSettings"> | number
     receiptFooter?: StringFilter<"AppSettings"> | string
     lowStockThreshold?: IntFilter<"AppSettings"> | number
+    deliveryFee?: FloatFilter<"AppSettings"> | number
+    whatsAppAdmin?: StringFilter<"AppSettings"> | string
+    whatsAppDriverEnabled?: BoolFilter<"AppSettings"> | boolean
+    assignMode?: StringFilter<"AppSettings"> | string
+    assignTimeout?: IntFilter<"AppSettings"> | number
+    defaultDriverId?: StringFilter<"AppSettings"> | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }, "id" | "tenantId">
 
@@ -37057,6 +37360,12 @@ export namespace Prisma {
     usdToLbpRate?: SortOrder
     receiptFooter?: SortOrder
     lowStockThreshold?: SortOrder
+    deliveryFee?: SortOrder
+    whatsAppAdmin?: SortOrder
+    whatsAppDriverEnabled?: SortOrder
+    assignMode?: SortOrder
+    assignTimeout?: SortOrder
+    defaultDriverId?: SortOrder
     _count?: AppSettingsCountOrderByAggregateInput
     _avg?: AppSettingsAvgOrderByAggregateInput
     _max?: AppSettingsMaxOrderByAggregateInput
@@ -37078,6 +37387,12 @@ export namespace Prisma {
     usdToLbpRate?: FloatWithAggregatesFilter<"AppSettings"> | number
     receiptFooter?: StringWithAggregatesFilter<"AppSettings"> | string
     lowStockThreshold?: IntWithAggregatesFilter<"AppSettings"> | number
+    deliveryFee?: FloatWithAggregatesFilter<"AppSettings"> | number
+    whatsAppAdmin?: StringWithAggregatesFilter<"AppSettings"> | string
+    whatsAppDriverEnabled?: BoolWithAggregatesFilter<"AppSettings"> | boolean
+    assignMode?: StringWithAggregatesFilter<"AppSettings"> | string
+    assignTimeout?: IntWithAggregatesFilter<"AppSettings"> | number
+    defaultDriverId?: StringWithAggregatesFilter<"AppSettings"> | string
   }
 
   export type ProductWhereInput = {
@@ -37733,6 +38048,7 @@ export namespace Prisma {
     tenantId?: StringFilter<"Customer"> | string
     name?: StringFilter<"Customer"> | string
     mobile?: StringFilter<"Customer"> | string
+    pin?: StringFilter<"Customer"> | string
     creditLimit?: FloatFilter<"Customer"> | number
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
@@ -37740,6 +38056,7 @@ export namespace Prisma {
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     debtSales?: DebtSaleListRelationFilter
     debtPayments?: DebtPaymentListRelationFilter
+    deliveryOrders?: DeliveryOrderListRelationFilter
   }
 
   export type CustomerOrderByWithRelationInput = {
@@ -37747,6 +38064,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     name?: SortOrder
     mobile?: SortOrder
+    pin?: SortOrder
     creditLimit?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
@@ -37754,6 +38072,7 @@ export namespace Prisma {
     tenant?: TenantOrderByWithRelationInput
     debtSales?: DebtSaleOrderByRelationAggregateInput
     debtPayments?: DebtPaymentOrderByRelationAggregateInput
+    deliveryOrders?: DeliveryOrderOrderByRelationAggregateInput
   }
 
   export type CustomerWhereUniqueInput = Prisma.AtLeast<{
@@ -37765,6 +38084,7 @@ export namespace Prisma {
     tenantId?: StringFilter<"Customer"> | string
     name?: StringFilter<"Customer"> | string
     mobile?: StringFilter<"Customer"> | string
+    pin?: StringFilter<"Customer"> | string
     creditLimit?: FloatFilter<"Customer"> | number
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
@@ -37772,6 +38092,7 @@ export namespace Prisma {
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     debtSales?: DebtSaleListRelationFilter
     debtPayments?: DebtPaymentListRelationFilter
+    deliveryOrders?: DeliveryOrderListRelationFilter
   }, "id" | "tenantId_name">
 
   export type CustomerOrderByWithAggregationInput = {
@@ -37779,6 +38100,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     name?: SortOrder
     mobile?: SortOrder
+    pin?: SortOrder
     creditLimit?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
@@ -37798,6 +38120,7 @@ export namespace Prisma {
     tenantId?: StringWithAggregatesFilter<"Customer"> | string
     name?: StringWithAggregatesFilter<"Customer"> | string
     mobile?: StringWithAggregatesFilter<"Customer"> | string
+    pin?: StringWithAggregatesFilter<"Customer"> | string
     creditLimit?: FloatWithAggregatesFilter<"Customer"> | number
     notes?: StringWithAggregatesFilter<"Customer"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Customer"> | Date | string
@@ -38983,6 +39306,8 @@ export namespace Prisma {
     changeRequired?: FloatFilter<"DeliveryOrder"> | number
     assignedTo?: StringNullableFilter<"DeliveryOrder"> | string | null
     assignedName?: StringNullableFilter<"DeliveryOrder"> | string | null
+    driverId?: StringNullableFilter<"DeliveryOrder"> | string | null
+    driverAssignedAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
     notes?: StringFilter<"DeliveryOrder"> | string
     cancelledReason?: StringFilter<"DeliveryOrder"> | string
     createdAt?: DateTimeFilter<"DeliveryOrder"> | Date | string
@@ -38990,6 +39315,8 @@ export namespace Prisma {
     deliveredAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
     cancelledAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    customer?: XOR<CustomerNullableScalarRelationFilter, CustomerWhereInput> | null
+    driver?: XOR<StaffUserNullableScalarRelationFilter, StaffUserWhereInput> | null
     items?: DeliveryOrderItemListRelationFilter
   }
 
@@ -39013,6 +39340,8 @@ export namespace Prisma {
     changeRequired?: SortOrder
     assignedTo?: SortOrderInput | SortOrder
     assignedName?: SortOrderInput | SortOrder
+    driverId?: SortOrderInput | SortOrder
+    driverAssignedAt?: SortOrderInput | SortOrder
     notes?: SortOrder
     cancelledReason?: SortOrder
     createdAt?: SortOrder
@@ -39020,6 +39349,8 @@ export namespace Prisma {
     deliveredAt?: SortOrderInput | SortOrder
     cancelledAt?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
+    customer?: CustomerOrderByWithRelationInput
+    driver?: StaffUserOrderByWithRelationInput
     items?: DeliveryOrderItemOrderByRelationAggregateInput
   }
 
@@ -39047,6 +39378,8 @@ export namespace Prisma {
     changeRequired?: FloatFilter<"DeliveryOrder"> | number
     assignedTo?: StringNullableFilter<"DeliveryOrder"> | string | null
     assignedName?: StringNullableFilter<"DeliveryOrder"> | string | null
+    driverId?: StringNullableFilter<"DeliveryOrder"> | string | null
+    driverAssignedAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
     notes?: StringFilter<"DeliveryOrder"> | string
     cancelledReason?: StringFilter<"DeliveryOrder"> | string
     createdAt?: DateTimeFilter<"DeliveryOrder"> | Date | string
@@ -39054,6 +39387,8 @@ export namespace Prisma {
     deliveredAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
     cancelledAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    customer?: XOR<CustomerNullableScalarRelationFilter, CustomerWhereInput> | null
+    driver?: XOR<StaffUserNullableScalarRelationFilter, StaffUserWhereInput> | null
     items?: DeliveryOrderItemListRelationFilter
   }, "id" | "tenantId_orderNumber">
 
@@ -39077,6 +39412,8 @@ export namespace Prisma {
     changeRequired?: SortOrder
     assignedTo?: SortOrderInput | SortOrder
     assignedName?: SortOrderInput | SortOrder
+    driverId?: SortOrderInput | SortOrder
+    driverAssignedAt?: SortOrderInput | SortOrder
     notes?: SortOrder
     cancelledReason?: SortOrder
     createdAt?: SortOrder
@@ -39113,6 +39450,8 @@ export namespace Prisma {
     changeRequired?: FloatWithAggregatesFilter<"DeliveryOrder"> | number
     assignedTo?: StringNullableWithAggregatesFilter<"DeliveryOrder"> | string | null
     assignedName?: StringNullableWithAggregatesFilter<"DeliveryOrder"> | string | null
+    driverId?: StringNullableWithAggregatesFilter<"DeliveryOrder"> | string | null
+    driverAssignedAt?: DateTimeNullableWithAggregatesFilter<"DeliveryOrder"> | Date | string | null
     notes?: StringWithAggregatesFilter<"DeliveryOrder"> | string
     cancelledReason?: StringWithAggregatesFilter<"DeliveryOrder"> | string
     createdAt?: DateTimeWithAggregatesFilter<"DeliveryOrder"> | Date | string
@@ -39543,6 +39882,7 @@ export namespace Prisma {
     id?: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
@@ -39551,6 +39891,7 @@ export namespace Prisma {
     openedShifts?: ShiftCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseCreateNestedManyWithoutRecordedByUserInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutDriverInput
   }
 
   export type StaffUserUncheckedCreateInput = {
@@ -39558,6 +39899,7 @@ export namespace Prisma {
     tenantId: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
@@ -39565,12 +39907,14 @@ export namespace Prisma {
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftUncheckedCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseUncheckedCreateNestedManyWithoutRecordedByUserInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutDriverInput
   }
 
   export type StaffUserUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
@@ -39579,6 +39923,7 @@ export namespace Prisma {
     openedShifts?: ShiftUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUpdateManyWithoutRecordedByUserNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutDriverNestedInput
   }
 
   export type StaffUserUncheckedUpdateInput = {
@@ -39586,6 +39931,7 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
@@ -39593,6 +39939,7 @@ export namespace Prisma {
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUncheckedUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUncheckedUpdateManyWithoutRecordedByUserNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutDriverNestedInput
   }
 
   export type StaffUserCreateManyInput = {
@@ -39600,6 +39947,7 @@ export namespace Prisma {
     tenantId: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
@@ -39610,6 +39958,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
@@ -39621,6 +39970,7 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
@@ -39637,6 +39987,12 @@ export namespace Prisma {
     usdToLbpRate: number
     receiptFooter: string
     lowStockThreshold: number
+    deliveryFee?: number
+    whatsAppAdmin?: string
+    whatsAppDriverEnabled?: boolean
+    assignMode?: string
+    assignTimeout?: number
+    defaultDriverId?: string
     tenant: TenantCreateNestedOneWithoutSettingsInput
   }
 
@@ -39651,6 +40007,12 @@ export namespace Prisma {
     usdToLbpRate: number
     receiptFooter: string
     lowStockThreshold: number
+    deliveryFee?: number
+    whatsAppAdmin?: string
+    whatsAppDriverEnabled?: boolean
+    assignMode?: string
+    assignTimeout?: number
+    defaultDriverId?: string
   }
 
   export type AppSettingsUpdateInput = {
@@ -39663,6 +40025,12 @@ export namespace Prisma {
     usdToLbpRate?: FloatFieldUpdateOperationsInput | number
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    whatsAppAdmin?: StringFieldUpdateOperationsInput | string
+    whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
+    assignMode?: StringFieldUpdateOperationsInput | string
+    assignTimeout?: IntFieldUpdateOperationsInput | number
+    defaultDriverId?: StringFieldUpdateOperationsInput | string
     tenant?: TenantUpdateOneRequiredWithoutSettingsNestedInput
   }
 
@@ -39677,6 +40045,12 @@ export namespace Prisma {
     usdToLbpRate?: FloatFieldUpdateOperationsInput | number
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    whatsAppAdmin?: StringFieldUpdateOperationsInput | string
+    whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
+    assignMode?: StringFieldUpdateOperationsInput | string
+    assignTimeout?: IntFieldUpdateOperationsInput | number
+    defaultDriverId?: StringFieldUpdateOperationsInput | string
   }
 
   export type AppSettingsCreateManyInput = {
@@ -39690,6 +40064,12 @@ export namespace Prisma {
     usdToLbpRate: number
     receiptFooter: string
     lowStockThreshold: number
+    deliveryFee?: number
+    whatsAppAdmin?: string
+    whatsAppDriverEnabled?: boolean
+    assignMode?: string
+    assignTimeout?: number
+    defaultDriverId?: string
   }
 
   export type AppSettingsUpdateManyMutationInput = {
@@ -39702,6 +40082,12 @@ export namespace Prisma {
     usdToLbpRate?: FloatFieldUpdateOperationsInput | number
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    whatsAppAdmin?: StringFieldUpdateOperationsInput | string
+    whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
+    assignMode?: StringFieldUpdateOperationsInput | string
+    assignTimeout?: IntFieldUpdateOperationsInput | number
+    defaultDriverId?: StringFieldUpdateOperationsInput | string
   }
 
   export type AppSettingsUncheckedUpdateManyInput = {
@@ -39715,6 +40101,12 @@ export namespace Prisma {
     usdToLbpRate?: FloatFieldUpdateOperationsInput | number
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    whatsAppAdmin?: StringFieldUpdateOperationsInput | string
+    whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
+    assignMode?: StringFieldUpdateOperationsInput | string
+    assignTimeout?: IntFieldUpdateOperationsInput | number
+    defaultDriverId?: StringFieldUpdateOperationsInput | string
   }
 
   export type ProductCreateInput = {
@@ -40456,6 +40848,7 @@ export namespace Prisma {
     id?: string
     name: string
     mobile: string
+    pin?: string
     creditLimit?: number
     notes?: string
     createdAt?: Date | string
@@ -40463,6 +40856,7 @@ export namespace Prisma {
     tenant: TenantCreateNestedOneWithoutCustomersInput
     debtSales?: DebtSaleCreateNestedManyWithoutCustomerInput
     debtPayments?: DebtPaymentCreateNestedManyWithoutCustomerInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateInput = {
@@ -40470,18 +40864,21 @@ export namespace Prisma {
     tenantId: string
     name: string
     mobile: string
+    pin?: string
     creditLimit?: number
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     debtSales?: DebtSaleUncheckedCreateNestedManyWithoutCustomerInput
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutCustomerInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: FloatFieldUpdateOperationsInput | number
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40489,6 +40886,7 @@ export namespace Prisma {
     tenant?: TenantUpdateOneRequiredWithoutCustomersNestedInput
     debtSales?: DebtSaleUpdateManyWithoutCustomerNestedInput
     debtPayments?: DebtPaymentUpdateManyWithoutCustomerNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateInput = {
@@ -40496,12 +40894,14 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: FloatFieldUpdateOperationsInput | number
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     debtSales?: DebtSaleUncheckedUpdateManyWithoutCustomerNestedInput
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutCustomerNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerCreateManyInput = {
@@ -40509,6 +40909,7 @@ export namespace Prisma {
     tenantId: string
     name: string
     mobile: string
+    pin?: string
     creditLimit?: number
     notes?: string
     createdAt?: Date | string
@@ -40519,6 +40920,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: FloatFieldUpdateOperationsInput | number
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40530,6 +40932,7 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: FloatFieldUpdateOperationsInput | number
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41800,7 +42203,6 @@ export namespace Prisma {
     id?: string
     orderNumber: string
     status?: $Enums.DeliveryOrderStatus
-    customerId?: string | null
     customerName: string
     customerPhone: string
     address: string
@@ -41815,6 +42217,7 @@ export namespace Prisma {
     changeRequired?: number
     assignedTo?: string | null
     assignedName?: string | null
+    driverAssignedAt?: Date | string | null
     notes?: string
     cancelledReason?: string
     createdAt?: Date | string
@@ -41822,6 +42225,8 @@ export namespace Prisma {
     deliveredAt?: Date | string | null
     cancelledAt?: Date | string | null
     tenant: TenantCreateNestedOneWithoutDeliveryOrdersInput
+    customer?: CustomerCreateNestedOneWithoutDeliveryOrdersInput
+    driver?: StaffUserCreateNestedOneWithoutDeliveryOrdersInput
     items?: DeliveryOrderItemCreateNestedManyWithoutDeliveryOrderInput
   }
 
@@ -41845,6 +42250,8 @@ export namespace Prisma {
     changeRequired?: number
     assignedTo?: string | null
     assignedName?: string | null
+    driverId?: string | null
+    driverAssignedAt?: Date | string | null
     notes?: string
     cancelledReason?: string
     createdAt?: Date | string
@@ -41858,7 +42265,6 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDeliveryOrderStatusFieldUpdateOperationsInput | $Enums.DeliveryOrderStatus
-    customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: StringFieldUpdateOperationsInput | string
     customerPhone?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
@@ -41873,6 +42279,7 @@ export namespace Prisma {
     changeRequired?: FloatFieldUpdateOperationsInput | number
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     notes?: StringFieldUpdateOperationsInput | string
     cancelledReason?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41880,6 +42287,8 @@ export namespace Prisma {
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     tenant?: TenantUpdateOneRequiredWithoutDeliveryOrdersNestedInput
+    customer?: CustomerUpdateOneWithoutDeliveryOrdersNestedInput
+    driver?: StaffUserUpdateOneWithoutDeliveryOrdersNestedInput
     items?: DeliveryOrderItemUpdateManyWithoutDeliveryOrderNestedInput
   }
 
@@ -41903,6 +42312,8 @@ export namespace Prisma {
     changeRequired?: FloatFieldUpdateOperationsInput | number
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverId?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     notes?: StringFieldUpdateOperationsInput | string
     cancelledReason?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41932,6 +42343,8 @@ export namespace Prisma {
     changeRequired?: number
     assignedTo?: string | null
     assignedName?: string | null
+    driverId?: string | null
+    driverAssignedAt?: Date | string | null
     notes?: string
     cancelledReason?: string
     createdAt?: Date | string
@@ -41944,7 +42357,6 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDeliveryOrderStatusFieldUpdateOperationsInput | $Enums.DeliveryOrderStatus
-    customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: StringFieldUpdateOperationsInput | string
     customerPhone?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
@@ -41959,6 +42371,7 @@ export namespace Prisma {
     changeRequired?: FloatFieldUpdateOperationsInput | number
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     notes?: StringFieldUpdateOperationsInput | string
     cancelledReason?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41987,6 +42400,8 @@ export namespace Prisma {
     changeRequired?: FloatFieldUpdateOperationsInput | number
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverId?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     notes?: StringFieldUpdateOperationsInput | string
     cancelledReason?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42613,6 +43028,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     name?: SortOrder
     mobile?: SortOrder
+    code?: SortOrder
     pin?: SortOrder
     role?: SortOrder
     active?: SortOrder
@@ -42624,6 +43040,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     name?: SortOrder
     mobile?: SortOrder
+    code?: SortOrder
     pin?: SortOrder
     role?: SortOrder
     active?: SortOrder
@@ -42635,6 +43052,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     name?: SortOrder
     mobile?: SortOrder
+    code?: SortOrder
     pin?: SortOrder
     role?: SortOrder
     active?: SortOrder
@@ -42692,12 +43110,20 @@ export namespace Prisma {
     usdToLbpRate?: SortOrder
     receiptFooter?: SortOrder
     lowStockThreshold?: SortOrder
+    deliveryFee?: SortOrder
+    whatsAppAdmin?: SortOrder
+    whatsAppDriverEnabled?: SortOrder
+    assignMode?: SortOrder
+    assignTimeout?: SortOrder
+    defaultDriverId?: SortOrder
   }
 
   export type AppSettingsAvgOrderByAggregateInput = {
     vatRate?: SortOrder
     usdToLbpRate?: SortOrder
     lowStockThreshold?: SortOrder
+    deliveryFee?: SortOrder
+    assignTimeout?: SortOrder
   }
 
   export type AppSettingsMaxOrderByAggregateInput = {
@@ -42711,6 +43137,12 @@ export namespace Prisma {
     usdToLbpRate?: SortOrder
     receiptFooter?: SortOrder
     lowStockThreshold?: SortOrder
+    deliveryFee?: SortOrder
+    whatsAppAdmin?: SortOrder
+    whatsAppDriverEnabled?: SortOrder
+    assignMode?: SortOrder
+    assignTimeout?: SortOrder
+    defaultDriverId?: SortOrder
   }
 
   export type AppSettingsMinOrderByAggregateInput = {
@@ -42724,12 +43156,20 @@ export namespace Prisma {
     usdToLbpRate?: SortOrder
     receiptFooter?: SortOrder
     lowStockThreshold?: SortOrder
+    deliveryFee?: SortOrder
+    whatsAppAdmin?: SortOrder
+    whatsAppDriverEnabled?: SortOrder
+    assignMode?: SortOrder
+    assignTimeout?: SortOrder
+    defaultDriverId?: SortOrder
   }
 
   export type AppSettingsSumOrderByAggregateInput = {
     vatRate?: SortOrder
     usdToLbpRate?: SortOrder
     lowStockThreshold?: SortOrder
+    deliveryFee?: SortOrder
+    assignTimeout?: SortOrder
   }
 
   export type FloatWithAggregatesFilter<$PrismaModel = never> = {
@@ -43392,6 +43832,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     name?: SortOrder
     mobile?: SortOrder
+    pin?: SortOrder
     creditLimit?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
@@ -43407,6 +43848,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     name?: SortOrder
     mobile?: SortOrder
+    pin?: SortOrder
     creditLimit?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
@@ -43418,6 +43860,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     name?: SortOrder
     mobile?: SortOrder
+    pin?: SortOrder
     creditLimit?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
@@ -44328,6 +44771,11 @@ export namespace Prisma {
     not?: NestedEnumDeliveryOrderStatusFilter<$PrismaModel> | $Enums.DeliveryOrderStatus
   }
 
+  export type CustomerNullableScalarRelationFilter = {
+    is?: CustomerWhereInput | null
+    isNot?: CustomerWhereInput | null
+  }
+
   export type DeliveryOrderItemListRelationFilter = {
     every?: DeliveryOrderItemWhereInput
     some?: DeliveryOrderItemWhereInput
@@ -44363,6 +44811,8 @@ export namespace Prisma {
     changeRequired?: SortOrder
     assignedTo?: SortOrder
     assignedName?: SortOrder
+    driverId?: SortOrder
+    driverAssignedAt?: SortOrder
     notes?: SortOrder
     cancelledReason?: SortOrder
     createdAt?: SortOrder
@@ -44401,6 +44851,8 @@ export namespace Prisma {
     changeRequired?: SortOrder
     assignedTo?: SortOrder
     assignedName?: SortOrder
+    driverId?: SortOrder
+    driverAssignedAt?: SortOrder
     notes?: SortOrder
     cancelledReason?: SortOrder
     createdAt?: SortOrder
@@ -44429,6 +44881,8 @@ export namespace Prisma {
     changeRequired?: SortOrder
     assignedTo?: SortOrder
     assignedName?: SortOrder
+    driverId?: SortOrder
+    driverAssignedAt?: SortOrder
     notes?: SortOrder
     cancelledReason?: SortOrder
     createdAt?: SortOrder
@@ -45518,6 +45972,13 @@ export namespace Prisma {
     connect?: ExpenseWhereUniqueInput | ExpenseWhereUniqueInput[]
   }
 
+  export type DeliveryOrderCreateNestedManyWithoutDriverInput = {
+    create?: XOR<DeliveryOrderCreateWithoutDriverInput, DeliveryOrderUncheckedCreateWithoutDriverInput> | DeliveryOrderCreateWithoutDriverInput[] | DeliveryOrderUncheckedCreateWithoutDriverInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutDriverInput | DeliveryOrderCreateOrConnectWithoutDriverInput[]
+    createMany?: DeliveryOrderCreateManyDriverInputEnvelope
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+  }
+
   export type ShiftUncheckedCreateNestedManyWithoutOpenedByInput = {
     create?: XOR<ShiftCreateWithoutOpenedByInput, ShiftUncheckedCreateWithoutOpenedByInput> | ShiftCreateWithoutOpenedByInput[] | ShiftUncheckedCreateWithoutOpenedByInput[]
     connectOrCreate?: ShiftCreateOrConnectWithoutOpenedByInput | ShiftCreateOrConnectWithoutOpenedByInput[]
@@ -45537,6 +45998,13 @@ export namespace Prisma {
     connectOrCreate?: ExpenseCreateOrConnectWithoutRecordedByUserInput | ExpenseCreateOrConnectWithoutRecordedByUserInput[]
     createMany?: ExpenseCreateManyRecordedByUserInputEnvelope
     connect?: ExpenseWhereUniqueInput | ExpenseWhereUniqueInput[]
+  }
+
+  export type DeliveryOrderUncheckedCreateNestedManyWithoutDriverInput = {
+    create?: XOR<DeliveryOrderCreateWithoutDriverInput, DeliveryOrderUncheckedCreateWithoutDriverInput> | DeliveryOrderCreateWithoutDriverInput[] | DeliveryOrderUncheckedCreateWithoutDriverInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutDriverInput | DeliveryOrderCreateOrConnectWithoutDriverInput[]
+    createMany?: DeliveryOrderCreateManyDriverInputEnvelope
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
   }
 
   export type EnumUserRoleFieldUpdateOperationsInput = {
@@ -45597,6 +46065,20 @@ export namespace Prisma {
     deleteMany?: ExpenseScalarWhereInput | ExpenseScalarWhereInput[]
   }
 
+  export type DeliveryOrderUpdateManyWithoutDriverNestedInput = {
+    create?: XOR<DeliveryOrderCreateWithoutDriverInput, DeliveryOrderUncheckedCreateWithoutDriverInput> | DeliveryOrderCreateWithoutDriverInput[] | DeliveryOrderUncheckedCreateWithoutDriverInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutDriverInput | DeliveryOrderCreateOrConnectWithoutDriverInput[]
+    upsert?: DeliveryOrderUpsertWithWhereUniqueWithoutDriverInput | DeliveryOrderUpsertWithWhereUniqueWithoutDriverInput[]
+    createMany?: DeliveryOrderCreateManyDriverInputEnvelope
+    set?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    disconnect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    delete?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    update?: DeliveryOrderUpdateWithWhereUniqueWithoutDriverInput | DeliveryOrderUpdateWithWhereUniqueWithoutDriverInput[]
+    updateMany?: DeliveryOrderUpdateManyWithWhereWithoutDriverInput | DeliveryOrderUpdateManyWithWhereWithoutDriverInput[]
+    deleteMany?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
+  }
+
   export type ShiftUncheckedUpdateManyWithoutOpenedByNestedInput = {
     create?: XOR<ShiftCreateWithoutOpenedByInput, ShiftUncheckedCreateWithoutOpenedByInput> | ShiftCreateWithoutOpenedByInput[] | ShiftUncheckedCreateWithoutOpenedByInput[]
     connectOrCreate?: ShiftCreateOrConnectWithoutOpenedByInput | ShiftCreateOrConnectWithoutOpenedByInput[]
@@ -45637,6 +46119,20 @@ export namespace Prisma {
     update?: ExpenseUpdateWithWhereUniqueWithoutRecordedByUserInput | ExpenseUpdateWithWhereUniqueWithoutRecordedByUserInput[]
     updateMany?: ExpenseUpdateManyWithWhereWithoutRecordedByUserInput | ExpenseUpdateManyWithWhereWithoutRecordedByUserInput[]
     deleteMany?: ExpenseScalarWhereInput | ExpenseScalarWhereInput[]
+  }
+
+  export type DeliveryOrderUncheckedUpdateManyWithoutDriverNestedInput = {
+    create?: XOR<DeliveryOrderCreateWithoutDriverInput, DeliveryOrderUncheckedCreateWithoutDriverInput> | DeliveryOrderCreateWithoutDriverInput[] | DeliveryOrderUncheckedCreateWithoutDriverInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutDriverInput | DeliveryOrderCreateOrConnectWithoutDriverInput[]
+    upsert?: DeliveryOrderUpsertWithWhereUniqueWithoutDriverInput | DeliveryOrderUpsertWithWhereUniqueWithoutDriverInput[]
+    createMany?: DeliveryOrderCreateManyDriverInputEnvelope
+    set?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    disconnect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    delete?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    update?: DeliveryOrderUpdateWithWhereUniqueWithoutDriverInput | DeliveryOrderUpdateWithWhereUniqueWithoutDriverInput[]
+    updateMany?: DeliveryOrderUpdateManyWithWhereWithoutDriverInput | DeliveryOrderUpdateManyWithWhereWithoutDriverInput[]
+    deleteMany?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
   }
 
   export type TenantCreateNestedOneWithoutSettingsInput = {
@@ -46170,6 +46666,13 @@ export namespace Prisma {
     connect?: DebtPaymentWhereUniqueInput | DebtPaymentWhereUniqueInput[]
   }
 
+  export type DeliveryOrderCreateNestedManyWithoutCustomerInput = {
+    create?: XOR<DeliveryOrderCreateWithoutCustomerInput, DeliveryOrderUncheckedCreateWithoutCustomerInput> | DeliveryOrderCreateWithoutCustomerInput[] | DeliveryOrderUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutCustomerInput | DeliveryOrderCreateOrConnectWithoutCustomerInput[]
+    createMany?: DeliveryOrderCreateManyCustomerInputEnvelope
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+  }
+
   export type DebtSaleUncheckedCreateNestedManyWithoutCustomerInput = {
     create?: XOR<DebtSaleCreateWithoutCustomerInput, DebtSaleUncheckedCreateWithoutCustomerInput> | DebtSaleCreateWithoutCustomerInput[] | DebtSaleUncheckedCreateWithoutCustomerInput[]
     connectOrCreate?: DebtSaleCreateOrConnectWithoutCustomerInput | DebtSaleCreateOrConnectWithoutCustomerInput[]
@@ -46182,6 +46685,13 @@ export namespace Prisma {
     connectOrCreate?: DebtPaymentCreateOrConnectWithoutCustomerInput | DebtPaymentCreateOrConnectWithoutCustomerInput[]
     createMany?: DebtPaymentCreateManyCustomerInputEnvelope
     connect?: DebtPaymentWhereUniqueInput | DebtPaymentWhereUniqueInput[]
+  }
+
+  export type DeliveryOrderUncheckedCreateNestedManyWithoutCustomerInput = {
+    create?: XOR<DeliveryOrderCreateWithoutCustomerInput, DeliveryOrderUncheckedCreateWithoutCustomerInput> | DeliveryOrderCreateWithoutCustomerInput[] | DeliveryOrderUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutCustomerInput | DeliveryOrderCreateOrConnectWithoutCustomerInput[]
+    createMany?: DeliveryOrderCreateManyCustomerInputEnvelope
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
   }
 
   export type TenantUpdateOneRequiredWithoutCustomersNestedInput = {
@@ -46220,6 +46730,20 @@ export namespace Prisma {
     deleteMany?: DebtPaymentScalarWhereInput | DebtPaymentScalarWhereInput[]
   }
 
+  export type DeliveryOrderUpdateManyWithoutCustomerNestedInput = {
+    create?: XOR<DeliveryOrderCreateWithoutCustomerInput, DeliveryOrderUncheckedCreateWithoutCustomerInput> | DeliveryOrderCreateWithoutCustomerInput[] | DeliveryOrderUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutCustomerInput | DeliveryOrderCreateOrConnectWithoutCustomerInput[]
+    upsert?: DeliveryOrderUpsertWithWhereUniqueWithoutCustomerInput | DeliveryOrderUpsertWithWhereUniqueWithoutCustomerInput[]
+    createMany?: DeliveryOrderCreateManyCustomerInputEnvelope
+    set?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    disconnect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    delete?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    update?: DeliveryOrderUpdateWithWhereUniqueWithoutCustomerInput | DeliveryOrderUpdateWithWhereUniqueWithoutCustomerInput[]
+    updateMany?: DeliveryOrderUpdateManyWithWhereWithoutCustomerInput | DeliveryOrderUpdateManyWithWhereWithoutCustomerInput[]
+    deleteMany?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
+  }
+
   export type DebtSaleUncheckedUpdateManyWithoutCustomerNestedInput = {
     create?: XOR<DebtSaleCreateWithoutCustomerInput, DebtSaleUncheckedCreateWithoutCustomerInput> | DebtSaleCreateWithoutCustomerInput[] | DebtSaleUncheckedCreateWithoutCustomerInput[]
     connectOrCreate?: DebtSaleCreateOrConnectWithoutCustomerInput | DebtSaleCreateOrConnectWithoutCustomerInput[]
@@ -46246,6 +46770,20 @@ export namespace Prisma {
     update?: DebtPaymentUpdateWithWhereUniqueWithoutCustomerInput | DebtPaymentUpdateWithWhereUniqueWithoutCustomerInput[]
     updateMany?: DebtPaymentUpdateManyWithWhereWithoutCustomerInput | DebtPaymentUpdateManyWithWhereWithoutCustomerInput[]
     deleteMany?: DebtPaymentScalarWhereInput | DebtPaymentScalarWhereInput[]
+  }
+
+  export type DeliveryOrderUncheckedUpdateManyWithoutCustomerNestedInput = {
+    create?: XOR<DeliveryOrderCreateWithoutCustomerInput, DeliveryOrderUncheckedCreateWithoutCustomerInput> | DeliveryOrderCreateWithoutCustomerInput[] | DeliveryOrderUncheckedCreateWithoutCustomerInput[]
+    connectOrCreate?: DeliveryOrderCreateOrConnectWithoutCustomerInput | DeliveryOrderCreateOrConnectWithoutCustomerInput[]
+    upsert?: DeliveryOrderUpsertWithWhereUniqueWithoutCustomerInput | DeliveryOrderUpsertWithWhereUniqueWithoutCustomerInput[]
+    createMany?: DeliveryOrderCreateManyCustomerInputEnvelope
+    set?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    disconnect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    delete?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+    update?: DeliveryOrderUpdateWithWhereUniqueWithoutCustomerInput | DeliveryOrderUpdateWithWhereUniqueWithoutCustomerInput[]
+    updateMany?: DeliveryOrderUpdateManyWithWhereWithoutCustomerInput | DeliveryOrderUpdateManyWithWhereWithoutCustomerInput[]
+    deleteMany?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
   }
 
   export type TenantCreateNestedOneWithoutDebtSalesInput = {
@@ -46774,6 +47312,18 @@ export namespace Prisma {
     connect?: TenantWhereUniqueInput
   }
 
+  export type CustomerCreateNestedOneWithoutDeliveryOrdersInput = {
+    create?: XOR<CustomerCreateWithoutDeliveryOrdersInput, CustomerUncheckedCreateWithoutDeliveryOrdersInput>
+    connectOrCreate?: CustomerCreateOrConnectWithoutDeliveryOrdersInput
+    connect?: CustomerWhereUniqueInput
+  }
+
+  export type StaffUserCreateNestedOneWithoutDeliveryOrdersInput = {
+    create?: XOR<StaffUserCreateWithoutDeliveryOrdersInput, StaffUserUncheckedCreateWithoutDeliveryOrdersInput>
+    connectOrCreate?: StaffUserCreateOrConnectWithoutDeliveryOrdersInput
+    connect?: StaffUserWhereUniqueInput
+  }
+
   export type DeliveryOrderItemCreateNestedManyWithoutDeliveryOrderInput = {
     create?: XOR<DeliveryOrderItemCreateWithoutDeliveryOrderInput, DeliveryOrderItemUncheckedCreateWithoutDeliveryOrderInput> | DeliveryOrderItemCreateWithoutDeliveryOrderInput[] | DeliveryOrderItemUncheckedCreateWithoutDeliveryOrderInput[]
     connectOrCreate?: DeliveryOrderItemCreateOrConnectWithoutDeliveryOrderInput | DeliveryOrderItemCreateOrConnectWithoutDeliveryOrderInput[]
@@ -46798,6 +47348,26 @@ export namespace Prisma {
     upsert?: TenantUpsertWithoutDeliveryOrdersInput
     connect?: TenantWhereUniqueInput
     update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutDeliveryOrdersInput, TenantUpdateWithoutDeliveryOrdersInput>, TenantUncheckedUpdateWithoutDeliveryOrdersInput>
+  }
+
+  export type CustomerUpdateOneWithoutDeliveryOrdersNestedInput = {
+    create?: XOR<CustomerCreateWithoutDeliveryOrdersInput, CustomerUncheckedCreateWithoutDeliveryOrdersInput>
+    connectOrCreate?: CustomerCreateOrConnectWithoutDeliveryOrdersInput
+    upsert?: CustomerUpsertWithoutDeliveryOrdersInput
+    disconnect?: CustomerWhereInput | boolean
+    delete?: CustomerWhereInput | boolean
+    connect?: CustomerWhereUniqueInput
+    update?: XOR<XOR<CustomerUpdateToOneWithWhereWithoutDeliveryOrdersInput, CustomerUpdateWithoutDeliveryOrdersInput>, CustomerUncheckedUpdateWithoutDeliveryOrdersInput>
+  }
+
+  export type StaffUserUpdateOneWithoutDeliveryOrdersNestedInput = {
+    create?: XOR<StaffUserCreateWithoutDeliveryOrdersInput, StaffUserUncheckedCreateWithoutDeliveryOrdersInput>
+    connectOrCreate?: StaffUserCreateOrConnectWithoutDeliveryOrdersInput
+    upsert?: StaffUserUpsertWithoutDeliveryOrdersInput
+    disconnect?: StaffUserWhereInput | boolean
+    delete?: StaffUserWhereInput | boolean
+    connect?: StaffUserWhereUniqueInput
+    update?: XOR<XOR<StaffUserUpdateToOneWithWhereWithoutDeliveryOrdersInput, StaffUserUpdateWithoutDeliveryOrdersInput>, StaffUserUncheckedUpdateWithoutDeliveryOrdersInput>
   }
 
   export type DeliveryOrderItemUpdateManyWithoutDeliveryOrderNestedInput = {
@@ -47300,6 +47870,7 @@ export namespace Prisma {
     id?: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
@@ -47307,12 +47878,14 @@ export namespace Prisma {
     openedShifts?: ShiftCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseCreateNestedManyWithoutRecordedByUserInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutDriverInput
   }
 
   export type StaffUserUncheckedCreateWithoutTenantInput = {
     id?: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
@@ -47320,6 +47893,7 @@ export namespace Prisma {
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftUncheckedCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseUncheckedCreateNestedManyWithoutRecordedByUserInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutDriverInput
   }
 
   export type StaffUserCreateOrConnectWithoutTenantInput = {
@@ -47503,24 +48077,28 @@ export namespace Prisma {
     id?: string
     name: string
     mobile: string
+    pin?: string
     creditLimit?: number
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     debtSales?: DebtSaleCreateNestedManyWithoutCustomerInput
     debtPayments?: DebtPaymentCreateNestedManyWithoutCustomerInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutTenantInput = {
     id?: string
     name: string
     mobile: string
+    pin?: string
     creditLimit?: number
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     debtSales?: DebtSaleUncheckedCreateNestedManyWithoutCustomerInput
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutCustomerInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutTenantInput = {
@@ -47813,6 +48391,12 @@ export namespace Prisma {
     usdToLbpRate: number
     receiptFooter: string
     lowStockThreshold: number
+    deliveryFee?: number
+    whatsAppAdmin?: string
+    whatsAppDriverEnabled?: boolean
+    assignMode?: string
+    assignTimeout?: number
+    defaultDriverId?: string
   }
 
   export type AppSettingsUncheckedCreateWithoutTenantInput = {
@@ -47825,6 +48409,12 @@ export namespace Prisma {
     usdToLbpRate: number
     receiptFooter: string
     lowStockThreshold: number
+    deliveryFee?: number
+    whatsAppAdmin?: string
+    whatsAppDriverEnabled?: boolean
+    assignMode?: string
+    assignTimeout?: number
+    defaultDriverId?: string
   }
 
   export type AppSettingsCreateOrConnectWithoutTenantInput = {
@@ -48084,7 +48674,6 @@ export namespace Prisma {
     id?: string
     orderNumber: string
     status?: $Enums.DeliveryOrderStatus
-    customerId?: string | null
     customerName: string
     customerPhone: string
     address: string
@@ -48099,12 +48688,15 @@ export namespace Prisma {
     changeRequired?: number
     assignedTo?: string | null
     assignedName?: string | null
+    driverAssignedAt?: Date | string | null
     notes?: string
     cancelledReason?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     deliveredAt?: Date | string | null
     cancelledAt?: Date | string | null
+    customer?: CustomerCreateNestedOneWithoutDeliveryOrdersInput
+    driver?: StaffUserCreateNestedOneWithoutDeliveryOrdersInput
     items?: DeliveryOrderItemCreateNestedManyWithoutDeliveryOrderInput
   }
 
@@ -48127,6 +48719,8 @@ export namespace Prisma {
     changeRequired?: number
     assignedTo?: string | null
     assignedName?: string | null
+    driverId?: string | null
+    driverAssignedAt?: Date | string | null
     notes?: string
     cancelledReason?: string
     createdAt?: Date | string
@@ -48170,6 +48764,7 @@ export namespace Prisma {
     tenantId?: StringFilter<"StaffUser"> | string
     name?: StringFilter<"StaffUser"> | string
     mobile?: StringFilter<"StaffUser"> | string
+    code?: StringFilter<"StaffUser"> | string
     pin?: StringFilter<"StaffUser"> | string
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
@@ -48321,6 +48916,7 @@ export namespace Prisma {
     tenantId?: StringFilter<"Customer"> | string
     name?: StringFilter<"Customer"> | string
     mobile?: StringFilter<"Customer"> | string
+    pin?: StringFilter<"Customer"> | string
     creditLimit?: FloatFilter<"Customer"> | number
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
@@ -48585,6 +49181,12 @@ export namespace Prisma {
     usdToLbpRate?: FloatFieldUpdateOperationsInput | number
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    whatsAppAdmin?: StringFieldUpdateOperationsInput | string
+    whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
+    assignMode?: StringFieldUpdateOperationsInput | string
+    assignTimeout?: IntFieldUpdateOperationsInput | number
+    defaultDriverId?: StringFieldUpdateOperationsInput | string
   }
 
   export type AppSettingsUncheckedUpdateWithoutTenantInput = {
@@ -48597,6 +49199,12 @@ export namespace Prisma {
     usdToLbpRate?: FloatFieldUpdateOperationsInput | number
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    whatsAppAdmin?: StringFieldUpdateOperationsInput | string
+    whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
+    assignMode?: StringFieldUpdateOperationsInput | string
+    assignTimeout?: IntFieldUpdateOperationsInput | number
+    defaultDriverId?: StringFieldUpdateOperationsInput | string
   }
 
   export type ExpenseUpsertWithWhereUniqueWithoutTenantInput = {
@@ -48851,6 +49459,8 @@ export namespace Prisma {
     changeRequired?: FloatFilter<"DeliveryOrder"> | number
     assignedTo?: StringNullableFilter<"DeliveryOrder"> | string | null
     assignedName?: StringNullableFilter<"DeliveryOrder"> | string | null
+    driverId?: StringNullableFilter<"DeliveryOrder"> | string | null
+    driverAssignedAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
     notes?: StringFilter<"DeliveryOrder"> | string
     cancelledReason?: StringFilter<"DeliveryOrder"> | string
     createdAt?: DateTimeFilter<"DeliveryOrder"> | Date | string
@@ -49064,6 +49674,76 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type DeliveryOrderCreateWithoutDriverInput = {
+    id?: string
+    orderNumber: string
+    status?: $Enums.DeliveryOrderStatus
+    customerName: string
+    customerPhone: string
+    address: string
+    locationLat?: number | null
+    locationLng?: number | null
+    deliveryNote?: string
+    itemsTotal: number
+    deliveryFee?: number
+    total: number
+    paymentMethod?: string
+    paidAmount?: number
+    changeRequired?: number
+    assignedTo?: string | null
+    assignedName?: string | null
+    driverAssignedAt?: Date | string | null
+    notes?: string
+    cancelledReason?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deliveredAt?: Date | string | null
+    cancelledAt?: Date | string | null
+    tenant: TenantCreateNestedOneWithoutDeliveryOrdersInput
+    customer?: CustomerCreateNestedOneWithoutDeliveryOrdersInput
+    items?: DeliveryOrderItemCreateNestedManyWithoutDeliveryOrderInput
+  }
+
+  export type DeliveryOrderUncheckedCreateWithoutDriverInput = {
+    id?: string
+    tenantId: string
+    orderNumber: string
+    status?: $Enums.DeliveryOrderStatus
+    customerId?: string | null
+    customerName: string
+    customerPhone: string
+    address: string
+    locationLat?: number | null
+    locationLng?: number | null
+    deliveryNote?: string
+    itemsTotal: number
+    deliveryFee?: number
+    total: number
+    paymentMethod?: string
+    paidAmount?: number
+    changeRequired?: number
+    assignedTo?: string | null
+    assignedName?: string | null
+    driverAssignedAt?: Date | string | null
+    notes?: string
+    cancelledReason?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deliveredAt?: Date | string | null
+    cancelledAt?: Date | string | null
+    items?: DeliveryOrderItemUncheckedCreateNestedManyWithoutDeliveryOrderInput
+  }
+
+  export type DeliveryOrderCreateOrConnectWithoutDriverInput = {
+    where: DeliveryOrderWhereUniqueInput
+    create: XOR<DeliveryOrderCreateWithoutDriverInput, DeliveryOrderUncheckedCreateWithoutDriverInput>
+  }
+
+  export type DeliveryOrderCreateManyDriverInputEnvelope = {
+    data: DeliveryOrderCreateManyDriverInput | DeliveryOrderCreateManyDriverInput[]
+    skipDuplicates?: boolean
+  }
+
   export type TenantUpsertWithoutUsersInput = {
     update: XOR<TenantUpdateWithoutUsersInput, TenantUncheckedUpdateWithoutUsersInput>
     create: XOR<TenantCreateWithoutUsersInput, TenantUncheckedCreateWithoutUsersInput>
@@ -49175,6 +49855,22 @@ export namespace Prisma {
   export type ExpenseUpdateManyWithWhereWithoutRecordedByUserInput = {
     where: ExpenseScalarWhereInput
     data: XOR<ExpenseUpdateManyMutationInput, ExpenseUncheckedUpdateManyWithoutRecordedByUserInput>
+  }
+
+  export type DeliveryOrderUpsertWithWhereUniqueWithoutDriverInput = {
+    where: DeliveryOrderWhereUniqueInput
+    update: XOR<DeliveryOrderUpdateWithoutDriverInput, DeliveryOrderUncheckedUpdateWithoutDriverInput>
+    create: XOR<DeliveryOrderCreateWithoutDriverInput, DeliveryOrderUncheckedCreateWithoutDriverInput>
+  }
+
+  export type DeliveryOrderUpdateWithWhereUniqueWithoutDriverInput = {
+    where: DeliveryOrderWhereUniqueInput
+    data: XOR<DeliveryOrderUpdateWithoutDriverInput, DeliveryOrderUncheckedUpdateWithoutDriverInput>
+  }
+
+  export type DeliveryOrderUpdateManyWithWhereWithoutDriverInput = {
+    where: DeliveryOrderScalarWhereInput
+    data: XOR<DeliveryOrderUpdateManyMutationInput, DeliveryOrderUncheckedUpdateManyWithoutDriverInput>
   }
 
   export type TenantCreateWithoutSettingsInput = {
@@ -50853,6 +51549,76 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type DeliveryOrderCreateWithoutCustomerInput = {
+    id?: string
+    orderNumber: string
+    status?: $Enums.DeliveryOrderStatus
+    customerName: string
+    customerPhone: string
+    address: string
+    locationLat?: number | null
+    locationLng?: number | null
+    deliveryNote?: string
+    itemsTotal: number
+    deliveryFee?: number
+    total: number
+    paymentMethod?: string
+    paidAmount?: number
+    changeRequired?: number
+    assignedTo?: string | null
+    assignedName?: string | null
+    driverAssignedAt?: Date | string | null
+    notes?: string
+    cancelledReason?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deliveredAt?: Date | string | null
+    cancelledAt?: Date | string | null
+    tenant: TenantCreateNestedOneWithoutDeliveryOrdersInput
+    driver?: StaffUserCreateNestedOneWithoutDeliveryOrdersInput
+    items?: DeliveryOrderItemCreateNestedManyWithoutDeliveryOrderInput
+  }
+
+  export type DeliveryOrderUncheckedCreateWithoutCustomerInput = {
+    id?: string
+    tenantId: string
+    orderNumber: string
+    status?: $Enums.DeliveryOrderStatus
+    customerName: string
+    customerPhone: string
+    address: string
+    locationLat?: number | null
+    locationLng?: number | null
+    deliveryNote?: string
+    itemsTotal: number
+    deliveryFee?: number
+    total: number
+    paymentMethod?: string
+    paidAmount?: number
+    changeRequired?: number
+    assignedTo?: string | null
+    assignedName?: string | null
+    driverId?: string | null
+    driverAssignedAt?: Date | string | null
+    notes?: string
+    cancelledReason?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deliveredAt?: Date | string | null
+    cancelledAt?: Date | string | null
+    items?: DeliveryOrderItemUncheckedCreateNestedManyWithoutDeliveryOrderInput
+  }
+
+  export type DeliveryOrderCreateOrConnectWithoutCustomerInput = {
+    where: DeliveryOrderWhereUniqueInput
+    create: XOR<DeliveryOrderCreateWithoutCustomerInput, DeliveryOrderUncheckedCreateWithoutCustomerInput>
+  }
+
+  export type DeliveryOrderCreateManyCustomerInputEnvelope = {
+    data: DeliveryOrderCreateManyCustomerInput | DeliveryOrderCreateManyCustomerInput[]
+    skipDuplicates?: boolean
+  }
+
   export type TenantUpsertWithoutCustomersInput = {
     update: XOR<TenantUpdateWithoutCustomersInput, TenantUncheckedUpdateWithoutCustomersInput>
     create: XOR<TenantCreateWithoutCustomersInput, TenantUncheckedCreateWithoutCustomersInput>
@@ -50950,6 +51716,22 @@ export namespace Prisma {
     data: XOR<DebtPaymentUpdateManyMutationInput, DebtPaymentUncheckedUpdateManyWithoutCustomerInput>
   }
 
+  export type DeliveryOrderUpsertWithWhereUniqueWithoutCustomerInput = {
+    where: DeliveryOrderWhereUniqueInput
+    update: XOR<DeliveryOrderUpdateWithoutCustomerInput, DeliveryOrderUncheckedUpdateWithoutCustomerInput>
+    create: XOR<DeliveryOrderCreateWithoutCustomerInput, DeliveryOrderUncheckedCreateWithoutCustomerInput>
+  }
+
+  export type DeliveryOrderUpdateWithWhereUniqueWithoutCustomerInput = {
+    where: DeliveryOrderWhereUniqueInput
+    data: XOR<DeliveryOrderUpdateWithoutCustomerInput, DeliveryOrderUncheckedUpdateWithoutCustomerInput>
+  }
+
+  export type DeliveryOrderUpdateManyWithWhereWithoutCustomerInput = {
+    where: DeliveryOrderScalarWhereInput
+    data: XOR<DeliveryOrderUpdateManyMutationInput, DeliveryOrderUncheckedUpdateManyWithoutCustomerInput>
+  }
+
   export type TenantCreateWithoutDebtSalesInput = {
     id?: string
     name: string
@@ -51013,12 +51795,14 @@ export namespace Prisma {
     id?: string
     name: string
     mobile: string
+    pin?: string
     creditLimit?: number
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutCustomersInput
     debtPayments?: DebtPaymentCreateNestedManyWithoutCustomerInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutDebtSalesInput = {
@@ -51026,11 +51810,13 @@ export namespace Prisma {
     tenantId: string
     name: string
     mobile: string
+    pin?: string
     creditLimit?: number
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutCustomerInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutDebtSalesInput = {
@@ -51118,12 +51904,14 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: FloatFieldUpdateOperationsInput | number
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutCustomersNestedInput
     debtPayments?: DebtPaymentUpdateManyWithoutCustomerNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutDebtSalesInput = {
@@ -51131,11 +51919,13 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: FloatFieldUpdateOperationsInput | number
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutCustomerNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type TenantCreateWithoutDebtPaymentsInput = {
@@ -51201,12 +51991,14 @@ export namespace Prisma {
     id?: string
     name: string
     mobile: string
+    pin?: string
     creditLimit?: number
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutCustomersInput
     debtSales?: DebtSaleCreateNestedManyWithoutCustomerInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerUncheckedCreateWithoutDebtPaymentsInput = {
@@ -51214,11 +52006,13 @@ export namespace Prisma {
     tenantId: string
     name: string
     mobile: string
+    pin?: string
     creditLimit?: number
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     debtSales?: DebtSaleUncheckedCreateNestedManyWithoutCustomerInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutCustomerInput
   }
 
   export type CustomerCreateOrConnectWithoutDebtPaymentsInput = {
@@ -51306,12 +52100,14 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: FloatFieldUpdateOperationsInput | number
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutCustomersNestedInput
     debtSales?: DebtSaleUpdateManyWithoutCustomerNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutDebtPaymentsInput = {
@@ -51319,11 +52115,13 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: FloatFieldUpdateOperationsInput | number
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     debtSales?: DebtSaleUncheckedUpdateManyWithoutCustomerNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type TenantCreateWithoutSuppliersInput = {
@@ -52085,6 +52883,7 @@ export namespace Prisma {
     id?: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
@@ -52092,6 +52891,7 @@ export namespace Prisma {
     tenant: TenantCreateNestedOneWithoutUsersInput
     closedShifts?: ShiftCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseCreateNestedManyWithoutRecordedByUserInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutDriverInput
   }
 
   export type StaffUserUncheckedCreateWithoutOpenedShiftsInput = {
@@ -52099,12 +52899,14 @@ export namespace Prisma {
     tenantId: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
     closedShifts?: ShiftUncheckedCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseUncheckedCreateNestedManyWithoutRecordedByUserInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutDriverInput
   }
 
   export type StaffUserCreateOrConnectWithoutOpenedShiftsInput = {
@@ -52116,6 +52918,7 @@ export namespace Prisma {
     id?: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
@@ -52123,6 +52926,7 @@ export namespace Prisma {
     tenant: TenantCreateNestedOneWithoutUsersInput
     openedShifts?: ShiftCreateNestedManyWithoutOpenedByInput
     expenses?: ExpenseCreateNestedManyWithoutRecordedByUserInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutDriverInput
   }
 
   export type StaffUserUncheckedCreateWithoutClosedShiftsInput = {
@@ -52130,12 +52934,14 @@ export namespace Prisma {
     tenantId: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
     expenses?: ExpenseUncheckedCreateNestedManyWithoutRecordedByUserInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutDriverInput
   }
 
   export type StaffUserCreateOrConnectWithoutClosedShiftsInput = {
@@ -52223,6 +53029,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
@@ -52230,6 +53037,7 @@ export namespace Prisma {
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
     closedShifts?: ShiftUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUpdateManyWithoutRecordedByUserNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutDriverNestedInput
   }
 
   export type StaffUserUncheckedUpdateWithoutOpenedShiftsInput = {
@@ -52237,12 +53045,14 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedShifts?: ShiftUncheckedUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUncheckedUpdateManyWithoutRecordedByUserNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutDriverNestedInput
   }
 
   export type StaffUserUpsertWithoutClosedShiftsInput = {
@@ -52260,6 +53070,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
@@ -52267,6 +53078,7 @@ export namespace Prisma {
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
     openedShifts?: ShiftUpdateManyWithoutOpenedByNestedInput
     expenses?: ExpenseUpdateManyWithoutRecordedByUserNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutDriverNestedInput
   }
 
   export type StaffUserUncheckedUpdateWithoutClosedShiftsInput = {
@@ -52274,12 +53086,14 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
     expenses?: ExpenseUncheckedUpdateManyWithoutRecordedByUserNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutDriverNestedInput
   }
 
   export type TenantCreateWithoutAuditEventsInput = {
@@ -52469,6 +53283,7 @@ export namespace Prisma {
     id?: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
@@ -52476,6 +53291,7 @@ export namespace Prisma {
     tenant: TenantCreateNestedOneWithoutUsersInput
     openedShifts?: ShiftCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftCreateNestedManyWithoutClosedByInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutDriverInput
   }
 
   export type StaffUserUncheckedCreateWithoutExpensesInput = {
@@ -52483,12 +53299,14 @@ export namespace Prisma {
     tenantId: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftUncheckedCreateNestedManyWithoutClosedByInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutDriverInput
   }
 
   export type StaffUserCreateOrConnectWithoutExpensesInput = {
@@ -52576,6 +53394,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
@@ -52583,6 +53402,7 @@ export namespace Prisma {
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
     openedShifts?: ShiftUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUpdateManyWithoutClosedByNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutDriverNestedInput
   }
 
   export type StaffUserUncheckedUpdateWithoutExpensesInput = {
@@ -52590,12 +53410,14 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUncheckedUpdateManyWithoutClosedByNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutDriverNestedInput
   }
 
   export type TenantCreateWithoutInventoryBatchesInput = {
@@ -53589,6 +54411,74 @@ export namespace Prisma {
     create: XOR<TenantCreateWithoutDeliveryOrdersInput, TenantUncheckedCreateWithoutDeliveryOrdersInput>
   }
 
+  export type CustomerCreateWithoutDeliveryOrdersInput = {
+    id?: string
+    name: string
+    mobile: string
+    pin?: string
+    creditLimit?: number
+    notes?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutCustomersInput
+    debtSales?: DebtSaleCreateNestedManyWithoutCustomerInput
+    debtPayments?: DebtPaymentCreateNestedManyWithoutCustomerInput
+  }
+
+  export type CustomerUncheckedCreateWithoutDeliveryOrdersInput = {
+    id?: string
+    tenantId: string
+    name: string
+    mobile: string
+    pin?: string
+    creditLimit?: number
+    notes?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    debtSales?: DebtSaleUncheckedCreateNestedManyWithoutCustomerInput
+    debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutCustomerInput
+  }
+
+  export type CustomerCreateOrConnectWithoutDeliveryOrdersInput = {
+    where: CustomerWhereUniqueInput
+    create: XOR<CustomerCreateWithoutDeliveryOrdersInput, CustomerUncheckedCreateWithoutDeliveryOrdersInput>
+  }
+
+  export type StaffUserCreateWithoutDeliveryOrdersInput = {
+    id?: string
+    name: string
+    mobile: string
+    code?: string
+    pin: string
+    role: $Enums.UserRole
+    active?: boolean
+    createdAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutUsersInput
+    openedShifts?: ShiftCreateNestedManyWithoutOpenedByInput
+    closedShifts?: ShiftCreateNestedManyWithoutClosedByInput
+    expenses?: ExpenseCreateNestedManyWithoutRecordedByUserInput
+  }
+
+  export type StaffUserUncheckedCreateWithoutDeliveryOrdersInput = {
+    id?: string
+    tenantId: string
+    name: string
+    mobile: string
+    code?: string
+    pin: string
+    role: $Enums.UserRole
+    active?: boolean
+    createdAt?: Date | string
+    openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
+    closedShifts?: ShiftUncheckedCreateNestedManyWithoutClosedByInput
+    expenses?: ExpenseUncheckedCreateNestedManyWithoutRecordedByUserInput
+  }
+
+  export type StaffUserCreateOrConnectWithoutDeliveryOrdersInput = {
+    where: StaffUserWhereUniqueInput
+    create: XOR<StaffUserCreateWithoutDeliveryOrdersInput, StaffUserUncheckedCreateWithoutDeliveryOrdersInput>
+  }
+
   export type DeliveryOrderItemCreateWithoutDeliveryOrderInput = {
     id?: string
     productId: number
@@ -53684,6 +54574,86 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
   }
 
+  export type CustomerUpsertWithoutDeliveryOrdersInput = {
+    update: XOR<CustomerUpdateWithoutDeliveryOrdersInput, CustomerUncheckedUpdateWithoutDeliveryOrdersInput>
+    create: XOR<CustomerCreateWithoutDeliveryOrdersInput, CustomerUncheckedCreateWithoutDeliveryOrdersInput>
+    where?: CustomerWhereInput
+  }
+
+  export type CustomerUpdateToOneWithWhereWithoutDeliveryOrdersInput = {
+    where?: CustomerWhereInput
+    data: XOR<CustomerUpdateWithoutDeliveryOrdersInput, CustomerUncheckedUpdateWithoutDeliveryOrdersInput>
+  }
+
+  export type CustomerUpdateWithoutDeliveryOrdersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
+    creditLimit?: FloatFieldUpdateOperationsInput | number
+    notes?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutCustomersNestedInput
+    debtSales?: DebtSaleUpdateManyWithoutCustomerNestedInput
+    debtPayments?: DebtPaymentUpdateManyWithoutCustomerNestedInput
+  }
+
+  export type CustomerUncheckedUpdateWithoutDeliveryOrdersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
+    creditLimit?: FloatFieldUpdateOperationsInput | number
+    notes?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    debtSales?: DebtSaleUncheckedUpdateManyWithoutCustomerNestedInput
+    debtPayments?: DebtPaymentUncheckedUpdateManyWithoutCustomerNestedInput
+  }
+
+  export type StaffUserUpsertWithoutDeliveryOrdersInput = {
+    update: XOR<StaffUserUpdateWithoutDeliveryOrdersInput, StaffUserUncheckedUpdateWithoutDeliveryOrdersInput>
+    create: XOR<StaffUserCreateWithoutDeliveryOrdersInput, StaffUserUncheckedCreateWithoutDeliveryOrdersInput>
+    where?: StaffUserWhereInput
+  }
+
+  export type StaffUserUpdateToOneWithWhereWithoutDeliveryOrdersInput = {
+    where?: StaffUserWhereInput
+    data: XOR<StaffUserUpdateWithoutDeliveryOrdersInput, StaffUserUncheckedUpdateWithoutDeliveryOrdersInput>
+  }
+
+  export type StaffUserUpdateWithoutDeliveryOrdersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    active?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
+    openedShifts?: ShiftUpdateManyWithoutOpenedByNestedInput
+    closedShifts?: ShiftUpdateManyWithoutClosedByNestedInput
+    expenses?: ExpenseUpdateManyWithoutRecordedByUserNestedInput
+  }
+
+  export type StaffUserUncheckedUpdateWithoutDeliveryOrdersInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
+    role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    active?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
+    closedShifts?: ShiftUncheckedUpdateManyWithoutClosedByNestedInput
+    expenses?: ExpenseUncheckedUpdateManyWithoutRecordedByUserNestedInput
+  }
+
   export type DeliveryOrderItemUpsertWithWhereUniqueWithoutDeliveryOrderInput = {
     where: DeliveryOrderItemWhereUniqueInput
     update: XOR<DeliveryOrderItemUpdateWithoutDeliveryOrderInput, DeliveryOrderItemUncheckedUpdateWithoutDeliveryOrderInput>
@@ -53718,7 +54688,6 @@ export namespace Prisma {
     id?: string
     orderNumber: string
     status?: $Enums.DeliveryOrderStatus
-    customerId?: string | null
     customerName: string
     customerPhone: string
     address: string
@@ -53733,6 +54702,7 @@ export namespace Prisma {
     changeRequired?: number
     assignedTo?: string | null
     assignedName?: string | null
+    driverAssignedAt?: Date | string | null
     notes?: string
     cancelledReason?: string
     createdAt?: Date | string
@@ -53740,6 +54710,8 @@ export namespace Prisma {
     deliveredAt?: Date | string | null
     cancelledAt?: Date | string | null
     tenant: TenantCreateNestedOneWithoutDeliveryOrdersInput
+    customer?: CustomerCreateNestedOneWithoutDeliveryOrdersInput
+    driver?: StaffUserCreateNestedOneWithoutDeliveryOrdersInput
   }
 
   export type DeliveryOrderUncheckedCreateWithoutItemsInput = {
@@ -53762,6 +54734,8 @@ export namespace Prisma {
     changeRequired?: number
     assignedTo?: string | null
     assignedName?: string | null
+    driverId?: string | null
+    driverAssignedAt?: Date | string | null
     notes?: string
     cancelledReason?: string
     createdAt?: Date | string
@@ -53790,7 +54764,6 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDeliveryOrderStatusFieldUpdateOperationsInput | $Enums.DeliveryOrderStatus
-    customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: StringFieldUpdateOperationsInput | string
     customerPhone?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
@@ -53805,6 +54778,7 @@ export namespace Prisma {
     changeRequired?: FloatFieldUpdateOperationsInput | number
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     notes?: StringFieldUpdateOperationsInput | string
     cancelledReason?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -53812,6 +54786,8 @@ export namespace Prisma {
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     tenant?: TenantUpdateOneRequiredWithoutDeliveryOrdersNestedInput
+    customer?: CustomerUpdateOneWithoutDeliveryOrdersNestedInput
+    driver?: StaffUserUpdateOneWithoutDeliveryOrdersNestedInput
   }
 
   export type DeliveryOrderUncheckedUpdateWithoutItemsInput = {
@@ -53834,6 +54810,8 @@ export namespace Prisma {
     changeRequired?: FloatFieldUpdateOperationsInput | number
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverId?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     notes?: StringFieldUpdateOperationsInput | string
     cancelledReason?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -54094,6 +55072,7 @@ export namespace Prisma {
     id?: string
     name: string
     mobile: string
+    code?: string
     pin: string
     role: $Enums.UserRole
     active?: boolean
@@ -54165,6 +55144,7 @@ export namespace Prisma {
     id?: string
     name: string
     mobile: string
+    pin?: string
     creditLimit?: number
     notes?: string
     createdAt?: Date | string
@@ -54380,6 +55360,8 @@ export namespace Prisma {
     changeRequired?: number
     assignedTo?: string | null
     assignedName?: string | null
+    driverId?: string | null
+    driverAssignedAt?: Date | string | null
     notes?: string
     cancelledReason?: string
     createdAt?: Date | string
@@ -54392,6 +55374,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
@@ -54399,12 +55382,14 @@ export namespace Prisma {
     openedShifts?: ShiftUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUpdateManyWithoutRecordedByUserNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutDriverNestedInput
   }
 
   export type StaffUserUncheckedUpdateWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
@@ -54412,12 +55397,14 @@ export namespace Prisma {
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUncheckedUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUncheckedUpdateManyWithoutRecordedByUserNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutDriverNestedInput
   }
 
   export type StaffUserUncheckedUpdateManyWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
@@ -54626,30 +55613,35 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: FloatFieldUpdateOperationsInput | number
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     debtSales?: DebtSaleUpdateManyWithoutCustomerNestedInput
     debtPayments?: DebtPaymentUpdateManyWithoutCustomerNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: FloatFieldUpdateOperationsInput | number
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     debtSales?: DebtSaleUncheckedUpdateManyWithoutCustomerNestedInput
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutCustomerNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutCustomerNestedInput
   }
 
   export type CustomerUncheckedUpdateManyWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
+    pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: FloatFieldUpdateOperationsInput | number
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55238,7 +56230,6 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     orderNumber?: StringFieldUpdateOperationsInput | string
     status?: EnumDeliveryOrderStatusFieldUpdateOperationsInput | $Enums.DeliveryOrderStatus
-    customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: StringFieldUpdateOperationsInput | string
     customerPhone?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
@@ -55253,12 +56244,15 @@ export namespace Prisma {
     changeRequired?: FloatFieldUpdateOperationsInput | number
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     notes?: StringFieldUpdateOperationsInput | string
     cancelledReason?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    customer?: CustomerUpdateOneWithoutDeliveryOrdersNestedInput
+    driver?: StaffUserUpdateOneWithoutDeliveryOrdersNestedInput
     items?: DeliveryOrderItemUpdateManyWithoutDeliveryOrderNestedInput
   }
 
@@ -55281,6 +56275,8 @@ export namespace Prisma {
     changeRequired?: FloatFieldUpdateOperationsInput | number
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverId?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     notes?: StringFieldUpdateOperationsInput | string
     cancelledReason?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55309,6 +56305,8 @@ export namespace Prisma {
     changeRequired?: FloatFieldUpdateOperationsInput | number
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverId?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     notes?: StringFieldUpdateOperationsInput | string
     cancelledReason?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55373,6 +56371,35 @@ export namespace Prisma {
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
+  }
+
+  export type DeliveryOrderCreateManyDriverInput = {
+    id?: string
+    tenantId: string
+    orderNumber: string
+    status?: $Enums.DeliveryOrderStatus
+    customerId?: string | null
+    customerName: string
+    customerPhone: string
+    address: string
+    locationLat?: number | null
+    locationLng?: number | null
+    deliveryNote?: string
+    itemsTotal: number
+    deliveryFee?: number
+    total: number
+    paymentMethod?: string
+    paidAmount?: number
+    changeRequired?: number
+    assignedTo?: string | null
+    assignedName?: string | null
+    driverAssignedAt?: Date | string | null
+    notes?: string
+    cancelledReason?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deliveredAt?: Date | string | null
+    cancelledAt?: Date | string | null
   }
 
   export type ShiftUpdateWithoutOpenedByInput = {
@@ -55547,6 +56574,95 @@ export namespace Prisma {
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DeliveryOrderUpdateWithoutDriverInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumDeliveryOrderStatusFieldUpdateOperationsInput | $Enums.DeliveryOrderStatus
+    customerName?: StringFieldUpdateOperationsInput | string
+    customerPhone?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
+    locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
+    deliveryNote?: StringFieldUpdateOperationsInput | string
+    itemsTotal?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    total?: FloatFieldUpdateOperationsInput | number
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    paidAmount?: FloatFieldUpdateOperationsInput | number
+    changeRequired?: FloatFieldUpdateOperationsInput | number
+    assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    notes?: StringFieldUpdateOperationsInput | string
+    cancelledReason?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tenant?: TenantUpdateOneRequiredWithoutDeliveryOrdersNestedInput
+    customer?: CustomerUpdateOneWithoutDeliveryOrdersNestedInput
+    items?: DeliveryOrderItemUpdateManyWithoutDeliveryOrderNestedInput
+  }
+
+  export type DeliveryOrderUncheckedUpdateWithoutDriverInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    orderNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumDeliveryOrderStatusFieldUpdateOperationsInput | $Enums.DeliveryOrderStatus
+    customerId?: NullableStringFieldUpdateOperationsInput | string | null
+    customerName?: StringFieldUpdateOperationsInput | string
+    customerPhone?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
+    locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
+    deliveryNote?: StringFieldUpdateOperationsInput | string
+    itemsTotal?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    total?: FloatFieldUpdateOperationsInput | number
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    paidAmount?: FloatFieldUpdateOperationsInput | number
+    changeRequired?: FloatFieldUpdateOperationsInput | number
+    assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    notes?: StringFieldUpdateOperationsInput | string
+    cancelledReason?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    items?: DeliveryOrderItemUncheckedUpdateManyWithoutDeliveryOrderNestedInput
+  }
+
+  export type DeliveryOrderUncheckedUpdateManyWithoutDriverInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    orderNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumDeliveryOrderStatusFieldUpdateOperationsInput | $Enums.DeliveryOrderStatus
+    customerId?: NullableStringFieldUpdateOperationsInput | string | null
+    customerName?: StringFieldUpdateOperationsInput | string
+    customerPhone?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
+    locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
+    deliveryNote?: StringFieldUpdateOperationsInput | string
+    itemsTotal?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    total?: FloatFieldUpdateOperationsInput | number
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    paidAmount?: FloatFieldUpdateOperationsInput | number
+    changeRequired?: FloatFieldUpdateOperationsInput | number
+    assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    notes?: StringFieldUpdateOperationsInput | string
+    cancelledReason?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type ProductCreateManyParentInput = {
@@ -56014,6 +57130,35 @@ export namespace Prisma {
     createdAt?: Date | string
   }
 
+  export type DeliveryOrderCreateManyCustomerInput = {
+    id?: string
+    tenantId: string
+    orderNumber: string
+    status?: $Enums.DeliveryOrderStatus
+    customerName: string
+    customerPhone: string
+    address: string
+    locationLat?: number | null
+    locationLng?: number | null
+    deliveryNote?: string
+    itemsTotal: number
+    deliveryFee?: number
+    total: number
+    paymentMethod?: string
+    paidAmount?: number
+    changeRequired?: number
+    assignedTo?: string | null
+    assignedName?: string | null
+    driverId?: string | null
+    driverAssignedAt?: Date | string | null
+    notes?: string
+    cancelledReason?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    deliveredAt?: Date | string | null
+    cancelledAt?: Date | string | null
+  }
+
   export type DebtSaleUpdateWithoutCustomerInput = {
     id?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
@@ -56072,6 +57217,95 @@ export namespace Prisma {
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DeliveryOrderUpdateWithoutCustomerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orderNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumDeliveryOrderStatusFieldUpdateOperationsInput | $Enums.DeliveryOrderStatus
+    customerName?: StringFieldUpdateOperationsInput | string
+    customerPhone?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
+    locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
+    deliveryNote?: StringFieldUpdateOperationsInput | string
+    itemsTotal?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    total?: FloatFieldUpdateOperationsInput | number
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    paidAmount?: FloatFieldUpdateOperationsInput | number
+    changeRequired?: FloatFieldUpdateOperationsInput | number
+    assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    notes?: StringFieldUpdateOperationsInput | string
+    cancelledReason?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tenant?: TenantUpdateOneRequiredWithoutDeliveryOrdersNestedInput
+    driver?: StaffUserUpdateOneWithoutDeliveryOrdersNestedInput
+    items?: DeliveryOrderItemUpdateManyWithoutDeliveryOrderNestedInput
+  }
+
+  export type DeliveryOrderUncheckedUpdateWithoutCustomerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    orderNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumDeliveryOrderStatusFieldUpdateOperationsInput | $Enums.DeliveryOrderStatus
+    customerName?: StringFieldUpdateOperationsInput | string
+    customerPhone?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
+    locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
+    deliveryNote?: StringFieldUpdateOperationsInput | string
+    itemsTotal?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    total?: FloatFieldUpdateOperationsInput | number
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    paidAmount?: FloatFieldUpdateOperationsInput | number
+    changeRequired?: FloatFieldUpdateOperationsInput | number
+    assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverId?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    notes?: StringFieldUpdateOperationsInput | string
+    cancelledReason?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    items?: DeliveryOrderItemUncheckedUpdateManyWithoutDeliveryOrderNestedInput
+  }
+
+  export type DeliveryOrderUncheckedUpdateManyWithoutCustomerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    orderNumber?: StringFieldUpdateOperationsInput | string
+    status?: EnumDeliveryOrderStatusFieldUpdateOperationsInput | $Enums.DeliveryOrderStatus
+    customerName?: StringFieldUpdateOperationsInput | string
+    customerPhone?: StringFieldUpdateOperationsInput | string
+    address?: StringFieldUpdateOperationsInput | string
+    locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
+    locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
+    deliveryNote?: StringFieldUpdateOperationsInput | string
+    itemsTotal?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    total?: FloatFieldUpdateOperationsInput | number
+    paymentMethod?: StringFieldUpdateOperationsInput | string
+    paidAmount?: FloatFieldUpdateOperationsInput | number
+    changeRequired?: FloatFieldUpdateOperationsInput | number
+    assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
+    assignedName?: NullableStringFieldUpdateOperationsInput | string | null
+    driverId?: NullableStringFieldUpdateOperationsInput | string | null
+    driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    notes?: StringFieldUpdateOperationsInput | string
+    cancelledReason?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    deliveredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type PurchaseOrderCreateManySupplierInput = {

@@ -1,7 +1,7 @@
 import { openDB, type IDBPDatabase } from "idb"
 
 const DB_NAME = "lebanonpos"
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 let dbPromise: Promise<IDBPDatabase> | null = null
 
@@ -77,6 +77,9 @@ function getDb(): Promise<IDBPDatabase> {
         }
         if (!db.objectStoreNames.contains("lebanonpos-migration")) {
           db.createObjectStore("lebanonpos-migration", { keyPath: "key" })
+        }
+        if (!db.objectStoreNames.contains("delivery-orders")) {
+          db.createObjectStore("delivery-orders", { keyPath: "id" })
         }
       },
     })

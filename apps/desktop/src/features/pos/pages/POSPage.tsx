@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useDebounce } from "../../../hooks/useDebounce"
 import { useHotkeys } from "../../../hooks/useHotkey"
 import type { ChangeEvent } from "react"
@@ -16,9 +16,9 @@ import {
   ShoppingCart,
   Star,
   Utensils,
-  X,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
+import { useI18n } from "@lebanonpos/shared"
 
 import ConfirmDialog from "../../../components/ConfirmDialog"
 import Spinner from "../../../components/ui/Spinner"
@@ -27,15 +27,22 @@ import ProductCard from "../components/ProductCard"
 import DepartmentTabs from "../components/DepartmentTabs"
 import LastSaleBanner from "../components/LastSaleBanner"
 import CartDrawer from "../components/CartDrawer"
+import VariantPicker from "../components/VariantPicker"
 import {
   formatCurrency,
   formatLbpCurrency,
   formatNumber,
-  formatUsdCurrency,
   lbpToUsd,
   usdToLbp,
 } from "../lib/currency"
-import { escapeHtml } from "../lib/salesHelpers"
+import {
+  getHeldSaleDiscountTotal,
+  getHeldSaleGrossSubtotal,
+  getHeldSaleItemCount,
+  getHeldSaleTotal,
+  parseMoney,
+} from "../lib/helpers"
+import { printLastSaleReceipt, type LastSaleSummary } from "../lib/printReceipt"
 import {
   createBarcodeDetector,
   createHtml5Qrcode,
@@ -93,23 +100,6 @@ type DepartmentTheme = {
   iconInactive: string
   countActive: string
   countInactive: string
-}
-
-type LastSaleSummary = {
-  number: string
-  paymentMethod: PaymentMethod
-  customerName?: string
-  grossSubtotal: number
-  subtotal: number
-  discountTotal: number
-  tax: number
-  total: number
-  totalLbp: number
-  exchangeRate: number
-  tender?: SaleTender
-  customerBalanceBefore?: number
-  customerBalanceAfter?: number
-  items: CartItem[]
 }
 
 const POS_CAMERA_READER_ID = "lebanonpos-pos-camera-reader"
@@ -190,53 +180,32 @@ const departmentThemes: DepartmentTheme[] = [
   },
 ]
 
-function parseMoney(value: string) {
-  const parsedValue = Number(value.replace(/,/g, "").trim())
-
-  return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0
-}
-
-function getHeldSaleItemCount(heldSale: HeldSale) {
-  return heldSale.items.reduce((sum, item) => sum + item.quantity, 0)
-}
-
-function getHeldSaleGrossSubtotal(heldSale: HeldSale) {
-  return heldSale.items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  )
-}
-
-function getHeldSaleDiscountTotal(heldSale: HeldSale) {
-  const grossSubtotal = getHeldSaleGrossSubtotal(heldSale)
-  const discountValue = parseMoney(heldSale.discountValue)
-
-  return Math.min(
-    grossSubtotal,
-    heldSale.discountMode === "Percent"
-      ? grossSubtotal * (Math.min(100, discountValue) / 100)
-      : discountValue
-  )
-}
-
-function getHeldSaleTotal(heldSale: HeldSale, vatRate: number) {
-  const subtotal = Math.max(
-    0,
-    getHeldSaleGrossSubtotal(heldSale) - getHeldSaleDiscountTotal(heldSale)
-  )
-
-  return subtotal + subtotal * vatRate
-}
-
 function normalizeBarcode(value: string) {
   return value.trim().replace(/\s+/g, "")
 }
 
-function formatVatRate(value: number) {
-  const rate = value * 100
-
-  return Number.isInteger(rate) ? `${rate}%` : `${rate.toFixed(2)}%`
-}
+const ProductGrid = memo(function ProductGrid({
+  products,
+  onAddProduct,
+  onToggleFavorite,
+}: {
+  products: Product[]
+  onAddProduct: (product: Product, source: string) => void
+  onToggleFavorite: (product: Product) => void
+}) {
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 pb-4 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] xl:gap-4">
+      {products.map((product) => (
+        <ProductCard
+          key={product.id}
+          product={product}
+          onClick={() => onAddProduct(product, "tap")}
+          onFavoriteToggle={() => onToggleFavorite(product)}
+        />
+      ))}
+    </div>
+  )
+})
 
 export default function POSPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -245,6 +214,7 @@ export default function POSPage() {
   const [heldSales, setHeldSales] = useState<HeldSale[]>(getHeldSales())
   const [customers, setCustomers] = useState<CustomerLedger[]>([])
   const scanInputRef = useRef<HTMLInputElement>(null)
+  const { t, dir } = useI18n()
   const [settings, setSettings] = useState<AppSettings>(getSettings())
   const [selectedCustomerId, setSelectedCustomerId] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
@@ -507,7 +477,7 @@ export default function POSPage() {
     })
   }
 
-  function addProductToSale(product: Product, source: string) {
+  const addProductToSale = useCallback(function addProductToSale(product: Product, source: string) {
     if (product.isParent) {
       const variants = products.filter((p) => p.parentId === product.id)
 
@@ -534,7 +504,7 @@ export default function POSPage() {
     setSearch("")
     setLastSale(null)
     setScannerStatus(`${product.name} added by ${source}.`)
-  }
+  }, [products, items])
 
   function handleScannedBarcode(value: string) {
     const barcode = normalizeBarcode(value)
@@ -587,16 +557,16 @@ export default function POSPage() {
     addProductToSale(product, exactProduct ? "barcode" : "quick add")
   }
 
-  function toggleFavorite(product: Product) {
+  const toggleFavorite = useCallback(function toggleFavorite(product: Product) {
     toggleProductFavorite(product.id)
     setScannerStatus(
       product.favorite
         ? `${product.name} removed from favorites.`
         : `${product.name} added to favorites.`
     )
-  }
+  }, [])
 
-  function selectDepartment(department: string) {
+  const selectDepartment = useCallback(function selectDepartment(department: string) {
     setSelectedCategory(department)
     setSearch("")
 
@@ -606,9 +576,9 @@ export default function POSPage() {
         behavior: "smooth",
       })
     })
-  }
+  }, [])
 
-  function increaseQuantity(id: number) {
+  const increaseQuantity = useCallback(function increaseQuantity(id: number) {
     setItems((currentItems) =>
       currentItems.map((item) =>
         item.id === id && item.quantity < item.stock
@@ -619,9 +589,9 @@ export default function POSPage() {
           : item
       )
     )
-  }
+  }, [])
 
-  function decreaseQuantity(id: number) {
+  const decreaseQuantity = useCallback(function decreaseQuantity(id: number) {
     setItems((currentItems) =>
       currentItems
         .map((item) =>
@@ -634,11 +604,11 @@ export default function POSPage() {
         )
         .filter((item) => item.quantity > 0)
     )
-  }
+  }, [])
 
-  function removeItem(id: number) {
+  const removeItem = useCallback(function removeItem(id: number) {
     setItems((currentItems) => currentItems.filter((item) => item.id !== id))
-  }
+  }, [])
 
   function resetTender() {
     setPaidUsd("")
@@ -655,7 +625,7 @@ export default function POSPage() {
     setItems([])
   }
 
-  function cleanSale() {
+  const cleanSale = useCallback(function cleanSale() {
     if (items.length === 0) {
       clearCart()
       resetTender()
@@ -668,9 +638,9 @@ export default function POSPage() {
       return
     }
     setConfirmAction({
-      title: "Clear current sale",
-      message: `Clear ${formatNumber(itemCount)} items from the cart?`,
-      confirmLabel: "Clear",
+      title: t("pos.clear_sale_title"),
+      message: `${t("pos.clear_sale_message", { n: formatNumber(itemCount) })}`,
+      confirmLabel: t("pos.clear"),
       onConfirm: () => {
         recordAuditEvent({
           action: "sale.void",
@@ -694,9 +664,9 @@ export default function POSPage() {
         setScannerStatus("Scanner ready for the next sale.")
       },
     })
-  }
+  }, [items, itemCount, grossSubtotal, discountTotal, t])
 
-  function holdCurrentSale() {
+  const holdCurrentSale = useCallback(function holdCurrentSale() {
     if (items.length === 0) {
       setScannerStatus("Add items before holding a sale.")
       return
@@ -731,9 +701,9 @@ export default function POSPage() {
     setPaymentMethod("Cash")
     setIsCartOpen(false)
     setScannerStatus(`${heldSale.holdNumber} held.`)
-  }
+  }, [items, itemCount, discountTotal, total, paymentMethod, selectedCustomerId, discountMode, discountValue, selectedCustomer, customers])
 
-  function resumeHeldSale(heldSale: HeldSale) {
+  const resumeHeldSale = useCallback(function resumeHeldSale(heldSale: HeldSale) {
     if (items.length > 0) {
       setScannerStatus("Hold or clear the current sale before resuming another.")
       return
@@ -756,9 +726,9 @@ export default function POSPage() {
     })
     setIsCartOpen(true)
     setScannerStatus(`${heldSale.holdNumber} resumed.`)
-  }
+  }, [items])
 
-  function discardHeldSale(heldSale: HeldSale) {
+  const discardHeldSale = useCallback(function discardHeldSale(heldSale: HeldSale) {
     setConfirmAction({
       title: "Discard held sale",
       message: `Discard ${heldSale.holdNumber}? This cannot be undone.`,
@@ -777,9 +747,9 @@ export default function POSPage() {
         setScannerStatus(`${heldSale.holdNumber} discarded.`)
       },
     })
-  }
+  }, [])
 
-  function selectTenderMode(mode: TenderMode) {
+  const selectTenderMode = useCallback(function selectTenderMode(mode: TenderMode) {
     setTenderMode(mode)
 
     if (mode === "USD") {
@@ -789,9 +759,9 @@ export default function POSPage() {
     if (mode === "LBP") {
       setPaidUsd("")
     }
-  }
+  }, [])
 
-  function fillExactTender(currency: "USD" | "LBP") {
+  const fillExactTender = useCallback(function fillExactTender(currency: "USD" | "LBP") {
     if (currency === "USD") {
       setTenderMode("USD")
       setPaidUsd(total.toFixed(2))
@@ -802,7 +772,7 @@ export default function POSPage() {
     setTenderMode("LBP")
     setPaidUsd("")
     setPaidLbp(String(Math.round(totalLbp)))
-  }
+  }, [total, totalLbp])
 
   async function startCameraScanner() {
     if (cameraActive) {
@@ -979,7 +949,7 @@ export default function POSPage() {
     setScannerStatus("Camera scanner stopped.")
   }
 
-  function completeSale() {
+  const completeSale = useCallback(function completeSale() {
     if (checkoutBlocked) {
       return
     }
@@ -1112,157 +1082,26 @@ export default function POSPage() {
     setSearch("")
     setIsCartOpen(false)
     setScannerStatus("Sale completed. Scanner ready for the next sale.")
-  }
-
-  function printReceipt() {
-    if (!lastSale) {
-      return
-    }
-
-    const receiptWindow = window.open("", "lebanonpos-receipt")
-
-    if (!receiptWindow) {
-      return
-    }
-
-    const lineItems = lastSale.items
-      .map(
-        (item) => `
-          <tr>
-            <td>
-              <strong>${escapeHtml(item.name)}</strong><br />
-              <span>${escapeHtml(item.barcode)}</span>
-            </td>
-            <td>${item.quantity}</td>
-            <td>${formatCurrency(item.price)}</td>
-            <td>${formatCurrency(item.price * item.quantity)}</td>
-          </tr>
-        `
-      )
-      .join("")
-    const tenderRows = lastSale.tender
-      ? `
-        <tr><td>Paid USD</td><td>${formatUsdCurrency(
-          lastSale.tender.paidUsd
-        )}</td></tr>
-        <tr><td>Paid LBP</td><td>${formatLbpCurrency(
-          lastSale.tender.paidLbp
-        )}</td></tr>
-        <tr><td>Total paid</td><td>${formatUsdCurrency(
-          lastSale.tender.paidTotalUsd
-        )} / ${formatLbpCurrency(lastSale.tender.paidTotalLbp)}</td></tr>
-        <tr><td>Change USD</td><td>${formatUsdCurrency(
-          lastSale.tender.changeUsd
-        )}</td></tr>
-        <tr><td>Change LBP</td><td>${formatLbpCurrency(
-          lastSale.tender.changeLbp
-        )}</td></tr>
-      `
-      : ""
-    const customerRows =
-      lastSale.customerBalanceAfter !== undefined
-        ? `
-          <tr><td>Customer</td><td>${escapeHtml(
-            lastSale.customerName ?? ""
-          )}</td></tr>
-          <tr><td>Previous balance</td><td>${formatCurrency(
-            lastSale.customerBalanceBefore ?? 0
-          )}</td></tr>
-          <tr><td>New balance</td><td>${formatCurrency(
-            lastSale.customerBalanceAfter
-          )}</td></tr>
-        `
-        : ""
-    const discountRows =
-      lastSale.discountTotal > 0
-        ? `
-          <tr><td>Items subtotal</td><td>${formatCurrency(
-            lastSale.grossSubtotal
-          )}</td></tr>
-          <tr><td>Discount</td><td>-${formatCurrency(
-            lastSale.discountTotal
-          )}</td></tr>
-        `
-        : ""
-
-    receiptWindow.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <title>${lastSale.number}</title>
-          <style>
-            @page { size: 80mm auto; margin: 4mm; }
-            body { font-family: Arial, sans-serif; color: #000; margin: 0; }
-            h1 { font-size: 18px; margin: 0 0 4px; text-align: center; }
-            p { margin: 2px 0; font-size: 12px; text-align: center; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-            td, th { border-bottom: 1px dashed #999; padding: 5px 0; vertical-align: top; }
-            th { text-align: left; }
-            td:nth-child(2), td:nth-child(3), td:nth-child(4),
-            th:nth-child(2), th:nth-child(3), th:nth-child(4) { text-align: right; }
-            .summary td:first-child { text-align: left; }
-            .summary td:last-child { text-align: right; font-weight: 700; }
-            .total { font-size: 16px; font-weight: 700; margin-top: 10px; text-align: right; }
-            .muted { color: #444; font-size: 11px; }
-          </style>
-        </head>
-        <body>
-          <h1>${escapeHtml(settings.storeName)}</h1>
-          <p>${escapeHtml(settings.branchName)}</p>
-          <p>${escapeHtml(settings.phone)}</p>
-          <p>${escapeHtml(settings.address)}</p>
-          <p>Receipt ${lastSale.number}</p>
-          <p>${new Date().toLocaleString("en-LB")}</p>
-          <table>
-            <thead>
-              <tr><th>Item</th><th>Qty</th><th>Each</th><th>Total</th></tr>
-            </thead>
-            <tbody>${lineItems}</tbody>
-          </table>
-          <table class="summary">
-            ${discountRows}
-            <tr><td>Subtotal</td><td>${formatCurrency(lastSale.subtotal)}</td></tr>
-            <tr><td>VAT ${formatVatRate(settings.vatRate)}</td><td>${formatCurrency(
-              lastSale.tax
-            )}</td></tr>
-            <tr><td>Total USD</td><td>${formatCurrency(lastSale.total)}</td></tr>
-            <tr><td>Total LBP</td><td>${formatLbpCurrency(
-              lastSale.totalLbp
-            )}</td></tr>
-            <tr><td>Payment</td><td>${lastSale.paymentMethod}</td></tr>
-            <tr><td>Rate</td><td>1 USD = ${formatLbpCurrency(
-              lastSale.exchangeRate
-            )}</td></tr>
-            ${tenderRows}
-            ${customerRows}
-          </table>
-          <p class="muted">${escapeHtml(settings.receiptFooter)}</p>
-        </body>
-      </html>
-    `)
-    receiptWindow.document.close()
-    receiptWindow.focus()
-    window.setTimeout(() => receiptWindow.print(), 250)
-  }
+  }, [checkoutBlocked, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, clearCart, resetTender, resetDiscount])
 
   return (
-    <main className="relative min-h-0 flex-1 overflow-hidden bg-[#eef3f2]">
+    <main className="relative min-h-0 flex-1 overflow-hidden bg-page">
       <section className="flex h-full min-w-0 flex-col gap-3 overflow-y-auto p-3 pb-28 sm:p-4 xl:p-5">
         <LastSaleBanner
           sale={lastSale}
           onNewSale={cleanSale}
-          onPrintReceipt={printReceipt}
+          onPrintReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}
         />
 
         <div className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm">
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
             <label className="relative min-w-0">
               <span className="mb-2 block text-sm font-bold text-zinc-700">
-                Quick add to cart
+                {t("pos.quick_add")}
               </span>
               <Search
                 size={22}
-                className="pointer-events-none absolute bottom-4 left-4 text-zinc-400"
+                className={`pointer-events-none absolute bottom-4 text-zinc-400 ${dir === "rtl" ? "right-4" : "left-4"}`}
               />
               <input
                 ref={scanInputRef}
@@ -1275,8 +1114,8 @@ export default function POSPage() {
                     quickAddProduct(scanCode)
                   }
                 }}
-                placeholder="Scan barcode or type item name"
-                className="h-14 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-12 pr-4 text-lg font-semibold text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                placeholder={t("pos.scan_placeholder")}
+                className={`h-14 w-full rounded-lg border border-zinc-200 bg-zinc-50 text-lg font-semibold text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100 ${dir === "rtl" ? "pr-12 pl-4" : "pl-12 pr-4"}`}
               />
             </label>
 
@@ -1287,7 +1126,7 @@ export default function POSPage() {
                 className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-base font-bold text-white transition hover:bg-zinc-800 sm:h-14 sm:px-5"
               >
                 <ScanBarcode size={19} />
-                Add
+                {t("pos.add")}
               </button>
               <button
                 type="button"
@@ -1295,7 +1134,7 @@ export default function POSPage() {
                 className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-base font-bold text-white shadow-sm transition hover:bg-emerald-500 sm:h-14 sm:px-5"
               >
                 <ShoppingCart size={19} />
-                Cart {formatNumber(itemCount)}
+                {t("pos.cart")} {formatNumber(itemCount)}
               </button>
               <button
                 type="button"
@@ -1307,7 +1146,7 @@ export default function POSPage() {
                 }`}
               >
                 <ScanBarcode size={19} />
-                {cameraActive ? "Stop" : "Scan"}
+                {cameraActive ? t("pos.stop") : t("pos.scan")}
               </button>
               <button
                 type="button"
@@ -1315,7 +1154,7 @@ export default function POSPage() {
                 className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 text-base font-bold text-zinc-700 transition hover:bg-zinc-50 sm:h-14"
               >
                 <Eraser size={19} />
-                Clean
+                {t("pos.clean")}
               </button>
             </div>
           </div>
@@ -1325,13 +1164,13 @@ export default function POSPage() {
               {scannerStatus}
             </p>
             <span className="rounded-lg bg-white px-3 py-2 text-zinc-600 ring-1 ring-zinc-200">
-              {formatNumber(filteredProducts.length)} shown
+              {t("pos.items_shown", { n: formatNumber(filteredProducts.length) })}
             </span>
             <span className="rounded-lg bg-white px-3 py-2 text-zinc-600 ring-1 ring-zinc-200">
-              Cart {formatNumber(itemCount)}
+              {t("pos.cart_count", { n: formatNumber(itemCount) })}
             </span>
             <span className="rounded-lg bg-emerald-50 px-3 py-2 text-emerald-800">
-              1 USD = {formatLbpCurrency(exchangeRate)}
+              {t("pos.exchange_rate", { rate: formatLbpCurrency(exchangeRate) })}
             </span>
           </div>
 
@@ -1377,10 +1216,10 @@ export default function POSPage() {
         >
           <div>
             <h3 className="text-xl font-bold text-zinc-950">
-              {selectedDepartment?.label ?? "Quick Sale"}
+              {selectedDepartment?.label ?? t("pos.quick_sale")}
             </h3>
             <p className="text-sm text-zinc-500">
-              Tap an item, scan, or type above to sell fast.
+              {t("pos.tap_hint")}
             </p>
           </div>
         </div>
@@ -1388,24 +1227,19 @@ export default function POSPage() {
         <div className="min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
           {isLoading ? (
             <div className="flex h-full min-h-80 items-center justify-center">
-              <Spinner label="Loading products..." />
+              <Spinner label={t("pos.loading_products")} />
             </div>
           ) : filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 pb-4 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] xl:gap-4">
-              {filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onClick={() => addProductToSale(product, "tap")}
-                  onFavoriteToggle={() => toggleFavorite(product)}
-                />
-              ))}
-            </div>
+            <ProductGrid
+              products={filteredProducts}
+              onAddProduct={addProductToSale}
+              onToggleFavorite={toggleFavorite}
+            />
           ) : (
             <EmptyState
               icon={PackageSearch}
-              title="No products found"
-              description="Try another search or category."
+              title={t("pos.no_products")}
+              description={t("pos.try_another")}
               className="min-h-80 bg-white"
             />
           )}
@@ -1415,7 +1249,7 @@ export default function POSPage() {
       <button
         type="button"
         onClick={() => setIsCartOpen(true)}
-        className="absolute bottom-20 left-3 right-3 z-30 flex items-center justify-between gap-3 rounded-lg bg-zinc-950 px-4 py-3 text-left text-white shadow-2xl transition hover:bg-zinc-800 md:bottom-5 md:left-auto md:right-5 md:min-w-64 md:px-5 md:py-4"
+        className={`absolute bottom-20 left-3 right-3 z-30 flex items-center justify-between gap-3 rounded-lg bg-zinc-950 px-4 py-3 text-left text-white shadow-2xl transition hover:bg-zinc-800 md:bottom-5 md:min-w-64 md:px-5 md:py-4 ${dir === "rtl" ? "md:left-5 md:right-auto" : "md:left-auto md:right-5"}`}
       >
         <span className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-400 text-zinc-950">
@@ -1423,7 +1257,7 @@ export default function POSPage() {
           </span>
           <span>
             <span className="block text-sm font-semibold text-zinc-300">
-              Cart / Checkout
+              {t("pos.cart_checkout")}
             </span>
             <span className="block text-xl font-bold">
               {formatCurrency(total)}
@@ -1433,7 +1267,7 @@ export default function POSPage() {
         <span className="flex shrink-0 items-center gap-2">
           {heldSales.length > 0 ? (
             <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-900">
-              Held {formatNumber(heldSales.length)}
+              {t("pos.held_count", { n: formatNumber(heldSales.length) })}
             </span>
           ) : null}
           <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-zinc-950">
@@ -1511,70 +1345,12 @@ export default function POSPage() {
       )}
 
       {variantPickerProduct ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="fixed inset-0 bg-black/40"
-            onClick={() => setVariantPickerProduct(null)}
-          />
-          <div className="relative w-full max-w-sm rounded-lg border border-zinc-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
-              <h2 className="text-lg font-bold text-zinc-950">
-                {variantPickerProduct.name}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setVariantPickerProduct(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="max-h-80 overflow-y-auto px-5 py-4">
-              <p className="mb-3 text-sm text-zinc-500">
-                Choose a variant to add to cart
-              </p>
-              <div className="space-y-2">
-                {products
-                  .filter((p) => p.parentId === variantPickerProduct.id)
-                  .map((variant) => {
-                    const outOfStock = variant.stock <= 0
-                    return (
-                      <button
-                        key={variant.id}
-                        type="button"
-                        disabled={outOfStock}
-                        onClick={() => {
-                          addProductToSale(variant, "variant picker")
-                          setVariantPickerProduct(null)
-                        }}
-                        className={`w-full rounded-lg border p-3 text-left transition ${
-                          outOfStock
-                            ? "cursor-not-allowed border-zinc-100 bg-zinc-50 opacity-50"
-                            : "border-zinc-200 bg-white hover:border-emerald-300 hover:bg-emerald-50"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-zinc-950">
-                            {variant.variantName ?? variant.name}
-                          </span>
-                          <span className="text-sm font-semibold text-zinc-800">
-                            {formatCurrency(variant.price)}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex items-center gap-3 text-xs text-zinc-500">
-                          <span>
-                            {formatNumber(variant.stock)} in stock
-                          </span>
-                          <span>{variant.barcode}</span>
-                        </div>
-                      </button>
-                    )
-                  })}
-              </div>
-            </div>
-          </div>
-        </div>
+        <VariantPicker
+          product={variantPickerProduct}
+          products={products}
+          onSelectVariant={addProductToSale}
+          onClose={() => setVariantPickerProduct(null)}
+        />
       ) : null}
     </main>
   )

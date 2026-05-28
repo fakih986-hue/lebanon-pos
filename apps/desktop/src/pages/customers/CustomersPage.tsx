@@ -29,6 +29,7 @@ import {
 } from "../../features/pos/services/customer.service"
 import { showToast } from "../../features/pos/services/toast.service"
 import ConfirmDialog from "../../components/ConfirmDialog"
+import { useI18n } from "@lebanonpos/shared"
 import Spinner from "../../components/ui/Spinner"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
@@ -112,6 +113,7 @@ export default function CustomersPage() {
   const [activePanel, setActivePanel] = useState<CustomerPanel>("Ledger")
   const [formErrors, setFormErrors] = useState<Partial<Record<"name" | "mobile", string>>>({})
   const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null)
+  const { t } = useI18n()
 
   function refreshLedger(preferredCustomerId?: string) {
     const nextCustomers = getCustomerLedger()
@@ -231,7 +233,7 @@ export default function CustomersPage() {
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
       {isLoading ? (
         <div className="flex min-h-[400px] items-center justify-center p-6">
           <Spinner label="Loading customers..." />
@@ -283,14 +285,14 @@ export default function CustomersPage() {
           <span className="sr-only">Search customers</span>
           <Search
             size={16}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-zinc-400"
           />
           <input
             ref={searchRef}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search name or mobile"
-            className="h-10 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            className="h-10 w-full rounded-lg border border-zinc-200 bg-white ps-9 pe-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
           />
         </label>
       </div>
@@ -301,9 +303,21 @@ export default function CustomersPage() {
             <div className="overflow-x-auto">
               <table className="min-w-full border-separate border-spacing-0 text-sm">
                 <thead>
-                  <tr className="text-left text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
+                  <tr className="text-start text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
                     <th className="border-b border-zinc-200 px-4 py-3">
                       Customer
+                    </th>
+                    <th className="border-b border-zinc-200 px-4 py-3">
+                      Contact
+                    </th>
+                    <th className="border-b border-zinc-200 px-4 py-3 text-end">
+                      Sales
+                    </th>
+                    <th className="border-b border-zinc-200 px-4 py-3 text-end">
+                      Paid
+                    </th>
+                    <th className="border-b border-zinc-200 px-4 py-3 text-end">
+                      Balance
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
                       Mobile
@@ -375,13 +389,13 @@ export default function CustomersPage() {
                             {customer.mobile}
                           </a>
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-right font-semibold text-zinc-800">
-                          {formatCurrency(customer.debtTotal)}
+                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-semibold text-zinc-800">
+                          {formatCurrency(customer.saleTotal)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-right font-semibold text-emerald-700">
+                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-semibold text-emerald-700">
                           {formatCurrency(customer.paidTotal)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-right font-bold text-rose-700">
+                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-bold text-rose-700">
                           {formatCurrency(customer.balance)}
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-4 text-zinc-500">
@@ -632,7 +646,7 @@ export default function CustomersPage() {
                       {selectedCustomer.mobile}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-end">
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
                       Balance
                     </p>
@@ -703,7 +717,7 @@ export default function CustomersPage() {
       <ConfirmDialog
         open={deleteCustomerId !== null}
         title="Delete customer"
-        confirmLabel="Delete"
+        confirmLabel={t("pos.delete")}
         confirmDestructive
         onConfirm={() => {
           if (deleteCustomerId !== null) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Cloud, CloudOff, RotateCw } from "lucide-react"
 
+import { useI18n } from "@lebanonpos/shared"
 import {
   flushSyncQueue,
   getSyncStatus,
@@ -10,23 +11,24 @@ import {
   type SyncStatus as RegisterSyncStatus,
 } from "../../features/pos/services/sync.service"
 
-function getLabel(status: RegisterSyncStatus) {
+function getLabel(status: RegisterSyncStatus, t: (key: string, params?: Record<string, unknown>) => string) {
   if (!status.online) {
-    return `${status.pending + status.failed} offline`
+    return t("sync.offline", { n: status.pending + status.failed })
   }
 
   if (status.pending > 0) {
-    return `${status.pending} pending`
+    return t("sync.pending", { n: status.pending })
   }
 
   if (status.failed > 0) {
-    return `${status.failed} failed`
+    return t("sync.failed", { n: status.failed })
   }
 
-  return "Synced"
+  return t("sync.synced")
 }
 
 export default function SyncStatus() {
+  const { t } = useI18n()
   const [status, setStatus] = useState<RegisterSyncStatus>(getSyncStatus())
 
   useEffect(
@@ -43,8 +45,8 @@ export default function SyncStatus() {
 
   const hasWork = status.pending > 0 || status.failed > 0
   const tooltip = status.online
-    ? `${status.pending} pending, ${status.synced} synced, ${status.failed} failed`
-    : `Offline - ${status.pending + status.failed} pending`
+    ? t("sync.tooltip", { pending: status.pending, synced: status.synced, failed: status.failed })
+    : t("sync.tooltip_offline", { n: status.pending + status.failed })
 
   return (
     <button
@@ -60,7 +62,7 @@ export default function SyncStatus() {
       }`}
     >
       {status.online ? <Cloud size={17} /> : <CloudOff size={17} />}
-      <span>{getLabel(status)}</span>
+      <span>{getLabel(status, t)}</span>
       {hasWork ? <RotateCw size={15} /> : null}
       <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-zinc-900 px-2 py-1 text-xs text-white opacity-0 transition group-hover:opacity-100">
         {tooltip}

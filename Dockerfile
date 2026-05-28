@@ -1,24 +1,48 @@
-FROM node:22-alpine AS admin-builder
+FROM node:22-alpine AS builder
+RUN npm install -g pnpm
 WORKDIR /app
-COPY apps/admin/package.json apps/admin/package-lock.json ./
-RUN npm ci
-COPY apps/admin/ ./
-RUN npx vite build
 
-FROM node:22-alpine AS api-builder
-WORKDIR /app
-COPY apps/api/package.json ./
-RUN npm install
-COPY apps/api/ ./
-COPY --from=admin-builder /app/dist ./public/admin
-RUN npx prisma generate && npx tsc
+# Copy workspace root configuration
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+
+# Copy shared package (used by all SPAs)
+COPY packages/shared/ ./packages/shared/
+
+# Copy all apps
+COPY apps/ ./apps/
+
+# Install all workspace dependencies (pnpm resolves workspace:* protocol)
+RUN pnpm install --frozen-lockfile
+
+# Build admin SPA
+RUN cd apps/admin && npx vite build
+
+# Build driver SPA
+RUN cd apps/driver && npx vite build
+
+# Build ordering SPA
+RUN cd apps/ordering && npx vite build
+
+# Build API server (generate prisma client, then compile TS)
+RUN cd apps/api && npx prisma generate && npx tsc
 
 FROM node:22-alpine
 WORKDIR /app
-COPY --from=api-builder /app/dist ./dist
-COPY --from=api-builder /app/src/generated ./dist/generated
-COPY --from=api-builder /app/node_modules ./node_modules
-COPY --from=api-builder /app/prisma ./prisma
-COPY --from=api-builder /app/public ./public
+
+# Copy API compiled output
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/apps/api/src/generated ./dist/generated
+COPY --from=builder /app/apps/api/prisma ./prisma
+
+# Copy built SPAs
+COPY --from=builder /app/apps/admin/dist ./public/admin
+COPY --from=builder /app/apps/driver/dist ./public/driver
+COPY --from=builder /app/apps/ordering/dist ./public/order
+
+# Install only production dependencies for the API
+COPY --from=builder /app/apps/api/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN npm install -g pnpm && pnpm install --prod
+
 EXPOSE 3001
 CMD ["node", "dist/index.js"]

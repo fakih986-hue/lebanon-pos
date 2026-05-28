@@ -1,5 +1,7 @@
-﻿import { Minus, Plus, Trash2 } from "lucide-react"
+import { memo } from "react"
+import { Minus, Plus, Trash2 } from "lucide-react"
 
+import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency } from "../lib/currency"
 
 type Props = {
@@ -12,7 +14,7 @@ type Props = {
   onRemove: () => void
 }
 
-export default function CartItemCard({
+const CartItemCard = memo(function CartItemCard({
   name,
   quantity,
   unitPrice,
@@ -21,20 +23,21 @@ export default function CartItemCard({
   onDecrease,
   onRemove,
 }: Props) {
+  const { t } = useI18n()
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate font-bold text-zinc-950">{name}</h3>
           <p className="mt-1 text-sm text-zinc-500">
-            {formatCurrency(unitPrice)} each
+            {formatCurrency(unitPrice)} {t("pos.each")}
           </p>
         </div>
 
         <button
           type="button"
           onClick={onRemove}
-          aria-label={`Remove ${name}`}
+          aria-label={t("pos.remove_item", { name })}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600"
         >
           <Trash2 size={16} />
@@ -46,7 +49,7 @@ export default function CartItemCard({
           <button
             type="button"
             onClick={onDecrease}
-            aria-label={`Decrease ${name}`}
+            aria-label={t("pos.decrease_item", { name })}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-100"
           >
             <Minus size={16} />
@@ -59,7 +62,7 @@ export default function CartItemCard({
           <button
             type="button"
             onClick={onIncrease}
-            aria-label={`Increase ${name}`}
+            aria-label={t("pos.increase_item", { name })}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-100"
           >
             <Plus size={16} />
@@ -72,4 +75,6 @@ export default function CartItemCard({
       </div>
     </div>
   )
-}
+})
+
+export default CartItemCard

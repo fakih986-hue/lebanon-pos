@@ -1,6 +1,7 @@
 import { CheckCircle2, Eraser, Printer, ReceiptText } from "lucide-react"
 import { Link } from "react-router"
 
+import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatLbpCurrency } from "../lib/currency"
 
 interface Sale {
@@ -21,6 +22,7 @@ export default function LastSaleBanner({
   onNewSale,
   onPrintReceipt,
 }: Props) {
+  const { t } = useI18n()
   if (!sale) {
     return null
   }
@@ -30,7 +32,7 @@ export default function LastSaleBanner({
       <div className="flex items-center gap-3">
         <CheckCircle2 size={22} />
         <div>
-          <p className="font-bold">Sale {sale.number} completed</p>
+          <p className="font-bold">{t("pos.last_sale.completed", { number: sale.number })}</p>
           <p className="text-sm text-emerald-800">
             {formatCurrency(sale.total)} / {formatLbpCurrency(sale.totalLbp)}
             {sale.customerName ? ` - ${sale.customerName}` : ""}
@@ -45,7 +47,7 @@ export default function LastSaleBanner({
           className="flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white transition hover:bg-emerald-500"
         >
           <Eraser size={16} />
-          New Sale
+          {t("pos.new_sale")}
         </button>
         <button
           type="button"
@@ -53,14 +55,14 @@ export default function LastSaleBanner({
           className="flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white transition hover:bg-emerald-500"
         >
           <Printer size={16} />
-          Receipt
+          {t("pos.receipt")}
         </button>
         <Link
           to="/sales?tab=receipts"
           className="flex h-10 items-center gap-2 rounded-lg bg-white px-3 text-sm font-bold text-emerald-800 ring-1 ring-emerald-200 transition hover:bg-emerald-100"
         >
           <ReceiptText size={16} />
-          History
+          {t("pos.history")}
         </Link>
       </div>
     </div>

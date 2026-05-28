@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useI18n } from "@lebanonpos/shared"
 import {
   BadgeCheck,
   Calculator,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react"
 
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
+import { formatDateTime, parseMoney } from "../../features/pos/lib/helpers"
 import {
   getExpenses,
   subscribeExpenses,
@@ -60,42 +62,7 @@ import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
 type StaffWorkspace = "Team" | "Shifts" | "Audit"
 
-const roleLabels: Record<UserRole, string> = {
-  Admin: "Full control",
-  Manager: "Daily control",
-  Cashier: "Checkout only",
-}
-
-const permissionLabels: Record<string, string> = {
-  "sales.checkout": "Checkout",
-  "sales.discount": "Discounts",
-  "sales.refund": "Refunds",
-  "sales.void": "Void sales",
-  "inventory.manage": "Inventory",
-  "customers.manage": "Customers",
-  "reports.view": "Reports",
-  "accounting.manage": "Accounting",
-  "settings.manage": "Settings",
-  "staff.manage": "Staff",
-  "shifts.manage": "Shifts",
-}
-
 const cashDenominations = [100, 50, 20, 10, 5, 1, 0.25]
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-LB", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value))
-}
-
-function parseMoney(value: string) {
-  const parsedValue = Number(value.replace(/,/g, "").trim())
-
-  return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0
-}
 
 function saleBelongsToShift(sale: Sale, shift: Shift) {
   if (sale.shiftId) {
@@ -225,6 +192,7 @@ function AuditRow({ event }: { event: AuditEvent }) {
 }
 
 export default function StaffPage() {
+  const { t } = useI18n()
   const [isLoading, setIsLoading] = useState(true)
   const [users, setUsers] = useState<StaffUser[]>(getUsers())
   const [activeUserId, setActiveUserId] = useState(getCurrentUser().id)
@@ -316,6 +284,30 @@ export default function StaffPage() {
   )
   const closingDifference = parseMoney(closingCash) - expectedCash
 
+  const roleLabels: Record<UserRole, string> = {
+    Admin: t("pos.staff.role_full_control"),
+    Manager: t("pos.staff.role_daily_control"),
+    Cashier: t("pos.staff.role_checkout_only"),
+  }
+  const roleNameLabels: Record<UserRole, string> = {
+    Admin: t("pos.staff.role_admin"),
+    Manager: t("pos.staff.role_manager"),
+    Cashier: t("pos.staff.role_cashier"),
+  }
+  const permissionLabels: Record<string, string> = {
+    "sales.checkout": t("pos.staff.permission_checkout"),
+    "sales.discount": t("pos.staff.permission_discounts"),
+    "sales.refund": t("pos.staff.permission_refunds"),
+    "sales.void": t("pos.staff.permission_void"),
+    "inventory.manage": t("pos.staff.permission_inventory"),
+    "customers.manage": t("pos.staff.permission_customers"),
+    "reports.view": t("pos.staff.permission_reports"),
+    "accounting.manage": t("pos.staff.permission_accounting"),
+    "settings.manage": t("pos.staff.permission_settings"),
+    "staff.manage": t("pos.staff.permission_staff"),
+    "shifts.manage": t("pos.staff.permission_shifts"),
+  }
+
   const searchQuery = debouncedSearch.trim().toLowerCase()
 
   const filteredUsers = useMemo(() => {
@@ -350,7 +342,7 @@ export default function StaffPage() {
 
   async function handleCreateUser() {
     if (!name.trim() || !mobile.trim() || !pin.trim()) {
-      showToast("Add name, mobile, and PIN before saving a user.", "error")
+      showToast(t("pos.staff.add_user_required"), "error")
       return
     }
 
@@ -365,24 +357,24 @@ export default function StaffPage() {
     setMobile("")
     setPin("")
     setRole("Cashier")
-    showToast(`${user.name} was added.`)
+    showToast(t("pos.staff.user_added", { name: user.name }))
   }
 
   function handleOpenShift() {
     const shift = openShift(parseMoney(openingFloat))
 
-    showToast(`${shift.shiftNumber} is open.`)
+    showToast(t("pos.staff.shift_opened", { shift: shift.shiftNumber }))
   }
 
   function handleCloseShift() {
     if (!activeShift) {
-      showToast("No active shift to close.", "error")
+      showToast(t("pos.staff.no_active_shift"), "error")
       return
     }
     setConfirmAction({
-      title: "Close shift",
-      message: `Close ${activeShift.shiftNumber} with ${formatCurrency(expectedCash)} expected cash?`,
-      confirmLabel: "Close Shift",
+      title: t("pos.staff.close_shift"),
+      message: t("pos.staff.close_shift_confirm", { shift: activeShift.shiftNumber, cash: formatCurrency(expectedCash) }),
+      confirmLabel: t("pos.staff.close_shift"),
       confirmDestructive: true,
       onConfirm: () => {
         const closedShift = closeShift({
@@ -399,7 +391,7 @@ export default function StaffPage() {
           setClosingCash("")
           setShiftNotes("")
           setCashCounts({})
-          showToast(`${closedShift.shiftNumber} closed.`)
+          showToast(t("pos.staff.shift_closed", { shift: closedShift.shiftNumber }))
         }
       },
     })
@@ -417,61 +409,60 @@ export default function StaffPage() {
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
       {isLoading ? (
         <div className="flex min-h-[400px] items-center justify-center p-6">
-          <Spinner label="Loading staff data..." />
+          <Spinner label={t("pos.staff.loading")} />
         </div>
       ) : (
       <>
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-zinc-500">Active user</p>
+            <p className="text-sm font-medium text-zinc-500">{t("pos.staff.active_user")}</p>
             <UserCog size={20} className="text-emerald-700" />
           </div>
           <p className="mt-3 text-2xl font-bold text-zinc-950">
             {activeUser.name}
           </p>
-          <p className="mt-1 text-sm text-zinc-500">{activeUser.role}</p>
+          <p className="mt-1 text-sm text-zinc-500">{roleNameLabels[activeUser.role]}</p>
         </div>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-zinc-500">Shift</p>
+            <p className="text-sm font-medium text-zinc-500">{t("pos.staff.shift")}</p>
             <Clock3 size={20} className="text-indigo-700" />
           </div>
           <p className="mt-3 text-2xl font-bold text-zinc-950">
-            {activeShift?.shiftNumber ?? "Closed"}
+            {activeShift?.shiftNumber ?? t("desktop.closed")}
           </p>
           <p className="mt-1 text-sm text-zinc-500">
-            {activeShift ? `Opened ${formatDateTime(activeShift.openedAt)}` : "No active shift"}
+            {activeShift ? t("pos.staff.opened_at", { date: formatDateTime(activeShift.openedAt) }) : t("pos.staff.no_active_shift")}
           </p>
         </div>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-zinc-500">Expected cash</p>
+            <p className="text-sm font-medium text-zinc-500">{t("pos.staff.expected_cash")}</p>
             <Store size={20} className="text-amber-700" />
           </div>
           <p className="mt-3 text-2xl font-bold text-zinc-950">
             {formatCurrency(expectedCash)}
           </p>
           <p className="mt-1 text-sm text-zinc-500">
-            {formatCurrency(cashSales)} sales -{" "}
-            {formatCurrency(cashRefunds + cashExpenses + cashSupplierPayments)} out
+            {t("pos.staff.cash_breakdown", { sales: formatCurrency(cashSales), out: formatCurrency(cashRefunds + cashExpenses + cashSupplierPayments) })}
           </p>
         </div>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-zinc-500">Audit events</p>
+            <p className="text-sm font-medium text-zinc-500">{t("pos.staff.audit_events")}</p>
             <ReceiptText size={20} className="text-zinc-700" />
           </div>
           <p className="mt-3 text-2xl font-bold text-zinc-950">
             {formatNumber(auditEvents.length)}
           </p>
-          <p className="mt-1 text-sm text-zinc-500">Last 500 kept locally</p>
+          <p className="mt-1 text-sm text-zinc-500">{t("pos.staff.audit_limit")}</p>
         </div>
       </section>
 
@@ -480,17 +471,17 @@ export default function StaffPage() {
           active={activeWorkspace}
           onChange={setActiveWorkspace}
           tabs={[
-            { label: "Team", count: users.length },
-            { label: "Shifts", count: shifts.length },
-            { label: "Audit", count: auditEvents.length },
+            { label: t("pos.staff.tab_team"), count: users.length },
+            { label: t("pos.staff.tab_shifts"), count: shifts.length },
+            { label: t("pos.staff.tab_audit"), count: auditEvents.length },
           ]}
         />
 
         <label className="relative w-full sm:w-64">
-          <span className="sr-only">Search</span>
+          <span className="sr-only">{t("pos.search")}</span>
           <Search
             size={16}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-zinc-400"
           />
           <input
             ref={searchRef}
@@ -498,12 +489,12 @@ export default function StaffPage() {
             onChange={(event) => setSearch(event.target.value)}
             placeholder={
               activeWorkspace === "Team"
-                ? "Search name, mobile, role"
+                ? t("pos.staff.search_team")
                 : activeWorkspace === "Shifts"
-                  ? "Search shift, cashier, status"
-                  : "Search events, user"
+                  ? t("pos.staff.search_shifts")
+                  : t("pos.staff.search_audit")
             }
-            className="h-10 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+            className="h-10 w-full rounded-lg border border-zinc-200 bg-white ps-9 pe-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
           />
         </label>
       </div>
@@ -526,10 +517,10 @@ export default function StaffPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-zinc-950">
-                    Staff users
+                    {t("pos.staff.users_title")}
                   </h2>
                   <p className="text-sm text-zinc-500">
-                    Add operators and control who is active at the register.
+                    {t("pos.staff.users_desc")}
                   </p>
                 </div>
               </div>
@@ -543,7 +534,7 @@ export default function StaffPage() {
                   .filter((user) => user.active)
                   .map((user) => (
                     <option key={user.id} value={user.id}>
-                      {user.name} - {user.role}
+                      {user.name} - {roleNameLabels[user.role]}
                     </option>
                   ))}
               </select>
@@ -552,7 +543,7 @@ export default function StaffPage() {
             <div className="grid gap-4 p-4 lg:grid-cols-2">
               {filteredUsers.length === 0 ? (
                 <div className="col-span-full py-8 text-center text-sm text-zinc-500">
-                  {search ? "No staff match your search." : "No staff users yet. Add one to get started."}
+                  {search ? t("pos.staff.no_users_search") : t("pos.staff.no_users")}
                 </div>
               ) : filteredUsers.map((user) => (
                 <article
@@ -575,13 +566,13 @@ export default function StaffPage() {
                           : "bg-zinc-100 text-zinc-500"
                       }`}
                     >
-                      {user.active ? "Active" : "Disabled"}
+                      {user.active ? t("pos.staff.status_active") : t("pos.staff.status_disabled")}
                     </span>
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
                     <span className="rounded-lg bg-zinc-100 px-2 py-1 text-zinc-700">
-                      {user.role}
+                      {roleNameLabels[user.role]}
                     </span>
 
                   </div>
@@ -594,12 +585,13 @@ export default function StaffPage() {
                       className="flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
                     >
                       <BadgeCheck size={16} />
-                      Use
+                      {t("pos.staff.use")}
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        const label = user.active ? "Disable" : "Enable"
+                        const labelKey = user.active ? "pos.staff.disable" : "pos.staff.enable"
+                        const label = t(labelKey)
                         setConfirmAction({
                           title: `${label} user`,
                           message: `${label} ${user.name}?`,
@@ -613,7 +605,7 @@ export default function StaffPage() {
                       className="flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
                     >
                       <LockKeyhole size={16} />
-                      {user.active ? "Disable" : "Enable"}
+                      {user.active ? t("pos.staff.disable") : t("pos.staff.enable")}
                     </button>
                   </div>
                 </article>
@@ -629,16 +621,16 @@ export default function StaffPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-zinc-950">
-                    Add staff user
+                    {t("pos.staff.add_user_title")}
                   </h2>
-                  <p className="text-sm text-zinc-500">Add new staff users with role-based permissions.</p>
+                  <p className="text-sm text-zinc-500">{t("pos.staff.add_user_desc")}</p>
                 </div>
               </div>
             </div>
 
             <div className="grid gap-4 p-4 md:grid-cols-2">
               <label className="block text-sm font-bold text-zinc-700">
-                Name
+                {t("pos.staff.name")}
                 <input
                   value={name}
                   onChange={(event) => setName(event.target.value)}
@@ -647,7 +639,7 @@ export default function StaffPage() {
               </label>
 
               <label className="block text-sm font-bold text-zinc-700">
-                Mobile
+                {t("pos.staff.mobile")}
                 <input
                   value={mobile}
                   onChange={(event) => setMobile(event.target.value)}
@@ -656,7 +648,7 @@ export default function StaffPage() {
               </label>
 
               <label className="block text-sm font-bold text-zinc-700">
-                PIN
+                {t("pos.staff.pin")}
                 <input
                   value={pin}
                   onChange={(event) => setPin(event.target.value)}
@@ -666,15 +658,15 @@ export default function StaffPage() {
               </label>
 
               <label className="block text-sm font-bold text-zinc-700">
-                Role
+                {t("pos.staff.role")}
                 <select
                   value={role}
                   onChange={(event) => setRole(event.target.value as UserRole)}
                   className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                 >
-                  <option value="Cashier">Cashier</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Admin">Admin</option>
+                  <option value="Cashier">{t("pos.staff.role_cashier")}</option>
+                  <option value="Manager">{t("pos.staff.role_manager")}</option>
+                  <option value="Admin">{t("pos.staff.role_admin")}</option>
                 </select>
               </label>
             </div>
@@ -682,11 +674,11 @@ export default function StaffPage() {
             <div className="flex justify-end border-t border-zinc-200 p-4">
               <button
                 type="button"
-                onClick={handleCreateUser}
+                onClick={() => void handleCreateUser()}
                 className="flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-bold text-white transition hover:bg-emerald-500"
               >
                 <Plus size={17} />
-                Add User
+                {t("pos.staff.add_user")}
               </button>
             </div>
           </section>
@@ -701,12 +693,12 @@ export default function StaffPage() {
                 <Clock3 size={21} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-zinc-950">
-                  Shift control
-                </h2>
-                <p className="text-sm text-zinc-500">
-                  Open, close, and count register cash.
-                </p>
+                  <h2 className="text-lg font-bold text-zinc-950">
+                    {t("pos.staff.shift_control")}
+                  </h2>
+                  <p className="text-sm text-zinc-500">
+                    {t("pos.staff.shift_control_desc")}
+                  </p>
               </div>
             </div>
 
@@ -714,27 +706,27 @@ export default function StaffPage() {
               <div className="mt-4 space-y-3">
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
                   <div className="flex justify-between gap-3">
-                    <span>Opening float</span>
+                    <span>{t("pos.staff.opening_float")}</span>
                     <strong>{formatCurrency(activeShift.openingFloatUsd)}</strong>
                   </div>
                   <div className="mt-2 flex justify-between gap-3">
-                    <span>Cash sales</span>
+                    <span>{t("pos.staff.cash_sales")}</span>
                     <strong>{formatCurrency(cashSales)}</strong>
                   </div>
                   <div className="mt-2 flex justify-between gap-3">
-                    <span>Cash returns</span>
+                    <span>{t("pos.staff.cash_returns")}</span>
                     <strong>-{formatCurrency(cashRefunds)}</strong>
                   </div>
                   <div className="mt-2 flex justify-between gap-3">
-                    <span>Cash expenses</span>
+                    <span>{t("pos.staff.cash_expenses")}</span>
                     <strong>-{formatCurrency(cashExpenses)}</strong>
                   </div>
                   <div className="mt-2 flex justify-between gap-3">
-                    <span>Supplier payments</span>
+                    <span>{t("pos.staff.supplier_payments")}</span>
                     <strong>-{formatCurrency(cashSupplierPayments)}</strong>
                   </div>
                   <div className="mt-2 flex justify-between gap-3 border-t border-emerald-200 pt-2 text-base">
-                    <span>Expected cash</span>
+                    <span>{t("pos.staff.expected_cash")}</span>
                     <strong>{formatCurrency(expectedCash)}</strong>
                   </div>
                 </div>
@@ -743,7 +735,7 @@ export default function StaffPage() {
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-sm font-bold text-indigo-950">
                       <Calculator size={17} />
-                      Cash count
+                      {t("pos.staff.cash_count")}
                     </div>
                     <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-indigo-800 ring-1 ring-indigo-200">
                       {formatCurrency(countedCash)}
@@ -765,7 +757,7 @@ export default function StaffPage() {
                           onChange={(event) =>
                             updateCashCount(denomination, event.target.value)
                           }
-                          className="mt-1 h-10 w-full rounded-lg border border-indigo-200 bg-white px-2 text-right text-zinc-900 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
+                          className="mt-1 h-10 w-full rounded-lg border border-indigo-200 bg-white px-2 text-end text-zinc-900 outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                         />
                       </label>
                     ))}
@@ -777,12 +769,12 @@ export default function StaffPage() {
                     className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-indigo-700 px-3 text-sm font-bold text-white transition hover:bg-indigo-600"
                   >
                     <Calculator size={16} />
-                    Use Count
+                    {t("pos.staff.use_count")}
                   </button>
                 </div>
 
                 <label className="block text-sm font-bold text-zinc-700">
-                  Closing cash
+                  {t("pos.staff.closing_cash")}
                   <input
                     type="number"
                     min="0"
@@ -802,7 +794,7 @@ export default function StaffPage() {
                       : "bg-zinc-50 text-zinc-500"
                   }`}
                 >
-                  Difference {formatCurrency(closingCash ? closingDifference : 0)}
+                  {t("pos.staff.difference", { diff: formatCurrency(closingCash ? closingDifference : 0) })}
                 </div>
 
                 <label className="block text-sm font-bold text-zinc-700">
@@ -822,13 +814,13 @@ export default function StaffPage() {
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
                 >
                   <KeyRound size={17} />
-                  Close Shift
+                  {t("pos.staff.close_shift")}
                 </button>
               </div>
             ) : (
               <div className="mt-4 space-y-3">
-                <label className="block text-sm font-bold text-zinc-700">
-                  Opening float
+                  <label className="block text-sm font-bold text-zinc-700">
+                    {t("pos.staff.opening_float")}
                   <input
                     type="number"
                     min="0"
@@ -844,7 +836,7 @@ export default function StaffPage() {
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white transition hover:bg-emerald-500"
                 >
                   <Clock3 size={17} />
-                  Open Shift
+                  {t("pos.staff.open_shift")}
                 </button>
               </div>
             )}
@@ -858,12 +850,12 @@ export default function StaffPage() {
                 <ShieldCheck size={21} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-zinc-950">
-                  Role permissions
-                </h2>
-                <p className="text-sm text-zinc-500">
-                  Permission model ready for backend enforcement.
-                </p>
+                  <h2 className="text-lg font-bold text-zinc-950">
+                    {t("pos.staff.role_permissions")}
+                  </h2>
+                  <p className="text-sm text-zinc-500">
+                    {t("pos.staff.role_permissions_desc")}
+                  </p>
               </div>
             </div>
 
@@ -900,15 +892,15 @@ export default function StaffPage() {
         {activeWorkspace === "Audit" ? (
         <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
           <div className="border-b border-zinc-200 p-4">
-            <h2 className="text-xl font-bold text-zinc-950">Audit trail</h2>
+            <h2 className="text-xl font-bold text-zinc-950">{t("pos.staff.audit_trail")}</h2>
             <p className="text-sm text-zinc-500">
-              Every important operator, sale, and shift event is tracked.
+              {t("pos.staff.audit_trail_desc")}
             </p>
           </div>
           <div className="max-h-[520px] space-y-3 overflow-y-auto bg-zinc-50 p-4">
             {filteredAuditEvents.length === 0 ? (
               <div className="py-8 text-center text-sm text-zinc-500">
-                {search ? "No events match your search." : "No events recorded yet."}
+                {search ? t("pos.staff.no_events_search") : t("pos.staff.no_events")}
               </div>
             ) : filteredAuditEvents.slice(0, 60).map((event) => (
               <AuditRow key={event.id} event={event} />
@@ -920,15 +912,15 @@ export default function StaffPage() {
         {activeWorkspace === "Shifts" ? (
         <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
           <div className="border-b border-zinc-200 p-4">
-            <h2 className="text-xl font-bold text-zinc-950">Shift history</h2>
+            <h2 className="text-xl font-bold text-zinc-950">{t("pos.staff.shift_history")}</h2>
             <p className="text-sm text-zinc-500">
-              Closed shifts keep expected cash and difference.
+              {t("pos.staff.shift_history_desc")}
             </p>
           </div>
           <div className="max-h-[520px] space-y-3 overflow-y-auto p-4">
             {filteredShifts.length === 0 ? (
               <div className="py-8 text-center text-sm text-zinc-500">
-                {search ? "No shifts match your search." : "No shifts recorded yet."}
+                {search ? t("pos.staff.no_shifts_search") : t("pos.staff.no_shifts")}
               </div>
             ) : filteredShifts.map((shift) => (
               <article
@@ -957,13 +949,13 @@ export default function StaffPage() {
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div className="rounded-lg bg-zinc-50 p-2">
-                    <p className="text-zinc-500">Opened by</p>
+                    <p className="text-zinc-500">{t("pos.staff.opened_by")}</p>
                     <p className="font-bold text-zinc-950">
                       {shift.openedByName}
                     </p>
                   </div>
                   <div className="rounded-lg bg-zinc-50 p-2">
-                    <p className="text-zinc-500">Expected</p>
+                    <p className="text-zinc-500">{t("pos.staff.expected")}</p>
                     <p className="font-bold text-zinc-950">
                       {shift.expectedCashUsd === undefined
                         ? "-"
@@ -971,7 +963,7 @@ export default function StaffPage() {
                     </p>
                   </div>
                   <div className="rounded-lg bg-zinc-50 p-2">
-                    <p className="text-zinc-500">Returns</p>
+                    <p className="text-zinc-500">{t("pos.staff.returns")}</p>
                     <p className="font-bold text-rose-700">
                       {shift.cashRefundsUsd === undefined
                         ? "-"
@@ -979,7 +971,7 @@ export default function StaffPage() {
                     </p>
                   </div>
                   <div className="rounded-lg bg-zinc-50 p-2">
-                    <p className="text-zinc-500">Cash out</p>
+                    <p className="text-zinc-500">{t("pos.staff.cash_out")}</p>
                     <p className="font-bold text-rose-700">
                       {formatCurrency(
                         (shift.cashExpensesUsd ?? 0) +
@@ -988,7 +980,7 @@ export default function StaffPage() {
                     </p>
                   </div>
                   <div className="rounded-lg bg-zinc-50 p-2">
-                    <p className="text-zinc-500">Difference</p>
+                    <p className="text-zinc-500">{t("pos.staff.difference", { diff: "" })}</p>
                     <p className="font-bold text-zinc-950">
                       {shift.differenceUsd === undefined
                         ? "-"
@@ -1010,7 +1002,7 @@ export default function StaffPage() {
           confirmLabel={confirmAction.confirmLabel}
           confirmDestructive={confirmAction.confirmDestructive}
           onConfirm={() => {
-            confirmAction.onConfirm()
+            void confirmAction.onConfirm()
             setConfirmAction(null)
           }}
           onCancel={() => setConfirmAction(null)}

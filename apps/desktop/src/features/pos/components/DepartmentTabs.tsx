@@ -1,3 +1,4 @@
+import { memo } from "react"
 import type { LucideIcon } from "lucide-react"
 
 import { formatNumber } from "../lib/currency"
@@ -23,13 +24,13 @@ interface Props {
   onSelect: (name: string) => void
 }
 
-export default function DepartmentTabs({
+const DepartmentTabs = memo(function DepartmentTabs({
   departments,
   selected,
   onSelect,
 }: Props) {
   return (
-    <div className="flex gap-2 overflow-x-auto rounded-lg border border-zinc-200 bg-white p-2 shadow-sm">
+    <div role="tablist" className="flex gap-2 overflow-x-auto rounded-lg border border-zinc-200 bg-white p-2 shadow-sm">
       {departments.map((department) => {
         const active = selected === department.name
         const Icon = department.Icon
@@ -39,7 +40,8 @@ export default function DepartmentTabs({
           <button
             key={department.name}
             type="button"
-            aria-pressed={active}
+            role="tab"
+            aria-selected={active}
             onClick={() => onSelect(department.name)}
             className={`flex h-12 touch-manipulation shrink-0 items-center gap-2 rounded-lg border px-3 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-emerald-100 ${
               active ? theme.active : theme.inactive
@@ -65,4 +67,6 @@ export default function DepartmentTabs({
       })}
     </div>
   )
-}
+})
+
+export default DepartmentTabs

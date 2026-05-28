@@ -20,6 +20,7 @@ const LS_KEY_TO_STORE: Record<string, string | null> = {
   "lebanonpos.inventory-adjustments.v1": "inventory-adjustments",
   "lebanonpos.held-sales.v1": "held-sales",
   "lebanonpos.daily-closes.v1": "daily-closes",
+  "lebanonpos.delivery-orders.v1": "delivery-orders",
   "lebanonpos.sync-queue.v1": "sync-queue",
   "lebanonpos.session.v1": null,
   "lebanonpos.current-user.v1": null,

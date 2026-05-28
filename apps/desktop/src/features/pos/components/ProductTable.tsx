@@ -2,28 +2,29 @@ import { Fragment, useState } from "react"
 import { Barcode, ChevronDown, ChevronRight, Hash, Plus, Search, SlidersHorizontal, Star, X } from "lucide-react"
 import { Link } from "react-router"
 
+import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatNumber } from "../lib/currency"
 import type { Product } from "../types/product"
 
-function getStockStatus(product: Product) {
+function getStockStatus(product: Product, t: (key: string, params?: Record<string, unknown>) => string) {
   const reorderPoint = product.reorderPoint ?? 10
 
   if (product.stock <= 0) {
     return {
-      label: "Out",
+      label: t("pos.stock.out"),
       className: "border-rose-200 bg-rose-50 text-rose-700",
     }
   }
 
   if (product.stock <= reorderPoint) {
     return {
-      label: "Low",
+      label: t("pos.stock.low"),
       className: "border-amber-200 bg-amber-50 text-amber-700",
     }
   }
 
   return {
-    label: "Active",
+    label: t("pos.stock.active"),
     className: "border-emerald-200 bg-emerald-50 text-emerald-700",
   }
 }
@@ -51,6 +52,7 @@ export default function ProductTable({
   onToggleFavorite,
   onDeleteClick,
 }: Props) {
+  const { t } = useI18n()
   const [expandedParents, setExpandedParents] = useState<Set<number>>(
     () => new Set()
   )
@@ -77,7 +79,7 @@ export default function ProductTable({
       <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <h2 className="text-xl font-bold text-zinc-950">
-            Product catalog
+            {t("pos.product_catalog")}
           </h2>
           <p className="text-sm text-zinc-500">
             {formatNumber(filteredProducts.length)} products shown -{" "}
@@ -91,33 +93,33 @@ export default function ProductTable({
             className="flex h-11 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-sm font-bold text-white transition hover:bg-zinc-800"
           >
             <Plus size={17} />
-            Receive Products
+            {t("pos.receive_products")}
           </Link>
 
           <label className="relative w-full sm:w-80">
-            <span className="sr-only">Search catalog</span>
+            <span className="sr-only">{t("pos.search_catalog")}</span>
             <Search
               size={18}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+              className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-zinc-400"
             />
             <input
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search product or barcode"
-              className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-10 pr-3 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              placeholder={t("pos.search_product_or_barcode")}
+              className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 ps-10 pe-3 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
             />
           </label>
 
           <label className="relative">
-            <span className="sr-only">Filter category</span>
+            <span className="sr-only">{t("pos.filter_category")}</span>
             <SlidersHorizontal
               size={17}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+              className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-zinc-400"
             />
             <select
               value={selectedCategory}
               onChange={(e) => onCategoryChange(e.target.value)}
-              className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-10 pr-9 font-semibold text-zinc-700 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100 sm:w-48"
+              className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 ps-10 pe-9 font-semibold text-zinc-700 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100 sm:w-48"
             >
               {categories.map((category) => (
                 <option key={category} value={category}>
@@ -134,34 +136,34 @@ export default function ProductTable({
           <thead>
             <tr className="text-left text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
               <th className="border-b border-zinc-200 px-4 py-3">
-                Product
+                {t("pos.table.product")}
               </th>
               <th className="border-b border-zinc-200 px-4 py-3">
-                Category
+                {t("pos.table.category")}
               </th>
               <th className="border-b border-zinc-200 px-4 py-3">
-                Supplier
+                {t("pos.table.supplier")}
               </th>
               <th className="border-b border-zinc-200 px-4 py-3">
-                Barcodes
+                {t("pos.table.barcodes")}
               </th>
               <th className="border-b border-zinc-200 px-4 py-3 text-right">
-                Price
+                {t("pos.table.price")}
               </th>
               <th className="border-b border-zinc-200 px-4 py-3 text-right">
-                Cost
+                {t("pos.table.cost")}
               </th>
               <th className="border-b border-zinc-200 px-4 py-3 text-right">
-                Stock
+                {t("pos.table.stock")}
               </th>
               <th className="border-b border-zinc-200 px-4 py-3">
-                Status
+                {t("pos.table.status")}
               </th>
               <th className="border-b border-zinc-200 px-4 py-3">
-                POS
+                {t("pos.table.pos")}
               </th>
               <th className="border-b border-zinc-200 px-4 py-3">
-                <span className="sr-only">Delete</span>
+                <span className="sr-only">{t("pos.table.actions")}</span>
               </th>
             </tr>
           </thead>
@@ -173,13 +175,13 @@ export default function ProductTable({
                   colSpan={10}
                   className="px-4 py-12 text-center text-sm font-medium text-zinc-500"
                 >
-                  No products found
+                  {t("pos.no_products_found")}
                 </td>
               </tr>
             ) : null}
 
             {parents.map((product) => {
-              const status = getStockStatus(product)
+              const status = getStockStatus(product, t)
               const childVariants = variantMap.get(product.id) ?? []
               const expanded = expandedParents.has(product.id)
 
@@ -224,7 +226,7 @@ export default function ProductTable({
                           <span className="inline-flex items-center gap-1 rounded-lg bg-zinc-100 px-2 py-1 text-xs font-bold text-zinc-600">
                             <Hash size={12} />
                             {formatNumber(product.barcodeAliases?.length ?? 0)}{" "}
-                            extra
+                            {t("pos.extra")}
                           </span>
                         ) : null}
                       </div>
@@ -256,8 +258,8 @@ export default function ProductTable({
                         }`}
                         aria-label={
                           product.favorite
-                            ? `Remove ${product.name} from favorites`
-                            : `Add ${product.name} to favorites`
+                            ? t("pos.remove_from_favorites", { name: product.name })
+                            : t("pos.add_to_favorites", { name: product.name })
                         }
                       >
                         <Star
@@ -271,7 +273,7 @@ export default function ProductTable({
                         type="button"
                         onClick={() => onDeleteClick(product.id)}
                         className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                        aria-label={`Delete ${product.name}`}
+                        aria-label={t("pos.delete_product", { name: product.name })}
                       >
                         <X size={15} />
                       </button>
@@ -280,7 +282,7 @@ export default function ProductTable({
 
                   {expanded
                     ? childVariants.map((variant) => {
-                        const vStatus = getStockStatus(variant)
+                        const vStatus = getStockStatus(variant, t)
 
                         return (
                           <tr
@@ -290,7 +292,7 @@ export default function ProductTable({
                             <td className="border-b border-zinc-100 px-4 py-4 pl-12">
                               <div className="flex items-center gap-2">
                                 <span className="inline-flex items-center gap-1 rounded bg-zinc-200 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-zinc-600">
-                                  Variant
+                                  {t("pos.variant")}
                                 </span>
                                 <span className="font-semibold text-zinc-900">
                                   {variant.variantName ?? variant.name}
@@ -337,10 +339,10 @@ export default function ProductTable({
                                     : "border-zinc-200 text-zinc-500 hover:bg-zinc-50"
                                 }`}
                                 aria-label={
-                                  variant.favorite
-                                    ? `Remove ${variant.name} from favorites`
-                                    : `Add ${variant.name} to favorites`
-                                }
+                            variant.favorite
+                              ? t("pos.remove_from_favorites", { name: variant.name })
+                              : t("pos.add_to_favorites", { name: variant.name })
+                        }
                               >
                                 <Star
                                   size={16}
@@ -357,7 +359,7 @@ export default function ProductTable({
                                 type="button"
                                 onClick={() => onDeleteClick(variant.id)}
                                 className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                                aria-label={`Delete ${variant.name}`}
+                                aria-label={t("pos.delete_product", { name: variant.name })}
                               >
                                 <X size={15} />
                               </button>
@@ -371,14 +373,14 @@ export default function ProductTable({
             })}
 
             {parents.length === 0 && filteredProducts.length > 0
-              ? filteredProducts.map((variant) => {
-                  const vStatus = getStockStatus(variant)
+                ? filteredProducts.map((variant) => {
+                  const vStatus = getStockStatus(variant, t)
                   return (
                     <tr key={variant.id} className="hover:bg-zinc-50">
                       <td className="border-b border-zinc-100 px-4 py-4">
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center gap-1 rounded bg-zinc-200 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-zinc-600">
-                            Variant
+                            {t("pos.variant")}
                           </span>
                           <span className="font-bold text-zinc-950">
                             {variant.variantName ?? variant.name}
@@ -425,25 +427,25 @@ export default function ProductTable({
                               : "border-zinc-200 text-zinc-500 hover:bg-zinc-50"
                           }`}
                           aria-label={
-                            variant.favorite
-                              ? `Remove ${variant.name} from favorites`
-                              : `Add ${variant.name} to favorites`
+                              variant.favorite
+                                ? t("pos.remove_from_favorites", { name: variant.name })
+                                : t("pos.add_to_favorites", { name: variant.name })
+                        }
+                      >
+                        <Star
+                          size={16}
+                          fill={
+                            variant.favorite ? "currentColor" : "none"
                           }
-                        >
-                          <Star
-                            size={16}
-                            fill={
-                              variant.favorite ? "currentColor" : "none"
-                            }
-                          />
-                        </button>
-                      </td>
-                      <td className="border-b border-zinc-100 px-4 py-4">
-                        <button
-                          type="button"
-                          onClick={() => onDeleteClick(variant.id)}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                          aria-label={`Delete ${variant.name}`}
+                        />
+                      </button>
+                    </td>
+                    <td className="border-b border-zinc-100 px-4 py-4">
+                      <button
+                        type="button"
+                        onClick={() => onDeleteClick(variant.id)}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                        aria-label={t("pos.delete_product", { name: variant.name })}
                         >
                           <X size={15} />
                         </button>

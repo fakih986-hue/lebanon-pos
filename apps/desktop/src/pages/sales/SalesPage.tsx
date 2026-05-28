@@ -37,10 +37,12 @@ import ReceiptPreview from "../../features/pos/components/ReceiptPreview"
 import SalesKpiCards from "../../features/pos/components/SalesKpiCards"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
+import { useI18n } from "@lebanonpos/shared"
 
 type SalesTab = "Receipts" | "Insights"
 
 export default function SalesPage() {
+  const { t } = useI18n()
   const [searchParams, setSearchParams] = useSearchParams()
   const [sales, setSales] = useState<Sale[]>(getSales())
   const [refunds, setRefunds] = useState<SaleRefund[]>(getRefunds())
@@ -58,7 +60,7 @@ export default function SalesPage() {
     Record<string, string>
   >({})
   const [refundReason, setRefundReason] = useState("")
-  const [refundStatus, setRefundStatus] = useState("Choose quantities to return.")
+  const [refundStatus, setRefundStatus] = useState(t("pos.sales.refund_status_default"))
   const [pendingRefund, setPendingRefund] = useState<{
     sale: Sale
     refundTotal: number
@@ -109,7 +111,7 @@ export default function SalesPage() {
   useEffect(() => {
     setRefundQuantities({})
     setRefundReason("")
-    setRefundStatus("Choose quantities to return.")
+    setRefundStatus(t("pos.sales.refund_status_default"))
   }, [drawerSaleId, selectedSale?.id])
 
   function selectTab(tab: SalesTab) {
@@ -130,7 +132,7 @@ export default function SalesPage() {
 
   function handleRecordRefund(sale: Sale) {
     if (!canRefund) {
-      setRefundStatus("Manager or admin permission required.")
+      setRefundStatus(t("pos.permission_required"))
       return
     }
 
@@ -152,7 +154,7 @@ export default function SalesPage() {
       .filter((item) => item.quantity > 0)
 
     if (refundItems.length === 0) {
-      setRefundStatus("Choose at least one item quantity.")
+      setRefundStatus(t("pos.sales.choose_item_qty"))
       return
     }
 
@@ -166,7 +168,7 @@ export default function SalesPage() {
     )
 
     if (refundTotal <= 0) {
-      setRefundStatus("This sale has no refundable balance left.")
+      setRefundStatus(t("pos.sales.no_refundable_balance"))
       return
     }
 
@@ -230,11 +232,11 @@ export default function SalesPage() {
     setRefundQuantities({})
     setRefundReason("")
     setPendingRefund(null)
-    setRefundStatus(`${refund.refundNumber} recorded.`)
+    setRefundStatus(t("pos.sales.refund_recorded", { refund: refund.refundNumber }))
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
       <SalesKpiCards metrics={metrics} />
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -242,24 +244,24 @@ export default function SalesPage() {
           active={activeTab}
           onChange={selectTab}
           tabs={[
-            { label: "Receipts", icon: <ReceiptText size={18} />, count: sales.length },
-            { label: "Insights", icon: <BarChart3 size={18} /> },
+            { label: t("pos.sales.tab_receipts"), icon: <ReceiptText size={18} />, count: sales.length },
+            { label: t("pos.sales.tab_insights"), icon: <BarChart3 size={18} /> },
           ]}
         />
 
         <div className="flex gap-2">
           <label className="relative w-full sm:w-64">
-            <span className="sr-only">Search sales</span>
+            <span className="sr-only">{t("pos.sales.search_sales")}</span>
             <Search
               size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+              className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-zinc-400"
             />
             <input
               ref={searchRef}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search receipt, customer, item"
-              className="h-10 w-full rounded-lg border border-zinc-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+              placeholder={t("pos.sales.search_placeholder")}
+              className="h-10 w-full rounded-lg border border-zinc-200 bg-white ps-9 pe-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
             />
           </label>
 
@@ -270,11 +272,11 @@ export default function SalesPage() {
             }
             className="h-10 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-700 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
           >
-            <option value="All">All payments</option>
-            <option value="Cash">Cash</option>
-            <option value="Card">Card</option>
-            <option value="Wallet">Wallet</option>
-            <option value="Debt">Debt</option>
+            <option value="All">{t("pos.sales.all_payments")}</option>
+            <option value="Cash">{t("pos.payment.cash")}</option>
+            <option value="Card">{t("pos.payment.card")}</option>
+            <option value="Wallet">{t("pos.payment.wallet")}</option>
+            <option value="Debt">{t("pos.payment.debt")}</option>
           </select>
         </div>
       </div>
@@ -333,7 +335,7 @@ export default function SalesPage() {
           <aside
             role="dialog"
             aria-modal="true"
-            aria-label="Receipt details"
+            aria-label={t("pos.sales.receipt_details")}
             className="relative z-10 flex h-full w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl transition-transform duration-300 sm:rounded-xl translate-x-0"
           >
             <div className="flex-1 overflow-y-auto">
@@ -359,21 +361,21 @@ export default function SalesPage() {
 
       <ConfirmDialog
         open={!!pendingRefund}
-        title="Record return"
-        confirmLabel="Record Return"
+        title={t("pos.record_return")}
+        confirmLabel={t("pos.record_return")}
         confirmDestructive
         onConfirm={executeRefund}
         onCancel={() => setPendingRefund(null)}
       >
         <p>
-          Process refund for {pendingRefund?.refundItems.length} item(s) totaling {formatCurrency(pendingRefund?.refundTotal ?? 0)}?
+          {t("pos.sales.confirm_refund", { count: pendingRefund?.refundItems.length ?? 0, total: formatCurrency(pendingRefund?.refundTotal ?? 0) })}
         </p>
       </ConfirmDialog>
 
       <ConfirmDialog
         open={voidSaleId !== null}
-        title="Void sale"
-        confirmLabel="Void"
+        title={t("pos.sales.void_sale_title")}
+        confirmLabel={t("pos.void")}
         confirmDestructive
         onConfirm={() => {
           if (voidSaleId !== null) {
@@ -383,7 +385,7 @@ export default function SalesPage() {
         }}
         onCancel={() => setVoidSaleId(null)}
       >
-        <p>Void this sale? This marks it as voided in the records.</p>
+        <p>{t("pos.sales.void_sale_message")}</p>
       </ConfirmDialog>
     </main>
   )

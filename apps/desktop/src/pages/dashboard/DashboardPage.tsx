@@ -49,6 +49,7 @@ import {
   getReorderSuggestions,
 } from "../../features/pos/services/stock.service"
 import type { Product } from "../../features/pos/types/product"
+import { useI18n } from "@lebanonpos/shared"
 
 function formatTime(value: string) {
   return new Intl.DateTimeFormat("en-LB", {
@@ -64,6 +65,7 @@ export default function DashboardPage() {
   const [expenses, setExpenses] = useState<Expense[]>(getExpenses())
   const [settings, setSettings] = useState<AppSettings>(getSettings())
   const [ledgerVersion, setLedgerVersion] = useState(0)
+  const { t } = useI18n()
 
   useEffect(() => {
     let active = true
@@ -136,37 +138,37 @@ export default function DashboardPage() {
   const promoSuggestions = useMemo(() => getPromoSuggestions(products), [products, sales])
   const ownerDigest = [
     {
-      label: "Sales today",
+      label: t("desktop.dashboard.sales_today"),
       value: formatCurrency(metrics.todayNetRevenue),
-      detail: `${formatNumber(metrics.todayTransactions)} receipts`,
+      detail: `${formatNumber(metrics.todayTransactions)} ${t("desktop.dashboard.receipts")}`,
     },
     {
-      label: "Cash risk",
+      label: t("desktop.dashboard.cash_risk"),
       value: formatCurrency(ledgerTotals.outstanding),
-      detail: `${formatNumber(riskyCustomers.length)} debt accounts need attention`,
+      detail: `${formatNumber(riskyCustomers.length)} ${t("desktop.dashboard.debt_accounts")}`,
     },
     {
-      label: "Inventory work",
+      label: t("desktop.dashboard.inventory_work"),
       value: formatNumber(reorderSuggestions.filter((item) => item.suggestedQuantity > 0).length),
-      detail: `${formatNumber(expiryAlerts.length)} expiry alerts`,
+      detail: `${formatNumber(expiryAlerts.length)} ${t("desktop.dashboard.expiry_alerts")}`,
     },
     {
-      label: "Promo ideas",
+      label: t("desktop.dashboard.promo_ideas"),
       value: formatNumber(promoSuggestions.length),
-      detail: `${formatNumber(deadStockItems.length)} dead-stock items`,
+      detail: `${formatNumber(deadStockItems.length)} ${t("desktop.dashboard.dead_stock")}`,
     },
   ]
 
   if (isLoading) {
     return (
-      <main className="flex min-h-0 flex-1 items-center justify-center bg-[#eef3f2] p-6">
-        <Spinner label="Loading dashboard..." />
+      <main className="flex min-h-0 flex-1 items-center justify-center bg-page p-6">
+        <Spinner label={t("desktop.dashboard.loading")} />
       </main>
     )
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
       <section className="mb-5 rounded-lg border border-zinc-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center gap-3">
@@ -175,10 +177,10 @@ export default function DashboardPage() {
             </div>
             <div>
               <h2 className="text-xl font-bold text-zinc-950">
-                Daily owner digest
+                {t("desktop.dashboard.owner_digest")}
               </h2>
               <p className="text-sm text-zinc-500">
-                Sales, cash, stock, and promo pressure for today.
+                {t("desktop.dashboard.owner_subtitle")}
               </p>
             </div>
           </div>
@@ -205,53 +207,53 @@ export default function DashboardPage() {
       <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-zinc-500">Net paid</p>
+            <p className="text-sm font-medium text-zinc-500">{t("desktop.dashboard.net_paid")}</p>
             <CircleDollarSign size={20} className="text-emerald-700" />
           </div>
           <p className="mt-3 text-3xl font-bold text-zinc-950">
             {formatCurrency(metrics.todayNetRevenue)}
           </p>
           <p className="mt-1 text-sm text-zinc-500">
-            {formatNumber(metrics.todayTransactions)} transactions
+            {formatNumber(metrics.todayTransactions)} {t("desktop.dashboard.transactions")}
           </p>
         </div>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-zinc-500">Operating profit</p>
+            <p className="text-sm font-medium text-zinc-500">{t("desktop.dashboard.operating_profit")}</p>
             <TrendingUp size={20} className="text-indigo-700" />
           </div>
           <p className="mt-3 text-3xl font-bold text-zinc-950">
             {formatCurrency(operatingProfit)}
           </p>
           <p className="mt-1 text-sm text-zinc-500">
-            {formatCurrency(todayExpenseTotal)} expenses today
+            {formatCurrency(todayExpenseTotal)} {t("desktop.dashboard.expenses_today")}
           </p>
         </div>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-zinc-500">Outstanding</p>
+            <p className="text-sm font-medium text-zinc-500">{t("desktop.dashboard.outstanding")}</p>
             <HandCoins size={20} className="text-rose-700" />
           </div>
           <p className="mt-3 text-3xl font-bold text-rose-700">
             {formatCurrency(ledgerTotals.outstanding)}
           </p>
           <p className="mt-1 text-sm text-zinc-500">
-            {formatNumber(ledgerTotals.customers)} customer accounts
+            {formatNumber(ledgerTotals.customers)} {t("desktop.dashboard.customer_accounts")}
           </p>
         </div>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium text-zinc-500">Stock value</p>
+            <p className="text-sm font-medium text-zinc-500">{t("desktop.dashboard.stock_value")}</p>
             <Boxes size={20} className="text-amber-700" />
           </div>
           <p className="mt-3 text-3xl font-bold text-zinc-950">
             {formatCurrency(stockValue)}
           </p>
           <p className="mt-1 text-sm text-zinc-500">
-            {formatNumber(lowStockProducts.length)} low stock products
+            {formatNumber(lowStockProducts.length)} {t("desktop.dashboard.low_stock_products")}
           </p>
         </div>
       </section>
@@ -260,18 +262,18 @@ export default function DashboardPage() {
         <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
           <div className="border-b border-zinc-200 p-4">
             <h2 className="text-xl font-bold text-zinc-950">
-              Business command center
-            </h2>
-            <p className="text-sm text-zinc-500">
-              Sales, inventory, debts, and cash signals in one place.
-            </p>
+                {t("desktop.dashboard.command_center")}
+              </h2>
+              <p className="text-sm text-zinc-500">
+                {t("desktop.dashboard.command_center_subtitle")}
+              </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-2">
             <div className="rounded-lg border border-zinc-200 p-4">
               <div className="mb-3 flex items-center gap-2 font-bold text-zinc-950">
                 <Banknote size={18} className="text-emerald-700" />
-                Payment mix
+                {t("desktop.dashboard.payment_mix")}
               </div>
               {Object.entries(paymentMix).map(([method, amount]) => (
                 <div
@@ -291,10 +293,10 @@ export default function DashboardPage() {
             <div className="rounded-lg border border-zinc-200 p-4">
               <div className="mb-3 flex items-center gap-2 font-bold text-zinc-950">
                 <PackageSearch size={18} className="text-indigo-700" />
-                Top products
+                {t("desktop.dashboard.top_products")}
               </div>
               {topProducts.length === 0 ? (
-                <EmptyState icon={PackageSearch} title="Sales will appear here." className="border-0 bg-transparent py-6" />
+                <EmptyState icon={PackageSearch} title={t("desktop.dashboard.sales_will_appear")} className="border-0 bg-transparent py-6" />
               ) : null}
               {topProducts.map((product) => (
                 <div
@@ -306,7 +308,7 @@ export default function DashboardPage() {
                       {product.name}
                     </p>
                     <p className="text-sm text-zinc-500">
-                      {formatNumber(product.quantity)} sold
+                      {formatNumber(product.quantity)} {t("desktop.dashboard.sold")}
                     </p>
                   </div>
                   <span className="font-bold text-zinc-950">
@@ -324,13 +326,13 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2">
                 <AlertTriangle size={18} className="text-amber-700" />
                 <h2 className="text-lg font-bold text-zinc-950">
-                  Action queue
+                  {t("desktop.dashboard.action_queue")}
                 </h2>
               </div>
             </div>
             <div className="space-y-2 p-4">
               {lowStockProducts.length === 0 && riskyCustomers.length === 0 ? (
-                <EmptyState icon={AlertTriangle} title="No urgent work right now." className="border-0 bg-transparent py-6" />
+                <EmptyState icon={AlertTriangle} title={t("desktop.dashboard.no_urgent_work")} className="border-0 bg-transparent py-6" />
               ) : null}
               {lowStockProducts.map((product) => (
                 <div
@@ -339,7 +341,7 @@ export default function DashboardPage() {
                 >
                   <p className="font-bold text-amber-900">{product.name}</p>
                   <p className="text-sm text-amber-800">
-                    {formatNumber(product.stock)} units left
+                    {formatNumber(product.stock)} {t("desktop.dashboard.units_left")}
                   </p>
                 </div>
               ))}
@@ -350,7 +352,7 @@ export default function DashboardPage() {
                 >
                   <p className="font-bold text-rose-900">{customer.name}</p>
                   <p className="text-sm text-rose-800">
-                    Owes {formatCurrency(customer.balance)}
+                    {t("desktop.dashboard.owes")} {formatCurrency(customer.balance)}
                   </p>
                 </div>
               ))}
@@ -362,13 +364,13 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2">
                 <Activity size={18} className="text-zinc-700" />
                 <h2 className="text-lg font-bold text-zinc-950">
-                  Recent sales
+                  {t("desktop.dashboard.recent_sales")}
                 </h2>
               </div>
             </div>
             <div className="space-y-2 p-4">
               {recentSales.length === 0 ? (
-                <EmptyState icon={ReceiptText} title="No sales yet." className="border-0 bg-transparent py-6" />
+                <EmptyState icon={ReceiptText} title={t("desktop.dashboard.no_sales_yet")} className="border-0 bg-transparent py-6" />
               ) : null}
               {recentSales.map((sale) => (
                 <div

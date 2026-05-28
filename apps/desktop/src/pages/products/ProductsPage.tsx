@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useDebounce } from "../../hooks/useDebounce"
 import type { Product } from "../../features/pos/types/product"
 import { Plus, X } from "lucide-react"
@@ -53,6 +53,7 @@ import {
   type StockCountSession,
 } from "../../features/pos/services/stockCount.service"
 import { showToast } from "../../features/pos/services/toast.service"
+import { useI18n } from "@lebanonpos/shared"
 type ProductWorkspaceView = "Catalog" | "Alerts" | "Control" | "Lots" | "Setup"
 
 function normalizeNumber(value: string) {
@@ -130,6 +131,7 @@ export default function ProductsPage() {
   const [newVariantStock, setNewVariantStock] = useState("")
   const [newVariantBarcode, setNewVariantBarcode] = useState("")
   const [deleteVariantId, setDeleteVariantId] = useState<number | null>(null)
+  const { t } = useI18n()
 
   useEffect(() => {
     let active = true
@@ -539,7 +541,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
       {isLoading ? (
         <div className="flex min-h-[400px] items-center justify-center p-6">
           <Spinner label="Loading inventory..." />
@@ -579,12 +581,12 @@ export default function ProductsPage() {
         <div className="overflow-x-auto">
           <table className="min-w-full border-separate border-spacing-0 text-sm">
             <thead>
-              <tr className="text-left text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
+              <tr className="text-start text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
                 <th className="border-b border-zinc-200 px-4 py-3">Lot</th>
                 <th className="border-b border-zinc-200 px-4 py-3">Product</th>
                 <th className="border-b border-zinc-200 px-4 py-3">Supplier</th>
-                <th className="border-b border-zinc-200 px-4 py-3 text-right">Qty</th>
-                <th className="border-b border-zinc-200 px-4 py-3 text-right">Cost</th>
+                <th className="border-b border-zinc-200 px-4 py-3 text-end">Qty</th>
+                <th className="border-b border-zinc-200 px-4 py-3 text-end">Cost</th>
                 <th className="border-b border-zinc-200 px-4 py-3">Expiry</th>
               </tr>
             </thead>
@@ -600,10 +602,10 @@ export default function ProductsPage() {
                   <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
                     {batch.supplierName ?? "-"}
                   </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-right font-bold text-zinc-950">
+                  <td className="border-b border-zinc-100 px-4 py-4 text-end font-bold text-zinc-950">
                     {formatNumber(batch.quantityRemaining)}
                   </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-right text-zinc-700">
+                  <td className="border-b border-zinc-100 px-4 py-4 text-end text-zinc-700">
                     {formatCurrency(batch.unitCost)}
                   </td>
                   <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
@@ -747,10 +749,10 @@ export default function ProductsPage() {
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="text-left text-xs font-bold uppercase text-zinc-500">
+              <tr className="text-start text-xs font-bold uppercase text-zinc-500">
                 <th className="border-b border-zinc-200 px-3 py-2">Name</th>
-                <th className="border-b border-zinc-200 px-3 py-2 text-right">Price</th>
-                <th className="border-b border-zinc-200 px-3 py-2 text-right">Stock</th>
+                <th className="border-b border-zinc-200 px-3 py-2 text-end">Price</th>
+                <th className="border-b border-zinc-200 px-3 py-2 text-end">Stock</th>
                 <th className="border-b border-zinc-200 px-3 py-2">Barcode</th>
                 <th className="border-b border-zinc-200 px-3 py-2">
                   <span className="sr-only">Remove</span>
@@ -763,10 +765,10 @@ export default function ProductsPage() {
                   <td className="border-b border-zinc-100 px-3 py-2 font-medium text-zinc-950">
                     {variant.variantName}
                   </td>
-                  <td className="border-b border-zinc-100 px-3 py-2 text-right text-zinc-800">
+                  <td className="border-b border-zinc-100 px-3 py-2 text-end text-zinc-800">
                     {formatCurrency(variant.price)}
                   </td>
-                  <td className="border-b border-zinc-100 px-3 py-2 text-right text-zinc-800">
+                  <td className="border-b border-zinc-100 px-3 py-2 text-end text-zinc-800">
                     {formatNumber(variant.stock)}
                   </td>
                   <td className="border-b border-zinc-100 px-3 py-2 text-zinc-600">
@@ -862,8 +864,8 @@ export default function ProductsPage() {
 
       <ConfirmDialog
         open={deleteProductId !== null}
-        title="Delete product"
-        confirmLabel="Delete"
+        title={t("desktop.delete_product")}
+        confirmLabel={t("pos.delete")}
         confirmDestructive
         onConfirm={() => {
           if (deleteProductId !== null) {
@@ -873,7 +875,7 @@ export default function ProductsPage() {
         }}
         onCancel={() => setDeleteProductId(null)}
       >
-        <p>Delete this product? This cannot be undone.</p>
+        <p>{t("desktop.delete_product_confirm")}</p>
       </ConfirmDialog>
 
       <ConfirmDialog

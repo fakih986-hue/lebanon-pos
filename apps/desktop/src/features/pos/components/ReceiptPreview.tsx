@@ -1,4 +1,7 @@
+import { memo } from "react"
 import { Printer, ReceiptText, RotateCcw, X } from "lucide-react"
+
+import { useI18n } from "@lebanonpos/shared"
 
 import { formatCurrency, formatLbpCurrency, formatNumber } from "../lib/currency"
 import {
@@ -17,7 +20,7 @@ import { userCan } from "../services/security.service"
 import type { Sale, SaleItem, SaleRefund } from "../services/sales.service"
 import { usdToLbp } from "../lib/currency"
 
-export default function ReceiptPreview({
+const ReceiptPreview = memo(function ReceiptPreview({
   sale,
   fallbackExchangeRate,
   refunds,
@@ -46,14 +49,15 @@ export default function ReceiptPreview({
   onRecordRefund: (sale: Sale) => void
   onVoid: (saleId: string) => void
 }) {
+  const { t } = useI18n()
   if (!sale) {
     return (
       <div className="flex min-h-96 items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center">
         <div>
           <ReceiptText size={44} className="mx-auto text-zinc-300" />
-          <p className="mt-3 font-bold text-zinc-950">No receipt selected</p>
+          <p className="mt-3 font-bold text-zinc-950">{t("pos.no_receipt")}</p>
           <p className="mt-1 text-sm text-zinc-500">
-            Select a sale to preview the full receipt.
+            {t("pos.select_receipt_hint")}
           </p>
         </div>
       </div>
@@ -93,7 +97,7 @@ export default function ReceiptPreview({
       <div className="flex items-start justify-between gap-3 border-b border-zinc-200 p-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">
-            Receipt
+            {t("pos.receipt")}
           </p>
           <h2 className="mt-1 text-2xl font-bold text-zinc-950">
             {sale.saleNumber}
@@ -110,14 +114,14 @@ export default function ReceiptPreview({
             className="flex h-10 items-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
           >
             <Printer size={16} />
-            Print
+            {t("pos.print")}
           </button>
           {onClose ? (
             <button
               type="button"
               onClick={onClose}
               className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-950"
-              aria-label="Close receipt"
+              aria-label={t("pos.close_receipt")}
             >
               <X size={18} />
             </button>
@@ -128,28 +132,28 @@ export default function ReceiptPreview({
       <div className="p-4">
         <div className="grid gap-2 text-sm sm:grid-cols-3">
           <div className="rounded-lg bg-zinc-50 p-3">
-            <p className="text-zinc-500">Payment</p>
+            <p className="text-zinc-500">{t("pos.payment")}</p>
             <p className="mt-1 font-bold text-zinc-950">
               {sale.paymentMethod}
             </p>
           </div>
           <div className="rounded-lg bg-zinc-50 p-3">
-            <p className="text-zinc-500">Cashier</p>
+            <p className="text-zinc-500">{t("pos.cashier")}</p>
             <p className="mt-1 font-bold text-zinc-950">{sale.cashier}</p>
           </div>
           <div className="rounded-lg bg-zinc-50 p-3">
-            <p className="text-zinc-500">Customer</p>
+            <p className="text-zinc-500">{t("pos.customer")}</p>
             <p className="mt-1 font-bold text-zinc-950">
-              {sale.customerName ?? "Walk-in"}
+              {sale.customerName ?? t("pos.walk_in")}
             </p>
           </div>
         </div>
 
         <div className="mt-4 overflow-hidden rounded-lg border border-zinc-200">
           <div className="grid grid-cols-[minmax(0,1fr)_64px_90px] bg-zinc-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">
-            <span>Item</span>
-            <span className="text-right">Qty</span>
-            <span className="text-right">Total</span>
+            <span>{t("pos.item_header")}</span>
+            <span className="text-right">{t("pos.qty_header")}</span>
+            <span className="text-right">{t("pos.total_header")}</span>
           </div>
 
           {sale.items.map((item) => (
@@ -177,41 +181,41 @@ export default function ReceiptPreview({
           {discountTotal > 0 ? (
             <>
               <div className="flex justify-between gap-3 text-zinc-600">
-                <span>Items subtotal</span>
+                <span>{t("pos.items_subtotal")}</span>
                 <strong className="text-zinc-900">
                   {formatCurrency(grossSubtotal)}
                 </strong>
               </div>
               <div className="flex justify-between gap-3 text-violet-700">
-                <span>Discount</span>
+                <span>{t("pos.discount")}</span>
                 <strong>-{formatCurrency(discountTotal)}</strong>
               </div>
             </>
           ) : null}
           <div className="flex justify-between gap-3 text-zinc-600">
-            <span>Subtotal</span>
+            <span>{t("pos.subtotal")}</span>
             <strong className="text-zinc-900">{formatCurrency(sale.subtotal)}</strong>
           </div>
           <div className="flex justify-between gap-3 text-zinc-600">
-            <span>VAT</span>
+            <span>{t("pos.vat")}</span>
             <strong className="text-zinc-900">{formatCurrency(sale.tax)}</strong>
           </div>
           <div className="flex justify-between gap-3 border-t border-zinc-200 pt-3 text-xl font-bold text-zinc-950">
-            <span>Total USD</span>
+            <span>{t("pos.total_usd")}</span>
             <span>{formatCurrency(sale.total)}</span>
           </div>
           <div className="flex justify-between gap-3 text-sm font-bold text-zinc-600">
-            <span>Total LBP</span>
+            <span>{t("pos.total_lbp")}</span>
             <span>{formatLbpCurrency(totalLbp)}</span>
           </div>
           {refundedTotal > 0 ? (
             <>
               <div className="flex justify-between gap-3 text-rose-700">
-                <span>Refunded</span>
+                <span>{t("pos.refunded")}</span>
                 <strong>-{formatCurrency(refundedTotal)}</strong>
               </div>
               <div className="flex justify-between gap-3 border-t border-zinc-200 pt-3 text-base font-bold text-zinc-950">
-                <span>Net receipt</span>
+                <span>{t("pos.net_receipt")}</span>
                 <span>{formatCurrency(Math.max(0, sale.total - refundedTotal))}</span>
               </div>
             </>
@@ -221,18 +225,18 @@ export default function ReceiptPreview({
         {sale.tender ? (
           <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
             <div className="flex justify-between gap-3">
-              <span>Paid total</span>
+              <span>{t("pos.paid_total")}</span>
               <strong>
                 {formatCurrency(sale.tender.paidTotalUsd)} /{" "}
                 {formatLbpCurrency(sale.tender.paidTotalLbp)}
               </strong>
             </div>
             <div className="mt-2 flex justify-between gap-3">
-              <span>Change USD</span>
+              <span>{t("pos.change_usd")}</span>
               <strong>{formatCurrency(sale.tender.changeUsd)}</strong>
             </div>
             <div className="flex justify-between gap-3">
-              <span>Change LBP</span>
+              <span>{t("pos.change_lbp")}</span>
               <strong>{formatLbpCurrency(sale.tender.changeLbp)}</strong>
             </div>
           </div>
@@ -242,7 +246,7 @@ export default function ReceiptPreview({
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm font-bold text-rose-950">
               <RotateCcw size={17} />
-              Returns
+              {t("pos.returns")}
             </div>
             <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-rose-800 ring-1 ring-rose-200">
               {getRefundMethod(sale)}
@@ -269,11 +273,11 @@ export default function ReceiptPreview({
 
           {!canRefund ? (
             <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-900 ring-1 ring-rose-100">
-              Manager or admin permission required.
+              {t("pos.permission_required")}
             </p>
           ) : !hasRefundableItems ? (
             <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-900 ring-1 ring-rose-100">
-              This receipt is fully returned.
+              {t("pos.fully_returned")}
             </p>
           ) : (
             <div className="mt-3 space-y-3">
@@ -300,12 +304,11 @@ export default function ReceiptPreview({
                           {item.name}
                         </p>
                         <p className="mt-1 text-xs font-semibold text-zinc-500">
-                          Sold {formatNumber(item.quantity)} - Returned{" "}
-                          {formatNumber(refundedQuantity)}
+                          {t("pos.sold_returned", { n: formatNumber(item.quantity), n2: formatNumber(refundedQuantity) })}
                         </p>
                       </div>
                       <label className="block text-xs font-bold text-rose-900">
-                        Return
+                        {t("pos.return_label")}
                         <input
                           type="number"
                           min="0"
@@ -327,13 +330,13 @@ export default function ReceiptPreview({
               <input
                 value={refundReason}
                 onChange={(event) => onRefundReasonChange(event.target.value)}
-                placeholder="Return reason"
+                placeholder={t("pos.return_reason")}
                 className="h-11 w-full rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium outline-none focus:border-rose-400 focus:ring-4 focus:ring-rose-100"
               />
 
               <div className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm ring-1 ring-rose-100">
                 <span className="font-semibold text-zinc-600">
-                  Refund amount
+                  {t("pos.refund_amount")}
                 </span>
                 <strong className="text-rose-700">
                   {formatCurrency(refundDraftTotal)}
@@ -347,7 +350,7 @@ export default function ReceiptPreview({
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-rose-600 px-3 text-sm font-bold text-white transition hover:bg-rose-500 disabled:bg-zinc-200 disabled:text-zinc-400"
               >
                 <RotateCcw size={16} />
-                Record Return
+                {t("pos.record_return")}
               </button>
 
               <p className="text-sm font-semibold text-rose-900">
@@ -363,11 +366,13 @@ export default function ReceiptPreview({
               className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-3 text-sm font-bold text-rose-600 transition hover:bg-rose-50"
             >
               <X size={16} />
-              Void
+              {t("pos.void")}
             </button>
           )}
         </div>
       </div>
     </article>
   )
-}
+})
+
+export default ReceiptPreview

@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react"
 import { X } from "lucide-react"
+import { useI18n } from "@lebanonpos/shared"
 
 type Props = {
   open: boolean
@@ -15,11 +16,12 @@ export default function ConfirmDialog({
   open,
   title,
   children,
-  confirmLabel = "Confirm",
+  confirmLabel,
   confirmDestructive,
   onConfirm,
   onCancel,
 }: Props) {
+  const { t } = useI18n()
   useEffect(() => {
     if (!open) return
     function handleKeyDown(event: KeyboardEvent) {
@@ -47,7 +49,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onCancel}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-600"
-            aria-label="Cancel"
+            aria-label={t("pos.cancel")}
           >
             <X size={18} />
           </button>
@@ -61,7 +63,7 @@ export default function ConfirmDialog({
             onClick={onCancel}
             className="h-10 rounded-lg border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
           >
-            Cancel
+            {t("pos.cancel")}
           </button>
           <button
             type="button"
@@ -72,7 +74,7 @@ export default function ConfirmDialog({
                 : "bg-zinc-950 hover:bg-zinc-800"
             }`}
           >
-            {confirmLabel}
+            {confirmLabel ?? t("pos.confirm")}
           </button>
         </div>
       </div>

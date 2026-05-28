@@ -1,4 +1,5 @@
 import { putMany } from "./db"
+import { writeLocalWithIndexedDB } from "./storage.service"
 
 const SYNC_QUEUE_KEY = "lebanonpos.sync-queue.v1"
 const LAST_SYNC_KEY = "lebanonpos.sync-last.v1"
@@ -351,7 +352,7 @@ export async function pullFromServer() {
         continue
       }
 
-      localStorage.setItem(target.key, JSON.stringify(value))
+      writeLocalWithIndexedDB(target.key, Array.isArray(value) ? value : [value])
       window.dispatchEvent(new Event(target.event))
     }
 

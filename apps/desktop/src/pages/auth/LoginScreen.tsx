@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { KeyRound, LockKeyhole, ShieldCheck } from "lucide-react"
+import { useI18n } from "@lebanonpos/shared"
 
 import {
   getUsers,
@@ -22,15 +23,16 @@ function roleBadgeColor(role: StaffUser["role"]) {
 
 export default function LoginScreen() {
   const users = getUsers().filter((user) => user.active)
+  const { t } = useI18n()
   const [pin, setPin] = useState("")
-  const [status, setStatus] = useState("Enter your PIN to unlock the register.")
+  const [status, setStatus] = useState(t("desktop.lock_hint"))
 
   async function handleUnlock() {
     const user = await unlockWithPin(pin)
 
     if (!user) {
       setPin("")
-      showToast("PIN not recognized.", "error")
+      showToast(t("desktop.lock_pin_not_recognized"), "error")
       return
     }
 
@@ -38,22 +40,20 @@ export default function LoginScreen() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#eef3f2] p-4">
+    <main className="flex min-h-screen items-center justify-center bg-page p-4">
       <section className="grid w-full max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_390px]">
         <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-zinc-950 text-white">
             <LockKeyhole size={26} />
           </div>
           <p className="mt-6 text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">
-            Lebanon POS
+            {t("login.title")}
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">
-            Register locked
+            {t("desktop.lock_title")}
           </h1>
           <p className="mt-3 max-w-xl text-base font-medium text-zinc-500">
-            Cashiers unlock with their PIN. Managers and admins get access to
-            reports, inventory, suppliers, accounting, staff, and settings based
-            on their role.
+            {t("desktop.lock_description")}
           </p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -81,13 +81,13 @@ export default function LoginScreen() {
               <ShieldCheck size={21} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-zinc-950">Unlock</h2>
+              <h2 className="text-xl font-bold text-zinc-950">{t("desktop.lock_unlock")}</h2>
               <p className="text-sm text-zinc-500">{status}</p>
             </div>
           </div>
 
           <label className="mt-5 block text-sm font-bold text-zinc-700">
-            PIN
+            {t("login.pin")}
             <input
               type="password"
               inputMode="numeric"
@@ -111,7 +111,7 @@ export default function LoginScreen() {
             className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-base font-bold text-white transition hover:bg-emerald-500 disabled:bg-zinc-200 disabled:text-zinc-400"
           >
             <KeyRound size={18} />
-            Unlock Register
+            {t("desktop.lock_unlock_register")}
           </button>
         </div>
       </section>

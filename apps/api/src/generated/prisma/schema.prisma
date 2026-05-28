@@ -12,6 +12,7 @@ enum UserRole {
   Admin
   Manager
   Cashier
+  Driver
 }
 
 enum ShiftStatus {
@@ -97,28 +98,38 @@ model StaffUser {
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
   name      String
   mobile    String
+  code      String   @default("")
   pin       String
   role      UserRole
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  openedShifts Shift[]   @relation("ShiftOpener")
-  closedShifts Shift[]   @relation("ShiftCloser")
-  expenses     Expense[]
+  openedShifts   Shift[]         @relation("ShiftOpener")
+  closedShifts   Shift[]         @relation("ShiftCloser")
+  expenses       Expense[]
+  deliveryOrders DeliveryOrder[] @relation("DeliveryDriver")
+
+  @@index([tenantId, code])
 }
 
 model AppSettings {
-  id                String @id @default(uuid())
-  tenantId          String @unique
-  tenant            Tenant @relation(fields: [tenantId], references: [id])
-  storeName         String
-  branchName        String
-  phone             String
-  address           String
-  vatRate           Float
-  usdToLbpRate      Float
-  receiptFooter     String
-  lowStockThreshold Int
+  id                    String  @id @default(uuid())
+  tenantId              String  @unique
+  tenant                Tenant  @relation(fields: [tenantId], references: [id])
+  storeName             String
+  branchName            String
+  phone                 String
+  address               String
+  vatRate               Float
+  usdToLbpRate          Float
+  receiptFooter         String
+  lowStockThreshold     Int
+  deliveryFee           Float   @default(2.0)
+  whatsAppAdmin         String  @default("")
+  whatsAppDriverEnabled Boolean @default(false)
+  assignMode            String  @default("manual")
+  assignTimeout         Int     @default(5)
+  defaultDriverId       String  @default("")
 }
 
 model Product {
@@ -260,13 +271,15 @@ model Customer {
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
   name        String
   mobile      String
+  pin         String   @default("")
   creditLimit Float    @default(0)
   notes       String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  debtSales    DebtSale[]
-  debtPayments DebtPayment[]
+  debtSales      DebtSale[]
+  debtPayments   DebtPayment[]
+  deliveryOrders DeliveryOrder[]
 
   @@unique([tenantId, name])
   @@index([tenantId, mobile])
@@ -518,32 +531,36 @@ enum DeliveryOrderStatus {
 }
 
 model DeliveryOrder {
-  id              String              @id @default(uuid())
-  tenantId        String
-  tenant          Tenant              @relation(fields: [tenantId], references: [id])
-  orderNumber     String
-  status          DeliveryOrderStatus @default(Pending)
-  customerId      String?
-  customerName    String
-  customerPhone   String
-  address         String
-  locationLat     Float?
-  locationLng     Float?
-  deliveryNote    String              @default("")
-  itemsTotal      Float
-  deliveryFee     Float               @default(0)
-  total           Float
-  paymentMethod   String              @default("CashOnDelivery")
-  paidAmount      Float               @default(0)
-  changeRequired  Float               @default(0)
-  assignedTo      String?
-  assignedName    String?
-  notes           String              @default("")
-  cancelledReason String              @default("")
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  deliveredAt     DateTime?
-  cancelledAt     DateTime?
+  id               String              @id @default(uuid())
+  tenantId         String
+  tenant           Tenant              @relation(fields: [tenantId], references: [id])
+  orderNumber      String
+  status           DeliveryOrderStatus @default(Pending)
+  customerId       String?
+  customer         Customer?           @relation(fields: [customerId], references: [id])
+  customerName     String
+  customerPhone    String
+  address          String
+  locationLat      Float?
+  locationLng      Float?
+  deliveryNote     String              @default("")
+  itemsTotal       Float
+  deliveryFee      Float               @default(0)
+  total            Float
+  paymentMethod    String              @default("CashOnDelivery")
+  paidAmount       Float               @default(0)
+  changeRequired   Float               @default(0)
+  assignedTo       String?
+  assignedName     String?
+  driverId         String?
+  driver           StaffUser?          @relation("DeliveryDriver", fields: [driverId], references: [id])
+  driverAssignedAt DateTime?
+  notes            String              @default("")
+  cancelledReason  String              @default("")
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  deliveredAt      DateTime?
+  cancelledAt      DateTime?
 
   items DeliveryOrderItem[]
 

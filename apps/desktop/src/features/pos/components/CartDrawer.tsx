@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useI18n } from "@lebanonpos/shared"
 import { AnimatePresence, motion } from "framer-motion"
 import {
   BadgeDollarSign,
@@ -26,6 +27,14 @@ import {
   usdToLbp,
 } from "../lib/currency"
 import type { HeldSale } from "../services/heldSale.service"
+import {
+  formatVatRate,
+  getHeldSaleDiscountTotal,
+  getHeldSaleGrossSubtotal,
+  getHeldSaleItemCount,
+  getHeldSaleTotal,
+  parseMoney,
+} from "../lib/helpers"
 import type { CustomerLedger } from "../services/customer.service"
 
 type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
@@ -43,46 +52,6 @@ const paymentOptions: PaymentOption[] = [
   { label: "Wallet", icon: WalletCards },
   { label: "Debt", icon: HandCoins },
 ]
-
-function parseMoney(value: string) {
-  const parsedValue = Number(value.replace(/,/g, "").trim())
-  return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0
-}
-
-function getHeldSaleItemCount(heldSale: HeldSale) {
-  return heldSale.items.reduce((sum, item) => sum + item.quantity, 0)
-}
-
-function getHeldSaleGrossSubtotal(heldSale: HeldSale) {
-  return heldSale.items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  )
-}
-
-function getHeldSaleDiscountTotal(heldSale: HeldSale) {
-  const grossSubtotal = getHeldSaleGrossSubtotal(heldSale)
-  const discountValue = parseMoney(heldSale.discountValue)
-  return Math.min(
-    grossSubtotal,
-    heldSale.discountMode === "Percent"
-      ? grossSubtotal * (Math.min(100, discountValue) / 100)
-      : discountValue
-  )
-}
-
-function getHeldSaleTotal(heldSale: HeldSale, vatRate: number) {
-  const subtotal = Math.max(
-    0,
-    getHeldSaleGrossSubtotal(heldSale) - getHeldSaleDiscountTotal(heldSale)
-  )
-  return subtotal + subtotal * vatRate
-}
-
-function formatVatRate(value: number) {
-  const rate = value * 100
-  return Number.isInteger(rate) ? `${rate}%` : `${rate.toFixed(2)}%`
-}
 
 interface CartItem {
   id: number
@@ -207,6 +176,9 @@ export default function CartDrawer({
   const [discountOpen, setDiscountOpen] = useState(false)
   const [heldSalesOpen, setHeldSalesOpen] = useState(false)
 
+  const { t, dir } = useI18n()
+  const drawerX = dir === "rtl" ? "-100%" : "100%"
+
   return (
     <AnimatePresence>
       {isOpen ? (
@@ -226,10 +198,10 @@ export default function CartDrawer({
           <motion.aside
             role="dialog"
             aria-modal="true"
-            aria-label="Current sale checkout"
-            initial={{ x: "100%" }}
+            aria-label={t("pos.current_sale")}
+            initial={{ x: drawerX }}
             animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+            exit={{ x: drawerX }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
             className="relative z-10 flex h-full w-full max-w-xl flex-col overflow-hidden bg-white shadow-2xl sm:rounded-xl"
           >
@@ -241,10 +213,10 @@ export default function CartDrawer({
               </div>
               <div>
                 <h2 className="text-xl font-bold text-zinc-950">
-                  Current sale
+                  {t("pos.current_sale")}
                 </h2>
                 <p className="text-sm font-medium text-zinc-500">
-                  {formatNumber(itemCount)} items - {formatCurrency(total)}
+                  {t("pos.items_total", { n: formatNumber(itemCount), total: formatCurrency(total) })}
                 </p>
               </div>
             </div>
@@ -257,15 +229,15 @@ export default function CartDrawer({
                 className="flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-30"
               >
                 <PauseCircle size={17} />
-                Hold
+                {t("pos.hold")}
               </button>
               <button
                 type="button"
                 onClick={onClean}
                 disabled={items.length === 0}
-                title="Clean sale"
+                title={t("pos.clean_sale")}
                 className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-30"
-                aria-label="Clean sale"
+                aria-label={t("pos.clean_sale")}
               >
                 <Eraser size={18} />
               </button>
@@ -273,7 +245,7 @@ export default function CartDrawer({
                 type="button"
                 onClick={onClose}
                 className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950"
-                aria-label="Close checkout"
+                aria-label={t("pos.close_checkout")}
               >
                 <X size={20} />
               </button>
@@ -302,10 +274,10 @@ export default function CartDrawer({
               <div className="px-6 text-center">
                 <ShoppingCart size={44} className="mx-auto text-zinc-300" />
                 <p className="mt-3 font-bold text-zinc-900">
-                  Cart is empty
+                  {t("pos.cart_empty")}
                 </p>
                 <p className="mt-1 text-sm text-zinc-500">
-                  Add products from the quick-sale screen.
+                  {t("pos.cart_empty_hint")}
                 </p>
               </div>
             </div>
@@ -322,12 +294,11 @@ export default function CartDrawer({
               >
                 <div className="flex items-center gap-2 text-sm font-bold text-zinc-800">
                   <PauseCircle size={16} />
-                  Held sales
+                  {t("pos.held_sales")}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-bold text-zinc-600">
-                    {formatNumber(heldSales.length)} holds /{" "}
-                    {formatNumber(heldSalesItemCount)} items
+                    {t("pos.holds_items", { n: formatNumber(heldSales.length), n2: formatNumber(heldSalesItemCount) })}
                   </span>
                   <ChevronDown
                     size={16}
@@ -368,7 +339,7 @@ export default function CartDrawer({
                           className="flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:bg-zinc-300 disabled:text-zinc-500"
                         >
                           <PlayCircle size={16} />
-                          Resume
+                          {t("pos.resume")}
                         </button>
                         <button
                           type="button"
@@ -376,7 +347,7 @@ export default function CartDrawer({
                           className="flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
                         >
                           <Eraser size={15} />
-                          Discard
+                          {t("pos.discard")}
                         </button>
                       </div>
                     </div>
@@ -387,7 +358,7 @@ export default function CartDrawer({
           ) : null}
 
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-            Payment method
+            {t("pos.payment_method")}
           </p>
           <div className="mb-4 grid grid-cols-2 gap-2">
             {paymentOptions.map((option) => {
@@ -409,7 +380,7 @@ export default function CartDrawer({
                   `}
                 >
                   <Icon size={18} />
-                  {option.label}
+                  {t("pos.payment." + option.label.toLowerCase())}
                 </button>
               )
             })}
@@ -423,7 +394,7 @@ export default function CartDrawer({
             >
               <div className="flex items-center gap-2 text-sm font-bold text-zinc-700">
                 <BadgePercent size={16} />
-                Discount
+                {t("pos.discount")}
               </div>
               <div className="flex items-center gap-2">
                 {hasDiscount ? (
@@ -456,7 +427,7 @@ export default function CartDrawer({
                               : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
                           }`}
                         >
-                          {mode === "USD" ? "$ off" : "% off"}
+                          {mode === "USD" ? t("pos.dollar_off") : t("pos.percent_off")}
                         </button>
                       )
                     })}
@@ -497,7 +468,7 @@ export default function CartDrawer({
                 </div>
               ) : (
                 <p className="mt-3 text-xs font-semibold text-zinc-500">
-                  Manager or admin permission required.
+                  {t("pos.permission_required")}
                 </p>
               )
             ) : null}
@@ -507,7 +478,7 @@ export default function CartDrawer({
             <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
               <div className="mb-3 flex items-center gap-2 text-sm font-bold text-emerald-900">
                 <BadgeDollarSign size={17} />
-                Cash tender
+                {t("pos.cash_tender")}
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -525,7 +496,7 @@ export default function CartDrawer({
                           : "border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-100"
                       }`}
                     >
-                      {mode === "Mixed" ? "Both" : mode}
+                      {mode === "Mixed" ? t("pos.tender.both") : t("pos.tender." + mode.toLowerCase())}
                     </button>
                   )
                 })}
@@ -534,7 +505,7 @@ export default function CartDrawer({
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {tenderMode !== "LBP" ? (
                   <label className="block text-sm font-bold text-emerald-900">
-                    Paid USD
+                    {t("pos.paid_usd")}
                     <input
                       type="number"
                       min="0"
@@ -550,7 +521,7 @@ export default function CartDrawer({
 
                 {tenderMode !== "USD" ? (
                   <label className="block text-sm font-bold text-emerald-900">
-                    Paid LBP
+                    {t("pos.paid_lbp")}
                     <input
                       type="number"
                       min="0"
@@ -572,7 +543,7 @@ export default function CartDrawer({
                   disabled={items.length === 0}
                   className="h-9 rounded-lg border border-emerald-200 bg-white px-3 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-40"
                 >
-                  Exact USD
+                  {t("pos.exact_usd")}
                 </button>
                 <button
                   type="button"
@@ -580,19 +551,19 @@ export default function CartDrawer({
                   disabled={items.length === 0}
                   className="h-9 rounded-lg border border-emerald-200 bg-white px-3 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-40"
                 >
-                  Exact LBP
+                  {t("pos.exact_lbp")}
                 </button>
               </div>
 
               {!cashTenderValid ? (
                 <p className="mt-2 text-xs font-medium text-rose-500">
-                  Insufficient payment - enter enough to cover the total.
+                  {t("pos.insufficient_payment")}
                 </p>
               ) : null}
 
               <div className="mt-3 space-y-2 text-sm text-emerald-950">
                 <div className="flex justify-between gap-3">
-                  <span>Paid total</span>
+                  <span>{t("pos.paid_total")}</span>
                   <span className="font-bold">
                     {formatCurrency(paidTotalUsd)} /{" "}
                     {formatLbpCurrency(paidTotalLbp)}
@@ -600,7 +571,7 @@ export default function CartDrawer({
                 </div>
                 <div className="flex justify-between gap-3">
                   <span>
-                    {cashChangeUsd > 0 ? "Change" : "Remaining"}
+                    {cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}
                   </span>
                   <span
                     className={`font-bold ${
@@ -626,14 +597,14 @@ export default function CartDrawer({
             <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
               <div className="mb-3 flex items-center gap-2 text-sm font-bold text-amber-900">
                 <ReceiptText size={17} />
-                Customer debt account
+                {t("pos.customer_debt")}
               </div>
 
               {customers.length > 0 ? (
                 <>
                   {!selectedCustomerId ? (
                     <p className="mb-2 text-xs font-medium text-rose-500">
-                      Please select a customer to record a debt sale.
+                      {t("pos.select_customer_hint")}
                     </p>
                   ) : null}
                   <select
@@ -651,13 +622,13 @@ export default function CartDrawer({
                   </select>
 
                   <div className="mt-3 flex justify-between text-sm text-amber-900">
-                    <span>Current balance</span>
+                    <span>{t("pos.current_balance")}</span>
                     <span className="font-bold">
                       {formatCurrency(selectedCustomer?.balance ?? 0)}
                     </span>
                   </div>
                   <div className="mt-1 flex justify-between text-sm text-amber-900">
-                    <span>After this sale</span>
+                    <span>{t("pos.after_sale")}</span>
                     <span className="font-bold">
                       {formatCurrency(
                         (selectedCustomer?.balance ?? 0) + total
@@ -672,7 +643,7 @@ export default function CartDrawer({
                           : "text-amber-900"
                       }`}
                     >
-                      <span>Credit limit</span>
+                      <span>{t("pos.credit_limit")}</span>
                       <span className="font-bold">
                         {formatCurrency(
                           selectedCustomer?.creditLimit ?? 0
@@ -686,7 +657,7 @@ export default function CartDrawer({
                   to="/customers"
                   className="flex h-11 items-center justify-center rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
                 >
-                  Add Customer
+                  {t("pos.add_customer")}
                 </Link>
               )}
             </div>
@@ -696,13 +667,13 @@ export default function CartDrawer({
             {hasDiscount ? (
               <>
                 <div className="flex justify-between text-zinc-500">
-                  <span>Items subtotal</span>
+                  <span>{t("pos.items_subtotal")}</span>
                   <span className="font-semibold text-zinc-800">
                     {formatCurrency(grossSubtotal)}
                   </span>
                 </div>
                 <div className="flex justify-between text-zinc-700">
-                  <span>Discount</span>
+                  <span>{t("pos.discount")}</span>
                   <span className="font-bold">
                     -{formatCurrency(discountTotal)}
                   </span>
@@ -710,23 +681,23 @@ export default function CartDrawer({
               </>
             ) : null}
             <div className="flex justify-between text-zinc-500">
-              <span>Subtotal</span>
+              <span>{t("pos.subtotal")}</span>
               <span className="font-semibold text-zinc-800">
                 {formatCurrency(subtotal)}
               </span>
             </div>
             <div className="flex justify-between text-zinc-500">
-              <span>VAT {formatVatRate(vatRate)}</span>
+              <span>{t("pos.vat")} {formatVatRate(vatRate)}</span>
               <span className="font-semibold text-zinc-800">
                 {formatCurrency(tax)}
               </span>
             </div>
             <div className="flex justify-between border-t-2 border-zinc-900 pt-3 text-2xl font-bold tracking-tight text-zinc-950">
-              <span>Total USD</span>
+              <span>{t("pos.total_usd")}</span>
               <span>{formatCurrency(total)}</span>
             </div>
             <div className="flex justify-between text-base font-bold text-zinc-600">
-              <span>Total LBP</span>
+              <span>{t("pos.total_lbp")}</span>
               <span>{formatLbpCurrency(totalLbp)}</span>
             </div>
           </div>
@@ -738,12 +709,12 @@ export default function CartDrawer({
             className="mt-4 h-14 w-full rounded-xl bg-emerald-600 px-4 text-lg font-bold text-white shadow-md transition hover:bg-emerald-500 active:scale-[0.97] disabled:bg-zinc-300 disabled:text-zinc-500 disabled:active:scale-100"
           >
             {creditLimitExceeded
-              ? "Credit Limit Exceeded"
+              ? t("pos.credit_exceeded")
               : paymentMethod === "Cash" && !cashTenderValid
-                ? "Enter Paid Amount"
+                ? t("pos.enter_amount")
                 : paymentMethod === "Debt"
-                  ? "Record Debt Sale"
-                  : "Complete Sale"}
+                  ? t("pos.record_debt")
+                  : t("pos.complete_sale")}
           </button>
         </div>
           </motion.aside>

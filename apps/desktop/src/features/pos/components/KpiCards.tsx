@@ -1,5 +1,6 @@
 import { AlertTriangle, Boxes, Layers3, PackageCheck } from "lucide-react"
 
+import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatNumber } from "../lib/currency"
 
 type Props = {
@@ -15,6 +16,7 @@ export default function KpiCards({
   totalValue,
   urgentReorderCount,
 }: Props) {
+  const { t } = useI18n()
   return (
     <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
       <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
@@ -24,7 +26,7 @@ export default function KpiCards({
           </div>
           <div>
             <p className="text-sm font-medium text-zinc-500">
-              Active products
+              {t("pos.kpi.active_products")}
             </p>
             <p className="text-2xl font-bold text-zinc-950">
               {formatNumber(totalProducts)}
@@ -40,7 +42,7 @@ export default function KpiCards({
           </div>
           <div>
             <p className="text-sm font-medium text-zinc-500">
-              Units in stock
+              {t("pos.kpi.units_in_stock")}
             </p>
             <p className="text-2xl font-bold text-zinc-950">
               {formatNumber(totalStock)}
@@ -56,7 +58,7 @@ export default function KpiCards({
           </div>
           <div>
             <p className="text-sm font-medium text-zinc-500">
-              Stock value
+              {t("pos.kpi.stock_value")}
             </p>
             <p className="text-2xl font-bold text-zinc-950">
               {formatCurrency(totalValue)}
@@ -72,7 +74,7 @@ export default function KpiCards({
           </div>
           <div>
             <p className="text-sm font-medium text-zinc-500">
-              Reorder needed
+              {t("pos.kpi.reorder_needed")}
             </p>
             <p className="text-2xl font-bold text-zinc-950">
               {formatNumber(urgentReorderCount)}

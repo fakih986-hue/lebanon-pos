@@ -160,16 +160,19 @@ async function processOperation(
   switch (entity) {
     case "product": {
       if (action === "create" || action === "update") {
-        const data = { ...payload, tenantId } as Record<string, unknown>
-        const barcode = data.barcode as string
-        if (barcode) {
-          await prisma.product.upsert({
-            where: { tenantId_barcode: { tenantId, barcode } },
-            create: data as any,
-            update: data as any,
-          })
-        } else {
-          await prisma.product.create({ data: data as any })
+        const items = Array.isArray(payload) ? payload : [payload]
+        for (const item of items) {
+          const data = { ...item, tenantId } as Record<string, unknown>
+          const barcode = data.barcode as string
+          if (barcode) {
+            await prisma.product.upsert({
+              where: { tenantId_barcode: { tenantId, barcode } },
+              create: data as any,
+              update: data as any,
+            })
+          } else {
+            await prisma.product.create({ data: data as any })
+          }
         }
       } else if (action === "delete") {
         await prisma.product.deleteMany({ where: { tenantId, id: payload?.id as number } })

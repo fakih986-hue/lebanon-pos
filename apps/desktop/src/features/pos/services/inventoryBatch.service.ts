@@ -161,7 +161,7 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[]) {
 
   writeBatches([...batches, ...getInventoryBatches()])
   enqueueSyncOperation({
-    entity: "product",
+    entity: "inventory",
     action: "receive",
     summary: `${batches.length} inventory batch${
       batches.length === 1 ? "" : "es"

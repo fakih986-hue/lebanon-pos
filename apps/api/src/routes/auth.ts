@@ -117,7 +117,7 @@ router.post("/tenant/setup", async (req: IncomingMessage & { body?: unknown }, r
 
 router.post("/login", async (req: IncomingMessage & { body?: unknown }, res: ServerResponse) => {
   try {
-    const { pin, tenantSubdomain } = req.body as { pin?: string; tenantSubdomain?: string }
+    const { pin, code, tenantSubdomain, role } = req.body as { pin?: string; code?: string; tenantSubdomain?: string; role?: string }
     if (!pin) {
       res.statusCode = 400; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "PIN is required" }))
       return
@@ -127,22 +127,48 @@ router.post("/login", async (req: IncomingMessage & { body?: unknown }, res: Ser
         ? tenantSubdomain.trim().toLowerCase()
         : ""
 
+    // Driver login uses code+PIN (no subdomain needed)
+    if (role === "Driver") {
+      if (!code) {
+        res.statusCode = 400; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Driver code is required" }))
+        return
+      }
+      const driver = await prisma.staffUser.findFirst({
+        where: { code, role: "Driver", active: true },
+        include: { tenant: true },
+      })
+      if (!driver) {
+        res.statusCode = 401; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Invalid credentials" }))
+        return
+      }
+      const pinMatches = driver.pin.startsWith("$2")
+        ? await bcrypt.compare(pin, driver.pin)
+        : driver.pin === pin || driver.pin === hashSha256Pin(pin)
+      if (!pinMatches) {
+        res.statusCode = 401; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Invalid credentials" }))
+        return
+      }
+      const token = signToken({ userId: driver.id, tenantId: driver.tenantId, role: "Driver" })
+      res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({
+        token, user: { id: driver.id, name: driver.name, role: "Driver", tenantId: driver.tenantId, tenantName: driver.tenant.name },
+      }))
+      return
+    }
+
+    // Staff login (admin/cashier/manager) uses subdomain+PIN or PIN-only if single tenant
     if (!cleanTenantSubdomain) {
       const tenantCount = await prisma.tenant.count()
-
       if (tenantCount > 1) {
         res.statusCode = 400; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Store subdomain is required" }))
         return
       }
     }
 
+    const where: Record<string, unknown> = { active: true }
+    if (cleanTenantSubdomain) where.tenant = { subdomain: cleanTenantSubdomain }
+
     const users = await prisma.staffUser.findMany({
-      where: {
-        active: true,
-        tenant: cleanTenantSubdomain
-          ? { subdomain: cleanTenantSubdomain }
-          : undefined,
-      },
+      where: where as any,
       include: { tenant: true },
     })
 

@@ -9,6 +9,8 @@ import {
   PackageSearch,
   PanelLeftClose,
   PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   ReceiptText,
   Settings,
   ShieldCheck,
@@ -19,6 +21,7 @@ import {
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useI18n } from "@lebanonpos/shared"
 
 import { formatCurrency } from "../../features/pos/lib/currency"
 import {
@@ -33,6 +36,8 @@ const SIDEBAR_EXPANDED_KEY = "lebanonpos.sidebar-expanded.v1"
 type MenuItem = {
   label: string
   detail: string
+  labelKey: string
+  detailKey: string
   path: string
   icon: LucideIcon
   permission: Permission
@@ -43,6 +48,8 @@ export const menuItems: MenuItem[] = [
   {
     label: "Dashboard",
     detail: "Command",
+    labelKey: "nav.dashboard",
+    detailKey: "desktop.nav.command",
     path: "/dashboard",
     icon: Gauge,
     permission: "reports.view",
@@ -51,6 +58,8 @@ export const menuItems: MenuItem[] = [
   {
     label: "POS",
     detail: "Checkout",
+    labelKey: "desktop.nav.pos",
+    detailKey: "desktop.nav.checkout",
     path: "/",
     icon: LayoutDashboard,
     permission: "sales.checkout",
@@ -59,6 +68,8 @@ export const menuItems: MenuItem[] = [
   {
     label: "Products",
     detail: "Inventory",
+    labelKey: "nav.products",
+    detailKey: "desktop.nav.inventory",
     path: "/products",
     icon: PackageSearch,
     permission: "inventory.manage",
@@ -67,6 +78,8 @@ export const menuItems: MenuItem[] = [
   {
     label: "Sales",
     detail: "History",
+    labelKey: "desktop.nav.sales",
+    detailKey: "desktop.nav.history",
     path: "/sales",
     icon: ReceiptText,
     permission: "reports.view",
@@ -75,6 +88,8 @@ export const menuItems: MenuItem[] = [
   {
     label: "Receiving",
     detail: "Batches",
+    labelKey: "desktop.nav.receiving",
+    detailKey: "desktop.nav.batches",
     path: "/products/new",
     icon: ClipboardPlus,
     permission: "inventory.manage",
@@ -83,6 +98,8 @@ export const menuItems: MenuItem[] = [
   {
     label: "Customers",
     detail: "Debts",
+    labelKey: "nav.customers",
+    detailKey: "desktop.nav.debts",
     path: "/customers",
     icon: UsersRound,
     permission: "customers.manage",
@@ -91,14 +108,28 @@ export const menuItems: MenuItem[] = [
   {
     label: "Delivery",
     detail: "Orders",
+    labelKey: "nav.delivery",
+    detailKey: "desktop.nav.orders",
     path: "/delivery",
     icon: Truck,
     permission: "delivery.manage",
     group: "Retail",
   },
   {
+    label: "Drivers",
+    detail: "Manage",
+    labelKey: "nav.drivers",
+    detailKey: "drivers.subtitle",
+    path: "/delivery/drivers",
+    icon: UsersRound,
+    permission: "delivery.manage",
+    group: "Retail",
+  },
+  {
     label: "Suppliers",
     detail: "Payables",
+    labelKey: "desktop.nav.suppliers",
+    detailKey: "desktop.nav.payables",
     path: "/suppliers",
     icon: ClipboardList,
     permission: "accounting.manage",
@@ -107,6 +138,8 @@ export const menuItems: MenuItem[] = [
   {
     label: "Accounting",
     detail: "Profit",
+    labelKey: "desktop.nav.accounting",
+    detailKey: "desktop.nav.profit",
     path: "/accounting",
     icon: Calculator,
     permission: "accounting.manage",
@@ -115,6 +148,8 @@ export const menuItems: MenuItem[] = [
   {
     label: "Staff",
     detail: "Shifts",
+    labelKey: "desktop.nav.staff",
+    detailKey: "desktop.nav.shifts",
     path: "/staff",
     icon: ShieldCheck,
     permission: "staff.manage",
@@ -123,6 +158,8 @@ export const menuItems: MenuItem[] = [
   {
     label: "Settings",
     detail: "System",
+    labelKey: "nav.settings",
+    detailKey: "desktop.nav.system",
     path: "/settings",
     icon: Settings,
     permission: "settings.manage",
@@ -151,6 +188,7 @@ function isActivePath(pathname: string, path: string) {
 
 export default function Sidebar() {
   const location = useLocation()
+  const { t, dir } = useI18n()
   const [, setSecurityVersion] = useState(0)
   const [expanded, setExpanded] = useState(() => {
     if (typeof window === "undefined") {
@@ -179,9 +217,9 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`hidden h-full shrink-0 flex-col border-r border-zinc-200 bg-zinc-950 text-white transition-[width] duration-200 md:flex ${
+      className={`hidden h-full shrink-0 flex-col bg-zinc-950 text-white transition-[width] duration-200 md:flex ${
         expanded ? "w-72" : "w-20"
-      }`}
+      } ${dir === "rtl" ? "border-l border-white/10" : "border-r border-zinc-200"}`}
     >
       <div className="shrink-0 border-b border-white/10 p-3">
         <div
@@ -200,8 +238,8 @@ export default function Sidebar() {
               <h1 className="truncate text-xl font-bold leading-tight">
                 Lebanon POS
               </h1>
-              <p className="truncate text-sm text-zinc-400">
-                Retail checkout suite
+                <p className="truncate text-sm text-zinc-400">
+                {t("desktop.retail_suite")}
               </p>
             </div>
           ) : null}
@@ -210,13 +248,13 @@ export default function Sidebar() {
             type="button"
             onClick={toggleExpanded}
             className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-zinc-300 transition hover:bg-white/10 hover:text-white"
-            aria-label={expanded ? "Collapse menu" : "Expand menu"}
-            title={expanded ? "Collapse menu" : "Expand menu"}
+            aria-label={expanded ? t("desktop.collapse_menu") : t("desktop.expand_menu")}
+            title={expanded ? t("desktop.collapse_menu") : t("desktop.expand_menu")}
           >
             {expanded ? (
-              <PanelLeftClose size={18} />
+              dir === "rtl" ? <PanelRightClose size={18} /> : <PanelLeftClose size={18} />
             ) : (
-              <PanelLeftOpen size={18} />
+              dir === "rtl" ? <PanelRightOpen size={18} /> : <PanelLeftOpen size={18} />
             )}
           </button>
         </div>
@@ -234,7 +272,7 @@ export default function Sidebar() {
             <div key={group} className={expanded ? "mb-4" : "mb-2"}>
               {expanded ? (
                 <p className="mb-2 px-3 text-[0.68rem] font-black uppercase tracking-[0.18em] text-zinc-500">
-                  {group}
+                  {t(`desktop.group.${group}`)}
                 </p>
               ) : null}
 
@@ -247,8 +285,8 @@ export default function Sidebar() {
                     <Link
                       key={item.path}
                       to={item.path}
-                      aria-label={item.label}
-                      title={expanded ? undefined : item.label}
+                      aria-label={t(item.labelKey)}
+                      title={expanded ? undefined : t(item.labelKey)}
                       className={`
                         flex items-center gap-3 rounded-lg border p-3 transition ${
                           expanded ? "justify-start" : "justify-center"
@@ -276,10 +314,10 @@ export default function Sidebar() {
                       {expanded ? (
                         <span className="min-w-0">
                           <span className="block font-semibold leading-tight">
-                            {item.label}
+                            {t(item.labelKey)}
                           </span>
                           <span className="block text-sm text-zinc-500">
-                            {item.detail}
+                            {t(item.detailKey)}
                           </span>
                         </span>
                       ) : null}
@@ -297,16 +335,16 @@ export default function Sidebar() {
           <div className="rounded-lg border border-emerald-400/20 bg-emerald-400/10 p-3">
             <div className="flex items-center gap-2 text-sm font-semibold text-emerald-200">
               <Wifi size={16} />
-              System online
+              {t("desktop.system_online")}
             </div>
 
             <div className="mt-3 flex items-center justify-between text-sm text-zinc-400">
-              <span>Shift float</span>
+              <span>{t("desktop.shift_float")}</span>
               <span className="inline-flex items-center gap-1 font-semibold text-white">
                 <CircleDollarSign size={15} />
                 {activeShift
                   ? formatCurrency(activeShift.openingFloatUsd)
-                  : "Closed"}
+                  : t("desktop.closed")}
               </span>
             </div>
           </div>
@@ -318,6 +356,7 @@ export default function Sidebar() {
 
 export function BottomNav() {
   const location = useLocation()
+  const { t } = useI18n()
   const [, setSecurityVersion] = useState(0)
   const visibleMenuItems = menuItems.filter((item) => userCan(item.permission))
 
@@ -337,7 +376,7 @@ export function BottomNav() {
             <Link
               key={item.path}
               to={item.path}
-              aria-label={item.label}
+              aria-label={t(item.labelKey)}
               className={`flex min-w-20 flex-none flex-col items-center justify-center gap-1 rounded-lg px-2 py-2 text-[0.7rem] font-bold transition sm:min-w-24 md:text-xs ${
                 active
                   ? "bg-zinc-950 text-white"
@@ -345,7 +384,7 @@ export function BottomNav() {
               }`}
             >
               <Icon size={19} />
-              <span className="leading-none">{item.label}</span>
+              <span className="leading-none">{t(item.labelKey)}</span>
             </Link>
           )
         })}

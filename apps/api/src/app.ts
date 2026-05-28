@@ -48,14 +48,6 @@ app.get("/api/health", (_req: Req, res: Res) => {
 
 app.use(express.static("public", { extensions: ["html"] }))
 
-function serveHtml(relativePath: string) {
-  const html = fs.readFileSync(path.join(__dirname, relativePath), "utf-8")
-  return (_req: Req, res: Res) => {
-    res.setHeader("Content-Type", "text/html")
-    res.end(html)
-  }
-}
-
 // Admin SPA
 const adminHtml = fs.readFileSync(
   path.join(__dirname, "..", "public", "admin", "index.html"),
@@ -66,11 +58,25 @@ app.get(/^\/admin(?:\/.*)?$/, (_req: Req, res: Res) => {
   res.end(adminHtml)
 })
 
-// Driver mobile app (no-auth, name-based)
-app.get(/^\/driver(?:\/.*)?$/, serveHtml("../public/driver/index.html"))
+// Driver SPA (React, mobile-first)
+const driverHtml = fs.readFileSync(
+  path.join(__dirname, "..", "public", "driver", "index.html"),
+  "utf-8"
+)
+app.get(/^\/driver(?:\/.*)?$/, (_req: Req, res: Res) => {
+  res.setHeader("Content-Type", "text/html")
+  res.end(driverHtml)
+})
 
-// Customer ordering page (no-auth, public)
-app.get(/^\/order(?:\/.*)?$/, serveHtml("../public/order/index.html"))
+// Customer ordering SPA (React)
+const orderHtml = fs.readFileSync(
+  path.join(__dirname, "..", "public", "order", "index.html"),
+  "utf-8"
+)
+app.get(/^\/order(?:\/.*)?$/, (_req: Req, res: Res) => {
+  res.setHeader("Content-Type", "text/html")
+  res.end(orderHtml)
+})
 
 app.use(errorHandler)
 

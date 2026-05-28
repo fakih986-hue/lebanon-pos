@@ -1,5 +1,7 @@
+import { memo } from "react"
 import { Barcode, BadgeDollarSign, Package, Star } from "lucide-react"
 
+import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency } from "../lib/currency"
 import type { Product, ProductAccent } from "../types/product"
 
@@ -49,11 +51,12 @@ const accentStyles: Record<
   },
 }
 
-export default function ProductCard({
+const ProductCard = memo(function ProductCard({
   product,
   onClick,
   onFavoriteToggle,
 }: Props) {
+  const { t } = useI18n()
   const styles = accentStyles[product.accent]
   const outOfStock = product.stock <= 0
 
@@ -91,7 +94,7 @@ export default function ProductCard({
             </span>
 
             <span className="text-sm font-semibold text-zinc-500">
-              {product.stock} left
+              {t("pos.stock_left", { n: product.stock })}
             </span>
           </div>
 
@@ -108,21 +111,23 @@ export default function ProductCard({
         <button
           type="button"
           onClick={onFavoriteToggle}
-          className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-lg border transition ${
+          className={`absolute end-3 top-3 flex h-9 w-9 items-center justify-center rounded-lg border transition ${
             product.favorite
               ? "border-amber-200 bg-amber-50 text-amber-600"
               : "border-zinc-200 bg-white text-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
           }`}
           aria-label={
             product.favorite
-              ? `Remove ${product.name} from favorites`
-              : `Add ${product.name} to favorites`
+              ? t("pos.remove_from_favorites", { name: product.name })
+              : t("pos.add_to_favorites", { name: product.name })
           }
-          title={product.favorite ? "Favorite item" : "Add to favorites"}
+          title={product.favorite ? t("pos.favorite_item") : t("pos.add_to_favorites_short")}
         >
           <Star size={17} fill={product.favorite ? "currentColor" : "none"} />
         </button>
       ) : null}
     </article>
   )
-}
+})
+
+export default ProductCard

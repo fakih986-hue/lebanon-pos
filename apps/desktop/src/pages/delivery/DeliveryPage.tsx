@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Search, Truck, MapPin, Phone, User, ChevronDown, ChevronUp } from "lucide-react"
+import { useI18n, useWebSocket } from "@lebanonpos/shared"
 import { useDebounce } from "../../hooks/useDebounce"
 import { useHotkeys } from "../../hooks/useHotkey"
 import Spinner from "../../components/ui/Spinner"
@@ -45,6 +46,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function DeliveryPage() {
+  const { t } = useI18n()
   const [orders, setOrders] = useState<DeliveryOrder[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -53,6 +55,23 @@ export default function DeliveryPage() {
   const debouncedSearch = useDebounce(search, 200)
 
   useHotkeys("Ctrl+f", (e) => { e.preventDefault(); document.getElementById("deliverySearch")?.focus() })
+
+  const wsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`
+  const token = localStorage.getItem("lebanonpos.auth.token")
+
+  useWebSocket({
+    url: wsUrl,
+    token,
+    onMessage: {
+      "order:new": (data: { order: DeliveryOrder }) => {
+        setOrders(prev => [data.order, ...prev])
+        showToast(`New order: ${data.order.orderNumber} - ${data.order.customerName}`, "success")
+      },
+      "order:updated": (data: { order: DeliveryOrder }) => {
+        setOrders(prev => prev.map(o => o.id === data.order.id ? data.order : o))
+      },
+    },
+  })
 
   useEffect(() => { loadOrders() }, [])
 
@@ -79,9 +98,9 @@ export default function DeliveryPage() {
       if (res.ok) {
         const updated = await res.json()
         setOrders(orders.map(o => o.id === id ? updated : o))
-        showToast(`Order marked as ${status}`, "success")
+        showToast(t("delivery.status_updated", { status }), "success")
       }
-    } catch { showToast("Failed to update order", "error") }
+    } catch { showToast(t("delivery.failed_update"), "error") }
   }
 
   const nextStatus = (current: string) => {
@@ -104,24 +123,24 @@ export default function DeliveryPage() {
   return (
     <div className="p-4 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-        <h1 className="text-xl font-bold flex items-center gap-2"><Truck className="w-5 h-5" /> Delivery Orders</h1>
+        <h1 className="text-xl font-bold flex items-center gap-2"><Truck className="w-5 h-5" /> {t("delivery.title")}</h1>
         <div className="flex gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-initial">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-            <input id="deliverySearch" type="text" placeholder="Search orders..." value={search} onChange={e => setSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-sm border border-zinc-300 rounded-lg w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <input id="deliverySearch" type="text" placeholder={t("delivery.search_placeholder")} value={search} onChange={e => setSearch(e.target.value)}
+              className="ps-8 pe-3 py-1.5 text-sm border border-zinc-300 rounded-lg w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
             className="text-sm border border-zinc-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="All">All Status</option>
+            <option value="All">{t("delivery.all_status")}</option>
             {STATUS_ORDER.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <button onClick={loadOrders} className="text-sm px-3 py-1.5 bg-zinc-100 rounded-lg hover:bg-zinc-200">Refresh</button>
+          <button onClick={loadOrders} className="text-sm px-3 py-1.5 bg-zinc-100 rounded-lg hover:bg-zinc-200">{t("delivery.refresh")}</button>
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={Truck} title="No delivery orders" message={debouncedSearch ? "No orders match your search" : "No orders yet"} />
+        <EmptyState icon={Truck} title={t("delivery.no_orders")} message={debouncedSearch ? t("delivery.no_results_sub") : t("delivery.no_orders_sub")} />
       ) : (
         <div className="space-y-2">
           {filtered.map(order => (
@@ -147,23 +166,23 @@ export default function DeliveryPage() {
               {expandedId === order.id && (
                 <div className="border-t border-zinc-100 p-3 space-y-3">
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="text-zinc-500">Items:</span> {order.items.length}</div>
-                    <div><span className="text-zinc-500">Total:</span> {formatCurrency(order.total)}</div>
-                    <div><span className="text-zinc-500">Delivery Fee:</span> {formatCurrency(order.deliveryFee)}</div>
-                    <div><span className="text-zinc-500">Payment:</span> Cash on Delivery</div>
-                    {order.deliveryNote && <div className="col-span-2"><span className="text-zinc-500">Note:</span> {order.deliveryNote}</div>}
-                    <div className="col-span-2 text-xs text-zinc-400">Created: {new Date(order.createdAt).toLocaleString()}</div>
+                    <div><span className="text-zinc-500">{t("delivery.items")}:</span> {order.items.length}</div>
+                    <div><span className="text-zinc-500">{t("delivery.total")}:</span> {formatCurrency(order.total)}</div>
+                    <div><span className="text-zinc-500">{t("delivery.delivery_fee")}:</span> {formatCurrency(order.deliveryFee)}</div>
+                    <div><span className="text-zinc-500">{t("delivery.payment")}:</span> Cash on Delivery</div>
+                    {order.deliveryNote && <div className="col-span-2"><span className="text-zinc-500">{t("delivery.note")}:</span> {order.deliveryNote}</div>}
+                    <div className="col-span-2 text-xs text-zinc-400">{t("delivery.created_at")}: {new Date(order.createdAt).toLocaleString()}</div>
                   </div>
 
                   <table className="w-full text-xs border-collapse">
-                    <thead><tr className="text-zinc-500 border-b"><th className="text-left py-1">Item</th><th className="text-right py-1">Qty</th><th className="text-right py-1">Price</th><th className="text-right py-1">Total</th></tr></thead>
+                    <thead><tr className="text-zinc-500 border-b"><th className="text-start py-1">{t("delivery.item")}</th><th className="text-end py-1">{t("delivery.qty")}</th><th className="text-end py-1">{t("delivery.price")}</th><th className="text-end py-1">{t("delivery.total")}</th></tr></thead>
                     <tbody>
                       {order.items.map(item => (
                         <tr key={item.id} className="border-b border-zinc-50">
                           <td className="py-1">{item.productName}</td>
-                          <td className="text-right py-1">{item.quantity}</td>
-                          <td className="text-right py-1">{formatCurrency(item.unitPrice)}</td>
-                          <td className="text-right py-1">{formatCurrency(item.total)}</td>
+                          <td className="text-end py-1">{item.quantity}</td>
+                          <td className="text-end py-1">{formatCurrency(item.unitPrice)}</td>
+                          <td className="text-end py-1">{formatCurrency(item.total)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -174,12 +193,12 @@ export default function DeliveryPage() {
                       {nextStatus(order.status) && (
                         <button onClick={() => updateStatus(order.id, nextStatus(order.status)!)}
                           className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                          Mark as {nextStatus(order.status)}
+                          {t("delivery.mark_as")} {nextStatus(order.status)}
                         </button>
                       )}
                       <button onClick={() => updateStatus(order.id, "Cancelled")}
                         className="text-xs px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">
-                        Cancel
+                        {t("delivery.cancel_order")}
                       </button>
                     </div>
                   )}

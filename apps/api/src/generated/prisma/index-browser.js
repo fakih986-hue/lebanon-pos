@@ -134,6 +134,7 @@ exports.Prisma.StaffUserScalarFieldEnum = {
   tenantId: 'tenantId',
   name: 'name',
   mobile: 'mobile',
+  code: 'code',
   pin: 'pin',
   role: 'role',
   active: 'active',
@@ -150,7 +151,13 @@ exports.Prisma.AppSettingsScalarFieldEnum = {
   vatRate: 'vatRate',
   usdToLbpRate: 'usdToLbpRate',
   receiptFooter: 'receiptFooter',
-  lowStockThreshold: 'lowStockThreshold'
+  lowStockThreshold: 'lowStockThreshold',
+  deliveryFee: 'deliveryFee',
+  whatsAppAdmin: 'whatsAppAdmin',
+  whatsAppDriverEnabled: 'whatsAppDriverEnabled',
+  assignMode: 'assignMode',
+  assignTimeout: 'assignTimeout',
+  defaultDriverId: 'defaultDriverId'
 };
 
 exports.Prisma.ProductScalarFieldEnum = {
@@ -260,6 +267,7 @@ exports.Prisma.CustomerScalarFieldEnum = {
   tenantId: 'tenantId',
   name: 'name',
   mobile: 'mobile',
+  pin: 'pin',
   creditLimit: 'creditLimit',
   notes: 'notes',
   createdAt: 'createdAt',
@@ -467,6 +475,8 @@ exports.Prisma.DeliveryOrderScalarFieldEnum = {
   changeRequired: 'changeRequired',
   assignedTo: 'assignedTo',
   assignedName: 'assignedName',
+  driverId: 'driverId',
+  driverAssignedAt: 'driverAssignedAt',
   notes: 'notes',
   cancelledReason: 'cancelledReason',
   createdAt: 'createdAt',
@@ -549,7 +559,8 @@ exports.Prisma.JsonNullValueFilter = {
 exports.UserRole = exports.$Enums.UserRole = {
   Admin: 'Admin',
   Manager: 'Manager',
-  Cashier: 'Cashier'
+  Cashier: 'Cashier',
+  Driver: 'Driver'
 };
 
 exports.SalePaymentMethod = exports.$Enums.SalePaymentMethod = {

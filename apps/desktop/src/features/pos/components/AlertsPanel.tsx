@@ -1,6 +1,7 @@
 import { CalendarClock, Copy, MessageCircle, PackageX, Star, Tag, Truck } from "lucide-react"
 import { Link } from "react-router"
 
+import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatNumber } from "../lib/currency"
 import type { DeadStockItem, ExpiryAlert, PromoSuggestion, ReorderSuggestion } from "../services/stock.service"
 
@@ -38,6 +39,8 @@ export default function AlertsPanel({
   buildSupplierOrderMessage,
   copySupplierOrder,
 }: Props) {
+  const { t } = useI18n()
+
   return (
     <>
       <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -45,10 +48,10 @@ export default function AlertsPanel({
           <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-bold text-zinc-950">
-                Stock alerts
+                {t("pos.alerts.stock_title")}
               </h2>
               <p className="text-sm text-zinc-500">
-                Low stock, fast movers, and suggested purchase quantities.
+                {t("pos.alerts.stock_desc")}
               </p>
             </div>
             <Link
@@ -56,7 +59,7 @@ export default function AlertsPanel({
               className="flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
             >
               <Truck size={16} />
-              Receive
+              {t("pos.receive")}
             </Link>
           </div>
 
@@ -99,25 +102,25 @@ export default function AlertsPanel({
 
                 <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs font-bold">
                   <div className="rounded-lg bg-zinc-50 p-2">
-                    <p className="text-zinc-500">Stock</p>
+                    <p className="text-zinc-500">{t("pos.alerts.stock_label")}</p>
                     <p className="mt-1 text-zinc-950">
                       {formatNumber(suggestion.product.stock)}
                     </p>
                   </div>
                   <div className="rounded-lg bg-zinc-50 p-2">
-                    <p className="text-zinc-500">Sold</p>
+                    <p className="text-zinc-500">{t("pos.alerts.sold_label")}</p>
                     <p className="mt-1 text-zinc-950">
                       {formatNumber(suggestion.soldLast30Days)}
                     </p>
                   </div>
                   <div className="rounded-lg bg-zinc-50 p-2">
-                    <p className="text-zinc-500">Point</p>
+                    <p className="text-zinc-500">{t("pos.alerts.reorder_point_label")}</p>
                     <p className="mt-1 text-zinc-950">
                       {formatNumber(suggestion.reorderPoint)}
                     </p>
                   </div>
                   <div className="rounded-lg bg-emerald-50 p-2">
-                    <p className="text-emerald-700">Buy</p>
+                    <p className="text-emerald-700">{t("pos.alerts.buy_label")}</p>
                     <p className="mt-1 text-emerald-900">
                       {formatNumber(suggestion.suggestedQuantity)}
                     </p>
@@ -128,7 +131,7 @@ export default function AlertsPanel({
 
             {reorderSuggestions.length === 0 ? (
               <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm font-medium text-zinc-500 lg:col-span-2">
-                No reorder alerts right now.
+                {t("pos.alerts.no_reorder_alerts")}
               </div>
             ) : null}
           </div>
@@ -142,10 +145,10 @@ export default function AlertsPanel({
               </div>
               <div>
                 <h2 className="text-lg font-bold text-zinc-950">
-                  Supplier reorder list
+                  {t("pos.alerts.supplier_reorder_title")}
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  Grouped by linked supplier.
+                  {t("pos.alerts.supplier_reorder_desc")}
                 </p>
               </div>
             </div>
@@ -165,14 +168,10 @@ export default function AlertsPanel({
                     </p>
                   </div>
                   <p className="mt-1 text-xs font-semibold text-zinc-500">
-                    {formatNumber(group.items.length)} items /{" "}
-                    {formatNumber(
-                      group.items.reduce(
-                        (sum, item) => sum + item.suggestedQuantity,
-                        0
-                      )
-                    )}{" "}
-                    units
+                    {t("pos.alerts.items_units", {
+                      items: formatNumber(group.items.length),
+                      units: formatNumber(group.items.reduce((sum, item) => sum + item.suggestedQuantity, 0))
+                    })}
                   </p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <button
@@ -181,7 +180,7 @@ export default function AlertsPanel({
                       className="flex h-9 items-center justify-center gap-2 rounded-lg border border-zinc-200 px-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50"
                     >
                       <Copy size={14} />
-                      Copy
+                      {t("pos.copy")}
                     </button>
                     <a
                       href={`https://wa.me/?text=${encodeURIComponent(
@@ -192,7 +191,7 @@ export default function AlertsPanel({
                       className="flex h-9 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-2 text-xs font-bold text-white transition hover:bg-emerald-500"
                     >
                       <MessageCircle size={14} />
-                      WhatsApp
+                      {t("pos.whatsapp")}
                     </a>
                   </div>
                 </div>
@@ -200,7 +199,7 @@ export default function AlertsPanel({
 
               {reorderGroups.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-zinc-300 p-4 text-sm font-medium text-zinc-500">
-                  No supplier reorder list yet.
+                  {t("pos.alerts.no_supplier_reorder")}
                 </div>
               ) : null}
             </div>
@@ -216,10 +215,10 @@ export default function AlertsPanel({
             </div>
             <div>
               <h2 className="text-lg font-bold text-zinc-950">
-                Expiry alerts
+                {t("pos.alerts.expiry_title")}
               </h2>
               <p className="text-sm text-zinc-500">
-                Food and dated stock to review.
+                {t("pos.alerts.expiry_desc")}
               </p>
             </div>
           </div>
@@ -235,10 +234,10 @@ export default function AlertsPanel({
                 }`}
               >
                 <p className="font-bold">{alert.product.name}</p>
-                <p className="text-sm font-medium opacity-80">
+                                <p className="text-sm font-medium opacity-80">
                   {alert.status === "Expired"
-                    ? "Expired"
-                    : `${alert.daysUntilExpiry} days left`}{" "}
+                    ? t("pos.alerts.expired")
+                    : t("pos.alerts.days_left", { days: alert.daysUntilExpiry })} {" "}
                   {alert.batch?.expiryDate || alert.product.expiryDate
                     ? `- ${formatDate(
                         alert.batch?.expiryDate ?? alert.product.expiryDate ?? ""
@@ -247,8 +246,7 @@ export default function AlertsPanel({
                 </p>
                 {alert.batch ? (
                   <p className="mt-1 text-xs font-bold opacity-75">
-                    {alert.batch.batchNumber} /{" "}
-                    {formatNumber(alert.batch.quantityRemaining)} units
+                    {t("pos.alerts.batch_info", { batch: alert.batch.batchNumber, qty: formatNumber(alert.batch.quantityRemaining) })}
                   </p>
                 ) : null}
               </div>
@@ -256,7 +254,7 @@ export default function AlertsPanel({
 
             {expiryAlerts.length === 0 ? (
               <div className="rounded-lg border border-dashed border-zinc-300 p-5 text-center text-sm font-medium text-zinc-500">
-                No expiry alerts in the next 30 days.
+                {t("pos.alerts.no_expiry_alerts")}
               </div>
             ) : null}
           </div>
@@ -268,9 +266,9 @@ export default function AlertsPanel({
               <PackageX size={21} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-zinc-950">Dead stock</h2>
+              <h2 className="text-lg font-bold text-zinc-950">{t("pos.alerts.dead_stock_title")}</h2>
               <p className="text-sm text-zinc-500">
-                In stock, but no sales for 60 days.
+                {t("pos.alerts.dead_stock_desc")}
               </p>
             </div>
           </div>
@@ -288,14 +286,14 @@ export default function AlertsPanel({
                   </p>
                 </div>
                 <p className="mt-1 text-sm text-zinc-500">
-                  Value {formatCurrency(item.product.stock * item.product.cost)}
+                  {t("pos.alerts.value", { value: formatCurrency(item.product.stock * item.product.cost) })}
                 </p>
               </div>
             ))}
 
             {deadStockItems.length === 0 ? (
               <div className="rounded-lg border border-dashed border-zinc-300 p-5 text-center text-sm font-medium text-zinc-500">
-                No dead stock found.
+                {t("pos.alerts.no_dead_stock")}
               </div>
             ) : null}
           </div>
@@ -308,10 +306,10 @@ export default function AlertsPanel({
             </div>
             <div>
               <h2 className="text-lg font-bold text-zinc-950">
-                Smart promos
+                {t("pos.alerts.promos_title")}
               </h2>
               <p className="text-sm text-zinc-500">
-                Discount ideas before value is lost.
+                {t("pos.alerts.promos_desc")}
               </p>
             </div>
           </div>
@@ -336,7 +334,7 @@ export default function AlertsPanel({
 
             {promoSuggestions.length === 0 ? (
               <div className="rounded-lg border border-dashed border-zinc-300 p-5 text-center text-sm font-medium text-zinc-500">
-                No promo pressure right now.
+                {t("pos.alerts.no_promo_pressure")}
               </div>
             ) : null}
           </div>

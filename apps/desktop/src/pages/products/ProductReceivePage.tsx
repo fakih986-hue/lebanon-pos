@@ -49,6 +49,7 @@ import {
 } from "../../features/pos/services/supplier.service"
 import type { Product, ProductAccent } from "../../features/pos/types/product"
 import { showToast } from "../../features/pos/services/toast.service"
+import { useI18n } from "@lebanonpos/shared"
 
 type BatchRow = {
   id: string
@@ -152,6 +153,7 @@ function isRowReady(row: BatchRow) {
 }
 
 export default function ProductReceivePage() {
+  const { t } = useI18n()
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [suppliers, setSuppliers] =
@@ -159,7 +161,7 @@ export default function ProductReceivePage() {
   const [rows, setRows] = useState<BatchRow[]>([createRow()])
   const [activeRowId, setActiveRowId] = useState(rows[0].id)
   const [scannerValue, setScannerValue] = useState("")
-  const [cameraStatus, setCameraStatus] = useState("Camera scanner is idle.")
+  const [cameraStatus, setCameraStatus] = useState(t("pos.receive.camera_idle"))
   const [cameraEngine, setCameraEngine] = useState<"native" | "html5" | null>(
     null
   )
@@ -306,7 +308,7 @@ export default function ProductReceivePage() {
       barcode: generateProductBarcode(),
     })
     setActiveRowId(id)
-    showToast("Barcode generated. Print a label or continue receiving.")
+    showToast(t("pos.receive.barcode_generated"))
   }
 
   function duplicateRow(row: BatchRow) {
@@ -327,7 +329,7 @@ export default function ProductReceivePage() {
 
   function saveBatch() {
     if (readyRows.length === 0) {
-      showToast("Add at least one complete product row before saving.", "error")
+      showToast(t("pos.receive.no_ready_rows"), "error")
       return
     }
 
@@ -380,7 +382,7 @@ export default function ProductReceivePage() {
         purchaseOrderError =
           error instanceof Error
             ? error.message
-            : "Purchase order was not recorded."
+            : t("pos.receive.po_not_recorded")
       }
     }
 
@@ -416,13 +418,13 @@ export default function ProductReceivePage() {
     setLastReceivedTotal(0)
     setSupplierInvoiceNumber("")
     setSupplierNote("")
-    showToast("Batch cleared.")
+    showToast(t("pos.receive.batch_cleared"))
   }
 
   async function startCamera() {
     if (cameraEngine) {
       stopCamera()
-      setCameraStatus("Camera scanner stopped.")
+      setCameraStatus(t("pos.receive.camera_stopped"))
       return
     }
 
@@ -449,7 +451,7 @@ export default function ProductReceivePage() {
         if (!scanner) {
           stopCamera()
           setCameraStatus(
-            "Camera scanner engine could not load. Use USB scan or manual entry."
+            t("pos.receive.camera_engine_failed")
           )
           return
         }
@@ -469,11 +471,11 @@ export default function ProductReceivePage() {
           },
           (decodedText) => {
             applyBarcodeToActiveRow(decodedText)
-            setCameraStatus(`Scanned ${decodedText}.`)
+            setCameraStatus(t("pos.receive.scanned", { barcode: decodedText }))
             stopCamera()
           }
         )
-        setCameraStatus("Point the camera at a barcode.")
+        setCameraStatus(t("pos.receive.camera_ready"))
         return
       }
 
@@ -492,12 +494,12 @@ export default function ProductReceivePage() {
 
       detectorRef.current = detector
       setCameraEngine("native")
-      setCameraStatus("Point the camera at a barcode.")
+      setCameraStatus(t("pos.receive.camera_ready"))
       void scanCameraFrame()
     } catch (error) {
       stopCamera()
       setCameraStatus(
-        `${getCameraErrorMessage(error)} Try USB scan or manual entry.`
+        t("pos.receive.camera_error_with_hint", { error: getCameraErrorMessage(error) })
       )
     }
   }
@@ -512,18 +514,18 @@ export default function ProductReceivePage() {
     }
 
     try {
-      setCameraStatus("Reading barcode...")
+      setCameraStatus(t("pos.receive.reading_barcode"))
       const barcode = await detectBarcodeFromImageFile(file)
 
       if (!barcode) {
-        setCameraStatus("No barcode found. Try closer and brighter.")
+        setCameraStatus(t("pos.receive.no_barcode_found"))
         return
       }
 
       applyBarcodeToActiveRow(barcode)
-      setCameraStatus(`Scanned ${barcode}.`)
+      setCameraStatus(t("pos.receive.scanned", { barcode }))
     } catch {
-      setCameraStatus("Scanner capture could not read this image.")
+      setCameraStatus(t("pos.receive.scan_failed"))
     }
   }
 
@@ -565,7 +567,7 @@ export default function ProductReceivePage() {
 
       if (detectedBarcode) {
         applyBarcodeToActiveRow(detectedBarcode)
-        setCameraStatus(`Scanned ${detectedBarcode}.`)
+        setCameraStatus(t("pos.receive.scanned", { barcode: detectedBarcode }))
         stopCamera()
         return
       }
@@ -590,7 +592,7 @@ export default function ProductReceivePage() {
       )
 
     if (labels.length === 0) {
-      showToast("Add a product name and barcode before printing labels.", "error")
+      showToast(t("pos.receive.print_labels_incomplete"), "error")
       return
     }
 
@@ -613,7 +615,7 @@ export default function ProductReceivePage() {
     const printWindow = window.open("", "lebanonpos-label-print")
 
     if (!printWindow) {
-      showToast("Popup blocked. Allow popups to print barcode labels.", "error")
+      showToast(t("pos.receive.popup_blocked"), "error")
       return
     }
 
@@ -621,7 +623,7 @@ export default function ProductReceivePage() {
       <!doctype html>
       <html>
         <head>
-          <title>Lebanon POS Barcode Labels</title>
+          <title>{t("pos.receive.print_title")}</title>
           <style>
             @page {
               size: ${size.width} ${size.height};
@@ -688,10 +690,10 @@ export default function ProductReceivePage() {
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
       {isLoading ? (
         <div className="flex min-h-[400px] items-center justify-center p-6">
-          <Spinner label="Loading products..." />
+          <Spinner label={t("pos.loading_products")} />
         </div>
       ) : (
       <>
@@ -699,21 +701,21 @@ export default function ProductReceivePage() {
         <section className="min-w-0 space-y-5">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-              <p className="text-sm font-medium text-zinc-500">Ready rows</p>
+              <p className="text-sm font-medium text-zinc-500">{t("pos.receive.ready_rows")}</p>
               <p className="mt-2 text-2xl font-bold text-zinc-950">
                 {formatNumber(readyRows.length)}
               </p>
             </div>
 
             <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-              <p className="text-sm font-medium text-zinc-500">Units</p>
+              <p className="text-sm font-medium text-zinc-500">{t("pos.receive.units")}</p>
               <p className="mt-2 text-2xl font-bold text-zinc-950">
                 {formatNumber(totalUnits)}
               </p>
             </div>
 
             <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-              <p className="text-sm font-medium text-zinc-500">Cost value</p>
+              <p className="text-sm font-medium text-zinc-500">{t("pos.receive.cost_value")}</p>
               <p className="mt-2 text-2xl font-bold text-zinc-950">
                 {formatCurrency(totalCost)}
               </p>
@@ -724,10 +726,10 @@ export default function ProductReceivePage() {
             <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <h2 className="text-xl font-bold text-zinc-950">
-                  Receive products
+                  {t("pos.receive.title")}
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  Manual entry, barcode scanner input, and batch stock receiving.
+                  {t("pos.receive.desc")}
                 </p>
               </div>
 
@@ -738,7 +740,7 @@ export default function ProductReceivePage() {
                   className="flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
                 >
                   <Plus size={17} />
-                  Add Row
+                  {t("pos.receive.add_row")}
                 </button>
 
                 <button
@@ -747,7 +749,7 @@ export default function ProductReceivePage() {
                   className="flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-bold text-white transition hover:bg-emerald-500"
                 >
                   <ClipboardCheck size={17} />
-                  Save Batch
+                  {t("pos.receive.save_batch")}
                 </button>
               </div>
             </div>
@@ -755,36 +757,36 @@ export default function ProductReceivePage() {
             <div className="overflow-x-auto">
               <table className="min-w-[1120px] border-separate border-spacing-0 text-sm">
                 <thead>
-                  <tr className="text-left text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
+                  <tr className="text-start text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
                     <th className="border-b border-zinc-200 px-4 py-3">
-                      Product
+                      {t("pos.receive.product_name")}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
-                      Category
+                      {t("pos.table.category")}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
-                      Barcode
+                      {t("pos.table.barcode")}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
-                      Qty
+                      {t("pos.table.qty")}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
-                      Low alert
+                      {t("pos.receive.low_alert")}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
-                      Expiry
+                      {t("pos.receive.expiry")}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
-                      Cost
+                      {t("pos.table.cost")}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
-                      Price
+                      {t("pos.table.price")}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
-                      Labels
+                      {t("pos.receive.labels")}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
-                      Actions
+                      {t("pos.table.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -805,7 +807,7 @@ export default function ProductReceivePage() {
                             onChange={(event) =>
                               updateRow(row.id, { name: event.target.value })
                             }
-                            placeholder="Product name"
+                            placeholder={t("pos.receive.product_name")}
                             className="h-10 w-56 rounded-lg border border-zinc-200 bg-white px-3 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                           />
                         </td>
@@ -830,16 +832,14 @@ export default function ProductReceivePage() {
                                   barcode: event.target.value,
                                 })
                               }
-                              placeholder="Scan or generate"
+                              placeholder={t("pos.receive.scan_or_generate")}
                               className="h-10 w-44 rounded-lg border border-zinc-200 bg-white px-3 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                             />
                             <button
                               type="button"
                               onClick={() => generateBarcodeForRow(row.id)}
                               className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition hover:bg-zinc-50"
-                              aria-label={`Generate barcode for row ${
-                                index + 1
-                              }`}
+                              aria-label={t("pos.receive.gen_barcode", { row: index + 1 })}
                             >
                               <Barcode size={17} />
                             </button>
@@ -856,7 +856,7 @@ export default function ProductReceivePage() {
                                 labels: normalizeNumber(event.target.value),
                               })
                             }
-                            className="h-10 w-20 rounded-lg border border-zinc-200 bg-white px-3 text-right outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                            className="h-10 w-20 rounded-lg border border-zinc-200 bg-white px-3 text-end outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                           />
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-3">
@@ -875,8 +875,8 @@ export default function ProductReceivePage() {
                                 ),
                               })
                             }
-                            title="Notify when stock reaches this quantity"
-                            className="h-10 w-24 rounded-lg border border-amber-200 bg-amber-50 px-3 text-right font-semibold text-amber-950 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
+                            title={t("pos.receive.low_alert_title")}
+                            className="h-10 w-24 rounded-lg border border-amber-200 bg-amber-50 px-3 text-end font-semibold text-amber-950 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
                           />
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-3">
@@ -888,7 +888,7 @@ export default function ProductReceivePage() {
                                 expiryDate: event.target.value,
                               })
                             }
-                            title="Optional product expiry date"
+                            title={t("pos.receive.expiry_title")}
                             className="h-10 w-36 rounded-lg border border-zinc-200 bg-white px-3 outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                           />
                         </td>
@@ -903,7 +903,7 @@ export default function ProductReceivePage() {
                                 cost: normalizeNumber(event.target.value),
                               })
                             }
-                            className="h-10 w-24 rounded-lg border border-zinc-200 bg-white px-3 text-right outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                            className="h-10 w-24 rounded-lg border border-zinc-200 bg-white px-3 text-end outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                           />
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-3">
@@ -917,7 +917,7 @@ export default function ProductReceivePage() {
                                 price: normalizeNumber(event.target.value),
                               })
                             }
-                            className="h-10 w-24 rounded-lg border border-zinc-200 bg-white px-3 text-right outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                            className="h-10 w-24 rounded-lg border border-zinc-200 bg-white px-3 text-end outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                           />
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-3">
@@ -930,7 +930,7 @@ export default function ProductReceivePage() {
                                 labels: normalizeNumber(event.target.value),
                               })
                             }
-                            className="h-10 w-20 rounded-lg border border-zinc-200 bg-white px-3 text-right outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                            className="h-10 w-20 rounded-lg border border-zinc-200 bg-white px-3 text-end outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
                           />
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-3">
@@ -943,7 +943,7 @@ export default function ProductReceivePage() {
                                   ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                                   : "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
                               }`}
-                              aria-label={`Use row ${index + 1} for scanner`}
+                              aria-label={t("pos.receive.use_row_scanner", { row: index + 1 })}
                             >
                               <ScanBarcode size={17} />
                             </button>
@@ -951,7 +951,7 @@ export default function ProductReceivePage() {
                               type="button"
                               onClick={() => duplicateRow(row)}
                               className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition hover:bg-zinc-50"
-                              aria-label={`Duplicate row ${index + 1}`}
+                              aria-label={t("pos.receive.duplicate_row", { row: index + 1 })}
                             >
                               <Copy size={17} />
                             </button>
@@ -959,7 +959,7 @@ export default function ProductReceivePage() {
                               type="button"
                               onClick={() => removeRow(row.id)}
                               className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition hover:bg-rose-50 hover:text-rose-600"
-                              aria-label={`Remove row ${index + 1}`}
+                              aria-label={t("pos.receive.remove_row", { row: index + 1 })}
                             >
                               <Trash2 size={17} />
                             </button>
@@ -988,10 +988,10 @@ export default function ProductReceivePage() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-zinc-950">
-                  Supplier purchase
+                  {t("pos.receive.supplier_purchase")}
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  Create a purchase order with this batch.
+                  {t("pos.receive.supplier_purchase_desc")}
                 </p>
               </div>
             </div>
@@ -1003,7 +1003,7 @@ export default function ProductReceivePage() {
                   onChange={(event) => setSelectedSupplierId(event.target.value)}
                   className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                 >
-                  <option value="">No supplier selected</option>
+                  <option value="">{t("pos.receive.no_supplier")}</option>
                   {suppliers.map((supplier) => (
                     <option key={supplier.id} value={supplier.id}>
                       {supplier.name} - {formatCurrency(supplier.balance)}
@@ -1015,7 +1015,7 @@ export default function ProductReceivePage() {
                   to="/suppliers"
                   className="flex h-11 items-center justify-center rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
                 >
-                  Add Supplier
+                  {t("pos.receive.add_supplier")}
                 </Link>
               )}
 
@@ -1024,7 +1024,7 @@ export default function ProductReceivePage() {
                 onChange={(event) =>
                   setSupplierInvoiceNumber(event.target.value)
                 }
-                placeholder="Supplier invoice number"
+                placeholder={t("pos.receive.invoice_number")}
                 className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               />
 
@@ -1054,7 +1054,13 @@ export default function ProductReceivePage() {
                       }`}
                     >
                       <Icon size={15} />
-                      {method}
+                      {t(
+                        method === "On Account"
+                          ? "pos.receive.payment.on_account"
+                          : method === "Bank Transfer"
+                            ? "pos.receive.payment.bank_transfer"
+                            : `pos.payment.${method.toLowerCase()}`
+                      )}
                     </button>
                   )
                 })}
@@ -1063,20 +1069,20 @@ export default function ProductReceivePage() {
               <textarea
                 value={supplierNote}
                 onChange={(event) => setSupplierNote(event.target.value)}
-                placeholder="Purchase note"
+                placeholder={t("pos.receive.purchase_note")}
                 rows={3}
                 className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               />
 
               <div className="rounded-lg bg-zinc-50 p-3 text-sm">
                 <div className="flex justify-between gap-3 text-zinc-600">
-                  <span>Batch cost</span>
+                  <span>{t("pos.receive.batch_cost")}</span>
                   <strong className="text-zinc-950">
                     {formatCurrency(totalCost)}
                   </strong>
                 </div>
                 <div className="mt-2 flex justify-between gap-3 text-zinc-600">
-                  <span>Supplier</span>
+                  <span>{t("pos.table.supplier")}</span>
                   <strong className="truncate text-zinc-950">
                     {selectedSupplier?.name ?? "None"}
                   </strong>
@@ -1092,10 +1098,10 @@ export default function ProductReceivePage() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-zinc-950">
-                  USB scanner
+                  {t("pos.receive.usb_scanner")}
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  Scanners that type then press Enter work here.
+                  {t("pos.receive.usb_scanner_desc")}
                 </p>
               </div>
             </div>
@@ -1109,7 +1115,7 @@ export default function ProductReceivePage() {
                   applyBarcodeToActiveRow(scannerValue)
                 }
               }}
-              placeholder="Scan barcode into active row"
+              placeholder={t("pos.receive.scan_into_row")}
               className="mt-4 h-12 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
             />
           </section>
@@ -1121,10 +1127,10 @@ export default function ProductReceivePage() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-zinc-950">
-                  Barcode scanner
+                  {t("pos.receive.barcode_scanner")}
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  Scan a product barcode into the active receiving row.
+                  {t("pos.receive.barcode_scanner_desc")}
                 </p>
               </div>
             </div>
@@ -1167,7 +1173,7 @@ export default function ProductReceivePage() {
                 }`}
               >
                 <ScanBarcode size={17} />
-                {cameraEngine ? "Stop" : "Scan"}
+                {cameraEngine ? t("pos.stop") : t("pos.scan")}
               </button>
             </div>
           </section>
@@ -1179,16 +1185,16 @@ export default function ProductReceivePage() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-zinc-950">
-                  Barcode labels
+                  {t("pos.receive.barcode_labels")}
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  Print sticky labels for shelf or product packaging.
+                  {t("pos.receive.barcode_labels_desc")}
                 </p>
               </div>
             </div>
 
             <label className="mt-4 block text-sm font-bold text-zinc-700">
-              Label size
+              {t("pos.receive.label_size")}
               <select
                 value={labelSize}
                 onChange={(event) =>
@@ -1196,9 +1202,9 @@ export default function ProductReceivePage() {
                 }
                 className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               >
-                {Object.entries(labelSizes).map(([value, size]) => (
+                {Object.entries(labelSizes).map(([value]) => (
                   <option key={value} value={value}>
-                    {size.label}
+                    {t("pos.receive.label_" + value)}
                   </option>
                 ))}
               </select>
@@ -1210,7 +1216,7 @@ export default function ProductReceivePage() {
               className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white transition hover:bg-emerald-500"
             >
               <Printer size={17} />
-              Print {formatNumber(labelsToPrint)} Labels
+              {t("pos.receive.print_labels", { n: formatNumber(labelsToPrint) })}
             </button>
           </section>
 
@@ -1220,8 +1226,8 @@ export default function ProductReceivePage() {
                 <PackagePlus size={21} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-zinc-950">Batch</h2>
-                <p className="text-sm text-zinc-500">Manage incoming stock and purchase orders.</p>
+                <h2 className="text-lg font-bold text-zinc-950">{t("pos.receive.batch")}</h2>
+                <p className="text-sm text-zinc-500">{t("pos.receive.batch_desc")}</p>
               </div>
             </div>
 
@@ -1232,7 +1238,7 @@ export default function ProductReceivePage() {
                 className="flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white transition hover:bg-emerald-500"
               >
                 <ClipboardCheck size={17} />
-                Save
+                {t("pos.save")}
               </button>
               <button
                 type="button"
@@ -1240,7 +1246,7 @@ export default function ProductReceivePage() {
                 className="flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-200 px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
               >
                 <RotateCcw size={17} />
-                Clear
+                {t("pos.clear")}
               </button>
             </div>
 
@@ -1249,7 +1255,7 @@ export default function ProductReceivePage() {
                 to="/products"
                 className="mt-4 flex h-11 items-center justify-center rounded-lg border border-zinc-200 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
               >
-                View Updated Inventory
+                {t("pos.receive.view_inventory")}
               </Link>
             ) : null}
           </section>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useI18n } from "@lebanonpos/shared"
 import {
   BadgeDollarSign,
   Cloud,
@@ -8,6 +9,7 @@ import {
   Save,
   Settings,
   Store,
+  Truck,
   Upload,
 } from "lucide-react"
 
@@ -38,7 +40,7 @@ import { restoreIndexedDBToLocal } from "../../features/pos/services/storage.ser
 import { showToast } from "../../features/pos/services/toast.service"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
-type SettingsWorkspace = "Business" | "Cloud sync" | "Security" | "Backup"
+type SettingsWorkspace = "Business" | "Cloud sync" | "Security" | "Backup" | "Delivery"
 
 function normalizeNumber(value: string) {
   const parsedValue = Number(value)
@@ -72,6 +74,7 @@ function getStatusClass(status: SyncOperation["status"]) {
 }
 
 export default function SettingsPage() {
+  const { t } = useI18n()
   const [isLoading, setIsLoading] = useState(true)
   const [settings, setSettings] = useState<AppSettings>(getSettings())
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(getSyncStatus())
@@ -80,11 +83,23 @@ export default function SettingsPage() {
   const [authToken, setAuthTokenState] = useState(getAuthToken() ?? "")
   const [activeWorkspace, setActiveWorkspace] =
     useState<SettingsWorkspace>("Business")
+  const [drivers, setDrivers] = useState<Array<{ id: string; name: string }>>([])
 
   useEffect(() => {
     setIsLoading(false)
     return subscribeSettings(setSettings)
   }, [])
+
+  useEffect(() => {
+    if (activeWorkspace === "Delivery" && getApiUrl() && getAuthToken()) {
+      fetch(`${getApiUrl()}/api/delivery/drivers`, {
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
+      })
+        .then(r => r.ok ? r.json() : [])
+        .then(setDrivers)
+        .catch(() => setDrivers([]))
+    }
+  }, [activeWorkspace])
   useEffect(
     () =>
       subscribeSync(() => {
@@ -127,20 +142,38 @@ export default function SettingsPage() {
         usdToLbpRate: settings.usdToLbpRate,
       },
     })
+    if (getApiUrl() && getAuthToken()) {
+      fetch(`${getApiUrl()}/api/delivery/settings`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getAuthToken()}` },
+        body: JSON.stringify({
+          deliveryFee: settings.deliveryFee,
+          whatsAppAdmin: settings.whatsAppAdmin,
+          whatsAppDriverEnabled: settings.whatsAppDriverEnabled,
+          assignMode: settings.assignMode,
+          assignTimeout: settings.assignTimeout,
+          defaultDriverId: settings.defaultDriverId,
+        }),
+      }).catch(() => {})
+    }
     showToast("Settings saved.")
   }
 
   function handleSyncNow() {
-    flushSyncQueue().then(async (result) => {
-      await pullFromServer()
-      setSyncStatus(getSyncStatus())
-      setSyncQueue(getSyncQueue())
-      showToast(
-        result.synced > 0
-          ? `${result.synced} item${result.synced === 1 ? "" : "s"} synced.`
-          : "No pending sync work."
-      )
-    })
+    void flushSyncQueue()
+      .then(async (result) => {
+        await pullFromServer()
+        setSyncStatus(getSyncStatus())
+        setSyncQueue(getSyncQueue())
+        showToast(
+          result.synced > 0
+            ? `${result.synced} item${result.synced === 1 ? "" : "s"} synced.`
+            : "No pending sync work."
+        )
+      })
+      .catch((error) => {
+        showToast(`Sync failed: ${error instanceof Error ? error.message : "Unknown error"}`, "error")
+      })
   }
 
   function handleRetryFailed() {
@@ -211,10 +244,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-[#eef3f2] p-3 sm:p-5 xl:p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
       {isLoading ? (
         <div className="flex min-h-[400px] items-center justify-center p-6">
-          <Spinner label="Loading settings..." />
+          <Spinner label={t("pos.settings.loading")} />
         </div>
       ) : (
       <>
@@ -224,6 +257,7 @@ export default function SettingsPage() {
         onChange={setActiveWorkspace}
         tabs={[
           { label: "Business" },
+          { label: "Delivery" },
           { label: "Cloud sync", count: syncStatus.pending + syncStatus.failed },
           { label: "Security" },
           { label: "Backup" },
@@ -418,6 +452,90 @@ export default function SettingsPage() {
         </section>
         ) : null}
 
+        {activeWorkspace === "Delivery" ? (
+        <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
+          <div className="border-b border-zinc-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
+                <Truck size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-zinc-950">
+                  Delivery settings
+                </h2>
+                <p className="text-sm text-zinc-500">
+                  Delivery fee, WhatsApp notifications, and driver assignment.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-4 p-4 md:grid-cols-2">
+            <label className="block text-sm font-bold text-zinc-700">
+              Delivery fee ($)
+              <input type="number" min="0" step="0.5"
+                value={settings.deliveryFee}
+                onChange={(event) => updateSettings({ deliveryFee: normalizeNumber(event.target.value) })}
+                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
+            </label>
+            <label className="block text-sm font-bold text-zinc-700">
+              WhatsApp admin number
+              <input value={settings.whatsAppAdmin}
+                onChange={(event) => updateSettings({ whatsAppAdmin: event.target.value })}
+                placeholder="+96170123456"
+                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
+            </label>
+            <label className="block text-sm font-bold text-zinc-700">
+              Driver WhatsApp enabled
+              <select value={settings.whatsAppDriverEnabled ? "true" : "false"}
+                onChange={(event) => updateSettings({ whatsAppDriverEnabled: event.target.value === "true" })}
+                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                <option value="false">Disabled</option>
+                <option value="true">Enabled</option>
+              </select>
+            </label>
+            <label className="block text-sm font-bold text-zinc-700">
+              Assign mode
+              <select value={settings.assignMode}
+                onChange={(event) => updateSettings({ assignMode: event.target.value as "manual" | "broadcast" })}
+                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                <option value="manual">Manual (admin assigns)</option>
+                <option value="broadcast">Broadcast (first driver accepts)</option>
+              </select>
+            </label>
+            <label className="block text-sm font-bold text-zinc-700">
+              Assign timeout (minutes)
+              <input type="number" min="1" max="60"
+                value={settings.assignTimeout}
+                onChange={(event) => updateSettings({ assignTimeout: normalizeNumber(event.target.value) })}
+                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
+            </label>
+            <label className="block text-sm font-bold text-zinc-700">
+              Default driver (auto-assign)
+              <select value={settings.defaultDriverId}
+                onChange={(event) => updateSettings({ defaultDriverId: event.target.value })}
+                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100">
+                <option value="">None (manual or broadcast)</option>
+                {drivers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </label>
+            <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900 flex items-start gap-2">
+              <Truck size={17} className="mt-0.5 shrink-0" />
+              <div>
+                <p className="font-bold mb-1">Delivery config is local</p>
+                Settings are saved on this device. The API delivery settings (fee, WhatsApp, assign mode) are managed per tenant on the server and affect the ordering app, driver app, and admin panel.
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end border-t border-zinc-200 p-4">
+            <button type="button" onClick={handleSave}
+              className="flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-bold text-white transition hover:bg-emerald-500">
+              <Save size={17} />
+              Save Settings
+            </button>
+          </div>
+        </section>
+        ) : null}
+
         {activeWorkspace === "Security" ? (
         <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
           <div className="border-b border-zinc-200 p-4">
@@ -548,7 +666,7 @@ export default function SettingsPage() {
                 className="flex h-11 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
               >
                 <RotateCw size={16} />
-                Sync Now
+                {t("pos.settings.sync_now")}
               </button>
               <button
                 type="button"
@@ -619,6 +737,7 @@ export default function SettingsPage() {
             <label className="mt-3 block text-sm font-bold text-zinc-700">
               Auth token
               <input
+                type="password"
                 value={authToken}
                 onChange={(e) => setAuthTokenState(e.target.value)}
                 placeholder="Paste your JWT token here"
@@ -665,7 +784,7 @@ export default function SettingsPage() {
 
             <button
               type="button"
-              onClick={handleRestoreFromIndexedDB}
+                onClick={() => void handleRestoreFromIndexedDB()}
               className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
             >
               <Upload size={16} />
