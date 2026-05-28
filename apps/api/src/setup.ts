@@ -11,6 +11,7 @@ const EXEC_OPTS = { stdio: "inherit" as const, env: ENV, timeout: 60_000 }
 // Resolve them as "applied" so Prisma stops blocking on them.
 const PRE_APPLIED_MIGRATIONS = [
   "20260526211605_variants_delivery",
+  "20260527000001_variants_delivery",
 ]
 for (const name of PRE_APPLIED_MIGRATIONS) {
   try {
