@@ -8,10 +8,12 @@ export type TranslationDict = typeof en
 const STORAGE_KEY = "lebanonpos.locale"
 const dicts: Record<Locale, TranslationDict> = { en, ar: ar as unknown as TranslationDict }
 
+type Params = Record<string, string | number | undefined | null>
+
 type I18nContextType = {
   locale: Locale
   dir: "ltr" | "rtl"
-  t: (key: string, fallback?: string) => string
+  t: (key: string, params?: Params) => string
   setLocale: (locale: Locale) => void
 }
 
@@ -28,8 +30,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = locale
   }, [locale])
 
-  const t = useCallback((key: string, fallback?: string) => {
-    return (dicts[locale] as Record<string, string>)?.[key] ?? fallback ?? key
+  const t = useCallback((key: string, params?: Params): string => {
+    const raw = (dicts[locale] as Record<string, string>)?.[key] ?? key
+    if (!params) return raw
+    return raw.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? `{${k}}`))
   }, [locale])
 
   const setLocale = useCallback((newLocale: Locale) => {
