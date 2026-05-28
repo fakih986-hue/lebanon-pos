@@ -1,20 +1,11 @@
 import { memo } from "react"
 import type { LucideIcon } from "lucide-react"
-
 import { formatNumber } from "../lib/currency"
 
 interface Department {
   name: string
   label: string
   Icon: LucideIcon
-  theme: {
-    active: string
-    inactive: string
-    iconActive: string
-    iconInactive: string
-    countActive: string
-    countInactive: string
-  }
   productCount: number
 }
 
@@ -24,43 +15,44 @@ interface Props {
   onSelect: (name: string) => void
 }
 
-const DepartmentTabs = memo(function DepartmentTabs({
-  departments,
-  selected,
-  onSelect,
-}: Props) {
+const DepartmentTabs = memo(function DepartmentTabs({ departments, selected, onSelect }: Props) {
   return (
-    <div role="tablist" className="flex gap-2 overflow-x-auto rounded-lg border border-zinc-200 bg-white p-2 shadow-sm">
-      {departments.map((department) => {
-        const active = selected === department.name
-        const Icon = department.Icon
-        const theme = department.theme
+    <div
+      role="tablist"
+      className="flex gap-1.5 overflow-x-auto rounded-xl p-1.5 [scrollbar-width:none]"
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+    >
+      {departments.map((dept) => {
+        const active = selected === dept.name
+        const Icon = dept.Icon
 
         return (
           <button
-            key={department.name}
+            key={dept.name}
             type="button"
             role="tab"
             aria-selected={active}
-            onClick={() => onSelect(department.name)}
-            className={`flex h-12 touch-manipulation shrink-0 items-center gap-2 rounded-lg border px-3 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-emerald-100 ${
-              active ? theme.active : theme.inactive
-            }`}
+            onClick={() => onSelect(dept.name)}
+            className="flex h-10 touch-manipulation shrink-0 items-center gap-2 rounded-lg px-3 text-[13px] font-semibold transition-all"
+            style={active ? {
+              background: "var(--brand)",
+              color: "#fff",
+              boxShadow: "0 2px 8px rgba(16,185,129,0.3)",
+            } : {
+              background: "transparent",
+              color: "var(--text-2)",
+            }}
           >
+            <Icon size={15} />
+            <span>{dept.label}</span>
             <span
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                active ? theme.iconActive : theme.iconInactive
-              }`}
+              className="rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none"
+              style={active
+                ? { background: "rgba(255,255,255,0.2)", color: "#fff" }
+                : { background: "var(--surface-2)", color: "var(--text-3)" }
+              }
             >
-              <Icon size={18} />
-            </span>
-            <span>{department.label}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs ${
-                active ? theme.countActive : theme.countInactive
-              }`}
-            >
-              {formatNumber(department.productCount)}
+              {formatNumber(dept.productCount)}
             </span>
           </button>
         )

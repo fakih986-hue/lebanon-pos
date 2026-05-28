@@ -28,6 +28,7 @@ import DepartmentTabs from "../components/DepartmentTabs"
 import LastSaleBanner from "../components/LastSaleBanner"
 import CartDrawer from "../components/CartDrawer"
 import VariantPicker from "../components/VariantPicker"
+import SimplePOSMode from "../components/SimplePOSMode"
 import {
   formatCurrency,
   formatLbpCurrency,
@@ -93,15 +94,6 @@ type CartItem = Product & {
   quantity: number
 }
 
-type DepartmentTheme = {
-  active: string
-  inactive: string
-  iconActive: string
-  iconInactive: string
-  countActive: string
-  countInactive: string
-}
-
 const POS_CAMERA_READER_ID = "lebanonpos-pos-camera-reader"
 
 const departmentIcons: Record<string, LucideIcon> = {
@@ -113,72 +105,6 @@ const departmentIcons: Record<string, LucideIcon> = {
   Snacks: Candy,
   Pantry: ShoppingBasket,
 }
-
-const departmentThemes: DepartmentTheme[] = [
-  {
-    active: "border-zinc-950 bg-zinc-950 text-white shadow-sm",
-    inactive:
-      "border-zinc-200 bg-white text-zinc-900 hover:border-zinc-300 hover:bg-zinc-50",
-    iconActive: "bg-white/15 text-white",
-    iconInactive: "bg-zinc-100 text-zinc-800",
-    countActive: "bg-white/15 text-white",
-    countInactive: "bg-zinc-100 text-zinc-700",
-  },
-  {
-    active: "border-cyan-700 bg-cyan-700 text-white shadow-sm",
-    inactive:
-      "border-cyan-200 bg-cyan-50 text-cyan-950 hover:border-cyan-300 hover:bg-cyan-100",
-    iconActive: "bg-white/15 text-white",
-    iconInactive: "bg-white text-cyan-700",
-    countActive: "bg-white/15 text-white",
-    countInactive: "bg-white text-cyan-800",
-  },
-  {
-    active: "border-amber-700 bg-amber-600 text-white shadow-sm",
-    inactive:
-      "border-amber-200 bg-amber-50 text-amber-950 hover:border-amber-300 hover:bg-amber-100",
-    iconActive: "bg-white/15 text-white",
-    iconInactive: "bg-white text-amber-700",
-    countActive: "bg-white/15 text-white",
-    countInactive: "bg-white text-amber-800",
-  },
-  {
-    active: "border-rose-700 bg-rose-700 text-white shadow-sm",
-    inactive:
-      "border-rose-200 bg-rose-50 text-rose-950 hover:border-rose-300 hover:bg-rose-100",
-    iconActive: "bg-white/15 text-white",
-    iconInactive: "bg-white text-rose-700",
-    countActive: "bg-white/15 text-white",
-    countInactive: "bg-white text-rose-800",
-  },
-  {
-    active: "border-violet-700 bg-violet-700 text-white shadow-sm",
-    inactive:
-      "border-violet-200 bg-violet-50 text-violet-950 hover:border-violet-300 hover:bg-violet-100",
-    iconActive: "bg-white/15 text-white",
-    iconInactive: "bg-white text-violet-700",
-    countActive: "bg-white/15 text-white",
-    countInactive: "bg-white text-violet-800",
-  },
-  {
-    active: "border-indigo-700 bg-indigo-700 text-white shadow-sm",
-    inactive:
-      "border-indigo-200 bg-indigo-50 text-indigo-950 hover:border-indigo-300 hover:bg-indigo-100",
-    iconActive: "bg-white/15 text-white",
-    iconInactive: "bg-white text-indigo-700",
-    countActive: "bg-white/15 text-white",
-    countInactive: "bg-white text-indigo-800",
-  },
-  {
-    active: "border-emerald-700 bg-emerald-700 text-white shadow-sm",
-    inactive:
-      "border-emerald-200 bg-emerald-50 text-emerald-950 hover:border-emerald-300 hover:bg-emerald-100",
-    iconActive: "bg-white/15 text-white",
-    iconInactive: "bg-white text-emerald-700",
-    countActive: "bg-white/15 text-white",
-    countInactive: "bg-white text-emerald-800",
-  },
-]
 
 function normalizeBarcode(value: string) {
   return value.trim().replace(/\s+/g, "")
@@ -245,6 +171,7 @@ export default function POSPage() {
   const [variantPickerProduct, setVariantPickerProduct] =
     useState<Product | null>(null)
   const [saleNote, setSaleNote] = useState("")
+  const [simpleMode, setSimpleMode] = useState(false)
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const productListRef = useRef<HTMLDivElement | null>(null)
@@ -347,29 +274,21 @@ export default function POSPage() {
       ...Array.from(new Set(products.map((product) => product.category))),
     ]
 
-    return categoryNames.map((category, index) => {
+    return categoryNames.map((category) => {
       const departmentProducts =
         category === "All"
           ? products
           : category === "Favorites"
             ? products.filter((product) => product.favorite)
           : products.filter((product) => product.category === category)
-      const theme =
-        category === "All"
-          ? departmentThemes[0]
-          : departmentThemes[((index - 1) % (departmentThemes.length - 1)) + 1]
       const Icon = departmentIcons[category] ?? PackageOpen
 
       return {
         name: category,
         label: category === "All" ? "All Items" : category,
         Icon,
-        theme,
         productCount: departmentProducts.length,
-        stockCount: departmentProducts.reduce(
-          (sum, product) => sum + product.stock,
-          0
-        ),
+        stockCount: departmentProducts.reduce((sum, p) => sum + p.stock, 0),
       }
     })
   }, [products])
@@ -1109,15 +1028,16 @@ export default function POSPage() {
           onPrintReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}
         />
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm">
+        <div className="rounded-xl border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "var(--shadow-sm)" }}>
           <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
             <label className="relative min-w-0">
-              <span className="mb-2 block text-sm font-bold text-zinc-700">
+              <span className="mb-2 block text-[13px] font-bold" style={{ color: "var(--text-2)" }}>
                 {t("pos.quick_add")}
               </span>
               <Search
-                size={22}
-                className={`pointer-events-none absolute bottom-4 text-zinc-400 ${dir === "rtl" ? "right-4" : "left-4"}`}
+                size={20}
+                className={`pointer-events-none absolute bottom-4`}
+                style={{ color: "var(--text-3)", [dir === "rtl" ? "right" : "left"]: "14px" }}
               />
               <input
                 ref={scanInputRef}
@@ -1131,7 +1051,7 @@ export default function POSPage() {
                   }
                 }}
                 placeholder={t("pos.scan_placeholder")}
-                className={`h-14 w-full rounded-lg border border-zinc-200 bg-zinc-50 text-lg font-semibold text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100 ${dir === "rtl" ? "pr-12 pl-4" : "pl-12 pr-4"}`}
+                className={`input h-14 text-[17px] font-semibold ${dir === "rtl" ? "pr-12 pl-4" : "pl-12 pr-4"}`}
               />
             </label>
 
@@ -1139,7 +1059,8 @@ export default function POSPage() {
               <button
                 type="button"
                 onClick={() => quickAddProduct(scanCode)}
-                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-base font-bold text-white transition hover:bg-zinc-800 sm:h-14 sm:px-5"
+                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-bold text-white transition sm:h-14 sm:px-5"
+                style={{ background: "var(--text)" }}
               >
                 <ScanBarcode size={19} />
                 {t("pos.add")}
@@ -1147,19 +1068,25 @@ export default function POSPage() {
               <button
                 type="button"
                 onClick={() => setIsCartOpen(true)}
-                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-base font-bold text-white shadow-sm transition hover:bg-emerald-500 sm:h-14 sm:px-5"
+                className="relative flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-bold text-white transition sm:h-14 sm:px-5"
+                style={{ background: "var(--brand)" }}
               >
                 <ShoppingCart size={19} />
-                {t("pos.cart")} {formatNumber(itemCount)}
+                {t("pos.cart")}
+                {itemCount > 0 && (
+                  <span className="ml-1 rounded-full px-1.5 py-0.5 text-[11px] font-black" style={{ background: "rgba(255,255,255,0.25)" }}>
+                    {itemCount}
+                  </span>
+                )}
               </button>
               <button
                 type="button"
                 onClick={startCameraScanner}
-                className={`flex h-12 touch-manipulation items-center justify-center gap-2 rounded-lg border px-4 text-base font-bold transition sm:h-14 ${
-                  cameraActive
-                    ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
-                    : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-                }`}
+                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl border px-4 text-[15px] font-bold transition sm:h-14"
+                style={cameraActive
+                  ? { borderColor: "var(--rose)", background: "var(--rose-soft)", color: "var(--rose)" }
+                  : { borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-2)" }
+                }
               >
                 <ScanBarcode size={19} />
                 {cameraActive ? t("pos.stop") : t("pos.scan")}
@@ -1167,7 +1094,8 @@ export default function POSPage() {
               <button
                 type="button"
                 onClick={cleanSale}
-                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 text-base font-bold text-zinc-700 transition hover:bg-zinc-50 sm:h-14"
+                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl border px-4 text-[15px] font-bold transition sm:h-14"
+                style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-2)" }}
               >
                 <Eraser size={19} />
                 {t("pos.clean")}
@@ -1176,16 +1104,16 @@ export default function POSPage() {
           </div>
 
           <div className="mt-3 grid gap-2 text-sm font-bold md:grid-cols-[minmax(0,1fr)_repeat(3,auto)]">
-            <p className="rounded-lg bg-zinc-50 px-3 py-2 text-zinc-600">
+            <p className="rounded-lg px-3 py-2 text-[13px] font-medium truncate" style={{ background: "var(--surface-2)", color: "var(--text-3)" }}>
               {scannerStatus}
             </p>
-            <span className="rounded-lg bg-white px-3 py-2 text-zinc-600 ring-1 ring-zinc-200">
+            <span className="rounded-lg px-3 py-2 text-[13px] font-semibold" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
               {t("pos.items_shown", { n: formatNumber(filteredProducts.length) })}
             </span>
-            <span className="rounded-lg bg-white px-3 py-2 text-zinc-600 ring-1 ring-zinc-200">
+            <span className="rounded-lg px-3 py-2 text-[13px] font-semibold" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
               {t("pos.cart_count", { n: formatNumber(itemCount) })}
             </span>
-            <span className="rounded-lg bg-emerald-50 px-3 py-2 text-emerald-800">
+            <span className="rounded-lg px-3 py-2 text-[13px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
               {t("pos.exchange_rate", { rate: formatLbpCurrency(exchangeRate) })}
             </span>
           </div>
@@ -1215,13 +1143,7 @@ export default function POSPage() {
         </div>
 
         <DepartmentTabs
-          departments={departmentSummaries.map((d) => ({
-            name: d.name,
-            label: d.label,
-            Icon: d.Icon,
-            theme: d.theme,
-            productCount: d.productCount,
-          }))}
+          departments={departmentSummaries}
           selected={selectedCategory}
           onSelect={selectDepartment}
         />
@@ -1231,13 +1153,26 @@ export default function POSPage() {
           className="flex scroll-mt-5 items-center justify-between"
         >
           <div>
-            <h3 className="text-xl font-bold text-zinc-950">
+            <h3 className="text-xl font-bold" style={{ color: "var(--text)" }}>
               {selectedDepartment?.label ?? t("pos.quick_sale")}
             </h3>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm" style={{ color: "var(--text-3)" }}>
               {t("pos.tap_hint")}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => setSimpleMode(true)}
+            className="flex items-center gap-2 rounded-xl border px-4 h-9 text-[13px] font-bold transition hover:opacity-80"
+            style={{
+              background: "var(--accent-soft)",
+              borderColor: "var(--accent)",
+              color: "var(--accent-text)",
+            }}
+          >
+            <span>⚡</span>
+            Quick Checkout
+          </button>
         </div>
 
         <div className="min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
@@ -1372,6 +1307,26 @@ export default function POSPage() {
           onClose={() => setVariantPickerProduct(null)}
         />
       ) : null}
+
+      {simpleMode && (
+        <SimplePOSMode
+          products={products}
+          categories={Array.from(new Set(products.filter((p) => !p.isParent).map((p) => p.category)))}
+          items={items}
+          onAddProduct={addProductToSale}
+          onIncreaseQty={increaseQuantity}
+          onDecreaseQty={decreaseQuantity}
+          onRemoveItem={removeItem}
+          vatRate={settings.vatRate}
+          grossSubtotal={grossSubtotal}
+          subtotal={subtotal}
+          tax={tax}
+          total={total}
+          totalLbp={totalLbp}
+          exchangeRate={exchangeRate}
+          onExit={() => setSimpleMode(false)}
+        />
+      )}
     </main>
   )
 }
