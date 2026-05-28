@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  ci:
+    name: Type-check, lint & test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --dir apps/api exec prisma generate
+        env:
+          DATABASE_URL: file:./dev.db
+
+      - name: Type-check API
+        run: pnpm --dir apps/api run build
+        env:
+          DATABASE_URL: file:./dev.db
+
+      - name: Type-check admin SPA
+        run: pnpm --dir apps/admin exec tsc --noEmit
+
+      - name: Type-check driver SPA
+        run: pnpm --dir apps/driver exec tsc --noEmit
+
+      - name: Type-check ordering SPA
+        run: pnpm --dir apps/ordering exec tsc --noEmit
+
+      - name: Type-check desktop SPA
+        run: pnpm --dir apps/desktop exec tsc --noEmit
+
+      - name: Run API tests
+        run: pnpm --dir apps/api run test
+        env:
+          DATABASE_URL: file:./dev.db
+          JWT_SECRET: ci-test-secret
+
+      - name: Build admin SPA
+        run: pnpm --dir apps/admin exec vite build
+
+      - name: Build driver SPA
+        run: pnpm --dir apps/driver exec vite build
+
+      - name: Build ordering SPA
+        run: pnpm --dir apps/ordering exec vite build

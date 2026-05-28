@@ -18,67 +18,81 @@ router.get("/kpi", requireAuth, async (req: AuthRequest, res: Response) => {
 
   const completed = { tenantId, status: "Completed" as const }
 
-  const [todaySales, weekSales, monthSales, trendSales, paymentSales, topProductsData, recentSalesData, lowStockData, topCustomersData, hourlySalesData] =
-    await Promise.all([
-      prisma.sale.findMany({ where: { ...completed, createdAt: { gte: todayStart } } }),
-      prisma.sale.findMany({ where: { ...completed, createdAt: { gte: weekStart } } }),
-      prisma.sale.findMany({ where: { ...completed, createdAt: { gte: monthStart } } }),
-      prisma.sale.findMany({
-        where: { ...completed, createdAt: { gte: thirtyDaysAgo } },
-        select: { total: true, profit: true, createdAt: true },
-      }),
-      prisma.sale.groupBy({
-        by: ["paymentMethod"],
-        where: { ...completed },
-        _sum: { total: true },
-        _count: { id: true },
-      }),
-      prisma.saleItem.groupBy({
-        by: ["productName", "barcode"],
-        where: { sale: { tenantId, status: "Completed" } },
-        _sum: { quantity: true, total: true },
-        orderBy: { _sum: { total: "desc" } },
-        take: 10,
-      }),
-      prisma.sale.findMany({
-        where: { ...completed },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-        select: {
-          saleNumber: true,
-          total: true,
-          paymentMethod: true,
-          cashier: true,
-          createdAt: true,
-          items: { select: { id: true } },
-        },
-      }),
-      prisma.product.findMany({
-        where: { tenantId, stock: { lte: 5 }, isParent: false },
-        select: { name: true, barcode: true, stock: true, category: true },
-        orderBy: { stock: "asc" },
-        take: 10,
-      }),
-      // Top customers: group sales by customer name if available
-      prisma.sale.groupBy({
-        by: ["customerName"],
-        where: { tenantId, status: "Completed", customerName: { not: null } },
-        _sum: { total: true },
-        _count: { id: true },
-        orderBy: { _sum: { total: "desc" } },
-        take: 5,
-      }),
-      // Hourly distribution: count sales by hour of day (today)
-      prisma.sale.findMany({
-        where: { ...completed, createdAt: { gte: todayStart } },
-        select: { createdAt: true },
-      }),
-    ])
+  const [
+    todayAgg, weekAgg, monthAgg,
+    trendSales, paymentSales, topProductsData, recentSalesData,
+    lowStockData, topCustomersData, hourlySalesData,
+  ] = await Promise.all([
+    // Use aggregate queries instead of loading full records into JS
+    prisma.sale.aggregate({
+      where: { ...completed, createdAt: { gte: todayStart } },
+      _count: { id: true },
+      _sum: { total: true, profit: true },
+    }),
+    prisma.sale.aggregate({
+      where: { ...completed, createdAt: { gte: weekStart } },
+      _count: { id: true },
+      _sum: { total: true, profit: true },
+    }),
+    prisma.sale.aggregate({
+      where: { ...completed, createdAt: { gte: monthStart } },
+      _count: { id: true },
+      _sum: { total: true, profit: true },
+    }),
+    prisma.sale.findMany({
+      where: { ...completed, createdAt: { gte: thirtyDaysAgo } },
+      select: { total: true, profit: true, createdAt: true },
+    }),
+    prisma.sale.groupBy({
+      by: ["paymentMethod"],
+      where: { ...completed, createdAt: { gte: thirtyDaysAgo } },
+      _sum: { total: true },
+      _count: { id: true },
+    }),
+    prisma.saleItem.groupBy({
+      by: ["productName", "barcode"],
+      where: { sale: { tenantId, status: "Completed", createdAt: { gte: thirtyDaysAgo } } },
+      _sum: { quantity: true, total: true },
+      orderBy: { _sum: { total: "desc" } },
+      take: 10,
+    }),
+    prisma.sale.findMany({
+      where: { ...completed },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        saleNumber: true,
+        total: true,
+        paymentMethod: true,
+        cashier: true,
+        createdAt: true,
+        items: { select: { id: true } },
+      },
+    }),
+    prisma.product.findMany({
+      where: { tenantId, stock: { lte: 5 }, isParent: false },
+      select: { name: true, barcode: true, stock: true, category: true },
+      orderBy: { stock: "asc" },
+      take: 10,
+    }),
+    prisma.sale.groupBy({
+      by: ["customerName"],
+      where: { tenantId, status: "Completed", customerName: { not: null }, createdAt: { gte: thirtyDaysAgo } },
+      _sum: { total: true },
+      _count: { id: true },
+      orderBy: { _sum: { total: "desc" } },
+      take: 5,
+    }),
+    prisma.sale.findMany({
+      where: { ...completed, createdAt: { gte: todayStart } },
+      select: { createdAt: true },
+    }),
+  ])
 
-  const aggregate = (sales: Array<{ total: number; profit?: number }>) => ({
-    count: sales.length,
-    revenue: sales.reduce((s, x) => s + x.total, 0),
-    profit: sales.reduce((s, x) => s + (x.profit ?? 0), 0),
+  const fromAggregate = (agg: { _count: { id: number }; _sum: { total: number | null; profit: number | null } }) => ({
+    count: agg._count.id,
+    revenue: agg._sum.total ?? 0,
+    profit: agg._sum.profit ?? 0,
   })
 
   const trendMap = new Map<string, { total: number; count: number }>()
@@ -97,7 +111,6 @@ router.get("/kpi", requireAuth, async (req: AuthRequest, res: Response) => {
   }
   const salesTrend = Array.from(trendMap.entries()).map(([date, data]) => ({ date, ...data }))
 
-  // Hourly sales distribution
   const hourlyMap = new Map<number, number>()
   for (let h = 0; h < 24; h++) hourlyMap.set(h, 0)
   for (const s of hourlySalesData) {
@@ -106,10 +119,10 @@ router.get("/kpi", requireAuth, async (req: AuthRequest, res: Response) => {
   }
   const hourlyDistribution = Array.from(hourlyMap.entries()).map(([hour, count]) => ({ hour, count }))
 
-  ;(res as any).json({
-    today: aggregate(todaySales),
-    week: aggregate(weekSales),
-    month: aggregate(monthSales),
+  res.json({
+    today: fromAggregate(todayAgg),
+    week: fromAggregate(weekAgg),
+    month: fromAggregate(monthAgg),
     salesTrend,
     paymentBreakdown: paymentSales.map((p: any) => ({
       method: p.paymentMethod,

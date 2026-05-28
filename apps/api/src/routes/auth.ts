@@ -164,24 +164,26 @@ router.post("/login", async (req: IncomingMessage & { body?: unknown }, res: Ser
       }
     }
 
-    const where: Record<string, unknown> = { active: true }
-    if (cleanTenantSubdomain) where.tenant = { subdomain: cleanTenantSubdomain }
+    const tenantFilter = cleanTenantSubdomain ? { tenant: { subdomain: cleanTenantSubdomain } } : {}
 
-    const users = await prisma.staffUser.findMany({
-      where: where as any,
+    // Fast path: look up by SHA-256 hash of PIN (O(1) DB lookup)
+    const sha256Pin = hashSha256Pin(pin)
+    let user = await prisma.staffUser.findFirst({
+      where: { active: true, pin: sha256Pin, ...tenantFilter },
       include: { tenant: true },
-    })
+    }) as any
 
-    let user: (typeof users)[number] | null = null
-
-    for (const candidate of users) {
-      const pinMatches = candidate.pin.startsWith("$2")
-        ? await bcrypt.compare(pin, candidate.pin)
-        : candidate.pin === pin || candidate.pin === hashSha256Pin(pin)
-
-      if (pinMatches) {
-        user = candidate
-        break
+    // Slow path: only for bcrypt-hashed PINs — query those users and compare one by one
+    if (!user) {
+      const bcryptUsers = await prisma.staffUser.findMany({
+        where: { active: true, pin: { startsWith: "$2" }, ...tenantFilter },
+        include: { tenant: true },
+      })
+      for (const candidate of bcryptUsers) {
+        if (await bcrypt.compare(pin, candidate.pin)) {
+          user = candidate
+          break
+        }
       }
     }
 

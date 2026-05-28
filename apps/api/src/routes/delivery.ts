@@ -338,16 +338,21 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerRes
       }
     }
 
-    const order = await prisma.deliveryOrder.update({
-      where: { id: req.params?.id as string },
-      data: updateData as any,
-      include: { items: true },
+    // Verify ownership before mutating
+    const existing = await prisma.deliveryOrder.findFirst({
+      where: { id: req.params?.id as string, tenantId },
+      select: { id: true },
     })
-
-    if (order.tenantId !== tenantId) {
+    if (!existing) {
       json(res, { error: "Not found" }, 404)
       return
     }
+
+    const order = await prisma.deliveryOrder.update({
+      where: { id: existing.id },
+      data: updateData as any,
+      include: { items: true },
+    })
 
     // Broadcast changes via WebSocket
     broadcastToTenant(tenantId, "order:updated", { order })
@@ -636,7 +641,7 @@ router.post("/customer/login", async (req: Req, res: ServerResponse) => {
     }
     const token = jwt.sign(
       { customerId: customer.id, tenantId, role: "Customer" },
-      process.env.JWT_SECRET || "lebanonpos-secret-key",
+      process.env.JWT_SECRET || "dev-secret-change-in-production",
       { expiresIn: "30d" },
     )
     json(res, {
@@ -659,7 +664,7 @@ router.get("/customer/orders", async (req: Req, res: ServerResponse) => {
     }
     let payload: { customerId?: string; tenantId?: string; role?: string }
     try {
-      payload = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET || "lebanonpos-secret-key") as any
+      payload = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET || "dev-secret-change-in-production") as any
     } catch {
       json(res, { error: "Invalid or expired token" }, 401)
       return

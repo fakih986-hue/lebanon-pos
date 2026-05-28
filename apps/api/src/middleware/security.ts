@@ -20,6 +20,14 @@ type RateLimitState = {
 
 const rateLimitBuckets = new Map<string, RateLimitState>()
 
+// Prune expired rate limit entries every 5 minutes to prevent unbounded growth
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, state] of rateLimitBuckets) {
+    if (state.resetAt <= now) rateLimitBuckets.delete(key)
+  }
+}, 5 * 60 * 1000).unref()
+
 function parseOriginList(value?: string) {
   return (value ?? "")
     .split(",")
@@ -53,6 +61,18 @@ export const securityHeaders: Handler = (_req, res, next) => {
   res.setHeader(
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=(), payment=()"
+  )
+  res.setHeader(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline'",  // unsafe-inline needed for Vite-built SPAs
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      "connect-src 'self' ws: wss:",
+      "frame-ancestors 'none'",
+    ].join("; ")
   )
 
   if (process.env.NODE_ENV === "production") {

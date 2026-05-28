@@ -4,20 +4,13 @@ import { cpSync, existsSync } from "fs"
 console.log("[setup] started")
 
 try {
-  console.log("[setup] Running prisma db push...")
-  execSync("npx prisma db push --accept-data-loss --skip-generate", { stdio: "inherit", env: { ...process.env, NO_COLOR: "1" }, timeout: 60_000 })
-  console.log("[setup] db push done, running seed...")
-  execSync("npx tsx prisma/seed.ts", { stdio: "inherit", env: { ...process.env, NO_COLOR: "1" }, timeout: 60_000 })
-  console.log("[setup] Database setup complete.")
+  console.log("[setup] Running prisma migrate deploy...")
+  execSync("npx prisma migrate deploy", { stdio: "inherit", env: { ...process.env, NO_COLOR: "1" }, timeout: 60_000 })
+  console.log("[setup] Migrations applied.")
 } catch (err) {
-  console.error("[setup] Database setup failed (continuing anyway):", err)
-}
-
-// Ensure Prisma client is generated (db push may skip generate if it fails early)
-try {
-  execSync("npx prisma generate", { stdio: "inherit", env: { ...process.env, NO_COLOR: "1" }, timeout: 30_000 })
-} catch {
-  console.error("[setup] prisma generate failed (will try copy from src/)")
+  console.error("[setup] prisma migrate deploy failed:", err)
+  // Do not continue — a failed migration means the schema is out of sync
+  process.exit(1)
 }
 
 // Copy Prisma client from src/generated/ to dist/generated/ so ESM imports resolve
