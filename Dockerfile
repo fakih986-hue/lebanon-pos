@@ -39,10 +39,9 @@ COPY --from=builder /app/apps/admin/dist ./public/admin
 COPY --from=builder /app/apps/driver/dist ./public/driver
 COPY --from=builder /app/apps/ordering/dist ./public/order
 
-# Install only production dependencies for the API
+# Install only production dependencies for the API (npm, since deps are plain packages)
 COPY --from=builder /app/apps/api/package.json ./package.json
-COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN npm install -g pnpm && pnpm install --prod
+RUN npm install --production
 
 EXPOSE 3001
 CMD ["node", "dist/index.js"]
