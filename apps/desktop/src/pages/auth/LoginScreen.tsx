@@ -163,38 +163,36 @@ export default function LoginScreen() {
           className="rounded-2xl border p-5"
           style={{ background: "var(--surface)", borderColor: "var(--border)" }}
         >
-          {/* Tab toggle */}
-          {users.length > 0 && (
-            <div
-              className="flex gap-1 rounded-xl p-1 mb-5"
-              style={{ background: "var(--surface-2)" }}
+          {/* Tab toggle — always visible */}
+          <div
+            className="flex gap-1 rounded-xl p-1 mb-5"
+            style={{ background: "var(--surface-2)" }}
+          >
+            <button
+              type="button"
+              onClick={() => setSetupMode(false)}
+              className="flex-1 rounded-lg py-2 text-[13px] font-semibold transition"
+              style={!setupMode
+                ? { background: "var(--text)", color: "var(--surface)" }
+                : { color: "var(--text-3)" }
+              }
             >
-              <button
-                type="button"
-                onClick={() => setSetupMode(false)}
-                className="flex-1 rounded-lg py-2 text-[13px] font-semibold transition"
-                style={!setupMode
-                  ? { background: "var(--text)", color: "var(--surface)" }
-                  : { color: "var(--text-3)" }
-                }
-              >
-                <ShieldCheck size={14} className="inline mr-1.5" />
-                Unlock
-              </button>
-              <button
-                type="button"
-                onClick={() => setSetupMode(true)}
-                className="flex-1 rounded-lg py-2 text-[13px] font-semibold transition"
-                style={setupMode
-                  ? { background: "var(--text)", color: "var(--surface)" }
-                  : { color: "var(--text-3)" }
-                }
-              >
-                <Link2 size={14} className="inline mr-1.5" />
-                Connect
-              </button>
-            </div>
-          )}
+              <ShieldCheck size={14} className="inline mr-1.5" />
+              Unlock
+            </button>
+            <button
+              type="button"
+              onClick={() => setSetupMode(true)}
+              className="flex-1 rounded-lg py-2 text-[13px] font-semibold transition"
+              style={setupMode
+                ? { background: "var(--text)", color: "var(--surface)" }
+                : { color: "var(--text-3)" }
+              }
+            >
+              <Link2 size={14} className="inline mr-1.5" />
+              Connect
+            </button>
+          </div>
 
           {/* ── Setup / Connect panel ── */}
           {setupMode ? (
