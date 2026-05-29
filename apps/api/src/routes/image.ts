@@ -8,7 +8,7 @@ const router = Router()
 
 const HF_TOKEN = (process.env.HUGGINGFACE_TOKEN || "").trim()
 const HF_MODEL = process.env.HF_IMAGE_MODEL || "black-forest-labs/FLUX.1-schnell"
-const HF_PROVIDER = process.env.HF_IMAGE_PROVIDER || "together"
+const HF_PROVIDER = process.env.HF_IMAGE_PROVIDER || "hf-inference"
 const HF_HOST = "router.huggingface.co"
 const HF_PATH = `/${HF_PROVIDER}/models/${HF_MODEL}`
 
