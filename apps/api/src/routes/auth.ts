@@ -115,8 +115,12 @@ router.post("/login", async (req: any, res: any) => {
         res.status(400).json({ error: "Driver code is required" })
         return
       }
+      if (!tenantSubdomain) {
+        res.status(400).json({ error: "Store subdomain is required" })
+        return
+      }
       const driver = await prisma.staffUser.findFirst({
-        where: { code, role: "Driver", active: true },
+        where: { code, role: "Driver", active: true, tenant: { subdomain: tenantSubdomain } },
         include: { tenant: true },
       })
       if (!driver) {

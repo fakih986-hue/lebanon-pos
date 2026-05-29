@@ -1,11 +1,12 @@
 import { useState } from "react"
-import { useNavigate } from "react-router"
+import { useNavigate, useParams } from "react-router"
 import { useI18n, useTheme } from "@lebanonpos/shared"
 import { setToken } from "../main"
 import { api } from "../app/api"
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const { store } = useParams<{ store: string }>()
   const { t, locale, setLocale } = useI18n()
   const { theme, toggleTheme } = useTheme()
   const [code, setCode] = useState("")
@@ -17,13 +18,14 @@ export function LoginPage() {
     e.preventDefault()
     setError("")
     if (!code.trim() || !pin.trim()) { setError(t("login.error_required")); return }
+    if (!store) { setError("Store not specified"); return }
     setLoading(true)
     try {
       const res = await api<{ token: string }>("/api/auth/login", {
-        method: "POST", body: JSON.stringify({ code: code.trim(), pin: pin.trim(), role: "Driver" }),
+        method: "POST", body: JSON.stringify({ code: code.trim(), pin: pin.trim(), role: "Driver", tenantSubdomain: store }),
       })
       setToken(res.token)
-      navigate("/driver/orders")
+      navigate(`/${store}/orders`)
     } catch (err) {
       setError(err instanceof Error ? err.message : t("login.error_failed"))
     } finally { setLoading(false) }

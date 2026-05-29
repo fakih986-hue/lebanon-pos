@@ -30,7 +30,7 @@ function decodeTokenPayload(token: string) {
 }
 
 export function OrderDetailPage() {
-  const { id } = useParams<{ id: string }>()
+  const { id, store } = useParams<{ id: string; store: string }>()
   const navigate = useNavigate()
   const { t } = useI18n()
   const [order, setOrder] = useState<Order | null>(null)
@@ -62,7 +62,7 @@ export function OrderDetailPage() {
       const found = data.find((o) => o.id === id)
       found ? setOrder(found) : setError(t("driver.order_not_found"))
     } catch (err) {
-      if (!getToken()) { navigate("/driver/login"); return }
+      if (!getToken()) { navigate(`/${store}/login`); return }
       setError(err instanceof Error ? err.message : t("driver.failed_load_order"))
     } finally { setLoading(false) }
   }
@@ -166,7 +166,7 @@ export function OrderDetailPage() {
 
       <header className="sticky top-0 z-10 bg-glass border-b border-glass">
         <div className="max-w-lg mx-auto flex items-center gap-3 px-4 py-3">
-          <button onClick={() => navigate("/driver/orders")}
+      <button onClick={() => navigate(`/${store}/orders`)}
             className="flex items-center justify-center w-9 h-9 rounded-xl bg-glass hover:bg-glass-hover text-secondary transition-all">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

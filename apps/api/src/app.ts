@@ -60,6 +60,14 @@ function spaHandler(publicDir: string) {
   }
 }
 
+// Redirect legacy driver routes (without /driver prefix) to the find-store page
+const driverRoutes = ["/login", "/orders"]
+app.use(driverRoutes, (_req: IncomingMessage, res: ServerResponse) => {
+  res.statusCode = 302
+  res.setHeader("Location", "/driver/")
+  res.end()
+})
+
 // SPA routes — match only paths without file extensions (assets are served by express.static)
 app.get(/^\/admin(?:\/[^.]*)?$/, spaHandler("admin"))
 app.get(/^\/driver(?:\/[^.]*)?$/, spaHandler("driver"))

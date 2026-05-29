@@ -2,6 +2,7 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router"
 import { I18nProvider, ThemeProvider, ErrorBoundary } from "@lebanonpos/shared"
+import { FindStorePage } from "./pages/FindStorePage"
 import { LoginPage } from "./pages/LoginPage"
 import { OrdersPage } from "./pages/OrdersPage"
 import { OrderDetailPage } from "./pages/OrderDetailPage"
@@ -26,10 +27,11 @@ createRoot(document.getElementById("root")!).render(
         <ThemeProvider>
           <ErrorBoundary>
             <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/orders" element={<RequireAuth><OrdersPage /></RequireAuth>} />
-              <Route path="/orders/:id" element={<RequireAuth><OrderDetailPage /></RequireAuth>} />
-              <Route path="*" element={<Navigate to="/orders" replace />} />
+              <Route path="/" element={<FindStorePage />} />
+              <Route path="/:store/login" element={<LoginPage />} />
+              <Route path="/:store/orders" element={<RequireAuth><OrdersPage /></RequireAuth>} />
+              <Route path="/:store/orders/:id" element={<RequireAuth><OrderDetailPage /></RequireAuth>} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </ErrorBoundary>
         </ThemeProvider>

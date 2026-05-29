@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router"
+import { useNavigate, useParams } from "react-router"
 import { useI18n, useTheme, useWebSocket } from "@lebanonpos/shared"
 import { clearToken, getToken } from "../main"
 import { api } from "../app/api"
@@ -25,6 +25,7 @@ function decodeTokenPayload(token: string) {
 
 export function OrdersPage() {
   const navigate = useNavigate()
+  const { store } = useParams<{ store: string }>()
   const { t, locale, setLocale } = useI18n()
   const { theme, toggleTheme } = useTheme()
   const [assigned, setAssigned] = useState<Order[]>([])
@@ -94,7 +95,7 @@ export function OrdersPage() {
       const data = await api<Order[]>("/api/delivery/driver/orders")
       setAssigned(data)
     } catch (err) {
-      if (!getToken()) { navigate("/driver/login"); return }
+      if (!getToken()) { navigate(`/${store}/login`); return }
       setError(err instanceof Error ? err.message : t("driver.failed_load"))
     }
   }
@@ -133,7 +134,7 @@ export function OrdersPage() {
     } finally { setAcceptingId(null) }
   }
 
-  function handleLogout() { clearToken(); navigate("/driver/login") }
+  function handleLogout() { clearToken(); navigate(`/${store}/login`) }
 
   return (
     <div className="min-h-dvh bg-gradient-page">
@@ -245,7 +246,7 @@ export function OrdersPage() {
         {assigned.length > 0 && (
           <div className="space-y-3">
             {assigned.map((order, i) => (
-              <button key={order.id} onClick={() => navigate(`/driver/orders/${order.id}`)}
+              <button key={order.id} onClick={() => navigate(`/${store}/orders/${order.id}`)}
                 className="w-full text-start rounded-2xl bg-glass border border-glass p-4 transition-all duration-200 hover:bg-glass-hover hover:shadow-lg animate-slide-up group"
                 style={{ animationDelay: `${i * 0.05}s` }}>
                 <div className="flex items-start justify-between gap-3">
