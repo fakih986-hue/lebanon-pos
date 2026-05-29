@@ -1,7 +1,6 @@
 import { Router } from "express"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import https from "node:https"
-import dns from "node:dns"
 import prisma from "../lib/prisma.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 
@@ -24,6 +23,85 @@ function generatePlaceholderSvg(productName: string): string {
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`
 }
 
+// Cache the resolved HF API IP to avoid repeated DoH lookups
+let hfApiIp: string | null = null
+
+async function resolveHfApiIp(): Promise<string> {
+  if (hfApiIp) return hfApiIp
+  // Google DoH via hardcoded lookup (bypasses Railway's broken system DNS)
+  const dohBody = JSON.stringify({ name: "api-inference.huggingface.co", type: "A" })
+  const ip: string = await new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: "dns.google",
+      port: 443,
+      path: "/dns-query",
+      method: "POST",
+      lookup: (host, opts, cb) => cb(null, "8.8.8.8", 4),
+      headers: {
+        "Content-Type": "application/dns-json",
+        "Content-Length": Buffer.byteLength(dohBody).toString(),
+        "User-Agent": "lebanonpos/1.0",
+        "Accept": "application/dns-json",
+      },
+      timeout: 10000,
+    }, (res) => {
+      const chunks: Buffer[] = []
+      res.on("data", (c: Buffer) => chunks.push(c))
+      res.on("end", () => {
+        try {
+          const data = JSON.parse(Buffer.concat(chunks).toString())
+          const addr = data.Answer?.[0]?.data
+          if (addr) resolve(addr as string)
+          else reject(new Error("No A record found via DoH"))
+        } catch { reject(new Error("Invalid DoH response")) }
+      })
+    })
+    req.on("error", reject)
+    req.on("timeout", () => { req.destroy(); reject(new Error("timeout")) })
+    req.write(dohBody)
+    req.end()
+  })
+  hfApiIp = ip
+  console.log(`[images] HF API resolved to ${ip} via DoH`)
+  return ip
+}
+
+async function hfRequest(productName: string, body: string, ip: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: "api-inference.huggingface.co",
+      port: 443,
+      path: `/models/${HF_MODEL}`,
+      method: "POST",
+      lookup: (host, opts, cb) => cb(null, ip, 4),
+      headers: {
+        "Authorization": `Bearer ${HF_TOKEN}`,
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(body).toString(),
+        "User-Agent": "lebanonpos/1.0",
+      },
+      timeout: 60000,
+    }, (res) => {
+      const chunks: Buffer[] = []
+      res.on("data", (c: Buffer) => chunks.push(c))
+      res.on("end", () => {
+        const buf = Buffer.concat(chunks)
+        if (res.statusCode && res.statusCode >= 400) {
+          const errText = buf.toString("utf8").substring(0, 200)
+          console.error(`[images] HF API error ${res.statusCode} for "${productName}": ${errText}`)
+          reject(new Error(`HTTP ${res.statusCode}`))
+          return
+        }
+        resolve(buf)
+      })
+    })
+    req.on("error", (e) => reject(e))
+    req.on("timeout", () => { req.destroy(); reject(new Error("timeout")) })
+    req.write(body)
+    req.end()
+  })
+}
+
 async function generateImage(productName: string): Promise<{ image: string; generated: boolean }> {
   if (!HF_TOKEN) {
     return { image: generatePlaceholderSvg(productName), generated: false }
@@ -32,80 +110,14 @@ async function generateImage(productName: string): Promise<{ image: string; gene
   try {
     const prompt = `Professional product photo of ${productName}, white background, studio lighting, high quality, e-commerce`
     const body = JSON.stringify({ inputs: prompt })
-    const buffer = await new Promise<Buffer>((resolve, reject) => {
-      // Use public DNS to bypass Railway container DNS issues
-      dns.setServers(["8.8.8.8", "1.1.1.1"])
-      dns.resolve4("api-inference.huggingface.co", (dnsErr, ips) => {
-        if (dnsErr) {
-          // Fallback: try with hostname directly (might work with cached DNS)
-          const req = https.request(`https://api-inference.huggingface.co/models/${HF_MODEL}`, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${HF_TOKEN}`,
-              "Content-Type": "application/json",
-              "Content-Length": Buffer.byteLength(body).toString(),
-              "User-Agent": "lebanonpos/1.0",
-            },
-            timeout: 30000,
-          }, (res) => {
-            const chunks: Buffer[] = []
-            res.on("data", (c: Buffer) => chunks.push(c))
-            res.on("end", () => {
-              const buf = Buffer.concat(chunks)
-              if (res.statusCode && res.statusCode >= 400) {
-                const errText = buf.toString("utf8").substring(0, 200)
-                console.error(`[images] HF API error ${res.statusCode} for "${productName}": ${errText}`)
-                reject(new Error(`HTTP ${res.statusCode}`))
-                return
-              }
-              resolve(buf)
-            })
-          })
-          req.on("error", (e) => reject(e))
-          req.on("timeout", () => { req.destroy(); reject(new Error("timeout")) })
-          req.write(body)
-          req.end()
-          return
-        }
-        const host = ips[0]
-        const opts = {
-          hostname: host,
-          port: 443,
-          path: `/models/${HF_MODEL}`,
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${HF_TOKEN}`,
-            "Content-Type": "application/json",
-            "Content-Length": Buffer.byteLength(body).toString(),
-            "User-Agent": "lebanonpos/1.0",
-            "Host": "api-inference.huggingface.co",
-          },
-          timeout: 30000,
-        }
-        const req = https.request(opts, (res) => {
-          const chunks: Buffer[] = []
-          res.on("data", (c: Buffer) => chunks.push(c))
-          res.on("end", () => {
-            const buf = Buffer.concat(chunks)
-            if (res.statusCode && res.statusCode >= 400) {
-              const errText = buf.toString("utf8").substring(0, 200)
-              console.error(`[images] HF API error ${res.statusCode} for "${productName}": ${errText}`)
-              reject(new Error(`HTTP ${res.statusCode}`))
-              return
-            }
-            resolve(buf)
-          })
-        })
-        req.on("error", (e) => reject(e))
-        req.on("timeout", () => { req.destroy(); reject(new Error("timeout")) })
-        req.write(body)
-        req.end()
-      })
-    })
+    const ip = await resolveHfApiIp()
+    const buffer = await hfRequest(productName, body, ip)
     const base64 = buffer.toString("base64")
     return { image: `data:image/jpeg;base64,${base64}`, generated: true }
   } catch (err) {
     console.error(`[images] HF exception for "${productName}":`, (err as Error).message)
+    // Clear cached IP on failure so next attempt retries DNS
+    hfApiIp = null
     return { image: generatePlaceholderSvg(productName), generated: false }
   }
 }
