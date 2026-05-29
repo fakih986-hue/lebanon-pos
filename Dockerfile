@@ -2,17 +2,20 @@ FROM node:22-alpine AS builder
 RUN npm install -g pnpm
 WORKDIR /app
 
-# Copy workspace root configuration
+# Layer 1: Lockfile + manifests only (changes rarely → caches the next layer)
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY packages/shared/package.json ./packages/shared/
+COPY apps/admin/package.json ./apps/admin/
+COPY apps/driver/package.json ./apps/driver/
+COPY apps/ordering/package.json ./apps/ordering/
+COPY apps/api/package.json ./apps/api/
 
-# Copy shared package (used by all SPAs)
-COPY packages/shared/ ./packages/shared/
-
-# Copy all apps
-COPY apps/ ./apps/
-
-# Install all workspace dependencies (pnpm resolves workspace:* protocol)
+# Layer 2: Install — cached unless lockfile or a manifest changes
 RUN pnpm install --frozen-lockfile
+
+# Layer 3: Source code (changes every deploy)
+COPY packages/shared/ ./packages/shared/
+COPY apps/ ./apps/
 
 # Build admin SPA
 RUN cd apps/admin && npx vite build
@@ -39,7 +42,7 @@ COPY --from=builder /app/apps/admin/dist ./public/admin
 COPY --from=builder /app/apps/driver/dist ./public/driver
 COPY --from=builder /app/apps/ordering/dist ./public/order
 
-# Install only production dependencies for the API (npm, since deps are plain packages)
+# Install only production dependencies for the API
 COPY --from=builder /app/apps/api/package.json ./package.json
 RUN npm install --production
 
