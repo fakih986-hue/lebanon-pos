@@ -7,9 +7,10 @@ import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 const router = Router()
 
 const HF_TOKEN = (process.env.HUGGINGFACE_TOKEN || "").trim()
-const HF_MODEL = process.env.HF_IMAGE_MODEL || "stabilityai/stable-diffusion-xl-base-1.0"
+const HF_MODEL = process.env.HF_IMAGE_MODEL || "black-forest-labs/FLUX.1-schnell"
+const HF_PROVIDER = process.env.HF_IMAGE_PROVIDER || "fal-ai"
 const HF_HOST = "router.huggingface.co"
-const HF_PATH = `/hf-inference/models/${HF_MODEL}`
+const HF_PATH = `/${HF_PROVIDER}/models/${HF_MODEL}`
 
 function generatePlaceholderSvg(productName: string): string {
   const encodedName = productName.replace(/[<>&"']/g, "").trim() || "Product"
