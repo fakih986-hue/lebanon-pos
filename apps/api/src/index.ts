@@ -5,9 +5,10 @@ import { setupWebSocket } from "./ws/index.js"
 import prisma from "./lib/prisma.js"
 
 // Must be set before any route handler runs
-const JWT_SECRET = process.env.JWT_SECRET
-if (!JWT_SECRET || JWT_SECRET === "dev-secret-change-in-production") {
-  console.error(`FATAL: JWT_SECRET environment variable must be set in production (length=${JWT_SECRET ? JWT_SECRET.length : 0}, first=${JWT_SECRET ? JWT_SECRET[0] : 'N/A'})`)
+const JWT_SECRET = (process.env.JWT_SECRET || "").trim()
+if (!JWT_SECRET) {
+  console.error("FATAL: JWT_SECRET environment variable must be set in production")
+  console.error("  raw value:", JSON.stringify(process.env.JWT_SECRET), "typeof:", typeof process.env.JWT_SECRET)
   process.exit(1)
 }
 
