@@ -279,16 +279,22 @@ export async function flushSyncQueue() {
   }
 }
 
-export async function pullFromServer() {
+/**
+ * Pull data from the server.
+ * @param full  When true, ignore the `since` cursor and pull EVERYTHING
+ *              (use for first connect / manual full refresh).
+ *
+ * Safety: on an incremental pull, an empty array for a collection means
+ * "nothing changed" — we must NOT overwrite local data with it. On a full
+ * pull, an empty array is authoritative and replaces local.
+ */
+export async function pullFromServer(full = false) {
   const apiUrl = getApiUrl()
   const token = getAuthToken()
   if (!apiUrl || !token) return
 
-  // Don't block pull on pending ops anymore — just try to pull always
-  // (we flush before pulling in background sync anyway)
-
   try {
-    const lastSync = readLastSyncedAt()
+    const lastSync = full ? undefined : readLastSyncedAt()
     const url = lastSync
       ? `${apiUrl}/api/sync/pull?since=${encodeURIComponent(lastSync)}`
       : `${apiUrl}/api/sync/pull`
@@ -302,7 +308,10 @@ export async function pullFromServer() {
     for (const [key, value] of Object.entries(data)) {
       const target = PULL_TARGETS[key]
       if (!target || value === null || value === undefined) continue
-      writeLocalWithIndexedDB(target.key, Array.isArray(value) ? value : [value])
+      const arr = Array.isArray(value) ? value : [value]
+      // On incremental pulls, never wipe a local collection with an empty result
+      if (!full && arr.length === 0) continue
+      writeLocalWithIndexedDB(target.key, arr)
       window.dispatchEvent(new Event(target.event))
     }
 

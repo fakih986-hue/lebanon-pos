@@ -162,13 +162,13 @@ export default function SettingsPage() {
   function handleSyncNow() {
     void flushSyncQueue()
       .then(async (result) => {
-        await pullFromServer()
+        await pullFromServer(true)  // full pull to guarantee data loads
         setSyncStatus(getSyncStatus())
         setSyncQueue(getSyncQueue())
         showToast(
           result.synced > 0
-            ? `${result.synced} item${result.synced === 1 ? "" : "s"} synced.`
-            : "No pending sync work."
+            ? `${result.synced} item${result.synced === 1 ? "" : "s"} synced. Data refreshed.`
+            : "Data refreshed from server."
         )
       })
       .catch((error) => {
@@ -190,7 +190,15 @@ export default function SettingsPage() {
     } else {
       clearAuthToken()
     }
-    showToast("Server connection saved.")
+    showToast("Server connection saved. Loading your data…")
+    // Full pull on connect so all data loads even if a stale sync cursor exists
+    void pullFromServer(true).then(() => {
+      setSyncStatus(getSyncStatus())
+      setSyncQueue(getSyncQueue())
+      showToast("Data loaded from server.")
+    }).catch(() => {
+      showToast("Connection saved, but data pull failed. Tap Sync now.", "error")
+    })
   }
 
   async function handleRestoreFromIndexedDB() {
