@@ -1,6 +1,7 @@
 import { Router } from "express"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import https from "node:https"
+import dns from "node:dns"
 import prisma from "../lib/prisma.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 
@@ -31,35 +32,75 @@ async function generateImage(productName: string): Promise<{ image: string; gene
   try {
     const prompt = `Professional product photo of ${productName}, white background, studio lighting, high quality, e-commerce`
     const body = JSON.stringify({ inputs: prompt })
-    const url = new URL(`https://api-inference.huggingface.co/models/${HF_MODEL}`)
     const buffer = await new Promise<Buffer>((resolve, reject) => {
-      const req = https.request(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HF_TOKEN}`,
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(body).toString(),
-          "User-Agent": "lebanonpos/1.0",
-        },
-        timeout: 30000,
-      }, (res) => {
-        const chunks: Buffer[] = []
-        res.on("data", (c: Buffer) => chunks.push(c))
-        res.on("end", () => {
-          const buf = Buffer.concat(chunks)
-          if (res.statusCode && res.statusCode >= 400) {
-            const errText = buf.toString("utf8").substring(0, 200)
-            console.error(`[images] HF API error ${res.statusCode} for "${productName}": ${errText}`)
-            reject(new Error(`HTTP ${res.statusCode}`))
-            return
-          }
-          resolve(buf)
+      // Use public DNS to bypass Railway container DNS issues
+      dns.setServers(["8.8.8.8", "1.1.1.1"])
+      dns.resolve4("api-inference.huggingface.co", (dnsErr, ips) => {
+        if (dnsErr) {
+          // Fallback: try with hostname directly (might work with cached DNS)
+          const req = https.request(`https://api-inference.huggingface.co/models/${HF_MODEL}`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${HF_TOKEN}`,
+              "Content-Type": "application/json",
+              "Content-Length": Buffer.byteLength(body).toString(),
+              "User-Agent": "lebanonpos/1.0",
+            },
+            timeout: 30000,
+          }, (res) => {
+            const chunks: Buffer[] = []
+            res.on("data", (c: Buffer) => chunks.push(c))
+            res.on("end", () => {
+              const buf = Buffer.concat(chunks)
+              if (res.statusCode && res.statusCode >= 400) {
+                const errText = buf.toString("utf8").substring(0, 200)
+                console.error(`[images] HF API error ${res.statusCode} for "${productName}": ${errText}`)
+                reject(new Error(`HTTP ${res.statusCode}`))
+                return
+              }
+              resolve(buf)
+            })
+          })
+          req.on("error", (e) => reject(e))
+          req.on("timeout", () => { req.destroy(); reject(new Error("timeout")) })
+          req.write(body)
+          req.end()
+          return
+        }
+        const host = ips[0]
+        const opts = {
+          hostname: host,
+          port: 443,
+          path: `/models/${HF_MODEL}`,
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${HF_TOKEN}`,
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(body).toString(),
+            "User-Agent": "lebanonpos/1.0",
+            "Host": "api-inference.huggingface.co",
+          },
+          timeout: 30000,
+        }
+        const req = https.request(opts, (res) => {
+          const chunks: Buffer[] = []
+          res.on("data", (c: Buffer) => chunks.push(c))
+          res.on("end", () => {
+            const buf = Buffer.concat(chunks)
+            if (res.statusCode && res.statusCode >= 400) {
+              const errText = buf.toString("utf8").substring(0, 200)
+              console.error(`[images] HF API error ${res.statusCode} for "${productName}": ${errText}`)
+              reject(new Error(`HTTP ${res.statusCode}`))
+              return
+            }
+            resolve(buf)
+          })
         })
+        req.on("error", (e) => reject(e))
+        req.on("timeout", () => { req.destroy(); reject(new Error("timeout")) })
+        req.write(body)
+        req.end()
       })
-      req.on("error", (e) => reject(e))
-      req.on("timeout", () => { req.destroy(); reject(new Error("timeout")) })
-      req.write(body)
-      req.end()
     })
     const base64 = buffer.toString("base64")
     return { image: `data:image/jpeg;base64,${base64}`, generated: true }
