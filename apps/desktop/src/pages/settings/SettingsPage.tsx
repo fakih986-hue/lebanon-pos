@@ -206,6 +206,44 @@ export default function SettingsPage() {
     showToast(count > 0 ? `Restored ${count} stores from IndexedDB.` : "No stores needed restoring.")
   }
 
+  function downloadRecoveryCard() {
+    const users = JSON.parse(localStorage.getItem("lebanonpos.users.v1") ?? "[]") as Array<{ name: string; role: string }>
+    const staffLines = users.map((u) => `  - ${u.name} (${u.role})`).join("\n")
+    const card = [
+      "================================",
+      "  LEBANON POS — RECOVERY CARD",
+      "================================",
+      "",
+      `Store:       ${settings.storeName || "—"}`,
+      `Branch:      ${settings.branchName || "—"}`,
+      `Server URL:  ${getApiUrl() || "(not set)"}`,
+      `Subdomain:   default`,
+      "",
+      "Staff (log in with each person's PIN — PINs are NOT stored here for security):",
+      staffLines || "  (none)",
+      "",
+      "--------------------------------",
+      "TO RECOVER ON A NEW DEVICE:",
+      "  1. Install / open Lebanon POS",
+      "  2. On the login screen tap 'New device? Connect to your store'",
+      "  3. Enter the Server URL + Subdomain above",
+      "  4. Enter your PIN  →  all your data downloads",
+      "--------------------------------",
+      "",
+      `Generated: ${new Date().toLocaleString()}`,
+      "Keep this card safe (email it to yourself or save to your phone/Drive).",
+    ].join("\n")
+
+    const blob = new Blob([card], { type: "text/plain" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `lebanonpos-recovery-card-${new Date().toISOString().slice(0, 10)}.txt`
+    link.click()
+    URL.revokeObjectURL(url)
+    showToast("Recovery card downloaded. Save it somewhere safe off this device.")
+  }
+
   function exportData() {
     const keys = [
       "lebanonpos.products.v1",
@@ -781,13 +819,28 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            <div className="mt-4 rounded-lg border-2 p-4" style={{ borderColor: "var(--brand-border)", background: "var(--brand-soft)" }}>
+              <p className="text-[13px] font-bold mb-1" style={{ color: "var(--brand-text)" }}>🛟 Disaster Recovery Card</p>
+              <p className="text-[12px] mb-3" style={{ color: "var(--text-2)" }}>
+                Download a small card with your server URL + store info. Save it to email or your phone. If this PC breaks, use it on a new device to reconnect and pull all your data.
+              </p>
+              <button
+                type="button"
+                onClick={downloadRecoveryCard}
+                className="btn-checkout w-full h-11 text-[14px] font-bold"
+              >
+                <Download size={16} className="inline mr-2" />
+                Download Recovery Card
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={exportData}
-              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+              className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
             >
               <Download size={17} />
-              Export Backup
+              Export Full Data Backup (JSON)
             </button>
 
             <button

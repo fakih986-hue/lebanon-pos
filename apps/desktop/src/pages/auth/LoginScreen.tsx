@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { KeyRound, LockKeyhole, ShieldCheck } from "lucide-react"
+import { CloudDownload, KeyRound, LockKeyhole, ShieldCheck, X } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
 import {
@@ -7,6 +7,12 @@ import {
   unlockWithPin,
   type StaffUser,
 } from "../../features/pos/services/security.service"
+import {
+  getApiUrl,
+  pullFromServer,
+  setApiUrl,
+  setAuthToken,
+} from "../../features/pos/services/sync.service"
 import { showToast } from "../../features/pos/services/toast.service"
 
 function roleBadge(role: StaffUser["role"]) {
@@ -21,6 +27,14 @@ export default function LoginScreen() {
   const [pin, setPin] = useState("")
   const [status, setStatus] = useState(t("desktop.lock_hint"))
 
+  // ── Connect-to-store (disaster recovery on a new/empty device) ──
+  const [connectOpen, setConnectOpen] = useState(false)
+  const [cApiUrl, setCApiUrl] = useState(getApiUrl() ?? "https://lebanon-pos-production.up.railway.app")
+  const [cSubdomain, setCSubdomain] = useState("")
+  const [cPin, setCPin] = useState("")
+  const [cLoading, setCLoading] = useState(false)
+  const [cError, setCError] = useState("")
+
   async function handleUnlock() {
     const user = await unlockWithPin(pin)
     if (!user) {
@@ -29,6 +43,43 @@ export default function LoginScreen() {
       return
     }
     setStatus(`${user.name} unlocked.`)
+  }
+
+  async function handleConnect() {
+    const url = cApiUrl.trim().replace(/\/+$/, "")
+    if (!url) { setCError("Enter the server URL"); return }
+    if (!cPin.trim()) { setCError("Enter your PIN"); return }
+    setCLoading(true)
+    setCError("")
+    try {
+      let res: Response
+      try {
+        res = await fetch(`${url}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin: cPin.trim(), tenantSubdomain: cSubdomain.trim() || undefined }),
+        })
+      } catch {
+        throw new Error(`Can't reach ${url}. Check the URL and your internet.`)
+      }
+      const raw = await res.text()
+      let data: any = null
+      try { data = raw ? JSON.parse(raw) : null } catch {
+        throw new Error(`Server returned an unexpected response (HTTP ${res.status}).`)
+      }
+      if (!res.ok) throw new Error(data?.error ?? `Login failed (HTTP ${res.status})`)
+      if (!data?.token) throw new Error("No token returned.")
+
+      setApiUrl(url)
+      setAuthToken(data.token)
+      await pullFromServer(true)  // full pull → all data + users land locally
+
+      showToast(`Connected to ${data.user?.tenantName ?? "store"}. Loading…`)
+      setTimeout(() => window.location.reload(), 700)
+    } catch (err) {
+      setCError(err instanceof Error ? err.message : "Connection failed")
+      setCLoading(false)
+    }
   }
 
   return (
@@ -121,8 +172,64 @@ export default function LoginScreen() {
             <KeyRound size={17} className="inline mr-2" />
             {t("desktop.lock_unlock_register")}
           </button>
+
+          {/* Disaster recovery: connect a new/empty device to the store */}
+          <button
+            type="button"
+            onClick={() => { setConnectOpen(true); setCError("") }}
+            className="mt-3 flex w-full items-center justify-center gap-2 text-[12px] font-semibold transition hover:opacity-80"
+            style={{ color: "var(--text-3)" }}
+          >
+            <CloudDownload size={14} />
+            New device? Connect to your store
+          </button>
         </div>
       </section>
+
+      {/* Connect modal */}
+      {connectOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+          <div
+            className="w-full max-w-md rounded-2xl border p-6 animate-scale-in"
+            style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "var(--shadow-xl)" }}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <CloudDownload size={20} style={{ color: "var(--accent)" }} />
+                <h2 className="text-[17px] font-bold" style={{ color: "var(--text)" }}>Connect to your store</h2>
+              </div>
+              <button onClick={() => setConnectOpen(false)} style={{ color: "var(--text-3)" }}><X size={18} /></button>
+            </div>
+            <p className="text-[12px] mb-4" style={{ color: "var(--text-3)" }}>
+              Use this on a new or replacement device. Enter your store details from your Recovery Card, plus your PIN. All your data will download.
+            </p>
+
+            <label className="block mb-3">
+              <span className="block text-[12px] font-bold mb-1.5" style={{ color: "var(--text-2)" }}>Server URL</span>
+              <input value={cApiUrl} onChange={(e) => setCApiUrl(e.target.value)} placeholder="https://your-app.railway.app" className="input w-full" autoFocus />
+            </label>
+            <label className="block mb-3">
+              <span className="block text-[12px] font-bold mb-1.5" style={{ color: "var(--text-2)" }}>Store subdomain <span style={{ color: "var(--text-3)" }}>(optional if single store)</span></span>
+              <input value={cSubdomain} onChange={(e) => setCSubdomain(e.target.value)} placeholder="default" className="input w-full" />
+            </label>
+            <label className="block mb-3">
+              <span className="block text-[12px] font-bold mb-1.5" style={{ color: "var(--text-2)" }}>Your PIN</span>
+              <input type="password" inputMode="numeric" value={cPin} onChange={(e) => setCPin(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleConnect() }}
+                placeholder="••••" className="input w-full text-center text-xl font-bold tracking-widest" style={{ height: 50 }} />
+            </label>
+
+            {cError && (
+              <p className="rounded-lg px-3 py-2 text-[13px] font-semibold mb-3" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>{cError}</p>
+            )}
+
+            <button type="button" onClick={handleConnect} disabled={cLoading || !cApiUrl.trim() || !cPin.trim()}
+              className="btn-checkout w-full h-12 text-[15px] font-bold">
+              {cLoading ? "Connecting & downloading…" : "Connect & Download My Data"}
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
