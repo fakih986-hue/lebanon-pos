@@ -146,7 +146,8 @@ export default function DashboardPage() {
   const rangeStart = useMemo(() => getDateStart(dateRange), [dateRange])
 
   const rangeSales = useMemo(
-    () => sales.filter((s) => new Date(s.createdAt) >= rangeStart),
+    // Exclude voided sales from every dashboard metric
+    () => sales.filter((s) => new Date(s.createdAt) >= rangeStart && s.status !== "Voided"),
     [sales, rangeStart]
   )
   const rangeExpenses = useMemo(
@@ -155,7 +156,11 @@ export default function DashboardPage() {
   )
 
   const metrics = useMemo(() => getSalesMetrics(), [sales, settings])
-  const rangeRevenue = rangeSales.reduce((s, x) => s + x.total, 0)
+  // Net Paid = cash/card/wallet sales only (debt is money owed, not collected)
+  const paidSales = rangeSales.filter((s) => s.paymentMethod !== "Debt")
+  const debtSales = rangeSales.filter((s) => s.paymentMethod === "Debt")
+  const rangeRevenue = paidSales.reduce((s, x) => s + x.total, 0)
+  const rangeDebtIssued = debtSales.reduce((s, x) => s + x.total, 0)
   const rangeProfit = rangeSales.reduce((s, x) => s + (x.profit ?? 0), 0)
   const rangeExpenseTotal = rangeExpenses.reduce((s, e) => s + e.amount, 0)
   const rangeOpProfit = rangeProfit - rangeExpenseTotal
@@ -228,7 +233,7 @@ export default function DashboardPage() {
       {/* KPI stat cards */}
       <section className="grid grid-cols-2 gap-3 xl:grid-cols-4 mb-5">
         {[
-          { label: t("desktop.dashboard.net_paid"), value: formatCurrency(rangeRevenue), sub: `${formatNumber(rangeTransactions)} ${t("desktop.dashboard.transactions")}`, icon: CircleDollarSign, color: "text-emerald-700", bg: "bg-emerald-50" },
+          { label: t("desktop.dashboard.net_paid"), value: formatCurrency(rangeRevenue), sub: rangeDebtIssued > 0 ? `${formatNumber(rangeTransactions)} sales · ${formatCurrency(rangeDebtIssued)} on debt` : `${formatNumber(rangeTransactions)} ${t("desktop.dashboard.transactions")}`, icon: CircleDollarSign, color: "text-emerald-700", bg: "bg-emerald-50" },
           { label: t("desktop.dashboard.operating_profit"), value: formatCurrency(rangeOpProfit), sub: `${formatCurrency(rangeExpenseTotal)} ${t("desktop.dashboard.expenses_today")}`, icon: TrendingUp, color: "text-indigo-700", bg: "bg-indigo-50" },
           { label: t("desktop.dashboard.outstanding"), value: formatCurrency(ledgerTotals.outstanding), sub: `${formatNumber(ledgerTotals.customers)} ${t("desktop.dashboard.customer_accounts")}`, icon: HandCoins, color: "text-rose-700", bg: "bg-rose-50", valueColor: "text-rose-700" },
           { label: t("desktop.dashboard.stock_value"), value: formatCurrency(stockValue), sub: `${formatNumber(lowStockProducts.length)} ${t("desktop.dashboard.low_stock_products")}`, icon: Boxes, color: "text-amber-700", bg: "bg-amber-50" },

@@ -1023,6 +1023,68 @@ export default function POSPage() {
     setScannerStatus("Sale completed. Scanner ready for the next sale.")
   }, [checkoutBlocked, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, clearCart, resetTender, resetDiscount])
 
+  // Quick Checkout (Simple Mode) completion — explicit payment params, Cash/Card/Wallet only.
+  // Returns the sale number on success, or null if blocked (empty cart / insufficient cash).
+  const completeSimpleSale = useCallback(function completeSimpleSale(
+    method: "Cash" | "Card" | "Wallet",
+    paidUsdInput: number
+  ): string | null {
+    if (items.length === 0) return null
+
+    const simpleSubtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const simpleTax = simpleSubtotal * settings.vatRate
+    const simpleTotal = simpleSubtotal + simpleTax
+    const rate = Math.max(1, settings.usdToLbpRate)
+    const simpleTotalLbp = usdToLbp(simpleTotal, rate)
+
+    if (method === "Cash" && paidUsdInput + 0.005 < simpleTotal) return null
+
+    const saleNumber = `S-${Date.now().toString().slice(-6)}`
+    const batchAllocations = consumeInventoryBatches(
+      items.map((item) => ({ productId: item.id, productName: item.name, barcode: item.barcode, quantity: item.quantity, fallbackUnitCost: item.cost }))
+    )
+    const saleItems = items.map((item) => {
+      const allocations = batchAllocations.get(item.id) ?? []
+      const allocatedQuantity = allocations.reduce((s, a) => s + a.quantity, 0)
+      const allocatedCost = allocations.reduce((s, a) => s + a.unitCost * a.quantity, 0)
+      const unitCost = allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost
+      return { id: item.id, name: item.name, barcode: item.barcode, cost: unitCost, quantity: item.quantity, unitPrice: item.price, total: item.price * item.quantity, batchAllocations: allocations }
+    })
+
+    const changeUsd = method === "Cash" ? Math.max(0, paidUsdInput - simpleTotal) : 0
+    const tender: SaleTender | undefined = method === "Cash" ? {
+      currency: "USD",
+      exchangeRate: rate,
+      paidUsd: paidUsdInput,
+      paidLbp: 0,
+      paidTotalUsd: paidUsdInput,
+      paidTotalLbp: usdToLbp(paidUsdInput, rate),
+      changeUsd,
+      changeLbp: usdToLbp(changeUsd, rate),
+    } : undefined
+
+    recordSale({
+      saleNumber,
+      paymentMethod: method,
+      subtotal: simpleSubtotal,
+      discountTotal: 0,
+      tax: simpleTax,
+      total: simpleTotal,
+      tender,
+      items: saleItems,
+    })
+
+    setProducts(decreaseProductStock(items.map((item) => ({ productId: item.id, quantity: item.quantity }))))
+    setLastSale({
+      number: saleNumber, paymentMethod: method, customerName: undefined,
+      grossSubtotal: simpleSubtotal, subtotal: simpleSubtotal, discountTotal: 0,
+      tax: simpleTax, total: simpleTotal, totalLbp: simpleTotalLbp, exchangeRate: rate,
+      tender, customerBalanceBefore: undefined, customerBalanceAfter: undefined, items,
+    })
+    clearCart()
+    return saleNumber
+  }, [items, settings, clearCart])
+
   return (
     <main className="relative min-h-0 flex-1 overflow-hidden bg-page">
       <section className="flex h-full min-w-0 flex-col gap-3 overflow-y-auto p-3 pb-28 sm:p-4 xl:p-5">
@@ -1328,6 +1390,7 @@ export default function POSPage() {
           total={total}
           totalLbp={totalLbp}
           exchangeRate={exchangeRate}
+          onCompleteSale={completeSimpleSale}
           onExit={() => setSimpleMode(false)}
         />
       )}

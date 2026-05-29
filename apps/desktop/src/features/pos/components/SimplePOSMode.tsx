@@ -39,6 +39,8 @@ interface Props {
   total: number
   totalLbp: number
   exchangeRate: number
+  // Complete the sale — returns the sale number on success, or null if blocked
+  onCompleteSale: (paymentMethod: PaymentMethod, paidUsd: number) => string | null
   // Exit
   onExit: () => void
 }
@@ -103,7 +105,7 @@ export default function SimplePOSMode({
   products, categories,
   items, onAddProduct, onIncreaseQty, onDecreaseQty, onRemoveItem,
   vatRate, grossSubtotal, subtotal, tax, total, totalLbp, exchangeRate,
-  onExit,
+  onCompleteSale, onExit,
 }: Props) {
   const { t } = useI18n()
   const [search, setSearch] = useState("")
@@ -129,14 +131,12 @@ export default function SimplePOSMode({
 
   function handleCompleteSale() {
     if (!cashValid || items.length === 0) return
-    // Trigger the parent's completeSale via a click on the hidden POS complete button
-    // We dispatch a custom event that POSPage listens for
-    window.dispatchEvent(new CustomEvent("pos:simple-complete", {
-      detail: { paymentMethod, paidUsd: parseMoney(paidUsd) }
-    }))
-    const saleNum = `S-${Date.now().toString().slice(-6)}`
-    setCompletedSale({ number: saleNum, change: changeUsd })
+    const change = changeUsd
+    const saleNumber = onCompleteSale(paymentMethod, parseMoney(paidUsd))
+    if (!saleNumber) return  // completion was blocked
+    setCompletedSale({ number: saleNumber, change })
     setPaidUsd("")
+    setPaymentMethod("Cash")
     setTimeout(() => setCompletedSale(null), 2500)
   }
 
@@ -289,9 +289,9 @@ export default function SimplePOSMode({
               className="mx-3 mt-3 rounded-xl p-3 text-center animate-scale-in"
               style={{ background: "var(--brand-soft)", border: "1px solid var(--brand-border)" }}
             >
-              <p className="text-[15px] font-black" style={{ color: "var(--brand-text)" }}>✓ Done!</p>
-              {changeUsd > 0 && (
-                <p className="text-[13px] font-semibold mt-0.5" style={{ color: "var(--brand-text)" }}>
+              <p className="text-[15px] font-black" style={{ color: "var(--brand-text)" }}>✓ Sale {completedSale.number}</p>
+              {completedSale.change > 0 && (
+                <p className="text-[14px] font-bold mt-0.5" style={{ color: "var(--brand-text)" }}>
                   Change: {formatCurrency(completedSale.change)}
                 </p>
               )}

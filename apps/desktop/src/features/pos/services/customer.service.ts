@@ -192,6 +192,25 @@ export function recordDebtSale(input: RecordDebtSaleInput) {
   return sale
 }
 
+/**
+ * Reverse a debt sale when its underlying sale is voided.
+ * Removes the matching DebtSale entry so the customer balance drops back.
+ */
+export function reverseDebtSale(saleNumber: string) {
+  const debtSales = getDebtSales()
+  const match = debtSales.find((d) => d.saleNumber === saleNumber)
+  if (!match) return undefined
+
+  writeCollection(DEBT_SALES_KEY, debtSales.filter((d) => d.id !== match.id))
+  enqueueSyncOperation({
+    entity: "debt",
+    action: "delete",
+    summary: `Debt sale ${saleNumber} reversed (sale voided).`,
+    payload: { id: match.id, saleNumber },
+  })
+  return match
+}
+
 export function recordDebtPayment(input: RecordDebtPaymentInput) {
   const payment: DebtPayment = {
     id: crypto.randomUUID(),

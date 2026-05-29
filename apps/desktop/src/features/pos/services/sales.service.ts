@@ -1,5 +1,8 @@
 import type { Product } from "../types/product"
 import type { BatchAllocation } from "./inventoryBatch.service"
+import { restoreInventoryBatches } from "./inventoryBatch.service"
+import { increaseProductStock } from "./product.service"
+import { reverseDebtSale } from "./customer.service"
 import { getSettings } from "./settings.service"
 import {
   getActiveShift,
@@ -333,15 +336,45 @@ export function voidSale(saleId: string) {
   const sale = sales.find((item) => item.id === saleId)
   if (!sale) return
 
+  // Guard: already voided — do nothing (prevents double-restock)
+  if (sale.status === "Voided") return
+
   const nextSales = sales.map((item) =>
     item.id === saleId ? { ...item, status: "Voided" as const } : item
   )
   writeSales(nextSales)
+
+  // 1. Restore product stock for every line item
+  increaseProductStock(
+    sale.items.map((item) => ({ productId: item.id, quantity: item.quantity }))
+  )
+
+  // 2. Return consumed inventory batches (FIFO restore)
+  restoreInventoryBatches(
+    sale.items.map((item) => ({
+      productId: item.id,
+      productName: item.name,
+      barcode: item.barcode,
+      quantity: item.quantity,
+      fallbackUnitCost: item.cost,
+    }))
+  )
+
+  // 3. If it was a debt sale, reverse the customer's outstanding balance
+  if (sale.paymentMethod === "Debt" || sale.status === "Debt") {
+    reverseDebtSale(sale.saleNumber)
+  }
+
   recordAuditEvent({
     action: "sale.void",
     entity: "sale",
-    summary: `${sale.saleNumber} voided.`,
-    metadata: { saleId, total: sale.total },
+    summary: `${sale.saleNumber} voided — stock and debt restored.`,
+    metadata: {
+      saleId,
+      total: sale.total,
+      itemsRestored: sale.items.length,
+      wasDebt: sale.paymentMethod === "Debt",
+    },
   })
   enqueueSyncOperation({
     entity: "sale",

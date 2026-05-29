@@ -247,6 +247,7 @@ export default function AccountingPage() {
   const [expenseForm, setExpenseForm] =
     useState<ExpenseForm>(emptyExpenseForm)
   const [closeNote, setCloseNote] = useState("")
+  const [countedCash, setCountedCash] = useState("")
   const canManageAccounting = userCan("accounting.manage")
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
   const [activeWorkspace, setActiveWorkspace] =
@@ -358,6 +359,15 @@ export default function AccountingPage() {
       showToast(t("pos.permission_required"), "error")
       return
     }
+    // Append cash reconciliation to the note if a count was entered
+    const counted = parseFloat(countedCash)
+    let finalNote = closeNote
+    if (countedCash.trim() !== "" && !isNaN(counted)) {
+      const variance = counted - summary.cashNet
+      const varianceLine = `Cash count: ${formatCurrency(counted)} vs expected ${formatCurrency(summary.cashNet)} (variance ${variance >= 0 ? "+" : ""}${formatCurrency(variance)}).`
+      finalNote = finalNote ? `${finalNote}\n${varianceLine}` : varianceLine
+    }
+
     const close = closeBusinessDay({
       dateKey: summary.dateKey,
       grossSales: summary.grossSales,
@@ -371,9 +381,10 @@ export default function AccountingPage() {
       netProfit: summary.netProfit,
       cashIn: summary.cashIn,
       cashOut: summary.cashOut,
-      note: closeNote,
+      note: finalNote,
     })
     setCloseNote("")
+    setCountedCash("")
     setShowCloseConfirm(false)
     showToast(t("pos.accounting.day_closed", { date: formatDateKey(close.dateKey) }))
   }
@@ -543,6 +554,55 @@ export default function AccountingPage() {
             </div>
 
             <div className="border-t border-zinc-200 p-4">
+              {/* Cash reconciliation: count drawer vs expected */}
+              {(() => {
+                const expected = summary.cashNet
+                const counted = parseFloat(countedCash)
+                const hasCount = countedCash.trim() !== "" && !isNaN(counted)
+                const variance = hasCount ? counted - expected : 0
+                const matched = Math.abs(variance) < 0.01
+                return (
+                  <div className="mb-3 rounded-lg border p-4" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+                    <p className="text-[13px] font-bold mb-3" style={{ color: "var(--text)" }}>Cash reconciliation</p>
+                    <div className="flex items-center justify-between mb-2 text-sm">
+                      <span style={{ color: "var(--text-2)" }}>Expected in drawer</span>
+                      <strong style={{ color: "var(--text)" }}>{formatCurrency(expected)}</strong>
+                    </div>
+                    <label className="block">
+                      <span className="block text-[12px] font-semibold mb-1.5" style={{ color: "var(--text-2)" }}>
+                        Counted cash (actual in drawer)
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={countedCash}
+                        onChange={(e) => setCountedCash(e.target.value)}
+                        placeholder={expected.toFixed(2)}
+                        className="input w-full text-right font-bold"
+                        style={{ height: 44, fontSize: 16 }}
+                      />
+                    </label>
+                    {hasCount && (
+                      <div
+                        className="mt-3 flex items-center justify-between rounded-lg px-3 py-2.5"
+                        style={matched
+                          ? { background: "var(--brand-soft)", color: "var(--brand-text)" }
+                          : { background: "var(--rose-soft)", color: "var(--rose-text)" }
+                        }
+                      >
+                        <span className="text-[13px] font-bold">
+                          {matched ? "✓ Balanced" : variance > 0 ? "Over (extra cash)" : "Short (missing cash)"}
+                        </span>
+                        <strong className="text-[15px]">
+                          {variance > 0 ? "+" : ""}{formatCurrency(variance)}
+                        </strong>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
               <textarea
                 value={closeNote}
                 onChange={(event) => setCloseNote(event.target.value)}
