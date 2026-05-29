@@ -168,6 +168,8 @@ export const en = {
   "products.images_error": "Failed to generate images",
   "products.images_token_missing": "AI token not set — using placeholder images",
   "products.images_all_done": "All products already have images",
+  "products.regenerate_all": "Regenerate All",
+  "products.regenerate_all_tip": "Regenerate images for all products (overwrites existing)",
 
   /* Status */
   "status.Pending": "Pending",

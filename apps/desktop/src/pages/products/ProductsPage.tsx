@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useDebounce } from "../../hooks/useDebounce"
 import type { Product } from "../../features/pos/types/product"
-import { Plus, X } from "lucide-react"
+import { ImagePlus, Plus, X } from "lucide-react"
 import KpiCards from "../../features/pos/components/KpiCards"
 import AlertsPanel from "../../features/pos/components/AlertsPanel"
 import StockControlPanel from "../../features/pos/components/StockControlPanel"
@@ -9,6 +9,7 @@ import ProductSetupForm from "../../features/pos/components/ProductSetupForm"
 import ProductTable from "../../features/pos/components/ProductTable"
 import Spinner from "../../components/ui/Spinner"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
+import { getApiUrl, getAuthToken } from "../../features/pos/services/sync.service"
 
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import {
@@ -103,6 +104,8 @@ export default function ProductsPage() {
   const [barcodeAliases, setBarcodeAliases] = useState("")
   const [categoryFrom, setCategoryFrom] = useState("")
   const [categoryTo, setCategoryTo] = useState("")
+  const [generatingImages, setGeneratingImages] = useState(false)
+  const [genImageStatus, setGenImageStatus] = useState<string | null>(null)
   const [adjustmentProductId, setAdjustmentProductId] = useState<number | null>(
     null
   )
@@ -424,6 +427,50 @@ export default function ProductsPage() {
         ? `${product.name} removed from POS favorites.`
         : `${product.name} added to POS favorites.`
     )
+  }
+
+  async function generateProductImages() {
+    const apiUrl = getApiUrl()
+    const token = getAuthToken()
+    if (!apiUrl || !token) {
+      showToast("Connect to server first in Settings.", "error")
+      return
+    }
+
+    setGeneratingImages(true)
+    setGenImageStatus(null)
+    try {
+      const res = await fetch(`${apiUrl}/api/images/generate-all`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ force: true }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }))
+        throw new Error(err.error || `Request failed: ${res.status}`)
+      }
+      const data = await res.json()
+      const { products: results } = data
+
+      if (Array.isArray(results)) {
+        for (const item of results) {
+          if (item.image) {
+            updateProduct(item.id, { image: item.image })
+          }
+        }
+      }
+
+      showToast(`Generated ${data.generated} AI images, ${data.placeholders} placeholders (${data.total} products)`)
+      setGenImageStatus(`Generated ${data.generated} AI images${data.tokenMissing ? " — set HUGGINGFACE_TOKEN for real AI images" : ""}`)
+    } catch (err) {
+      showToast(`Image generation failed: ${(err as Error).message}`, "error")
+      setGenImageStatus("Failed to generate images")
+    } finally {
+      setGeneratingImages(false)
+    }
   }
 
   function addVariant() {
@@ -917,7 +964,15 @@ export default function ProductsPage() {
         </div>
       )}
       {!bulkEditOpen && (
-        <div className="mb-3 flex justify-end">
+        <div className="mb-3 flex items-center justify-end gap-2">
+          {genImageStatus && (
+            <span className="mr-auto text-xs text-zinc-500">{genImageStatus}</span>
+          )}
+          <button type="button" onClick={generateProductImages} disabled={generatingImages}
+            className="flex h-9 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50">
+            <ImagePlus size={14} />
+            {generatingImages ? "Generating..." : "Generate Images"}
+          </button>
           <button type="button" onClick={() => setBulkEditOpen(true)}
             className="flex h-9 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50">
             ± Bulk Edit Prices

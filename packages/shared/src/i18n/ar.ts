@@ -168,6 +168,8 @@ export const ar = {
   "products.images_error": "فشل توليد الصور",
   "products.images_token_missing": "رمز AI غير مضبوط — استخدام صور بديلة",
   "products.images_all_done": "جميع المنتجات لديها صور بالفعل",
+  "products.regenerate_all": "إعادة التوليد للجميع",
+  "products.regenerate_all_tip": "إعادة توليد الصور لجميع المنتجات (الكتابة فوق الموجودة)",
 
   /* Status */
   "status.Pending": "معلق",

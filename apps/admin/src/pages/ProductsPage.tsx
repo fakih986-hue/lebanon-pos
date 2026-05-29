@@ -28,11 +28,12 @@ export function ProductsPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const handleGenerateImages = async () => {
+  const handleGenerateImages = async (force = false) => {
     setGenerating(true)
     setGenStatus(null)
     try {
-      const data = await api<{ generated: number; placeholders: number; total: number; tokenMissing?: boolean }>("/api/images/generate-all", { method: "POST" })
+      const body = force ? { force: true } : undefined
+      const data = await api<{ generated: number; placeholders: number; total: number; tokenMissing?: boolean }>("/api/images/generate-all", { method: "POST", body: body ? JSON.stringify(body) : undefined })
       if (data.tokenMissing) {
         setGenStatus(t("products.images_token_missing") || "AI token not set — using placeholder images")
       } else if (data.total === 0) {
@@ -62,7 +63,7 @@ export function ProductsPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={handleGenerateImages}
+            onClick={() => handleGenerateImages()}
             disabled={generating}
             className="btn-primary text-sm flex items-center gap-2"
           >
@@ -72,6 +73,15 @@ export function ProductsPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             )}
             {generating ? t("products.generating") : t("products.generate_images")}
+          </button>
+          <button
+            onClick={() => handleGenerateImages(true)}
+            disabled={generating}
+            className="btn-secondary text-sm flex items-center gap-2"
+            title={t("products.regenerate_all_tip") || "Regenerate images for all products (overwrites existing)"}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            {t("products.regenerate_all") || "Regenerate All"}
           </button>
           {genStatus && (
             <span className="text-xs font-medium px-3 py-1.5 rounded-lg" style={{ color: "var(--text-secondary)", background: "var(--input-bg)" }}>{genStatus}</span>

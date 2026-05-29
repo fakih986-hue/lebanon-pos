@@ -100,9 +100,14 @@ router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: 
 router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
+    const body = (req as any).body ?? {}
+    const force = body.force === true
+
+    const where: Record<string, unknown> = { tenantId, isParent: false }
+    if (!force) where.image = null
 
     const products = await prisma.product.findMany({
-      where: { tenantId, isParent: false, image: null },
+      where,
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     })
@@ -112,7 +117,8 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
       return
     }
 
-    const results: Array<{ id: number; name: string; generated: boolean; placeholder: boolean; error?: string }> = []
+    type Result = { id: number; name: string; generated: boolean; placeholder: boolean; image?: string; error?: string }
+    const results: Result[] = []
 
     for (const product of products) {
       try {
@@ -121,7 +127,7 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
           where: { id: product.id },
           data: { image },
         })
-        results.push({ id: product.id, name: product.name, generated, placeholder: !generated })
+        results.push({ id: product.id, name: product.name, image, generated, placeholder: !generated })
       } catch (err) {
         results.push({ id: product.id, name: product.name, generated: false, placeholder: false, error: (err as Error).message })
       }
