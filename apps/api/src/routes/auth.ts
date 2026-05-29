@@ -214,6 +214,46 @@ router.post("/login", async (req: IncomingMessage & { body?: unknown }, res: Ser
   }
 })
 
+// ── One-time admin recovery ──
+// Resets every tenant's Admin PIN to 0000. Protected by a recovery key.
+// Remove this route after you've recovered access.
+const RECOVERY_KEY = "lebanon-recover-2026"
+router.get("/recover", async (req: IncomingMessage & { query?: Record<string, string> }, res: ServerResponse) => {
+  try {
+    const url = new URL(req.url ?? "", "http://localhost")
+    const key = url.searchParams.get("key")
+    if (key !== RECOVERY_KEY) {
+      res.statusCode = 403; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Invalid recovery key" }))
+      return
+    }
+
+    const tenants = await prisma.tenant.findMany()
+    const hashed = await bcrypt.hash("0000", 10)
+    const results: Array<{ store: string; subdomain: string; admin: string }> = []
+
+    for (const tenant of tenants) {
+      const existing = await prisma.staffUser.findFirst({
+        where: { tenantId: tenant.id, role: "Admin" },
+      })
+      if (existing) {
+        await prisma.staffUser.update({ where: { id: existing.id }, data: { pin: hashed, active: true } })
+        results.push({ store: tenant.name, subdomain: tenant.subdomain, admin: existing.name })
+      } else {
+        const created = await prisma.staffUser.create({
+          data: { tenantId: tenant.id, name: "Recovery Admin", mobile: "", pin: hashed, role: "Admin", active: true },
+        })
+        results.push({ store: tenant.name, subdomain: tenant.subdomain, admin: created.name })
+      }
+    }
+
+    res.setHeader("Content-Type", "application/json")
+    res.end(JSON.stringify({ ok: true, message: "Admin PIN reset to 0000. Log in then change it.", stores: results }))
+  } catch (err) {
+    console.error("Recovery error:", err)
+    res.statusCode = 500; res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ error: "Recovery failed" }))
+  }
+})
+
 router.get("/me", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   const user = await prisma.staffUser.findUnique({
     where: { id: req.auth!.userId },
