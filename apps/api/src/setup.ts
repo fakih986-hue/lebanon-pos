@@ -6,20 +6,23 @@ console.log("[setup] started")
 const ENV = { ...process.env, NO_COLOR: "1" }
 const EXEC_OPTS = { stdio: "inherit" as const, env: ENV, timeout: 60_000 }
 
-// If a previous deploy used `db push`, types/tables were created directly in the DB
-// without migration tracking. Those migrations would then fail with "already exists".
-// Resolve them as "applied" so Prisma stops blocking on them.
-const PRE_APPLIED_MIGRATIONS = [
-  "20260526211605_variants_delivery",
-  "20260527000001_variants_delivery",
-]
-for (const name of PRE_APPLIED_MIGRATIONS) {
-  try {
-    execSync(`npx prisma migrate resolve --applied ${name}`, EXEC_OPTS)
-    console.log(`[setup] resolved migration: ${name}`)
-  } catch {
-    // Already resolved or not in a failed state — safe to ignore
-  }
+// Resolve the missing duplicate migration — its schema changes are identical
+// to those in the surviving 20260526211605_variants_delivery migration.
+try {
+  execSync(`npx prisma migrate resolve --rolled-back "20260527000001_variants_delivery"`, EXEC_OPTS)
+  console.log("[setup] rolled back missing migration: 20260527000001_variants_delivery")
+} catch {
+  // Already resolved or not in a failed state — safe to ignore
+}
+
+// Resolve the drift-fix migration that failed to apply because the schema
+// changes (Driver enum, StaffUser.code, AppSettings delivery fields, etc.)
+// were already present in the database from a prior `db push`.
+try {
+  execSync(`npx prisma migrate resolve --applied "20260528000001_fix_schema_drift"`, EXEC_OPTS)
+  console.log("[setup] resolved failed migration: 20260528000001_fix_schema_drift")
+} catch {
+  // Already resolved or not in a failed state — safe to ignore
 }
 
 try {

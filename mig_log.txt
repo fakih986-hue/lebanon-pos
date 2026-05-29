@@ -1,0 +1,10 @@
+﻿006dae8 Image generation endpoints + ordering menu images + admin generate button + i18n fixes
+apps/api/prisma/migrations/20260527000001_variants_delivery/migration.sql
+apps/api/prisma/migrations/20260528000001_fix_schema_drift/migration.sql
+7de7530 Fix all sync entities: upsert for retry safety, void handler, empty tender bug
+apps/api/prisma/migrations/20260526211605_variants_delivery/migration.sql
+70e4435 Add Prisma migration for variants and delivery
+apps/api/prisma/migrations/20260527000001_variants_delivery/migration.sql
+4945f73 fix: commit prisma migrations, use migrate deploy
+apps/api/prisma/migrations/20260526082956_init/migration.sql
+apps/api/prisma/migrations/migration_lock.toml
