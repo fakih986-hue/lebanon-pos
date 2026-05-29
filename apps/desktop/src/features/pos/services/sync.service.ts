@@ -34,13 +34,15 @@ const PULL_TARGETS: Record<string, { key: string; event: string }> = {
 }
 
 export function getApiUrl(): string | null {
-  return localStorage.getItem(API_URL_KEY)
+  const raw = localStorage.getItem(API_URL_KEY)
+  // Strip trailing slashes so `${apiUrl}/api/...` never produces a double slash
+  return raw ? raw.replace(/\/+$/, "") : raw
 }
 export function getAuthToken(): string | null {
   return localStorage.getItem(AUTH_TOKEN_KEY)
 }
 export function setApiUrl(url: string) {
-  localStorage.setItem(API_URL_KEY, url)
+  localStorage.setItem(API_URL_KEY, url.trim().replace(/\/+$/, ""))
 }
 export function setAuthToken(token: string) {
   localStorage.setItem(AUTH_TOKEN_KEY, token)
