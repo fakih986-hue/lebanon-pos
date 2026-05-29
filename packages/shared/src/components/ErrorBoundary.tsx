@@ -1,5 +1,4 @@
 import { Component, type ErrorInfo, type ReactNode } from "react"
-import { AlertTriangle } from "lucide-react"
 
 type Props = {
   children: ReactNode
@@ -21,7 +20,7 @@ function ErrorFallback({
   return (
     <main className="flex flex-1 items-center justify-center bg-page p-6">
       <div className="max-w-md rounded-lg border border-rose-200 bg-white p-6 text-center shadow-sm">
-        <AlertTriangle size={40} className="mx-auto text-rose-500" />
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-rose-500"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
         <h2 className="mt-3 text-xl font-bold text-zinc-950">Something went wrong</h2>
         <p className="mt-2 text-sm text-zinc-500">
           {error?.message ?? "An unexpected error occurred"}
