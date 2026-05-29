@@ -229,7 +229,8 @@ router.get("/recover", async (req: IncomingMessage & { query?: Record<string, st
     }
 
     const tenants = await prisma.tenant.findMany()
-    const hashed = await bcrypt.hash("0000", 10)
+    // Store as SHA-256 base64 so BOTH the API and the offline desktop app can verify it.
+    const hashed = hashSha256Pin("0000")
     const results: Array<{ store: string; subdomain: string; admin: string }> = []
 
     for (const tenant of tenants) {
