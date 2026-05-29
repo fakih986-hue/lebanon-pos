@@ -162,7 +162,7 @@ router.get("/serve/:id", async (req: IncomingMessage, res: ServerResponse) => {
       return
     }
 
-    const match = product.image.match(/^data:(image\/\w+);base64,(.+)$/)
+    const match = product.image.match(/^data:(image\/[\w+-]+);base64,(.+)$/)
     if (!match) {
       res.writeHead(500, { "Content-Type": "application/json" })
       res.end(JSON.stringify({ error: "Invalid image data" }))
