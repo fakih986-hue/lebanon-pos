@@ -470,10 +470,11 @@ async function processOperation(
     }
     case "settings": {
       if (action === "create" || action === "update") {
+        const data = Array.isArray(payload) ? payload[0] ?? {} : payload ?? {}
         await db.appSettings.upsert({
           where: { tenantId },
-          create: { ...payload, tenantId } as any,
-          update: { ...payload } as any,
+          create: { ...data, tenantId } as any,
+          update: { ...data } as any,
         })
       }
       break
