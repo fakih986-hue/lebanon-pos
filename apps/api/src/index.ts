@@ -8,7 +8,6 @@ import prisma from "./lib/prisma.js"
 const JWT_SECRET = (process.env.JWT_SECRET || "").trim()
 if (!JWT_SECRET) {
   console.error("FATAL: JWT_SECRET environment variable must be set in production")
-  console.error("  raw value:", JSON.stringify(process.env.JWT_SECRET), "typeof:", typeof process.env.JWT_SECRET)
   process.exit(1)
 }
 
