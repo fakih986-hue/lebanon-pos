@@ -166,24 +166,25 @@ router.post("/login", async (req: IncomingMessage & { body?: unknown }, res: Ser
 
     const tenantFilter = cleanTenantSubdomain ? { tenant: { subdomain: cleanTenantSubdomain } } : {}
 
-    // Fast path: look up by SHA-256 hash of PIN (O(1) DB lookup)
-    const sha256Pin = hashSha256Pin(pin)
-    let user = await prisma.staffUser.findFirst({
-      where: { active: true, pin: sha256Pin, ...tenantFilter },
-      include: { tenant: true },
-    }) as any
+    // When several users share the same PIN, prefer the highest-privilege role.
+    const rolePriority: Record<string, number> = { Admin: 4, Manager: 3, Cashier: 2, Driver: 1 }
+    const betterRole = (a: any, b: any) =>
+      (rolePriority[b.role] ?? 0) > (rolePriority[a.role] ?? 0) ? b : a
 
-    // Slow path: only for bcrypt-hashed PINs — query those users and compare one by one
-    if (!user) {
-      const bcryptUsers = await prisma.staffUser.findMany({
-        where: { active: true, pin: { startsWith: "$2" }, ...tenantFilter },
-        include: { tenant: true },
-      })
-      for (const candidate of bcryptUsers) {
-        if (await bcrypt.compare(pin, candidate.pin)) {
-          user = candidate
-          break
-        }
+    // Collect ALL users in scope that match this PIN (sha256 or bcrypt), then pick best role.
+    const sha256Pin = hashSha256Pin(pin)
+    const candidates = await prisma.staffUser.findMany({
+      where: { active: true, ...tenantFilter },
+      include: { tenant: true },
+    })
+
+    let user: any = null
+    for (const candidate of candidates) {
+      const matches = candidate.pin.startsWith("$2")
+        ? await bcrypt.compare(pin, candidate.pin)
+        : (candidate.pin === sha256Pin || candidate.pin === pin)
+      if (matches) {
+        user = user ? betterRole(user, candidate) : candidate
       }
     }
 
