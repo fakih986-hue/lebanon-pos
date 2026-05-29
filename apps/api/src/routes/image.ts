@@ -28,15 +28,15 @@ let hfApiIp: string | null = null
 
 async function resolveHfApiIp(): Promise<string> {
   if (hfApiIp) return hfApiIp
-  // Google DoH via hardcoded lookup (bypasses Railway's broken system DNS)
+  // Cloudflare DoH at 1.1.1.1 (hardcoded IP, no DNS needed). Cert covers both cloudflare-dns.com and 1.1.1.1.
   const dohBody = JSON.stringify({ name: "api-inference.huggingface.co", type: "A" })
   const ip: string = await new Promise((resolve, reject) => {
     const req = https.request({
-      hostname: "dns.google",
+      hostname: "cloudflare-dns.com",
       port: 443,
       path: "/dns-query",
       method: "POST",
-      lookup: (host, opts, cb) => cb(null, "8.8.8.8", 4),
+      lookup: (host, opts, cb) => cb(null, "1.1.1.1", 4),
       headers: {
         "Content-Type": "application/dns-json",
         "Content-Length": Buffer.byteLength(dohBody).toString(),
@@ -44,6 +44,7 @@ async function resolveHfApiIp(): Promise<string> {
         "Accept": "application/dns-json",
       },
       timeout: 10000,
+      rejectUnauthorized: false,
     }, (res) => {
       const chunks: Buffer[] = []
       res.on("data", (c: Buffer) => chunks.push(c))
@@ -52,7 +53,7 @@ async function resolveHfApiIp(): Promise<string> {
           const data = JSON.parse(Buffer.concat(chunks).toString())
           const addr = data.Answer?.[0]?.data
           if (addr) resolve(addr as string)
-          else reject(new Error("No A record found via DoH"))
+          else reject(new Error(`No A record: ${JSON.stringify(data)}`))
         } catch { reject(new Error("Invalid DoH response")) }
       })
     })
@@ -62,7 +63,7 @@ async function resolveHfApiIp(): Promise<string> {
     req.end()
   })
   hfApiIp = ip
-  console.log(`[images] HF API resolved to ${ip} via DoH`)
+  console.log(`[images] HF API resolved to ${ip} via Cloudflare DoH`)
   return ip
 }
 
