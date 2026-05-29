@@ -32,8 +32,7 @@ export function ProductsPage() {
     setGenerating(true)
     setGenStatus(null)
     try {
-      const res = await fetch("/api/images/generate-all", { method: "POST" })
-      const data = await res.json()
+      const data = await api<{ generated: number }>("/api/images/generate-all", { method: "POST" })
       setGenStatus(t("products.images_generated", { count: data.generated }))
     } catch {
       setGenStatus(t("products.images_error"))
