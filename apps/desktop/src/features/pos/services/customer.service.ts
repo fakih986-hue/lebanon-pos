@@ -43,11 +43,55 @@ export type DebtPayment = {
   createdAt: string
 }
 
+export type DebtAging = {
+  current: number   // 0–30 days
+  days30: number    // 30–60
+  days60: number    // 60–90
+  days90: number    // 90+
+}
+
 export type CustomerLedger = Customer & {
   debtTotal: number
   paidTotal: number
   balance: number
   lastActivityAt: string | null
+  aging: DebtAging
+  oldestUnpaidDays: number      // age in days of the oldest still-unpaid debt
+  overLimit: boolean            // balance exceeds credit limit
+  overdue: boolean              // has unpaid debt older than 30 days
+}
+
+/**
+ * FIFO aging: payments settle the oldest debts first. Returns how much of the
+ * outstanding balance falls into each age bucket, plus the oldest unpaid age.
+ */
+function computeAging(
+  sales: { total: number; createdAt: string }[],
+  totalPaid: number
+): { aging: DebtAging; oldestUnpaidDays: number } {
+  const ordered = [...sales].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  let remainingPaid = totalPaid
+  const now = Date.now()
+  const aging: DebtAging = { current: 0, days30: 0, days60: 0, days90: 0 }
+  let oldestUnpaidDays = 0
+
+  for (const sale of ordered) {
+    let unpaid = sale.total
+    if (remainingPaid > 0) {
+      const applied = Math.min(remainingPaid, unpaid)
+      unpaid -= applied
+      remainingPaid -= applied
+    }
+    if (unpaid <= 0.001) continue
+
+    const days = Math.floor((now - new Date(sale.createdAt).getTime()) / (24 * 60 * 60 * 1000))
+    if (days > oldestUnpaidDays) oldestUnpaidDays = days
+    if (days < 30) aging.current += unpaid
+    else if (days < 60) aging.days30 += unpaid
+    else if (days < 90) aging.days60 += unpaid
+    else aging.days90 += unpaid
+  }
+  return { aging, oldestUnpaidDays }
 }
 
 export type CreateCustomerInput = {
@@ -256,14 +300,44 @@ export function getCustomerLedger() {
       ...customerPayments.map((payment) => payment.createdAt),
     ].sort((a, b) => b.localeCompare(a))
 
+    const balance = Math.max(0, debtTotal - paidTotal)
+    const { aging, oldestUnpaidDays } = computeAging(customerSales, paidTotal)
+
     return {
       ...customer,
       debtTotal,
       paidTotal,
-      balance: Math.max(0, debtTotal - paidTotal),
+      balance,
       lastActivityAt: activityDates[0] ?? null,
+      aging,
+      oldestUnpaidDays,
+      overLimit: customer.creditLimit > 0 && balance > customer.creditLimit,
+      overdue: aging.days30 + aging.days60 + aging.days90 > 0.001,
     }
   })
+}
+
+/** Build a plain-text statement for a customer (for printing or WhatsApp). */
+export function buildCustomerStatement(customerId: string, storeName = "Lebanon POS"): string {
+  const ledger = getCustomerLedger().find((c) => c.id === customerId)
+  if (!ledger) return ""
+  const activity = getCustomerActivity(customerId)
+  const lines = [
+    `${storeName} — Account Statement`,
+    `Customer: ${ledger.name}${ledger.mobile ? ` (${ledger.mobile})` : ""}`,
+    `Date: ${new Date().toLocaleDateString()}`,
+    "",
+    "Activity:",
+    ...activity.slice(0, 40).map((a) => {
+      const sign = a.type === "Payment" ? "-" : "+"
+      return `  ${new Date(a.createdAt).toLocaleDateString()}  ${a.type.padEnd(8)} ${sign}$${a.amount.toFixed(2)}  ${a.title}`
+    }),
+    "",
+    `Total charged:  $${ledger.debtTotal.toFixed(2)}`,
+    `Total paid:     $${ledger.paidTotal.toFixed(2)}`,
+    `BALANCE DUE:    $${ledger.balance.toFixed(2)}`,
+  ]
+  return lines.join("\n")
 }
 
 export function getLedgerTotals() {

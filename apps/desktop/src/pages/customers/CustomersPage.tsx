@@ -4,7 +4,9 @@ import { useHotkeys } from "../../hooks/useHotkey"
 import {
   CalendarClock,
   CreditCard,
+  Download,
   HandCoins,
+  MessageCircle,
   Phone,
   Plus,
   ReceiptText,
@@ -14,10 +16,10 @@ import {
   WalletCards,
   X,
 } from "lucide-react"
-
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import {
   addCustomer,
+  buildCustomerStatement,
   deleteCustomer,
   getCustomerActivity,
   getCustomerLedger,
@@ -27,6 +29,8 @@ import {
   type CustomerLedger,
   type DebtPayment,
 } from "../../features/pos/services/customer.service"
+import { getSettings } from "../../features/pos/services/settings.service"
+import { openWhatsApp, debtReminderMessage } from "../../features/pos/lib/whatsapp"
 import { showToast } from "../../features/pos/services/toast.service"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import { useI18n } from "@lebanonpos/shared"
@@ -142,6 +146,18 @@ export default function CustomersPage() {
     return subscribeLedger(() => refreshLedger())
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const agingTotals = useMemo(() => {
+    return customers.reduce(
+      (acc, c) => ({
+        current: acc.current + c.aging.current,
+        days30: acc.days30 + c.aging.days30,
+        days60: acc.days60 + c.aging.days60,
+        days90: acc.days90 + c.aging.days90,
+      }),
+      { current: 0, days30: 0, days60: 0, days90: 0 }
+    )
+  }, [customers])
 
   const filteredCustomers = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -270,6 +286,26 @@ export default function CustomersPage() {
             </div>
       </section>
 
+      {/* Debt aging breakdown */}
+      {totals.outstanding > 0 && (
+        <section className="mt-3 rounded-xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+          <p className="text-[12px] font-bold uppercase tracking-wide mb-3" style={{ color: "var(--text-3)" }}>Outstanding by age</p>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label: "0–30 days", value: agingTotals.current, color: "var(--brand-text)", bg: "var(--brand-soft)" },
+              { label: "30–60 days", value: agingTotals.days30, color: "var(--amber-text)", bg: "var(--amber-soft)" },
+              { label: "60–90 days", value: agingTotals.days60, color: "#EA580C", bg: "rgba(234,88,12,0.12)" },
+              { label: "90+ days", value: agingTotals.days90, color: "var(--rose-text)", bg: "var(--rose-soft)" },
+            ].map((b) => (
+              <div key={b.label} className="rounded-lg p-3" style={{ background: b.bg }}>
+                <p className="text-[11px] font-semibold" style={{ color: b.color }}>{b.label}</p>
+                <p className="mt-1 text-[17px] font-bold tabular-nums" style={{ color: b.color }}>{formatCurrency(b.value)}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <WorkspaceTabs<CustomerPanel>
           active={activePanel}
@@ -371,8 +407,18 @@ export default function CustomersPage() {
                         }`}
                       >
                         <td className="border-b border-zinc-100 px-4 py-4">
-                          <div className="font-bold text-zinc-950">
-                            {customer.name}
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-zinc-950">{customer.name}</span>
+                            {customer.overdue && (
+                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>
+                                {customer.oldestUnpaidDays}d overdue
+                              </span>
+                            )}
+                            {customer.overLimit && (
+                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>
+                                over limit
+                              </span>
+                            )}
                           </div>
                           {customer.notes ? (
                             <div className="mt-1 max-w-64 truncate text-xs text-zinc-500">
@@ -390,7 +436,7 @@ export default function CustomersPage() {
                           </a>
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-4 text-end font-semibold text-zinc-800">
-                          {formatCurrency(customer.saleTotal)}
+                          {formatCurrency(customer.debtTotal)}
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-4 text-end font-semibold text-emerald-700">
                           {formatCurrency(customer.paidTotal)}
@@ -402,17 +448,56 @@ export default function CustomersPage() {
                           {formatDate(customer.lastActivityAt)}
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-4">
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              setDeleteCustomerId(customer.id)
-                            }}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                            aria-label={`Delete ${customer.name}`}
-                          >
-                            <X size={15} />
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            {customer.balance > 0 && customer.mobile && (
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  openWhatsApp(customer.mobile, debtReminderMessage({
+                                    storeName: getSettings().storeName,
+                                    customerName: customer.name,
+                                    balance: customer.balance,
+                                    oldestDays: customer.oldestUnpaidDays,
+                                  }))
+                                }}
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border transition"
+                                style={{ borderColor: "var(--border)", color: "#25D366" }}
+                                title="Send WhatsApp reminder"
+                              >
+                                <MessageCircle size={15} />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                const text = buildCustomerStatement(customer.id, getSettings().storeName)
+                                const blob = new Blob([text], { type: "text/plain" })
+                                const url = URL.createObjectURL(blob)
+                                const a = document.createElement("a")
+                                a.href = url
+                                a.download = `statement-${customer.name.replace(/\s+/g, "-")}.txt`
+                                a.click()
+                                URL.revokeObjectURL(url)
+                              }}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700"
+                              title="Download statement"
+                            >
+                              <Download size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setDeleteCustomerId(customer.id)
+                              }}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                              aria-label={`Delete ${customer.name}`}
+                            >
+                              <X size={15} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )
