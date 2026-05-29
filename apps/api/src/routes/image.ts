@@ -8,6 +8,8 @@ const router = Router()
 
 const HF_TOKEN = process.env.HUGGINGFACE_TOKEN || ""
 const HF_MODEL = process.env.HF_IMAGE_MODEL || "stabilityai/stable-diffusion-xl-base-1.0"
+const HF_HOST = "router.huggingface.co"
+const HF_PATH = `/hf-inference/models/${HF_MODEL}`
 
 function generatePlaceholderSvg(productName: string): string {
   const encodedName = productName.replace(/[<>&"']/g, "").trim() || "Product"
@@ -23,60 +25,15 @@ function generatePlaceholderSvg(productName: string): string {
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`
 }
 
-// Cache the resolved HF API IP to avoid repeated DoH lookups
-let hfApiIp: string | null = null
-
-async function resolveHfApiIp(): Promise<string> {
-  if (hfApiIp) return hfApiIp
-  // Cloudflare DoH at 1.1.1.1 (hardcoded IP, no DNS needed). Cert covers both cloudflare-dns.com and 1.1.1.1.
-  const dohBody = JSON.stringify({ name: "api-inference.huggingface.co", type: "A" })
-  const ip: string = await new Promise((resolve, reject) => {
-    const req = https.request({
-      hostname: "cloudflare-dns.com",
-      port: 443,
-      path: "/dns-query",
-      method: "POST",
-      lookup: (host, opts, cb) => cb(null, "1.1.1.1", 4),
-      headers: {
-        "Content-Type": "application/dns-json",
-        "Content-Length": Buffer.byteLength(dohBody).toString(),
-        "User-Agent": "lebanonpos/1.0",
-        "Accept": "application/dns-json",
-      },
-      timeout: 10000,
-      rejectUnauthorized: false,
-    }, (res) => {
-      const chunks: Buffer[] = []
-      res.on("data", (c: Buffer) => chunks.push(c))
-      res.on("end", () => {
-        try {
-          const data = JSON.parse(Buffer.concat(chunks).toString())
-          const addr = data.Answer?.[0]?.data
-          if (addr) resolve(addr as string)
-          else reject(new Error(`No A record: ${JSON.stringify(data)}`))
-        } catch { reject(new Error("Invalid DoH response")) }
-      })
-    })
-    req.on("error", reject)
-    req.on("timeout", () => { req.destroy(); reject(new Error("timeout")) })
-    req.write(dohBody)
-    req.end()
-  })
-  hfApiIp = ip
-  console.log(`[images] HF API resolved to ${ip} via Cloudflare DoH`)
-  return ip
-}
-
-async function hfRequest(productName: string, body: string, ip: string): Promise<Buffer> {
+function hfRequest(body: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const req = https.request({
-      hostname: "api-inference.huggingface.co",
+      hostname: HF_HOST,
       port: 443,
-      path: `/models/${HF_MODEL}`,
+      path: HF_PATH,
       method: "POST",
-      lookup: (host, opts, cb) => cb(null, ip, 4),
       headers: {
-        "Authorization": `Bearer ${HF_TOKEN}`,
+        Authorization: `Bearer ${HF_TOKEN}`,
         "Content-Type": "application/json",
         "Content-Length": Buffer.byteLength(body).toString(),
         "User-Agent": "lebanonpos/1.0",
@@ -88,15 +45,14 @@ async function hfRequest(productName: string, body: string, ip: string): Promise
       res.on("end", () => {
         const buf = Buffer.concat(chunks)
         if (res.statusCode && res.statusCode >= 400) {
-          const errText = buf.toString("utf8").substring(0, 200)
-          console.error(`[images] HF API error ${res.statusCode} for "${productName}": ${errText}`)
-          reject(new Error(`HTTP ${res.statusCode}`))
+          const errText = buf.toString("utf8").substring(0, 300)
+          reject(new Error(`HF API ${res.statusCode}: ${errText}`))
           return
         }
         resolve(buf)
       })
     })
-    req.on("error", (e) => reject(e))
+    req.on("error", reject)
     req.on("timeout", () => { req.destroy(); reject(new Error("timeout")) })
     req.write(body)
     req.end()
@@ -111,26 +67,68 @@ async function generateImage(productName: string): Promise<{ image: string; gene
   try {
     const prompt = `Professional product photo of ${productName}, white background, studio lighting, high quality, e-commerce`
     const body = JSON.stringify({ inputs: prompt })
-    const ip = await resolveHfApiIp()
-    const buffer = await hfRequest(productName, body, ip)
+    const buffer = await hfRequest(body)
     const base64 = buffer.toString("base64")
     return { image: `data:image/jpeg;base64,${base64}`, generated: true }
   } catch (err) {
-    console.error(`[images] HF exception for "${productName}":`, (err as Error).message)
-    // Clear cached IP on failure so next attempt retries DNS
-    hfApiIp = null
+    console.error(`[images] HF error for "${productName}":`, (err as Error).message)
     return { image: generatePlaceholderSvg(productName), generated: false }
   }
 }
 
+// Save a client-generated image for a single product
+router.post("/save", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const { productId, image } = (req as any).body ?? {}
+    if (!productId || typeof image !== "string") {
+      json(res, { error: "productId (number) and image (string) required" }, 400)
+      return
+    }
+    const tenantId = req.auth!.tenantId
+    const product = await prisma.product.findFirst({ where: { id: productId, tenantId } })
+    if (!product) {
+      json(res, { error: "Product not found" }, 404)
+      return
+    }
+    await prisma.product.update({ where: { id: productId }, data: { image } })
+    json(res, { ok: true })
+  } catch (err) {
+    console.error("Save image error:", err)
+    json(res, { error: "Failed to save image" }, 500)
+  }
+})
+
+// Save client-generated images for multiple products at once
+router.post("/save-all", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const { products } = (req as any).body ?? {}
+    if (!Array.isArray(products)) {
+      json(res, { error: "products array required" }, 400)
+      return
+    }
+    const tenantId = req.auth!.tenantId
+    let saved = 0
+    for (const { productId, image } of products) {
+      if (!productId || typeof image !== "string") continue
+      const product = await prisma.product.findFirst({ where: { id: productId, tenantId } })
+      if (product) {
+        await prisma.product.update({ where: { id: productId }, data: { image } })
+        saved++
+      }
+    }
+    json(res, { saved, total: products.length })
+  } catch (err) {
+    console.error("Save all images error:", err)
+    json(res, { error: "Failed to save images" }, 500)
+  }
+})
+
 router.post("/generate", async (req: IncomingMessage, res: ServerResponse) => {
   const { name } = (req as any).body ?? {}
-
   if (!name || typeof name !== "string") {
     json(res, { error: "Product name is required" }, 400)
     return
   }
-
   const result = await generateImage(name)
   json(res, result)
 })
@@ -139,24 +137,16 @@ router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: 
   try {
     const productId = Number(req.params?.id)
     const tenantId = req.auth!.tenantId
-
     const product = await prisma.product.findFirst({
       where: { id: productId, tenantId },
       select: { id: true, name: true },
     })
-
     if (!product) {
       json(res, { error: "Product not found" }, 404)
       return
     }
-
     const { image, generated } = await generateImage(product.name)
-
-    await prisma.product.update({
-      where: { id: product.id },
-      data: { image },
-    })
-
+    await prisma.product.update({ where: { id: product.id }, data: { image } })
     json(res, { image, generated })
   } catch (err) {
     console.error("Generate product image error:", err)
@@ -190,10 +180,7 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
     for (const product of products) {
       try {
         const { image, generated } = await generateImage(product.name)
-        await prisma.product.update({
-          where: { id: product.id },
-          data: { image },
-        })
+        await prisma.product.update({ where: { id: product.id }, data: { image } })
         results.push({ id: product.id, name: product.name, image, generated, placeholder: !generated })
       } catch (err) {
         results.push({ id: product.id, name: product.name, generated: false, placeholder: false, error: (err as Error).message })
@@ -254,7 +241,7 @@ router.get("/serve/:id", async (req: IncomingMessage, res: ServerResponse) => {
   }
 })
 
-// Debug: show first product's image status
+// Debug: show product image status
 router.get("/debug", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   const products = await prisma.product.findMany({
@@ -271,6 +258,10 @@ router.get("/debug", requireAuth, async (req: AuthRequest, res: ServerResponse) 
     imageStartsWith: p.image ? p.image.substring(0, 50) : null,
   }))
   json(res, info)
+})
+
+router.get("/token", requireAuth, async (_req: AuthRequest, res: ServerResponse) => {
+  json(res, { token: HF_TOKEN || null, model: HF_MODEL })
 })
 
 export default router
