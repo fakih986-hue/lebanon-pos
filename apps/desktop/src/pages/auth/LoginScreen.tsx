@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CloudDownload, KeyRound, LockKeyhole, ShieldCheck, X } from "lucide-react"
+import { CloudDownload, KeyRound, LockKeyhole, ShieldCheck, Store, X } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
 import {
@@ -8,10 +8,15 @@ import {
   type StaffUser,
 } from "../../features/pos/services/security.service"
 import {
+  clearStoreData,
+  flushSyncQueue,
   getApiUrl,
+  getKnownStores,
   pullFromServer,
+  rememberStore,
   setApiUrl,
   setAuthToken,
+  type KnownStore,
 } from "../../features/pos/services/sync.service"
 import { showToast } from "../../features/pos/services/toast.service"
 
@@ -34,6 +39,7 @@ export default function LoginScreen() {
   const [cPin, setCPin] = useState("")
   const [cLoading, setCLoading] = useState(false)
   const [cError, setCError] = useState("")
+  const knownStores = getKnownStores()
 
   async function handleUnlock() {
     const user = await unlockWithPin(pin)
@@ -70,8 +76,17 @@ export default function LoginScreen() {
       if (!res.ok) throw new Error(data?.error ?? `Login failed (HTTP ${res.status})`)
       if (!data?.token) throw new Error("No token returned.")
 
+      // If switching from another store, push any pending work then wipe local data
+      try { await flushSyncQueue() } catch { /* offline — proceed */ }
+      clearStoreData()
+
       setApiUrl(url)
       setAuthToken(data.token)
+      rememberStore({
+        name: data.user?.tenantName ?? cSubdomain.trim() ?? "Store",
+        apiUrl: url,
+        subdomain: cSubdomain.trim(),
+      })
       await pullFromServer(true)  // full pull → all data + users land locally
 
       showToast(`Connected to ${data.user?.tenantName ?? "store"}. Loading…`)
@@ -80,6 +95,14 @@ export default function LoginScreen() {
       setCError(err instanceof Error ? err.message : "Connection failed")
       setCLoading(false)
     }
+  }
+
+  function openStore(store: KnownStore) {
+    setCApiUrl(store.apiUrl)
+    setCSubdomain(store.subdomain)
+    setCPin("")
+    setCError("")
+    setConnectOpen(true)
   }
 
   return (
@@ -173,15 +196,49 @@ export default function LoginScreen() {
             {t("desktop.lock_unlock_register")}
           </button>
 
+          {/* Quick-switch between known stores */}
+          {knownStores.length > 0 && (
+            <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--border)" }}>
+              <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-3)" }}>
+                Switch store
+              </p>
+              <div className="space-y-1.5">
+                {knownStores.map((store) => {
+                  const isCurrent = getApiUrl() === store.apiUrl
+                  return (
+                    <button
+                      key={`${store.apiUrl}|${store.subdomain}`}
+                      type="button"
+                      onClick={() => openStore(store)}
+                      className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition hover:opacity-80"
+                      style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <Store size={14} style={{ color: "var(--accent)" }} />
+                        <span className="text-[13px] font-semibold truncate" style={{ color: "var(--text)" }}>{store.name}</span>
+                        <span className="text-[11px]" style={{ color: "var(--text-3)" }}>/{store.subdomain}</span>
+                      </span>
+                      {isCurrent && (
+                        <span className="text-[10px] font-bold rounded-full px-2 py-0.5" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+                          current
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Disaster recovery: connect a new/empty device to the store */}
           <button
             type="button"
-            onClick={() => { setConnectOpen(true); setCError("") }}
+            onClick={() => { setCSubdomain(""); setCPin(""); setConnectOpen(true); setCError("") }}
             className="mt-3 flex w-full items-center justify-center gap-2 text-[12px] font-semibold transition hover:opacity-80"
             style={{ color: "var(--text-3)" }}
           >
             <CloudDownload size={14} />
-            New device? Connect to your store
+            New device / add another store
           </button>
         </div>
       </section>

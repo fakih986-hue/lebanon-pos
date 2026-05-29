@@ -51,6 +51,47 @@ export function clearAuthToken() {
   localStorage.removeItem(AUTH_TOKEN_KEY)
 }
 
+// ── Multi-store support ──────────────────────────────────────────────
+const KNOWN_STORES_KEY = "lebanonpos.known-stores.v1"
+
+export type KnownStore = {
+  name: string
+  apiUrl: string
+  subdomain: string
+}
+
+export function getKnownStores(): KnownStore[] {
+  try {
+    const raw = localStorage.getItem(KNOWN_STORES_KEY)
+    return raw ? (JSON.parse(raw) as KnownStore[]) : []
+  } catch {
+    return []
+  }
+}
+
+export function rememberStore(store: KnownStore) {
+  const stores = getKnownStores()
+  const key = `${store.apiUrl}|${store.subdomain}`.toLowerCase()
+  const next = stores.filter((s) => `${s.apiUrl}|${s.subdomain}`.toLowerCase() !== key)
+  next.unshift(store)
+  localStorage.setItem(KNOWN_STORES_KEY, JSON.stringify(next.slice(0, 10)))
+}
+
+/**
+ * Wipe all store DATA from this device (keeps the known-stores list).
+ * Used when switching stores so store B's data never mixes with store A's.
+ */
+export function clearStoreData() {
+  for (const { key } of Object.values(PULL_TARGETS)) {
+    localStorage.removeItem(key)
+  }
+  localStorage.removeItem(SYNC_QUEUE_KEY)
+  localStorage.removeItem(LAST_SYNC_KEY)
+  localStorage.removeItem("lebanonpos.session.v1")
+  localStorage.removeItem("lebanonpos.current-user.v1")
+  localStorage.removeItem("lebanonpos.held-sales.v1")
+}
+
 export type SyncEntity =
   | "sale" | "refund" | "product" | "customer" | "debt"
   | "expense" | "daily-close" | "supplier" | "purchase-order"
