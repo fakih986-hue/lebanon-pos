@@ -141,6 +141,49 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
   }
 })
 
+// Serve product image as raw binary (no auth — public for ordering app)
+router.get("/serve/:id", async (req: IncomingMessage, res: ServerResponse) => {
+  try {
+    const productId = Number((req as any).params?.id)
+    if (isNaN(productId)) {
+      res.writeHead(400, { "Content-Type": "application/json" })
+      res.end(JSON.stringify({ error: "Invalid product ID" }))
+      return
+    }
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { image: true },
+    })
+
+    if (!product?.image) {
+      res.writeHead(404, { "Content-Type": "application/json" })
+      res.end(JSON.stringify({ error: "No image found" }))
+      return
+    }
+
+    const match = product.image.match(/^data:(image\/\w+);base64,(.+)$/)
+    if (!match) {
+      res.writeHead(500, { "Content-Type": "application/json" })
+      res.end(JSON.stringify({ error: "Invalid image data" }))
+      return
+    }
+
+    const mime = match[1]
+    const buffer = Buffer.from(match[2], "base64")
+    res.writeHead(200, {
+      "Content-Type": mime,
+      "Content-Length": buffer.length.toString(),
+      "Cache-Control": "public, max-age=31536000, immutable",
+    })
+    res.end(buffer)
+  } catch (err) {
+    console.error("Serve image error:", err)
+    res.writeHead(500, { "Content-Type": "application/json" })
+    res.end(JSON.stringify({ error: "Failed to serve image" }))
+  }
+})
+
 // Debug: show first product's image status
 router.get("/debug", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId

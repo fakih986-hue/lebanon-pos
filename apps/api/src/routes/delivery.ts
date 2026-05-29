@@ -295,7 +295,12 @@ router.get("/products", async (req: any, res: ServerResponse) => {
       },
       orderBy: { name: "asc" },
     })
-    json(res, products)
+    const result = products.map(p => ({
+      ...p,
+      image: p.image ? true : false,
+      parent: p.parent ? { ...p.parent, image: p.parent.image ? true : false } : null,
+    }))
+    json(res, result)
   } catch (err) {
     console.error("Delivery products error:", err)
     json(res, { error: "Failed to fetch products" }, 500)
