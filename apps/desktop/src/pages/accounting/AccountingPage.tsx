@@ -8,6 +8,7 @@ import {
   ClipboardList,
   FileText,
   Landmark,
+  MessageCircle,
   Plus,
   ReceiptText,
   TrendingDown,
@@ -16,6 +17,9 @@ import {
 } from "lucide-react"
 
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
+import { openWhatsApp, openWhatsAppShare, dailySummaryMessage } from "../../features/pos/lib/whatsapp"
+import { getSettings } from "../../features/pos/services/settings.service"
+import { getLedgerTotals } from "../../features/pos/services/customer.service"
 import { formatDateTime, parseMoney } from "../../features/pos/lib/helpers"
 import {
   closeBusinessDay,
@@ -612,15 +616,40 @@ export default function AccountingPage() {
               />
               <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm font-semibold text-zinc-500">Daily profit and expense summary.</p>
-                <button
-                  type="button"
-                  onClick={handleCloseDay}
-                  disabled={!canManageAccounting}
-                  className="flex h-11 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
-                >
-                  <CheckCircle2 size={17} />
-                  {todayClose ? "Reclose Today" : "Close Today"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const s = getSettings()
+                      const msg = dailySummaryMessage({
+                        storeName: s.storeName,
+                        date: formatDateKey(summary.dateKey),
+                        netSales: summary.netSales,
+                        grossMargin: summary.grossMargin,
+                        expenses: summary.expenses,
+                        netProfit: summary.netProfit,
+                        cashIn: summary.cashIn,
+                        outstanding: getLedgerTotals().outstanding,
+                      })
+                      if (s.whatsAppAdmin) openWhatsApp(s.whatsAppAdmin, msg)
+                      else openWhatsAppShare(msg)
+                    }}
+                    className="flex h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-bold transition hover:opacity-80"
+                    style={{ borderColor: "var(--border)", color: "#25D366" }}
+                  >
+                    <MessageCircle size={16} />
+                    WhatsApp summary
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCloseDay}
+                    disabled={!canManageAccounting}
+                    className="flex h-11 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
+                  >
+                    <CheckCircle2 size={17} />
+                    {todayClose ? "Reclose Today" : "Close Today"}
+                  </button>
+                </div>
               </div>
             </div>
           </section>

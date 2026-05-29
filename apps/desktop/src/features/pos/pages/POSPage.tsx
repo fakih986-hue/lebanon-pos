@@ -30,6 +30,7 @@ import CartDrawer from "../components/CartDrawer"
 import VariantPicker from "../components/VariantPicker"
 import SimplePOSMode from "../components/SimplePOSMode"
 import { StaleRateBanner } from "../components/RateManager"
+import { openWhatsAppShare, receiptMessage } from "../lib/whatsapp"
 import {
   formatCurrency,
   formatLbpCurrency,
@@ -1094,6 +1095,17 @@ export default function POSPage() {
           sale={lastSale}
           onNewSale={cleanSale}
           onPrintReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}
+          onWhatsApp={() => {
+            if (!lastSale) return
+            openWhatsAppShare(receiptMessage({
+              storeName: settings.storeName,
+              saleNumber: lastSale.number,
+              total: lastSale.total,
+              totalLbp: lastSale.totalLbp,
+              items: lastSale.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+              footer: settings.receiptFooter,
+            }))
+          }}
         />
 
         <div className="rounded-xl border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "var(--shadow-sm)" }}>

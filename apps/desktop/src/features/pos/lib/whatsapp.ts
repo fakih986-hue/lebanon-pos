@@ -25,6 +25,59 @@ export function openWhatsApp(number: string, message: string) {
   window.open(url, "_blank", "noopener,noreferrer")
 }
 
+/** Open WhatsApp with a message but no preset recipient — user picks the contact. */
+export function openWhatsAppShare(message: string) {
+  window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer")
+}
+
+/** Receipt summary for sharing to a customer. */
+export function receiptMessage(opts: {
+  storeName: string
+  saleNumber: string
+  total: number
+  totalLbp: number
+  items: { name: string; quantity: number; total: number }[]
+  footer?: string
+}): string {
+  const { storeName, saleNumber, total, totalLbp, items, footer } = opts
+  const lines = [
+    `🧾 ${storeName}`,
+    `Receipt ${saleNumber}`,
+    ``,
+    ...items.map((i) => `${i.quantity}× ${i.name} — $${i.total.toFixed(2)}`),
+    ``,
+    `TOTAL: $${total.toFixed(2)}  /  ${Math.round(totalLbp).toLocaleString()} LBP`,
+  ]
+  if (footer) { lines.push(``, footer) }
+  return lines.join("\n")
+}
+
+/** Nightly close summary for the owner. */
+export function dailySummaryMessage(opts: {
+  storeName: string
+  date: string
+  netSales: number
+  grossMargin: number
+  expenses: number
+  netProfit: number
+  cashIn: number
+  outstanding?: number
+}): string {
+  const { storeName, date, netSales, grossMargin, expenses, netProfit, cashIn, outstanding } = opts
+  const lines = [
+    `📊 ${storeName} — Daily Summary`,
+    date,
+    ``,
+    `Net sales:     $${netSales.toFixed(2)}`,
+    `Gross margin:  $${grossMargin.toFixed(2)}`,
+    `Expenses:      $${expenses.toFixed(2)}`,
+    `Net profit:    $${netProfit.toFixed(2)}`,
+    `Cash in:       $${cashIn.toFixed(2)}`,
+  ]
+  if (typeof outstanding === "number") lines.push(`Debt outstanding: $${outstanding.toFixed(2)}`)
+  return lines.join("\n")
+}
+
 /** Friendly debt reminder message. */
 export function debtReminderMessage(opts: {
   storeName: string

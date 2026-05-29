@@ -1,4 +1,4 @@
-import { CheckCircle2, Eraser, Printer, ReceiptText } from "lucide-react"
+import { CheckCircle2, Eraser, MessageCircle, Printer, ReceiptText } from "lucide-react"
 import { Link } from "react-router"
 import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatLbpCurrency } from "../lib/currency"
@@ -14,9 +14,10 @@ interface Props {
   sale: Sale | null
   onNewSale: () => void
   onPrintReceipt: () => void
+  onWhatsApp?: () => void
 }
 
-export default function LastSaleBanner({ sale, onNewSale, onPrintReceipt }: Props) {
+export default function LastSaleBanner({ sale, onNewSale, onPrintReceipt, onWhatsApp }: Props) {
   const { t } = useI18n()
   if (!sale) return null
 
@@ -64,6 +65,17 @@ export default function LastSaleBanner({ sale, onNewSale, onPrintReceipt }: Prop
           <Printer size={14} />
           {t("pos.receipt")}
         </button>
+        {onWhatsApp && (
+          <button
+            type="button"
+            onClick={onWhatsApp}
+            className="btn h-9 gap-2"
+            style={{ background: "var(--surface)", borderColor: "var(--border)", color: "#25D366", border: "1px solid" }}
+          >
+            <MessageCircle size={14} />
+            WhatsApp
+          </button>
+        )}
         <Link
           to="/sales?tab=receipts"
           className="btn h-9 gap-2"
