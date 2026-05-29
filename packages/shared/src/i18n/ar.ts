@@ -166,6 +166,8 @@ export const ar = {
   "products.generating": "جاري التوليد...",
   "products.images_generated": "تم توليد {count} صورة",
   "products.images_error": "فشل توليد الصور",
+  "products.images_token_missing": "رمز AI غير مضبوط — استخدام صور بديلة",
+  "products.images_all_done": "جميع المنتجات لديها صور بالفعل",
 
   /* Status */
   "status.Pending": "معلق",

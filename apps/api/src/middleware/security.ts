@@ -67,9 +67,9 @@ export const securityHeaders: Handler = (_req, res, next) => {
     [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline'",  // unsafe-inline needed for Vite-built SPAs
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob:",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' ws: wss:",
       "frame-ancestors 'none'",
     ].join("; ")

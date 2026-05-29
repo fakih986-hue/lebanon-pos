@@ -108,11 +108,11 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
     })
 
     if (products.length === 0) {
-      json(res, { generated: 0, products: [] })
+      json(res, { generated: 0, placeholders: 0, total: 0, products: [] })
       return
     }
 
-    const results: Array<{ id: number; name: string; generated: boolean; error?: string }> = []
+    const results: Array<{ id: number; name: string; generated: boolean; placeholder: boolean; error?: string }> = []
 
     for (const product of products) {
       try {
@@ -121,13 +121,17 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
           where: { id: product.id },
           data: { image },
         })
-        results.push({ id: product.id, name: product.name, generated })
+        results.push({ id: product.id, name: product.name, generated, placeholder: !generated })
       } catch (err) {
-        results.push({ id: product.id, name: product.name, generated: false, error: (err as Error).message })
+        results.push({ id: product.id, name: product.name, generated: false, placeholder: false, error: (err as Error).message })
       }
     }
 
-    json(res, { generated: results.filter(r => r.generated).length, products: results })
+    const generatedCount = results.filter(r => r.generated).length
+    const placeholderCount = results.filter(r => r.placeholder).length
+    const errorCount = results.filter(r => r.error).length
+    console.log(`[images] generate-all: ${generatedCount} AI, ${placeholderCount} placeholders, ${errorCount} errors (${products.length} total)`)
+    json(res, { generated: generatedCount, placeholders: placeholderCount, total: products.length, tokenMissing: !HF_TOKEN, products: results })
   } catch (err) {
     console.error("Generate all images error:", err)
     json(res, { error: "Failed to generate images" }, 500)

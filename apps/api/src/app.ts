@@ -60,6 +60,13 @@ function spaHandler(publicDir: string) {
   }
 }
 
+// Redirect /favicon.ico to the SVG favicon (browsers auto-request .ico regardless of <link>)
+app.get("/favicon.ico", (_req: IncomingMessage, res: ServerResponse) => {
+  res.statusCode = 302
+  res.setHeader("Location", "/favicon.svg")
+  res.end()
+})
+
 // Redirect legacy driver routes (without /driver prefix) to the find-store page
 const driverRoutes = ["/login", "/orders"]
 app.use(driverRoutes, (_req: IncomingMessage, res: ServerResponse) => {

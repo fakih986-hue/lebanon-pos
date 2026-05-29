@@ -166,6 +166,8 @@ export const en = {
   "products.generating": "Generating...",
   "products.images_generated": "Generated {count} images",
   "products.images_error": "Failed to generate images",
+  "products.images_token_missing": "AI token not set — using placeholder images",
+  "products.images_all_done": "All products already have images",
 
   /* Status */
   "status.Pending": "Pending",

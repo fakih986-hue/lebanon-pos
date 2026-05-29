@@ -32,8 +32,14 @@ export function ProductsPage() {
     setGenerating(true)
     setGenStatus(null)
     try {
-      const data = await api<{ generated: number }>("/api/images/generate-all", { method: "POST" })
-      setGenStatus(t("products.images_generated", { count: data.generated }))
+      const data = await api<{ generated: number; placeholders: number; total: number; tokenMissing?: boolean }>("/api/images/generate-all", { method: "POST" })
+      if (data.tokenMissing) {
+        setGenStatus(t("products.images_token_missing") || "AI token not set — using placeholder images")
+      } else if (data.total === 0) {
+        setGenStatus(t("products.images_all_done") || "All products already have images")
+      } else {
+        setGenStatus(t("products.images_generated", { count: data.generated }) + ` (${data.placeholders} placeholders, ${data.total} total)`)
+      }
     } catch {
       setGenStatus(t("products.images_error"))
     } finally {
