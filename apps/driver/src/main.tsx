@@ -21,7 +21,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.PROD ? "/driver" : undefined}>
       <I18nProvider>
         <ThemeProvider>
           <ErrorBoundary>
