@@ -9,18 +9,15 @@ const HF_TOKEN = process.env.HUGGINGFACE_TOKEN || ""
 const HF_MODEL = process.env.HF_IMAGE_MODEL || "black-forest-labs/FLUX.1-schnell"
 
 function generatePlaceholderSvg(productName: string): string {
-  const encodedName = productName.replace(/[<>&"']/g, "")
+  const encodedName = productName.replace(/[<>&"']/g, "").trim() || "Product"
+  const hue = (productName.length * 31 + productName.charCodeAt(0) * 7) % 360
+  const r = 150 + 80 * Math.sin(hue * Math.PI / 180)
+  const g = 150 + 80 * Math.sin((hue + 120) * Math.PI / 180)
+  const b = 150 + 80 * Math.sin((hue + 240) * Math.PI / 180)
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
-    <defs>
-      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" style="stop-color:#667eea"/>
-        <stop offset="100%" style="stop-color:#764ba2"/>
-      </linearGradient>
-    </defs>
-    <rect width="400" height="400" fill="url(#bg)"/>
-    <circle cx="200" cy="160" r="60" fill="rgba(255,255,255,0.2)"/>
-    <text x="200" y="280" text-anchor="middle" fill="white" font-family="Arial,sans-serif" font-size="18" font-weight="bold">${encodedName}</text>
-    <text x="200" y="310" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="Arial,sans-serif" font-size="12">Generated Image</text>
+    <rect width="400" height="400" fill="rgb(${r|0},${g|0},${b|0})"/>
+    <circle cx="200" cy="170" r="60" fill="rgba(255,255,255,0.15)"/>
+    <text x="200" y="290" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="20" font-weight="bold">${encodedName}</text>
   </svg>`
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`
 }
@@ -142,6 +139,25 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
     console.error("Generate all images error:", err)
     json(res, { error: "Failed to generate images" }, 500)
   }
+})
+
+// Debug: show first product's image status
+router.get("/debug", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+  const tenantId = req.auth!.tenantId
+  const products = await prisma.product.findMany({
+    where: { tenantId, isParent: false },
+    select: { id: true, name: true, image: true },
+    take: 5,
+    orderBy: { name: "asc" },
+  })
+  const info = products.map(p => ({
+    id: p.id,
+    name: p.name,
+    hasImage: p.image !== null,
+    imageLength: p.image?.length ?? 0,
+    imageStartsWith: p.image ? p.image.substring(0, 50) : null,
+  }))
+  json(res, info)
 })
 
 export default router
