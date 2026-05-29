@@ -13,7 +13,20 @@
 import { PrismaClient } from "../src/generated/prisma/index.js"
 import bcrypt from "bcryptjs"
 
-const prisma = new PrismaClient()
+// Accept the DB URL as the first CLI arg (avoids .env interference).
+// Usage: npx tsx prisma/reset-admin.ts "postgresql://...:PORT/railway"
+const dbUrl = process.argv[2] || process.env.DATABASE_URL
+
+if (!dbUrl) {
+  console.error("No database URL. Pass it as an argument:\n  npx tsx prisma/reset-admin.ts \"postgresql://user:pass@host:port/railway\"")
+  process.exit(1)
+}
+
+console.log("Connecting to:", dbUrl.replace(/:[^:@]+@/, ":****@"))
+
+const prisma = new PrismaClient({
+  datasources: { db: { url: dbUrl } },
+})
 
 async function main() {
   const tenants = await prisma.tenant.findMany()
