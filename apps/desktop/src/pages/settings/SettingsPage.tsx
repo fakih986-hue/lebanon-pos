@@ -81,9 +81,6 @@ export default function SettingsPage() {
   const [syncQueue, setSyncQueue] = useState<SyncOperation[]>(getSyncQueue())
   const [apiUrl, setApiUrlState] = useState(getApiUrl() ?? "")
   const [authToken, setAuthTokenState] = useState(getAuthToken() ?? "")
-  const [connectSubdomain, setConnectSubdomain] = useState("")
-  const [connectPin, setConnectPin] = useState("")
-  const [connecting, setConnecting] = useState(false)
   const [activeWorkspace, setActiveWorkspace] =
     useState<SettingsWorkspace>("Business")
   const [drivers, setDrivers] = useState<Array<{ id: string; name: string }>>([])
@@ -194,58 +191,6 @@ export default function SettingsPage() {
       clearAuthToken()
     }
     showToast("Server connection saved.")
-  }
-
-  async function handleConnectAndPull() {
-    const url = apiUrl.trim().replace(/\/$/, "")
-    if (!url) { showToast("Enter the API URL first.", "error"); return }
-    if (!connectPin.trim()) { showToast("Enter your admin PIN.", "error"); return }
-
-    setConnecting(true)
-    try {
-      let res: Response
-      try {
-        res = await fetch(`${url}/api/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            pin: connectPin.trim(),
-            tenantSubdomain: connectSubdomain.trim() || undefined,
-          }),
-        })
-      } catch {
-        throw new Error(`Could not reach ${url}. Check the API URL and that the server is running.`)
-      }
-
-      // Read body as text first so a non-JSON response (404 HTML, empty body) gives a clear message
-      const raw = await res.text()
-      let data: any = null
-      try {
-        data = raw ? JSON.parse(raw) : null
-      } catch {
-        throw new Error(`Server returned a non-JSON response (HTTP ${res.status}). Check the API URL — it should point to your API server, not a web page.`)
-      }
-
-      if (!res.ok) {
-        throw new Error(data?.error ?? `Login failed (HTTP ${res.status})`)
-      }
-      if (!data?.token) {
-        throw new Error("Login succeeded but no token was returned.")
-      }
-
-      setApiUrl(url)
-      setApiUrlState(url)
-      setAuthToken(data.token)
-      setAuthTokenState(data.token)
-
-      await pullFromServer()
-      setConnectPin("")
-      showToast(`Connected as ${data.user?.name ?? "admin"}. Pulling your data…`)
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Connection failed", "error")
-    } finally {
-      setConnecting(false)
-    }
   }
 
   async function handleRestoreFromIndexedDB() {
@@ -784,69 +729,30 @@ export default function SettingsPage() {
               <input
                 value={apiUrl}
                 onChange={(e) => setApiUrlState(e.target.value)}
-                placeholder="https://your-app.railway.app"
+                placeholder="https://api.example.com"
                 className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               />
             </label>
 
-            {/* ── Quick connect: log in to fetch token + pull data ── */}
-            <div className="mt-4 rounded-lg border-2 p-4" style={{ borderColor: "var(--brand-border)", background: "var(--brand-soft)" }}>
-              <p className="text-[13px] font-bold mb-1" style={{ color: "var(--brand-text)" }}>
-                Connect &amp; pull my data
-              </p>
-              <p className="text-[12px] mb-3" style={{ color: "var(--text-2)" }}>
-                Enter your store subdomain + admin PIN. We'll fetch a fresh token and download your data automatically.
-              </p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <input
-                  value={connectSubdomain}
-                  onChange={(e) => setConnectSubdomain(e.target.value)}
-                  placeholder="Store subdomain (optional)"
-                  className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-                />
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  value={connectPin}
-                  onChange={(e) => setConnectPin(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleConnectAndPull() }}
-                  placeholder="Admin PIN"
-                  className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-center text-lg font-bold tracking-widest outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleConnectAndPull}
-                disabled={connecting || !apiUrl.trim() || !connectPin.trim()}
-                className="btn-checkout mt-3 w-full h-11 text-[14px] font-bold"
-              >
-                {connecting ? "Connecting…" : "Connect & Pull Data"}
-              </button>
-            </div>
+            <label className="mt-3 block text-sm font-bold text-zinc-700">
+              Auth token
+              <input
+                type="password"
+                value={authToken}
+                onChange={(e) => setAuthTokenState(e.target.value)}
+                placeholder="Paste your JWT token here"
+                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-mono text-xs outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
 
-            <details className="mt-3">
-              <summary className="cursor-pointer text-[12px] font-semibold" style={{ color: "var(--text-3)" }}>
-                Advanced: paste token manually
-              </summary>
-              <label className="mt-2 block text-sm font-bold text-zinc-700">
-                Auth token
-                <input
-                  type="password"
-                  value={authToken}
-                  onChange={(e) => setAuthTokenState(e.target.value)}
-                  placeholder="Paste your JWT token here"
-                  className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-mono text-xs outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={handleSaveServer}
-                className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-3 text-sm font-bold text-white transition hover:bg-sky-500"
-              >
-                <Save size={16} />
-                Save Connection
-              </button>
-            </details>
+            <button
+              type="button"
+              onClick={handleSaveServer}
+              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-3 text-sm font-bold text-white transition hover:bg-sky-500"
+            >
+              <Save size={16} />
+              Save Connection
+            </button>
 
             <div className="mt-3 rounded-lg border border-sky-100 bg-sky-50 p-3 text-sm font-medium text-sky-900">
               Cloud is the shared company record. This register stays fast
