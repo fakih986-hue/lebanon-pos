@@ -24,7 +24,7 @@ export function DriversPage() {
   }, [])
 
   async function fetchOnline() {
-    try { setOnlineDrivers(await api<string[]>("/api/delivery/drivers/online")) } catch { }
+    try { setOnlineDrivers(await api<string[]>("/api/delivery/drivers/online")) } catch (e) { console.warn("Failed to fetch online drivers:", e) }
   }
 
   async function load() {

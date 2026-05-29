@@ -162,6 +162,10 @@ export const en = {
   "products.price": "Price",
   "products.cost": "Cost",
   "products.stock": "Stock",
+  "products.generate_images": "Generate Images",
+  "products.generating": "Generating...",
+  "products.images_generated": "Generated {count} images",
+  "products.images_error": "Failed to generate images",
 
   /* Status */
   "status.Pending": "Pending",
@@ -258,6 +262,7 @@ export const en = {
   "ordering.name_required": "Name is required",
   "ordering.phone_pin_required": "Phone and PIN are required",
   "ordering.store_not_found": "Store not found",
+  "ordering.search_menu": "Search menu...",
   "ordering.something_went_wrong": "Something went wrong",
 
   /* Theme */

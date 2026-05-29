@@ -1,16 +1,14 @@
-import { Router } from "express"
-import type { IncomingMessage, ServerResponse } from "node:http"
+import { Router, type Request, type Response } from "express"
+import prisma from "../lib/prisma.js"
+import { requireAuth, type AuthRequest } from "../middleware/auth.js"
 
 const router = Router()
-
-type Req = IncomingMessage & { body?: unknown; query: Record<string, string | string[] | undefined> }
 
 const HF_TOKEN = process.env.HUGGINGFACE_TOKEN || ""
 const HF_MODEL = process.env.HF_IMAGE_MODEL || "black-forest-labs/FLUX.1-schnell"
 
 function generatePlaceholderSvg(productName: string): string {
   const encodedName = productName.replace(/[<>&"']/g, "")
-  const gradient = `linear-gradient(135deg, #667eea 0%, #764ba2 100%)`
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
     <defs>
       <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -26,25 +24,13 @@ function generatePlaceholderSvg(productName: string): string {
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`
 }
 
-router.post("/generate", async (req: Req, res: ServerResponse) => {
-  const { name } = (req.body as { name?: string }) ?? {}
-
-  if (!name || typeof name !== "string") {
-    res.statusCode = 400
-    res.setHeader("Content-Type", "application/json")
-    res.end(JSON.stringify({ error: "Product name is required" }))
-    return
-  }
-
+async function generateImage(productName: string): Promise<{ image: string; generated: boolean }> {
   if (!HF_TOKEN) {
-    const placeholder = generatePlaceholderSvg(name)
-    res.setHeader("Content-Type", "application/json")
-    res.end(JSON.stringify({ image: placeholder, generated: false }))
-    return
+    return { image: generatePlaceholderSvg(productName), generated: false }
   }
 
   try {
-    const prompt = `Professional product photo of ${name}, white background, studio lighting, high quality, e-commerce`
+    const prompt = `Professional product photo of ${productName}, white background, studio lighting, high quality, e-commerce`
     const hfRes = await fetch(
       `https://api-inference.huggingface.co/models/${HF_MODEL}`,
       {
@@ -58,22 +44,92 @@ router.post("/generate", async (req: Req, res: ServerResponse) => {
     )
 
     if (!hfRes.ok) {
-      const placeholder = generatePlaceholderSvg(name)
-      res.setHeader("Content-Type", "application/json")
-      res.end(JSON.stringify({ image: placeholder, generated: false }))
-      return
+      return { image: generatePlaceholderSvg(productName), generated: false }
     }
 
     const blob = await hfRes.arrayBuffer()
     const base64 = Buffer.from(blob).toString("base64")
-    const image = `data:image/jpeg;base64,${base64}`
-
-    res.setHeader("Content-Type", "application/json")
-    res.end(JSON.stringify({ image, generated: true }))
+    return { image: `data:image/jpeg;base64,${base64}`, generated: true }
   } catch {
-    const placeholder = generatePlaceholderSvg(name)
-    res.setHeader("Content-Type", "application/json")
-    res.end(JSON.stringify({ image: placeholder, generated: false }))
+    return { image: generatePlaceholderSvg(productName), generated: false }
+  }
+}
+
+router.post("/generate", async (req: Request, res: Response) => {
+  const { name } = (req.body as { name?: string }) ?? {}
+
+  if (!name || typeof name !== "string") {
+    res.status(400).json({ error: "Product name is required" })
+    return
+  }
+
+  const result = await generateImage(name)
+  res.json(result)
+})
+
+router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const productId = Number(req.params.id)
+    const tenantId = req.auth!.tenantId
+
+    const product = await prisma.product.findFirst({
+      where: { id: productId, tenantId },
+      select: { id: true, name: true },
+    })
+
+    if (!product) {
+      res.status(404).json({ error: "Product not found" })
+      return
+    }
+
+    const { image, generated } = await generateImage(product.name)
+
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { image },
+    })
+
+    res.json({ image, generated })
+  } catch (err) {
+    console.error("Generate product image error:", err)
+    res.status(500).json({ error: "Failed to generate product image" })
+  }
+})
+
+router.post("/generate-all", requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const tenantId = req.auth!.tenantId
+
+    const products = await prisma.product.findMany({
+      where: { tenantId, isParent: false, image: null },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    })
+
+    if (products.length === 0) {
+      res.json({ generated: 0, products: [] })
+      return
+    }
+
+    const results: Array<{ id: number; name: string; generated: boolean; error?: string }> = []
+
+    for (const product of products) {
+      try {
+        const { image, generated } = await generateImage(product.name)
+        await prisma.product.update({
+          where: { id: product.id },
+          data: { image },
+        })
+        results.push({ id: product.id, name: product.name, generated })
+      } catch (err) {
+        results.push({ id: product.id, name: product.name, generated: false, error: (err as Error).message })
+      }
+    }
+
+    res.json({ generated: results.filter(r => r.generated).length, products: results })
+  } catch (err) {
+    console.error("Generate all images error:", err)
+    res.status(500).json({ error: "Failed to generate images" })
   }
 })
 

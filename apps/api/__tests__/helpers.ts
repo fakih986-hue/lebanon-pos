@@ -1,3 +1,9 @@
+import { vi } from "vitest"
+
+vi.hoisted(() => {
+  process.env.JWT_SECRET = "test-secret"
+})
+
 import http from "http"
 import type { AddressInfo } from "net"
 import app from "../src/app"

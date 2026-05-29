@@ -4,6 +4,7 @@ import { restoreInventoryBatches } from "./inventoryBatch.service"
 import { increaseProductStock } from "./product.service"
 import { reverseDebtSale } from "./customer.service"
 import { getSettings } from "./settings.service"
+import { canUseStorage } from "../lib/storage"
 import {
   getActiveShift,
   getCurrentUser,
@@ -110,9 +111,6 @@ export type RecordRefundInput = {
   items: RefundItem[]
 }
 
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
 
 function readSales() {
   if (!canUseStorage()) {

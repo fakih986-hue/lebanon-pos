@@ -5,6 +5,7 @@ import {
 } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
+import { canUseStorage, createId } from "../lib/storage"
 
 const SUPPLIERS_KEY = "lebanonpos.suppliers.v1"
 const PURCHASE_ORDERS_KEY = "lebanonpos.purchase-orders.v1"
@@ -106,20 +107,8 @@ export type RecordSupplierPaymentInput = {
   reference: string
 }
 
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
-
 function cleanText(value: string) {
   return value.trim().replace(/\s+/g, " ")
-}
-
-function createId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}-${crypto.randomUUID()}`
-  }
-
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`
 }
 
 function readCollection<T>(key: string) {

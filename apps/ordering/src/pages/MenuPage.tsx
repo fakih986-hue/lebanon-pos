@@ -3,7 +3,21 @@ import { useParams, useNavigate } from "react-router"
 import { useI18n } from "@lebanonpos/shared"
 import { api } from "../app/api"
 
-type Product = { id: number; name: string; price: number; barcode: string; category: string; stock: number; variantName: string | null }
+type Product = { id: number; name: string; price: number; barcode: string; category: string; stock: number; variantName: string | null; image?: string | null }
+
+function ProductImagePlaceholder({ name }: { name: string }) {
+  const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0)
+  const hue1 = hash % 360
+  const hue2 = (hash * 137) % 360
+  return (
+    <div
+      className="w-full aspect-[4/3] rounded-t-xl flex items-center justify-center"
+      style={{ background: `linear-gradient(135deg, hsl(${hue1},60%,60%) 0%, hsl(${hue2},70%,50%) 100%)` }}
+    >
+      <span className="text-white/80 font-bold text-lg select-none">{name.charAt(0).toUpperCase()}</span>
+    </div>
+  )
+}
 type CartItem = { product: Product; quantity: number }
 type OrderPayload = { tenantId: string; customerName: string; customerPhone: string; address: string; deliveryNote?: string; deliveryFee: number; customerId?: string; items: Array<{ productId: number; productName: string; barcode: string; quantity: number; unitPrice: number }> }
 
@@ -259,28 +273,42 @@ export function MenuPage() {
         )}
         <div className="grid grid-cols-2 gap-3">
           {inStock.map((product) => (
-            <div key={product.id} className="bg-glass border border-glass rounded-xl p-4 shadow-lg hover:bg-glass-hover transition-all duration-200">
-              <div className="flex items-center justify-between">
-                <span className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-300 font-medium uppercase tracking-wider">{product.category}</span>
-                <span className="text-sm font-bold text-emerald-400">${product.price.toFixed(2)}</span>
+            <div key={product.id} className="bg-glass border border-glass rounded-xl shadow-lg hover:bg-glass-hover transition-all duration-200 overflow-hidden">
+              {product.image ? (
+                <img src={product.image} alt={product.name} className="w-full aspect-[4/3] object-cover" loading="lazy" />
+              ) : (
+                <ProductImagePlaceholder name={product.name} />
+              )}
+              <div className="p-3">
+                <div className="flex items-center justify-between">
+                  <span className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-300 font-medium uppercase tracking-wider">{product.category}</span>
+                  <span className="text-sm font-bold text-emerald-400">${product.price.toFixed(2)}</span>
+                </div>
+                <p className="mt-2 text-sm font-medium text-primary leading-tight">{product.name}</p>
+                {product.variantName && <p className="text-xs text-secondary mt-0.5">{product.variantName}</p>}
+                <button onClick={() => addToCart(product)}
+                  className="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:from-emerald-500 hover:to-emerald-400 active:scale-95">
+                  {t("ordering.add_to_cart")}
+                </button>
               </div>
-              <p className="mt-3 text-sm font-medium text-primary leading-tight">{product.name}</p>
-              {product.variantName && <p className="text-xs text-secondary mt-0.5">{product.variantName}</p>}
-              <button onClick={() => addToCart(product)}
-                className="mt-3 flex h-9 w-full items-center justify-center rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:from-emerald-500 hover:to-emerald-400 active:scale-95">
-                {t("ordering.add_to_cart")}
-              </button>
             </div>
           ))}
           {outOfStock.map((product) => (
-            <div key={product.id} className="bg-glass border border-glass rounded-xl p-4 opacity-50">
-              <div className="flex items-center justify-between">
-                <span className="rounded-lg bg-white/[0.06] px-2 py-0.5 text-[10px] text-muted font-medium uppercase tracking-wider">{product.category}</span>
-                <span className="text-sm font-bold text-muted">${product.price.toFixed(2)}</span>
+            <div key={product.id} className="bg-glass border border-glass rounded-xl opacity-50 overflow-hidden">
+              {product.image ? (
+                <img src={product.image} alt={product.name} className="w-full aspect-[4/3] object-cover grayscale" loading="lazy" />
+              ) : (
+                <ProductImagePlaceholder name={product.name} />
+              )}
+              <div className="p-3">
+                <div className="flex items-center justify-between">
+                  <span className="rounded-lg bg-white/[0.06] px-2 py-0.5 text-[10px] text-muted font-medium uppercase tracking-wider">{product.category}</span>
+                  <span className="text-sm font-bold text-muted">${product.price.toFixed(2)}</span>
+                </div>
+                <p className="mt-2 text-sm font-medium text-primary leading-tight">{product.name}</p>
+                {product.variantName && <p className="text-xs text-muted mt-0.5">{product.variantName}</p>}
+                <p className="mt-2 text-center text-xs text-muted">{t("ordering.out_of_stock")}</p>
               </div>
-              <p className="mt-3 text-sm font-medium text-primary leading-tight">{product.name}</p>
-              {product.variantName && <p className="text-xs text-muted mt-0.5">{product.variantName}</p>}
-              <p className="mt-3 text-center text-xs text-muted">{t("ordering.out_of_stock")}</p>
             </div>
           ))}
         </div>

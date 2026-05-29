@@ -1,5 +1,6 @@
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
+import { canUseStorage, createId } from "../lib/storage"
 
 const USERS_KEY = "lebanonpos.users.v1"
 const CURRENT_USER_KEY = "lebanonpos.current-user.v1"
@@ -140,18 +141,6 @@ const initialUsers: StaffUser[] = [
     createdAt: new Date().toISOString(),
   },
 ]
-
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
-
-function createId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}-${crypto.randomUUID()}`
-  }
-
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`
-}
 
 async function hashPin(pin: string): Promise<string> {
   const encoder = new TextEncoder()

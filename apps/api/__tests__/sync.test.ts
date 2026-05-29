@@ -9,36 +9,40 @@ vi.mock("../src/lib/prisma", () => {
     findUnique: vi.fn(),
     findMany: vi.fn(),
     create: vi.fn(),
-    upsert: vi.fn(),
+    upsert: vi.fn().mockResolvedValue({}),
     update: vi.fn(),
     deleteMany: vi.fn(),
+    count: vi.fn(),
   })
 
-  return {
-    default: {
-      staffUser: model(),
-      product: model(),
-      sale: { ...model() },
-      saleRefund: { ...model() },
-      customer: model(),
-      debtSale: model(),
-      debtPayment: model(),
-      supplier: model(),
-      purchaseOrder: model(),
-      supplierPayment: model(),
-      shift: model(),
-      auditEvent: model(),
-      appSettings: { findUnique: vi.fn(), upsert: vi.fn() },
-      expense: model(),
-      inventoryBatch: model(),
-      stockAdjustment: model(),
-      stockCountSession: { ...model() },
-      dailyClose: model(),
-      syncOperation: model(),
-      $connect: vi.fn(),
-      $disconnect: vi.fn(),
-    },
+  const mock = {
+    staffUser: model(),
+    product: model(),
+    sale: { ...model() },
+    saleRefund: { ...model() },
+    customer: model(),
+    debtSale: model(),
+    debtPayment: model(),
+    supplier: model(),
+    purchaseOrder: model(),
+    supplierPayment: model(),
+    shift: model(),
+    auditEvent: model(),
+    appSettings: { findUnique: vi.fn(), upsert: vi.fn() },
+    expense: model(),
+    inventoryBatch: model(),
+    stockAdjustment: model(),
+    stockCountSession: { ...model() },
+    dailyClose: model(),
+    deliveryOrder: model(),
+    syncOperation: model(),
+    $connect: vi.fn(),
+    $disconnect: vi.fn(),
   }
+
+  mock.$transaction = vi.fn((cb: (tx: any) => unknown) => cb(mock))
+
+  return { default: mock }
 })
 
 const token = signToken({ userId: "u1", tenantId: "t1", role: "Admin" })
@@ -110,6 +114,7 @@ describe("GET /api/sync/pull", () => {
     vi.mocked(prisma.stockAdjustment.findMany).mockResolvedValue(empty)
     vi.mocked(prisma.stockCountSession.findMany).mockResolvedValue(empty)
     vi.mocked(prisma.dailyClose.findMany).mockResolvedValue(empty)
+    vi.mocked(prisma.deliveryOrder.findMany).mockResolvedValue(empty)
   }
 
   beforeEach(() => { vi.clearAllMocks() })

@@ -1,3 +1,4 @@
+export { default as ErrorBoundary } from "./components/ErrorBoundary"
 export { I18nProvider, useI18n } from "./i18n/I18nProvider"
 export type { Locale, TranslationDict } from "./i18n/I18nProvider"
 export { ThemeProvider, useTheme } from "./theme/ThemeProvider"

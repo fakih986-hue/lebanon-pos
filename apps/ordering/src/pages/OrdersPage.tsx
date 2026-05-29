@@ -68,7 +68,7 @@ export function OrdersPage() {
                           }
                           localStorage.setItem(`cart_${tenantSubdomain}`, JSON.stringify(merged))
                           navigate(`/order/${tenantSubdomain}`)
-                        } catch {}
+                        } catch (e) { console.warn("Failed to reorder:", e) }
                       }}
                       className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30">
                       {t("ordering.reorder")}

@@ -69,11 +69,11 @@ export function DeliveryPage() {
   }, [])
 
   async function fetchOnlineDrivers() {
-    try { setOnlineDrivers(await api<string[]>("/api/delivery/drivers/online")) } catch { }
+    try { setOnlineDrivers(await api<string[]>("/api/delivery/drivers/online")) } catch (e) { console.warn("Failed to fetch online drivers:", e) }
   }
 
   async function loadDrivers() {
-    try { setDrivers(await api<Driver[]>("/api/delivery/drivers")) } catch { }
+    try { setDrivers(await api<Driver[]>("/api/delivery/drivers")) } catch (e) { console.warn("Failed to load drivers:", e) }
   }
 
   async function load() {

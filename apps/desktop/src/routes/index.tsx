@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react"
-import { createBrowserRouter, RouterProvider, useLocation } from "react-router"
+import { createBrowserRouter, RouterProvider, useLocation, Navigate } from "react-router"
 import { AnimatePresence, motion } from "framer-motion"
 
 import { runMigration } from "../features/pos/services/migration.service"
@@ -250,6 +250,11 @@ const router = createBrowserRouter([
         </RequirePermission>
       </Shell>
     ),
+  },
+
+  {
+    path: "*",
+    element: <Navigate to="/" replace />,
   },
 ])
 

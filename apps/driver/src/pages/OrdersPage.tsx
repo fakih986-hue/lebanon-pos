@@ -107,7 +107,7 @@ export function OrdersPage() {
         for (const o of data) { if (!existing.has(o.id)) existing.set(o.id, o) }
         return Array.from(existing.values())
       })
-    } catch { }
+    } catch (e) { console.warn("Failed to fetch available orders:", e) }
   }
 
   useEffect(() => {

@@ -6,7 +6,7 @@ export type Locale = "en" | "ar"
 export type TranslationDict = typeof en
 
 const STORAGE_KEY = "lebanonpos.locale"
-const dicts: Record<Locale, TranslationDict> = { en, ar: ar as unknown as TranslationDict }
+const dicts: Record<Locale, TranslationDict> = { en, ar: ar as TranslationDict }
 
 type Params = Record<string, string | number | undefined | null>
 

@@ -9,5 +9,6 @@ export function errorHandler(
   console.error("API Error:", err.message, err.stack)
   res.statusCode = 500
   res.setHeader("Content-Type", "application/json")
-  res.end(JSON.stringify({ error: err.message || "Internal server error" }))
+  const isDev = process.env.NODE_ENV !== "production"
+  res.end(JSON.stringify({ error: isDev ? err.message : "Internal server error" }))
 }

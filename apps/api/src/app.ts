@@ -1,16 +1,7 @@
-import express from "express"
-import type { IncomingMessage, ServerResponse } from "node:http"
+import express, { type Request, type Response } from "express"
 import path from "node:path"
 import fs from "node:fs"
 import { fileURLToPath } from "node:url"
-type Req = IncomingMessage & { body?: unknown; query: Record<string, string | string[] | undefined>; params?: Record<string, string> }
-type Res = ServerResponse
-
-function json(res: ServerResponse, data: unknown, statusCode = 200) {
-  res.statusCode = statusCode
-  res.setHeader("Content-Type", "application/json")
-  res.end(JSON.stringify(data))
-}
 import cors from "cors"
 import authRoutes from "./routes/auth.js"
 import syncRoutes from "./routes/sync.js"
@@ -46,23 +37,22 @@ app.use("/api/dashboard", dashboardRoutes)
 app.use("/api/delivery", deliveryRoutes)
 app.use("/api/images", imageRoutes)
 
-app.get("/api/health", (_req: Req, res: Res) => {
-  json(res, { status: "ok", timestamp: new Date().toISOString() })
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() })
 })
 
 app.use(express.static("public"))
 
 function spaHandler(publicDir: string) {
-  return (_req: Req, res: Res) => {
+  return (_req: Request, res: Response) => {
     try {
       const html = fs.readFileSync(
         path.join(__dirname, "..", "public", publicDir, "index.html"),
         "utf-8"
       )
-      res.setHeader("Content-Type", "text/html")
-      res.end(html)
+      res.type("text/html").send(html)
     } catch {
-      json(res, { error: `${publicDir} app not found` }, 503)
+      res.status(503).json({ error: `${publicDir} app not found` })
     }
   }
 }

@@ -1,5 +1,6 @@
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
+import { canUseStorage, createId } from "../lib/storage"
 
 const BATCHES_KEY = "lebanonpos.inventory-batches.v1"
 const BATCHES_EVENT = "lebanonpos-inventory-batches-changed"
@@ -60,18 +61,6 @@ export type InventoryBatchAdjustmentInput = {
   unitPrice: number
   batchId?: string
   reason?: string
-}
-
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
-
-function createId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}-${crypto.randomUUID()}`
-  }
-
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`
 }
 
 function createBatchNumber() {

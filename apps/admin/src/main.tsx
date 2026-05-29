@@ -1,8 +1,7 @@
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router"
-import { I18nProvider } from "@lebanonpos/shared"
-import { ThemeProvider } from "@lebanonpos/shared"
+import { I18nProvider, ThemeProvider, ErrorBoundary } from "@lebanonpos/shared"
 import { LoginPage } from "./pages/LoginPage"
 import { DashboardPage } from "./pages/DashboardPage"
 import { DeliveryPage } from "./pages/DeliveryPage"
@@ -31,19 +30,22 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <I18nProvider>
         <ThemeProvider>
-          <Routes>
-            <Route path="/admin/login" element={<LoginPage />} />
-            <Route path="/admin" element={<RequireAuth><Layout /></RequireAuth>}>
-              <Route index element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="delivery" element={<DeliveryPage />} />
-              <Route path="customers" element={<CustomersPage />} />
-              <Route path="products" element={<ProductsPage />} />
-              <Route path="drivers" element={<DriversPage />} />
-              <Route path="staff" element={<StaffPage />} />
-              <Route path="sales" element={<SalesPage />} />
-            </Route>
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/admin/login" element={<LoginPage />} />
+              <Route path="/admin" element={<RequireAuth><Layout /></RequireAuth>}>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="delivery" element={<DeliveryPage />} />
+                <Route path="customers" element={<CustomersPage />} />
+                <Route path="products" element={<ProductsPage />} />
+                <Route path="drivers" element={<DriversPage />} />
+                <Route path="staff" element={<StaffPage />} />
+                <Route path="sales" element={<SalesPage />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/admin" replace />} />
+            </Routes>
+          </ErrorBoundary>
         </ThemeProvider>
       </I18nProvider>
     </BrowserRouter>

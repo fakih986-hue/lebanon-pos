@@ -1,4 +1,4 @@
-export const ar: Record<string, string> = {
+export const ar = {
   /* Nav */
   "nav.dashboard": "لوحة التحكم",
   "nav.delivery": "التوصيل",
@@ -162,6 +162,10 @@ export const ar: Record<string, string> = {
   "products.price": "السعر",
   "products.cost": "التكلفة",
   "products.stock": "المخزون",
+  "products.generate_images": "توليد الصور",
+  "products.generating": "جاري التوليد...",
+  "products.images_generated": "تم توليد {count} صورة",
+  "products.images_error": "فشل توليد الصور",
 
   /* Status */
   "status.Pending": "معلق",
@@ -258,6 +262,7 @@ export const ar: Record<string, string> = {
   "ordering.name_required": "الاسم مطلوب",
   "ordering.phone_pin_required": "رقم الهاتف و PIN مطلوبان",
   "ordering.store_not_found": "المتجر غير موجود",
+  "ordering.search_menu": "ابحث في القائمة...",
   "ordering.something_went_wrong": "حدث خطأ ما",
 
   /* Theme */

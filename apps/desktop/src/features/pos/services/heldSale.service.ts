@@ -1,6 +1,7 @@
 import type { Product } from "../types/product"
 
 import { writeLocalWithIndexedDB } from "./storage.service"
+import { canUseStorage } from "../lib/storage"
 
 const HELD_SALES_KEY = "lebanonpos.held-sales.v1"
 const HELD_SALES_EVENT = "lebanonpos-held-sales-changed"
@@ -21,9 +22,6 @@ export type HeldSale = {
   createdAt: string
 }
 
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
 
 function readHeldSales() {
   if (!canUseStorage()) {

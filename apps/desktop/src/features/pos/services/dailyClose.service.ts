@@ -1,6 +1,7 @@
 import { getCurrentUser, recordAuditEvent } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
+import { canUseStorage } from "../lib/storage"
 
 const DAILY_CLOSES_KEY = "lebanonpos.daily-closes.v1"
 const DAILY_CLOSES_EVENT = "lebanonpos-daily-closes-changed"
@@ -29,9 +30,6 @@ export type CloseBusinessDayInput = Omit<
   "id" | "closedBy" | "createdAt"
 >
 
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
 
 export function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear()

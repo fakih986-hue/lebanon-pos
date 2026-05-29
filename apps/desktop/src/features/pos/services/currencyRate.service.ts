@@ -1,5 +1,6 @@
 import { getSettings, saveSettings } from "./settings.service"
 import { recordAuditEvent } from "./security.service"
+import { canUseStorage } from "../lib/storage"
 
 const RATE_META_KEY = "lebanonpos.rate-meta.v1"
 const RATE_EVENT = "lebanonpos-rate-changed"
@@ -20,9 +21,6 @@ export type RateMeta = {
   autoFetchUrl?: string
 }
 
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
 
 export function getRateMeta(): RateMeta {
   if (!canUseStorage()) return { history: [] }

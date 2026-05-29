@@ -3,6 +3,7 @@ import type { Product, ProductAccent } from "../types/product"
 import { receiveInventoryBatches } from "./inventoryBatch.service"
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
+import { canUseStorage } from "../lib/storage"
 
 const STORAGE_KEY = "lebanonpos.products.v1"
 const PRODUCT_EVENT = "lebanonpos-products-changed"
@@ -35,10 +36,6 @@ const accents: ProductAccent[] = [
   "violet",
   "indigo",
 ]
-
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
 
 function normalizeBarcode(value: string) {
   return value.trim().replace(/\s+/g, "")

@@ -1,4 +1,4 @@
-import { getToken } from "../main"
+import { getToken, clearToken } from "../main"
 
 const BASE = import.meta.env.VITE_API_URL || ""
 
@@ -12,6 +12,11 @@ export async function api<T>(path: string, options?: RequestInit): Promise<T> {
       ...options?.headers,
     },
   })
+  if (res.status === 401) {
+    clearToken()
+    window.location.href = "/driver/login"
+    throw new Error("Session expired")
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error(body.error || `Request failed: ${res.status}`)

@@ -3,7 +3,7 @@ import type { Server } from "node:http"
 import jwt from "jsonwebtoken"
 import type { AuthPayload } from "../middleware/auth.js"
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production"
+const JWT_SECRET = process.env.JWT_SECRET!
 
 interface ClientInfo {
   ws: WebSocket

@@ -8,6 +8,7 @@ import {
   increaseProductStock,
 } from "./product.service"
 import { recordAuditEvent } from "./security.service"
+import { canUseStorage, createId } from "../lib/storage"
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 
@@ -46,18 +47,6 @@ export type RecordStockAdjustmentInput = {
   reason: StockAdjustmentReason
   note?: string
   batchId?: string
-}
-
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
-
-function createId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}-${crypto.randomUUID()}`
-  }
-
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`
 }
 
 function createAdjustmentNumber(count: number) {

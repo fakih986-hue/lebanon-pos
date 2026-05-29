@@ -6,6 +6,7 @@ import { getProductsSync } from "./product.service"
 import { recordAuditEvent } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
+import { canUseStorage, createId } from "../lib/storage"
 
 const STOCK_COUNTS_KEY = "lebanonpos.stock-counts.v1"
 const STOCK_COUNTS_EVENT = "lebanonpos-stock-counts-changed"
@@ -32,18 +33,6 @@ export type StockCountSession = {
   lines: StockCountLine[]
   totalVariance: number
   totalValueImpact: number
-}
-
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
-
-function createId(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}-${crypto.randomUUID()}`
-  }
-
-  return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`
 }
 
 function readCounts() {

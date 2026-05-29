@@ -5,6 +5,7 @@ import {
 } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
+import { canUseStorage } from "../lib/storage"
 
 const EXPENSES_KEY = "lebanonpos.expenses.v1"
 const EXPENSES_EVENT = "lebanonpos-expenses-changed"
@@ -49,9 +50,6 @@ export type CreateExpenseInput = {
   note: string
 }
 
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
 
 function cleanText(value: string) {
   return value.trim().replace(/\s+/g, " ")

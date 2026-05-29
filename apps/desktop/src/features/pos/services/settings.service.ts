@@ -1,3 +1,5 @@
+import { canUseStorage } from "../lib/storage"
+
 const SETTINGS_KEY = "lebanonpos.settings.v1"
 const SETTINGS_EVENT = "lebanonpos-settings-changed"
 
@@ -38,9 +40,6 @@ export const defaultSettings: AppSettings = {
   defaultDriverId: "",
 }
 
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
 
 export function getSettings() {
   if (!canUseStorage()) {

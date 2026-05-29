@@ -11,6 +11,21 @@ jobs:
     name: Type-check, lint & test
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ci_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v4
 
@@ -29,12 +44,17 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --dir apps/api exec prisma generate
         env:
-          DATABASE_URL: file:./dev.db
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci_test
+
+      - name: Push schema to test DB
+        run: pnpm --dir apps/api exec prisma db push --skip-generate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci_test
 
       - name: Type-check API
         run: pnpm --dir apps/api run build
         env:
-          DATABASE_URL: file:./dev.db
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci_test
 
       - name: Type-check admin SPA
         run: pnpm --dir apps/admin exec tsc --noEmit
@@ -51,7 +71,7 @@ jobs:
       - name: Run API tests
         run: pnpm --dir apps/api run test
         env:
-          DATABASE_URL: file:./dev.db
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci_test
           JWT_SECRET: ci-test-secret
 
       - name: Build admin SPA

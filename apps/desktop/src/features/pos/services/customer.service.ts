@@ -1,6 +1,7 @@
 import type { Product } from "../types/product"
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
+import { canUseStorage } from "../lib/storage"
 
 const CUSTOMERS_KEY = "lebanonpos.customers.v1"
 const DEBT_SALES_KEY = "lebanonpos.debt-sales.v1"
@@ -118,9 +119,6 @@ export type RecordDebtPaymentInput = {
   reference: string
 }
 
-function canUseStorage() {
-  return typeof window !== "undefined" && Boolean(window.localStorage)
-}
 
 function readCollection<T>(key: string, fallback: T[]) {
   if (!canUseStorage()) {
