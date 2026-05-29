@@ -7,7 +7,7 @@ import prisma from "./lib/prisma.js"
 // Must be set before any route handler runs
 const JWT_SECRET = process.env.JWT_SECRET
 if (!JWT_SECRET || JWT_SECRET === "dev-secret-change-in-production") {
-  console.error("FATAL: JWT_SECRET environment variable must be set in production")
+  console.error(`FATAL: JWT_SECRET environment variable must be set in production (length=${JWT_SECRET ? JWT_SECRET.length : 0}, first=${JWT_SECRET ? JWT_SECRET[0] : 'N/A'})`)
   process.exit(1)
 }
 
