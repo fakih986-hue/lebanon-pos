@@ -18,6 +18,12 @@ function ProductImagePlaceholder({ name }: { name: string }) {
     </div>
   )
 }
+
+function ProductImage({ src, name }: { src: string; name: string }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) return <ProductImagePlaceholder name={name} />
+  return <img src={src} alt={name} className="w-full aspect-[4/3] object-cover" loading="lazy" onError={() => setFailed(true)} />
+}
 type CartItem = { product: Product; quantity: number }
 type OrderPayload = { tenantId: string; customerName: string; customerPhone: string; address: string; deliveryNote?: string; deliveryFee: number; customerId?: string; items: Array<{ productId: number; productName: string; barcode: string; quantity: number; unitPrice: number }> }
 
@@ -275,7 +281,7 @@ export function MenuPage() {
           {inStock.map((product) => (
             <div key={product.id} className="bg-glass border border-glass rounded-xl shadow-lg hover:bg-glass-hover transition-all duration-200 overflow-hidden">
               {product.image ? (
-                <img src={product.image} alt={product.name} className="w-full aspect-[4/3] object-cover" loading="lazy" />
+                <ProductImage src={product.image} name={product.name} />
               ) : (
                 <ProductImagePlaceholder name={product.name} />
               )}
