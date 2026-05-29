@@ -232,7 +232,7 @@ router.get("/serve/:id", async (req: IncomingMessage, res: ServerResponse) => {
     res.writeHead(200, {
       "Content-Type": mime,
       "Content-Length": buffer.length.toString(),
-      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cache-Control": "public, max-age=0, must-revalidate",
     })
     res.end(buffer)
   } catch (err) {
