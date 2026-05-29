@@ -76,7 +76,13 @@ export function OrderDetailPage() {
         method: "PATCH",
         body: JSON.stringify({ status, ...extra }),
       })
-      setSuccessMsg(t("driver.status_updated"))
+      const msgMap: Record<string, string> = {
+        OutForDelivery: t("driver.started_delivery"),
+        Delivered: extra?.paidAmount
+          ? t("driver.collect_cash_success", { amount: (extra.paidAmount as number).toFixed(2) })
+          : t("driver.delivered_success"),
+      }
+      setSuccessMsg(msgMap[status] ?? t("driver.status_updated"))
       await fetchOrder()
     } catch (err) {
       setError(err instanceof Error ? err.message : t("driver.failed_update"))

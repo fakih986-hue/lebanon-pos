@@ -1,30 +1,12 @@
-﻿export type ProductAccent =
-  | "amber"
-  | "cyan"
-  | "emerald"
-  | "indigo"
-  | "rose"
-  | "violet"
+﻿import type { Product as SharedProduct, ProductAccent } from "@lebanonpos/types"
 
-export type Product = {
-  id: number
-  parentId?: number | null
-  isParent?: boolean
-  variantName?: string
-  variants?: Product[]
-  name: string
-  price: number
-  cost: number
-  stock: number
+export type { ProductAccent }
+
+export type Product = SharedProduct & {
   barcode: string
-  barcodeAliases?: string[]
-  category: string
-  accent: ProductAccent
-  favorite?: boolean
-  reorderPoint?: number
-  reorderQuantity?: number
+  variantName?: string
   supplierId?: string
   supplierName?: string
   expiryDate?: string
-  image?: string
+  variants?: Product[]
 }

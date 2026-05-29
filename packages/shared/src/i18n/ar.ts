@@ -196,8 +196,10 @@ export const ar = {
   "driver.total": "الإجمالي",
   "driver.picked_up": "تم الاستلام",
   "driver.delivered": "تم التوصيل",
-  "driver.completed": "مكتمل",
-  "driver.order_not_found": "الطلب غير موجود",
+  "driver.started_delivery": "بدأت التوصيل! 🛵",
+  "driver.delivered_success": "تم التوصيل بنجاح! ✅",
+  "driver.collect_cash_success": "تم التوصيل — تحصيل ${amount} نقداً",
+
   "driver.status_updated": "تم تحديث الحالة بنجاح!",
   "driver.failed_load": "فشل تحميل الطلبات",
   "driver.failed_update": "فشل تحديث الحالة",
@@ -849,6 +851,11 @@ export const ar = {
   "pos.staff.expected": "متوقع",
   "pos.staff.returns": "مرتجعات",
   "pos.staff.cash_out": "صرف نقد",
+  "pos.staff.change_pin": "تغيير رمز PIN",
+  "pos.staff.new_pin_for": "رمز PIN جديد لـ {name}",
+  "pos.staff.pin_too_short": "يجب أن يكون رمز PIN 4 أرقام على الأقل",
+  "pos.staff.pin_updated": "تم تحديث رمز PIN بنجاح",
+  "pos.staff.save_pin": "حفظ رمز PIN",
 
   /* POS - Accounting Page */
   "pos.accounting.category_supplier": "مورد",

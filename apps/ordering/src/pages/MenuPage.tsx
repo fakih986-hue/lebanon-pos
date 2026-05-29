@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useParams, useNavigate } from "react-router"
 import { useI18n } from "@lebanonpos/shared"
 import { api } from "../app/api"
-
-type Product = { id: number; name: string; price: number; barcode: string; category: string; stock: number; variantName: string | null; image?: string | null }
+import type { Product } from "@lebanonpos/types"
 
 function ProductImagePlaceholder({ name }: { name: string }) {
   const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0)
@@ -107,7 +106,7 @@ export function MenuPage() {
         tenantId, customerName, customerPhone, address,
         deliveryNote: deliveryNote || undefined, deliveryFee: deliveryFee,
         customerId,
-        items: cart.map((item) => ({ productId: item.product.id, productName: item.product.name, barcode: item.product.barcode, quantity: item.quantity, unitPrice: item.product.price })),
+        items: cart.map((item) => ({ productId: item.product.id, productName: item.product.name, barcode: item.product.barcode ?? "", quantity: item.quantity, unitPrice: item.product.price })),
       }
       const result = await api<{ order: { orderNumber: string } }>("/api/delivery/order", { method: "POST", body: JSON.stringify(payload) })
       setCart([])

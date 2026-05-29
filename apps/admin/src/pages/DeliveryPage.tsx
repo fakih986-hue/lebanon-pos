@@ -2,17 +2,9 @@ import { useEffect, useState, useRef } from "react"
 import { api } from "../app/api"
 import { useI18n, useWebSocket } from "@lebanonpos/shared"
 import { getToken } from "../main"
+import type { DeliveryOrder } from "@lebanonpos/types"
 
 type Driver = { id: string; name: string; code?: string }
-
-type DeliveryOrder = {
-  id: string; orderNumber: string; status: string; customerName: string
-  customerPhone: string; address: string; itemsTotal: number; deliveryFee: number
-  total: number; paymentMethod: string; paidAmount: number
-  assignedName: string | null; driverId: string | null; deliveryNote: string
-  notes: string; cancelledReason: string; createdAt: string
-  items: Array<{ id: string; productName: string; quantity: number; unitPrice: number; total: number }>
-}
 
 const STATUS_ORDER = ["Pending", "Confirmed", "Preparing", "OutForDelivery", "Delivered", "Cancelled"]
 const STATUS_STYLES: Record<string, string> = {

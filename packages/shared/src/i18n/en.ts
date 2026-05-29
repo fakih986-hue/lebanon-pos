@@ -196,8 +196,10 @@ export const en = {
   "driver.total": "Total",
   "driver.picked_up": "Picked Up",
   "driver.delivered": "Delivered",
-  "driver.completed": "Completed",
-  "driver.order_not_found": "Order not found",
+  "driver.started_delivery": "Started delivery! 🛵",
+  "driver.delivered_success": "Delivered successfully! ✅",
+  "driver.collect_cash_success": "Delivered — collected ${amount} cash",
+
   "driver.status_updated": "Status updated successfully!",
   "driver.failed_load": "Failed to load orders",
   "driver.failed_update": "Failed to update status",
@@ -849,6 +851,11 @@ export const en = {
   "pos.staff.expected": "Expected",
   "pos.staff.returns": "Returns",
   "pos.staff.cash_out": "Cash out",
+  "pos.staff.change_pin": "Change PIN",
+  "pos.staff.new_pin_for": "New PIN for {name}",
+  "pos.staff.pin_too_short": "PIN must be at least 4 digits",
+  "pos.staff.pin_updated": "PIN updated successfully",
+  "pos.staff.save_pin": "Save PIN",
 
   /* POS - Accounting Page */
   "pos.accounting.category_supplier": "Supplier",

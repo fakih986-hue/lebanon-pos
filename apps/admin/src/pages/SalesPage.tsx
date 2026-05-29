@@ -1,23 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { api } from "../app/api"
-import { useI18n } from "@lebanonpos/shared"
-
-type SaleItem = { id: string; productName: string; quantity: number; unitPrice: number; total: number }
-type Sale = {
-  id: string
-  saleNumber: string
-  paymentMethod: string
-  customerName?: string
-  subtotal: number
-  discountTotal?: number
-  tax: number
-  total: number
-  profit: number
-  cashier: string
-  status: string
-  createdAt: string
-  items: SaleItem[]
-}
+import type { Sale } from "@lebanonpos/types"
 
 type DateRange = "today" | "week" | "month" | "all"
 
@@ -52,7 +35,6 @@ const PM_COLORS: Record<string, string> = {
 }
 
 export function SalesPage() {
-  const { t } = useI18n()
   const [sales, setSales] = useState<Sale[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")

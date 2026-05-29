@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
 import { api } from "../app/api"
 import { useI18n } from "@lebanonpos/shared"
+import type { Product } from "@lebanonpos/types"
 
-type Product = { id: number; name: string; barcode: string; category: string; price: number; cost: number; stock: number; isParent: boolean; variantName: string | null; parentId: number | null }
 type PullResponse = { products: Product[] }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -51,7 +51,7 @@ export function ProductsPage() {
   const filtered = products.filter(p => {
     if (!search) return true
     const q = search.toLowerCase()
-    return p.name.toLowerCase().includes(q) || p.barcode.toLowerCase().includes(q)
+    return p.name.toLowerCase().includes(q) || (p.barcode ?? "").toLowerCase().includes(q)
   })
 
   return (

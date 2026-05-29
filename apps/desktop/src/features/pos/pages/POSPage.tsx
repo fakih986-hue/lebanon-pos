@@ -1,29 +1,14 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useDebounce } from "../../../hooks/useDebounce"
 import { useHotkeys } from "../../../hooks/useHotkey"
-import type { ChangeEvent } from "react"
-import {
-  Candy,
-  Croissant,
-  CupSoda,
-  Eraser,
-  LayoutGrid,
-  PackageOpen,
-  PackageSearch,
-  ScanBarcode,
-  Search,
-  ShoppingBasket,
-  ShoppingCart,
-  Star,
-  Utensils,
-} from "lucide-react"
-import type { LucideIcon } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
+import { PackageSearch, ShoppingCart } from "lucide-react"
 
 import ConfirmDialog from "../../../components/ConfirmDialog"
 import Spinner from "../../../components/ui/Spinner"
 import EmptyState from "../../../components/ui/EmptyState"
-import ProductCard from "../components/ProductCard"
+import ProductGrid from "../components/ProductGrid"
+import SearchToolbar from "../components/SearchToolbar"
 import DepartmentTabs from "../components/DepartmentTabs"
 import LastSaleBanner from "../components/LastSaleBanner"
 import CartDrawer from "../components/CartDrawer"
@@ -33,60 +18,34 @@ import { StaleRateBanner } from "../components/RateManager"
 import { openWhatsAppShare, receiptMessage } from "../lib/whatsapp"
 import {
   formatCurrency,
-  formatLbpCurrency,
   formatNumber,
   lbpToUsd,
   usdToLbp,
 } from "../lib/currency"
 import {
-  getHeldSaleDiscountTotal,
-  getHeldSaleGrossSubtotal,
   getHeldSaleItemCount,
-  getHeldSaleTotal,
   parseMoney,
 } from "../lib/helpers"
+import { departmentIcons } from "../lib/pos.constants"
 import { printLastSaleReceipt, type LastSaleSummary } from "../lib/printReceipt"
 import {
-  createBarcodeDetector,
-  createHtml5Qrcode,
-  detectBarcodeFromImageFile,
-  getCameraErrorMessage,
-  getHtml5QrcodeFormatCodes,
-  getLiveCameraIssue,
-  getPreferredCameraConstraints,
-  type Html5QrcodeInstance,
-} from "../lib/cameraScanner"
-import {
-  getCustomerLedger,
-  recordDebtSale,
-  subscribeLedger,
-  type CustomerLedger,
-} from "../services/customer.service"
-import { consumeInventoryBatches } from "../services/inventoryBatch.service"
-import {
-  decreaseProductStock,
-  findProductByBarcode,
-  getProducts,
   productHasBarcode,
   productMatchesSearch,
-  subscribeProducts,
   toggleProductFavorite,
 } from "../services/product.service"
-import {
-  getSettings,
-  subscribeSettings,
-  type AppSettings,
-} from "../services/settings.service"
+import { decreaseProductStock } from "../services/product.service"
 import { recordSale, type SaleTender } from "../services/sales.service"
 import {
-  getHeldSales,
   holdSale,
   removeHeldSale,
-  subscribeHeldSales,
   type HeldSale,
 } from "../services/heldSale.service"
+import { recordDebtSale } from "../services/customer.service"
 import { recordAuditEvent, userCan } from "../services/security.service"
+import { consumeInventoryBatches } from "../services/inventoryBatch.service"
 import type { Product } from "../types/product"
+import { usePosData } from "../hooks/usePosData"
+import { useBarcodeScanner } from "../hooks/useBarcodeScanner"
 
 type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
 type TenderMode = "USD" | "LBP" | "Mixed"
@@ -96,61 +55,33 @@ type CartItem = Product & {
   quantity: number
 }
 
-const POS_CAMERA_READER_ID = "lebanonpos-pos-camera-reader"
-
-const departmentIcons: Record<string, LucideIcon> = {
-  All: LayoutGrid,
-  Favorites: Star,
-  Drinks: CupSoda,
-  Bakery: Croissant,
-  Food: Utensils,
-  Snacks: Candy,
-  Pantry: ShoppingBasket,
-}
-
-function normalizeBarcode(value: string) {
-  return value.trim().replace(/\s+/g, "")
-}
-
-const ProductGrid = memo(function ProductGrid({
-  products,
-  onAddProduct,
-  onToggleFavorite,
-}: {
-  products: Product[]
-  onAddProduct: (product: Product, source: string) => void
-  onToggleFavorite: (product: Product) => void
-}) {
-  return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 pb-4 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] xl:gap-4">
-      {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          onClick={() => onAddProduct(product, "tap")}
-          onFavoriteToggle={() => onToggleFavorite(product)}
-        />
-      ))}
-    </div>
-  )
-})
-
 export default function POSPage() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [items, setItems] = useState<CartItem[]>([])
-  const [heldSales, setHeldSales] = useState<HeldSale[]>(getHeldSales())
-  const [customers, setCustomers] = useState<CustomerLedger[]>([])
-  const scanInputRef = useRef<HTMLInputElement>(null)
   const { t, dir } = useI18n()
-  const [settings, setSettings] = useState<AppSettings>(getSettings())
+
+  // --- Data ---
+  const { products, isLoading, heldSales, customers, settings } = usePosData()
+
+  // --- Scanner / barcode ---
+  const {
+    scanInputRef,
+    scanCode,
+    setScanCode,
+    scannerStatus,
+    setScannerStatus,
+    cameraActive,
+    cameraEngine,
+    startCameraScanner,
+    handleScanCapture,
+    videoRef,
+    scanCaptureInputRef,
+  } = useBarcodeScanner((product, source) => addProductToSale(product, source))
+
+  // --- Local state ---
+  const [items, setItems] = useState<CartItem[]>([])
   const [selectedCustomerId, setSelectedCustomerId] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebounce(search, 200)
-  const [scanCode, setScanCode] = useState("")
-  const [scannerStatus, setScannerStatus] = useState("Scanner ready.")
-  const [cameraActive, setCameraActive] = useState(false)
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("Cash")
   const [tenderMode, setTenderMode] = useState<TenderMode>("USD")
@@ -160,9 +91,6 @@ export default function POSPage() {
   const [discountValue, setDiscountValue] = useState("")
   const [lastSale, setLastSale] = useState<LastSaleSummary | null>(null)
   const [isCartOpen, setIsCartOpen] = useState(false)
-  const [cameraEngine, setCameraEngine] = useState<"native" | "html5" | null>(
-    null
-  )
   const [confirmAction, setConfirmAction] = useState<{
     title: string
     message: string
@@ -175,82 +103,16 @@ export default function POSPage() {
   const [saleNote, setSaleNote] = useState("")
   const [simpleMode, setSimpleMode] = useState(false)
 
-  const videoRef = useRef<HTMLVideoElement | null>(null)
   const productListRef = useRef<HTMLDivElement | null>(null)
-  const scanCaptureInputRef = useRef<HTMLInputElement | null>(null)
-  const scannerStreamRef = useRef<MediaStream | null>(null)
-  const html5ScannerRef = useRef<Html5QrcodeInstance | null>(null)
-  const cameraFrameRef = useRef<number | null>(null)
-  const lastDetectedRef = useRef({
-    code: "",
-    at: 0,
-  })
 
-  useEffect(() => {
-    let active = true
-
-    getProducts()
-      .then((data) => {
-        if (active) {
-          setProducts(data)
-          setIsLoading(false)
-        }
-      })
-      .catch(() => {
-        if (active) setIsLoading(false)
-      })
-
-    const unsubscribe = subscribeProducts((data) => {
-      if (active) {
-        setProducts(data)
-      }
-    })
-    const unsubscribeHeldSales = subscribeHeldSales((data) => {
-      if (active) {
-        setHeldSales(data)
-      }
-    })
-    const refreshLedger = () => {
-      if (active) {
-        setCustomers(getCustomerLedger())
-      }
-    }
-    const unsubscribeLedger = subscribeLedger(refreshLedger)
-    const unsubscribeSettings = subscribeSettings(setSettings)
-
-    refreshLedger()
-
-    return () => {
-      active = false
-      unsubscribe()
-      unsubscribeHeldSales()
-      unsubscribeLedger()
-      unsubscribeSettings()
-    }
-  }, [])
-
+  // --- Auto-select first customer for Debt ---
   useEffect(() => {
     if (paymentMethod === "Debt" && !selectedCustomerId && customers[0]) {
       setSelectedCustomerId(customers[0].id)
     }
   }, [customers, paymentMethod, selectedCustomerId])
 
-  useEffect(() => {
-    return () => {
-      if (cameraFrameRef.current) {
-        window.cancelAnimationFrame(cameraFrameRef.current)
-      }
-
-      scannerStreamRef.current?.getTracks().forEach((track) => track.stop())
-      const scanner = html5ScannerRef.current
-
-      html5ScannerRef.current = null
-      if (scanner) {
-        void scanner.stop().catch(() => undefined).finally(() => scanner.clear())
-      }
-    }
-  }, [])
-
+  // --- Hotkeys ---
   useHotkeys([
     {
       key: "f",
@@ -259,9 +121,7 @@ export default function POSPage() {
     },
     {
       key: "f8",
-      handler: () => {
-        if (items.length > 0) setIsCartOpen(true)
-      },
+      handler: () => { if (items.length > 0) setIsCartOpen(true) },
     },
     {
       key: "Escape",
@@ -269,13 +129,13 @@ export default function POSPage() {
     },
   ])
 
+  // --- Computed values ---
   const departmentSummaries = useMemo(() => {
     const categoryNames = [
       "All",
       "Favorites",
       ...Array.from(new Set(products.map((product) => product.category))),
     ]
-
     return categoryNames.map((category) => {
       const departmentProducts =
         category === "All"
@@ -283,7 +143,7 @@ export default function POSPage() {
           : category === "Favorites"
             ? products.filter((product) => product.favorite)
           : products.filter((product) => product.category === category)
-      const Icon = departmentIcons[category] ?? PackageOpen
+      const Icon = departmentIcons[category] ?? PackageSearch
 
       return {
         name: category,
@@ -297,21 +157,17 @@ export default function POSPage() {
 
   const filteredProducts = useMemo(() => {
     const query = (debouncedSearch || scanCode).trim().toLowerCase()
-
     return products.filter((product) => {
       const matchesCategory =
         selectedCategory === "All" ||
         (selectedCategory === "Favorites" && product.favorite) ||
         product.category === selectedCategory
-
       const matchesSearch =
-        query.length === 0 ||
-        productMatchesSearch(product, query)
-
+        query.length === 0 || productMatchesSearch(product, query)
       return matchesCategory && matchesSearch
-    })
-      .sort((a, b) => Number(Boolean(b.favorite)) - Number(Boolean(a.favorite)))
+    }).sort((a, b) => Number(Boolean(b.favorite)) - Number(Boolean(a.favorite)))
   }, [products, scanCode, search, selectedCategory])
+
   const selectedDepartment =
     departmentSummaries.find(
       (department) => department.name === selectedCategory
@@ -319,8 +175,7 @@ export default function POSPage() {
 
   const canApplyDiscount = userCan("sales.discount")
   const grossSubtotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
+    (sum, item) => sum + item.price * item.quantity, 0
   )
   const parsedDiscountValue = parseMoney(discountValue)
   const discountTotal = canApplyDiscount
@@ -342,13 +197,11 @@ export default function POSPage() {
   )
   const hasDiscount = discountTotal > 0
   const heldSalesItemCount = heldSales.reduce(
-    (sum, heldSale) => sum + getHeldSaleItemCount(heldSale),
-    0
+    (sum, heldSale) => sum + getHeldSaleItemCount(heldSale), 0
   )
   const paidUsdAmount = tenderMode === "LBP" ? 0 : parseMoney(paidUsd)
   const paidLbpAmount = tenderMode === "USD" ? 0 : parseMoney(paidLbp)
-  const paidTotalUsd =
-    paidUsdAmount + lbpToUsd(paidLbpAmount, exchangeRate)
+  const paidTotalUsd = paidUsdAmount + lbpToUsd(paidLbpAmount, exchangeRate)
   const paidTotalLbp = usdToLbp(paidTotalUsd, exchangeRate)
   const cashStillDueUsd = Math.max(0, total - paidTotalUsd)
   const cashChangeUsd = Math.max(0, paidTotalUsd - total)
@@ -366,61 +219,40 @@ export default function POSPage() {
     (paymentMethod === "Cash" && !cashTenderValid) ||
     (paymentMethod === "Debt" && (!selectedCustomer || creditLimitExceeded))
 
+  // --- Cart operations ---
   function addItem(product: Product) {
-    if (product.stock <= 0) {
-      return
-    }
-
+    if (product.stock <= 0) return
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.id === product.id)
-
       if (existingItem) {
-        if (existingItem.quantity >= product.stock) {
-          return currentItems
-        }
-
+        if (existingItem.quantity >= product.stock) return currentItems
         return currentItems.map((item) =>
           item.id === product.id
-            ? {
-                ...item,
-                quantity: item.quantity + 1,
-              }
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         )
       }
-
-      return [
-        ...currentItems,
-        {
-          ...product,
-          quantity: 1,
-        },
-      ]
+      return [...currentItems, { ...product, quantity: 1 }]
     })
   }
 
   const addProductToSale = useCallback(function addProductToSale(product: Product, source: string) {
     if (product.isParent) {
       const variants = products.filter((p) => p.parentId === product.id)
-
       if (variants.length > 0) {
         setVariantPickerProduct(product)
         return
       }
     }
-
     const cartItem = items.find((item) => item.id === product.id)
-
     if (product.stock <= 0) {
       setScannerStatus(`${product.name} is out of stock.`)
       return
     }
-
     if (cartItem && cartItem.quantity >= product.stock) {
       setScannerStatus(`${product.name} reached available stock.`)
       return
     }
-
     addItem(product)
     setScanCode("")
     setSearch("")
@@ -428,33 +260,13 @@ export default function POSPage() {
     setScannerStatus(`${product.name} added by ${source}.`)
   }, [products, items])
 
-  function handleScannedBarcode(value: string) {
-    const barcode = normalizeBarcode(value)
-
-    if (!barcode) {
-      setScannerStatus("Scan a barcode first.")
-      return
-    }
-
-    const product = findProductByBarcode(barcode)
-
-    if (!product) {
-      setScannerStatus(`Barcode ${barcode} was not found.`)
-      return
-    }
-
-    addProductToSale(product, "barcode")
-  }
-
   function quickAddProduct(value: string) {
     const query = value.trim().toLowerCase()
-    const barcode = normalizeBarcode(value)
-
     if (!query) {
       setScannerStatus("Type, scan, or choose an item first.")
       return
     }
-
+    const barcode = value.trim().replace(/\s+/g, "")
     const exactProduct = products.find(
       (product) =>
         productHasBarcode(product, barcode) ||
@@ -463,19 +275,13 @@ export default function POSPage() {
     const matchingProducts = products.filter((product) => {
       const matchesCategory =
         selectedCategory === "All" || product.category === selectedCategory
-
-      return (
-        matchesCategory &&
-        productMatchesSearch(product, query || barcode)
-      )
+      return matchesCategory && productMatchesSearch(product, query || barcode)
     })
     const product = exactProduct ?? matchingProducts[0]
-
     if (!product) {
       setScannerStatus(`No item found for ${value.trim()}.`)
       return
     }
-
     addProductToSale(product, exactProduct ? "barcode" : "quick add")
   }
 
@@ -491,7 +297,6 @@ export default function POSPage() {
   const selectDepartment = useCallback(function selectDepartment(department: string) {
     setSelectedCategory(department)
     setSearch("")
-
     window.requestAnimationFrame(() => {
       productListRef.current?.scrollIntoView({
         block: "start",
@@ -504,10 +309,7 @@ export default function POSPage() {
     setItems((currentItems) =>
       currentItems.map((item) =>
         item.id === id && item.quantity < item.stock
-          ? {
-              ...item,
-              quantity: item.quantity + 1,
-            }
+          ? { ...item, quantity: item.quantity + 1 }
           : item
       )
     )
@@ -517,12 +319,7 @@ export default function POSPage() {
     setItems((currentItems) =>
       currentItems
         .map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                quantity: item.quantity - 1,
-              }
-            : item
+          item.id === id ? { ...item, quantity: item.quantity - 1 } : item
         )
         .filter((item) => item.quantity > 0)
     )
@@ -546,6 +343,7 @@ export default function POSPage() {
     )
   }, [])
 
+  // --- Tender / discount ---
   function resetTender() {
     setPaidUsd("")
     setPaidLbp("")
@@ -561,6 +359,25 @@ export default function POSPage() {
     setItems([])
   }
 
+  const selectTenderMode = useCallback(function selectTenderMode(mode: TenderMode) {
+    setTenderMode(mode)
+    if (mode === "USD") setPaidLbp("")
+    if (mode === "LBP") setPaidUsd("")
+  }, [])
+
+  const fillExactTender = useCallback(function fillExactTender(currency: "USD" | "LBP") {
+    if (currency === "USD") {
+      setTenderMode("USD")
+      setPaidUsd(total.toFixed(2))
+      setPaidLbp("")
+      return
+    }
+    setTenderMode("LBP")
+    setPaidUsd("")
+    setPaidLbp(String(Math.round(totalLbp)))
+  }, [total, totalLbp])
+
+  // --- Sale lifecycle ---
   const cleanSale = useCallback(function cleanSale() {
     if (items.length === 0) {
       clearCart()
@@ -581,14 +398,8 @@ export default function POSPage() {
         recordAuditEvent({
           action: "sale.void",
           entity: "sale",
-          summary: `Current sale cleared before checkout with ${formatNumber(
-            itemCount
-          )} items.`,
-          metadata: {
-            itemCount,
-            grossSubtotal,
-            discountTotal,
-          },
+          summary: `Current sale cleared before checkout with ${formatNumber(itemCount)} items.`,
+          metadata: { itemCount, grossSubtotal, discountTotal },
         })
         clearCart()
         resetTender()
@@ -607,28 +418,16 @@ export default function POSPage() {
       setScannerStatus("Add items before holding a sale.")
       return
     }
-
     const heldSale = holdSale({
-      items,
-      paymentMethod,
-      selectedCustomerId,
-      discountMode,
-      discountValue,
+      items, paymentMethod, selectedCustomerId,
+      discountMode, discountValue,
       note: selectedCustomer?.name ?? "Walk-in",
     })
-
     recordAuditEvent({
       action: "sale.hold",
       entity: "sale",
-      summary: `${heldSale.holdNumber} held with ${formatNumber(
-        itemCount
-      )} items.`,
-      metadata: {
-        heldSaleId: heldSale.id,
-        itemCount,
-        discountTotal,
-        total,
-      },
+      summary: `${heldSale.holdNumber} held with ${formatNumber(itemCount)} items.`,
+      metadata: { heldSaleId: heldSale.id, itemCount, discountTotal, total },
     })
     clearCart()
     resetTender()
@@ -644,7 +443,6 @@ export default function POSPage() {
       setScannerStatus("Hold or clear the current sale before resuming another.")
       return
     }
-
     setItems(heldSale.items)
     setPaymentMethod(heldSale.paymentMethod)
     setSelectedCustomerId(heldSale.selectedCustomerId)
@@ -656,9 +454,7 @@ export default function POSPage() {
       action: "sale.resume",
       entity: "sale",
       summary: `${heldSale.holdNumber} resumed.`,
-      metadata: {
-        heldSaleId: heldSale.id,
-      },
+      metadata: { heldSaleId: heldSale.id },
     })
     setIsCartOpen(true)
     setScannerStatus(`${heldSale.holdNumber} resumed.`)
@@ -676,270 +472,42 @@ export default function POSPage() {
           action: "sale.hold.discard",
           entity: "sale",
           summary: `${heldSale.holdNumber} was discarded.`,
-          metadata: {
-            heldSaleId: heldSale.id,
-          },
+          metadata: { heldSaleId: heldSale.id },
         })
         setScannerStatus(`${heldSale.holdNumber} discarded.`)
       },
     })
   }, [])
 
-  const selectTenderMode = useCallback(function selectTenderMode(mode: TenderMode) {
-    setTenderMode(mode)
-
-    if (mode === "USD") {
-      setPaidLbp("")
-    }
-
-    if (mode === "LBP") {
-      setPaidUsd("")
-    }
-  }, [])
-
-  const fillExactTender = useCallback(function fillExactTender(currency: "USD" | "LBP") {
-    if (currency === "USD") {
-      setTenderMode("USD")
-      setPaidUsd(total.toFixed(2))
-      setPaidLbp("")
-      return
-    }
-
-    setTenderMode("LBP")
-    setPaidUsd("")
-    setPaidLbp(String(Math.round(totalLbp)))
-  }, [total, totalLbp])
-
-  async function startCameraScanner() {
-    if (cameraActive) {
-      stopCameraScanner()
-      return
-    }
-
-    const liveCameraIssue = getLiveCameraIssue()
-
-    if (liveCameraIssue) {
-      // No getUserMedia at all — fall back to file/photo capture
-      setScannerStatus("📷 Point camera at barcode, then take a photo.")
-      scanCaptureInputRef.current?.click()
-      return
-    }
-
-    try {
-      const detector = await createBarcodeDetector()
-
-      if (!detector) {
-        setCameraActive(true)
-        setCameraEngine("html5")
-        setScannerStatus("Starting bundled camera scanner...")
-        await new Promise<void>((resolve) =>
-          window.requestAnimationFrame(() => resolve())
-        )
-
-        const scanner = await createHtml5Qrcode(POS_CAMERA_READER_ID)
-
-        if (!scanner) {
-          stopCameraScanner()
-          setScannerStatus(
-            "Camera scanner engine could not load. Use USB scan or manual entry."
-          )
-          return
-        }
-
-        html5ScannerRef.current = scanner
-        await scanner.start(
-          {
-            facingMode: "environment",
-          },
-          {
-            fps: 12,
-            qrbox: {
-              width: 260,
-              height: 160,
-            },
-            formatsToSupport: getHtml5QrcodeFormatCodes(),
-          },
-          (decodedText) => {
-            const now = Date.now()
-
-            if (
-              decodedText &&
-              (lastDetectedRef.current.code !== decodedText ||
-                now - lastDetectedRef.current.at > 1500)
-            ) {
-              lastDetectedRef.current = {
-                code: decodedText,
-                at: now,
-              }
-              handleScannedBarcode(decodedText)
-            }
-          }
-        )
-        setScannerStatus("Camera scanner active. Point at a barcode.")
-        return
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia(
-        getPreferredCameraConstraints()
-      )
-      const video = videoRef.current
-
-      if (!video) {
-        stream.getTracks().forEach((track) => track.stop())
-        setScannerStatus("Camera preview is not ready.")
-        return
-      }
-
-      scannerStreamRef.current = stream
-      video.srcObject = stream
-      video.setAttribute("playsinline", "true")
-      video.muted = true
-      await video.play()
-      setCameraEngine("native")
-      setCameraActive(true)
-      setScannerStatus("Camera scanner active. Point at a barcode.")
-
-      const scanFrame = async () => {
-        const currentVideo = videoRef.current
-
-        if (!currentVideo || !scannerStreamRef.current) {
-          return
-        }
-
-        try {
-          const codes = await detector.detect(currentVideo)
-          const code = codes[0]?.rawValue
-          const now = Date.now()
-
-          if (
-            code &&
-            (lastDetectedRef.current.code !== code ||
-              now - lastDetectedRef.current.at > 1500)
-          ) {
-            lastDetectedRef.current = {
-              code,
-              at: now,
-            }
-            handleScannedBarcode(code)
-          }
-        } catch {
-          // Some browsers throw while the video frame is still warming up.
-        }
-
-        cameraFrameRef.current = window.requestAnimationFrame(scanFrame)
-      }
-
-      cameraFrameRef.current = window.requestAnimationFrame(scanFrame)
-    } catch (error) {
-      stopCameraScanner()
-      // On HTTP (non-secure context), getUserMedia may throw SecurityError.
-      // Fall back to file/photo capture which works everywhere.
-      const isSecurityError = error instanceof DOMException &&
-        (error.name === "SecurityError" || error.name === "NotAllowedError")
-      if (isSecurityError) {
-        setScannerStatus("📷 Live camera needs HTTPS. Point camera at barcode and take a photo.")
-        scanCaptureInputRef.current?.click()
-      } else {
-        setScannerStatus(`${getCameraErrorMessage(error)} Try USB scan or photo capture.`)
-      }
-    }
-  }
-
-  async function handleScanCapture(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.currentTarget.files?.[0]
-    event.currentTarget.value = ""
-    if (!file) return
-
-    try {
-      setScannerStatus("🔍 Reading barcode from photo…")
-      const barcode = await detectBarcodeFromImageFile(file)
-
-      if (!barcode) {
-        setScannerStatus("❌ No barcode found. Hold phone steady, get closer, ensure good lighting, then tap Scan again.")
-        return
-      }
-
-      handleScannedBarcode(barcode)
-    } catch {
-      setScannerStatus("❌ Could not read image. Try again with better lighting.")
-    }
-  }
-
-  function stopCameraScanner() {
-    if (cameraFrameRef.current) {
-      window.cancelAnimationFrame(cameraFrameRef.current)
-      cameraFrameRef.current = null
-    }
-
-    scannerStreamRef.current?.getTracks().forEach((track) => track.stop())
-    scannerStreamRef.current = null
-    const scanner = html5ScannerRef.current
-
-    html5ScannerRef.current = null
-    if (scanner) {
-      void scanner.stop().catch(() => undefined).finally(() => scanner.clear())
-    }
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = null
-    }
-
-    setCameraEngine(null)
-    setCameraActive(false)
-    setScannerStatus("Camera scanner stopped.")
-  }
-
   const completeSale = useCallback(function completeSale() {
-    if (checkoutBlocked) {
-      return
-    }
+    if (checkoutBlocked) return
 
     const saleNumber = `S-${Date.now().toString().slice(-6)}`
     const batchAllocations = consumeInventoryBatches(
       items.map((item) => ({
-        productId: item.id,
-        productName: item.name,
-        barcode: item.barcode,
-        quantity: item.quantity,
-        fallbackUnitCost: item.cost,
+        productId: item.id, productName: item.name, barcode: item.barcode,
+        quantity: item.quantity, fallbackUnitCost: item.cost,
       }))
     )
     const saleItems = items.map((item) => {
       const allocations = batchAllocations.get(item.id) ?? []
-      const allocatedQuantity = allocations.reduce(
-        (sum, allocation) => sum + allocation.quantity,
-        0
-      )
-      const allocatedCost = allocations.reduce(
-        (sum, allocation) =>
-          sum + allocation.unitCost * allocation.quantity,
-        0
-      )
-      const unitCost =
-        allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost
-
+      const allocatedQuantity = allocations.reduce((sum, a) => sum + a.quantity, 0)
+      const allocatedCost = allocations.reduce((sum, a) => sum + a.unitCost * a.quantity, 0)
+      const unitCost = allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost
       return {
-      id: item.id,
-      name: item.name,
-      barcode: item.barcode,
-      cost: unitCost,
-      quantity: item.quantity,
-      unitPrice: item.price,
-      total: item.price * item.quantity,
-      batchAllocations: allocations,
-    }
+        id: item.id, name: item.name, barcode: item.barcode, cost: unitCost,
+        quantity: item.quantity, unitPrice: item.price,
+        total: item.price * item.quantity, batchAllocations: allocations,
+      }
     })
     const tender: SaleTender | undefined =
       paymentMethod === "Cash"
         ? {
-            currency: tenderMode,
-            exchangeRate,
-            paidUsd: paidUsdAmount,
-            paidLbp: paidLbpAmount,
-            paidTotalUsd,
-            paidTotalLbp,
-            changeUsd: cashChangeUsd,
-            changeLbp: cashChangeLbp,
+            currency: tenderMode, exchangeRate,
+            paidUsd: paidUsdAmount, paidLbp: paidLbpAmount,
+            paidTotalUsd, paidTotalLbp,
+            changeUsd: cashChangeUsd, changeLbp: cashChangeLbp,
+            changeCurrency: tenderMode === "LBP" ? "LBP" : "USD",
           }
         : undefined
     const customerBalanceBefore = selectedCustomer?.balance ?? 0
@@ -947,73 +515,36 @@ export default function POSPage() {
       paymentMethod === "Debt" ? customerBalanceBefore + total : undefined
 
     recordSale({
-      saleNumber,
-      paymentMethod,
-      customerId: selectedCustomer?.id,
-      customerName: selectedCustomer?.name,
-      subtotal,
-      discountTotal,
-      tax,
-      total,
-      tender,
-      items: saleItems,
+      saleNumber, paymentMethod,
+      customerId: selectedCustomer?.id, customerName: selectedCustomer?.name,
+      subtotal, discountTotal, tax, total, tender, items: saleItems,
     })
 
     if (discountTotal > 0) {
       recordAuditEvent({
-        action: "sale.discount",
-        entity: "sale",
-        summary: `${saleNumber} received a ${formatCurrency(
-          discountTotal
-        )} discount.`,
-        metadata: {
-          saleNumber,
-          grossSubtotal,
-          discountMode,
-          discountValue,
-          discountTotal,
-        },
+        action: "sale.discount", entity: "sale",
+        summary: `${saleNumber} received a ${formatCurrency(discountTotal)} discount.`,
+        metadata: { saleNumber, grossSubtotal, discountMode, discountValue, discountTotal },
       })
     }
 
     if (paymentMethod === "Debt" && selectedCustomer) {
       recordDebtSale({
-        customerId: selectedCustomer.id,
-        saleNumber,
-        subtotal,
-        discountTotal,
-        tax,
-        total,
-        items: saleItems,
+        customerId: selectedCustomer.id, saleNumber,
+        subtotal, discountTotal, tax, total, items: saleItems,
       })
-      setCustomers(getCustomerLedger())
     }
 
-    setProducts(
-      decreaseProductStock(
-        items.map((item) => ({
-          productId: item.id,
-          quantity: item.quantity,
-        }))
-      )
+    decreaseProductStock(
+      items.map((item) => ({ productId: item.id, quantity: item.quantity }))
     )
 
     setLastSale({
-      number: saleNumber,
-      paymentMethod,
-      customerName: selectedCustomer?.name,
-      grossSubtotal,
-      subtotal,
-      discountTotal,
-      tax,
-      total,
-      totalLbp,
-      exchangeRate,
+      number: saleNumber, paymentMethod, customerName: selectedCustomer?.name,
+      grossSubtotal, subtotal, discountTotal, tax, total, totalLbp, exchangeRate,
       tender,
-      customerBalanceBefore:
-        paymentMethod === "Debt" ? customerBalanceBefore : undefined,
-      customerBalanceAfter,
-      items,
+      customerBalanceBefore: paymentMethod === "Debt" ? customerBalanceBefore : undefined,
+      customerBalanceAfter, items,
     })
     clearCart()
     resetTender()
@@ -1023,22 +554,18 @@ export default function POSPage() {
     setSaleNote("")
     setIsCartOpen(false)
     setScannerStatus("Sale completed. Scanner ready for the next sale.")
-  }, [checkoutBlocked, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, clearCart, resetTender, resetDiscount])
+  }, [checkoutBlocked, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId])
 
-  // Quick Checkout (Simple Mode) completion — explicit payment params, Cash/Card/Wallet only.
-  // Returns the sale number on success, or null if blocked (empty cart / insufficient cash).
   const completeSimpleSale = useCallback(function completeSimpleSale(
     method: "Cash" | "Card" | "Wallet",
     paidUsdInput: number
   ): string | null {
     if (items.length === 0) return null
-
     const simpleSubtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
     const simpleTax = simpleSubtotal * settings.vatRate
     const simpleTotal = simpleSubtotal + simpleTax
     const rate = Math.max(1, settings.usdToLbpRate)
     const simpleTotalLbp = usdToLbp(simpleTotal, rate)
-
     if (method === "Cash" && paidUsdInput + 0.005 < simpleTotal) return null
 
     const saleNumber = `S-${Date.now().toString().slice(-6)}`
@@ -1055,28 +582,20 @@ export default function POSPage() {
 
     const changeUsd = method === "Cash" ? Math.max(0, paidUsdInput - simpleTotal) : 0
     const tender: SaleTender | undefined = method === "Cash" ? {
-      currency: "USD",
-      exchangeRate: rate,
-      paidUsd: paidUsdInput,
-      paidLbp: 0,
-      paidTotalUsd: paidUsdInput,
+      currency: "USD", exchangeRate: rate,
+      paidUsd: paidUsdInput, paidLbp: 0, paidTotalUsd: paidUsdInput,
       paidTotalLbp: usdToLbp(paidUsdInput, rate),
-      changeUsd,
-      changeLbp: usdToLbp(changeUsd, rate),
+      changeUsd, changeLbp: usdToLbp(changeUsd, rate),
+      changeCurrency: "USD",
     } : undefined
 
     recordSale({
-      saleNumber,
-      paymentMethod: method,
-      subtotal: simpleSubtotal,
-      discountTotal: 0,
-      tax: simpleTax,
-      total: simpleTotal,
-      tender,
-      items: saleItems,
+      saleNumber, paymentMethod: method,
+      subtotal: simpleSubtotal, discountTotal: 0, tax: simpleTax,
+      total: simpleTotal, tender, items: saleItems,
     })
 
-    setProducts(decreaseProductStock(items.map((item) => ({ productId: item.id, quantity: item.quantity }))))
+    decreaseProductStock(items.map((item) => ({ productId: item.id, quantity: item.quantity })))
     setLastSale({
       number: saleNumber, paymentMethod: method, customerName: undefined,
       grossSubtotal: simpleSubtotal, subtotal: simpleSubtotal, discountTotal: 0,
@@ -1085,7 +604,7 @@ export default function POSPage() {
     })
     clearCart()
     return saleNumber
-  }, [items, settings, clearCart])
+  }, [items, settings])
 
   return (
     <main className="relative min-h-0 flex-1 overflow-hidden bg-page">
@@ -1108,119 +627,24 @@ export default function POSPage() {
           }}
         />
 
-        <div className="rounded-xl border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "var(--shadow-sm)" }}>
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
-            <label className="relative min-w-0">
-              <span className="mb-2 block text-[13px] font-bold" style={{ color: "var(--text-2)" }}>
-                {t("pos.quick_add")}
-              </span>
-              <Search
-                size={20}
-                className={`pointer-events-none absolute bottom-4`}
-                style={{ color: "var(--text-3)", [dir === "rtl" ? "right" : "left"]: "14px" }}
-              />
-              <input
-                ref={scanInputRef}
-                autoFocus
-                value={scanCode}
-                onChange={(event) => setScanCode(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault()
-                    quickAddProduct(scanCode)
-                  }
-                }}
-                placeholder={t("pos.scan_placeholder")}
-                className={`input h-14 text-[17px] font-semibold ${dir === "rtl" ? "pr-12 pl-4" : "pl-12 pr-4"}`}
-              />
-            </label>
-
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:flex">
-              <button
-                type="button"
-                onClick={() => quickAddProduct(scanCode)}
-                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-bold text-white transition sm:h-14 sm:px-5"
-                style={{ background: "var(--text)" }}
-              >
-                <ScanBarcode size={19} />
-                {t("pos.add")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsCartOpen(true)}
-                className="relative flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-bold text-white transition sm:h-14 sm:px-5"
-                style={{ background: "var(--brand)" }}
-              >
-                <ShoppingCart size={19} />
-                {t("pos.cart")}
-                {itemCount > 0 && (
-                  <span className="ml-1 rounded-full px-1.5 py-0.5 text-[11px] font-black" style={{ background: "rgba(255,255,255,0.25)" }}>
-                    {itemCount}
-                  </span>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={startCameraScanner}
-                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl border px-4 text-[15px] font-bold transition sm:h-14"
-                style={cameraActive
-                  ? { borderColor: "var(--rose)", background: "var(--rose-soft)", color: "var(--rose)" }
-                  : { borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-2)" }
-                }
-              >
-                <ScanBarcode size={19} />
-                {cameraActive ? t("pos.stop") : t("pos.scan")}
-              </button>
-              <button
-                type="button"
-                onClick={cleanSale}
-                className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl border px-4 text-[15px] font-bold transition sm:h-14"
-                style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-2)" }}
-              >
-                <Eraser size={19} />
-                {t("pos.clean")}
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-3 grid gap-2 text-sm font-bold md:grid-cols-[minmax(0,1fr)_repeat(3,auto)]">
-            <p className="rounded-lg px-3 py-2 text-[13px] font-medium truncate" style={{ background: "var(--surface-2)", color: "var(--text-3)" }}>
-              {scannerStatus}
-            </p>
-            <span className="rounded-lg px-3 py-2 text-[13px] font-semibold" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
-              {t("pos.items_shown", { n: formatNumber(filteredProducts.length) })}
-            </span>
-            <span className="rounded-lg px-3 py-2 text-[13px] font-semibold" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
-              {t("pos.cart_count", { n: formatNumber(itemCount) })}
-            </span>
-            <span className="rounded-lg px-3 py-2 text-[13px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
-              {t("pos.exchange_rate", { rate: formatLbpCurrency(exchangeRate) })}
-            </span>
-          </div>
-
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            className={`mt-3 aspect-video w-full rounded-lg border border-zinc-200 bg-zinc-950 object-cover ${
-              cameraActive && cameraEngine === "native" ? "block" : "hidden"
-            }`}
-          />
-          <div
-            id={POS_CAMERA_READER_ID}
-            className={`mt-3 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-950 ${
-              cameraActive && cameraEngine === "html5" ? "block" : "hidden"
-            }`}
-          />
-          <input
-            ref={scanCaptureInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleScanCapture}
-            className="hidden"
-          />
-        </div>
+        <SearchToolbar
+          scanInputRef={scanInputRef}
+          scanCode={scanCode}
+          onScanCodeChange={setScanCode}
+          onQuickAdd={quickAddProduct}
+          scannerStatus={scannerStatus}
+          cameraActive={cameraActive}
+          cameraEngine={cameraEngine}
+          filteredProductsCount={filteredProducts.length}
+          itemCount={itemCount}
+          exchangeRate={exchangeRate}
+          onStartCamera={startCameraScanner}
+          onCleanSale={cleanSale}
+          onCartOpen={() => setIsCartOpen(true)}
+          videoRef={videoRef}
+          scanCaptureInputRef={scanCaptureInputRef}
+          onScanCapture={handleScanCapture}
+        />
 
         <DepartmentTabs
           departments={departmentSummaries}
