@@ -1,5 +1,6 @@
 import { Router } from "express"
 import type { IncomingMessage, ServerResponse } from "node:http"
+import https from "node:https"
 import prisma from "../lib/prisma.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 
@@ -29,26 +30,38 @@ async function generateImage(productName: string): Promise<{ image: string; gene
 
   try {
     const prompt = `Professional product photo of ${productName}, white background, studio lighting, high quality, e-commerce`
-    const hfRes = await fetch(
-      `https://api-inference.huggingface.co/models/${HF_MODEL}`,
-      {
+    const body = JSON.stringify({ inputs: prompt })
+    const url = new URL(`https://api-inference.huggingface.co/models/${HF_MODEL}`)
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      const req = https.request(url, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${HF_TOKEN}`,
           "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body).toString(),
+          "User-Agent": "lebanonpos/1.0",
         },
-        body: JSON.stringify({ inputs: prompt }),
-      }
-    )
-
-    if (!hfRes.ok) {
-      const errText = await hfRes.text().catch(() => "unknown")
-      console.error(`[images] HF API error ${hfRes.status} for "${productName}": ${errText.substring(0, 200)}`)
-      return { image: generatePlaceholderSvg(productName), generated: false }
-    }
-
-    const blob = await hfRes.arrayBuffer()
-    const base64 = Buffer.from(blob).toString("base64")
+        timeout: 30000,
+      }, (res) => {
+        const chunks: Buffer[] = []
+        res.on("data", (c: Buffer) => chunks.push(c))
+        res.on("end", () => {
+          const buf = Buffer.concat(chunks)
+          if (res.statusCode && res.statusCode >= 400) {
+            const errText = buf.toString("utf8").substring(0, 200)
+            console.error(`[images] HF API error ${res.statusCode} for "${productName}": ${errText}`)
+            reject(new Error(`HTTP ${res.statusCode}`))
+            return
+          }
+          resolve(buf)
+        })
+      })
+      req.on("error", (e) => reject(e))
+      req.on("timeout", () => { req.destroy(); reject(new Error("timeout")) })
+      req.write(body)
+      req.end()
+    })
+    const base64 = buffer.toString("base64")
     return { image: `data:image/jpeg;base64,${base64}`, generated: true }
   } catch (err) {
     console.error(`[images] HF exception for "${productName}":`, (err as Error).message)
