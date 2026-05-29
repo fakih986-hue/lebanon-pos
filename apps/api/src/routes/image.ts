@@ -6,7 +6,7 @@ import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 
 const router = Router()
 
-const HF_TOKEN = process.env.HUGGINGFACE_TOKEN || ""
+const HF_TOKEN = (process.env.HUGGINGFACE_TOKEN || "").trim()
 const HF_MODEL = process.env.HF_IMAGE_MODEL || "stabilityai/stable-diffusion-xl-base-1.0"
 const HF_HOST = "router.huggingface.co"
 const HF_PATH = `/hf-inference/models/${HF_MODEL}`
