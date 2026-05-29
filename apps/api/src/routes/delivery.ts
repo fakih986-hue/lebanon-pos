@@ -1,23 +1,18 @@
-import { Router, type Request, type Response } from "express"
+import { Router } from "express"
+import type { IncomingMessage, ServerResponse } from "node:http"
 import bcrypt from "bcryptjs"
 import { createHash } from "crypto"
 import jwt from "jsonwebtoken"
 import prisma from "../lib/prisma.js"
-import { requireAuth, type AuthRequest, signToken } from "../middleware/auth.js"
+import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 import { broadcastToTenant, broadcastToUser, getConnectedDrivers } from "../ws/index.js"
 
 const router = Router()
 
-function json(res: Response, data: unknown, statusCode = 200) {
-  res.statusCode = statusCode
-  res.setHeader("Content-Type", "application/json")
-  res.end(JSON.stringify(data))
-}
-
 // ── Driver Management (admin auth) ──
 
 // List drivers for this tenant
-router.get("/drivers", requireAuth, async (req: AuthRequest, res: Response) => {
+router.get("/drivers", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const drivers = await prisma.staffUser.findMany({
       where: { tenantId: req.auth!.tenantId, role: "Driver" },
@@ -32,7 +27,7 @@ router.get("/drivers", requireAuth, async (req: AuthRequest, res: Response) => {
 })
 
 // Create driver
-router.post("/drivers", requireAuth, async (req: AuthRequest, res: Response) => {
+router.post("/drivers", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const { name, mobile, code, pin } = req.body as { name?: string; mobile?: string; code?: string; pin?: string }
     if (!name || !code || !pin) {
@@ -70,7 +65,7 @@ router.post("/drivers", requireAuth, async (req: AuthRequest, res: Response) => 
 })
 
 // Update driver
-router.patch("/drivers/:id", requireAuth, async (req: AuthRequest, res: Response) => {
+router.patch("/drivers/:id", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const driverId = req.params?.id as string
     const existing = await prisma.staffUser.findFirst({
@@ -107,7 +102,7 @@ router.patch("/drivers/:id", requireAuth, async (req: AuthRequest, res: Response
 })
 
 // Customer-facing: create delivery order (no auth)
-router.post("/order", async (req: Request, res: Response) => {
+router.post("/order", async (req: any, res: ServerResponse) => {
   try {
     const body = req.body as {
       tenantId?: string
@@ -215,7 +210,7 @@ router.post("/order", async (req: Request, res: Response) => {
 })
 
 // Customer-facing: check order status (full details for tracking page)
-router.get("/order/:orderNumber/status", async (req: Request, res: Response) => {
+router.get("/order/:orderNumber/status", async (req: any, res: ServerResponse) => {
   try {
     const order = await prisma.deliveryOrder.findFirst({
       where: { orderNumber: req.params?.orderNumber as string },
@@ -261,7 +256,7 @@ router.get("/order/:orderNumber/status", async (req: Request, res: Response) => 
 })
 
 // Customer-facing: lookup tenant by subdomain
-router.get("/tenant", async (req: Request, res: Response) => {
+router.get("/tenant", async (req: any, res: ServerResponse) => {
   try {
     const subdomain = (req.query as Record<string, string>)?.subdomain
     if (!subdomain) {
@@ -284,7 +279,7 @@ router.get("/tenant", async (req: Request, res: Response) => {
 })
 
 // Customer-facing: list products for ordering
-router.get("/products", async (req: Request, res: Response) => {
+router.get("/products", async (req: any, res: ServerResponse) => {
   try {
     const tenantId = (req.query as Record<string, string>)?.tenantId
     if (!tenantId) {
@@ -308,7 +303,7 @@ router.get("/products", async (req: Request, res: Response) => {
 })
 
 // POS: list delivery orders
-router.get("/orders", requireAuth, async (req: AuthRequest, res: Response) => {
+router.get("/orders", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const q = (req.query as Record<string, string>) ?? {}
@@ -330,7 +325,7 @@ router.get("/orders", requireAuth, async (req: AuthRequest, res: Response) => {
 })
 
 // POS: update delivery order status
-router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: Response) => {
+router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const body = req.body as {
@@ -394,7 +389,7 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: Response)
 
 // ── Driver API (JWT auth, role=Driver) ──
 
-function requireDriver(req: AuthRequest, res: Response, next: () => void) {
+function requireDriver(req: AuthRequest, res: ServerResponse, next: () => void) {
   if (req.auth?.role !== "Driver") {
     json(res, { error: "Driver access required" }, 403)
     return
@@ -403,7 +398,7 @@ function requireDriver(req: AuthRequest, res: Response, next: () => void) {
 }
 
 // Admin: get online driver IDs
-router.get("/drivers/online", requireAuth, async (req: AuthRequest, res: Response) => {
+router.get("/drivers/online", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const online = getConnectedDrivers(req.auth!.tenantId)
     json(res, online)
@@ -414,7 +409,7 @@ router.get("/drivers/online", requireAuth, async (req: AuthRequest, res: Respons
 })
 
 // Driver: get available (unassigned) orders
-router.get("/driver/orders/available", requireAuth, requireDriver, async (req: AuthRequest, res: Response) => {
+router.get("/driver/orders/available", requireAuth, requireDriver, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const orders = await prisma.deliveryOrder.findMany({
       where: { tenantId: req.auth!.tenantId, driverId: null, status: "Pending" },
@@ -430,7 +425,7 @@ router.get("/driver/orders/available", requireAuth, requireDriver, async (req: A
 })
 
 // Driver: get my assigned orders
-router.get("/driver/orders", requireAuth, requireDriver, async (req: AuthRequest, res: Response) => {
+router.get("/driver/orders", requireAuth, requireDriver, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const orders = await prisma.deliveryOrder.findMany({
       where: { driverId: req.auth!.userId },
@@ -446,7 +441,7 @@ router.get("/driver/orders", requireAuth, requireDriver, async (req: AuthRequest
 })
 
 // Driver: update order status (OutForDelivery, Delivered)
-router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req: AuthRequest, res: Response) => {
+router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const orderId = req.params?.id as string
     const order = await prisma.deliveryOrder.findUnique({
@@ -497,7 +492,7 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
 // ── Delivery Settings (admin auth) ──
 
 // Get delivery settings for this tenant (public, used by ordering app)
-router.get("/settings", async (req: Request, res: Response) => {
+router.get("/settings", async (req: any, res: ServerResponse) => {
   try {
     const tenantId = (req.query as Record<string, string>)?.tenantId
     if (!tenantId) {
@@ -523,7 +518,7 @@ router.get("/settings", async (req: Request, res: Response) => {
 })
 
 // Update delivery settings (admin auth)
-router.patch("/settings", requireAuth, async (req: AuthRequest, res: Response) => {
+router.patch("/settings", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const body = req.body as {
@@ -556,7 +551,7 @@ router.patch("/settings", requireAuth, async (req: AuthRequest, res: Response) =
 
 // ── Driver: Accept an unassigned order (first-responder) ──
 
-router.post("/driver/orders/:id/accept", requireAuth, requireDriver, async (req: AuthRequest, res: Response) => {
+router.post("/driver/orders/:id/accept", requireAuth, requireDriver, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const orderId = req.params?.id as string
     const driverId = req.auth!.userId
@@ -616,7 +611,7 @@ router.post("/driver/orders/:id/accept", requireAuth, requireDriver, async (req:
 // ── Customer Account API ──
 
 // Customer signup (creates account or adds PIN to existing customer)
-router.post("/customer/signup", async (req: Request, res: Response) => {
+router.post("/customer/signup", async (req: any, res: ServerResponse) => {
   try {
     const { tenantId, name, mobile, pin } = req.body as { tenantId?: string; name?: string; mobile?: string; pin?: string }
     if (!tenantId || !name || !mobile || !pin) {
@@ -653,7 +648,7 @@ router.post("/customer/signup", async (req: Request, res: Response) => {
 })
 
 // Customer login
-router.post("/customer/login", async (req: Request, res: Response) => {
+router.post("/customer/login", async (req: any, res: ServerResponse) => {
   try {
     const { tenantId, mobile, pin } = req.body as { tenantId?: string; mobile?: string; pin?: string }
     if (!tenantId || !mobile || !pin) {
@@ -689,7 +684,7 @@ router.post("/customer/login", async (req: Request, res: Response) => {
 })
 
 // Customer: get my orders
-router.get("/customer/orders", async (req: Request, res: Response) => {
+router.get("/customer/orders", async (req: any, res: ServerResponse) => {
   try {
     const authHeader = req.headers?.authorization
     if (!authHeader || !authHeader.startsWith("Bearer ")) {

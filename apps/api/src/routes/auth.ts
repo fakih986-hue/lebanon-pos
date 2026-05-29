@@ -1,10 +1,11 @@
-import { Router, type Request, type Response } from "express"
+import { Router } from "express"
+import type { IncomingMessage, ServerResponse } from "node:http"
 import bcrypt from "bcryptjs"
 import { createHash } from "crypto"
 import { z } from "zod"
 import prisma from "../lib/prisma.js"
 
-import { signToken, type AuthRequest, requireAuth } from "../middleware/auth.js"
+import { signToken, json, type AuthRequest, requireAuth } from "../middleware/auth.js"
 
 const setupSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required"),
@@ -27,7 +28,7 @@ function hashSha256Pin(pin: string) {
   return createHash("sha256").update(pin).digest("base64")
 }
 
-router.post("/tenant/setup", async (req: Request, res: Response) => {
+router.post("/tenant/setup", async (req: any, res: any) => {
   try {
     const parsed = setupSchema.safeParse(req.body)
     if (!parsed.success) {
@@ -100,7 +101,7 @@ router.post("/tenant/setup", async (req: Request, res: Response) => {
   }
 })
 
-router.post("/login", async (req: Request, res: Response) => {
+router.post("/login", async (req: any, res: any) => {
   try {
     const parsed = loginSchema.safeParse(req.body)
     if (!parsed.success) {
@@ -193,7 +194,7 @@ router.post("/login", async (req: Request, res: Response) => {
   }
 })
 
-router.get("/me", requireAuth, async (req: AuthRequest, res: Response) => {
+router.get("/me", requireAuth, async (req: AuthRequest, res: any) => {
   const user = await prisma.staffUser.findUnique({
     where: { id: req.auth!.userId },
     select: { id: true, name: true, mobile: true, role: true, active: true, tenantId: true },

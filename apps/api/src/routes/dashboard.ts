@@ -1,11 +1,11 @@
 import { Router } from "express"
-import type { Response } from "express"
+import type { ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
-import { requireAuth, type AuthRequest } from "../middleware/auth.js"
+import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 
 const router = Router()
 
-router.get("/kpi", requireAuth, async (req: AuthRequest, res: Response) => {
+router.get("/kpi", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
 
   const now = new Date()
@@ -119,7 +119,7 @@ router.get("/kpi", requireAuth, async (req: AuthRequest, res: Response) => {
   }
   const hourlyDistribution = Array.from(hourlyMap.entries()).map(([hour, count]) => ({ hour, count }))
 
-  res.json({
+  json(res, {
     today: fromAggregate(todayAgg),
     week: fromAggregate(weekAgg),
     month: fromAggregate(monthAgg),

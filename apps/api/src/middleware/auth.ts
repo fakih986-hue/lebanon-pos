@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from "express"
+import type { IncomingMessage, ServerResponse } from "node:http"
 import jwt, { type SignOptions } from "jsonwebtoken"
 
 const JWT_SECRET = process.env.JWT_SECRET!
@@ -11,14 +11,29 @@ export interface AuthPayload {
   role: string
 }
 
-export interface AuthRequest extends Request {
+export interface AuthRequest extends IncomingMessage {
   auth?: AuthPayload
+  body?: unknown
+  query: Record<string, string | string[] | undefined>
+  params?: Record<string, string>
 }
 
-export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+type Handler = (
+  req: AuthRequest,
+  res: ServerResponse,
+  next: (err?: unknown) => void
+) => void
+
+export function json(res: ServerResponse, data: unknown, statusCode = 200) {
+  res.statusCode = statusCode
+  res.setHeader("Content-Type", "application/json")
+  res.end(JSON.stringify(data))
+}
+
+export const requireAuth: Handler = (req, res, next) => {
   const header = req.headers.authorization
   if (!header?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Missing or invalid authorization header" })
+    json(res, { error: "Missing or invalid authorization header" }, 401)
     return
   }
 
@@ -28,7 +43,7 @@ export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction)
     req.auth = payload
     next()
   } catch {
-    res.status(401).json({ error: "Invalid or expired token" })
+    json(res, { error: "Invalid or expired token" }, 401)
   }
 }
 

@@ -1,7 +1,9 @@
-import express, { type Request, type Response } from "express"
+import express from "express"
+import type { IncomingMessage, ServerResponse } from "node:http"
 import path from "node:path"
 import fs from "node:fs"
 import { fileURLToPath } from "node:url"
+import { json } from "./middleware/auth.js"
 import cors from "cors"
 import authRoutes from "./routes/auth.js"
 import syncRoutes from "./routes/sync.js"
@@ -37,22 +39,23 @@ app.use("/api/dashboard", dashboardRoutes)
 app.use("/api/delivery", deliveryRoutes)
 app.use("/api/images", imageRoutes)
 
-app.get("/api/health", (_req: Request, res: Response) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() })
+app.get("/api/health", (_req: IncomingMessage, res: ServerResponse) => {
+  json(res, { status: "ok", timestamp: new Date().toISOString() })
 })
 
 app.use(express.static("public"))
 
 function spaHandler(publicDir: string) {
-  return (_req: Request, res: Response) => {
+  return (_req: IncomingMessage, res: ServerResponse) => {
     try {
       const html = fs.readFileSync(
         path.join(__dirname, "..", "public", publicDir, "index.html"),
         "utf-8"
       )
-      res.type("text/html").send(html)
+      res.setHeader("Content-Type", "text/html")
+      res.end(html)
     } catch {
-      res.status(503).json({ error: `${publicDir} app not found` })
+      json(res, { error: `${publicDir} app not found` }, 503)
     }
   }
 }

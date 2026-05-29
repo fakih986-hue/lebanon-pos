@@ -1,6 +1,7 @@
-import { Router, type Request, type Response } from "express"
+import { Router } from "express"
+import type { IncomingMessage, ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
-import { requireAuth, type AuthRequest } from "../middleware/auth.js"
+import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 
 const router = Router()
 
@@ -55,21 +56,21 @@ async function generateImage(productName: string): Promise<{ image: string; gene
   }
 }
 
-router.post("/generate", async (req: Request, res: Response) => {
-  const { name } = (req.body as { name?: string }) ?? {}
+router.post("/generate", async (req: IncomingMessage, res: ServerResponse) => {
+  const { name } = (req as any).body ?? {}
 
   if (!name || typeof name !== "string") {
-    res.status(400).json({ error: "Product name is required" })
+    json(res, { error: "Product name is required" }, 400)
     return
   }
 
   const result = await generateImage(name)
-  res.json(result)
+  json(res, result)
 })
 
-router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: Response) => {
+router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const productId = Number(req.params.id)
+    const productId = Number(req.params?.id)
     const tenantId = req.auth!.tenantId
 
     const product = await prisma.product.findFirst({
@@ -78,7 +79,7 @@ router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: 
     })
 
     if (!product) {
-      res.status(404).json({ error: "Product not found" })
+      json(res, { error: "Product not found" }, 404)
       return
     }
 
@@ -89,14 +90,14 @@ router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: 
       data: { image },
     })
 
-    res.json({ image, generated })
+    json(res, { image, generated })
   } catch (err) {
     console.error("Generate product image error:", err)
-    res.status(500).json({ error: "Failed to generate product image" })
+    json(res, { error: "Failed to generate product image" }, 500)
   }
 })
 
-router.post("/generate-all", requireAuth, async (req: AuthRequest, res: Response) => {
+router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
 
@@ -107,7 +108,7 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: Response
     })
 
     if (products.length === 0) {
-      res.json({ generated: 0, products: [] })
+      json(res, { generated: 0, products: [] })
       return
     }
 
@@ -126,10 +127,10 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: Response
       }
     }
 
-    res.json({ generated: results.filter(r => r.generated).length, products: results })
+    json(res, { generated: results.filter(r => r.generated).length, products: results })
   } catch (err) {
     console.error("Generate all images error:", err)
-    res.status(500).json({ error: "Failed to generate images" })
+    json(res, { error: "Failed to generate images" }, 500)
   }
 })
 

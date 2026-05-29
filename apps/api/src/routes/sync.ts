@@ -1,12 +1,11 @@
 import { Router } from "express"
-import type { Response } from "express"
 import bcrypt from "bcryptjs"
 import prisma from "../lib/prisma.js"
 
-import { requireAuth, type AuthRequest } from "../middleware/auth.js"
+import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 const router = Router()
 
-router.post("/push", requireAuth, async (req: AuthRequest, res: Response) => {
+router.post("/push", requireAuth, async (req: AuthRequest, res: any) => {
   const { operations } = req.body as { operations: Array<{
     id: string
     entity: string
@@ -97,7 +96,7 @@ router.post("/push", requireAuth, async (req: AuthRequest, res: Response) => {
   res.json({ results })
 })
 
-router.get("/pull", requireAuth, async (req: AuthRequest, res: Response) => {
+router.get("/pull", requireAuth, async (req: AuthRequest, res: any) => {
   const tenantId = req.auth!.tenantId
   const since = req.query.since as string | undefined
   const sinceDate = since ? new Date(since) : undefined
