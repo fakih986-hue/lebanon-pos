@@ -6,7 +6,7 @@ import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 const router = Router()
 
 const HF_TOKEN = process.env.HUGGINGFACE_TOKEN || ""
-const HF_MODEL = process.env.HF_IMAGE_MODEL || "black-forest-labs/FLUX.1-schnell"
+const HF_MODEL = process.env.HF_IMAGE_MODEL || "stabilityai/stable-diffusion-xl-base-1.0"
 
 function generatePlaceholderSvg(productName: string): string {
   const encodedName = productName.replace(/[<>&"']/g, "").trim() || "Product"
@@ -42,13 +42,16 @@ async function generateImage(productName: string): Promise<{ image: string; gene
     )
 
     if (!hfRes.ok) {
+      const errText = await hfRes.text().catch(() => "unknown")
+      console.error(`[images] HF API error ${hfRes.status} for "${productName}": ${errText.substring(0, 200)}`)
       return { image: generatePlaceholderSvg(productName), generated: false }
     }
 
     const blob = await hfRes.arrayBuffer()
     const base64 = Buffer.from(blob).toString("base64")
     return { image: `data:image/jpeg;base64,${base64}`, generated: true }
-  } catch {
+  } catch (err) {
+    console.error(`[images] HF exception for "${productName}":`, (err as Error).message)
     return { image: generatePlaceholderSvg(productName), generated: false }
   }
 }
