@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useI18n } from "@lebanonpos/shared"
+import { RatePanel } from "../../features/pos/components/RateManager"
 import {
   BadgeDollarSign,
   Cloud,
@@ -410,32 +411,9 @@ export default function SettingsPage() {
               ) : null}
             </label>
 
-            <label className="block text-sm font-bold text-zinc-700">
-              USD to LBP rate
-              <input
-                type="number"
-                min="1"
-                step="500"
-                value={settings.usdToLbpRate}
-                onChange={(event) => {
-                  updateSettings({
-                    usdToLbpRate: Math.max(
-                      1,
-                      normalizeNumber(event.target.value)
-                    ),
-                  })
-                  setSettingsErrors((prev) => ({ ...prev, usdToLbpRate: undefined }))
-                }}
-                className={`mt-2 h-11 w-full rounded-lg border px-3 font-medium outline-none focus:ring-4 ${
-                  settingsErrors.usdToLbpRate
-                    ? "border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-100"
-                    : "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-emerald-100"
-                }`}
-              />
-              {settingsErrors.usdToLbpRate ? (
-                <p className="mt-1 text-xs font-medium text-rose-600">{settingsErrors.usdToLbpRate}</p>
-              ) : null}
-            </label>
+            <div className="md:col-span-2">
+              <RatePanel />
+            </div>
 
             <label className="block text-sm font-bold text-zinc-700">
               Address

@@ -29,6 +29,7 @@ import LastSaleBanner from "../components/LastSaleBanner"
 import CartDrawer from "../components/CartDrawer"
 import VariantPicker from "../components/VariantPicker"
 import SimplePOSMode from "../components/SimplePOSMode"
+import { StaleRateBanner } from "../components/RateManager"
 import {
   formatCurrency,
   formatLbpCurrency,
@@ -1088,6 +1089,7 @@ export default function POSPage() {
   return (
     <main className="relative min-h-0 flex-1 overflow-hidden bg-page">
       <section className="flex h-full min-w-0 flex-col gap-3 overflow-y-auto p-3 pb-28 sm:p-4 xl:p-5">
+        <StaleRateBanner />
         <LastSaleBanner
           sale={lastSale}
           onNewSale={cleanSale}
