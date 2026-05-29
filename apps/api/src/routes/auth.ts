@@ -69,7 +69,8 @@ router.post("/tenant/setup", async (req: IncomingMessage & { body?: unknown }, r
           tenantId: tenant.id,
           name: cleanAdminName,
           mobile: cleanAdminMobile,
-          pin: await bcrypt.hash(cleanAdminPin, 10),
+          // SHA-256 base64 so the offline desktop app can verify the PIN too
+          pin: hashSha256Pin(cleanAdminPin),
           role: "Admin",
           active: true,
         },
