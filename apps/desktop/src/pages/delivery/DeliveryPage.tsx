@@ -7,6 +7,7 @@ import Spinner from "../../components/ui/Spinner"
 import EmptyState from "../../components/ui/EmptyState"
 import { formatCurrency } from "../../features/pos/lib/currency"
 import { showToast } from "../../features/pos/services/toast.service"
+import { getApiUrl, getAuthToken } from "../../features/pos/services/sync.service"
 
 type DeliveryOrder = {
   id: string
@@ -56,8 +57,9 @@ export default function DeliveryPage() {
 
   useHotkeys("Ctrl+f", (e) => { e.preventDefault(); document.getElementById("deliverySearch")?.focus() })
 
-  const wsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`
-  const token = localStorage.getItem("lebanonpos.auth.token")
+  const apiUrl = getApiUrl()
+  const token = getAuthToken()
+  const wsUrl = apiUrl ? `${apiUrl.replace(/^http/, "ws")}/ws` : ""
 
   useWebSocket({
     url: wsUrl,
@@ -76,10 +78,13 @@ export default function DeliveryPage() {
   useEffect(() => { loadOrders() }, [])
 
   async function loadOrders() {
+    if (!apiUrl || !token) {
+      setIsLoading(false)
+      return
+    }
     try {
       setIsLoading(true)
-      const token = localStorage.getItem("lebanonpos.auth.token")
-      const res = await fetch("/api/delivery/orders", {
+      const res = await fetch(`${apiUrl}/api/delivery/orders`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) setOrders(await res.json())
@@ -88,9 +93,9 @@ export default function DeliveryPage() {
   }
 
   async function updateStatus(id: string, status: string) {
-    const token = localStorage.getItem("lebanonpos.auth.token")
+    if (!apiUrl || !token) return
     try {
-      const res = await fetch(`/api/delivery/orders/${id}`, {
+      const res = await fetch(`${apiUrl}/api/delivery/orders/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status }),
