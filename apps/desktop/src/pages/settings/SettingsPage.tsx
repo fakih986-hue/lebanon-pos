@@ -203,16 +203,35 @@ export default function SettingsPage() {
 
     setConnecting(true)
     try {
-      const res = await fetch(`${url}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pin: connectPin.trim(),
-          tenantSubdomain: connectSubdomain.trim() || undefined,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? "Login failed")
+      let res: Response
+      try {
+        res = await fetch(`${url}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pin: connectPin.trim(),
+            tenantSubdomain: connectSubdomain.trim() || undefined,
+          }),
+        })
+      } catch {
+        throw new Error(`Could not reach ${url}. Check the API URL and that the server is running.`)
+      }
+
+      // Read body as text first so a non-JSON response (404 HTML, empty body) gives a clear message
+      const raw = await res.text()
+      let data: any = null
+      try {
+        data = raw ? JSON.parse(raw) : null
+      } catch {
+        throw new Error(`Server returned a non-JSON response (HTTP ${res.status}). Check the API URL — it should point to your API server, not a web page.`)
+      }
+
+      if (!res.ok) {
+        throw new Error(data?.error ?? `Login failed (HTTP ${res.status})`)
+      }
+      if (!data?.token) {
+        throw new Error("Login succeeded but no token was returned.")
+      }
 
       setApiUrl(url)
       setApiUrlState(url)
