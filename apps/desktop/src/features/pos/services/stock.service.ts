@@ -12,6 +12,7 @@ export type ReorderSuggestion = {
   urgency: "Critical" | "Low" | "Watch"
   supplierId?: string
   supplierName: string
+  daysUntilStockout: number | null  // null = no sales velocity to predict from
 }
 
 export type ExpiryAlert = {
@@ -109,6 +110,8 @@ export function getReorderSuggestions(products: Product[]) {
           : product.stock <= reorderPoint
             ? "Low"
             : "Watch"
+      const daysUntilStockout =
+        averageDailySales > 0 ? Math.floor(product.stock / averageDailySales) : null
 
       return {
         product,
@@ -120,6 +123,7 @@ export function getReorderSuggestions(products: Product[]) {
         urgency,
         supplierId: product.supplierId,
         supplierName: product.supplierName || "No supplier linked",
+        daysUntilStockout,
       }
     })
     .filter(

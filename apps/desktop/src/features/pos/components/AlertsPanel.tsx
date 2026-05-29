@@ -86,6 +86,17 @@ export default function AlertsPanel({
                     <p className="mt-1 text-xs font-semibold text-zinc-500">
                       {suggestion.supplierName}
                     </p>
+                    {suggestion.daysUntilStockout !== null && (
+                      <p className="mt-1 text-xs font-bold" style={{
+                        color: suggestion.daysUntilStockout <= 3 ? "var(--rose-text)"
+                          : suggestion.daysUntilStockout <= 7 ? "var(--amber-text)"
+                          : "var(--text-3)"
+                      }}>
+                        {suggestion.daysUntilStockout <= 0
+                          ? "⚠ Out of stock"
+                          : `⏳ Runs out in ~${suggestion.daysUntilStockout} day${suggestion.daysUntilStockout === 1 ? "" : "s"}`}
+                      </p>
+                    )}
                   </div>
                   <span
                     className={`rounded-lg px-2.5 py-1 text-xs font-bold ${

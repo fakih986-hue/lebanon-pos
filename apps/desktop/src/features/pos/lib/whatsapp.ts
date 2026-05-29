@@ -78,6 +78,23 @@ export function dailySummaryMessage(opts: {
   return lines.join("\n")
 }
 
+/** Purchase order message to send a supplier. */
+export function purchaseOrderMessage(opts: {
+  storeName: string
+  supplierName: string
+  items: { name: string; quantity: number }[]
+}): string {
+  const { storeName, supplierName, items } = opts
+  return [
+    `🛒 Order from ${storeName}`,
+    `To: ${supplierName}`,
+    ``,
+    ...items.map((i) => `• ${i.name} × ${i.quantity}`),
+    ``,
+    `Please confirm availability & price. Shukran!`,
+  ].join("\n")
+}
+
 /** Friendly debt reminder message. */
 export function debtReminderMessage(opts: {
   storeName: string
