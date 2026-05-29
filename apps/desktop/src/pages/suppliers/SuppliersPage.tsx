@@ -501,7 +501,7 @@ export default function SuppliersPage() {
                       {purchaseOrder.paymentStatus}
                     </span>
                     <span className="rounded-lg bg-zinc-100 px-2 py-1 text-zinc-700">
-                      {formatNumber(purchaseOrder.items.length)} items
+                      {formatNumber(purchaseOrder.items?.length ?? 0)} items
                     </span>
                   </div>
                 </article>

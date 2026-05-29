@@ -288,7 +288,7 @@ export function getCustomerActivity(customerId: string) {
       title: sale.saleNumber,
       amount: sale.total,
       createdAt: sale.createdAt,
-      detail: `${sale.items.length} line items`,
+      detail: `${sale.items?.length ?? 0} line items`,
     }))
   const payments = getDebtPayments()
     .filter((payment) => payment.customerId === customerId)
