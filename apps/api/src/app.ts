@@ -7,6 +7,7 @@ import { json } from "./middleware/auth.js"
 import cors from "cors"
 import authRoutes from "./routes/auth.js"
 import syncRoutes from "./routes/sync.js"
+import setupRoutes from "./routes/setup.js"
 import dashboardRoutes from "./routes/dashboard.js"
 import deliveryRoutes from "./routes/delivery.js"
 import imageRoutes from "./routes/image.js"
@@ -35,6 +36,7 @@ app.use("/api/delivery/customer/login", rateLimit({ windowMs: 60_000, max: 10, b
 
 app.use("/api/auth", authRoutes)
 app.use("/api/sync", syncRoutes)
+app.use("/api/setup", setupRoutes)
 app.use("/api/dashboard", dashboardRoutes)
 app.use("/api/delivery", deliveryRoutes)
 app.use("/api/images", imageRoutes)

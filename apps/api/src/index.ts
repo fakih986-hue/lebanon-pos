@@ -2,6 +2,7 @@ import "./setup.js"
 import { createServer } from "node:http"
 import app from "./app.js"
 import { setupWebSocket } from "./ws/index.js"
+import { startCloudSyncBridge } from "./services/cloudSync.js"
 import prisma from "./lib/prisma.js"
 
 // Must be set before any route handler runs
@@ -28,6 +29,9 @@ async function main() {
   server.listen(PORT, () => {
     console.log(`Lebanon POS API running on port ${PORT}`)
     scheduleSyncOperationPrune()
+    if (process.env.IS_LOCAL_SERVER === "true") {
+      startCloudSyncBridge()
+    }
   })
 
   const shutdown = async () => {

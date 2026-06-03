@@ -1,24 +1,62 @@
 import { Router } from "express"
 import bcrypt from "bcryptjs"
+import { z } from "zod"
 import prisma from "../lib/prisma.js"
 
-import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
+import { requireAuth, type AuthRequest } from "../middleware/auth.js"
+import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
 const router = Router()
 
-router.post("/push", requireAuth, async (req: AuthRequest, res: any) => {
-  const { operations } = req.body as { operations: Array<{
-    id: string
-    entity: string
-    action: string
-    payload?: Record<string, unknown>
-  }> }
+const syncOperationSchema = z.object({
+  id: z.string().min(1),
+  entity: z.enum([
+    "sale",
+    "refund",
+    "product",
+    "customer",
+    "debt",
+    "expense",
+    "daily-close",
+    "supplier",
+    "purchase-order",
+    "supplier-payment",
+    "staff",
+    "shift",
+    "inventory",
+    "settings",
+    "delivery-order",
+  ]),
+  action: z.enum([
+    "create",
+    "update",
+    "delete",
+    "receive",
+    "payment",
+    "close",
+    "open",
+    "adjust",
+    "count",
+    "void",
+  ]),
+  payload: z.unknown().optional(),
+})
+
+const syncPushSchema = z.object({
+  operations: z.array(syncOperationSchema).max(100),
+})
+
+type SyncOperationInput = z.infer<typeof syncOperationSchema>
+
+router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Response) => {
+  const parsed = syncPushSchema.safeParse(req.body)
   const tenantId = req.auth!.tenantId
 
-  if (!Array.isArray(operations)) {
-    res.status(400).json({ error: "operations must be an array" })
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid sync payload", details: parsed.error.flatten() })
     return
   }
 
+  const { operations } = parsed.data
   const results: Array<{ id: string; status: "ok" | "error"; error?: string }> = []
 
   for (const op of operations) {
@@ -33,8 +71,10 @@ router.post("/push", requireAuth, async (req: AuthRequest, res: any) => {
         continue
       }
 
+      validateSyncOperation(op)
+
       await prisma.$transaction(async (tx) => {
-        await processOperation(tenantId, op.entity, op.action, op.payload, tx as typeof prisma)
+        await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma)
 
         const operationData = {
           entity: op.entity,
@@ -96,7 +136,7 @@ router.post("/push", requireAuth, async (req: AuthRequest, res: any) => {
   res.json({ results })
 })
 
-router.get("/pull", requireAuth, async (req: AuthRequest, res: any) => {
+router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: Response) => {
   const tenantId = req.auth!.tenantId
   const since = req.query.since as string | undefined
   const sinceDate = since ? new Date(since) : undefined
@@ -209,7 +249,7 @@ router.get("/pull", requireAuth, async (req: AuthRequest, res: any) => {
   res.json({
     products, sales, refunds, customers, debtSales, debtPayments,
     suppliers, purchaseOrders, supplierPayments, users, shifts,
-    auditEvents, settings: settings ?? null, expenses, batches,
+    auditEvents, settings: settings ? [settings] : [], expenses, batches,
     adjustments, stockCounts: counts, dailyCloses, deliveryOrders,
   })
 })
@@ -246,11 +286,41 @@ async function processOperation(
     case "sale": {
       if (action === "void") {
         const id = payload?.id as string
+        const saleNumber = payload?.saleNumber as string
         if (id) {
+          const sale = await db.sale.findFirst({
+            where: { id, tenantId, status: { not: "Voided" } },
+            include: { items: true },
+          })
+
           await db.sale.updateMany({
             where: { id, tenantId },
             data: { status: "Voided" },
           })
+
+          for (const item of sale?.items ?? []) {
+            await db.product.updateMany({
+              where: { tenantId, id: item.productId },
+              data: { stock: { increment: item.quantity } },
+            })
+          }
+
+          // Clean up tender record to prevent stale tender data in reports
+          await db.saleTender.deleteMany({ where: { saleId: id } })
+
+          // If this was a debt sale, remove the DebtSale record too
+          if (saleNumber) {
+            await db.debtSale.deleteMany({
+              where: { saleNumber, tenantId },
+            })
+          } else {
+            const saleData = sale ?? await db.sale.findFirst({ where: { id, tenantId }, select: { saleNumber: true } })
+            if (saleData?.saleNumber) {
+              await db.debtSale.deleteMany({
+                where: { saleNumber: saleData.saleNumber, tenantId },
+              })
+            }
+          }
         }
       } else if (action === "create") {
         const data = payload as any
@@ -266,35 +336,46 @@ async function processOperation(
         const { saleId: _s, ...prismaTender } = data.tender ?? {}
         const hasTender = Object.keys(prismaTender).length > 0
         const { items: _i, tender: _t, ...saleData } = data
-        try {
-          await db.sale.upsert({
-            where: { id: saleData.id },
-            update: saleData,
-            create: {
-              ...saleData,
-              tenantId,
-              items: { create: prismaItems },
-              tender: hasTender ? { create: prismaTender } : undefined,
-            } as any,
-          })
-        } catch (e1) {
-          const { customerId: _c, shiftId: _s2, ...safeData } = saleData
-          try {
-            await db.sale.upsert({
-              where: { id: safeData.id },
-              update: safeData,
-              create: {
-                ...safeData,
-                tenantId,
-                items: { create: prismaItems },
-                tender: hasTender ? { create: prismaTender } : undefined,
-              } as any,
-            })
-          } catch (e2) {
-            await db.sale.upsert({
-              where: { id: safeData.id },
-              update: safeData,
-              create: { ...safeData, tenantId } as any,
+
+        if (!saleData.id || prismaItems.length === 0) {
+          throw new Error("Sale sync requires an id and at least one item")
+        }
+
+        // Check if sale already exists to avoid double-decrementing stock on retry
+        const existingSale = await db.sale.findUnique({
+          where: { id: saleData.id },
+          select: { id: true },
+        })
+
+        await db.sale.upsert({
+          where: { id: saleData.id },
+          update: { ...saleData, tenantId },
+          create: {
+            ...saleData,
+            tenantId,
+            items: { create: prismaItems },
+            tender: hasTender ? { create: prismaTender } : undefined,
+          } as any,
+        })
+
+        await db.saleItem.deleteMany({ where: { saleId: saleData.id } })
+        await db.saleItem.createMany({
+          data: prismaItems.map((item: any) => ({ ...item, saleId: saleData.id })),
+        })
+
+        await db.saleTender.deleteMany({ where: { saleId: saleData.id } })
+        if (hasTender) {
+          await db.saleTender.create({
+            data: { ...prismaTender, saleId: saleData.id },
+          } as any)
+        }
+
+        // Only decrement stock for NEW sales (avoid double-decrement on retry)
+        if (!existingSale) {
+          for (const item of prismaItems) {
+            await db.product.updateMany({
+              where: { tenantId, id: item.productId },
+              data: { stock: { decrement: item.quantity } },
             })
           }
         }
@@ -390,17 +471,28 @@ async function processOperation(
           update: payload as any,
           create: { ...payload, tenantId } as any,
         })
+      } else if (action === "delete") {
+        const id = payload?.id as string
+        const saleNumber = payload?.saleNumber as string
+        if (id) {
+          await db.debtSale.deleteMany({ where: { id, tenantId } })
+        } else if (saleNumber) {
+          await db.debtSale.deleteMany({ where: { saleNumber, tenantId } })
+        }
       }
       break
     }
     case "inventory": {
       if (action === "receive") {
-        const { id: batchId, ...batchData } = payload ?? {}
-        await db.inventoryBatch.upsert({
-          where: { id: batchId as string },
-          update: batchData,
-          create: { ...payload, tenantId } as any,
-        })
+        const items = Array.isArray(payload) ? payload : [payload]
+        for (const item of items) {
+          const { id: batchId, ...batchData } = item ?? {}
+          await db.inventoryBatch.upsert({
+            where: { id: batchId as string },
+            update: batchData,
+            create: { ...item, tenantId } as any,
+          })
+        }
       } else if (action === "adjust") {
         await db.stockAdjustment.upsert({
           where: { id: payload?.id as string },
@@ -521,6 +613,41 @@ async function processOperation(
     }
     default:
       console.warn(`Unknown sync entity: ${entity}`)
+  }
+}
+
+function validateSyncOperation(op: SyncOperationInput) {
+  const allowedActions: Record<SyncOperationInput["entity"], SyncOperationInput["action"][]> = {
+    sale: ["create", "void"],
+    refund: ["create"],
+    product: ["create", "update", "delete"],
+    customer: ["create", "update", "delete"],
+    debt: ["create", "payment", "delete"],
+    expense: ["create"],
+    "daily-close": ["close"],
+    supplier: ["create", "update", "delete"],
+    "purchase-order": ["create", "update"],
+    "supplier-payment": ["create", "payment"],
+    staff: ["create", "update"],
+    shift: ["open", "close"],
+    inventory: ["receive", "adjust", "count"],
+    settings: ["create", "update"],
+    "delivery-order": ["create", "update"],
+  }
+
+  if (!allowedActions[op.entity].includes(op.action)) {
+    throw new Error(`Unsupported sync operation: ${op.entity}.${op.action}`)
+  }
+
+  if (!op.payload || (typeof op.payload !== "object" && !Array.isArray(op.payload))) {
+    throw new Error(`Sync operation ${op.id} requires a payload`)
+  }
+
+  if (op.entity === "sale" && op.action === "create") {
+    const payload = op.payload as Record<string, unknown>
+    if (!payload.id || !Array.isArray(payload.items) || payload.items.length === 0) {
+      throw new Error("Sale sync requires an id and at least one item")
+    }
   }
 }
 

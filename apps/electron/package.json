@@ -1,0 +1,63 @@
+{
+  "name": "lebanon-pos",
+  "version": "1.0.0",
+  "description": "Lebanon POS — Local Server Desktop App",
+  "main": "dist/main.js",
+  "scripts": {
+    "build":    "tsc -p tsconfig.json",
+    "start":    "electron dist/main.js",
+    "dist":     "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win"
+  },
+  "devDependencies": {
+    "@types/node":      "^24.0.0",
+    "electron":         "42.2.0",
+    "electron-builder": "^25.0.0",
+    "typescript":       "~6.0.3"
+  },
+  "build": {
+    "appId":       "com.lebanonpos.app",
+    "productName": "Lebanon POS",
+    "copyright":   "Copyright © 2025 LebanonPOS",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../../apps/api/dist",
+        "to":   "api/dist"
+      },
+      {
+        "from": "../../apps/api/prisma",
+        "to":   "api/prisma"
+      },
+      {
+        "from": "../../apps/api/node_modules",
+        "to":   "api/node_modules"
+      },
+      {
+        "from": "../../apps/api/public",
+        "to":   "api/public"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon":   "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick":                           false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut":              true,
+      "createStartMenuShortcut":            true,
+      "shortcutName":                       "Lebanon POS"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon":   "assets/icon.png"
+    }
+  }
+}

@@ -91,6 +91,22 @@ export function clearStoreData() {
   localStorage.removeItem("lebanonpos.session.v1")
   localStorage.removeItem("lebanonpos.current-user.v1")
   localStorage.removeItem("lebanonpos.held-sales.v1")
+  // Also clear IndexedDB to prevent stale data accumulation across stores
+  clearIndexedDB().catch(() => {})
+}
+
+async function clearIndexedDB() {
+  try {
+    const { openDB } = await import("idb")
+    const db = await openDB("lebanonpos", undefined, {})
+    const stores = Array.from(db.objectStoreNames)
+    const tx = db.transaction(stores, "readwrite")
+    await Promise.all(stores.map((name) => tx.objectStore(name).clear()))
+    await tx.done
+    db.close()
+  } catch {
+    // IndexedDB may not be available; ignore
+  }
 }
 
 export type SyncEntity =
@@ -100,7 +116,7 @@ export type SyncEntity =
 
 export type SyncAction =
   | "create" | "update" | "delete" | "receive"
-  | "payment" | "close" | "open" | "adjust" | "count"
+  | "payment" | "close" | "open" | "adjust" | "count" | "void"
 
 export type SyncOperationStatus = "Pending" | "Synced" | "Failed"
 
@@ -344,8 +360,36 @@ export async function pullFromServer(full = false) {
       const target = PULL_TARGETS[key]
       if (!target || value === null || value === undefined) continue
       const arr = Array.isArray(value) ? value : [value]
-      // On incremental pulls, never wipe a local collection with an empty result
-      if (!full && arr.length === 0) continue
+      if (!full) {
+        if (arr.length === 0) continue
+        // Collections whose items have no `id` (e.g. settings) cannot be merged —
+        // always do a full replace so server updates are never silently dropped.
+        if ((arr[0] as any)?.id === undefined) {
+          writeLocalWithIndexedDB(target.key, arr)
+          window.dispatchEvent(new Event(target.event))
+          continue
+        }
+        // Merge incremental pull into existing local data by id
+        const raw = window.localStorage.getItem(target.key)
+        if (raw) {
+          try {
+            const local = JSON.parse(raw)
+            if (Array.isArray(local) && local.length > 0) {
+              const merged = local.slice()
+              for (const item of arr) {
+                if (item && typeof item.id !== "undefined") {
+                  const idx = merged.findIndex((e) => e.id === item.id)
+                  if (idx >= 0) merged[idx] = item
+                  else merged.push(item)
+                }
+              }
+              writeLocalWithIndexedDB(target.key, merged)
+              window.dispatchEvent(new Event(target.event))
+              continue
+            }
+          } catch { /* fall through to write directly */ }
+        }
+      }
       writeLocalWithIndexedDB(target.key, arr)
       window.dispatchEvent(new Event(target.event))
     }
