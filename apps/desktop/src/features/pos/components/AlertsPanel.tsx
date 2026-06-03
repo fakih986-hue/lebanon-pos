@@ -92,7 +92,7 @@ export default function AlertsPanel({
                           : suggestion.daysUntilStockout <= 7 ? "var(--amber-text)"
                           : "var(--text-3)"
                       }}>
-                        {suggestion.daysUntilStockout <= 0
+                        {suggestion.product.stock <= 0
                           ? "⚠ Out of stock"
                           : `⏳ Runs out in ~${suggestion.daysUntilStockout} day${suggestion.daysUntilStockout === 1 ? "" : "s"}`}
                       </p>

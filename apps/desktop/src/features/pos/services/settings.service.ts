@@ -53,9 +53,11 @@ export function getSettings() {
   }
 
   try {
+    const parsed = JSON.parse(storedSettings)
+    const raw = Array.isArray(parsed) ? parsed[0] ?? {} : parsed
     return {
       ...defaultSettings,
-      ...(JSON.parse(storedSettings) as Partial<AppSettings>),
+      ...(raw as Partial<AppSettings>),
     }
   } catch {
     console.warn(`[settings.service] Failed to parse storage key`)

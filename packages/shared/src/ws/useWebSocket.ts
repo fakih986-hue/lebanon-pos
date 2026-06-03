@@ -11,6 +11,11 @@ type UseWebSocketOptions = {
   onDisconnect?: () => void
 }
 
+function scheduleReconnect(reconnectRef: React.MutableRefObject<number | null>, connect: () => void) {
+  if (reconnectRef.current) clearTimeout(reconnectRef.current)
+  reconnectRef.current = window.setTimeout(connect, 3000)
+}
+
 export function useWebSocket({
   url,
   token,
@@ -25,6 +30,10 @@ export function useWebSocket({
   const reconnectRef = useRef<number | null>(null)
   const handlersRef = useRef(onMessage)
   handlersRef.current = onMessage
+  const onConnectRef = useRef(onConnect)
+  onConnectRef.current = onConnect
+  const onDisconnectRef = useRef(onDisconnect)
+  onDisconnectRef.current = onDisconnect
 
   const connect = useCallback(() => {
     if (!url || wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) return
@@ -41,7 +50,7 @@ export function useWebSocket({
         if (tenantId) {
           ws.send(JSON.stringify({ type: "subscribe", channel: `tenant:${tenantId}` }))
         }
-        onConnect?.()
+        onConnectRef.current?.()
       }
 
       ws.onmessage = (event) => {
@@ -56,18 +65,18 @@ export function useWebSocket({
 
       ws.onclose = () => {
         setIsConnected(false)
-        onDisconnect?.()
+        onDisconnectRef.current?.()
         wsRef.current = null
-        reconnectRef.current = window.setTimeout(connect, 3000)
+        scheduleReconnect(reconnectRef, connect)
       }
 
       ws.onerror = () => {
         ws.close()
       }
     } catch {
-      reconnectRef.current = window.setTimeout(connect, 3000)
+      scheduleReconnect(reconnectRef, connect)
     }
-  }, [url, token, tenantId, onConnect, onDisconnect])
+  }, [url, token, tenantId]) // onConnect/onDisconnect via ref — stable identity
 
   useEffect(() => {
     connect()

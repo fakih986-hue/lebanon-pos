@@ -20,12 +20,12 @@ import { showToast } from "../services/toast.service"
  */
 export function RatePanel() {
   const { t } = useI18n()
-  const [, setVersion] = useState(0)
+  const [, forceUpdate] = useState(0)
   const [input, setInput] = useState(String(getCurrentRate()))
   const meta = getRateMeta()
   const current = getCurrentRate()
 
-  useEffect(() => subscribeRate(() => { setVersion((v) => v + 1); setInput(String(getCurrentRate())) }), [])
+  useEffect(() => subscribeRate(() => { forceUpdate((v) => v + 1); setInput(String(getCurrentRate())) }), [])
 
   const newRate = parseFloat(input)
   const validNew = Number.isFinite(newRate) && newRate >= 1
@@ -122,11 +122,11 @@ export function RatePanel() {
  */
 export function StaleRateBanner() {
   const [dismissed, setDismissed] = useState(false)
-  const [, setVersion] = useState(0)
+  const [, forceUpdate] = useState(0)
   const [editing, setEditing] = useState(false)
   const [input, setInput] = useState(String(getCurrentRate()))
 
-  useEffect(() => subscribeRate(() => setVersion((v) => v + 1)), [])
+  useEffect(() => subscribeRate(() => forceUpdate((v) => v + 1)), [])
 
   if (dismissed || !isRateStale()) return null
 

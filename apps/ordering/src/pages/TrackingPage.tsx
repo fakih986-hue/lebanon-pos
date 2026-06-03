@@ -80,9 +80,11 @@ export function TrackingPage() {
   }, [tenantSubdomain])
 
   const fetchOrder = useCallback(async () => {
-    if (!orderNumber) return
+    if (!orderNumber || !tenantSubdomain) return
     try {
-      const data = await api<OrderDetail>(`/api/delivery/order/${orderNumber}/status`)
+      const data = await api<OrderDetail>(
+        `/api/delivery/order/${orderNumber}/status?tenantSubdomain=${encodeURIComponent(tenantSubdomain)}`
+      )
       setOrder(data)
       setLastUpdated(new Date())
     } catch (err: any) {
@@ -90,7 +92,7 @@ export function TrackingPage() {
     } finally {
       setLoading(false)
     }
-  }, [orderNumber])
+  }, [orderNumber, tenantSubdomain])
 
   useEffect(() => {
     fetchOrder()

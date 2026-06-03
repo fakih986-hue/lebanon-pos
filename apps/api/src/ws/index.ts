@@ -61,6 +61,11 @@ function handleMessage(ws: WebSocket, info: ClientInfo, msg: any) {
 
     case "subscribe":
       if (msg.channel) {
+        if (!canSubscribe(info, msg.channel)) {
+          send(ws, { type: "subscribe:error", data: { channel: msg.channel, message: "Channel not allowed" } })
+          break
+        }
+
         info.subscribedChannels.add(msg.channel)
         send(ws, { type: "subscribed", data: { channel: msg.channel } })
       }
@@ -76,6 +81,22 @@ function handleMessage(ws: WebSocket, info: ClientInfo, msg: any) {
       send(ws, { type: "pong" })
       break
   }
+}
+
+function canSubscribe(info: ClientInfo, channel: unknown) {
+  if (typeof channel !== "string" || !info.userId || !info.tenantId) {
+    return false
+  }
+
+  if (channel === `tenant:${info.tenantId}`) {
+    return true
+  }
+
+  if (channel === `user:${info.userId}`) {
+    return true
+  }
+
+  return false
 }
 
 function send(ws: WebSocket, data: any) {

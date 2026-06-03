@@ -1,3 +1,5 @@
+import { formatNumber } from "./currency"
+
 /**
  * WhatsApp deep-link helpers.
  * Opens wa.me with a prefilled message — works on desktop (WhatsApp Web/app)
@@ -46,7 +48,7 @@ export function receiptMessage(opts: {
     ``,
     ...items.map((i) => `${i.quantity}× ${i.name} — $${i.total.toFixed(2)}`),
     ``,
-    `TOTAL: $${total.toFixed(2)}  /  ${Math.round(totalLbp).toLocaleString()} LBP`,
+    `TOTAL: $${total.toFixed(2)}  /  ${formatNumber(Math.round(totalLbp))} LBP`,
   ]
   if (footer) { lines.push(``, footer) }
   return lines.join("\n")

@@ -2,7 +2,8 @@ import type { ReactNode } from "react"
 import { cn } from "../../lib/utils"
 
 export type WorkspaceTabItem<T extends string> = {
-  label: T
+  value?: T
+  label: string
   icon?: ReactNode
   count?: number
 }
@@ -21,12 +22,13 @@ export default function WorkspaceTabs<T extends string>({ tabs, active, onChange
       style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
     >
       {tabs.map((tab) => {
-        const selected = active === tab.label
+        const value = tab.value ?? (tab.label as T)
+        const selected = active === value
         return (
           <button
-            key={tab.label}
+            key={value}
             type="button"
-            onClick={() => onChange(tab.label)}
+            onClick={() => onChange(value)}
             className={cn(
               "flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-[13px] font-semibold transition whitespace-nowrap",
               selected

@@ -37,7 +37,7 @@ export function OrdersPage() {
 
   const token = getToken()
   const payload = token ? decodeTokenPayload(token) : null
-  const wsUrl = token ? `${import.meta.env.VITE_API_URL?.replace(/^http/, "ws") || "ws://localhost:3001"}/ws` : ""
+  const wsUrl = token ? `${(import.meta.env.VITE_API_URL || window.location.origin).replace(/^http/, "ws")}/ws` : ""
 
   function playAlert() {
     try {

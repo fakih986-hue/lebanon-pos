@@ -62,7 +62,7 @@ const menuGroups: MenuItem["group"][] = ["Command", "Retail", "Operations", "Adm
 
 function isActivePath(pathname: string, path: string) {
   if (path === "/") return pathname === "/"
-  if (path === "/products" || path === "/products/new") return pathname === path
+  if (path === "/products" || path === "/products/new" || path === "/delivery/drivers") return pathname === path
   return pathname === path || pathname.startsWith(`${path}/`)
 }
 
@@ -224,7 +224,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1.5 backdrop-blur-xl"
+      className="fixed inset-x-0 bottom-0 z-40 border-t px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1.5 backdrop-blur-xl md:hidden"
       style={{ background: "rgba(var(--bg),0.92)", borderColor: "var(--border)" }}
     >
       <div className="mx-auto flex max-w-6xl gap-0.5 overflow-x-auto [scrollbar-width:none]">

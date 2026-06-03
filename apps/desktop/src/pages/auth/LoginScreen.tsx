@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { CloudDownload, KeyRound, LockKeyhole, ShieldCheck, Store, X } from "lucide-react"
+import { CloudDownload, KeyRound, LockKeyhole, ShieldCheck, Store, X, Save } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
 import {
@@ -18,6 +18,7 @@ import {
   setAuthToken,
   type KnownStore,
 } from "../../features/pos/services/sync.service"
+import { mustChangePin, updateUser } from "../../features/pos/services/security.service"
 import { showToast } from "../../features/pos/services/toast.service"
 
 function roleBadge(role: StaffUser["role"]) {
@@ -41,6 +42,8 @@ export default function LoginScreen() {
   const [cError, setCError] = useState("")
   const knownStores = getKnownStores()
 
+  const [changePinUser, setChangePinUser] = useState<StaffUser | null>(null)
+
   async function handleUnlock() {
     const user = await unlockWithPin(pin)
     if (!user) {
@@ -49,6 +52,17 @@ export default function LoginScreen() {
       return
     }
     setStatus(`${user.name} unlocked.`)
+    if (mustChangePin(user)) {
+      setChangePinUser(user)
+    }
+  }
+
+  async function handleChangePin(newPin: string) {
+    if (!changePinUser) return
+    await updateUser(changePinUser.id, { pin: newPin })
+    setChangePinUser(null)
+    showToast("PIN changed successfully", "success")
+    setPin("")
   }
 
   async function handleConnect() {
@@ -76,10 +90,25 @@ export default function LoginScreen() {
       if (!res.ok) throw new Error(data?.error ?? `Login failed (HTTP ${res.status})`)
       if (!data?.token) throw new Error("No token returned.")
 
-      // If switching from another store, push any pending work then wipe local data
+      // If switching from another store, push any pending work
       try { await flushSyncQueue() } catch { /* offline — proceed */ }
-      clearStoreData()
 
+      // Backup existing data before clearing (for rollback on pull failure)
+      const PULL_TARGETS_BACKUP = [
+        "lebanonpos.products.v1", "lebanonpos.sales.v1", "lebanonpos.refunds.v1",
+        "lebanonpos.customers.v1", "lebanonpos.debt-sales.v1", "lebanonpos.debt-payments.v1",
+        "lebanonpos.suppliers.v1", "lebanonpos.purchase-orders.v1", "lebanonpos.supplier-payments.v1",
+        "lebanonpos.users.v1", "lebanonpos.shifts.v1", "lebanonpos.audit.v1",
+        "lebanonpos.settings.v1", "lebanonpos.expenses.v1", "lebanonpos.inventory-batches.v1",
+        "lebanonpos.inventory-adjustments.v1", "lebanonpos.stock-counts.v1",
+        "lebanonpos.daily-closes.v1", "lebanonpos.delivery-orders.v1",
+      ]
+      const backupSnapshot: Record<string, string | null> = {}
+      for (const key of PULL_TARGETS_BACKUP) {
+        backupSnapshot[key] = localStorage.getItem(key)
+      }
+
+      clearStoreData()
       setApiUrl(url)
       setAuthToken(data.token)
       rememberStore({
@@ -87,7 +116,16 @@ export default function LoginScreen() {
         apiUrl: url,
         subdomain: cSubdomain.trim(),
       })
-      await pullFromServer(true)  // full pull → all data + users land locally
+
+      try {
+        await pullFromServer(true)  // full pull → all data + users land locally
+      } catch (pullErr) {
+        // Restore backup on pull failure so existing data isn't lost
+        for (const [key, val] of Object.entries(backupSnapshot)) {
+          if (val !== null) localStorage.setItem(key, val)
+        }
+        throw pullErr
+      }
 
       showToast(`Connected to ${data.user?.tenantName ?? "store"}. Loading…`)
       setTimeout(() => window.location.reload(), 700)
@@ -287,6 +325,74 @@ export default function LoginScreen() {
           </div>
         </div>
       )}
+
+      {/* PIN change modal */}
+      {changePinUser && (
+        <ChangePinModal
+          user={changePinUser}
+          onConfirm={handleChangePin}
+          onCancel={() => { setChangePinUser(null); setPin("") }}
+        />
+      )}
     </main>
+  )
+}
+
+function ChangePinModal({ user, onConfirm, onCancel }: { user: StaffUser; onConfirm: (newPin: string) => Promise<void>; onCancel: () => void }) {
+  const [newPin, setNewPin] = useState("")
+  const [confirmPin, setConfirmPin] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSubmit() {
+    setError("")
+    if (newPin.length < 4) { setError("PIN must be at least 4 digits"); return }
+    if (newPin !== confirmPin) { setError("PINs do not match"); return }
+    setLoading(true)
+    try {
+      await onConfirm(newPin)
+    } catch {
+      setError("Failed to change PIN")
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+      <div className="w-full max-w-md rounded-2xl border p-6 animate-scale-in" style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "var(--shadow-xl)" }}>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <KeyRound size={20} style={{ color: "var(--accent)" }} />
+            <h2 className="text-[17px] font-bold" style={{ color: "var(--text)" }}>Change your PIN</h2>
+          </div>
+          <button onClick={onCancel} style={{ color: "var(--text-3)" }}><X size={18} /></button>
+        </div>
+        <p className="text-[12px] mb-4" style={{ color: "var(--text-3)" }}>
+          {user.name}, you must change the default PIN before using the system.
+        </p>
+
+        <label className="block mb-3">
+          <span className="block text-[12px] font-bold mb-1.5" style={{ color: "var(--text-2)" }}>New PIN</span>
+          <input type="password" inputMode="numeric" value={newPin} onChange={(e) => setNewPin(e.target.value)}
+            className="input w-full text-center text-xl font-bold tracking-widest" style={{ height: 50 }} autoFocus />
+        </label>
+        <label className="block mb-3">
+          <span className="block text-[12px] font-bold mb-1.5" style={{ color: "var(--text-2)" }}>Confirm PIN</span>
+          <input type="password" inputMode="numeric" value={confirmPin} onChange={(e) => setConfirmPin(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSubmit() }}
+            className="input w-full text-center text-xl font-bold tracking-widest" style={{ height: 50 }} />
+        </label>
+
+        {error && (
+          <p className="rounded-lg px-3 py-2 text-[13px] font-semibold mb-3" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>{error}</p>
+        )}
+
+        <button type="button" onClick={handleSubmit} disabled={loading || !newPin || !confirmPin}
+          className="btn-checkout w-full h-12 text-[15px] font-bold">
+          <Save size={17} className="inline mr-2" />
+          {loading ? "Saving…" : "Save New PIN"}
+        </button>
+      </div>
+    </div>
   )
 }

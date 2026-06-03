@@ -52,7 +52,7 @@ function getSalesVelocity(productId: number) {
   const since = startOfLookback()
 
   return getSales()
-    .filter((sale) => new Date(sale.createdAt) >= since)
+    .filter((sale) => sale.status !== "Voided" && new Date(sale.createdAt) >= since)
     .flatMap((sale) => sale.items)
     .filter((item) => item.id === productId)
     .reduce((sum, item) => sum + item.quantity, 0)
@@ -65,7 +65,7 @@ function getSoldSince(productId: number, days: number) {
   since.setHours(0, 0, 0, 0)
 
   return getSales()
-    .filter((sale) => new Date(sale.createdAt) >= since)
+    .filter((sale) => sale.status !== "Voided" && new Date(sale.createdAt) >= since)
     .flatMap((sale) => sale.items)
     .filter((item) => item.id === productId)
     .reduce((sum, item) => sum + item.quantity, 0)
@@ -111,7 +111,7 @@ export function getReorderSuggestions(products: Product[]) {
             ? "Low"
             : "Watch"
       const daysUntilStockout =
-        averageDailySales > 0 ? Math.floor(product.stock / averageDailySales) : null
+        averageDailySales > 0 ? Math.ceil(product.stock / averageDailySales) : null
 
       return {
         product,

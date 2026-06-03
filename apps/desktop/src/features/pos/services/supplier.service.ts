@@ -159,6 +159,11 @@ export function deleteSupplier(supplierId: string) {
   if (!supplier) return
 
   writeCollection(SUPPLIERS_KEY, suppliers.filter((item) => item.id !== supplierId))
+  // Clean up orphan purchase orders and payments
+  const orders = getPurchaseOrders().filter((o) => o.supplierId !== supplierId)
+  const payments = getSupplierPayments().filter((p) => p.supplierId !== supplierId)
+  writeCollection(PURCHASE_ORDERS_KEY, orders)
+  writeCollection(SUPPLIER_PAYMENTS_KEY, payments)
   recordAuditEvent({
     action: "supplier.delete",
     entity: "supplier",

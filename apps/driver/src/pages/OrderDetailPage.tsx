@@ -44,7 +44,7 @@ export function OrderDetailPage() {
 
   const token = getToken()
   const payload = token ? decodeTokenPayload(token) : null
-  const wsUrl = token ? `${import.meta.env.VITE_API_URL?.replace(/^http/, "ws") || "ws://localhost:3001"}/ws` : ""
+  const wsUrl = token ? `${(import.meta.env.VITE_API_URL || window.location.origin).replace(/^http/, "ws")}/ws` : ""
 
   useWebSocket({
     url: wsUrl, token, tenantId: payload?.tenantId,
@@ -128,7 +128,14 @@ export function OrderDetailPage() {
 
   const isTerminal = order.status === "Delivered" || order.status === "Cancelled"
   const isCash = order.paymentMethod === "CashOnDelivery"
-  const whatsappUrl = `https://wa.me/${order.customerPhone.replace(/^0+/, "")}?text=${encodeURIComponent(`Hi ${order.customerName}, I'm your delivery driver for order ${order.orderNumber}. I'm on my way!`)}`
+  function normalizeLBPhone(raw: string): string {
+    let n = (raw || "").replace(/[^\d+]/g, "")
+    if (n.startsWith("+")) n = n.slice(1)
+    if (n.startsWith("0")) n = "961" + n.slice(1)
+    else if (n.length >= 7 && n.length <= 8) n = "961" + n
+    return n
+  }
+  const whatsappUrl = `https://wa.me/${normalizeLBPhone(order.customerPhone)}?text=${encodeURIComponent(`Hi ${order.customerName}, I'm your delivery driver for order ${order.orderNumber}. I'm on my way!`)}`
 
   return (
     <div className="min-h-dvh bg-gradient-page">

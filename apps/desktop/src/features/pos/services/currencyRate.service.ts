@@ -76,17 +76,27 @@ export function updateRate(newRate: number, source: "manual" | "auto" = "manual"
   return rate
 }
 
+function parseDateSafe(value: string | undefined): Date | null {
+  if (!value) return null
+  const d = new Date(value)
+  return isNaN(d.getTime()) ? null : d
+}
+
 export function isRateStale(hours = RATE_STALE_HOURS): boolean {
   const meta = getRateMeta()
   if (!meta.lastUpdatedAt) return true
-  const ageMs = Date.now() - new Date(meta.lastUpdatedAt).getTime()
+  const updatedAt = parseDateSafe(meta.lastUpdatedAt)
+  if (!updatedAt) return true
+  const ageMs = Date.now() - updatedAt.getTime()
   return ageMs > hours * 60 * 60 * 1000
 }
 
 export function rateAgeLabel(): string {
   const meta = getRateMeta()
   if (!meta.lastUpdatedAt) return "never updated"
-  const ageMs = Date.now() - new Date(meta.lastUpdatedAt).getTime()
+  const updatedAt = parseDateSafe(meta.lastUpdatedAt)
+  if (!updatedAt) return "never updated"
+  const ageMs = Date.now() - updatedAt.getTime()
   const hours = Math.floor(ageMs / (60 * 60 * 1000))
   if (hours < 1) return "updated just now"
   if (hours < 24) return `updated ${hours}h ago`
@@ -124,9 +134,7 @@ export function subscribeRate(callback: () => void) {
   if (!canUseStorage()) return () => undefined
   const handler = () => callback()
   window.addEventListener(RATE_EVENT, handler)
-  window.addEventListener("lebanonpos-settings-changed", handler)
   return () => {
     window.removeEventListener(RATE_EVENT, handler)
-    window.removeEventListener("lebanonpos-settings-changed", handler)
   }
 }

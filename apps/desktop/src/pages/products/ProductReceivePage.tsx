@@ -93,8 +93,8 @@ function createRow(defaults?: Partial<BatchRow>): BatchRow {
   return {
     id: crypto.randomUUID(),
     name: "",
-    category: "Pantry",
-    quantity: 1,
+    category: "",
+    quantity: 0,
     cost: 0,
     price: 0,
     reorderPoint: 10,
@@ -179,17 +179,29 @@ export default function ProductReceivePage() {
     })
   }
 
+  function fillRowFromBarcode(row: BatchRow, barcode: string): BatchRow {
+    const product = findProductByBarcode(barcode)
+    if (!product) return { ...row, barcode, name: "", category: "Pantry", price: 0, cost: 0, reorderPoint: 10, reorderQuantity: 20, expiryDate: "" }
+    return { ...row, name: product.name, category: product.category, price: product.price, cost: product.cost, reorderPoint: product.reorderPoint ?? 10, reorderQuantity: product.reorderQuantity ?? 20, expiryDate: product.expiryDate ?? "", barcode: product.barcode, accent: product.accent }
+  }
+
   function applyBarcodeToActiveRow(barcode: string) {
     const clean = barcode.trim().replace(/\s+/g, "")
     if (!clean) return
-    const product = findProductByBarcode(clean)
-    setRows((rows) => rows.map((r) => {
-      if (r.id !== activeRowId) return r
-      if (!product) return { ...r, barcode: clean }
-      return { ...r, name: product.name, category: product.category, price: product.price, cost: product.cost, reorderPoint: product.reorderPoint ?? 10, reorderQuantity: product.reorderQuantity ?? 20, expiryDate: product.expiryDate ?? "", barcode: product.barcode, accent: product.accent }
-    }))
+    setRows((rows) => rows.map((r) => r.id !== activeRowId ? r : fillRowFromBarcode(r, clean)))
     setScannerValue("")
+    const product = findProductByBarcode(clean)
     showToast(product ? `Loaded: ${product.name}` : `New barcode: ${clean}`)
+  }
+
+  function handleBarcodeInput(rowId: string, value: string) {
+    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, barcode: value }))
+    if (activeRowId !== rowId) return
+    const clean = value.trim().replace(/\s+/g, "")
+    if (!clean) return
+    const product = findProductByBarcode(clean)
+    if (!product) return
+    setRows((rows) => rows.map((r) => r.id !== rowId ? r : fillRowFromBarcode(r, clean)))
   }
 
   function generateBarcodeForRow(id: string) {
@@ -388,22 +400,26 @@ export default function ProductReceivePage() {
                       {ready ? "✓" : idx + 1}
                     </span>
 
-                    <input
-                      value={row.name}
-                      onChange={(e) => updateRow(row.id, { name: e.target.value })}
-                      placeholder={t("pos.receive.product_name")}
-                      className="min-w-0 flex-1 bg-transparent text-[14px] font-semibold outline-none"
-                      style={{ color: "var(--text)" }}
-                    />
-
-                    <input
-                      value={row.category}
-                      list="product-categories"
-                      onChange={(e) => updateRow(row.id, { category: e.target.value })}
-                      placeholder="Category"
-                      className="w-28 rounded-lg border px-2 text-[12px] font-medium h-8 outline-none"
-                      style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
-                    />
+                    {/* Barcode input — always first */}
+                    <div className="min-w-0 flex-1 flex items-center gap-2">
+                      <Barcode size={16} style={{ color: "var(--text-3)" }} className="shrink-0" />
+                      <input
+                        value={row.barcode}
+                        onChange={(e) => handleBarcodeInput(row.id, e.target.value)}
+                        placeholder={t("pos.receive.scan_or_generate")}
+                        className="min-w-0 flex-1 bg-transparent text-[13px] font-mono outline-none"
+                        style={{ color: "var(--text)" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => generateBarcodeForRow(row.id)}
+                        className="shrink-0 flex items-center gap-1.5 h-7 rounded-lg border px-2.5 text-[11px] font-semibold transition hover:opacity-80"
+                        style={{ borderColor: "var(--border)", color: "var(--text-2)", background: "var(--surface-2)" }}
+                      >
+                        <Barcode size={12} />
+                        Generate
+                      </button>
+                    </div>
 
                     {/* Actions */}
                     <div className="flex items-center gap-1 shrink-0">
@@ -442,14 +458,53 @@ export default function ProductReceivePage() {
                     </div>
                   </div>
 
+                  {/* Matched product banner */}
+                  {(() => {
+                    const matched = row.barcode ? findProductByBarcode(row.barcode) : null
+                    return matched ? (
+                      <div className="flex items-center gap-2 px-4 py-1.5 text-[12px] font-medium" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+                        <CheckCircle2 size={13} />
+                        Restocking: <strong className="ml-1">{matched.name}</strong>
+                        <span className="ml-auto opacity-60">Stock: {matched.stock} → {matched.stock + row.quantity}</span>
+                      </div>
+                    ) : row.barcode ? (
+                      <div className="flex items-center gap-2 px-4 py-1.5 text-[12px] font-medium" style={{ background: "var(--amber-soft)", color: "rgb(180,130,20)" }}>
+                        <PackagePlus size={13} />
+                        New product
+                      </div>
+                    ) : null
+                  })()}
+
                   {/* Card body — key fields in a clean grid */}
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 px-4 py-3 sm:grid-cols-3 lg:grid-cols-6">
+                    {(() => {
+                      const matched = row.barcode ? findProductByBarcode(row.barcode) : null
+                      return [
+                        { label: t("pos.receive.product_name"), value: row.name, key: "name", disabled: !!matched },
+                        { label: "Category", value: row.category, key: "category", disabled: !!matched },
+                      ].map((field) => (
+                        <label key={field.key} className="block">
+                          <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>
+                            {field.label}
+                          </span>
+                          <input
+                            value={field.value}
+                            disabled={field.disabled}
+                            onChange={(e) => updateRow(row.id, { [field.key]: e.target.value } as any)}
+                            list={field.key === "category" ? "product-categories" : undefined}
+                            className="input"
+                            style={{
+                              height: 34, fontSize: 13, fontWeight: 600,
+                              opacity: field.disabled ? 0.6 : 1,
+                            }}
+                          />
+                        </label>
+                      ))
+                    })()}
                     {[
-                      { label: t("pos.table.cost"), value: row.cost, key: "cost", step: "0.01", min: "0", suffix: "$" },
-                      { label: t("pos.table.price"), value: row.price, key: "price", step: "0.01", min: "0", suffix: "$" },
-                      { label: t("pos.table.qty"), value: row.quantity, key: "quantity", step: "1", min: "1" },
-                      { label: t("pos.receive.low_alert"), value: row.reorderPoint, key: "reorderPoint", step: "1", min: "0", amber: true },
-                      { label: t("pos.receive.labels"), value: row.labels, key: "labels", step: "1", min: "0" },
+                      { label: t("pos.table.cost"), value: row.cost, key: "cost", step: "0.01", min: "0", plh: "0", suffix: "$" },
+                      { label: t("pos.table.price"), value: row.price, key: "price", step: "0.01", min: "0", plh: "0", suffix: "$" },
+                      { label: t("pos.table.qty"), value: row.quantity, key: "quantity", step: "1", min: "1", plh: "" },
                     ].map((field) => (
                       <label key={field.key} className="block">
                         <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>
@@ -459,12 +514,12 @@ export default function ProductReceivePage() {
                           type="number"
                           min={field.min}
                           step={field.step}
-                          value={field.value}
+                          value={field.value || ""}
+                          placeholder={field.plh}
                           onChange={(e) => updateRow(row.id, { [field.key]: normalizeNumber(e.target.value) } as any)}
                           className="input text-right"
                           style={{
                             height: 34, fontSize: 13, fontWeight: 600,
-                            ...(field.amber ? { borderColor: "rgba(245,158,11,0.4)", background: "var(--amber-soft)" } : {}),
                           }}
                         />
                       </label>
@@ -485,33 +540,11 @@ export default function ProductReceivePage() {
                     </label>
                   </div>
 
-                  {/* Barcode row */}
-                  <div className="flex items-center gap-2 border-t px-4 py-2.5" style={{ borderColor: "var(--border)" }}>
-                    <Barcode size={14} style={{ color: "var(--text-3)" }} className="shrink-0" />
-                    <input
-                      value={row.barcode}
-                      onChange={(e) => updateRow(row.id, { barcode: e.target.value })}
-                      placeholder={t("pos.receive.scan_or_generate")}
-                      className="min-w-0 flex-1 bg-transparent text-[13px] font-mono outline-none"
-                      style={{ color: "var(--text-2)" }}
+                  {row.barcode && (
+                    <div className="shrink-0 rounded-lg overflow-hidden p-1" style={{ background: "#fff" }}
+                      dangerouslySetInnerHTML={{ __html: renderCode128Svg(row.barcode, 32, 1.2) }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => generateBarcodeForRow(row.id)}
-                      className="shrink-0 flex items-center gap-1.5 h-7 rounded-lg border px-2.5 text-[11px] font-semibold transition hover:opacity-80"
-                      style={{ borderColor: "var(--border)", color: "var(--text-2)", background: "var(--surface-2)" }}
-                    >
-                      <Barcode size={12} />
-                      Generate
-                    </button>
-                    {row.barcode && (
-                      <div
-                        className="shrink-0 rounded-lg overflow-hidden p-1"
-                        style={{ background: "#fff" }}
-                        dangerouslySetInnerHTML={{ __html: renderCode128Svg(row.barcode, 32, 1.2) }}
-                      />
-                    )}
-                  </div>
+                  )}
                 </div>
               )
             })}

@@ -36,7 +36,7 @@ const CartItemCard = memo(function CartItemCard({
   }
   function commitQty() {
     const val = parseFloat(qtyInput)
-    if (!isNaN(val) && val > 0) onSetQuantity(Math.round(val))
+    if (!isNaN(val) && val > 0) onSetQuantity(Math.floor(val))
     setEditingQty(false)
   }
   function openPriceEdit() {

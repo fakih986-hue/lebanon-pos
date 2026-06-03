@@ -192,8 +192,6 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
 
       nextProducts[existingIndex] = {
         ...existingProduct,
-        name,
-        category,
         price: entry.price,
         cost: entry.cost,
         stock: existingProduct.stock + entry.stock,
@@ -333,6 +331,12 @@ export function createProduct(input: {
   }
   const nextProducts = [...currentProducts, product]
   writeProducts(nextProducts)
+  enqueueSyncOperation({
+    entity: "product",
+    action: "create",
+    summary: `${product.name} created.`,
+    payload: product,
+  })
   return product
 }
 
@@ -383,15 +387,18 @@ export function renameCategory(oldCategory: string, nextCategory: string) {
   )
 
   writeProducts(nextProducts)
-  enqueueSyncOperation({
-    entity: "product",
-    action: "update",
-    summary: `${from} category renamed to ${to}.`,
-    payload: {
-      oldCategory: from,
-      nextCategory: to,
-    },
-  })
+
+  // Sync each affected product individually so the server handler works
+  for (const product of nextProducts) {
+    if (product.category === to && from !== to) {
+      enqueueSyncOperation({
+        entity: "product",
+        action: "update",
+        summary: `${product.name} category: ${from} → ${to}.`,
+        payload: product,
+      })
+    }
+  }
 
   return nextProducts
 }

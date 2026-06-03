@@ -54,6 +54,9 @@ const paymentColors: Record<string, { active: string; inactive: string }> = {
   amber:   { active: "bg-amber-500 border-amber-500 text-white shadow-amber-500/25",      inactive: "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)] hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700" },
 }
 
+const MotionDiv = motion.div as any
+const MotionAside = motion.aside as any
+
 interface CartItem { id: number; name: string; price: number; quantity: number; stock: number }
 
 interface Props {
@@ -148,7 +151,7 @@ export default function CartDrawer({
           tabIndex={-1}
         >
           {/* Backdrop */}
-          <motion.div
+          <MotionDiv
             className="fixed inset-0"
             style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}
             initial={{ opacity: 0 }}
@@ -158,7 +161,7 @@ export default function CartDrawer({
           />
 
           {/* Drawer */}
-          <motion.aside
+          <MotionAside
             role="dialog"
             aria-modal="true"
             aria-label={t("pos.current_sale")}
@@ -223,8 +226,8 @@ export default function CartDrawer({
               </div>
             </div>
 
-            {/* ── Items ── */}
-            <div className="min-h-0 flex-1 overflow-y-auto p-3" style={{ background: "var(--surface-2)" }}>
+            {/* ── Scrollable body (items + payment) ── */}
+            <div className="min-h-0 flex-1 overflow-y-auto p-3 space-y-3" style={{ background: "var(--surface-2)" }}>
               {items.length > 0 ? (
                 <div className="space-y-2">
                   {items.map((item) => (
@@ -244,7 +247,7 @@ export default function CartDrawer({
                 </div>
               ) : (
                 <div
-                  className="flex h-full min-h-56 flex-col items-center justify-center rounded-xl border-2 border-dashed gap-3"
+                  className="flex min-h-56 flex-col items-center justify-center rounded-xl border-2 border-dashed gap-3"
                   style={{ borderColor: "var(--border)", background: "var(--surface)" }}
                 >
                   <ShoppingCart size={36} style={{ color: "var(--text-3)" }} />
@@ -254,13 +257,9 @@ export default function CartDrawer({
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* ── Payment panel ── */}
-            <div
-              className="shrink-0 overflow-y-auto border-t p-3 space-y-3"
-              style={{ borderColor: "var(--border)", maxHeight: "62vh" }}
-            >
+              {/* ── Payment panel ── */}
+              <div className="border-t pt-3 space-y-3" style={{ borderColor: "var(--border)" }}>
               {/* Held sales */}
               {heldSales.length > 0 && (
                 <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
@@ -623,7 +622,8 @@ export default function CartDrawer({
                 {checkoutLabel}
               </button>
             </div>
-          </motion.aside>
+          </div>
+          </MotionAside>
         </div>
       )}
     </AnimatePresence>

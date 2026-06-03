@@ -487,9 +487,9 @@ export default function StaffPage() {
           active={activeWorkspace}
           onChange={setActiveWorkspace}
           tabs={[
-            { label: t("pos.staff.tab_team"), count: users.length },
-            { label: t("pos.staff.tab_shifts"), count: shifts.length },
-            { label: t("pos.staff.tab_audit"), count: auditEvents.length },
+            { value: "Team", label: t("pos.staff.tab_team"), count: users.length },
+            { value: "Shifts", label: t("pos.staff.tab_shifts"), count: shifts.length },
+            { value: "Audit", label: t("pos.staff.tab_audit"), count: auditEvents.length },
           ]}
         />
 

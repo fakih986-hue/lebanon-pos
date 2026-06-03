@@ -347,31 +347,19 @@ export default function CustomersPage() {
                       Contact
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3 text-end">
-                      Sales
-                    </th>
-                    <th className="border-b border-zinc-200 px-4 py-3 text-end">
-                      Paid
-                    </th>
-                    <th className="border-b border-zinc-200 px-4 py-3 text-end">
-                      Balance
-                    </th>
-                    <th className="border-b border-zinc-200 px-4 py-3">
-                      Mobile
-                    </th>
-                    <th className="border-b border-zinc-200 px-4 py-3 text-right">
                       Debt
                     </th>
-                    <th className="border-b border-zinc-200 px-4 py-3 text-right">
+                    <th className="border-b border-zinc-200 px-4 py-3 text-end">
                       Paid
                     </th>
-                    <th className="border-b border-zinc-200 px-4 py-3 text-right">
+                    <th className="border-b border-zinc-200 px-4 py-3 text-end">
                       Balance
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
                       Last activity
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
-                      <span className="sr-only">Delete</span>
+                      <span className="sr-only">Actions</span>
                     </th>
                   </tr>
                 </thead>

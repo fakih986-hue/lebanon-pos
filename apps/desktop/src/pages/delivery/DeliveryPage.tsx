@@ -55,7 +55,7 @@ export default function DeliveryPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const debouncedSearch = useDebounce(search, 200)
 
-  useHotkeys("Ctrl+f", (e) => { e.preventDefault(); document.getElementById("deliverySearch")?.focus() })
+  useHotkeys([{ key: "f", modifiers: ["ctrl"], handler: () => document.getElementById("deliverySearch")?.focus() }])
 
   const apiUrl = getApiUrl()
   const token = getAuthToken()
@@ -145,7 +145,7 @@ export default function DeliveryPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState icon={Truck} title={t("delivery.no_orders")} message={debouncedSearch ? t("delivery.no_results_sub") : t("delivery.no_orders_sub")} />
+        <EmptyState icon={Truck} title={t("delivery.no_orders")} description={debouncedSearch ? t("delivery.no_results_sub") : t("delivery.no_orders_sub")} />
       ) : (
         <div className="space-y-2">
           {filtered.map(order => (

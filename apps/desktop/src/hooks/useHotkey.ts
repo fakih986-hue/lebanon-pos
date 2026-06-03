@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 type Modifier = "ctrl" | "alt" | "shift" | "meta"
 
@@ -19,6 +19,8 @@ function matchModifier(e: KeyboardEvent, modifier: Modifier): boolean {
 }
 
 export function useHotkeys(hotkeys: HotkeyDef[]) {
+  const hotkeysRef = useRef(hotkeys)
+  hotkeysRef.current = hotkeys
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
@@ -31,7 +33,7 @@ export function useHotkeys(hotkeys: HotkeyDef[]) {
         }
       }
 
-      for (const hk of hotkeys) {
+      for (const hk of hotkeysRef.current) {
         if (hk.enabled === false) continue
 
         const keyMatch = e.key.toLowerCase() === hk.key.toLowerCase()
@@ -50,5 +52,5 @@ export function useHotkeys(hotkeys: HotkeyDef[]) {
 
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [hotkeys])
+  }, [])
 }

@@ -632,7 +632,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "D:\\projects\\new posAI\\lebanonpos\\apps\\api\\src\\generated\\prisma",
+      "value": "C:\\projects\\2.6.2026 leb\\lebanonpos\\apps\\api\\src\\generated\\prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -646,7 +646,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "D:\\projects\\new posAI\\lebanonpos\\apps\\api\\prisma\\schema.prisma",
+    "sourceFilePath": "C:\\projects\\2.6.2026 leb\\lebanonpos\\apps\\api\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -660,7 +660,6 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {

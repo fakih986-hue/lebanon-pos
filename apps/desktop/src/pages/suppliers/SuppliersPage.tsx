@@ -509,11 +509,9 @@ export default function SuppliersPage() {
             </div>
           </section>
           ) : null}
-        </section>
 
-        <aside className="space-y-5">
           {activeWorkspace === "Add supplier" ? (
-          <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+          <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
                 <Building2 size={21} />
@@ -526,43 +524,47 @@ export default function SuppliersPage() {
               </div>
             </div>
 
-            <div className="mt-4 space-y-3">
-              <input
-                value={supplierForm.name}
-                onChange={(event) => {
-                  updateSupplierForm({ name: event.target.value })
-                  if (formErrors.name) {
-                    setFormErrors((currentErrors) => ({ ...currentErrors, name: undefined }))
-                  }
-                }}
-                placeholder="Supplier name"
-                className={`h-11 w-full rounded-lg border bg-zinc-50 px-3 outline-none focus:bg-white focus:ring-4 ${
-                  formErrors.name
-                    ? "border-rose-300 focus:border-rose-400 focus:ring-rose-100"
-                    : "border-zinc-200 focus:border-emerald-400 focus:ring-emerald-100"
-                }`}
-              />
-              {formErrors.name ? (
-                <p className="mt-1 text-xs font-medium text-rose-500">{formErrors.name}</p>
-              ) : null}
-              <input
-                value={supplierForm.mobile}
-                onChange={(event) => {
-                  updateSupplierForm({ mobile: event.target.value })
-                  if (formErrors.mobile) {
-                    setFormErrors((currentErrors) => ({ ...currentErrors, mobile: undefined }))
-                  }
-                }}
-                placeholder="Mobile number"
-                className={`h-11 w-full rounded-lg border bg-zinc-50 px-3 outline-none focus:bg-white focus:ring-4 ${
-                  formErrors.mobile
-                    ? "border-rose-300 focus:border-rose-400 focus:ring-rose-100"
-                    : "border-zinc-200 focus:border-emerald-400 focus:ring-emerald-100"
-                }`}
-              />
-              {formErrors.mobile ? (
-                <p className="mt-1 text-xs font-medium text-rose-500">{formErrors.mobile}</p>
-              ) : null}
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div>
+                <input
+                  value={supplierForm.name}
+                  onChange={(event) => {
+                    updateSupplierForm({ name: event.target.value })
+                    if (formErrors.name) {
+                      setFormErrors((currentErrors) => ({ ...currentErrors, name: undefined }))
+                    }
+                  }}
+                  placeholder="Supplier name *"
+                  className={`h-11 w-full rounded-lg border bg-zinc-50 px-3 outline-none focus:bg-white focus:ring-4 ${
+                    formErrors.name
+                      ? "border-rose-300 focus:border-rose-400 focus:ring-rose-100"
+                      : "border-zinc-200 focus:border-emerald-400 focus:ring-emerald-100"
+                  }`}
+                />
+                {formErrors.name ? (
+                  <p className="mt-1 text-xs font-medium text-rose-500">{formErrors.name}</p>
+                ) : null}
+              </div>
+              <div>
+                <input
+                  value={supplierForm.mobile}
+                  onChange={(event) => {
+                    updateSupplierForm({ mobile: event.target.value })
+                    if (formErrors.mobile) {
+                      setFormErrors((currentErrors) => ({ ...currentErrors, mobile: undefined }))
+                    }
+                  }}
+                  placeholder="Mobile number *"
+                  className={`h-11 w-full rounded-lg border bg-zinc-50 px-3 outline-none focus:bg-white focus:ring-4 ${
+                    formErrors.mobile
+                      ? "border-rose-300 focus:border-rose-400 focus:ring-rose-100"
+                      : "border-zinc-200 focus:border-emerald-400 focus:ring-emerald-100"
+                  }`}
+                />
+                {formErrors.mobile ? (
+                  <p className="mt-1 text-xs font-medium text-rose-500">{formErrors.mobile}</p>
+                ) : null}
+              </div>
               <input
                 value={supplierForm.contact}
                 onChange={(event) =>
@@ -579,29 +581,33 @@ export default function SuppliersPage() {
                 placeholder="Address"
                 className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               />
-              <textarea
-                value={supplierForm.notes}
-                onChange={(event) =>
-                  updateSupplierForm({ notes: event.target.value })
-                }
-                placeholder="Notes"
-                rows={3}
-                className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              />
-              <button
-                type="button"
-                onClick={handleCreateSupplier}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
-              >
-                <Plus size={17} />
-                Add Supplier
-              </button>
+              <div className="sm:col-span-2">
+                <textarea
+                  value={supplierForm.notes}
+                  onChange={(event) =>
+                    updateSupplierForm({ notes: event.target.value })
+                  }
+                  placeholder="Notes"
+                  rows={3}
+                  className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <button
+                  type="button"
+                  onClick={handleCreateSupplier}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+                >
+                  <Plus size={17} />
+                  Add Supplier
+                </button>
+              </div>
             </div>
           </section>
           ) : null}
 
           {activeWorkspace === "Pay supplier" ? (
-          <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+          <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
                 <HandCoins size={21} />
@@ -616,7 +622,7 @@ export default function SuppliersPage() {
               </div>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <select
                 value={payment.supplierId || selectedSupplierId}
                 onChange={(event) => {
@@ -671,7 +677,7 @@ export default function SuppliersPage() {
                 className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               />
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2">
                 {supplierPaymentMethods.map((method) => {
                   const Icon = method.icon
                   const active = payment.method === method.label
@@ -686,7 +692,7 @@ export default function SuppliersPage() {
                           method: method.label,
                         }))
                       }
-                      className={`flex h-11 items-center justify-center gap-2 rounded-lg border text-sm font-bold transition ${
+                      className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border text-sm font-bold transition ${
                         active
                           ? "border-emerald-600 bg-emerald-50 text-emerald-800"
                           : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
@@ -711,19 +717,22 @@ export default function SuppliersPage() {
                 className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               />
 
-              <button
-                type="button"
-                onClick={handleRecordPayment}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white transition hover:bg-emerald-500"
-              >
-                <HandCoins size={17} />
-                Record Payment
-              </button>
+              <div className="sm:col-span-2">
+                <button
+                  type="button"
+                  onClick={handleRecordPayment}
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white transition hover:bg-emerald-500"
+                >
+                  <HandCoins size={17} />
+                  Record Payment
+                </button>
+              </div>
             </div>
           </section>
           ) : null}
+        </section>
 
-          {activeWorkspace === "Activity" || activeWorkspace === "Accounts" ? (
+        <aside className="space-y-5">
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
@@ -796,7 +805,6 @@ export default function SuppliersPage() {
               ))}
             </div>
           </section>
-          ) : null}
         </aside>
       </div>
       <ConfirmDialog

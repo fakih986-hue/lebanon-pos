@@ -6,7 +6,7 @@ import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatNumber } from "../lib/currency"
 import type { Product } from "../types/product"
 
-function getStockStatus(product: Product, t: (key: string, params?: Record<string, unknown>) => string) {
+function getStockStatus(product: Product, t: (key: string, params?: any) => string) {
   const reorderPoint = product.reorderPoint ?? 10
 
   if (product.stock <= 0) {

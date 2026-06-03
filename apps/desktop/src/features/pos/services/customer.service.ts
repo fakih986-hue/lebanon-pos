@@ -176,11 +176,23 @@ export function deleteCustomer(customerId: string) {
   if (!customer) return
 
   writeCollection(CUSTOMERS_KEY, customers.filter((item) => item.id !== customerId))
+  // Clean up orphan debt records
+  const debtSales = getDebtSales().filter((d) => d.customerId !== customerId)
+  const debtPayments = getDebtPayments().filter((d) => d.customerId !== customerId)
+  writeCollection(DEBT_SALES_KEY, debtSales)
+  writeCollection(DEBT_PAYMENTS_KEY, debtPayments)
   enqueueSyncOperation({
     entity: "customer",
     action: "delete",
     summary: `${customer.name} deleted.`,
     payload: { id: customerId },
+  })
+  // Enqueue debt deletions for server sync
+  enqueueSyncOperation({
+    entity: "debt",
+    action: "delete",
+    summary: `Debt sales for deleted customer ${customer.name}`,
+    payload: { customerId },
   })
 }
 

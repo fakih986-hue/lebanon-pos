@@ -1,4 +1,4 @@
-import { formatCurrency, formatLbpCurrency, formatUsdCurrency, usdToLbp } from "./currency"
+import { formatCurrency, formatLbpCurrency, formatNumber, formatUsdCurrency, usdToLbp } from "./currency"
 import {
   escapeHtml,
   formatReceiptDate,
@@ -294,7 +294,7 @@ export function printLastSaleReceipt(lastSale: LastSaleSummary, settings: AppSet
             lastSale.totalLbp
           )}</td></tr>
           <tr><td>Payment</td><td>${lastSale.paymentMethod}</td></tr>
-          <tr><td>Rate</td><td>1 USD = ${formatLbpCurrency(
+          <tr><td>Rate</td><td>1 USD = ${formatNumber(
             lastSale.exchangeRate
           )}</td></tr>
           ${tenderRows}

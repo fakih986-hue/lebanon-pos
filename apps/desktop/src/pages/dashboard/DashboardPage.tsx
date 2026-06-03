@@ -155,7 +155,7 @@ export default function DashboardPage() {
     [expenses, rangeStart]
   )
 
-  const metrics = useMemo(() => getSalesMetrics(), [sales, settings])
+  const metrics = useMemo(() => getSalesMetrics(), [rangeSales, settings])
   // Net Paid = cash/card/wallet sales only (debt is money owed, not collected)
   const paidSales = rangeSales.filter((s) => s.paymentMethod !== "Debt")
   const debtSales = rangeSales.filter((s) => s.paymentMethod === "Debt")
@@ -184,10 +184,10 @@ export default function DashboardPage() {
   const stockValue = products.reduce((sum, p) => sum + p.cost * p.stock, 0)
   const recentSales = rangeSales.slice(0, 6)
   const riskyCustomers = customerLedger.filter((c) => c.balance > 0).sort((a, b) => b.balance - a.balance).slice(0, 5)
-  const reorderSuggestions = useMemo(() => getReorderSuggestions(products), [products, sales])
+  const reorderSuggestions = useMemo(() => getReorderSuggestions(products), [products])
   const expiryAlerts = useMemo(() => getExpiryAlerts(products, 30), [products])
-  const deadStockItems = useMemo(() => getDeadStockItems(products, 60), [products, sales])
-  const promoSuggestions = useMemo(() => getPromoSuggestions(products), [products, sales])
+  const deadStockItems = useMemo(() => getDeadStockItems(products, 60), [products])
+  const promoSuggestions = useMemo(() => getPromoSuggestions(products), [products])
 
   const rangeLabel: Record<DateRange, string> = {
     today: t("desktop.dashboard.range_today"),
@@ -360,9 +360,9 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-2 p-4 max-h-60 overflow-y-auto">
                 {expiryAlerts.slice(0, 4).map((p) => (
-                  <div key={p.id} className="flex justify-between rounded-lg border border-orange-200 bg-orange-50 p-3">
-                    <p className="text-sm font-bold text-orange-900">{p.name}</p>
-                    <p className="text-xs text-orange-700">{t("desktop.dashboard.expires")} {p.expiryDate}</p>
+                  <div key={`${p.product.id}-${p.batch?.id ?? "product"}`} className="flex justify-between rounded-lg border border-orange-200 bg-orange-50 p-3">
+                    <p className="text-sm font-bold text-orange-900">{p.product.name}</p>
+                    <p className="text-xs text-orange-700">{t("desktop.dashboard.expires")} {p.batch?.expiryDate ?? p.product.expiryDate ?? ""}</p>
                   </div>
                 ))}
               </div>

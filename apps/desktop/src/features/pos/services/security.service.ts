@@ -33,6 +33,7 @@ export type StaffUser = {
   role: UserRole
   active: boolean
   createdAt: string
+  pinChanged: boolean
 }
 
 export type SecuritySession = {
@@ -121,6 +122,7 @@ const initialUsers: StaffUser[] = [
     role: "Admin",
     active: true,
     createdAt: new Date().toISOString(),
+    pinChanged: false,
   },
   {
     id: "user-manager",
@@ -130,6 +132,7 @@ const initialUsers: StaffUser[] = [
     role: "Manager",
     active: true,
     createdAt: new Date().toISOString(),
+    pinChanged: false,
   },
   {
     id: "user-cashier",
@@ -139,6 +142,7 @@ const initialUsers: StaffUser[] = [
     role: "Cashier",
     active: true,
     createdAt: new Date().toISOString(),
+    pinChanged: false,
   },
 ]
 
@@ -317,6 +321,7 @@ export async function unlockWithPin(pin: string) {
 
   if (user.pin === cleanPin) {
     user.pin = pinHash
+    user.pinChanged = true
     writeCollection(USERS_KEY, users)
   }
 
@@ -423,11 +428,16 @@ export async function createUser(input: {
   return user
 }
 
+export function mustChangePin(user: StaffUser): boolean {
+  return !user.pinChanged
+}
+
 export async function updateUser(userId: string, patch: Partial<StaffUser>) {
   const users = getUsers()
   const resolvedPatch = { ...patch }
   if (resolvedPatch.pin) {
     resolvedPatch.pin = await hashPin(resolvedPatch.pin)
+    resolvedPatch.pinChanged = true
   }
   const nextUsers = users.map((user) =>
     user.id === userId
