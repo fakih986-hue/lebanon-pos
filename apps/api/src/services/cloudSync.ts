@@ -229,6 +229,30 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<v
     }
   }
 
+  // Ensure tenant row exists locally — all other records have a FK to it.
+  // Fetch the real name + subdomain from Railway so login works correctly.
+  await run("tenant", async () => {
+    const existing = await prisma.tenant.findUnique({ where: { id: tenantId } })
+    if (!existing) {
+      let name      = "Synced Store"
+      let subdomain = tenantId.slice(0, 8)
+
+      try {
+        const infoRes = await fetchCloud("/api/setup/tenant-info")
+        if (infoRes.ok) {
+          const info = await infoRes.json() as { name: string; subdomain: string }
+          name      = info.name
+          subdomain = info.subdomain
+        }
+      } catch { /* use placeholders if endpoint unreachable */ }
+
+      await prisma.tenant.create({
+        data: { id: tenantId, name, subdomain },
+      })
+      console.log(`[cloud-sync] Created local tenant: "${name}" (subdomain: ${subdomain})`)
+    }
+  })
+
   // Settings (single record, no id field)
   for (const s of data.settings ?? []) {
     await run("settings", () =>

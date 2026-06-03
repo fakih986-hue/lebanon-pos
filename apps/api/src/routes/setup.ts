@@ -92,4 +92,35 @@ router.post("/pull-from-cloud", (req: Req, res: Response) => {
   }
 })
 
+// ─── GET /api/setup/tenant-info ──────────────────────────────────────────────
+// Requires X-Cloud-Key + X-Tenant-Id.
+// Returns the tenant name and subdomain — used by the cloud sync bridge on
+// local servers to create the correct tenant row in the local database.
+
+router.get("/tenant-info", async (req: Req, res: Response) => {
+  if (!requireCloudKey(req, res)) return
+
+  const tenantId = req.headers["x-tenant-id"] as string | undefined
+  if (!tenantId) {
+    res.status(400).json({ error: "X-Tenant-Id header required" })
+    return
+  }
+
+  try {
+    const tenant = await prisma.tenant.findUnique({
+      where:  { id: tenantId },
+      select: { id: true, name: true, subdomain: true },
+    })
+
+    if (!tenant) {
+      res.status(404).json({ error: "Tenant not found" })
+      return
+    }
+
+    res.json(tenant)
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message })
+  }
+})
+
 export default router
