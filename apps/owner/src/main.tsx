@@ -224,6 +224,7 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                 <div>
                   <p className="font-semibold text-sm text-white">{t.name}</p>
                   <p className="text-xs font-mono text-slate-500">/{t.subdomain}</p>
+                  <p className="text-[10px] font-mono text-slate-600 cursor-default select-all" title="Triple-click to copy Tenant ID">{t.id}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
