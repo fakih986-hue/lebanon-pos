@@ -11,6 +11,7 @@ import setupRoutes from "./routes/setup.js"
 import dashboardRoutes from "./routes/dashboard.js"
 import deliveryRoutes from "./routes/delivery.js"
 import imageRoutes from "./routes/image.js"
+import adminRoutes from "./routes/admin.js"
 import { errorHandler } from "./middleware/errorHandler.js"
 import {
   getCorsOptions,
@@ -40,6 +41,7 @@ app.use("/api/setup", setupRoutes)
 app.use("/api/dashboard", dashboardRoutes)
 app.use("/api/delivery", deliveryRoutes)
 app.use("/api/images", imageRoutes)
+app.use("/api/admin", adminRoutes)
 
 app.get("/api/health", (_req: IncomingMessage, res: ServerResponse) => {
   json(res, { status: "ok", timestamp: new Date().toISOString() })
