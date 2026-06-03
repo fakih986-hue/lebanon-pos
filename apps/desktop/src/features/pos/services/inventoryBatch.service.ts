@@ -2,8 +2,10 @@ import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 
-const BATCHES_KEY = "lebanonpos.inventory-batches.v1"
+const BATCHES_KEY  = "lebanonpos.inventory-batches.v1"
 const BATCHES_EVENT = "lebanonpos-inventory-batches-changed"
+const PRODUCTS_KEY  = "lebanonpos.products.v1"
+const PRODUCTS_EVENT = "lebanonpos-products-changed"
 
 export type BatchAllocation = {
   batchId: string
@@ -149,6 +151,31 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[]) {
   }
 
   writeBatches([...batches, ...getInventoryBatches()])
+
+  // Optimistic local stock update — so products show new quantities immediately
+  // without waiting for the next background pull from the server (up to 120s).
+  // The server is still the source of truth; a pull will reconcile if needed.
+  if (canUseStorage()) {
+    try {
+      const raw = window.localStorage.getItem(PRODUCTS_KEY)
+      if (raw) {
+        const products: Array<Record<string, unknown>> = JSON.parse(raw)
+        const stockById = new Map<number, number>()
+        for (const b of batches) {
+          stockById.set(b.productId, (stockById.get(b.productId) ?? 0) + b.initialQuantity)
+        }
+        const updated = products.map((p) => {
+          const add = stockById.get(p.id as number)
+          return add ? { ...p, stock: ((p.stock as number) ?? 0) + add } : p
+        })
+        writeLocalWithIndexedDB(PRODUCTS_KEY, updated)
+        window.dispatchEvent(new Event(PRODUCTS_EVENT))
+      }
+    } catch {
+      // Non-critical — server pull will correct stock on next cycle
+    }
+  }
+
   enqueueSyncOperation({
     entity: "inventory",
     action: "receive",
