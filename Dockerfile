@@ -38,7 +38,7 @@ COPY --from=builder /app/apps/api/src/generated ./dist/generated
 COPY --from=builder /app/apps/api/prisma ./prisma
 
 # Copy built SPAs
-COPY --from=builder /app/apps/admin/dist ./public/admin
+COPY --from=builder /app/apps/admin/dist ./public/owner
 COPY --from=builder /app/apps/driver/dist ./public/driver
 COPY --from=builder /app/apps/ordering/dist ./public/order
 

@@ -19,7 +19,7 @@ const ADMIN_TYPE_KEY = "lebanonpos.admin.type"
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem(TOKEN_KEY)
-  if (!token) return <Navigate to="/admin/login" replace />
+  if (!token) return <Navigate to="/owner/login" replace />
   return <>{children}</>
 }
 
@@ -37,19 +37,19 @@ createRoot(document.getElementById("root")!).render(
         <ThemeProvider>
           <ErrorBoundary>
             <Routes>
-              <Route path="/admin/login" element={<LoginPage />} />
-              <Route path="/admin" element={<RequireAuth><Layout /></RequireAuth>}>
-                <Route index element={<Navigate to="/admin/tenants" replace />} />
-                <Route path="tenants" element={<TenantsPage />} />
-                <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="delivery" element={<DeliveryPage />} />
-                <Route path="customers" element={<CustomersPage />} />
-                <Route path="products" element={<ProductsPage />} />
-                <Route path="drivers" element={<DriversPage />} />
-                <Route path="staff" element={<StaffPage />} />
-                <Route path="sales" element={<SalesPage />} />
-              </Route>
-              <Route path="*" element={<Navigate to="/admin" replace />} />
+            <Route path="/owner/login" element={<LoginPage />} />
+            <Route path="/owner" element={<RequireAuth><Layout /></RequireAuth>}>
+              <Route index element={<Navigate to="/owner/tenants" replace />} />
+              <Route path="tenants" element={<TenantsPage />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="delivery" element={<DeliveryPage />} />
+              <Route path="customers" element={<CustomersPage />} />
+              <Route path="products" element={<ProductsPage />} />
+              <Route path="drivers" element={<DriversPage />} />
+              <Route path="staff" element={<StaffPage />} />
+              <Route path="sales" element={<SalesPage />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/owner" replace />} />
             </Routes>
           </ErrorBoundary>
         </ThemeProvider>

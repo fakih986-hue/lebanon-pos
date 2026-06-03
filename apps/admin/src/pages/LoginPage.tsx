@@ -26,7 +26,7 @@ export function LoginPage() {
       })
       setToken(res.token)
       setAdminType("master")
-      navigate("/admin/tenants")
+      navigate("/owner/tenants")
     } catch (err) {
       setError((err as Error).message)
     }
@@ -45,7 +45,7 @@ export function LoginPage() {
       setToken(res.token)
       setAdminType("tenant")
       localStorage.setItem("lebanonpos.admin.tenant", res.user.tenantName)
-      navigate("/admin/dashboard")
+      navigate("/owner/dashboard")
     } catch (err) {
       setError((err as Error).message)
     }
