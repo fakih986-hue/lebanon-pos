@@ -1,4 +1,5 @@
 import { Router } from "express"
+import type { Response } from "express"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 import prisma from "../lib/prisma.js"
