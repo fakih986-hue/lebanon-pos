@@ -19,7 +19,7 @@ import {
   userCan,
   type Permission,
 } from "../features/pos/services/security.service"
-import { setupBackgroundSync, stopBackgroundSync } from "../features/pos/services/sync.service"
+import { setupBackgroundSync, stopBackgroundSync, isSuspended, subscribeSuspended } from "../features/pos/services/sync.service"
 import LoginScreen from "../pages/auth/LoginScreen"
 import AccountingPage from "../pages/accounting/AccountingPage"
 import CustomersPage from "../pages/customers/CustomersPage"
@@ -49,6 +49,14 @@ function Shell({ children }: { children: ReactNode }) {
     () => subscribeSecurity(() => setSecurityVersion((version) => version + 1)),
     []
   )
+
+  const [suspended, setSuspended] = useState(isSuspended())
+  useEffect(() => {
+    const unsub = subscribeSuspended(setSuspended)
+    const onStorage = (e: StorageEvent) => { if (e.key === "lebanonpos.suspended.v1") setSuspended(e.newValue === "true") }
+    window.addEventListener("storage", onStorage)
+    return () => { unsub(); window.removeEventListener("storage", onStorage) }
+  }, [])
 
   useEffect(() => {
     if (!isSessionUnlocked()) return
@@ -83,6 +91,17 @@ function Shell({ children }: { children: ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col pb-20">
         <Topbar />
+          {suspended && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}>
+              <div className="bg-slate-900 border border-rose-800/50 rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
+                <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">Store Suspended</h2>
+                <p className="text-sm text-slate-400">This store has been suspended by the platform owner. Please contact support for more information.</p>
+              </div>
+            </div>
+          )}
           <ErrorBoundary>
             <AnimatePresence mode="wait">
               <motion.div

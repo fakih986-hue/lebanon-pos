@@ -3828,6 +3828,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     subdomain: string | null
+    suspended: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -3836,6 +3837,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     subdomain: string | null
+    suspended: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -3844,6 +3846,7 @@ export namespace Prisma {
     id: number
     name: number
     subdomain: number
+    suspended: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -3854,6 +3857,7 @@ export namespace Prisma {
     id?: true
     name?: true
     subdomain?: true
+    suspended?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -3862,6 +3866,7 @@ export namespace Prisma {
     id?: true
     name?: true
     subdomain?: true
+    suspended?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -3870,6 +3875,7 @@ export namespace Prisma {
     id?: true
     name?: true
     subdomain?: true
+    suspended?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -3951,6 +3957,7 @@ export namespace Prisma {
     id: string
     name: string
     subdomain: string
+    suspended: boolean
     createdAt: Date
     updatedAt: Date
     _count: TenantCountAggregateOutputType | null
@@ -3976,6 +3983,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     subdomain?: boolean
+    suspended?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     users?: boolean | Tenant$usersArgs<ExtArgs>
@@ -4005,6 +4013,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     subdomain?: boolean
+    suspended?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["tenant"]>
@@ -4013,6 +4022,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     subdomain?: boolean
+    suspended?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["tenant"]>
@@ -4021,11 +4031,12 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     subdomain?: boolean
+    suspended?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
+  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
   export type TenantInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     users?: boolean | Tenant$usersArgs<ExtArgs>
     products?: boolean | Tenant$productsArgs<ExtArgs>
@@ -4080,6 +4091,7 @@ export namespace Prisma {
       id: string
       name: string
       subdomain: string
+      suspended: boolean
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["tenant"]>
@@ -4528,6 +4540,7 @@ export namespace Prisma {
     readonly id: FieldRef<"Tenant", 'String'>
     readonly name: FieldRef<"Tenant", 'String'>
     readonly subdomain: FieldRef<"Tenant", 'String'>
+    readonly suspended: FieldRef<"Tenant", 'Boolean'>
     readonly createdAt: FieldRef<"Tenant", 'DateTime'>
     readonly updatedAt: FieldRef<"Tenant", 'DateTime'>
   }
@@ -36334,6 +36347,7 @@ export namespace Prisma {
     id: 'id',
     name: 'name',
     subdomain: 'subdomain',
+    suspended: 'suspended',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -36879,6 +36893,13 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Boolean'
+   */
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+  /**
    * Reference to a field of type 'DateTime'
    */
   export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -36903,13 +36924,6 @@ export namespace Prisma {
    * Reference to a field of type 'UserRole[]'
    */
   export type ListEnumUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserRole[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Boolean'
-   */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -37091,6 +37105,7 @@ export namespace Prisma {
     id?: StringFilter<"Tenant"> | string
     name?: StringFilter<"Tenant"> | string
     subdomain?: StringFilter<"Tenant"> | string
+    suspended?: BoolFilter<"Tenant"> | boolean
     createdAt?: DateTimeFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeFilter<"Tenant"> | Date | string
     users?: StaffUserListRelationFilter
@@ -37119,6 +37134,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     subdomain?: SortOrder
+    suspended?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     users?: StaffUserOrderByRelationAggregateInput
@@ -37150,6 +37166,7 @@ export namespace Prisma {
     OR?: TenantWhereInput[]
     NOT?: TenantWhereInput | TenantWhereInput[]
     name?: StringFilter<"Tenant"> | string
+    suspended?: BoolFilter<"Tenant"> | boolean
     createdAt?: DateTimeFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeFilter<"Tenant"> | Date | string
     users?: StaffUserListRelationFilter
@@ -37178,6 +37195,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     subdomain?: SortOrder
+    suspended?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: TenantCountOrderByAggregateInput
@@ -37192,6 +37210,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Tenant"> | string
     name?: StringWithAggregatesFilter<"Tenant"> | string
     subdomain?: StringWithAggregatesFilter<"Tenant"> | string
+    suspended?: BoolWithAggregatesFilter<"Tenant"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Tenant"> | Date | string
   }
@@ -39746,6 +39765,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -39774,6 +39794,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -39802,6 +39823,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -39830,6 +39852,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -39858,6 +39881,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -39866,6 +39890,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -39874,6 +39899,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -42744,6 +42770,11 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -42954,6 +42985,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     subdomain?: SortOrder
+    suspended?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -42962,6 +42994,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     subdomain?: SortOrder
+    suspended?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -42970,6 +43003,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     subdomain?: SortOrder
+    suspended?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -42992,6 +43026,14 @@ export namespace Prisma {
     _max?: NestedStringFilter<$PrismaModel>
   }
 
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
+  }
+
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -43011,11 +43053,6 @@ export namespace Prisma {
     in?: $Enums.UserRole[] | ListEnumUserRoleFieldRefInput<$PrismaModel>
     notIn?: $Enums.UserRole[] | ListEnumUserRoleFieldRefInput<$PrismaModel>
     not?: NestedEnumUserRoleFilter<$PrismaModel> | $Enums.UserRole
-  }
-
-  export type BoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
   export type TenantScalarRelationFilter = {
@@ -43067,14 +43104,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumUserRoleFilter<$PrismaModel>
     _max?: NestedEnumUserRoleFilter<$PrismaModel>
-  }
-
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type FloatFilter<$PrismaModel = never> = {
@@ -45389,6 +45418,10 @@ export namespace Prisma {
     set?: string
   }
 
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
+  }
+
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
   }
@@ -46009,10 +46042,6 @@ export namespace Prisma {
 
   export type EnumUserRoleFieldUpdateOperationsInput = {
     set?: $Enums.UserRole
-  }
-
-  export type BoolFieldUpdateOperationsInput = {
-    set?: boolean
   }
 
   export type TenantUpdateOneRequiredWithoutUsersNestedInput = {
@@ -47454,6 +47483,11 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
+  }
+
   export type NestedDateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -47493,6 +47527,14 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
+  }
+
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -47514,11 +47556,6 @@ export namespace Prisma {
     not?: NestedEnumUserRoleFilter<$PrismaModel> | $Enums.UserRole
   }
 
-  export type NestedBoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
   export type NestedEnumUserRoleWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.UserRole | EnumUserRoleFieldRefInput<$PrismaModel>
     in?: $Enums.UserRole[] | ListEnumUserRoleFieldRefInput<$PrismaModel>
@@ -47527,14 +47564,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumUserRoleFilter<$PrismaModel>
     _max?: NestedEnumUserRoleFilter<$PrismaModel>
-  }
-
-  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedFloatFilter<$PrismaModel = never> = {
@@ -49473,6 +49502,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     products?: ProductCreateNestedManyWithoutTenantInput
@@ -49500,6 +49530,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     products?: ProductUncheckedCreateNestedManyWithoutTenantInput
@@ -49759,6 +49790,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: ProductUpdateManyWithoutTenantNestedInput
@@ -49786,6 +49818,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: ProductUncheckedUpdateManyWithoutTenantNestedInput
@@ -49877,6 +49910,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -49904,6 +49938,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -49947,6 +49982,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -49974,6 +50010,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -50001,6 +50038,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -50028,6 +50066,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -50318,6 +50357,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -50345,6 +50385,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -50518,6 +50559,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -50545,6 +50587,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -50697,6 +50740,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -50724,6 +50768,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -51051,6 +51096,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -51078,6 +51124,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -51204,6 +51251,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -51231,6 +51279,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -51434,6 +51483,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -51461,6 +51511,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -51634,6 +51685,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -51661,6 +51713,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -51736,6 +51789,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -51763,6 +51817,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -51839,6 +51894,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -51866,6 +51922,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -51932,6 +51989,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -51959,6 +52017,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -52035,6 +52094,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -52062,6 +52122,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -52128,6 +52189,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -52155,6 +52217,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -52330,6 +52393,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -52357,6 +52421,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -52432,6 +52497,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -52459,6 +52525,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -52535,6 +52602,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -52562,6 +52630,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -52628,6 +52697,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -52655,6 +52725,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -52731,6 +52802,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -52758,6 +52830,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -52824,6 +52897,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -52851,6 +52925,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -52964,6 +53039,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -52991,6 +53067,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -53100,6 +53177,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -53127,6 +53205,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -53170,6 +53249,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -53197,6 +53277,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -53224,6 +53305,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -53251,6 +53333,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -53329,6 +53412,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -53356,6 +53440,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -53424,6 +53509,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -53451,6 +53537,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -53587,6 +53674,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -53614,6 +53702,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -53746,6 +53835,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -53773,6 +53863,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -53876,6 +53967,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -53903,6 +53995,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -53996,6 +54089,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -54023,6 +54117,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -54100,6 +54195,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -54127,6 +54223,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -54356,6 +54453,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -54383,6 +54481,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -54524,6 +54623,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -54551,6 +54651,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -54824,6 +54925,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -54851,6 +54953,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -54894,6 +54997,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -54921,6 +55025,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -54948,6 +55053,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -54975,6 +55081,7 @@ export namespace Prisma {
     id?: string
     name: string
     subdomain: string
+    suspended?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -55018,6 +55125,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -55045,6 +55153,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput

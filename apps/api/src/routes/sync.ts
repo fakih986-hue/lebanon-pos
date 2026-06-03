@@ -48,6 +48,20 @@ const syncPushSchema = z.object({
 
 type SyncOperationInput = z.infer<typeof syncOperationSchema>
 
+router.get("/status", requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: req.auth!.tenantId },
+      select: { name: true, subdomain: true, suspended: true },
+    })
+    if (!tenant) { res.status(404).json({ error: "Tenant not found" }); return }
+    res.json(tenant)
+  } catch (err) {
+    console.error("Tenant status error:", err)
+    res.status(500).json({ error: "Failed to get tenant status" })
+  }
+})
+
 router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Response) => {
   const parsed = syncPushSchema.safeParse(req.body)
   const tenantId = req.auth!.tenantId

@@ -7,6 +7,8 @@ const LAST_SYNC_KEY  = "lebanonpos.sync-last.v1"
 const SYNC_EVENT     = "lebanonpos-sync-changed"
 const API_URL_KEY    = "lebanonpos.api-url"
 const AUTH_TOKEN_KEY = "lebanonpos.auth-token"
+const SUSPENDED_KEY  = "lebanonpos.suspended.v1"
+const SUSPEND_EVENT  = "lebanonpos-suspended-changed"
 
 /** Operations that exceed this many attempts are considered permanently dead
  *  and stop counting as "pending" in the badge. */
@@ -88,11 +90,53 @@ export function clearStoreData() {
   }
   localStorage.removeItem(SYNC_QUEUE_KEY)
   localStorage.removeItem(LAST_SYNC_KEY)
+  localStorage.removeItem(SUSPENDED_KEY)
   localStorage.removeItem("lebanonpos.session.v1")
   localStorage.removeItem("lebanonpos.current-user.v1")
   localStorage.removeItem("lebanonpos.held-sales.v1")
   // Also clear IndexedDB to prevent stale data accumulation across stores
   clearIndexedDB().catch(() => {})
+}
+
+// ── Suspension enforcement ──────────────────────────────────────────
+export function isSuspended(): boolean {
+  return localStorage.getItem(SUSPENDED_KEY) === "true"
+}
+
+function setSuspended(value: boolean) {
+  const prev = localStorage.getItem(SUSPENDED_KEY)
+  const next = value ? "true" : "false"
+  if (prev !== next) {
+    localStorage.setItem(SUSPENDED_KEY, next)
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(SUSPEND_EVENT))
+  }
+}
+
+export async function checkTenantStatus(): Promise<boolean> {
+  const apiUrl = getApiUrl()
+  const token = getAuthToken()
+  if (!apiUrl || !token) return isSuspended()
+  try {
+    const res = await fetch(`${apiUrl}/api/sync/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) {
+      if (res.status === 401) return isSuspended()
+      throw new Error(`Status check failed: ${res.status}`)
+    }
+    const data = await res.json()
+    setSuspended(data.suspended === true)
+    return data.suspended === true
+  } catch {
+    return isSuspended()
+  }
+}
+
+export function subscribeSuspended(callback: (suspended: boolean) => void) {
+  if (typeof window === "undefined") return () => undefined
+  const onChange = () => callback(isSuspended())
+  window.addEventListener(SUSPEND_EVENT, onChange)
+  return () => window.removeEventListener(SUSPEND_EVENT, onChange)
 }
 
 async function clearIndexedDB() {
@@ -248,6 +292,8 @@ export function enqueueSyncOperation(input: EnqueueSyncInput) {
 }
 
 export async function flushSyncQueue() {
+  if (isSuspended()) return { synced: 0, skipped: 0 }
+
   const queue = readQueue()
   const apiUrl = getApiUrl()
   const token = getAuthToken()
@@ -340,6 +386,8 @@ export async function flushSyncQueue() {
  * pull, an empty array is authoritative and replaces local.
  */
 export async function pullFromServer(full = false) {
+  if (isSuspended()) return
+
   const apiUrl = getApiUrl()
   const token = getAuthToken()
   if (!apiUrl || !token) return
@@ -452,21 +500,29 @@ export function subscribeSync(callback: () => void) {
 
 const BACKGROUND_SYNC_MS = 30_000
 const BACKGROUND_PULL_MS = 120_000
+const BACKGROUND_STATUS_MS = 300_000
 let bgSyncInterval: ReturnType<typeof setInterval> | undefined
 let bgPullInterval: ReturnType<typeof setInterval> | undefined
+let bgStatusInterval: ReturnType<typeof setInterval> | undefined
 
 export function setupBackgroundSync() {
   if (typeof window === "undefined") return
   stopBackgroundSync()
+  // Immediately check tenant status on startup
+  checkTenantStatus().catch(() => {})
+  bgStatusInterval = window.setInterval(() => {
+    if (isBrowserOnline() && getApiUrl() && getAuthToken()) {
+      checkTenantStatus().catch(() => {})
+    }
+  }, BACKGROUND_STATUS_MS)
   bgSyncInterval = window.setInterval(() => {
     if (isBrowserOnline() && getApiUrl() && getAuthToken()) {
-      flushSyncQueue().catch(() => {})
+      if (!isSuspended()) flushSyncQueue().catch(() => {})
     }
   }, BACKGROUND_SYNC_MS)
   bgPullInterval = window.setInterval(() => {
     if (isBrowserOnline() && getApiUrl() && getAuthToken()) {
-      // Always flush first, then pull — regardless of pending state
-      flushSyncQueue().then(() => pullFromServer()).catch(() => {})
+      if (!isSuspended()) flushSyncQueue().then(() => pullFromServer()).catch(() => {})
     }
   }, BACKGROUND_PULL_MS)
 }
@@ -474,5 +530,6 @@ export function setupBackgroundSync() {
 export function stopBackgroundSync() {
   if (bgSyncInterval) { clearInterval(bgSyncInterval); bgSyncInterval = undefined }
   if (bgPullInterval) { clearInterval(bgPullInterval); bgPullInterval = undefined }
+  if (bgStatusInterval) { clearInterval(bgStatusInterval); bgStatusInterval = undefined }
   clearTimeout(autoFlushTimer)
 }

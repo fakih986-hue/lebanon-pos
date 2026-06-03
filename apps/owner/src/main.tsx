@@ -71,7 +71,7 @@ function LoginPage({ onLogin }: { onLogin: () => void }) {
   )
 }
 
-type Tenant = { id: string; name: string; subdomain: string; createdAt: string; _count: { users: number; products: number; sales: number } }
+type Tenant = { id: string; name: string; subdomain: string; suspended: boolean; createdAt: string; _count: { users: number; products: number; sales: number } }
 
 function TenantsPage({ onLogout }: { onLogout: () => void }) {
   const [tenants, setTenants] = useState<Tenant[]>([])
@@ -82,6 +82,10 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
   const [creating, setCreating] = useState(false)
   const [createdResult, setCreatedResult] = useState<{ subdomain: string; pin: string } | null>(null)
   const [formError, setFormError] = useState("")
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
+  const [editForm, setEditForm] = useState({ name: "", subdomain: "", suspended: false })
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState("")
 
   useEffect(() => { loadTenants() }, [])
 
@@ -105,6 +109,28 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
   }
 
   function handleLogout() { clearToken(); onLogout() }
+
+  function openEdit(tenant: Tenant) {
+    setEditingTenant(tenant)
+    setEditForm({ name: tenant.name, subdomain: tenant.subdomain, suspended: tenant.suspended })
+    setSaveError("")
+  }
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingTenant) return
+    setSaveError("")
+    setSaving(true)
+    try {
+      const updated = await api<Tenant>(`/api/admin/tenants/${editingTenant.id}`, {
+        method: "PUT",
+        body: JSON.stringify(editForm),
+      })
+      setTenants(prev => prev.map(t => t.id === updated.id ? { ...t, ...updated } : t))
+      setEditingTenant(null)
+    } catch (err) { setSaveError((err as Error).message) }
+    setSaving(false)
+  }
 
   if (createdResult) {
     return (
@@ -192,18 +218,22 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
       ) : (
         <div className="space-y-3">
           {tenants.map(t => (
-            <div key={t.id} className="bg-slate-900 border border-slate-700 rounded-2xl p-5 flex items-center justify-between">
+            <div key={t.id} className={"rounded-2xl p-5 flex items-center justify-between border " + (t.suspended ? "bg-rose-950/30 border-rose-800/30" : "bg-slate-900 border-slate-700")}>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center text-white text-xs font-bold">{t.name.charAt(0).toUpperCase()}</div>
+                <div className={"w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold " + (t.suspended ? "bg-rose-600" : "bg-gradient-to-br from-indigo-400 to-violet-600")}>{t.name.charAt(0).toUpperCase()}</div>
                 <div>
                   <p className="font-semibold text-sm text-white">{t.name}</p>
                   <p className="text-xs font-mono text-slate-500">/{t.subdomain}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-xs text-slate-500">
-                <span>{t._count.users} staff</span>
-                <span>{t._count.products} products</span>
-                <span>{t._count.sales} sales</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 text-xs text-slate-500">
+                  <span>{t._count.users} staff</span>
+                  <span>{t._count.products} products</span>
+                  <span>{t._count.sales} sales</span>
+                </div>
+                {t.suspended && <span className="text-[10px] uppercase tracking-wider font-bold text-rose-400 bg-rose-500/10 px-2 py-1 rounded-lg">Suspended</span>}
+                <button onClick={() => openEdit(t)} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700">Edit</button>
               </div>
             </div>
           ))}
@@ -213,6 +243,40 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
       <div className="flex justify-center mt-8">
         <button onClick={handleLogout} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Sign out</button>
       </div>
+
+      {editingTenant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEditingTenant(null)}>
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h2 className="font-semibold text-white mb-4">Edit Store</h2>
+            {saveError && <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl">{saveError}</div>}
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block text-slate-400">Store Name</label>
+                <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} required className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block text-slate-400">Subdomain</label>
+                <input value={editForm.subdomain} onChange={e => setEditForm({ ...editForm, subdomain: e.target.value.replace(/[^a-z0-9-]/g, "") })} required pattern="[a-z0-9-]{3,}" className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+              </div>
+              <div className="flex items-center gap-3 pt-2">
+                <div className="relative inline-flex items-center cursor-pointer" onClick={() => setEditForm({ ...editForm, suspended: !editForm.suspended })}>
+                  <div className={"w-11 h-6 rounded-full transition-colors duration-200 " + (editForm.suspended ? "bg-rose-600" : "bg-slate-700")}>
+                    <div className={"w-4 h-4 rounded-full bg-white transition-transform duration-200 mt-1 " + (editForm.suspended ? "translate-x-6" : "translate-x-1")} />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">Suspended</p>
+                  <p className="text-xs text-slate-500">Block this store from syncing to the platform</p>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setEditingTenant(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-sm border border-slate-700 hover:bg-slate-700 transition-colors">Cancel</button>
+                <button type="submit" disabled={saving} className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm disabled:opacity-50">{saving ? "Saving…" : "Save Changes"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

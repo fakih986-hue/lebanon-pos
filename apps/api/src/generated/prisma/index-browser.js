@@ -125,6 +125,7 @@ exports.Prisma.TenantScalarFieldEnum = {
   id: 'id',
   name: 'name',
   subdomain: 'subdomain',
+  suspended: 'suspended',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
