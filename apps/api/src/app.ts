@@ -80,6 +80,7 @@ app.use(driverRoutes, (_req: IncomingMessage, res: ServerResponse) => {
 })
 
 // SPA routes — match only paths without file extensions (assets are served by express.static)
+app.get(/^\/admin(?:\/[^.]*)?$/, spaHandler("admin"))
 app.get(/^\/owner(?:\/[^.]*)?$/, spaHandler("owner"))
 app.get(/^\/driver(?:\/[^.]*)?$/, spaHandler("driver"))
 app.get(/^\/order(?:\/[^.]*)?$/, spaHandler("order"))

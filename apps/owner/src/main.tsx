@@ -1,0 +1,226 @@
+import { StrictMode, useState, useEffect } from "react"
+import { createRoot } from "react-dom/client"
+import "./index.css"
+
+const BASE = ""
+const TOKEN_KEY = "lebanonpos.owner.token"
+
+function getToken() { return localStorage.getItem(TOKEN_KEY) }
+function setToken(t: string) { localStorage.setItem(TOKEN_KEY, t) }
+function clearToken() { localStorage.removeItem(TOKEN_KEY) }
+
+async function api<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getToken()
+  const res = await fetch(`${BASE}${path}`, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options?.headers },
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }))
+    throw new Error(body.error || `Request failed: ${res.status}`)
+  }
+  return res.json()
+}
+
+function LoginPage({ onLogin }: { onLogin: () => void }) {
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+    try {
+      const res = await api<{ token: string }>("/api/admin/login", { method: "POST", body: JSON.stringify({ password }) })
+      setToken(res.token)
+      onLogin()
+    } catch (err) {
+      setError((err as Error).message)
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div className="min-h-dvh flex items-center justify-center relative overflow-hidden bg-slate-950">
+      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.1) 0%, transparent 50%)" }} />
+      <div className="relative z-10 w-full max-w-md mx-4">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-400 to-violet-600 text-white text-2xl font-bold shadow-xl shadow-indigo-600/20 mb-5">L</div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Owner Portal</h1>
+          <p className="text-sm text-indigo-300/70 mt-1">Lebanon POS — manage all stores</p>
+        </div>
+        <form onSubmit={handleSubmit} className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.06] rounded-2xl p-8 shadow-2xl">
+          {error && (
+            <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl flex items-center gap-2">{error}</div>
+          )}
+          <div className="space-y-5">
+            <div>
+              <label className="text-xs font-semibold text-indigo-200/80 uppercase tracking-wider">Master Password</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} required autoFocus
+                className="w-full mt-1.5 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-indigo-300/30 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all duration-200" />
+            </div>
+            <button type="submit" disabled={loading}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed">
+              {loading ? "Signing in…" : "Sign in"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+type Tenant = { id: string; name: string; subdomain: string; createdAt: string; _count: { users: number; products: number; sales: number } }
+
+function TenantsPage({ onLogout }: { onLogout: () => void }) {
+  const [tenants, setTenants] = useState<Tenant[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [showCreate, setShowCreate] = useState(false)
+  const [form, setForm] = useState({ storeName: "", subdomain: "", adminName: "Admin", adminMobile: "", adminPin: "0000" })
+  const [creating, setCreating] = useState(false)
+  const [createdResult, setCreatedResult] = useState<{ subdomain: string; pin: string } | null>(null)
+  const [formError, setFormError] = useState("")
+
+  useEffect(() => { loadTenants() }, [])
+
+  async function loadTenants() {
+    setLoading(true)
+    try { setTenants(await api<Tenant[]>("/api/admin/tenants")) } catch (err) { setError((err as Error).message) }
+    setLoading(false)
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    setFormError("")
+    setCreating(true)
+    try {
+      const res = await api<{ credentials: { subdomain: string; pin: string } }>("/api/admin/tenants", { method: "POST", body: JSON.stringify(form) })
+      setCreatedResult(res.credentials)
+      setForm({ storeName: "", subdomain: "", adminName: "Admin", adminMobile: "", adminPin: "0000" })
+      loadTenants()
+    } catch (err) { setFormError((err as Error).message) }
+    setCreating(false)
+  }
+
+  function handleLogout() { clearToken(); onLogout() }
+
+  if (createdResult) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4">
+        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </div>
+          <h2 className="text-xl font-bold mb-2 text-white">Store Created!</h2>
+          <p className="text-sm text-slate-400 mb-6">Give these credentials to the customer:</p>
+          <div className="max-w-xs mx-auto space-y-3 mb-6">
+            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Server URL</p>
+              <p className="text-sm font-bold font-mono text-white">https://lebanon-pos-production.up.railway.app</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Subdomain</p>
+              <p className="text-lg font-bold font-mono tracking-wider text-white">{createdResult.subdomain}</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Admin PIN</p>
+              <p className="text-lg font-bold font-mono tracking-widest text-white">{createdResult.pin}</p>
+            </div>
+          </div>
+          <button onClick={() => setCreatedResult(null)} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm">Create Another Store</button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto py-8 px-4">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Stores</h1>
+          <p className="text-sm text-slate-400 mt-1">Manage all tenant stores</p>
+        </div>
+        <button onClick={() => setShowCreate(!showCreate)} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm">
+          {showCreate ? "Cancel" : "+ New Store"}
+        </button>
+      </div>
+
+      {showCreate && (
+        <form onSubmit={handleCreate} className="bg-slate-900 border border-slate-700 rounded-2xl p-6 mb-8">
+          <h2 className="font-semibold text-white mb-4">Create New Store</h2>
+          {formError && <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl">{formError}</div>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-semibold mb-1.5 block text-slate-400">Store Name</label>
+              <input value={form.storeName} onChange={e => setForm({ ...form, storeName: e.target.value })} required placeholder="e.g. Mini Market" className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1.5 block text-slate-400">Subdomain</label>
+              <input value={form.subdomain} onChange={e => setForm({ ...form, subdomain: e.target.value.replace(/[^a-z0-9-]/g, "") })} required placeholder="e.g. fakih" className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" pattern="[a-z0-9-]{3,}" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1.5 block text-slate-400">Admin Name</label>
+              <input value={form.adminName} onChange={e => setForm({ ...form, adminName: e.target.value })} required className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1.5 block text-slate-400">Admin Mobile</label>
+              <input value={form.adminMobile} onChange={e => setForm({ ...form, adminMobile: e.target.value })} required placeholder="e.g. 03xxxxxx" className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold mb-1.5 block text-slate-400">Admin PIN</label>
+              <input value={form.adminPin} onChange={e => setForm({ ...form, adminPin: e.target.value })} required className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+            </div>
+          </div>
+          <div className="flex justify-end mt-6">
+            <button type="submit" disabled={creating} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm disabled:opacity-50">{creating ? "Creating…" : "Create Store"}</button>
+          </div>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-20 rounded-xl bg-slate-800 animate-pulse" />)}</div>
+      ) : error ? (
+        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 text-center">
+          <p className="text-rose-400 font-medium">{error}</p>
+        </div>
+      ) : tenants.length === 0 ? (
+        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 text-center">
+          <p className="text-slate-400 font-semibold">No stores yet</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {tenants.map(t => (
+            <div key={t.id} className="bg-slate-900 border border-slate-700 rounded-2xl p-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center text-white text-xs font-bold">{t.name.charAt(0).toUpperCase()}</div>
+                <div>
+                  <p className="font-semibold text-sm text-white">{t.name}</p>
+                  <p className="text-xs font-mono text-slate-500">/{t.subdomain}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-xs text-slate-500">
+                <span>{t._count.users} staff</span>
+                <span>{t._count.products} products</span>
+                <span>{t._count.sales} sales</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex justify-center mt-8">
+        <button onClick={handleLogout} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Sign out</button>
+      </div>
+    </div>
+  )
+}
+
+function App() {
+  const [authed, setAuthed] = useState(!!getToken())
+  if (!authed) return <LoginPage onLogin={() => setAuthed(true)} />
+  return <TenantsPage onLogout={() => setAuthed(false)} />
+}
+
+createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>)

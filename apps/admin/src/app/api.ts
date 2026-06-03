@@ -23,21 +23,3 @@ export async function api<T>(path: string, options?: RequestInit): Promise<T> {
   }
   return res.json()
 }
-
-export async function adminApi<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = getToken()
-  if (!token) throw new Error("Not authenticated")
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...options?.headers,
-    },
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }))
-    throw new Error(body.error || `Request failed: ${res.status}`)
-  }
-  return res.json()
-}

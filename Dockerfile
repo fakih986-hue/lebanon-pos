@@ -6,6 +6,7 @@ WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/admin/package.json ./apps/admin/
+COPY apps/owner/package.json ./apps/owner/
 COPY apps/driver/package.json ./apps/driver/
 COPY apps/ordering/package.json ./apps/ordering/
 COPY apps/api/package.json ./apps/api/
@@ -19,6 +20,9 @@ COPY apps/ ./apps/
 
 # Build admin SPA
 RUN cd apps/admin && npx vite build
+
+# Build owner SPA
+RUN cd apps/owner && npx vite build
 
 # Build driver SPA
 RUN cd apps/driver && npx vite build
@@ -38,7 +42,8 @@ COPY --from=builder /app/apps/api/src/generated ./dist/generated
 COPY --from=builder /app/apps/api/prisma ./prisma
 
 # Copy built SPAs
-COPY --from=builder /app/apps/admin/dist ./public/owner
+COPY --from=builder /app/apps/admin/dist ./public/admin
+COPY --from=builder /app/apps/owner/dist ./public/owner
 COPY --from=builder /app/apps/driver/dist ./public/driver
 COPY --from=builder /app/apps/ordering/dist ./public/order
 
