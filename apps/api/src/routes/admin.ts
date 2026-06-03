@@ -1,21 +1,15 @@
 import { Router } from "express"
-import type { Response } from "express"
 import { createHash } from "crypto"
 import { z } from "zod"
 import prisma from "../lib/prisma.js"
-import { signToken, requireAuth, type AuthRequest } from "../middleware/auth.js"
-
-function json(res: Response, data: unknown, statusCode = 200) {
-  res.statusCode = statusCode
-  res.setHeader("Content-Type", "application/json")
-  res.end(JSON.stringify(data))
-}
+import { signToken, requireAuth } from "../middleware/auth.js"
+import type { AuthRequest } from "../middleware/auth.js"
 
 const router = Router()
 
-function requireAdmin(req: AuthRequest, res: Response, next: () => void) {
+function requireAdmin(req: AuthRequest, res: any, next: () => void) {
   if (!req.auth || req.auth.userId !== "__admin__") {
-    json(res, { error: "Admin access required" }, 403)
+    res.status(403).json({ error: "Admin access required" })
     return
   }
   next()
@@ -49,7 +43,7 @@ router.post("/login", async (req: any, res: any) => {
   }
 })
 
-router.get("/tenants", requireAuth, requireAdmin, async (req: AuthRequest, res: any) => {
+router.get("/tenants", requireAuth, requireAdmin, async (_req: any, res: any) => {
   try {
     const tenants = await prisma.tenant.findMany({
       orderBy: { createdAt: "desc" },
@@ -83,7 +77,7 @@ router.post("/tenants", requireAuth, requireAdmin, async (req: any, res: any) =>
       return
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       const tenant = await tx.tenant.create({
         data: { name: storeName, subdomain },
       })
