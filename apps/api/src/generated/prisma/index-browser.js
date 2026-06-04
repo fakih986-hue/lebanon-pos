@@ -169,6 +169,7 @@ exports.Prisma.ProductScalarFieldEnum = {
   variantName: 'variantName',
   name: 'name',
   price: 'price',
+  wholesalePrice: 'wholesalePrice',
   cost: 'cost',
   stock: 'stock',
   barcode: 'barcode',
@@ -270,6 +271,7 @@ exports.Prisma.CustomerScalarFieldEnum = {
   mobile: 'mobile',
   pin: 'pin',
   creditLimit: 'creditLimit',
+  isWholesale: 'isWholesale',
   notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

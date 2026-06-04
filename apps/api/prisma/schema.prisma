@@ -146,6 +146,7 @@ model Product {
   variantName     String?
   name            String
   price           Decimal   @db.Decimal(18, 4)
+  wholesalePrice  Decimal?  @db.Decimal(18, 4)
   cost            Decimal   @default(0) @db.Decimal(18, 4)
   stock           Float     @default(0)   // quantity — stays Float
   barcode         String?
@@ -279,6 +280,7 @@ model Customer {
   mobile      String
   pin         String   @default("")
   creditLimit Decimal  @default(0) @db.Decimal(18, 4)
+  isWholesale  Boolean  @default(false)
   notes       String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

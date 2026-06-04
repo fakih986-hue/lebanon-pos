@@ -8165,6 +8165,7 @@ export namespace Prisma {
     id: number | null
     parentId: number | null
     price: Decimal | null
+    wholesalePrice: Decimal | null
     cost: Decimal | null
     stock: number | null
     reorderPoint: number | null
@@ -8175,6 +8176,7 @@ export namespace Prisma {
     id: number | null
     parentId: number | null
     price: Decimal | null
+    wholesalePrice: Decimal | null
     cost: Decimal | null
     stock: number | null
     reorderPoint: number | null
@@ -8189,6 +8191,7 @@ export namespace Prisma {
     variantName: string | null
     name: string | null
     price: Decimal | null
+    wholesalePrice: Decimal | null
     cost: Decimal | null
     stock: number | null
     barcode: string | null
@@ -8213,6 +8216,7 @@ export namespace Prisma {
     variantName: string | null
     name: string | null
     price: Decimal | null
+    wholesalePrice: Decimal | null
     cost: Decimal | null
     stock: number | null
     barcode: string | null
@@ -8237,6 +8241,7 @@ export namespace Prisma {
     variantName: number
     name: number
     price: number
+    wholesalePrice: number
     cost: number
     stock: number
     barcode: number
@@ -8260,6 +8265,7 @@ export namespace Prisma {
     id?: true
     parentId?: true
     price?: true
+    wholesalePrice?: true
     cost?: true
     stock?: true
     reorderPoint?: true
@@ -8270,6 +8276,7 @@ export namespace Prisma {
     id?: true
     parentId?: true
     price?: true
+    wholesalePrice?: true
     cost?: true
     stock?: true
     reorderPoint?: true
@@ -8284,6 +8291,7 @@ export namespace Prisma {
     variantName?: true
     name?: true
     price?: true
+    wholesalePrice?: true
     cost?: true
     stock?: true
     barcode?: true
@@ -8308,6 +8316,7 @@ export namespace Prisma {
     variantName?: true
     name?: true
     price?: true
+    wholesalePrice?: true
     cost?: true
     stock?: true
     barcode?: true
@@ -8332,6 +8341,7 @@ export namespace Prisma {
     variantName?: true
     name?: true
     price?: true
+    wholesalePrice?: true
     cost?: true
     stock?: true
     barcode?: true
@@ -8444,6 +8454,7 @@ export namespace Prisma {
     variantName: string | null
     name: string
     price: Decimal
+    wholesalePrice: Decimal | null
     cost: Decimal
     stock: number
     barcode: string | null
@@ -8488,6 +8499,7 @@ export namespace Prisma {
     variantName?: boolean
     name?: boolean
     price?: boolean
+    wholesalePrice?: boolean
     cost?: boolean
     stock?: boolean
     barcode?: boolean
@@ -8520,6 +8532,7 @@ export namespace Prisma {
     variantName?: boolean
     name?: boolean
     price?: boolean
+    wholesalePrice?: boolean
     cost?: boolean
     stock?: boolean
     barcode?: boolean
@@ -8547,6 +8560,7 @@ export namespace Prisma {
     variantName?: boolean
     name?: boolean
     price?: boolean
+    wholesalePrice?: boolean
     cost?: boolean
     stock?: boolean
     barcode?: boolean
@@ -8574,6 +8588,7 @@ export namespace Prisma {
     variantName?: boolean
     name?: boolean
     price?: boolean
+    wholesalePrice?: boolean
     cost?: boolean
     stock?: boolean
     barcode?: boolean
@@ -8591,7 +8606,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "cost" | "stock" | "barcode" | "barcodeAliases" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "wholesalePrice" | "cost" | "stock" | "barcode" | "barcodeAliases" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
   export type ProductInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     parent?: boolean | Product$parentArgs<ExtArgs>
@@ -8628,6 +8643,7 @@ export namespace Prisma {
       variantName: string | null
       name: string
       price: Prisma.Decimal
+      wholesalePrice: Prisma.Decimal | null
       cost: Prisma.Decimal
       stock: number
       barcode: string | null
@@ -9079,6 +9095,7 @@ export namespace Prisma {
     readonly variantName: FieldRef<"Product", 'String'>
     readonly name: FieldRef<"Product", 'String'>
     readonly price: FieldRef<"Product", 'Decimal'>
+    readonly wholesalePrice: FieldRef<"Product", 'Decimal'>
     readonly cost: FieldRef<"Product", 'Decimal'>
     readonly stock: FieldRef<"Product", 'Float'>
     readonly barcode: FieldRef<"Product", 'String'>
@@ -15786,6 +15803,7 @@ export namespace Prisma {
     mobile: string | null
     pin: string | null
     creditLimit: Decimal | null
+    isWholesale: boolean | null
     notes: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -15798,6 +15816,7 @@ export namespace Prisma {
     mobile: string | null
     pin: string | null
     creditLimit: Decimal | null
+    isWholesale: boolean | null
     notes: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -15810,6 +15829,7 @@ export namespace Prisma {
     mobile: number
     pin: number
     creditLimit: number
+    isWholesale: number
     notes: number
     createdAt: number
     updatedAt: number
@@ -15832,6 +15852,7 @@ export namespace Prisma {
     mobile?: true
     pin?: true
     creditLimit?: true
+    isWholesale?: true
     notes?: true
     createdAt?: true
     updatedAt?: true
@@ -15844,6 +15865,7 @@ export namespace Prisma {
     mobile?: true
     pin?: true
     creditLimit?: true
+    isWholesale?: true
     notes?: true
     createdAt?: true
     updatedAt?: true
@@ -15856,6 +15878,7 @@ export namespace Prisma {
     mobile?: true
     pin?: true
     creditLimit?: true
+    isWholesale?: true
     notes?: true
     createdAt?: true
     updatedAt?: true
@@ -15955,6 +15978,7 @@ export namespace Prisma {
     mobile: string
     pin: string
     creditLimit: Decimal
+    isWholesale: boolean
     notes: string
     createdAt: Date
     updatedAt: Date
@@ -15986,6 +16010,7 @@ export namespace Prisma {
     mobile?: boolean
     pin?: boolean
     creditLimit?: boolean
+    isWholesale?: boolean
     notes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -16003,6 +16028,7 @@ export namespace Prisma {
     mobile?: boolean
     pin?: boolean
     creditLimit?: boolean
+    isWholesale?: boolean
     notes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -16016,6 +16042,7 @@ export namespace Prisma {
     mobile?: boolean
     pin?: boolean
     creditLimit?: boolean
+    isWholesale?: boolean
     notes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -16029,12 +16056,13 @@ export namespace Prisma {
     mobile?: boolean
     pin?: boolean
     creditLimit?: boolean
+    isWholesale?: boolean
     notes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type CustomerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "pin" | "creditLimit" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
+  export type CustomerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "pin" | "creditLimit" | "isWholesale" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
   export type CustomerInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     debtSales?: boolean | Customer$debtSalesArgs<ExtArgs>
@@ -16064,6 +16092,7 @@ export namespace Prisma {
       mobile: string
       pin: string
       creditLimit: Prisma.Decimal
+      isWholesale: boolean
       notes: string
       createdAt: Date
       updatedAt: Date
@@ -16500,6 +16529,7 @@ export namespace Prisma {
     readonly mobile: FieldRef<"Customer", 'String'>
     readonly pin: FieldRef<"Customer", 'String'>
     readonly creditLimit: FieldRef<"Customer", 'Decimal'>
+    readonly isWholesale: FieldRef<"Customer", 'Boolean'>
     readonly notes: FieldRef<"Customer", 'String'>
     readonly createdAt: FieldRef<"Customer", 'DateTime'>
     readonly updatedAt: FieldRef<"Customer", 'DateTime'>
@@ -38873,6 +38903,7 @@ export namespace Prisma {
     variantName: 'variantName',
     name: 'name',
     price: 'price',
+    wholesalePrice: 'wholesalePrice',
     cost: 'cost',
     stock: 'stock',
     barcode: 'barcode',
@@ -38992,6 +39023,7 @@ export namespace Prisma {
     mobile: 'mobile',
     pin: 'pin',
     creditLimit: 'creditLimit',
+    isWholesale: 'isWholesale',
     notes: 'notes',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -39942,6 +39974,7 @@ export namespace Prisma {
     variantName?: StringNullableFilter<"Product"> | string | null
     name?: StringFilter<"Product"> | string
     price?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: DecimalNullableFilter<"Product"> | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
     stock?: FloatFilter<"Product"> | number
     barcode?: StringNullableFilter<"Product"> | string | null
@@ -39973,6 +40006,7 @@ export namespace Prisma {
     variantName?: SortOrderInput | SortOrder
     name?: SortOrder
     price?: SortOrder
+    wholesalePrice?: SortOrderInput | SortOrder
     cost?: SortOrder
     stock?: SortOrder
     barcode?: SortOrderInput | SortOrder
@@ -40008,6 +40042,7 @@ export namespace Prisma {
     variantName?: StringNullableFilter<"Product"> | string | null
     name?: StringFilter<"Product"> | string
     price?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: DecimalNullableFilter<"Product"> | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
     stock?: FloatFilter<"Product"> | number
     barcode?: StringNullableFilter<"Product"> | string | null
@@ -40039,6 +40074,7 @@ export namespace Prisma {
     variantName?: SortOrderInput | SortOrder
     name?: SortOrder
     price?: SortOrder
+    wholesalePrice?: SortOrderInput | SortOrder
     cost?: SortOrder
     stock?: SortOrder
     barcode?: SortOrderInput | SortOrder
@@ -40072,6 +40108,7 @@ export namespace Prisma {
     variantName?: StringNullableWithAggregatesFilter<"Product"> | string | null
     name?: StringWithAggregatesFilter<"Product"> | string
     price?: DecimalWithAggregatesFilter<"Product"> | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: DecimalNullableWithAggregatesFilter<"Product"> | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalWithAggregatesFilter<"Product"> | Decimal | DecimalJsLike | number | string
     stock?: FloatWithAggregatesFilter<"Product"> | number
     barcode?: StringNullableWithAggregatesFilter<"Product"> | string | null
@@ -40586,6 +40623,7 @@ export namespace Prisma {
     mobile?: StringFilter<"Customer"> | string
     pin?: StringFilter<"Customer"> | string
     creditLimit?: DecimalFilter<"Customer"> | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFilter<"Customer"> | boolean
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
@@ -40602,6 +40640,7 @@ export namespace Prisma {
     mobile?: SortOrder
     pin?: SortOrder
     creditLimit?: SortOrder
+    isWholesale?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -40622,6 +40661,7 @@ export namespace Prisma {
     mobile?: StringFilter<"Customer"> | string
     pin?: StringFilter<"Customer"> | string
     creditLimit?: DecimalFilter<"Customer"> | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFilter<"Customer"> | boolean
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
@@ -40638,6 +40678,7 @@ export namespace Prisma {
     mobile?: SortOrder
     pin?: SortOrder
     creditLimit?: SortOrder
+    isWholesale?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -40658,6 +40699,7 @@ export namespace Prisma {
     mobile?: StringWithAggregatesFilter<"Customer"> | string
     pin?: StringWithAggregatesFilter<"Customer"> | string
     creditLimit?: DecimalWithAggregatesFilter<"Customer"> | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolWithAggregatesFilter<"Customer"> | boolean
     notes?: StringWithAggregatesFilter<"Customer"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Customer"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Customer"> | Date | string
@@ -42799,6 +42841,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -42830,6 +42873,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -42856,6 +42900,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42887,6 +42932,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42916,6 +42962,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -42938,6 +42985,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42963,6 +43011,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -43535,6 +43584,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -43551,6 +43601,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -43565,6 +43616,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -43581,6 +43633,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -43596,6 +43649,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -43607,6 +43661,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -43619,6 +43674,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -46075,6 +46131,17 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
+  export type DecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type FloatFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel>
     in?: number[] | ListFloatFieldRefInput<$PrismaModel>
@@ -46127,6 +46194,7 @@ export namespace Prisma {
     variantName?: SortOrder
     name?: SortOrder
     price?: SortOrder
+    wholesalePrice?: SortOrder
     cost?: SortOrder
     stock?: SortOrder
     barcode?: SortOrder
@@ -46148,6 +46216,7 @@ export namespace Prisma {
     id?: SortOrder
     parentId?: SortOrder
     price?: SortOrder
+    wholesalePrice?: SortOrder
     cost?: SortOrder
     stock?: SortOrder
     reorderPoint?: SortOrder
@@ -46162,6 +46231,7 @@ export namespace Prisma {
     variantName?: SortOrder
     name?: SortOrder
     price?: SortOrder
+    wholesalePrice?: SortOrder
     cost?: SortOrder
     stock?: SortOrder
     barcode?: SortOrder
@@ -46186,6 +46256,7 @@ export namespace Prisma {
     variantName?: SortOrder
     name?: SortOrder
     price?: SortOrder
+    wholesalePrice?: SortOrder
     cost?: SortOrder
     stock?: SortOrder
     barcode?: SortOrder
@@ -46206,6 +46277,7 @@ export namespace Prisma {
     id?: SortOrder
     parentId?: SortOrder
     price?: SortOrder
+    wholesalePrice?: SortOrder
     cost?: SortOrder
     stock?: SortOrder
     reorderPoint?: SortOrder
@@ -46246,6 +46318,22 @@ export namespace Prisma {
     _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
+  export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
   export type FloatWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel>
     in?: number[] | ListFloatFieldRefInput<$PrismaModel>
@@ -46267,17 +46355,6 @@ export namespace Prisma {
     in?: $Enums.SalePaymentMethod[] | ListEnumSalePaymentMethodFieldRefInput<$PrismaModel>
     notIn?: $Enums.SalePaymentMethod[] | ListEnumSalePaymentMethodFieldRefInput<$PrismaModel>
     not?: NestedEnumSalePaymentMethodFilter<$PrismaModel> | $Enums.SalePaymentMethod
-  }
-
-  export type DecimalNullableFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
   export type EnumSaleStatusFilter<$PrismaModel = never> = {
@@ -46396,22 +46473,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumSalePaymentMethodFilter<$PrismaModel>
     _max?: NestedEnumSalePaymentMethodFilter<$PrismaModel>
-  }
-
-  export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedDecimalNullableFilter<$PrismaModel>
-    _sum?: NestedDecimalNullableFilter<$PrismaModel>
-    _min?: NestedDecimalNullableFilter<$PrismaModel>
-    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
   export type EnumSaleStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -46706,6 +46767,7 @@ export namespace Prisma {
     mobile?: SortOrder
     pin?: SortOrder
     creditLimit?: SortOrder
+    isWholesale?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -46722,6 +46784,7 @@ export namespace Prisma {
     mobile?: SortOrder
     pin?: SortOrder
     creditLimit?: SortOrder
+    isWholesale?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -46734,6 +46797,7 @@ export namespace Prisma {
     mobile?: SortOrder
     pin?: SortOrder
     creditLimit?: SortOrder
+    isWholesale?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -49274,6 +49338,14 @@ export namespace Prisma {
     set?: string | null
   }
 
+  export type NullableDecimalFieldUpdateOperationsInput = {
+    set?: Decimal | DecimalJsLike | number | string | null
+    increment?: Decimal | DecimalJsLike | number | string
+    decrement?: Decimal | DecimalJsLike | number | string
+    multiply?: Decimal | DecimalJsLike | number | string
+    divide?: Decimal | DecimalJsLike | number | string
+  }
+
   export type FloatFieldUpdateOperationsInput = {
     set?: number
     increment?: number
@@ -49473,14 +49545,6 @@ export namespace Prisma {
 
   export type EnumSalePaymentMethodFieldUpdateOperationsInput = {
     set?: $Enums.SalePaymentMethod
-  }
-
-  export type NullableDecimalFieldUpdateOperationsInput = {
-    set?: Decimal | DecimalJsLike | number | string | null
-    increment?: Decimal | DecimalJsLike | number | string
-    decrement?: Decimal | DecimalJsLike | number | string
-    multiply?: Decimal | DecimalJsLike | number | string
-    divide?: Decimal | DecimalJsLike | number | string
   }
 
   export type EnumSaleStatusFieldUpdateOperationsInput = {
@@ -50735,6 +50799,17 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
+  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
@@ -50779,6 +50854,22 @@ export namespace Prisma {
     _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
+  export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
   export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | FloatFieldRefInput<$PrismaModel>
     in?: number[] | ListFloatFieldRefInput<$PrismaModel>
@@ -50802,17 +50893,6 @@ export namespace Prisma {
     not?: NestedEnumSalePaymentMethodFilter<$PrismaModel> | $Enums.SalePaymentMethod
   }
 
-  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
-  }
-
   export type NestedEnumSaleStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.SaleStatus | EnumSaleStatusFieldRefInput<$PrismaModel>
     in?: $Enums.SaleStatus[] | ListEnumSaleStatusFieldRefInput<$PrismaModel>
@@ -50828,22 +50908,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumSalePaymentMethodFilter<$PrismaModel>
     _max?: NestedEnumSalePaymentMethodFilter<$PrismaModel>
-  }
-
-  export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedDecimalNullableFilter<$PrismaModel>
-    _sum?: NestedDecimalNullableFilter<$PrismaModel>
-    _min?: NestedDecimalNullableFilter<$PrismaModel>
-    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumSaleStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -51084,6 +51148,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -51113,6 +51178,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -51252,6 +51318,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -51266,6 +51333,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -52005,6 +52073,7 @@ export namespace Prisma {
     variantName?: StringNullableFilter<"Product"> | string | null
     name?: StringFilter<"Product"> | string
     price?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: DecimalNullableFilter<"Product"> | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
     stock?: FloatFilter<"Product"> | number
     barcode?: StringNullableFilter<"Product"> | string | null
@@ -52125,6 +52194,7 @@ export namespace Prisma {
     mobile?: StringFilter<"Customer"> | string
     pin?: StringFilter<"Customer"> | string
     creditLimit?: DecimalFilter<"Customer"> | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFilter<"Customer"> | boolean
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
@@ -53319,6 +53389,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -53349,6 +53420,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -53379,6 +53451,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -53408,6 +53481,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -53646,6 +53720,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -53676,6 +53751,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -55087,6 +55163,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -55102,6 +55179,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -55200,6 +55278,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55215,6 +55294,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55291,6 +55371,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -55306,6 +55387,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -55404,6 +55486,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55419,6 +55502,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -57112,6 +57196,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -57142,6 +57227,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -57285,6 +57371,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57315,6 +57402,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57442,6 +57530,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -57472,6 +57561,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -57582,6 +57672,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57612,6 +57703,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57846,6 +57938,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -57876,6 +57969,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -57950,6 +58044,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57980,6 +58075,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -58069,6 +58165,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -58084,6 +58181,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -58247,6 +58345,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -58262,6 +58361,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -58758,6 +58858,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -58818,6 +58919,7 @@ export namespace Prisma {
     mobile: string
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
+    isWholesale?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -59099,6 +59201,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -59128,6 +59231,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -59156,6 +59260,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -59298,6 +59403,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59312,6 +59418,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59326,6 +59433,7 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    isWholesale?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -60390,6 +60498,7 @@ export namespace Prisma {
     variantName?: string | null
     name: string
     price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
     cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
@@ -60458,6 +60567,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -60487,6 +60597,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
@@ -60515,6 +60626,7 @@ export namespace Prisma {
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
     price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null

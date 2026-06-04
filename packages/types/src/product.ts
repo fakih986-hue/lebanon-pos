@@ -8,6 +8,7 @@ export type Product = {
   variantName?: string | null
   name: string
   price: number
+  wholesalePrice?: number | null
   cost: number
   stock: number
   barcode: string | null

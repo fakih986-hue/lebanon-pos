@@ -10,6 +10,7 @@ type Props = {
   exchangeRate: number
   onClick: () => void
   onFavoriteToggle?: () => void
+  wholesale?: boolean
 }
 
 const accents: Record<ProductAccent, { bg: string; border: string; text: string; top: string }> = {
@@ -26,11 +27,13 @@ const ProductCard = memo(function ProductCard({
   exchangeRate,
   onClick,
   onFavoriteToggle,
+  wholesale,
 }: Props) {
   const { t } = useI18n()
   const outOfStock = product.stock <= 0
   const lowStock = !outOfStock && product.stock <= 5
   const accent = accents[product.accent] ?? accents.emerald
+  const effectivePrice = wholesale && product.wholesalePrice != null ? Number(product.wholesalePrice) : product.price
 
   const stockTone = outOfStock
     ? { bg: "var(--rose-soft)", text: "var(--rose-text)", label: t("pos.out_of_stock") }
@@ -91,11 +94,16 @@ const ProductCard = memo(function ProductCard({
           <div className="mt-auto pt-2.5">
             <div className="flex items-end justify-between gap-3">
               <div className="min-w-0">
-                <span className="block text-[20px] font-black leading-none tabular-nums" style={{ color: "var(--text)" }}>
-                  {formatCurrency(product.price)}
+                <span className="block text-[20px] font-black leading-none tabular-nums" style={{ color: wholesale && product.wholesalePrice != null ? "var(--green)" : "var(--text)" }}>
+                  {formatCurrency(effectivePrice)}
                 </span>
+                {wholesale && product.wholesalePrice != null && (
+                  <span className="block text-[10px] font-bold line-through mt-0.5" style={{ color: "var(--text-3)" }}>
+                    {formatCurrency(product.price)}
+                  </span>
+                )}
                 <span className="mt-1 block text-[10px] font-bold tabular-nums" style={{ color: "var(--text-3)" }}>
-                  {formatLbpCurrency(usdToLbp(product.price, exchangeRate))}
+                  {formatLbpCurrency(usdToLbp(effectivePrice, exchangeRate))}
                 </span>
               </div>
 

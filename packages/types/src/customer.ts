@@ -3,6 +3,7 @@ export type Customer = {
   name: string
   mobile: string
   creditLimit: number
+  isWholesale?: boolean
   notes: string
   createdAt: string
 }

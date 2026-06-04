@@ -229,17 +229,20 @@ export default function POSPage() {
   // --- Cart operations ---
   function addItem(product: Product) {
     if (product.stock <= 0) return
+    const effectivePrice = selectedCustomer?.isWholesale && product.wholesalePrice != null
+      ? Number(product.wholesalePrice)
+      : product.price
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.id === product.id)
       if (existingItem) {
         if (existingItem.quantity >= product.stock) return currentItems
         return currentItems.map((item) =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + 1, price: effectivePrice }
             : item
         )
       }
-      return [...currentItems, { ...product, quantity: 1 }]
+      return [...currentItems, { ...product, quantity: 1, price: effectivePrice }]
     })
   }
 
@@ -709,6 +712,7 @@ export default function POSPage() {
                           exchangeRate={exchangeRate}
                           onAddProduct={addProductToSale}
                           onToggleFavorite={toggleFavorite}
+                          wholesale={!!(selectedCustomer?.isWholesale)}
                         />
                       ) : (
                         <EmptyState
