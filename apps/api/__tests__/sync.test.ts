@@ -17,8 +17,10 @@ vi.mock("../src/lib/prisma", () => {
 
   const mock = {
     staffUser: model(),
-    product: model(),
+    product: { ...model(), updateMany: vi.fn() },
     sale: { ...model() },
+    saleItem: { ...model(), createMany: vi.fn() },
+    saleTender: { ...model() },
     saleRefund: { ...model() },
     customer: model(),
     debtSale: model(),
@@ -141,6 +143,100 @@ describe("GET /api/sync/pull", () => {
     })
     expect(vi.mocked(prisma.sale.findMany).mock.calls[0][0]).toMatchObject({
       where: { tenantId: "t1" },
+  })
+})
+
+describe("POST /api/sync/push — sale stock integrity", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  function mockNewSale() {
+    // Sale does not exist yet (new sale → triggers stock decrement)
+    vi.mocked(prisma.sale.findUnique).mockResolvedValue(null)
+    // Product has sufficient stock
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      { id: 1, stock: 10, name: "Cola" } as any,
+      { id: 2, stock: 5, name: "Chips" } as any,
+    ])
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+  }
+
+  const salePayload = {
+    id: "sale-1",
+    saleNumber: "S-001",
+    paymentMethod: "Cash",
+    subtotal: 25,
+    tax: 0,
+    total: 25,
+    cost: 15,
+    profit: 10,
+    cashier: "John",
+    items: [
+      { id: 1, name: "Cola", barcode: "111", quantity: 2, unitPrice: 5, total: 10, cost: 3 },
+      { id: 2, name: "Chips", barcode: "222", quantity: 3, unitPrice: 5, total: 15, cost: 3 },
+    ],
+  }
+
+  it("decrements stock for each item on new sale", async () => {
+    mockNewSale()
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{ id: "op1", entity: "sale", action: "create", payload: salePayload }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+    // updateMany called twice (one per item) with decrement
+    expect(vi.mocked(prisma.product.updateMany).mock.calls.length).toBe(2)
+    expect(vi.mocked(prisma.product.updateMany).mock.calls[0][0]).toMatchObject({
+      where: { tenantId: "t1", id: 1 },
+      data: { stock: { decrement: 2 } },
+    })
+    expect(vi.mocked(prisma.product.updateMany).mock.calls[1][0]).toMatchObject({
+      where: { tenantId: "t1", id: 2 },
+      data: { stock: { decrement: 3 } },
     })
   })
+
+  it("does not double-decrement stock on duplicate sale push", async () => {
+    mockNewSale()
+    // Simulate existing sale (second push with same ID)
+    vi.mocked(prisma.sale.findUnique).mockResolvedValue({ id: "sale-1" } as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{ id: "op1", entity: "sale", action: "create", payload: salePayload }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    // updateMany should NOT be called because sale already exists
+    expect(vi.mocked(prisma.product.updateMany).mock.calls.length).toBe(0)
+  })
+
+  it("rejects sale push when product stock is insufficient", async () => {
+    // Product stock is less than sale quantity
+    vi.mocked(prisma.sale.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      { id: 1, stock: 1, name: "Cola" } as any,   // only 1 in stock, need 2
+      { id: 2, stock: 5, name: "Chips" } as any,
+    ])
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{ id: "op1", entity: "sale", action: "create", payload: salePayload }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("error")
+    expect(res.body.results[0].error).toContain("Insufficient stock")
+    // updateMany should NOT be called (stock check failed before decrement)
+    expect(vi.mocked(prisma.product.updateMany).mock.calls.length).toBe(0)
+  })
+})
 })

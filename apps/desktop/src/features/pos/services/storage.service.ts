@@ -31,7 +31,7 @@ export function writeLocalWithIndexedDB<T>(lsKey: string, value: T[]): void {
   window.localStorage.setItem(lsKey, JSON.stringify(value))
   const storeName = LS_KEY_TO_STORE[lsKey]
   if (storeName) {
-    putMany(storeName, value).catch(() => {})
+    putMany(storeName, value).catch((err) => console.error(`[storage] IndexedDB write failed for ${storeName}:`, err))
   }
 }
 
@@ -45,7 +45,7 @@ export async function restoreIndexedDBToLocal(): Promise<number> {
         window.localStorage.setItem(lsKey, JSON.stringify(data))
         restored++
       }
-    } catch { /* skip */ }
+      } catch (err) { console.error(`[storage] restoreIndexedDBToLocal failed for ${storeName}:`, err) }
   }
   return restored
 }

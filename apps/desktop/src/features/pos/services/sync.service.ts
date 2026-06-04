@@ -122,7 +122,7 @@ export function clearStoreData() {
   localStorage.removeItem("lebanonpos.current-user.v1")
   localStorage.removeItem("lebanonpos.held-sales.v1")
   // Also clear IndexedDB to prevent stale data accumulation across stores
-  clearIndexedDB().catch(() => {})
+  clearIndexedDB().catch((e) => console.error("[sync] clearIndexedDB failed:", e))
 }
 
 // ── Suspension enforcement ──────────────────────────────────────────
@@ -254,7 +254,7 @@ function writeQueue(queue: SyncOperation[]) {
   const trimmed = [...active, ...synced]
 
   window.localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(trimmed))
-  putMany("sync-queue", trimmed).catch(() => {})
+  putMany("sync-queue", trimmed).catch((e) => console.error("[sync] sync-queue write failed:", e))
   dispatchSyncChanged()
 }
 
@@ -271,7 +271,7 @@ function scheduleAutoFlush() {
   if (typeof window === "undefined") return
   window.clearTimeout(autoFlushTimer)
   // Short debounce — actual reachability check happens inside _flushSyncQueue
-  autoFlushTimer = window.setTimeout(() => { flushSyncQueue().catch(() => {}) }, 900)
+  autoFlushTimer = window.setTimeout(() => { flushSyncQueue().catch((e) => console.error("[sync] auto-flush failed:", e)) }, 900)
 }
 
 export function getSyncQueue() { return readQueue() }
@@ -545,7 +545,7 @@ export function clearAllSyncOperations() {
 export function subscribeSync(callback: () => void) {
   if (typeof window === "undefined") return () => undefined
   const onChange = () => callback()
-  const onOnline  = () => { scheduleAutoFlush(); flushSyncQueue().then(() => pullFromServer()).catch(() => {}) }
+  const onOnline  = () => { scheduleAutoFlush(); flushSyncQueue().then(() => pullFromServer()).catch((e) => console.error("[sync] online flush failed:", e)) }
   window.addEventListener(SYNC_EVENT,  onChange)
   window.addEventListener("storage",   onChange)
   window.addEventListener("online",    onChange)
@@ -571,20 +571,20 @@ export function setupBackgroundSync() {
   if (typeof window === "undefined") return
   stopBackgroundSync()
   // Immediately check tenant status on startup
-  checkTenantStatus().catch(() => {})
+  checkTenantStatus().catch((e) => console.error("[sync] tenant status check failed:", e))
   bgStatusInterval = window.setInterval(() => {
     if (isBrowserOnline() && getApiUrl() && getAuthToken()) {
-      checkTenantStatus().catch(() => {})
+      checkTenantStatus().catch((e) => console.error("[sync] tenant status check failed:", e))
     }
   }, BACKGROUND_STATUS_MS)
   bgSyncInterval = window.setInterval(() => {
     if (isBrowserOnline() && getApiUrl() && getAuthToken()) {
-      if (!isSuspended()) flushSyncQueue().catch(() => {})
+      if (!isSuspended()) flushSyncQueue().catch((e) => console.error("[sync] flush on visibility change failed:", e))
     }
   }, BACKGROUND_SYNC_MS)
   bgPullInterval = window.setInterval(() => {
     if (isBrowserOnline() && getApiUrl() && getAuthToken()) {
-      if (!isSuspended()) flushSyncQueue().then(() => pullFromServer()).catch(() => {})
+      if (!isSuspended()) flushSyncQueue().then(() => pullFromServer()).catch((e) => console.error("[sync] online pull from visibility change failed:", e))
     }
   }, BACKGROUND_PULL_MS)
 }

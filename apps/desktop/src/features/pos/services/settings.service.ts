@@ -71,7 +71,7 @@ export function saveSettings(settings: AppSettings) {
   }
 
   window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
-  put("settings", { id: "app", ...settings }).catch(() => {})
+  put("settings", { id: "app", ...settings }).catch((e) => console.error("[settings] IndexedDB write failed:", e))
   window.dispatchEvent(new Event(SETTINGS_EVENT))
   enqueueSyncOperation({
     entity: "settings",

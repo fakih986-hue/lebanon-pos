@@ -19,3 +19,4 @@ apps/electron/dist-electron/
 mockups/
 AGENTS.md
 *.tmp
+*.tmp*

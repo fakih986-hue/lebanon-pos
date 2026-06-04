@@ -280,7 +280,7 @@ export function MenuPage() {
           {inStock.map((product) => (
             <div key={product.id} className="bg-glass border border-glass rounded-xl shadow-lg hover:bg-glass-hover transition-all duration-200 overflow-hidden">
               {product.image ? (
-                <ProductImage src={`/api/images/serve/${product.id}`} name={product.name} />
+                <ProductImage src={`/api/delivery/public/image/${product.id}`} name={product.name} />
               ) : (
                 <ProductImagePlaceholder name={product.name} />
               )}
@@ -301,7 +301,7 @@ export function MenuPage() {
           {outOfStock.map((product) => (
             <div key={product.id} className="bg-glass border border-glass rounded-xl opacity-50 overflow-hidden">
               {product.image ? (
-                <img src={`/api/images/serve/${product.id}`} alt={product.name} className="w-full aspect-[4/3] object-cover grayscale" loading="lazy" />
+                <img src={`/api/delivery/public/image/${product.id}`} alt={product.name} className="w-full aspect-[4/3] object-cover grayscale" loading="lazy" />
               ) : (
                 <ProductImagePlaceholder name={product.name} />
               )}

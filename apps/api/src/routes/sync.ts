@@ -392,6 +392,18 @@ async function processOperation(
 
         // Only decrement stock for NEW sales (avoid double-decrement on retry)
         if (!existingSale) {
+          const ids = prismaItems.map((i: any) => i.productId)
+          const prods = await db.product.findMany({
+            where: { tenantId, id: { in: ids } },
+            select: { id: true, stock: true, name: true },
+          })
+          const stockMap = new Map(prods.map((p: any) => [p.id, { stock: Number(p.stock), name: p.name }]))
+          for (const item of prismaItems) {
+            const info = stockMap.get(item.productId) ?? { stock: 0, name: item.productName ?? `ID ${item.productId}` }
+            if (info.stock < item.quantity) {
+              throw new Error(`Insufficient stock for "${info.name}": ${info.stock} available, ${item.quantity} required`)
+            }
+          }
           for (const item of prismaItems) {
             await db.product.updateMany({
               where: { tenantId, id: item.productId },

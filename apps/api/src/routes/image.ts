@@ -199,8 +199,8 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
   }
 })
 
-// Serve product image as raw binary (no auth — public for ordering app)
-router.get("/serve/:id", async (req: IncomingMessage, res: ServerResponse) => {
+// Serve product image as raw binary (JWT required — use /api/delivery/public/image/:id for public access)
+router.get("/serve/:id", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const productId = Number((req as any).params?.id)
     if (isNaN(productId)) {

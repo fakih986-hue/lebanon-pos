@@ -386,6 +386,18 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerRes
 
       // Decrement product stock exactly once when order transitions → Delivered
       if (becomingDelivered && updated.items.length > 0) {
+        const ids = updated.items.map((i: any) => i.productId)
+        const prods = await tx.product.findMany({
+          where: { tenantId, id: { in: ids } },
+          select: { id: true, stock: true, name: true },
+        })
+        const stockMap = new Map(prods.map((p: any) => [p.id, { stock: Number(p.stock), name: p.name }]))
+        for (const item of updated.items) {
+          const info = stockMap.get(item.productId) ?? { stock: 0, name: item.productName ?? `ID ${item.productId}` }
+          if (info.stock < item.quantity) {
+            throw new Error(`Insufficient stock for "${info.name}": ${info.stock} available, ${item.quantity} required`)
+          }
+        }
         for (const item of updated.items) {
           await tx.product.updateMany({
             where: { id: item.productId, tenantId },
@@ -507,6 +519,18 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
 
       // Decrement product stock exactly once when driver marks → Delivered
       if (becomingDelivered && result.items.length > 0) {
+        const ids = result.items.map((i: any) => i.productId)
+        const prods = await tx.product.findMany({
+          where: { tenantId: order.tenantId, id: { in: ids } },
+          select: { id: true, stock: true, name: true },
+        })
+        const stockMap = new Map(prods.map((p: any) => [p.id, { stock: Number(p.stock), name: p.name }]))
+        for (const item of result.items) {
+          const info = stockMap.get(item.productId) ?? { stock: 0, name: item.productName ?? `ID ${item.productId}` }
+          if (info.stock < item.quantity) {
+            throw new Error(`Insufficient stock for "${info.name}": ${info.stock} available, ${item.quantity} required`)
+          }
+        }
         for (const item of result.items) {
           await tx.product.updateMany({
             where: { id: item.productId, tenantId: order.tenantId },
@@ -751,6 +775,41 @@ router.get("/customer/orders", async (req: any, res: ServerResponse) => {
   } catch (err) {
     console.error("Customer orders error:", err)
     json(res, { error: "Failed to fetch orders" }, 500)
+  }
+})
+
+// Public: serve product image (no auth — customer-facing)
+router.get("/public/image/:productId", async (req: any, res: ServerResponse) => {
+  try {
+    const productId = Number(req.params?.productId)
+    if (isNaN(productId)) {
+      json(res, { error: "Invalid product ID" }, 400)
+      return
+    }
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { image: true },
+    })
+    if (!product?.image) {
+      json(res, { error: "No image found" }, 404)
+      return
+    }
+    const match = product.image.match(/^data:(image\/[\w+-]+);base64,(.+)$/)
+    if (!match) {
+      json(res, { error: "Invalid image data" }, 500)
+      return
+    }
+    const mime = match[1]
+    const buffer = Buffer.from(match[2], "base64")
+    res.writeHead(200, {
+      "Content-Type": mime,
+      "Content-Length": buffer.length.toString(),
+      "Cache-Control": "public, max-age=86400, immutable",
+    })
+    res.end(buffer)
+  } catch (err) {
+    console.error("Public image error:", err)
+    json(res, { error: "Failed to serve image" }, 500)
   }
 })
 

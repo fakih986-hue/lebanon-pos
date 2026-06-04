@@ -213,6 +213,8 @@ model SaleItem {
   unitPrice Decimal @db.Decimal(18, 4)
   total     Decimal @db.Decimal(18, 4)
   cost      Decimal @default(0) @db.Decimal(18, 4)
+
+  @@index([productId])
 }
 
 model SaleTender {
@@ -642,4 +644,5 @@ model SyncOperation {
 
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
+  @@index([tenantId, entity, status])
 }
