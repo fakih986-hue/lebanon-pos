@@ -651,3 +651,14 @@ model SyncOperation {
   @@index([tenantId, createdAt])
   @@index([tenantId, entity, status])
 }
+
+model RateLimitEntry {
+  id      String   @id @default(uuid())
+  bucket  String
+  key     String
+  count   Int      @default(1)
+  resetAt DateTime
+
+  @@unique([bucket, key])
+  @@index([resetAt])
+}

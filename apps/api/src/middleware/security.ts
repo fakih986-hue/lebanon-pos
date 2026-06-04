@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 import type { CorsOptions } from "cors"
+import prisma from "../lib/prisma.js"
 
 type Handler = (
   req: IncomingMessage,
@@ -19,14 +20,32 @@ type RateLimitState = {
 }
 
 const rateLimitBuckets = new Map<string, RateLimitState>()
+const PRUNE_INTERVAL = 10 * 60 * 1000
+setInterval(persistPrune, PRUNE_INTERVAL).unref()
 
-// Prune expired rate limit entries every 5 minutes to prevent unbounded growth
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, state] of rateLimitBuckets) {
-    if (state.resetAt <= now) rateLimitBuckets.delete(key)
-  }
-}, 5 * 60 * 1000).unref()
+
+// Helper: fire-and-forget DB writes — never crash on missing model
+function persistUpsert(bucket: string, key: string, count: number, resetAtMs: number) {
+  if (!(prisma as any).rateLimitEntry) return
+  prisma.rateLimitEntry.upsert({
+    where: { bucket_key: { bucket, key } },
+    create: { bucket, key, count, resetAt: new Date(resetAtMs) },
+    update: { count, resetAt: new Date(resetAtMs) },
+  }).catch(() => {})
+}
+function persistUpdate(bucket: string, key: string, count: number) {
+  if (!(prisma as any).rateLimitEntry) return
+  prisma.rateLimitEntry.update({
+    where: { bucket_key: { bucket, key } },
+    data: { count },
+  }).catch(() => {})
+}
+function persistPrune() {
+  if (!(prisma as any).rateLimitEntry) return
+  prisma.rateLimitEntry.deleteMany({
+    where: { resetAt: { lte: new Date() } },
+  }).catch(() => {})
+}
 
 function parseOriginList(value?: string) {
   return (value ?? "")
@@ -93,9 +112,8 @@ export const securityHeaders: Handler = (_req, res, next) => {
 }
 
 export function rateLimit({ windowMs, max, bucket = "api" }: RateLimitOptions) {
-  return (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => {
+  return async (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => {
     const now = Date.now()
-    // Prefer X-Forwarded-For (set by Railway/nginx) over socket address
     const forwarded = (req.headers as Record<string, string | string[] | undefined>)["x-forwarded-for"]
     const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0])?.trim()
       ?? req.socket.remoteAddress
@@ -105,6 +123,7 @@ export function rateLimit({ windowMs, max, bucket = "api" }: RateLimitOptions) {
 
     if (!current || current.resetAt <= now) {
       rateLimitBuckets.set(key, { count: 1, resetAt: now + windowMs })
+      persistUpsert(bucket, key, 1, now + windowMs)
       next()
       return
     }
@@ -118,6 +137,7 @@ export function rateLimit({ windowMs, max, bucket = "api" }: RateLimitOptions) {
     }
 
     current.count += 1
+    persistUpdate(bucket, key, current.count)
     next()
   }
 }

@@ -544,6 +544,14 @@ exports.Prisma.SyncOperationScalarFieldEnum = {
   error: 'error'
 };
 
+exports.Prisma.RateLimitEntryScalarFieldEnum = {
+  id: 'id',
+  bucket: 'bucket',
+  key: 'key',
+  count: 'count',
+  resetAt: 'resetAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -660,7 +668,8 @@ exports.Prisma.ModelName = {
   DeliveryOrder: 'DeliveryOrder',
   DeliveryOrderItem: 'DeliveryOrderItem',
   DailyClose: 'DailyClose',
-  SyncOperation: 'SyncOperation'
+  SyncOperation: 'SyncOperation',
+  RateLimitEntry: 'RateLimitEntry'
 };
 
 /**

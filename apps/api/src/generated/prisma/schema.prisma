@@ -200,6 +200,7 @@ model Sale {
   @@unique([tenantId, saleNumber])
   @@index([tenantId, createdAt])
   @@index([tenantId, customerId])
+  @@index([tenantId, status, createdAt])
 }
 
 model SaleItem {
@@ -213,6 +214,8 @@ model SaleItem {
   unitPrice   Decimal @db.Decimal(18, 4)
   total       Decimal @db.Decimal(18, 4)
   cost        Decimal @default(0) @db.Decimal(18, 4)
+
+  @@index([productId])
 }
 
 model SaleTender {
@@ -302,6 +305,7 @@ model DebtSale {
   createdAt     DateTime @default(now())
 
   @@index([tenantId, customerId])
+  @@index([tenantId, createdAt])
 }
 
 model DebtPayment {
@@ -316,6 +320,7 @@ model DebtPayment {
   createdAt  DateTime @default(now())
 
   @@index([tenantId, customerId])
+  @@index([tenantId, createdAt])
 }
 
 model Supplier {
@@ -424,6 +429,7 @@ model Shift {
   notes               String?
 
   @@unique([tenantId, shiftNumber])
+  @@index([tenantId, status])
 }
 
 model AuditEvent {
@@ -462,6 +468,7 @@ model Expense {
   createdAt      DateTime   @default(now())
 
   @@unique([tenantId, expenseNumber])
+  @@index([tenantId, createdAt])
 }
 
 model InventoryBatch {
@@ -642,4 +649,16 @@ model SyncOperation {
 
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
+  @@index([tenantId, entity, status])
+}
+
+model RateLimitEntry {
+  id      String   @id @default(uuid())
+  bucket  String
+  key     String
+  count   Int      @default(1)
+  resetAt DateTime
+
+  @@unique([bucket, key])
+  @@index([resetAt])
 }
