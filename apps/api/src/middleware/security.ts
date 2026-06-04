@@ -59,6 +59,9 @@ export function getCorsOptions(): CorsOptions {
     process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN
   )
 
+  // Default dev origins: Vite servers for desktop + admin + ordering + driver
+  const devOrigins = /^http:\/\/localhost:\d+$/
+
   return {
     credentials: true,
     origin(origin, callback) {
@@ -68,8 +71,9 @@ export function getCorsOptions(): CorsOptions {
         return
       }
 
-      // If no allowlist configured, deny all cross-origin requests
+      // If no allowlist configured, allow localhost dev servers
       if (allowedOrigins.length === 0) {
+        if (devOrigins.test(origin)) { callback(null, true); return }
         callback(new Error("CORS: no origins configured — set CORS_ORIGINS env var"))
         return
       }
