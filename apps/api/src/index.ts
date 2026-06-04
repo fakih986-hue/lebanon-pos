@@ -1,3 +1,8 @@
+// Load env FIRST — before anything reads process.env.
+// dotenv reads DOTENV_CONFIG_PATH if set (the packaged Electron app points this at
+// its user-data .env); otherwise it loads ./.env from cwd (dev). On Railway, no
+// .env file exists and the real dashboard env vars are used untouched.
+import "dotenv/config"
 import "./setup.js"
 import { createServer } from "node:http"
 import app from "./app.js"
