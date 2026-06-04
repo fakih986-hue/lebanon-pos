@@ -78,6 +78,10 @@ export function startCloudSyncBridge(): void {
     `[cloud-sync] Bridge started → ${CLOUD_API_URL}  tenant=${CLOUD_TENANT}`
   )
 
+  // Immediate full sync on startup so data is available right away
+  pushToCloud().catch(() => {})
+  pullFromCloud().catch(() => {})
+
   schedulePush()
   schedulePull()
 }
