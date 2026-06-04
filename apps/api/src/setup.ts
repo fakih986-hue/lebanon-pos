@@ -25,6 +25,16 @@ try {
   // Already resolved or not in a failed state — safe to ignore
 }
 
+// Resolve the Phase-0 migration that failed because duplicate empty StaffUser.mobile
+// values violated the new unique constraint. The migration SQL now fixes duplicates
+// before creating the index, so rolling it back and re-applying will succeed.
+try {
+  execSync(`npx prisma migrate resolve --rolled-back "20260604000001_phase0_po_items_staff_unique"`, EXEC_OPTS)
+  console.log("[setup] rolled back failed migration: 20260604000001_phase0_po_items_staff_unique")
+} catch {
+  // Already resolved or not in a failed state — safe to ignore
+}
+
 try {
   console.log("[setup] Running prisma migrate deploy...")
   execSync("npx prisma migrate deploy", EXEC_OPTS)

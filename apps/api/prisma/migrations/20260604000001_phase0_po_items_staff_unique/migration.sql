@@ -28,7 +28,10 @@ ALTER TABLE "PurchaseOrderItem"
 CREATE INDEX "PurchaseOrderItem_tenantId_purchaseOrderId_idx"
     ON "PurchaseOrderItem"("tenantId", "purchaseOrderId");
 
+-- Fix duplicate empty mobiles before adding unique constraint
+-- Staff with empty mobile get their id as mobile (safe: they can't login via mobile anyway)
+UPDATE "StaffUser" SET mobile = id WHERE mobile = '';
+
 -- Unique mobile per tenant (prevents login ambiguity)
--- NOTE: Will fail if duplicate mobiles already exist — clean those up first if needed
 CREATE UNIQUE INDEX "StaffUser_tenantId_mobile_key"
     ON "StaffUser"("tenantId", "mobile");
