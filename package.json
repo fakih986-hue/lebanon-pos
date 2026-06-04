@@ -26,8 +26,11 @@
     "typecheck:ordering": "pnpm --dir apps/ordering exec tsc -b",
     "typecheck:driver": "pnpm --dir apps/driver exec tsc -b",
     "typecheck:all": "pnpm typecheck:api && pnpm typecheck:desktop && pnpm typecheck:admin && pnpm typecheck:ordering && pnpm typecheck:driver",
-    "electron:build": "tsc -p apps/electron",
-    "electron:start": "electron apps/electron/dist/main.js"
+    "electron:build":   "tsc -p apps/electron",
+    "electron:start":   "electron apps/electron/dist/main.js",
+    "electron:dev":     "pnpm electron:build && electron apps/electron/dist/main.js",
+    "electron:package": "pnpm build:api && pnpm --dir apps/api bundle && pnpm build:desktop && pnpm --dir apps/electron run package",
+    "electron:icon":    "node apps/electron/scripts/generate-icon.mjs"
   },
   "devDependencies": {
     "@types/electron": "^1.6.12",

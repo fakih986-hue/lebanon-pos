@@ -1,7 +1,24 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 import jwt, { type SignOptions } from "jsonwebtoken"
+import { Decimal } from "@prisma/client/runtime/library"
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-in-production"
+/**
+ * Recursively convert Prisma Decimal values to plain JS numbers.
+ * Prisma's Decimal.toJSON() returns a string — this ensures the API
+ * always sends numbers (not strings) to the desktop and ordering apps.
+ */
+function serializeDecimals(value: unknown): unknown {
+  if (value instanceof Decimal) return value.toNumber()
+  if (Array.isArray(value)) return value.map(serializeDecimals)
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, serializeDecimals(v)])
+    )
+  }
+  return value
+}
+
+const JWT_SECRET = process.env.JWT_SECRET!
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN ||
   "30d") as SignOptions["expiresIn"]
 
@@ -27,7 +44,7 @@ type Handler = (
 export function json(res: ServerResponse, data: unknown, statusCode = 200) {
   res.statusCode = statusCode
   res.setHeader("Content-Type", "application/json")
-  res.end(JSON.stringify(data))
+  res.end(JSON.stringify(serializeDecimals(data)))
 }
 
 export const requireAuth: Handler = (req, res, next) => {

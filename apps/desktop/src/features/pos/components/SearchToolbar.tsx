@@ -5,6 +5,7 @@ import {
   ScanBarcode,
   Search,
   ShoppingCart,
+  Zap,
 } from "lucide-react"
 import { formatLbpCurrency, formatNumber } from "../lib/currency"
 
@@ -25,6 +26,8 @@ type Props = {
   videoRef: RefObject<HTMLVideoElement | null>
   scanCaptureInputRef: RefObject<HTMLInputElement | null>
   onScanCapture: (event: ChangeEvent<HTMLInputElement>) => void
+  quickMode: boolean
+  onToggleQuickMode: () => void
 }
 
 export default function SearchToolbar({
@@ -44,20 +47,34 @@ export default function SearchToolbar({
   videoRef,
   scanCaptureInputRef,
   onScanCapture,
+  quickMode,
+  onToggleQuickMode,
 }: Props) {
   const { t, dir } = useI18n()
 
   return (
-    <div className="rounded-xl border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "var(--shadow-sm)" }}>
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
-        <label className="relative min-w-0">
-          <span className="mb-2 block text-[13px] font-bold" style={{ color: "var(--text-2)" }}>
-            {t("pos.quick_add")}
+    <div className="pos-command-panel p-3 sm:p-4">
+      {/* Compact header with inline chips */}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h2 className="text-[18px] font-black leading-none tracking-tight" style={{ color: "var(--text)" }}>
+          Scan, tap, sell
+        </h2>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="pos-command-chip">Active shift</span>
+          <span className="pos-command-chip">{formatNumber(itemCount)} items</span>
+          <span className="pos-command-chip" style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}>
+            1 USD = {formatLbpCurrency(exchangeRate)}
           </span>
+        </div>
+      </div>
+
+      {/* Search + buttons row */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+        <label className="relative min-w-0 flex-1">
           <Search
             size={20}
-            className={`pointer-events-none absolute bottom-4`}
-            style={{ color: "var(--text-3)", [dir === "rtl" ? "right" : "left"]: "14px" }}
+            className="pointer-events-none absolute"
+            style={{ color: "#059669", [dir === "rtl" ? "right" : "left"]: "16px", top: "50%", transform: "translateY(-50%)" }}
           />
           <input
             ref={scanInputRef}
@@ -71,70 +88,69 @@ export default function SearchToolbar({
               }
             }}
             placeholder={t("pos.scan_placeholder")}
-            className={`input h-14 text-[17px] font-semibold ${dir === "rtl" ? "pr-12 pl-4" : "pl-12 pr-4"}`}
+            className={`input h-[54px] rounded-lg text-[17px] font-black ${dir === "rtl" ? "pr-14 pl-4" : "pl-[48px] pr-4"}`}
           />
         </label>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:flex">
+        <div className="flex gap-1.5">
           <button
             type="button"
             onClick={() => onQuickAdd(scanCode)}
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-bold text-white transition sm:h-14 sm:px-5"
-            style={{ background: "var(--text)" }}
+            className="pos-command-button pos-command-primary"
+            style={{ height: 54, minWidth: 80 }}
           >
-            <ScanBarcode size={19} />
-            {t("pos.add")}
+            <ScanBarcode size={18} />
+            Add
           </button>
           <button
             type="button"
-            onClick={onCartOpen}
-            className="relative flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-bold text-white transition sm:h-14 sm:px-5"
-            style={{ background: "var(--brand)" }}
+            onClick={onToggleQuickMode}
+            className="pos-command-button pos-command-dark"
+            style={{ height: 54, minWidth: 100 }}
           >
-            <ShoppingCart size={19} />
-            {t("pos.cart")}
-            {itemCount > 0 && (
-              <span className="ml-1 rounded-full px-1.5 py-0.5 text-[11px] font-black" style={{ background: "rgba(255,255,255,0.25)" }}>
-                {itemCount}
-              </span>
-            )}
+            <Zap size={18} />
+            Full Screen POS
           </button>
           <button
             type="button"
             onClick={onStartCamera}
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl border px-4 text-[15px] font-bold transition sm:h-14"
-            style={cameraActive
-              ? { borderColor: "var(--rose)", background: "var(--rose-soft)", color: "var(--rose)" }
-              : { borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-2)" }
-            }
+            className="pos-command-button"
+            style={{ height: 54, minWidth: 72 }}
           >
-            <ScanBarcode size={19} />
+            <ScanBarcode size={18} />
             {cameraActive ? t("pos.stop") : t("pos.scan")}
           </button>
           <button
             type="button"
-            onClick={onCleanSale}
-            className="flex h-12 touch-manipulation items-center justify-center gap-2 rounded-xl border px-4 text-[15px] font-bold transition sm:h-14"
-            style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-2)" }}
+            onClick={onCartOpen}
+            className="pos-command-button"
+            style={{ height: 54, minWidth: 72 }}
           >
-            <Eraser size={19} />
+            <ShoppingCart size={18} />
+            {t("pos.cart")}
+          </button>
+          <button
+            type="button"
+            onClick={onCleanSale}
+            className="pos-command-button"
+            style={{ height: 54, minWidth: 72 }}
+          >
+            <Eraser size={18} />
             {t("pos.clean")}
           </button>
         </div>
       </div>
 
-      <div className="mt-3 grid gap-2 text-sm font-bold md:grid-cols-[minmax(0,1fr)_repeat(3,auto)]">
-        <p className="rounded-lg px-3 py-2 text-[13px] font-medium truncate" style={{ background: "var(--surface-2)", color: "var(--text-3)" }}>
-          {scannerStatus}
-        </p>
-        <span className="rounded-lg px-3 py-2 text-[13px] font-semibold" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
+      {/* Unified status bar */}
+      <div className="mt-3 flex h-[34px] items-center gap-2 rounded-lg border px-3 text-[12px] font-semibold"
+        style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
+      >
+        <span className="h-[6px] w-[6px] shrink-0 rounded-full" style={{ background: "var(--brand)" }} />
+        <span className="truncate">{scannerStatus}</span>
+        <span className="ml-auto shrink-0 rounded-md px-2 py-0.5 text-[11px] font-black"
+          style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
+        >
           {t("pos.items_shown", { n: formatNumber(filteredProductsCount) })}
-        </span>
-        <span className="rounded-lg px-3 py-2 text-[13px] font-semibold" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
-          {t("pos.cart_count", { n: formatNumber(itemCount) })}
-        </span>
-        <span className="rounded-lg px-3 py-2 text-[13px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
-          {t("pos.exchange_rate", { rate: formatLbpCurrency(exchangeRate) })}
         </span>
       </div>
 

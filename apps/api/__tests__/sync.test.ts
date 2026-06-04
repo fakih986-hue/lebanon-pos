@@ -79,9 +79,7 @@ describe("POST /api/sync/push", () => {
     expect(res.body.results[0].status).toBe("ok")
   })
 
-  it("handles unknown entity without throwing", async () => {
-    vi.mocked(prisma.syncOperation.create).mockResolvedValue({ id: "op1" })
-
+  it("rejects unknown entity via Zod schema", async () => {
     const res = await request("POST", "/api/sync/push", {
       token,
       body: {
@@ -89,7 +87,7 @@ describe("POST /api/sync/push", () => {
       },
     })
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(400)
   })
 })
 
@@ -131,7 +129,7 @@ describe("GET /api/sync/pull", () => {
     expect(res.body.products).toEqual([])
     expect(res.body.sales).toEqual([])
     expect(res.body.customers).toEqual([])
-    expect(res.body.settings).toBeNull()
+    expect(res.body.settings).toEqual([])
   })
 
   it("scopes queries to the authenticated tenant", async () => {

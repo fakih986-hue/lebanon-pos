@@ -1,7 +1,7 @@
 import type { Product } from "../types/product"
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
-import { canUseStorage } from "../lib/storage"
+import { canUseStorage, createId } from "../lib/storage"
 
 const CUSTOMERS_KEY = "lebanonpos.customers.v1"
 const DEBT_SALES_KEY = "lebanonpos.debt-sales.v1"
@@ -199,7 +199,7 @@ export function deleteCustomer(customerId: string) {
 export function addCustomer(input: CreateCustomerInput) {
   const customers = getCustomers()
   const customer: Customer = {
-    id: crypto.randomUUID(),
+    id: createId(),
     name: cleanText(input.name),
     mobile: cleanMobile(input.mobile),
     creditLimit: Math.max(0, input.creditLimit),
@@ -224,7 +224,7 @@ export function addCustomer(input: CreateCustomerInput) {
 
 export function recordDebtSale(input: RecordDebtSaleInput) {
   const sale: DebtSale = {
-    id: crypto.randomUUID(),
+    id: createId(),
     customerId: input.customerId,
     saleNumber: input.saleNumber,
     subtotal: input.subtotal,
@@ -267,7 +267,7 @@ export function reverseDebtSale(saleNumber: string) {
 
 export function recordDebtPayment(input: RecordDebtPaymentInput) {
   const payment: DebtPayment = {
-    id: crypto.randomUUID(),
+    id: createId(),
     customerId: input.customerId,
     amount: Math.max(0, input.amount),
     method: input.method,

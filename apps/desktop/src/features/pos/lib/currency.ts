@@ -23,12 +23,22 @@ export function formatNumber(value: number) {
   return numberFormatter.format(value)
 }
 
+/**
+ * Round a USD money value to 2 decimal places using "round half away from zero".
+ * Apply at every calculation boundary (tax, discount, total, change, profit, cost)
+ * to prevent IEEE 754 float accumulation errors.
+ * e.g. roundMoney(10.50 * 0.11) → 1.16  (not 1.1550000000000001)
+ */
+export function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100
+}
+
 export function usdToLbp(value: number, exchangeRate: number) {
   return value * Math.max(1, exchangeRate)
 }
 
 export function lbpToUsd(value: number, exchangeRate: number) {
-  return value / Math.max(1, exchangeRate)
+  return roundMoney(value / Math.max(1, exchangeRate))
 }
 
 /**

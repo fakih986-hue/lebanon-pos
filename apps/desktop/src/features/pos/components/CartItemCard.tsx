@@ -143,10 +143,8 @@ const CartItemCard = memo(function CartItemCard({
       <button
         type="button"
         onClick={onRemove}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition"
-        style={{ color: "var(--text-3)" }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--rose)"; e.currentTarget.style.background = "var(--rose-soft)" }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-3)"; e.currentTarget.style.background = "transparent" }}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition hover:opacity-80"
+        style={{ color: "var(--text-3)", background: "var(--surface-2)" }}
         aria-label={t("pos.remove_item", { name })}
       >
         <Trash2 size={14} />

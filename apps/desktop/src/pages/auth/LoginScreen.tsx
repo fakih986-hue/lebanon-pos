@@ -4,6 +4,7 @@ import { useI18n } from "@lebanonpos/shared"
 
 import {
   getUsers,
+  hashPin,
   unlockWithPin,
   type StaffUser,
 } from "../../features/pos/services/security.service"
@@ -45,15 +46,24 @@ export default function LoginScreen() {
   const [changePinUser, setChangePinUser] = useState<StaffUser | null>(null)
 
   async function handleUnlock() {
-    const user = await unlockWithPin(pin)
-    if (!user) {
-      setPin("")
-      showToast(t("desktop.lock_pin_not_recognized"), "error")
-      return
-    }
-    setStatus(`${user.name} unlocked.`)
-    if (mustChangePin(user)) {
-      setChangePinUser(user)
+    try {
+      console.log("[LoginScreen] handleUnlock called, pin length:", pin.length)
+      const user = await unlockWithPin(pin)
+      console.log("[LoginScreen] unlockWithPin result:", user?.name ?? "null")
+      if (!user) {
+        setPin("")
+        showToast(t("desktop.lock_pin_not_recognized"), "error")
+        return
+      }
+      setStatus(`${user.name} unlocked.`)
+      console.log("[LoginScreen] mustChangePin:", mustChangePin(user))
+      if (mustChangePin(user)) {
+        setChangePinUser(user)
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error"
+      console.error("[LoginScreen] handleUnlock error:", err)
+      setStatus(`Error: ${msg}`)
     }
   }
 
@@ -119,6 +129,25 @@ export default function LoginScreen() {
 
       try {
         await pullFromServer(true)  // full pull → all data + users land locally
+
+        // Client knows the plaintext PIN — replace the user's bcrypt PIN with SHA-256 for local unlock
+        if (data.user?.id) {
+          try {
+            const raw = localStorage.getItem("lebanonpos.users.v1")
+            if (raw) {
+              const users = JSON.parse(raw)
+              const pinHash = await hashPin(cPin.trim())
+              for (const u of users) {
+                if (u.id === data.user.id) {
+                  u.pin = pinHash
+                  u.pinChanged = true
+                  break
+                }
+              }
+              localStorage.setItem("lebanonpos.users.v1", JSON.stringify(users))
+            }
+          } catch { /* non-critical */ }
+        }
       } catch (pullErr) {
         // Restore backup on pull failure so existing data isn't lost
         for (const [key, val] of Object.entries(backupSnapshot)) {

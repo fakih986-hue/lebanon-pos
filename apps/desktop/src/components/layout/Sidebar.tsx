@@ -40,25 +40,25 @@ type MenuItem = {
   path: string
   icon: LucideIcon
   permission: Permission
-  group: "Command" | "Retail" | "Operations" | "Admin"
+  group: "Register" | "Stock" | "Operations" | "Online" | "System"
 }
 
 export const menuItems: MenuItem[] = [
-  { label: "Dashboard", detail: "Overview", labelKey: "nav.dashboard", detailKey: "desktop.nav.command", path: "/dashboard", icon: Gauge, permission: "reports.view", group: "Command" },
-  { label: "POS", detail: "Checkout", labelKey: "desktop.nav.pos", detailKey: "desktop.nav.checkout", path: "/", icon: LayoutDashboard, permission: "sales.checkout", group: "Retail" },
-  { label: "Products", detail: "Inventory", labelKey: "nav.products", detailKey: "desktop.nav.inventory", path: "/products", icon: PackageSearch, permission: "inventory.manage", group: "Retail" },
-  { label: "Sales", detail: "History", labelKey: "desktop.nav.sales", detailKey: "desktop.nav.history", path: "/sales", icon: ReceiptText, permission: "reports.view", group: "Retail" },
-  { label: "Receiving", detail: "Batches", labelKey: "desktop.nav.receiving", detailKey: "desktop.nav.batches", path: "/products/new", icon: ClipboardPlus, permission: "inventory.manage", group: "Retail" },
-  { label: "Customers", detail: "Debts", labelKey: "nav.customers", detailKey: "desktop.nav.debts", path: "/customers", icon: UsersRound, permission: "customers.manage", group: "Retail" },
-  { label: "Delivery", detail: "Orders", labelKey: "nav.delivery", detailKey: "desktop.nav.orders", path: "/delivery", icon: Truck, permission: "delivery.manage", group: "Retail" },
-  { label: "Drivers", detail: "Manage", labelKey: "nav.drivers", detailKey: "drivers.subtitle", path: "/delivery/drivers", icon: UsersRound, permission: "delivery.manage", group: "Retail" },
-  { label: "Suppliers", detail: "Payables", labelKey: "desktop.nav.suppliers", detailKey: "desktop.nav.payables", path: "/suppliers", icon: ClipboardList, permission: "accounting.manage", group: "Operations" },
+  { label: "POS", detail: "Checkout", labelKey: "desktop.nav.pos", detailKey: "desktop.nav.checkout", path: "/", icon: LayoutDashboard, permission: "sales.checkout", group: "Register" },
+  { label: "Sales", detail: "History", labelKey: "desktop.nav.sales", detailKey: "desktop.nav.history", path: "/sales", icon: ReceiptText, permission: "reports.view", group: "Register" },
+  { label: "Customers", detail: "Debts", labelKey: "nav.customers", detailKey: "desktop.nav.debts", path: "/customers", icon: UsersRound, permission: "customers.manage", group: "Register" },
+  { label: "Products", detail: "Inventory", labelKey: "nav.products", detailKey: "desktop.nav.inventory", path: "/products", icon: PackageSearch, permission: "inventory.manage", group: "Stock" },
+  { label: "Receiving", detail: "Batches", labelKey: "desktop.nav.receiving", detailKey: "desktop.nav.batches", path: "/products/new", icon: ClipboardPlus, permission: "inventory.manage", group: "Stock" },
+  { label: "Dashboard", detail: "Overview", labelKey: "nav.dashboard", detailKey: "desktop.nav.command", path: "/dashboard", icon: Gauge, permission: "reports.view", group: "Operations" },
   { label: "Accounting", detail: "Profit", labelKey: "desktop.nav.accounting", detailKey: "desktop.nav.profit", path: "/accounting", icon: Calculator, permission: "accounting.manage", group: "Operations" },
-  { label: "Staff", detail: "Shifts", labelKey: "desktop.nav.staff", detailKey: "desktop.nav.shifts", path: "/staff", icon: ShieldCheck, permission: "staff.manage", group: "Admin" },
-  { label: "Settings", detail: "System", labelKey: "nav.settings", detailKey: "desktop.nav.system", path: "/settings", icon: Settings, permission: "settings.manage", group: "Admin" },
+  { label: "Suppliers", detail: "Payables", labelKey: "desktop.nav.suppliers", detailKey: "desktop.nav.payables", path: "/suppliers", icon: ClipboardList, permission: "accounting.manage", group: "Operations" },
+  { label: "Staff", detail: "Shifts", labelKey: "desktop.nav.staff", detailKey: "desktop.nav.shifts", path: "/staff", icon: ShieldCheck, permission: "staff.manage", group: "Operations" },
+  { label: "Delivery", detail: "Orders", labelKey: "nav.delivery", detailKey: "desktop.nav.orders", path: "/delivery", icon: Truck, permission: "delivery.manage", group: "Online" },
+  { label: "Drivers", detail: "Manage", labelKey: "nav.drivers", detailKey: "drivers.subtitle", path: "/delivery/drivers", icon: UsersRound, permission: "delivery.manage", group: "Online" },
+  { label: "Settings", detail: "System", labelKey: "nav.settings", detailKey: "desktop.nav.system", path: "/settings", icon: Settings, permission: "settings.manage", group: "System" },
 ]
 
-const menuGroups: MenuItem["group"][] = ["Command", "Retail", "Operations", "Admin"]
+const menuGroups: MenuItem["group"][] = ["Register", "Stock", "Operations", "Online", "System"]
 
 function isActivePath(pathname: string, path: string) {
   if (path === "/") return pathname === "/"
@@ -99,7 +99,7 @@ export default function Sidebar() {
         style={{ borderColor: "var(--sidebar-border)", minHeight: 64 }}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-lg shadow-emerald-900/30">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white" style={{ background: "var(--brand)" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
             </svg>
@@ -224,8 +224,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1.5 backdrop-blur-xl md:hidden"
-      style={{ background: "rgba(var(--bg),0.92)", borderColor: "var(--border)" }}
+      className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1.5 backdrop-blur-xl md:hidden"
     >
       <div className="mx-auto flex max-w-6xl gap-0.5 overflow-x-auto [scrollbar-width:none]">
         {visibleMenuItems.map((item) => {

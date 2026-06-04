@@ -6,6 +6,7 @@ import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 const router = Router()
 
 router.get("/kpi", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+  try {
   const tenantId = req.auth!.tenantId
 
   const now = new Date()
@@ -89,10 +90,10 @@ router.get("/kpi", requireAuth, async (req: AuthRequest, res: ServerResponse) =>
     }),
   ])
 
-  const fromAggregate = (agg: { _count: { id: number }; _sum: { total: number | null; profit: number | null } }) => ({
+  const fromAggregate = (agg: { _count: { id: number }; _sum: { total: unknown; profit: unknown } }) => ({
     count: agg._count.id,
-    revenue: agg._sum.total ?? 0,
-    profit: agg._sum.profit ?? 0,
+    revenue: Number(agg._sum.total ?? 0),
+    profit: Number(agg._sum.profit ?? 0),
   })
 
   const trendMap = new Map<string, { total: number; count: number }>()
@@ -105,7 +106,7 @@ router.get("/kpi", requireAuth, async (req: AuthRequest, res: ServerResponse) =>
     const key = s.createdAt.toISOString().slice(0, 10)
     const entry = trendMap.get(key)
     if (entry) {
-      entry.total += s.total
+      entry.total += Number(s.total)
       entry.count++
     }
   }
@@ -156,6 +157,10 @@ router.get("/kpi", requireAuth, async (req: AuthRequest, res: ServerResponse) =>
     })),
     hourlyDistribution,
   })
+  } catch (err) {
+    console.error("Dashboard KPI error:", err)
+    json(res, { error: "Failed to load dashboard data" }, 500)
+  }
 })
 
 export default router

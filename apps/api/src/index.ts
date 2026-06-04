@@ -8,7 +8,13 @@ import prisma from "./lib/prisma.js"
 // Must be set before any route handler runs
 const JWT_SECRET = (process.env.JWT_SECRET || "").trim()
 if (!JWT_SECRET) {
-  console.error("FATAL: JWT_SECRET environment variable must be set in production")
+  console.error("FATAL: JWT_SECRET environment variable must be set")
+  process.exit(1)
+}
+
+const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || "").trim()
+if (!ADMIN_PASSWORD) {
+  console.error("FATAL: ADMIN_PASSWORD environment variable must be set")
   process.exit(1)
 }
 

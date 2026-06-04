@@ -12,14 +12,16 @@ import SearchToolbar from "../components/SearchToolbar"
 import DepartmentTabs from "../components/DepartmentTabs"
 import LastSaleBanner from "../components/LastSaleBanner"
 import CartDrawer from "../components/CartDrawer"
+import CartPanel from "../components/CartPanel"
 import VariantPicker from "../components/VariantPicker"
-import SimplePOSMode from "../components/SimplePOSMode"
+import QuickPOSMode from "../components/QuickPOSMode"
 import { StaleRateBanner } from "../components/RateManager"
 import { openWhatsAppShare, receiptMessage } from "../lib/whatsapp"
 import {
   formatCurrency,
   formatNumber,
   lbpToUsd,
+  roundMoney,
   usdToLbp,
 } from "../lib/currency"
 import {
@@ -33,8 +35,8 @@ import {
   productMatchesSearch,
   toggleProductFavorite,
 } from "../services/product.service"
-import { decreaseProductStock } from "../services/product.service"
-import { recordSale, type SaleTender } from "../services/sales.service"
+import { decreaseProductStock, increaseProductStock } from "../services/product.service"
+import { recordSale, voidSale, type SaleTender } from "../services/sales.service"
 import {
   holdSale,
   removeHeldSale,
@@ -42,7 +44,7 @@ import {
 } from "../services/heldSale.service"
 import { recordDebtSale } from "../services/customer.service"
 import { recordAuditEvent, userCan } from "../services/security.service"
-import { consumeInventoryBatches } from "../services/inventoryBatch.service"
+import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
 import type { Product } from "../types/product"
 import { usePosData } from "../hooks/usePosData"
 import { useBarcodeScanner } from "../hooks/useBarcodeScanner"
@@ -101,7 +103,7 @@ export default function POSPage() {
   const [variantPickerProduct, setVariantPickerProduct] =
     useState<Product | null>(null)
   const [saleNote, setSaleNote] = useState("")
-  const [simpleMode, setSimpleMode] = useState(false)
+  const [quickMode, setQuickMode] = useState(false)
 
   const productListRef = useRef<HTMLDivElement | null>(null)
 
@@ -128,6 +130,11 @@ export default function POSPage() {
       handler: () => { if (isCartOpen) setIsCartOpen(false) },
     },
   ])
+
+  useEffect(() => {
+    if (!quickMode) return
+    window.requestAnimationFrame(() => scanInputRef.current?.focus())
+  }, [quickMode, scanInputRef])
 
   // --- Computed values ---
   const departmentSummaries = useMemo(() => {
@@ -174,21 +181,21 @@ export default function POSPage() {
     ) ?? departmentSummaries[0]
 
   const canApplyDiscount = userCan("sales.discount")
-  const grossSubtotal = items.reduce(
+  const grossSubtotal = roundMoney(items.reduce(
     (sum, item) => sum + item.price * item.quantity, 0
-  )
+  ))
   const parsedDiscountValue = parseMoney(discountValue)
   const discountTotal = canApplyDiscount
-    ? Math.min(
+    ? roundMoney(Math.min(
         grossSubtotal,
         discountMode === "Percent"
           ? grossSubtotal * (Math.min(100, parsedDiscountValue) / 100)
           : parsedDiscountValue
-      )
+      ))
     : 0
-  const subtotal = Math.max(0, grossSubtotal - discountTotal)
-  const tax = subtotal * settings.vatRate
-  const total = subtotal + tax
+  const subtotal = roundMoney(Math.max(0, grossSubtotal - discountTotal))
+  const tax = roundMoney(subtotal * settings.vatRate)
+  const total = roundMoney(subtotal + tax)
   const exchangeRate = Math.max(1, settings.usdToLbpRate)
   const totalLbp = usdToLbp(total, exchangeRate)
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
@@ -201,10 +208,10 @@ export default function POSPage() {
   )
   const paidUsdAmount = tenderMode === "LBP" ? 0 : parseMoney(paidUsd)
   const paidLbpAmount = tenderMode === "USD" ? 0 : parseMoney(paidLbp)
-  const paidTotalUsd = paidUsdAmount + lbpToUsd(paidLbpAmount, exchangeRate)
+  const paidTotalUsd = roundMoney(paidUsdAmount + lbpToUsd(paidLbpAmount, exchangeRate))
   const paidTotalLbp = usdToLbp(paidTotalUsd, exchangeRate)
-  const cashStillDueUsd = Math.max(0, total - paidTotalUsd)
-  const cashChangeUsd = Math.max(0, paidTotalUsd - total)
+  const cashStillDueUsd = roundMoney(Math.max(0, total - paidTotalUsd))
+  const cashChangeUsd = roundMoney(Math.max(0, paidTotalUsd - total))
   const cashChangeLbp = usdToLbp(cashChangeUsd, exchangeRate)
   const cashTenderValid =
     paymentMethod !== "Cash" || items.length === 0 || paidTotalUsd + 0.005 >= total
@@ -483,309 +490,387 @@ export default function POSPage() {
     if (checkoutBlocked) return
 
     const saleNumber = `S-${Date.now().toString().slice(-6)}`
-    const batchAllocations = consumeInventoryBatches(
-      items.map((item) => ({
-        productId: item.id, productName: item.name, barcode: item.barcode,
-        quantity: item.quantity, fallbackUnitCost: item.cost,
-      }))
-    )
-    const saleItems = items.map((item) => {
-      const allocations = batchAllocations.get(item.id) ?? []
-      const allocatedQuantity = allocations.reduce((sum, a) => sum + a.quantity, 0)
-      const allocatedCost = allocations.reduce((sum, a) => sum + a.unitCost * a.quantity, 0)
-      const unitCost = allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost
-      return {
-        id: item.id, name: item.name, barcode: item.barcode, cost: unitCost,
-        quantity: item.quantity, unitPrice: item.price,
-        total: item.price * item.quantity, batchAllocations: allocations,
+
+    let batchesConsumed = false
+    let recordedSaleId: string | undefined
+    let stockDecreased = false
+
+    try {
+      const batchAllocations = consumeInventoryBatches(
+        items.map((item) => ({
+          productId: item.id, productName: item.name, barcode: item.barcode,
+          quantity: item.quantity, fallbackUnitCost: item.cost,
+        }))
+      )
+      batchesConsumed = true
+
+      const saleItems = items.map((item) => {
+        const allocations = batchAllocations.get(item.id) ?? []
+        const allocatedQuantity = allocations.reduce((sum, a) => sum + a.quantity, 0)
+        const allocatedCost = allocations.reduce((sum, a) => sum + a.unitCost * a.quantity, 0)
+        const unitCost = allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost
+        return {
+          id: item.id, name: item.name, barcode: item.barcode, cost: unitCost,
+          quantity: item.quantity, unitPrice: item.price,
+          total: item.price * item.quantity, batchAllocations: allocations,
+        }
+      })
+      const tender: SaleTender | undefined =
+        paymentMethod === "Cash"
+          ? {
+              currency: tenderMode, exchangeRate,
+              paidUsd: paidUsdAmount, paidLbp: paidLbpAmount,
+              paidTotalUsd, paidTotalLbp,
+              changeUsd: cashChangeUsd, changeLbp: cashChangeLbp,
+              changeCurrency: tenderMode === "LBP" ? "LBP" : "USD",
+            }
+          : undefined
+      const customerBalanceBefore = selectedCustomer?.balance ?? 0
+      const customerBalanceAfter =
+        paymentMethod === "Debt" ? customerBalanceBefore + total : undefined
+
+      const saleResult = recordSale({
+        saleNumber, paymentMethod,
+        customerId: selectedCustomer?.id, customerName: selectedCustomer?.name,
+        subtotal, discountTotal, tax, total, tender, items: saleItems,
+      })
+      recordedSaleId = saleResult.id
+
+      if (discountTotal > 0) {
+        recordAuditEvent({
+          action: "sale.discount", entity: "sale",
+          summary: `${saleNumber} received a ${formatCurrency(discountTotal)} discount.`,
+          metadata: { saleNumber, grossSubtotal, discountMode, discountValue, discountTotal },
+        })
       }
-    })
-    const tender: SaleTender | undefined =
-      paymentMethod === "Cash"
-        ? {
-            currency: tenderMode, exchangeRate,
-            paidUsd: paidUsdAmount, paidLbp: paidLbpAmount,
-            paidTotalUsd, paidTotalLbp,
-            changeUsd: cashChangeUsd, changeLbp: cashChangeLbp,
-            changeCurrency: tenderMode === "LBP" ? "LBP" : "USD",
-          }
-        : undefined
-    const customerBalanceBefore = selectedCustomer?.balance ?? 0
-    const customerBalanceAfter =
-      paymentMethod === "Debt" ? customerBalanceBefore + total : undefined
 
-    recordSale({
-      saleNumber, paymentMethod,
-      customerId: selectedCustomer?.id, customerName: selectedCustomer?.name,
-      subtotal, discountTotal, tax, total, tender, items: saleItems,
-    })
+      if (paymentMethod === "Debt" && selectedCustomer) {
+        recordDebtSale({
+          customerId: selectedCustomer.id, saleNumber,
+          subtotal, discountTotal, tax, total, items: saleItems,
+        })
+      }
 
-    if (discountTotal > 0) {
-      recordAuditEvent({
-        action: "sale.discount", entity: "sale",
-        summary: `${saleNumber} received a ${formatCurrency(discountTotal)} discount.`,
-        metadata: { saleNumber, grossSubtotal, discountMode, discountValue, discountTotal },
+      decreaseProductStock(
+        items.map((item) => ({ productId: item.id, quantity: item.quantity }))
+      )
+      stockDecreased = true
+
+      setLastSale({
+        number: saleNumber, paymentMethod, customerName: selectedCustomer?.name,
+        grossSubtotal, subtotal, discountTotal, tax, total, totalLbp, exchangeRate,
+        tender,
+        customerBalanceBefore: paymentMethod === "Debt" ? customerBalanceBefore : undefined,
+        customerBalanceAfter, items,
       })
+      clearCart()
+      resetTender()
+      resetDiscount()
+      setScanCode("")
+      setSearch("")
+      setSaleNote("")
+      setIsCartOpen(false)
+      setScannerStatus("Sale completed. Scanner ready for the next sale.")
+    } catch (err) {
+      // Reverse completed steps — cart is preserved so user can retry
+      if (recordedSaleId) {
+        // voidSale restores stock + batches + debt internally — don't double-restore
+        voidSale(recordedSaleId)
+      } else {
+        // Sale was NOT recorded — manually restore what was consumed
+        if (stockDecreased) {
+          increaseProductStock(
+            items.map((item) => ({ productId: item.id, quantity: item.quantity }))
+          )
+        }
+        if (batchesConsumed) {
+          restoreInventoryBatches(
+            items.map((item) => ({
+              productId: item.id, productName: item.name, barcode: item.barcode,
+              quantity: item.quantity, fallbackUnitCost: item.cost,
+            }))
+          )
+        }
+      }
+      setScannerStatus(`Checkout failed. Cart preserved, try again.`)
     }
-
-    if (paymentMethod === "Debt" && selectedCustomer) {
-      recordDebtSale({
-        customerId: selectedCustomer.id, saleNumber,
-        subtotal, discountTotal, tax, total, items: saleItems,
-      })
-    }
-
-    decreaseProductStock(
-      items.map((item) => ({ productId: item.id, quantity: item.quantity }))
-    )
-
-    setLastSale({
-      number: saleNumber, paymentMethod, customerName: selectedCustomer?.name,
-      grossSubtotal, subtotal, discountTotal, tax, total, totalLbp, exchangeRate,
-      tender,
-      customerBalanceBefore: paymentMethod === "Debt" ? customerBalanceBefore : undefined,
-      customerBalanceAfter, items,
-    })
-    clearCart()
-    resetTender()
-    resetDiscount()
-    setScanCode("")
-    setSearch("")
-    setSaleNote("")
-    setIsCartOpen(false)
-    setScannerStatus("Sale completed. Scanner ready for the next sale.")
-  }, [checkoutBlocked, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId])
-
-  const completeSimpleSale = useCallback(function completeSimpleSale(
-    method: "Cash" | "Card" | "Wallet",
-    paidUsdInput: number
-  ): string | null {
-    if (items.length === 0) return null
-    const simpleSubtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-    const simpleTax = simpleSubtotal * settings.vatRate
-    const simpleTotal = simpleSubtotal + simpleTax
-    const rate = Math.max(1, settings.usdToLbpRate)
-    const simpleTotalLbp = usdToLbp(simpleTotal, rate)
-    if (method === "Cash" && paidUsdInput + 0.005 < simpleTotal) return null
-
-    const saleNumber = `S-${Date.now().toString().slice(-6)}`
-    const batchAllocations = consumeInventoryBatches(
-      items.map((item) => ({ productId: item.id, productName: item.name, barcode: item.barcode, quantity: item.quantity, fallbackUnitCost: item.cost }))
-    )
-    const saleItems = items.map((item) => {
-      const allocations = batchAllocations.get(item.id) ?? []
-      const allocatedQuantity = allocations.reduce((s, a) => s + a.quantity, 0)
-      const allocatedCost = allocations.reduce((s, a) => s + a.unitCost * a.quantity, 0)
-      const unitCost = allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost
-      return { id: item.id, name: item.name, barcode: item.barcode, cost: unitCost, quantity: item.quantity, unitPrice: item.price, total: item.price * item.quantity, batchAllocations: allocations }
-    })
-
-    const changeUsd = method === "Cash" ? Math.max(0, paidUsdInput - simpleTotal) : 0
-    const tender: SaleTender | undefined = method === "Cash" ? {
-      currency: "USD", exchangeRate: rate,
-      paidUsd: paidUsdInput, paidLbp: 0, paidTotalUsd: paidUsdInput,
-      paidTotalLbp: usdToLbp(paidUsdInput, rate),
-      changeUsd, changeLbp: usdToLbp(changeUsd, rate),
-      changeCurrency: "USD",
-    } : undefined
-
-    recordSale({
-      saleNumber, paymentMethod: method,
-      subtotal: simpleSubtotal, discountTotal: 0, tax: simpleTax,
-      total: simpleTotal, tender, items: saleItems,
-    })
-
-    decreaseProductStock(items.map((item) => ({ productId: item.id, quantity: item.quantity })))
-    setLastSale({
-      number: saleNumber, paymentMethod: method, customerName: undefined,
-      grossSubtotal: simpleSubtotal, subtotal: simpleSubtotal, discountTotal: 0,
-      tax: simpleTax, total: simpleTotal, totalLbp: simpleTotalLbp, exchangeRate: rate,
-      tender, customerBalanceBefore: undefined, customerBalanceAfter: undefined, items,
-    })
-    clearCart()
-    return saleNumber
-  }, [items, settings])
+  }, [checkoutBlocked, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal])
 
   return (
-    <main className="relative min-h-0 flex-1 overflow-hidden bg-page">
-      <section className="flex h-full min-w-0 flex-col gap-3 overflow-y-auto p-3 pb-28 sm:p-4 xl:p-5">
-        <StaleRateBanner />
-        <LastSaleBanner
-          sale={lastSale}
-          onNewSale={cleanSale}
-          onPrintReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}
-          onWhatsApp={() => {
-            if (!lastSale) return
-            openWhatsAppShare(receiptMessage({
-              storeName: settings.storeName,
-              saleNumber: lastSale.number,
-              total: lastSale.total,
-              totalLbp: lastSale.totalLbp,
-              items: lastSale.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
-              footer: settings.receiptFooter,
-            }))
-          }}
-        />
+    <main className="pos-workspace relative min-h-0 flex-1 overflow-hidden">
+      {/* Desktop: flex row with products + cart rail. Mobile: single column */}
+      <div className="flex h-full min-h-0">
+        {/* ── Left: Product area ── */}
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <section className="flex h-full min-w-0 flex-col gap-4 overflow-hidden p-3 pb-28 sm:p-4 md:pb-4 xl:p-5">
+            <StaleRateBanner />
+            <LastSaleBanner
+              sale={lastSale}
+              onNewSale={cleanSale}
+              onPrintReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}
+              onWhatsApp={() => {
+                if (!lastSale) return
+                openWhatsAppShare(receiptMessage({
+                  storeName: settings.storeName,
+                  saleNumber: lastSale.number,
+                  total: lastSale.total,
+                  totalLbp: lastSale.totalLbp,
+                  items: lastSale.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                  footer: settings.receiptFooter,
+                }))
+              }}
+            />
 
-        <SearchToolbar
-          scanInputRef={scanInputRef}
-          scanCode={scanCode}
-          onScanCodeChange={setScanCode}
-          onQuickAdd={quickAddProduct}
-          scannerStatus={scannerStatus}
-          cameraActive={cameraActive}
-          cameraEngine={cameraEngine}
-          filteredProductsCount={filteredProducts.length}
-          itemCount={itemCount}
-          exchangeRate={exchangeRate}
-          onStartCamera={startCameraScanner}
-          onCleanSale={cleanSale}
-          onCartOpen={() => setIsCartOpen(true)}
-          videoRef={videoRef}
-          scanCaptureInputRef={scanCaptureInputRef}
-          onScanCapture={handleScanCapture}
-        />
+            {quickMode ? (
+              <QuickPOSMode
+                scanInputRef={scanInputRef}
+                scanCode={scanCode}
+                onScanCodeChange={setScanCode}
+                onQuickAdd={quickAddProduct}
+                scannerStatus={scannerStatus}
+                cameraActive={cameraActive}
+                cameraEngine={cameraEngine}
+                onStartCamera={startCameraScanner}
+                videoRef={videoRef}
+                scanCaptureInputRef={scanCaptureInputRef}
+                onScanCapture={handleScanCapture}
+                items={items}
+                onIncreaseQty={increaseQuantity}
+                onDecreaseQty={decreaseQuantity}
+                onRemoveItem={removeItem}
+                onSetQuantity={setItemQuantity}
+                onSetPrice={setItemPrice}
+                onCleanSale={cleanSale}
+                onCartOpen={() => setIsCartOpen(true)}
+                onExit={() => setQuickMode(false)}
+                itemCount={itemCount}
+                total={total}
+                totalLbp={totalLbp}
+                exchangeRate={exchangeRate}
+              />
+            ) : (
+              <>
+                <SearchToolbar
+                  scanInputRef={scanInputRef}
+                  scanCode={scanCode}
+                  onScanCodeChange={setScanCode}
+                  onQuickAdd={quickAddProduct}
+                  scannerStatus={scannerStatus}
+                  cameraActive={cameraActive}
+                  cameraEngine={cameraEngine}
+                  filteredProductsCount={filteredProducts.length}
+                  itemCount={itemCount}
+                  exchangeRate={exchangeRate}
+                  onStartCamera={startCameraScanner}
+                  onCleanSale={cleanSale}
+                  onCartOpen={() => setIsCartOpen(true)}
+                  videoRef={videoRef}
+                  scanCaptureInputRef={scanCaptureInputRef}
+                  onScanCapture={handleScanCapture}
+                  quickMode={quickMode}
+                  onToggleQuickMode={() => setQuickMode(true)}
+                />
 
-        <DepartmentTabs
-          departments={departmentSummaries}
-          selected={selectedCategory}
-          onSelect={selectDepartment}
-        />
+                <div className="pos-section-card grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[184px_minmax(0,1fr)]">
+                  <DepartmentTabs
+                    departments={departmentSummaries}
+                    selected={selectedCategory}
+                    onSelect={selectDepartment}
+                  />
 
-        <div
-          ref={productListRef}
-          className="flex scroll-mt-5 items-center justify-between"
-        >
-          <div>
-            <h3 className="text-xl font-bold" style={{ color: "var(--text)" }}>
-              {selectedDepartment?.label ?? t("pos.quick_sale")}
-            </h3>
-            <p className="text-sm" style={{ color: "var(--text-3)" }}>
-              {t("pos.tap_hint")}
-            </p>
-          </div>
+                  <div className="flex min-h-0 flex-col border-t md:border-l md:border-t-0" style={{ borderColor: "var(--border)" }}>
+                    <div
+                      ref={productListRef}
+                      className="flex scroll-mt-5 items-center justify-between gap-3 border-b px-4 py-3"
+                      style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+                    >
+                      <div>
+                        <h3 className="text-lg font-black tracking-tight" style={{ color: "var(--text)" }}>
+                          {selectedDepartment?.label ?? t("pos.quick_sale")}
+                        </h3>
+                        <p className="text-[12px] font-semibold" style={{ color: "var(--text-3)" }}>
+                          {formatNumber(filteredProducts.length)} items ready
+                        </p>
+                      </div>
+                      <div className="rounded-lg px-3 py-2 text-right" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+                        <p className="text-[10px] font-black uppercase tracking-[0.12em]">Cart</p>
+                        <p className="text-lg font-black tabular-nums">{formatNumber(itemCount)}</p>
+                      </div>
+                    </div>
+
+                    <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                      {isLoading ? (
+                        <div className="flex h-full min-h-80 items-center justify-center">
+                          <Spinner label={t("pos.loading_products")} />
+                        </div>
+                      ) : filteredProducts.length > 0 ? (
+                        <ProductGrid
+                          products={filteredProducts}
+                          exchangeRate={exchangeRate}
+                          onAddProduct={addProductToSale}
+                          onToggleFavorite={toggleFavorite}
+                        />
+                      ) : (
+                        <EmptyState
+                          icon={PackageSearch}
+                          title={t("pos.no_products")}
+                          description={t("pos.try_another")}
+                          className="min-h-80 bg-white"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
+
+          {/* ── Mobile floating cart button (hidden on desktop) ── */}
           <button
             type="button"
-            onClick={() => setSimpleMode(true)}
-            className="flex items-center gap-2 rounded-xl border px-4 h-9 text-[13px] font-bold transition hover:opacity-80"
-            style={{
-              background: "var(--accent-soft)",
-              borderColor: "var(--accent)",
-              color: "var(--accent-text)",
-            }}
+            onClick={() => setIsCartOpen(true)}
+            className={`lg:hidden absolute bottom-20 left-3 right-3 z-30 flex items-center justify-between gap-3 rounded-lg bg-zinc-950 px-4 py-3 text-left text-white shadow-2xl transition hover:bg-zinc-800 md:bottom-5 md:min-w-64 md:px-5 md:py-4 ${dir === "rtl" ? "md:left-5 md:right-auto" : "md:left-auto md:right-5"}`}
           >
-            <span>⚡</span>
-            Quick Checkout
+            <span className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-400 text-zinc-950">
+                <ShoppingCart size={22} />
+              </span>
+              <span>
+                <span className="block text-sm font-semibold text-zinc-300">
+                  {t("pos.cart_checkout")}
+                </span>
+                <span className="block text-xl font-bold">
+                  {formatCurrency(total)}
+                </span>
+              </span>
+            </span>
+            <span className="flex shrink-0 items-center gap-2">
+              {heldSales.length > 0 ? (
+                <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-900">
+                  {t("pos.held_count", { n: formatNumber(heldSales.length) })}
+                </span>
+              ) : null}
+              <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-zinc-950">
+                {formatNumber(itemCount)}
+              </span>
+            </span>
           </button>
         </div>
 
-        <div className="min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
-          {isLoading ? (
-            <div className="flex h-full min-h-80 items-center justify-center">
-              <Spinner label={t("pos.loading_products")} />
-            </div>
-          ) : filteredProducts.length > 0 ? (
-            <ProductGrid
-              products={filteredProducts}
-              onAddProduct={addProductToSale}
-              onToggleFavorite={toggleFavorite}
-            />
-          ) : (
-            <EmptyState
-              icon={PackageSearch}
-              title={t("pos.no_products")}
-              description={t("pos.try_another")}
-              className="min-h-80 bg-white"
-            />
-          )}
-        </div>
-      </section>
+        {/* ── Right: Persistent cart rail (desktop only) ── */}
+        <CartPanel
+          items={items}
+          onIncreaseQty={increaseQuantity}
+          onDecreaseQty={decreaseQuantity}
+          onRemoveItem={removeItem}
+          onSetQuantity={setItemQuantity}
+          onSetPrice={setItemPrice}
+          saleNote={saleNote}
+          onSaleNoteChange={setSaleNote}
+          heldSales={heldSales}
+          onResumeHeld={resumeHeldSale}
+          onDiscardHeld={discardHeldSale}
+          vatRate={settings.vatRate}
+          customers={customers}
+          selectedCustomerId={selectedCustomerId}
+          onSelectCustomer={setSelectedCustomerId}
+          selectedCustomer={selectedCustomer}
+          paymentMethod={paymentMethod}
+          onSelectPayment={setPaymentMethod}
+          tenderMode={tenderMode}
+          onSelectTenderMode={selectTenderMode}
+          paidUsd={paidUsd}
+          paidLbp={paidLbp}
+          onPaidUsdChange={setPaidUsd}
+          onPaidLbpChange={setPaidLbp}
+          onFillExactTender={fillExactTender}
+          discountMode={discountMode}
+          discountValue={discountValue}
+          onDiscountModeChange={setDiscountMode}
+          onDiscountValueChange={setDiscountValue}
+          onHold={holdCurrentSale}
+          onClean={cleanSale}
+          onCompleteSale={completeSale}
+          itemCount={itemCount}
+          grossSubtotal={grossSubtotal}
+          discountTotal={discountTotal}
+          subtotal={subtotal}
+          tax={tax}
+          total={total}
+          totalLbp={totalLbp}
+          exchangeRate={exchangeRate}
+          paidTotalUsd={paidTotalUsd}
+          paidTotalLbp={paidTotalLbp}
+          cashChangeUsd={cashChangeUsd}
+          cashChangeLbp={cashChangeLbp}
+          cashStillDueUsd={cashStillDueUsd}
+          cashTenderValid={cashTenderValid}
+          creditLimitExceeded={creditLimitExceeded}
+          checkoutBlocked={checkoutBlocked}
+          hasDiscount={hasDiscount}
+          heldSalesItemCount={heldSalesItemCount}
+          canApplyDiscount={canApplyDiscount}
+        />
+      </div>
 
-      <button
-        type="button"
-        onClick={() => setIsCartOpen(true)}
-        className={`absolute bottom-20 left-3 right-3 z-30 flex items-center justify-between gap-3 rounded-lg bg-zinc-950 px-4 py-3 text-left text-white shadow-2xl transition hover:bg-zinc-800 md:bottom-5 md:min-w-64 md:px-5 md:py-4 ${dir === "rtl" ? "md:left-5 md:right-auto" : "md:left-auto md:right-5"}`}
-      >
-        <span className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-400 text-zinc-950">
-            <ShoppingCart size={22} />
-          </span>
-          <span>
-            <span className="block text-sm font-semibold text-zinc-300">
-              {t("pos.cart_checkout")}
-            </span>
-            <span className="block text-xl font-bold">
-              {formatCurrency(total)}
-            </span>
-          </span>
-        </span>
-        <span className="flex shrink-0 items-center gap-2">
-          {heldSales.length > 0 ? (
-            <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-900">
-              {t("pos.held_count", { n: formatNumber(heldSales.length) })}
-            </span>
-          ) : null}
-          <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-zinc-950">
-            {formatNumber(itemCount)}
-          </span>
-        </span>
-      </button>
-
-      <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        items={items}
-        onIncreaseQty={increaseQuantity}
-        onDecreaseQty={decreaseQuantity}
-        onRemoveItem={removeItem}
-        onSetQuantity={setItemQuantity}
-        onSetPrice={setItemPrice}
-        saleNote={saleNote}
-        onSaleNoteChange={setSaleNote}
-        heldSales={heldSales}
-        onResumeHeld={resumeHeldSale}
-        onDiscardHeld={discardHeldSale}
-        vatRate={settings.vatRate}
-        customers={customers}
-        selectedCustomerId={selectedCustomerId}
-        onSelectCustomer={setSelectedCustomerId}
-        selectedCustomer={selectedCustomer}
-        paymentMethod={paymentMethod}
-        onSelectPayment={setPaymentMethod}
-        tenderMode={tenderMode}
-        onSelectTenderMode={selectTenderMode}
-        paidUsd={paidUsd}
-        paidLbp={paidLbp}
-        onPaidUsdChange={setPaidUsd}
-        onPaidLbpChange={setPaidLbp}
-        onFillExactTender={fillExactTender}
-        discountMode={discountMode}
-        discountValue={discountValue}
-        onDiscountModeChange={setDiscountMode}
-        onDiscountValueChange={setDiscountValue}
-        onHold={holdCurrentSale}
-        onClean={cleanSale}
-        onCompleteSale={completeSale}
-        itemCount={itemCount}
-        grossSubtotal={grossSubtotal}
-        discountTotal={discountTotal}
-        subtotal={subtotal}
-        tax={tax}
-        total={total}
-        totalLbp={totalLbp}
-        exchangeRate={exchangeRate}
-        paidTotalUsd={paidTotalUsd}
-        paidTotalLbp={paidTotalLbp}
-        cashChangeUsd={cashChangeUsd}
-        cashChangeLbp={cashChangeLbp}
-        cashStillDueUsd={cashStillDueUsd}
-        cashTenderValid={cashTenderValid}
-        creditLimitExceeded={creditLimitExceeded}
-        checkoutBlocked={checkoutBlocked}
-        hasDiscount={hasDiscount}
-        heldSalesItemCount={heldSalesItemCount}
-        canApplyDiscount={canApplyDiscount}
-      />
+      {/* ── CartDrawer (mobile drawer, hidden on desktop) ── */}
+      <div className="lg:hidden">
+        <CartDrawer
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+          items={items}
+          onIncreaseQty={increaseQuantity}
+          onDecreaseQty={decreaseQuantity}
+          onRemoveItem={removeItem}
+          onSetQuantity={setItemQuantity}
+          onSetPrice={setItemPrice}
+          saleNote={saleNote}
+          onSaleNoteChange={setSaleNote}
+          heldSales={heldSales}
+          onResumeHeld={resumeHeldSale}
+          onDiscardHeld={discardHeldSale}
+          vatRate={settings.vatRate}
+          customers={customers}
+          selectedCustomerId={selectedCustomerId}
+          onSelectCustomer={setSelectedCustomerId}
+          selectedCustomer={selectedCustomer}
+          paymentMethod={paymentMethod}
+          onSelectPayment={setPaymentMethod}
+          tenderMode={tenderMode}
+          onSelectTenderMode={selectTenderMode}
+          paidUsd={paidUsd}
+          paidLbp={paidLbp}
+          onPaidUsdChange={setPaidUsd}
+          onPaidLbpChange={setPaidLbp}
+          onFillExactTender={fillExactTender}
+          discountMode={discountMode}
+          discountValue={discountValue}
+          onDiscountModeChange={setDiscountMode}
+          onDiscountValueChange={setDiscountValue}
+          onHold={holdCurrentSale}
+          onClean={cleanSale}
+          onCompleteSale={completeSale}
+          itemCount={itemCount}
+          grossSubtotal={grossSubtotal}
+          discountTotal={discountTotal}
+          subtotal={subtotal}
+          tax={tax}
+          total={total}
+          totalLbp={totalLbp}
+          exchangeRate={exchangeRate}
+          paidTotalUsd={paidTotalUsd}
+          paidTotalLbp={paidTotalLbp}
+          cashChangeUsd={cashChangeUsd}
+          cashChangeLbp={cashChangeLbp}
+          cashStillDueUsd={cashStillDueUsd}
+          cashTenderValid={cashTenderValid}
+          creditLimitExceeded={creditLimitExceeded}
+          checkoutBlocked={checkoutBlocked}
+          hasDiscount={hasDiscount}
+          heldSalesItemCount={heldSalesItemCount}
+          canApplyDiscount={canApplyDiscount}
+        />
+      </div>
 
       {confirmAction && (
         <ConfirmDialog
@@ -812,26 +897,6 @@ export default function POSPage() {
         />
       ) : null}
 
-      {simpleMode && (
-        <SimplePOSMode
-          products={products}
-          categories={Array.from(new Set(products.filter((p) => !p.isParent).map((p) => p.category)))}
-          items={items}
-          onAddProduct={addProductToSale}
-          onIncreaseQty={increaseQuantity}
-          onDecreaseQty={decreaseQuantity}
-          onRemoveItem={removeItem}
-          vatRate={settings.vatRate}
-          grossSubtotal={grossSubtotal}
-          subtotal={subtotal}
-          tax={tax}
-          total={total}
-          totalLbp={totalLbp}
-          exchangeRate={exchangeRate}
-          onCompleteSale={completeSimpleSale}
-          onExit={() => setSimpleMode(false)}
-        />
-      )}
     </main>
   )
 }

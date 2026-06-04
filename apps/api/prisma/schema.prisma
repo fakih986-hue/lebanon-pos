@@ -71,26 +71,27 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users          StaffUser[]
-  products       Product[]
-  sales          Sale[]
-  refunds        SaleRefund[]
-  customers      Customer[]
-  debtSales      DebtSale[]
-  debtPayments   DebtPayment[]
-  suppliers      Supplier[]
-  purchaseOrders PurchaseOrder[]
-  supplierPayments SupplierPayment[]
-  shifts         Shift[]
-  auditEvents    AuditEvent[]
-  settings       AppSettings?
-  expenses       Expense[]
-  inventoryBatches   InventoryBatch[]
-  stockAdjustments  StockAdjustment[]
-  stockCounts       StockCountSession[]
-  dailyCloses       DailyClose[]
-  syncOperations    SyncOperation[]
-  deliveryOrders    DeliveryOrder[]
+  users               StaffUser[]
+  products            Product[]
+  sales               Sale[]
+  refunds             SaleRefund[]
+  customers           Customer[]
+  debtSales           DebtSale[]
+  debtPayments        DebtPayment[]
+  suppliers           Supplier[]
+  purchaseOrders      PurchaseOrder[]
+  purchaseOrderItems  PurchaseOrderItem[]
+  supplierPayments    SupplierPayment[]
+  shifts              Shift[]
+  auditEvents         AuditEvent[]
+  settings            AppSettings?
+  expenses            Expense[]
+  inventoryBatches    InventoryBatch[]
+  stockAdjustments    StockAdjustment[]
+  stockCounts         StockCountSession[]
+  dailyCloses         DailyClose[]
+  syncOperations      SyncOperation[]
+  deliveryOrders      DeliveryOrder[]
 }
 
 model StaffUser {
@@ -105,6 +106,7 @@ model StaffUser {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
 
+  @@unique([tenantId, mobile])
   @@index([tenantId, code])
 
   openedShifts    Shift[]          @relation("ShiftOpener")
@@ -121,11 +123,11 @@ model AppSettings {
   branchName       String
   phone            String
   address          String
-  vatRate          Float
-  usdToLbpRate     Float
+  vatRate          Decimal @db.Decimal(10, 6)
+  usdToLbpRate     Decimal @db.Decimal(18, 4)
   receiptFooter    String
   lowStockThreshold Int
-  deliveryFee      Float   @default(2.0)
+  deliveryFee      Decimal @default(2.0) @db.Decimal(18, 4)
   whatsAppAdmin    String  @default("")
   whatsAppDriverEnabled Boolean @default(false)
   assignMode       String  @default("manual")
@@ -143,9 +145,9 @@ model Product {
   isParent        Boolean   @default(false)
   variantName     String?
   name            String
-  price           Float
-  cost            Float     @default(0)
-  stock           Float     @default(0)
+  price           Decimal   @db.Decimal(18, 4)
+  cost            Decimal   @default(0) @db.Decimal(18, 4)
+  stock           Float     @default(0)   // quantity — stays Float
   barcode         String?
   barcodeAliases  String[]
   category        String
@@ -178,12 +180,12 @@ model Sale {
   paymentMethod SalePaymentMethod
   customerId    String?
   customerName  String?
-  subtotal      Float
-  discountTotal Float?
-  tax           Float
-  total         Float
-  cost          Float            @default(0)
-  profit        Float            @default(0)
+  subtotal      Decimal          @db.Decimal(18, 4)
+  discountTotal Decimal?         @db.Decimal(18, 4)
+  tax           Decimal          @db.Decimal(18, 4)
+  total         Decimal          @db.Decimal(18, 4)
+  cost          Decimal          @default(0) @db.Decimal(18, 4)
+  profit        Decimal          @default(0) @db.Decimal(18, 4)
   cashier       String
   cashierId     String?
   shiftId       String?
@@ -207,10 +209,10 @@ model SaleItem {
   productId Int
   productName String
   barcode   String
-  quantity  Float
-  unitPrice Float
-  total     Float
-  cost      Float   @default(0)
+  quantity  Float                    // quantity — stays Float
+  unitPrice Decimal @db.Decimal(18, 4)
+  total     Decimal @db.Decimal(18, 4)
+  cost      Decimal @default(0) @db.Decimal(18, 4)
 }
 
 model SaleTender {
@@ -218,13 +220,13 @@ model SaleTender {
   saleId         String  @unique
   sale           Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
   currency       String
-  exchangeRate   Float
-  paidUsd        Float   @default(0)
-  paidLbp        Float   @default(0)
-  paidTotalUsd   Float
-  paidTotalLbp   Float
-  changeUsd      Float   @default(0)
-  changeLbp      Float   @default(0)
+  exchangeRate   Float                        // reference rate — stays Float
+  paidUsd        Decimal @default(0) @db.Decimal(18, 4)
+  paidLbp        Decimal @default(0) @db.Decimal(18, 4)
+  paidTotalUsd   Decimal @db.Decimal(18, 4)
+  paidTotalLbp   Decimal @db.Decimal(18, 4)
+  changeUsd      Decimal @default(0) @db.Decimal(18, 4)
+  changeLbp      Decimal @default(0) @db.Decimal(18, 4)
   changeCurrency String
 }
 
@@ -240,7 +242,7 @@ model SaleRefund {
   customerName String?
   method       RefundMethod
   reason       String
-  total        Float
+  total        Decimal      @db.Decimal(18, 4)
   cashier      String
   cashierId    String?
   shiftId      String?
@@ -260,10 +262,10 @@ model RefundItem {
   productId   Int
   productName String
   barcode     String
-  quantity    Float
-  unitPrice   Float
-  cost        Float?
-  total       Float
+  quantity    Float                         // quantity — stays Float
+  unitPrice   Decimal    @db.Decimal(18, 4)
+  cost        Decimal?   @db.Decimal(18, 4)
+  total       Decimal    @db.Decimal(18, 4)
 }
 
 model Customer {
@@ -273,7 +275,7 @@ model Customer {
   name        String
   mobile      String
   pin         String   @default("")
-  creditLimit Float    @default(0)
+  creditLimit Decimal  @default(0) @db.Decimal(18, 4)
   notes       String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -293,10 +295,10 @@ model DebtSale {
   customerId  String
   customer    Customer @relation(fields: [customerId], references: [id])
   saleNumber  String
-  subtotal    Float
-  discountTotal Float?
-  tax         Float
-  total       Float
+  subtotal    Decimal  @db.Decimal(18, 4)
+  discountTotal Decimal? @db.Decimal(18, 4)
+  tax         Decimal  @db.Decimal(18, 4)
+  total       Decimal  @db.Decimal(18, 4)
   createdAt   DateTime @default(now())
 
   @@index([tenantId, customerId])
@@ -308,7 +310,7 @@ model DebtPayment {
   tenant      Tenant   @relation(fields: [tenantId], references: [id])
   customerId  String
   customer    Customer @relation(fields: [customerId], references: [id])
-  amount      Float
+  amount      Decimal  @db.Decimal(18, 4)
   method      String
   reference   String   @default("")
   createdAt   DateTime @default(now())
@@ -347,16 +349,34 @@ model PurchaseOrder {
   paymentStatus PaymentStatus       @default(Unpaid)
   invoiceNumber String              @default("")
   note          String              @default("")
-  total         Float
-  paidTotal     Float               @default(0)
+  total         Decimal             @db.Decimal(18, 4)
+  paidTotal     Decimal             @default(0) @db.Decimal(18, 4)
   createdBy     String
   shiftId       String?
   shiftNumber   String?
   createdAt     DateTime            @default(now())
   receivedAt    DateTime?
 
+  items PurchaseOrderItem[]
+
   @@unique([tenantId, poNumber])
   @@index([tenantId, supplierId])
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(uuid())
+  tenantId        String
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productName     String
+  barcode         String        @default("")
+  quantity        Float
+  unitCost        Decimal       @default(0) @db.Decimal(18, 4)
+  unitPrice       Decimal       @default(0) @db.Decimal(18, 4)
+  total           Decimal       @db.Decimal(18, 4)
+
+  @@index([tenantId, purchaseOrderId])
 }
 
 model SupplierPayment {
@@ -368,7 +388,7 @@ model SupplierPayment {
   supplierName        String
   purchaseOrderId     String?
   purchaseOrderNumber String?
-  amount              Float
+  amount              Decimal  @db.Decimal(18, 4)
   method              String
   reference           String   @default("")
   recordedBy          String
@@ -387,14 +407,14 @@ model Shift {
   status            ShiftStatus @default(Open)
   openedAt          DateTime    @default(now())
   closedAt          DateTime?
-  openingFloatUsd   Float       @default(0)
-  cashSalesUsd      Float?
-  cashRefundsUsd    Float?
-  cashExpensesUsd   Float?
-  supplierPaymentsUsd Float?
-  expectedCashUsd   Float?
-  closingCashUsd    Float?
-  differenceUsd     Float?
+  openingFloatUsd   Decimal?    @default(0) @db.Decimal(18, 4)
+  cashSalesUsd      Decimal?    @db.Decimal(18, 4)
+  cashRefundsUsd    Decimal?    @db.Decimal(18, 4)
+  cashExpensesUsd   Decimal?    @db.Decimal(18, 4)
+  supplierPaymentsUsd Decimal?  @db.Decimal(18, 4)
+  expectedCashUsd   Decimal?    @db.Decimal(18, 4)
+  closingCashUsd    Decimal?    @db.Decimal(18, 4)
+  differenceUsd     Decimal?    @db.Decimal(18, 4)
   openedById        String
   openedByName      String
   openedBy          StaffUser   @relation("ShiftOpener", fields: [openedById], references: [id])
@@ -430,7 +450,7 @@ model Expense {
   expenseNumber String
   vendor        String
   category      String
-  amount        Float
+  amount        Decimal  @db.Decimal(18, 4)
   paymentMethod String
   invoiceNumber String   @default("")
   note          String   @default("")
@@ -453,10 +473,10 @@ model InventoryBatch {
   product             Product              @relation(fields: [productId], references: [id])
   productName         String
   barcode             String
-  initialQuantity     Float
-  quantityRemaining   Float
-  unitCost            Float
-  unitPrice           Float
+  initialQuantity     Float                     // quantity — stays Float
+  quantityRemaining   Float                     // quantity — stays Float
+  unitCost            Decimal  @db.Decimal(18, 4)
+  unitPrice           Decimal  @db.Decimal(18, 4)
   expiryDate          String?
   supplierId          String?
   supplier            Supplier?            @relation(fields: [supplierId], references: [id])
@@ -478,13 +498,13 @@ model StockAdjustment {
   product           Product  @relation(fields: [productId], references: [id])
   productName       String
   barcode           String
-  quantityBefore    Float
-  quantityChange    Float
-  quantityAfter     Float
+  quantityBefore    Float                     // quantity — stays Float
+  quantityChange    Float                     // quantity — stays Float
+  quantityAfter     Float                     // quantity — stays Float
   reason            String
   note              String?
   batchId           String?
-  valueImpact       Float
+  valueImpact       Decimal  @db.Decimal(18, 4)
   createdAt         DateTime @default(now())
 
   @@unique([tenantId, adjustmentNumber])
@@ -499,8 +519,8 @@ model StockCountSession {
   status          StockCountStatus @default(Draft)
   createdAt       DateTime         @default(now())
   completedAt     DateTime?
-  totalVariance   Float            @default(0)
-  totalValueImpact Float           @default(0)
+  totalVariance    Decimal @default(0) @db.Decimal(18, 4)
+  totalValueImpact Decimal @default(0) @db.Decimal(18, 4)
 
   lines StockCountLine[]
 
@@ -516,10 +536,10 @@ model StockCountLine {
   productName      String
   barcode          String
   category         String
-  expectedQuantity Float
-  countedQuantity  Float?
-  variance         Float            @default(0)
-  valueImpact      Float            @default(0)
+  expectedQuantity Float                          // quantity — stays Float
+  countedQuantity  Float?                         // quantity — stays Float
+  variance         Float            @default(0)   // quantity variance — stays Float
+  valueImpact      Decimal          @default(0) @db.Decimal(18, 4)
 }
 
 enum DeliveryOrderStatus {
@@ -545,12 +565,12 @@ model DeliveryOrder {
   locationLat     Float?
   locationLng     Float?
   deliveryNote    String               @default("")
-  itemsTotal      Float
-  deliveryFee     Float                @default(0)
-  total           Float
+  itemsTotal      Decimal              @db.Decimal(18, 4)
+  deliveryFee     Decimal              @default(0) @db.Decimal(18, 4)
+  total           Decimal              @db.Decimal(18, 4)
   paymentMethod   String               @default("CashOnDelivery")
-  paidAmount      Float                @default(0)
-  changeRequired  Float                @default(0)
+  paidAmount      Decimal              @default(0) @db.Decimal(18, 4)
+  changeRequired  Decimal              @default(0) @db.Decimal(18, 4)
   assignedTo      String?
   assignedName    String?
   driverId        String?
@@ -578,8 +598,8 @@ model DeliveryOrderItem {
   productName     String
   barcode         String
   quantity        Float
-  unitPrice       Float
-  total           Float
+  unitPrice       Decimal @db.Decimal(18, 4)
+  total           Decimal @db.Decimal(18, 4)
 }
 
 model DailyClose {
@@ -587,17 +607,17 @@ model DailyClose {
   tenantId        String
   tenant          Tenant   @relation(fields: [tenantId], references: [id])
   dateKey         String
-  grossSales      Float
-  refunds         Float    @default(0)
-  netSales        Float
-  costOfGoods     Float    @default(0)
-  returnedCost    Float    @default(0)
-  grossMargin     Float    @default(0)
-  expenses        Float    @default(0)
-  supplierPayments Float?
-  netProfit       Float    @default(0)
-  cashIn          Float    @default(0)
-  cashOut         Float    @default(0)
+  grossSales      Decimal   @db.Decimal(18, 4)
+  refunds         Decimal   @default(0) @db.Decimal(18, 4)
+  netSales        Decimal   @db.Decimal(18, 4)
+  costOfGoods     Decimal   @default(0) @db.Decimal(18, 4)
+  returnedCost    Decimal   @default(0) @db.Decimal(18, 4)
+  grossMargin     Decimal   @default(0) @db.Decimal(18, 4)
+  expenses        Decimal   @default(0) @db.Decimal(18, 4)
+  supplierPayments Decimal? @db.Decimal(18, 4)
+  netProfit       Decimal   @default(0) @db.Decimal(18, 4)
+  cashIn          Decimal   @default(0) @db.Decimal(18, 4)
+  cashOut         Decimal   @default(0) @db.Decimal(18, 4)
   note            String   @default("")
   closedBy        String
   createdAt       DateTime @default(now())

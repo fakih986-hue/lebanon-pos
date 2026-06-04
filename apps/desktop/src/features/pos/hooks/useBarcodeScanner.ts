@@ -31,9 +31,11 @@ export function useBarcodeScanner(
   const html5ScannerRef = useRef<Html5QrcodeInstance | null>(null)
   const cameraFrameRef = useRef<number | null>(null)
   const lastDetectedRef = useRef({ code: "", at: 0 })
+  const isMountedRef = useRef(true)
 
   useEffect(() => {
     return () => {
+      isMountedRef.current = false
       if (cameraFrameRef.current) {
         window.cancelAnimationFrame(cameraFrameRef.current)
       }
@@ -75,6 +77,7 @@ export function useBarcodeScanner(
 
     try {
       const detector = await createBarcodeDetector()
+      if (!isMountedRef.current) return
       if (!detector) {
         setCameraActive(true)
         setCameraEngine("html5")
@@ -82,7 +85,9 @@ export function useBarcodeScanner(
         await new Promise<void>((resolve) =>
           window.requestAnimationFrame(() => resolve())
         )
+        if (!isMountedRef.current) return
         const scanner = await createHtml5Qrcode(POS_CAMERA_READER_ID)
+        if (!isMountedRef.current) return
         if (!scanner) {
           stopCameraScanner()
           setScannerStatus(
@@ -91,6 +96,7 @@ export function useBarcodeScanner(
           return
         }
         html5ScannerRef.current = scanner
+        if (!isMountedRef.current) return
         await scanner.start(
           { facingMode: "environment" },
           {
@@ -117,6 +123,10 @@ export function useBarcodeScanner(
       const stream = await navigator.mediaDevices.getUserMedia(
         getPreferredCameraConstraints()
       )
+      if (!isMountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
       const video = videoRef.current
       if (!video) {
         stream.getTracks().forEach((track) => track.stop())
@@ -128,6 +138,10 @@ export function useBarcodeScanner(
       video.setAttribute("playsinline", "true")
       video.muted = true
       await video.play()
+      if (!isMountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
       setCameraEngine("native")
       setCameraActive(true)
       setScannerStatus("Camera scanner active. Point at a barcode.")

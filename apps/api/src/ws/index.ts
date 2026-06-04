@@ -1,5 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws"
-import type { Server } from "node:http"
+import type { Server, IncomingMessage } from "node:http"
 import jwt from "jsonwebtoken"
 import type { AuthPayload } from "../middleware/auth.js"
 
@@ -10,13 +10,39 @@ interface ClientInfo {
   userId?: string
   tenantId?: string
   role?: string
+  /** The raw JWT token — re-verified on subscribe to catch expiry */
+  token?: string
   subscribedChannels: Set<string>
 }
 
 const clients = new Map<WebSocket, ClientInfo>()
 
+function isOriginAllowed(origin: string | undefined): boolean {
+  const allowedOrigins = (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean)
+
+  // No origin = server-side / same-origin request — allow
+  if (!origin) return true
+  // No allowlist configured — deny all cross-origin WS connections
+  if (allowedOrigins.length === 0) return false
+  return allowedOrigins.includes(origin)
+}
+
 export function setupWebSocket(server: Server) {
-  const wss = new WebSocketServer({ server, path: "/ws" })
+  const wss = new WebSocketServer({
+    server,
+    path: "/ws",
+    verifyClient: ({ req }: { req: IncomingMessage }) => {
+      const origin = req.headers.origin
+      if (!isOriginAllowed(origin)) {
+        console.warn(`[ws] rejected connection from origin: ${origin}`)
+        return false
+      }
+      return true
+    },
+  })
 
   wss.on("connection", (ws: WebSocket) => {
     const info: ClientInfo = { ws, subscribedChannels: new Set() }
@@ -53,19 +79,30 @@ function handleMessage(ws: WebSocket, info: ClientInfo, msg: any) {
         info.userId = payload.userId
         info.tenantId = payload.tenantId
         info.role = payload.role
+        info.token = msg.token  // store for re-validation on subscribe
         send(ws, { type: "auth:ok", data: { userId: payload.userId, role: payload.role } })
       } catch {
-        send(ws, { type: "auth:error", data: { message: "Invalid token" } })
+        send(ws, { type: "auth:error", data: { message: "Invalid or expired token" } })
+        ws.close()
       }
       break
 
     case "subscribe":
       if (msg.channel) {
+        // Re-verify token on every subscribe to catch expiry between auth and subscribe
+        if (info.token) {
+          try {
+            jwt.verify(info.token, JWT_SECRET)
+          } catch {
+            send(ws, { type: "auth:error", data: { message: "Token expired — reconnect to refresh" } })
+            ws.close()
+            break
+          }
+        }
         if (!canSubscribe(info, msg.channel)) {
           send(ws, { type: "subscribe:error", data: { channel: msg.channel, message: "Channel not allowed" } })
           break
         }
-
         info.subscribedChannels.add(msg.channel)
         send(ws, { type: "subscribed", data: { channel: msg.channel } })
       }

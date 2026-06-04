@@ -9,6 +9,7 @@ COPY apps/admin/package.json ./apps/admin/
 COPY apps/owner/package.json ./apps/owner/
 COPY apps/driver/package.json ./apps/driver/
 COPY apps/ordering/package.json ./apps/ordering/
+COPY apps/desktop/package.json ./apps/desktop/
 COPY apps/api/package.json ./apps/api/
 
 # Layer 2: Install — cached unless lockfile or a manifest changes
@@ -30,6 +31,9 @@ RUN cd apps/driver && npx vite build
 # Build ordering SPA
 RUN cd apps/ordering && npx vite build
 
+# Build desktop SPA (served at root /)
+RUN cd apps/desktop && npx vite build
+
 # Build API server (generate prisma client, then compile TS)
 RUN cd apps/api && npx prisma generate && npx tsc
 
@@ -46,6 +50,9 @@ COPY --from=builder /app/apps/admin/dist ./public/admin
 COPY --from=builder /app/apps/owner/dist ./public/owner
 COPY --from=builder /app/apps/driver/dist ./public/driver
 COPY --from=builder /app/apps/ordering/dist ./public/order
+
+# Copy built desktop SPA to public root
+COPY --from=builder /app/apps/desktop/dist ./public
 
 # Install only production dependencies for the API
 COPY --from=builder /app/apps/api/package.json ./package.json

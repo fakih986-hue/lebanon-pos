@@ -10,6 +10,7 @@ import { ProductsPage } from "./pages/ProductsPage"
 import { DriversPage } from "./pages/DriversPage"
 import { StaffPage } from "./pages/StaffPage"
 import { SalesPage } from "./pages/SalesPage"
+import { TenantsPage } from "./pages/TenantsPage"
 import { Layout } from "./app/Layout"
 import "./index.css"
 
@@ -42,6 +43,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="drivers" element={<DriversPage />} />
                 <Route path="staff" element={<StaffPage />} />
                 <Route path="sales" element={<SalesPage />} />
+                <Route path="tenants" element={<TenantsPage />} />
               </Route>
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>

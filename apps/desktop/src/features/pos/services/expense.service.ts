@@ -5,7 +5,7 @@ import {
 } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
-import { canUseStorage } from "../lib/storage"
+import { canUseStorage, createId } from "../lib/storage"
 
 const EXPENSES_KEY = "lebanonpos.expenses.v1"
 const EXPENSES_EVENT = "lebanonpos-expenses-changed"
@@ -94,7 +94,7 @@ export function createExpense(input: CreateExpenseInput) {
   const shift = getActiveShift()
   const amount = Math.max(0, input.amount)
   const expense: Expense = {
-    id: crypto.randomUUID(),
+    id: createId(),
     expenseNumber: `EXP-${Date.now().toString().slice(-6)}`,
     vendor: cleanText(input.vendor) || "Unknown vendor",
     category: input.category,

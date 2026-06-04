@@ -1,7 +1,7 @@
 import type { Product } from "../types/product"
 
 import { writeLocalWithIndexedDB } from "./storage.service"
-import { canUseStorage } from "../lib/storage"
+import { canUseStorage, createId } from "../lib/storage"
 
 const HELD_SALES_KEY = "lebanonpos.held-sales.v1"
 const HELD_SALES_EVENT = "lebanonpos-held-sales-changed"
@@ -61,7 +61,7 @@ export function holdSale(input: Omit<HeldSale, "id" | "holdNumber" | "createdAt"
   const heldSales = getHeldSales()
   const heldSale: HeldSale = {
     ...input,
-    id: crypto.randomUUID(),
+    id: createId(),
     holdNumber: `H-${Date.now().toString().slice(-6)}`,
     createdAt: new Date().toISOString(),
   }

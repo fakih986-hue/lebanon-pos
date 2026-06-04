@@ -84,6 +84,11 @@ export type Supplier = $Result.DefaultSelection<Prisma.$SupplierPayload>
  */
 export type PurchaseOrder = $Result.DefaultSelection<Prisma.$PurchaseOrderPayload>
 /**
+ * Model PurchaseOrderItem
+ * 
+ */
+export type PurchaseOrderItem = $Result.DefaultSelection<Prisma.$PurchaseOrderItemPayload>
+/**
  * Model SupplierPayment
  * 
  */
@@ -540,6 +545,16 @@ export class PrismaClient<
     * ```
     */
   get purchaseOrder(): Prisma.PurchaseOrderDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.purchaseOrderItem`: Exposes CRUD operations for the **PurchaseOrderItem** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PurchaseOrderItems
+    * const purchaseOrderItems = await prisma.purchaseOrderItem.findMany()
+    * ```
+    */
+  get purchaseOrderItem(): Prisma.PurchaseOrderItemDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.supplierPayment`: Exposes CRUD operations for the **SupplierPayment** model.
@@ -1115,6 +1130,7 @@ export namespace Prisma {
     DebtPayment: 'DebtPayment',
     Supplier: 'Supplier',
     PurchaseOrder: 'PurchaseOrder',
+    PurchaseOrderItem: 'PurchaseOrderItem',
     SupplierPayment: 'SupplierPayment',
     Shift: 'Shift',
     AuditEvent: 'AuditEvent',
@@ -1145,7 +1161,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "syncOperation"
+      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "syncOperation"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -2185,6 +2201,80 @@ export namespace Prisma {
           }
         }
       }
+      PurchaseOrderItem: {
+        payload: Prisma.$PurchaseOrderItemPayload<ExtArgs>
+        fields: Prisma.PurchaseOrderItemFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PurchaseOrderItemFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PurchaseOrderItemPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PurchaseOrderItemFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PurchaseOrderItemPayload>
+          }
+          findFirst: {
+            args: Prisma.PurchaseOrderItemFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PurchaseOrderItemPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PurchaseOrderItemFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PurchaseOrderItemPayload>
+          }
+          findMany: {
+            args: Prisma.PurchaseOrderItemFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PurchaseOrderItemPayload>[]
+          }
+          create: {
+            args: Prisma.PurchaseOrderItemCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PurchaseOrderItemPayload>
+          }
+          createMany: {
+            args: Prisma.PurchaseOrderItemCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.PurchaseOrderItemCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PurchaseOrderItemPayload>[]
+          }
+          delete: {
+            args: Prisma.PurchaseOrderItemDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PurchaseOrderItemPayload>
+          }
+          update: {
+            args: Prisma.PurchaseOrderItemUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PurchaseOrderItemPayload>
+          }
+          deleteMany: {
+            args: Prisma.PurchaseOrderItemDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PurchaseOrderItemUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.PurchaseOrderItemUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PurchaseOrderItemPayload>[]
+          }
+          upsert: {
+            args: Prisma.PurchaseOrderItemUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PurchaseOrderItemPayload>
+          }
+          aggregate: {
+            args: Prisma.PurchaseOrderItemAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePurchaseOrderItem>
+          }
+          groupBy: {
+            args: Prisma.PurchaseOrderItemGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PurchaseOrderItemGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PurchaseOrderItemCountArgs<ExtArgs>
+            result: $Utils.Optional<PurchaseOrderItemCountAggregateOutputType> | number
+          }
+        }
+      }
       SupplierPayment: {
         payload: Prisma.$SupplierPaymentPayload<ExtArgs>
         fields: Prisma.SupplierPaymentFieldRefs
@@ -3183,6 +3273,7 @@ export namespace Prisma {
     debtPayment?: DebtPaymentOmit
     supplier?: SupplierOmit
     purchaseOrder?: PurchaseOrderOmit
+    purchaseOrderItem?: PurchaseOrderItemOmit
     supplierPayment?: SupplierPaymentOmit
     shift?: ShiftOmit
     auditEvent?: AuditEventOmit
@@ -3284,6 +3375,7 @@ export namespace Prisma {
     debtPayments: number
     suppliers: number
     purchaseOrders: number
+    purchaseOrderItems: number
     supplierPayments: number
     shifts: number
     auditEvents: number
@@ -3306,6 +3398,7 @@ export namespace Prisma {
     debtPayments?: boolean | TenantCountOutputTypeCountDebtPaymentsArgs
     suppliers?: boolean | TenantCountOutputTypeCountSuppliersArgs
     purchaseOrders?: boolean | TenantCountOutputTypeCountPurchaseOrdersArgs
+    purchaseOrderItems?: boolean | TenantCountOutputTypeCountPurchaseOrderItemsArgs
     supplierPayments?: boolean | TenantCountOutputTypeCountSupplierPaymentsArgs
     shifts?: boolean | TenantCountOutputTypeCountShiftsArgs
     auditEvents?: boolean | TenantCountOutputTypeCountAuditEventsArgs
@@ -3390,6 +3483,13 @@ export namespace Prisma {
    */
   export type TenantCountOutputTypeCountPurchaseOrdersArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: PurchaseOrderWhereInput
+  }
+
+  /**
+   * TenantCountOutputType without action
+   */
+  export type TenantCountOutputTypeCountPurchaseOrderItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PurchaseOrderItemWhereInput
   }
 
   /**
@@ -3749,6 +3849,37 @@ export namespace Prisma {
 
 
   /**
+   * Count Type PurchaseOrderCountOutputType
+   */
+
+  export type PurchaseOrderCountOutputType = {
+    items: number
+  }
+
+  export type PurchaseOrderCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    items?: boolean | PurchaseOrderCountOutputTypeCountItemsArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * PurchaseOrderCountOutputType without action
+   */
+  export type PurchaseOrderCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderCountOutputType
+     */
+    select?: PurchaseOrderCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * PurchaseOrderCountOutputType without action
+   */
+  export type PurchaseOrderCountOutputTypeCountItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PurchaseOrderItemWhereInput
+  }
+
+
+  /**
    * Count Type StockCountSessionCountOutputType
    */
 
@@ -3995,6 +4126,7 @@ export namespace Prisma {
     debtPayments?: boolean | Tenant$debtPaymentsArgs<ExtArgs>
     suppliers?: boolean | Tenant$suppliersArgs<ExtArgs>
     purchaseOrders?: boolean | Tenant$purchaseOrdersArgs<ExtArgs>
+    purchaseOrderItems?: boolean | Tenant$purchaseOrderItemsArgs<ExtArgs>
     supplierPayments?: boolean | Tenant$supplierPaymentsArgs<ExtArgs>
     shifts?: boolean | Tenant$shiftsArgs<ExtArgs>
     auditEvents?: boolean | Tenant$auditEventsArgs<ExtArgs>
@@ -4047,6 +4179,7 @@ export namespace Prisma {
     debtPayments?: boolean | Tenant$debtPaymentsArgs<ExtArgs>
     suppliers?: boolean | Tenant$suppliersArgs<ExtArgs>
     purchaseOrders?: boolean | Tenant$purchaseOrdersArgs<ExtArgs>
+    purchaseOrderItems?: boolean | Tenant$purchaseOrderItemsArgs<ExtArgs>
     supplierPayments?: boolean | Tenant$supplierPaymentsArgs<ExtArgs>
     shifts?: boolean | Tenant$shiftsArgs<ExtArgs>
     auditEvents?: boolean | Tenant$auditEventsArgs<ExtArgs>
@@ -4075,6 +4208,7 @@ export namespace Prisma {
       debtPayments: Prisma.$DebtPaymentPayload<ExtArgs>[]
       suppliers: Prisma.$SupplierPayload<ExtArgs>[]
       purchaseOrders: Prisma.$PurchaseOrderPayload<ExtArgs>[]
+      purchaseOrderItems: Prisma.$PurchaseOrderItemPayload<ExtArgs>[]
       supplierPayments: Prisma.$SupplierPaymentPayload<ExtArgs>[]
       shifts: Prisma.$ShiftPayload<ExtArgs>[]
       auditEvents: Prisma.$AuditEventPayload<ExtArgs>[]
@@ -4497,6 +4631,7 @@ export namespace Prisma {
     debtPayments<T extends Tenant$debtPaymentsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$debtPaymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DebtPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     suppliers<T extends Tenant$suppliersArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$suppliersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SupplierPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     purchaseOrders<T extends Tenant$purchaseOrdersArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$purchaseOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PurchaseOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    purchaseOrderItems<T extends Tenant$purchaseOrderItemsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$purchaseOrderItemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     supplierPayments<T extends Tenant$supplierPaymentsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$supplierPaymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SupplierPaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     shifts<T extends Tenant$shiftsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$shiftsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ShiftPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     auditEvents<T extends Tenant$auditEventsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$auditEventsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AuditEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -5144,6 +5279,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: PurchaseOrderScalarFieldEnum | PurchaseOrderScalarFieldEnum[]
+  }
+
+  /**
+   * Tenant.purchaseOrderItems
+   */
+  export type Tenant$purchaseOrderItemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+    where?: PurchaseOrderItemWhereInput
+    orderBy?: PurchaseOrderItemOrderByWithRelationInput | PurchaseOrderItemOrderByWithRelationInput[]
+    cursor?: PurchaseOrderItemWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PurchaseOrderItemScalarFieldEnum | PurchaseOrderItemScalarFieldEnum[]
   }
 
   /**
@@ -6661,18 +6820,18 @@ export namespace Prisma {
   }
 
   export type AppSettingsAvgAggregateOutputType = {
-    vatRate: number | null
-    usdToLbpRate: number | null
+    vatRate: Decimal | null
+    usdToLbpRate: Decimal | null
     lowStockThreshold: number | null
-    deliveryFee: number | null
+    deliveryFee: Decimal | null
     assignTimeout: number | null
   }
 
   export type AppSettingsSumAggregateOutputType = {
-    vatRate: number | null
-    usdToLbpRate: number | null
+    vatRate: Decimal | null
+    usdToLbpRate: Decimal | null
     lowStockThreshold: number | null
-    deliveryFee: number | null
+    deliveryFee: Decimal | null
     assignTimeout: number | null
   }
 
@@ -6683,11 +6842,11 @@ export namespace Prisma {
     branchName: string | null
     phone: string | null
     address: string | null
-    vatRate: number | null
-    usdToLbpRate: number | null
+    vatRate: Decimal | null
+    usdToLbpRate: Decimal | null
     receiptFooter: string | null
     lowStockThreshold: number | null
-    deliveryFee: number | null
+    deliveryFee: Decimal | null
     whatsAppAdmin: string | null
     whatsAppDriverEnabled: boolean | null
     assignMode: string | null
@@ -6702,11 +6861,11 @@ export namespace Prisma {
     branchName: string | null
     phone: string | null
     address: string | null
-    vatRate: number | null
-    usdToLbpRate: number | null
+    vatRate: Decimal | null
+    usdToLbpRate: Decimal | null
     receiptFooter: string | null
     lowStockThreshold: number | null
-    deliveryFee: number | null
+    deliveryFee: Decimal | null
     whatsAppAdmin: string | null
     whatsAppDriverEnabled: boolean | null
     assignMode: string | null
@@ -6902,11 +7061,11 @@ export namespace Prisma {
     branchName: string
     phone: string
     address: string
-    vatRate: number
-    usdToLbpRate: number
+    vatRate: Decimal
+    usdToLbpRate: Decimal
     receiptFooter: string
     lowStockThreshold: number
-    deliveryFee: number
+    deliveryFee: Decimal
     whatsAppAdmin: string
     whatsAppDriverEnabled: boolean
     assignMode: string
@@ -7035,11 +7194,11 @@ export namespace Prisma {
       branchName: string
       phone: string
       address: string
-      vatRate: number
-      usdToLbpRate: number
+      vatRate: Prisma.Decimal
+      usdToLbpRate: Prisma.Decimal
       receiptFooter: string
       lowStockThreshold: number
-      deliveryFee: number
+      deliveryFee: Prisma.Decimal
       whatsAppAdmin: string
       whatsAppDriverEnabled: boolean
       assignMode: string
@@ -7475,11 +7634,11 @@ export namespace Prisma {
     readonly branchName: FieldRef<"AppSettings", 'String'>
     readonly phone: FieldRef<"AppSettings", 'String'>
     readonly address: FieldRef<"AppSettings", 'String'>
-    readonly vatRate: FieldRef<"AppSettings", 'Float'>
-    readonly usdToLbpRate: FieldRef<"AppSettings", 'Float'>
+    readonly vatRate: FieldRef<"AppSettings", 'Decimal'>
+    readonly usdToLbpRate: FieldRef<"AppSettings", 'Decimal'>
     readonly receiptFooter: FieldRef<"AppSettings", 'String'>
     readonly lowStockThreshold: FieldRef<"AppSettings", 'Int'>
-    readonly deliveryFee: FieldRef<"AppSettings", 'Float'>
+    readonly deliveryFee: FieldRef<"AppSettings", 'Decimal'>
     readonly whatsAppAdmin: FieldRef<"AppSettings", 'String'>
     readonly whatsAppDriverEnabled: FieldRef<"AppSettings", 'Boolean'>
     readonly assignMode: FieldRef<"AppSettings", 'String'>
@@ -7914,8 +8073,8 @@ export namespace Prisma {
   export type ProductAvgAggregateOutputType = {
     id: number | null
     parentId: number | null
-    price: number | null
-    cost: number | null
+    price: Decimal | null
+    cost: Decimal | null
     stock: number | null
     reorderPoint: number | null
     reorderQuantity: number | null
@@ -7924,8 +8083,8 @@ export namespace Prisma {
   export type ProductSumAggregateOutputType = {
     id: number | null
     parentId: number | null
-    price: number | null
-    cost: number | null
+    price: Decimal | null
+    cost: Decimal | null
     stock: number | null
     reorderPoint: number | null
     reorderQuantity: number | null
@@ -7938,8 +8097,8 @@ export namespace Prisma {
     isParent: boolean | null
     variantName: string | null
     name: string | null
-    price: number | null
-    cost: number | null
+    price: Decimal | null
+    cost: Decimal | null
     stock: number | null
     barcode: string | null
     category: string | null
@@ -7962,8 +8121,8 @@ export namespace Prisma {
     isParent: boolean | null
     variantName: string | null
     name: string | null
-    price: number | null
-    cost: number | null
+    price: Decimal | null
+    cost: Decimal | null
     stock: number | null
     barcode: string | null
     category: string | null
@@ -8193,8 +8352,8 @@ export namespace Prisma {
     isParent: boolean
     variantName: string | null
     name: string
-    price: number
-    cost: number
+    price: Decimal
+    cost: Decimal
     stock: number
     barcode: string | null
     barcodeAliases: string[]
@@ -8377,8 +8536,8 @@ export namespace Prisma {
       isParent: boolean
       variantName: string | null
       name: string
-      price: number
-      cost: number
+      price: Prisma.Decimal
+      cost: Prisma.Decimal
       stock: number
       barcode: string | null
       barcodeAliases: string[]
@@ -8828,8 +8987,8 @@ export namespace Prisma {
     readonly isParent: FieldRef<"Product", 'Boolean'>
     readonly variantName: FieldRef<"Product", 'String'>
     readonly name: FieldRef<"Product", 'String'>
-    readonly price: FieldRef<"Product", 'Float'>
-    readonly cost: FieldRef<"Product", 'Float'>
+    readonly price: FieldRef<"Product", 'Decimal'>
+    readonly cost: FieldRef<"Product", 'Decimal'>
     readonly stock: FieldRef<"Product", 'Float'>
     readonly barcode: FieldRef<"Product", 'String'>
     readonly barcodeAliases: FieldRef<"Product", 'String[]'>
@@ -9386,21 +9545,21 @@ export namespace Prisma {
   }
 
   export type SaleAvgAggregateOutputType = {
-    subtotal: number | null
-    discountTotal: number | null
-    tax: number | null
-    total: number | null
-    cost: number | null
-    profit: number | null
+    subtotal: Decimal | null
+    discountTotal: Decimal | null
+    tax: Decimal | null
+    total: Decimal | null
+    cost: Decimal | null
+    profit: Decimal | null
   }
 
   export type SaleSumAggregateOutputType = {
-    subtotal: number | null
-    discountTotal: number | null
-    tax: number | null
-    total: number | null
-    cost: number | null
-    profit: number | null
+    subtotal: Decimal | null
+    discountTotal: Decimal | null
+    tax: Decimal | null
+    total: Decimal | null
+    cost: Decimal | null
+    profit: Decimal | null
   }
 
   export type SaleMinAggregateOutputType = {
@@ -9410,12 +9569,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod | null
     customerId: string | null
     customerName: string | null
-    subtotal: number | null
-    discountTotal: number | null
-    tax: number | null
-    total: number | null
-    cost: number | null
-    profit: number | null
+    subtotal: Decimal | null
+    discountTotal: Decimal | null
+    tax: Decimal | null
+    total: Decimal | null
+    cost: Decimal | null
+    profit: Decimal | null
     cashier: string | null
     cashierId: string | null
     shiftId: string | null
@@ -9431,12 +9590,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod | null
     customerId: string | null
     customerName: string | null
-    subtotal: number | null
-    discountTotal: number | null
-    tax: number | null
-    total: number | null
-    cost: number | null
-    profit: number | null
+    subtotal: Decimal | null
+    discountTotal: Decimal | null
+    tax: Decimal | null
+    total: Decimal | null
+    cost: Decimal | null
+    profit: Decimal | null
     cashier: string | null
     cashierId: string | null
     shiftId: string | null
@@ -9643,12 +9802,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId: string | null
     customerName: string | null
-    subtotal: number
-    discountTotal: number | null
-    tax: number
-    total: number
-    cost: number
-    profit: number
+    subtotal: Decimal
+    discountTotal: Decimal | null
+    tax: Decimal
+    total: Decimal
+    cost: Decimal
+    profit: Decimal
     cashier: string
     cashierId: string | null
     shiftId: string | null
@@ -9797,12 +9956,12 @@ export namespace Prisma {
       paymentMethod: $Enums.SalePaymentMethod
       customerId: string | null
       customerName: string | null
-      subtotal: number
-      discountTotal: number | null
-      tax: number
-      total: number
-      cost: number
-      profit: number
+      subtotal: Prisma.Decimal
+      discountTotal: Prisma.Decimal | null
+      tax: Prisma.Decimal
+      total: Prisma.Decimal
+      cost: Prisma.Decimal
+      profit: Prisma.Decimal
       cashier: string
       cashierId: string | null
       shiftId: string | null
@@ -10242,12 +10401,12 @@ export namespace Prisma {
     readonly paymentMethod: FieldRef<"Sale", 'SalePaymentMethod'>
     readonly customerId: FieldRef<"Sale", 'String'>
     readonly customerName: FieldRef<"Sale", 'String'>
-    readonly subtotal: FieldRef<"Sale", 'Float'>
-    readonly discountTotal: FieldRef<"Sale", 'Float'>
-    readonly tax: FieldRef<"Sale", 'Float'>
-    readonly total: FieldRef<"Sale", 'Float'>
-    readonly cost: FieldRef<"Sale", 'Float'>
-    readonly profit: FieldRef<"Sale", 'Float'>
+    readonly subtotal: FieldRef<"Sale", 'Decimal'>
+    readonly discountTotal: FieldRef<"Sale", 'Decimal'>
+    readonly tax: FieldRef<"Sale", 'Decimal'>
+    readonly total: FieldRef<"Sale", 'Decimal'>
+    readonly cost: FieldRef<"Sale", 'Decimal'>
+    readonly profit: FieldRef<"Sale", 'Decimal'>
     readonly cashier: FieldRef<"Sale", 'String'>
     readonly cashierId: FieldRef<"Sale", 'String'>
     readonly shiftId: FieldRef<"Sale", 'String'>
@@ -10750,17 +10909,17 @@ export namespace Prisma {
   export type SaleItemAvgAggregateOutputType = {
     productId: number | null
     quantity: number | null
-    unitPrice: number | null
-    total: number | null
-    cost: number | null
+    unitPrice: Decimal | null
+    total: Decimal | null
+    cost: Decimal | null
   }
 
   export type SaleItemSumAggregateOutputType = {
     productId: number | null
     quantity: number | null
-    unitPrice: number | null
-    total: number | null
-    cost: number | null
+    unitPrice: Decimal | null
+    total: Decimal | null
+    cost: Decimal | null
   }
 
   export type SaleItemMinAggregateOutputType = {
@@ -10770,9 +10929,9 @@ export namespace Prisma {
     productName: string | null
     barcode: string | null
     quantity: number | null
-    unitPrice: number | null
-    total: number | null
-    cost: number | null
+    unitPrice: Decimal | null
+    total: Decimal | null
+    cost: Decimal | null
   }
 
   export type SaleItemMaxAggregateOutputType = {
@@ -10782,9 +10941,9 @@ export namespace Prisma {
     productName: string | null
     barcode: string | null
     quantity: number | null
-    unitPrice: number | null
-    total: number | null
-    cost: number | null
+    unitPrice: Decimal | null
+    total: Decimal | null
+    cost: Decimal | null
   }
 
   export type SaleItemCountAggregateOutputType = {
@@ -10947,9 +11106,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
-    cost: number
+    unitPrice: Decimal
+    total: Decimal
+    cost: Decimal
     _count: SaleItemCountAggregateOutputType | null
     _avg: SaleItemAvgAggregateOutputType | null
     _sum: SaleItemSumAggregateOutputType | null
@@ -11045,9 +11204,9 @@ export namespace Prisma {
       productName: string
       barcode: string
       quantity: number
-      unitPrice: number
-      total: number
-      cost: number
+      unitPrice: Prisma.Decimal
+      total: Prisma.Decimal
+      cost: Prisma.Decimal
     }, ExtArgs["result"]["saleItem"]>
     composites: {}
   }
@@ -11478,9 +11637,9 @@ export namespace Prisma {
     readonly productName: FieldRef<"SaleItem", 'String'>
     readonly barcode: FieldRef<"SaleItem", 'String'>
     readonly quantity: FieldRef<"SaleItem", 'Float'>
-    readonly unitPrice: FieldRef<"SaleItem", 'Float'>
-    readonly total: FieldRef<"SaleItem", 'Float'>
-    readonly cost: FieldRef<"SaleItem", 'Float'>
+    readonly unitPrice: FieldRef<"SaleItem", 'Decimal'>
+    readonly total: FieldRef<"SaleItem", 'Decimal'>
+    readonly cost: FieldRef<"SaleItem", 'Decimal'>
   }
     
 
@@ -11909,22 +12068,22 @@ export namespace Prisma {
 
   export type SaleTenderAvgAggregateOutputType = {
     exchangeRate: number | null
-    paidUsd: number | null
-    paidLbp: number | null
-    paidTotalUsd: number | null
-    paidTotalLbp: number | null
-    changeUsd: number | null
-    changeLbp: number | null
+    paidUsd: Decimal | null
+    paidLbp: Decimal | null
+    paidTotalUsd: Decimal | null
+    paidTotalLbp: Decimal | null
+    changeUsd: Decimal | null
+    changeLbp: Decimal | null
   }
 
   export type SaleTenderSumAggregateOutputType = {
     exchangeRate: number | null
-    paidUsd: number | null
-    paidLbp: number | null
-    paidTotalUsd: number | null
-    paidTotalLbp: number | null
-    changeUsd: number | null
-    changeLbp: number | null
+    paidUsd: Decimal | null
+    paidLbp: Decimal | null
+    paidTotalUsd: Decimal | null
+    paidTotalLbp: Decimal | null
+    changeUsd: Decimal | null
+    changeLbp: Decimal | null
   }
 
   export type SaleTenderMinAggregateOutputType = {
@@ -11932,12 +12091,12 @@ export namespace Prisma {
     saleId: string | null
     currency: string | null
     exchangeRate: number | null
-    paidUsd: number | null
-    paidLbp: number | null
-    paidTotalUsd: number | null
-    paidTotalLbp: number | null
-    changeUsd: number | null
-    changeLbp: number | null
+    paidUsd: Decimal | null
+    paidLbp: Decimal | null
+    paidTotalUsd: Decimal | null
+    paidTotalLbp: Decimal | null
+    changeUsd: Decimal | null
+    changeLbp: Decimal | null
     changeCurrency: string | null
   }
 
@@ -11946,12 +12105,12 @@ export namespace Prisma {
     saleId: string | null
     currency: string | null
     exchangeRate: number | null
-    paidUsd: number | null
-    paidLbp: number | null
-    paidTotalUsd: number | null
-    paidTotalLbp: number | null
-    changeUsd: number | null
-    changeLbp: number | null
+    paidUsd: Decimal | null
+    paidLbp: Decimal | null
+    paidTotalUsd: Decimal | null
+    paidTotalLbp: Decimal | null
+    changeUsd: Decimal | null
+    changeLbp: Decimal | null
     changeCurrency: string | null
   }
 
@@ -12125,12 +12284,12 @@ export namespace Prisma {
     saleId: string
     currency: string
     exchangeRate: number
-    paidUsd: number
-    paidLbp: number
-    paidTotalUsd: number
-    paidTotalLbp: number
-    changeUsd: number
-    changeLbp: number
+    paidUsd: Decimal
+    paidLbp: Decimal
+    paidTotalUsd: Decimal
+    paidTotalLbp: Decimal
+    changeUsd: Decimal
+    changeLbp: Decimal
     changeCurrency: string
     _count: SaleTenderCountAggregateOutputType | null
     _avg: SaleTenderAvgAggregateOutputType | null
@@ -12233,12 +12392,12 @@ export namespace Prisma {
       saleId: string
       currency: string
       exchangeRate: number
-      paidUsd: number
-      paidLbp: number
-      paidTotalUsd: number
-      paidTotalLbp: number
-      changeUsd: number
-      changeLbp: number
+      paidUsd: Prisma.Decimal
+      paidLbp: Prisma.Decimal
+      paidTotalUsd: Prisma.Decimal
+      paidTotalLbp: Prisma.Decimal
+      changeUsd: Prisma.Decimal
+      changeLbp: Prisma.Decimal
       changeCurrency: string
     }, ExtArgs["result"]["saleTender"]>
     composites: {}
@@ -12668,12 +12827,12 @@ export namespace Prisma {
     readonly saleId: FieldRef<"SaleTender", 'String'>
     readonly currency: FieldRef<"SaleTender", 'String'>
     readonly exchangeRate: FieldRef<"SaleTender", 'Float'>
-    readonly paidUsd: FieldRef<"SaleTender", 'Float'>
-    readonly paidLbp: FieldRef<"SaleTender", 'Float'>
-    readonly paidTotalUsd: FieldRef<"SaleTender", 'Float'>
-    readonly paidTotalLbp: FieldRef<"SaleTender", 'Float'>
-    readonly changeUsd: FieldRef<"SaleTender", 'Float'>
-    readonly changeLbp: FieldRef<"SaleTender", 'Float'>
+    readonly paidUsd: FieldRef<"SaleTender", 'Decimal'>
+    readonly paidLbp: FieldRef<"SaleTender", 'Decimal'>
+    readonly paidTotalUsd: FieldRef<"SaleTender", 'Decimal'>
+    readonly paidTotalLbp: FieldRef<"SaleTender", 'Decimal'>
+    readonly changeUsd: FieldRef<"SaleTender", 'Decimal'>
+    readonly changeLbp: FieldRef<"SaleTender", 'Decimal'>
     readonly changeCurrency: FieldRef<"SaleTender", 'String'>
   }
     
@@ -13102,11 +13261,11 @@ export namespace Prisma {
   }
 
   export type SaleRefundAvgAggregateOutputType = {
-    total: number | null
+    total: Decimal | null
   }
 
   export type SaleRefundSumAggregateOutputType = {
-    total: number | null
+    total: Decimal | null
   }
 
   export type SaleRefundMinAggregateOutputType = {
@@ -13119,7 +13278,7 @@ export namespace Prisma {
     customerName: string | null
     method: $Enums.RefundMethod | null
     reason: string | null
-    total: number | null
+    total: Decimal | null
     cashier: string | null
     cashierId: string | null
     shiftId: string | null
@@ -13137,7 +13296,7 @@ export namespace Prisma {
     customerName: string | null
     method: $Enums.RefundMethod | null
     reason: string | null
-    total: number | null
+    total: Decimal | null
     cashier: string | null
     cashierId: string | null
     shiftId: string | null
@@ -13324,7 +13483,7 @@ export namespace Prisma {
     customerName: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal
     cashier: string
     cashierId: string | null
     shiftId: string | null
@@ -13464,7 +13623,7 @@ export namespace Prisma {
       customerName: string | null
       method: $Enums.RefundMethod
       reason: string
-      total: number
+      total: Prisma.Decimal
       cashier: string
       cashierId: string | null
       shiftId: string | null
@@ -13905,7 +14064,7 @@ export namespace Prisma {
     readonly customerName: FieldRef<"SaleRefund", 'String'>
     readonly method: FieldRef<"SaleRefund", 'RefundMethod'>
     readonly reason: FieldRef<"SaleRefund", 'String'>
-    readonly total: FieldRef<"SaleRefund", 'Float'>
+    readonly total: FieldRef<"SaleRefund", 'Decimal'>
     readonly cashier: FieldRef<"SaleRefund", 'String'>
     readonly cashierId: FieldRef<"SaleRefund", 'String'>
     readonly shiftId: FieldRef<"SaleRefund", 'String'>
@@ -14364,17 +14523,17 @@ export namespace Prisma {
   export type RefundItemAvgAggregateOutputType = {
     productId: number | null
     quantity: number | null
-    unitPrice: number | null
-    cost: number | null
-    total: number | null
+    unitPrice: Decimal | null
+    cost: Decimal | null
+    total: Decimal | null
   }
 
   export type RefundItemSumAggregateOutputType = {
     productId: number | null
     quantity: number | null
-    unitPrice: number | null
-    cost: number | null
-    total: number | null
+    unitPrice: Decimal | null
+    cost: Decimal | null
+    total: Decimal | null
   }
 
   export type RefundItemMinAggregateOutputType = {
@@ -14384,9 +14543,9 @@ export namespace Prisma {
     productName: string | null
     barcode: string | null
     quantity: number | null
-    unitPrice: number | null
-    cost: number | null
-    total: number | null
+    unitPrice: Decimal | null
+    cost: Decimal | null
+    total: Decimal | null
   }
 
   export type RefundItemMaxAggregateOutputType = {
@@ -14396,9 +14555,9 @@ export namespace Prisma {
     productName: string | null
     barcode: string | null
     quantity: number | null
-    unitPrice: number | null
-    cost: number | null
-    total: number | null
+    unitPrice: Decimal | null
+    cost: Decimal | null
+    total: Decimal | null
   }
 
   export type RefundItemCountAggregateOutputType = {
@@ -14561,9 +14720,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    cost: number | null
-    total: number
+    unitPrice: Decimal
+    cost: Decimal | null
+    total: Decimal
     _count: RefundItemCountAggregateOutputType | null
     _avg: RefundItemAvgAggregateOutputType | null
     _sum: RefundItemSumAggregateOutputType | null
@@ -14659,9 +14818,9 @@ export namespace Prisma {
       productName: string
       barcode: string
       quantity: number
-      unitPrice: number
-      cost: number | null
-      total: number
+      unitPrice: Prisma.Decimal
+      cost: Prisma.Decimal | null
+      total: Prisma.Decimal
     }, ExtArgs["result"]["refundItem"]>
     composites: {}
   }
@@ -15092,9 +15251,9 @@ export namespace Prisma {
     readonly productName: FieldRef<"RefundItem", 'String'>
     readonly barcode: FieldRef<"RefundItem", 'String'>
     readonly quantity: FieldRef<"RefundItem", 'Float'>
-    readonly unitPrice: FieldRef<"RefundItem", 'Float'>
-    readonly cost: FieldRef<"RefundItem", 'Float'>
-    readonly total: FieldRef<"RefundItem", 'Float'>
+    readonly unitPrice: FieldRef<"RefundItem", 'Decimal'>
+    readonly cost: FieldRef<"RefundItem", 'Decimal'>
+    readonly total: FieldRef<"RefundItem", 'Decimal'>
   }
     
 
@@ -15522,11 +15681,11 @@ export namespace Prisma {
   }
 
   export type CustomerAvgAggregateOutputType = {
-    creditLimit: number | null
+    creditLimit: Decimal | null
   }
 
   export type CustomerSumAggregateOutputType = {
-    creditLimit: number | null
+    creditLimit: Decimal | null
   }
 
   export type CustomerMinAggregateOutputType = {
@@ -15535,7 +15694,7 @@ export namespace Prisma {
     name: string | null
     mobile: string | null
     pin: string | null
-    creditLimit: number | null
+    creditLimit: Decimal | null
     notes: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -15547,7 +15706,7 @@ export namespace Prisma {
     name: string | null
     mobile: string | null
     pin: string | null
-    creditLimit: number | null
+    creditLimit: Decimal | null
     notes: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -15704,7 +15863,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin: string
-    creditLimit: number
+    creditLimit: Decimal
     notes: string
     createdAt: Date
     updatedAt: Date
@@ -15813,7 +15972,7 @@ export namespace Prisma {
       name: string
       mobile: string
       pin: string
-      creditLimit: number
+      creditLimit: Prisma.Decimal
       notes: string
       createdAt: Date
       updatedAt: Date
@@ -16249,7 +16408,7 @@ export namespace Prisma {
     readonly name: FieldRef<"Customer", 'String'>
     readonly mobile: FieldRef<"Customer", 'String'>
     readonly pin: FieldRef<"Customer", 'String'>
-    readonly creditLimit: FieldRef<"Customer", 'Float'>
+    readonly creditLimit: FieldRef<"Customer", 'Decimal'>
     readonly notes: FieldRef<"Customer", 'String'>
     readonly createdAt: FieldRef<"Customer", 'DateTime'>
     readonly updatedAt: FieldRef<"Customer", 'DateTime'>
@@ -16752,17 +16911,17 @@ export namespace Prisma {
   }
 
   export type DebtSaleAvgAggregateOutputType = {
-    subtotal: number | null
-    discountTotal: number | null
-    tax: number | null
-    total: number | null
+    subtotal: Decimal | null
+    discountTotal: Decimal | null
+    tax: Decimal | null
+    total: Decimal | null
   }
 
   export type DebtSaleSumAggregateOutputType = {
-    subtotal: number | null
-    discountTotal: number | null
-    tax: number | null
-    total: number | null
+    subtotal: Decimal | null
+    discountTotal: Decimal | null
+    tax: Decimal | null
+    total: Decimal | null
   }
 
   export type DebtSaleMinAggregateOutputType = {
@@ -16770,10 +16929,10 @@ export namespace Prisma {
     tenantId: string | null
     customerId: string | null
     saleNumber: string | null
-    subtotal: number | null
-    discountTotal: number | null
-    tax: number | null
-    total: number | null
+    subtotal: Decimal | null
+    discountTotal: Decimal | null
+    tax: Decimal | null
+    total: Decimal | null
     createdAt: Date | null
   }
 
@@ -16782,10 +16941,10 @@ export namespace Prisma {
     tenantId: string | null
     customerId: string | null
     saleNumber: string | null
-    subtotal: number | null
-    discountTotal: number | null
-    tax: number | null
-    total: number | null
+    subtotal: Decimal | null
+    discountTotal: Decimal | null
+    tax: Decimal | null
+    total: Decimal | null
     createdAt: Date | null
   }
 
@@ -16945,10 +17104,10 @@ export namespace Prisma {
     tenantId: string
     customerId: string
     saleNumber: string
-    subtotal: number
-    discountTotal: number | null
-    tax: number
-    total: number
+    subtotal: Decimal
+    discountTotal: Decimal | null
+    tax: Decimal
+    total: Decimal
     createdAt: Date
     _count: DebtSaleCountAggregateOutputType | null
     _avg: DebtSaleAvgAggregateOutputType | null
@@ -17050,10 +17209,10 @@ export namespace Prisma {
       tenantId: string
       customerId: string
       saleNumber: string
-      subtotal: number
-      discountTotal: number | null
-      tax: number
-      total: number
+      subtotal: Prisma.Decimal
+      discountTotal: Prisma.Decimal | null
+      tax: Prisma.Decimal
+      total: Prisma.Decimal
       createdAt: Date
     }, ExtArgs["result"]["debtSale"]>
     composites: {}
@@ -17484,10 +17643,10 @@ export namespace Prisma {
     readonly tenantId: FieldRef<"DebtSale", 'String'>
     readonly customerId: FieldRef<"DebtSale", 'String'>
     readonly saleNumber: FieldRef<"DebtSale", 'String'>
-    readonly subtotal: FieldRef<"DebtSale", 'Float'>
-    readonly discountTotal: FieldRef<"DebtSale", 'Float'>
-    readonly tax: FieldRef<"DebtSale", 'Float'>
-    readonly total: FieldRef<"DebtSale", 'Float'>
+    readonly subtotal: FieldRef<"DebtSale", 'Decimal'>
+    readonly discountTotal: FieldRef<"DebtSale", 'Decimal'>
+    readonly tax: FieldRef<"DebtSale", 'Decimal'>
+    readonly total: FieldRef<"DebtSale", 'Decimal'>
     readonly createdAt: FieldRef<"DebtSale", 'DateTime'>
   }
     
@@ -17916,18 +18075,18 @@ export namespace Prisma {
   }
 
   export type DebtPaymentAvgAggregateOutputType = {
-    amount: number | null
+    amount: Decimal | null
   }
 
   export type DebtPaymentSumAggregateOutputType = {
-    amount: number | null
+    amount: Decimal | null
   }
 
   export type DebtPaymentMinAggregateOutputType = {
     id: string | null
     tenantId: string | null
     customerId: string | null
-    amount: number | null
+    amount: Decimal | null
     method: string | null
     reference: string | null
     createdAt: Date | null
@@ -17937,7 +18096,7 @@ export namespace Prisma {
     id: string | null
     tenantId: string | null
     customerId: string | null
-    amount: number | null
+    amount: Decimal | null
     method: string | null
     reference: string | null
     createdAt: Date | null
@@ -18084,7 +18243,7 @@ export namespace Prisma {
     id: string
     tenantId: string
     customerId: string
-    amount: number
+    amount: Decimal
     method: string
     reference: string
     createdAt: Date
@@ -18179,7 +18338,7 @@ export namespace Prisma {
       id: string
       tenantId: string
       customerId: string
-      amount: number
+      amount: Prisma.Decimal
       method: string
       reference: string
       createdAt: Date
@@ -18611,7 +18770,7 @@ export namespace Prisma {
     readonly id: FieldRef<"DebtPayment", 'String'>
     readonly tenantId: FieldRef<"DebtPayment", 'String'>
     readonly customerId: FieldRef<"DebtPayment", 'String'>
-    readonly amount: FieldRef<"DebtPayment", 'Float'>
+    readonly amount: FieldRef<"DebtPayment", 'Decimal'>
     readonly method: FieldRef<"DebtPayment", 'String'>
     readonly reference: FieldRef<"DebtPayment", 'String'>
     readonly createdAt: FieldRef<"DebtPayment", 'DateTime'>
@@ -20238,13 +20397,13 @@ export namespace Prisma {
   }
 
   export type PurchaseOrderAvgAggregateOutputType = {
-    total: number | null
-    paidTotal: number | null
+    total: Decimal | null
+    paidTotal: Decimal | null
   }
 
   export type PurchaseOrderSumAggregateOutputType = {
-    total: number | null
-    paidTotal: number | null
+    total: Decimal | null
+    paidTotal: Decimal | null
   }
 
   export type PurchaseOrderMinAggregateOutputType = {
@@ -20257,8 +20416,8 @@ export namespace Prisma {
     paymentStatus: $Enums.PaymentStatus | null
     invoiceNumber: string | null
     note: string | null
-    total: number | null
-    paidTotal: number | null
+    total: Decimal | null
+    paidTotal: Decimal | null
     createdBy: string | null
     shiftId: string | null
     shiftNumber: string | null
@@ -20276,8 +20435,8 @@ export namespace Prisma {
     paymentStatus: $Enums.PaymentStatus | null
     invoiceNumber: string | null
     note: string | null
-    total: number | null
-    paidTotal: number | null
+    total: Decimal | null
+    paidTotal: Decimal | null
     createdBy: string | null
     shiftId: string | null
     shiftNumber: string | null
@@ -20470,8 +20629,8 @@ export namespace Prisma {
     paymentStatus: $Enums.PaymentStatus
     invoiceNumber: string
     note: string
-    total: number
-    paidTotal: number
+    total: Decimal
+    paidTotal: Decimal
     createdBy: string
     shiftId: string | null
     shiftNumber: string | null
@@ -20517,6 +20676,8 @@ export namespace Prisma {
     receivedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     supplier?: boolean | SupplierDefaultArgs<ExtArgs>
+    items?: boolean | PurchaseOrder$itemsArgs<ExtArgs>
+    _count?: boolean | PurchaseOrderCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["purchaseOrder"]>
 
   export type PurchaseOrderSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -20584,6 +20745,8 @@ export namespace Prisma {
   export type PurchaseOrderInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     supplier?: boolean | SupplierDefaultArgs<ExtArgs>
+    items?: boolean | PurchaseOrder$itemsArgs<ExtArgs>
+    _count?: boolean | PurchaseOrderCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type PurchaseOrderIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -20599,6 +20762,7 @@ export namespace Prisma {
     objects: {
       tenant: Prisma.$TenantPayload<ExtArgs>
       supplier: Prisma.$SupplierPayload<ExtArgs>
+      items: Prisma.$PurchaseOrderItemPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -20610,8 +20774,8 @@ export namespace Prisma {
       paymentStatus: $Enums.PaymentStatus
       invoiceNumber: string
       note: string
-      total: number
-      paidTotal: number
+      total: Prisma.Decimal
+      paidTotal: Prisma.Decimal
       createdBy: string
       shiftId: string | null
       shiftNumber: string | null
@@ -21013,6 +21177,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     supplier<T extends SupplierDefaultArgs<ExtArgs> = {}>(args?: Subset<T, SupplierDefaultArgs<ExtArgs>>): Prisma__SupplierClient<$Result.GetResult<Prisma.$SupplierPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    items<T extends PurchaseOrder$itemsArgs<ExtArgs> = {}>(args?: Subset<T, PurchaseOrder$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -21051,8 +21216,8 @@ export namespace Prisma {
     readonly paymentStatus: FieldRef<"PurchaseOrder", 'PaymentStatus'>
     readonly invoiceNumber: FieldRef<"PurchaseOrder", 'String'>
     readonly note: FieldRef<"PurchaseOrder", 'String'>
-    readonly total: FieldRef<"PurchaseOrder", 'Float'>
-    readonly paidTotal: FieldRef<"PurchaseOrder", 'Float'>
+    readonly total: FieldRef<"PurchaseOrder", 'Decimal'>
+    readonly paidTotal: FieldRef<"PurchaseOrder", 'Decimal'>
     readonly createdBy: FieldRef<"PurchaseOrder", 'String'>
     readonly shiftId: FieldRef<"PurchaseOrder", 'String'>
     readonly shiftNumber: FieldRef<"PurchaseOrder", 'String'>
@@ -21454,6 +21619,30 @@ export namespace Prisma {
   }
 
   /**
+   * PurchaseOrder.items
+   */
+  export type PurchaseOrder$itemsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+    where?: PurchaseOrderItemWhereInput
+    orderBy?: PurchaseOrderItemOrderByWithRelationInput | PurchaseOrderItemOrderByWithRelationInput[]
+    cursor?: PurchaseOrderItemWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PurchaseOrderItemScalarFieldEnum | PurchaseOrderItemScalarFieldEnum[]
+  }
+
+  /**
    * PurchaseOrder without action
    */
   export type PurchaseOrderDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -21473,6 +21662,1170 @@ export namespace Prisma {
 
 
   /**
+   * Model PurchaseOrderItem
+   */
+
+  export type AggregatePurchaseOrderItem = {
+    _count: PurchaseOrderItemCountAggregateOutputType | null
+    _avg: PurchaseOrderItemAvgAggregateOutputType | null
+    _sum: PurchaseOrderItemSumAggregateOutputType | null
+    _min: PurchaseOrderItemMinAggregateOutputType | null
+    _max: PurchaseOrderItemMaxAggregateOutputType | null
+  }
+
+  export type PurchaseOrderItemAvgAggregateOutputType = {
+    quantity: number | null
+    unitCost: Decimal | null
+    unitPrice: Decimal | null
+    total: Decimal | null
+  }
+
+  export type PurchaseOrderItemSumAggregateOutputType = {
+    quantity: number | null
+    unitCost: Decimal | null
+    unitPrice: Decimal | null
+    total: Decimal | null
+  }
+
+  export type PurchaseOrderItemMinAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    purchaseOrderId: string | null
+    productName: string | null
+    barcode: string | null
+    quantity: number | null
+    unitCost: Decimal | null
+    unitPrice: Decimal | null
+    total: Decimal | null
+  }
+
+  export type PurchaseOrderItemMaxAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    purchaseOrderId: string | null
+    productName: string | null
+    barcode: string | null
+    quantity: number | null
+    unitCost: Decimal | null
+    unitPrice: Decimal | null
+    total: Decimal | null
+  }
+
+  export type PurchaseOrderItemCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    purchaseOrderId: number
+    productName: number
+    barcode: number
+    quantity: number
+    unitCost: number
+    unitPrice: number
+    total: number
+    _all: number
+  }
+
+
+  export type PurchaseOrderItemAvgAggregateInputType = {
+    quantity?: true
+    unitCost?: true
+    unitPrice?: true
+    total?: true
+  }
+
+  export type PurchaseOrderItemSumAggregateInputType = {
+    quantity?: true
+    unitCost?: true
+    unitPrice?: true
+    total?: true
+  }
+
+  export type PurchaseOrderItemMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    purchaseOrderId?: true
+    productName?: true
+    barcode?: true
+    quantity?: true
+    unitCost?: true
+    unitPrice?: true
+    total?: true
+  }
+
+  export type PurchaseOrderItemMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    purchaseOrderId?: true
+    productName?: true
+    barcode?: true
+    quantity?: true
+    unitCost?: true
+    unitPrice?: true
+    total?: true
+  }
+
+  export type PurchaseOrderItemCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    purchaseOrderId?: true
+    productName?: true
+    barcode?: true
+    quantity?: true
+    unitCost?: true
+    unitPrice?: true
+    total?: true
+    _all?: true
+  }
+
+  export type PurchaseOrderItemAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PurchaseOrderItem to aggregate.
+     */
+    where?: PurchaseOrderItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PurchaseOrderItems to fetch.
+     */
+    orderBy?: PurchaseOrderItemOrderByWithRelationInput | PurchaseOrderItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PurchaseOrderItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PurchaseOrderItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PurchaseOrderItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PurchaseOrderItems
+    **/
+    _count?: true | PurchaseOrderItemCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: PurchaseOrderItemAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: PurchaseOrderItemSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PurchaseOrderItemMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PurchaseOrderItemMaxAggregateInputType
+  }
+
+  export type GetPurchaseOrderItemAggregateType<T extends PurchaseOrderItemAggregateArgs> = {
+        [P in keyof T & keyof AggregatePurchaseOrderItem]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePurchaseOrderItem[P]>
+      : GetScalarType<T[P], AggregatePurchaseOrderItem[P]>
+  }
+
+
+
+
+  export type PurchaseOrderItemGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PurchaseOrderItemWhereInput
+    orderBy?: PurchaseOrderItemOrderByWithAggregationInput | PurchaseOrderItemOrderByWithAggregationInput[]
+    by: PurchaseOrderItemScalarFieldEnum[] | PurchaseOrderItemScalarFieldEnum
+    having?: PurchaseOrderItemScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PurchaseOrderItemCountAggregateInputType | true
+    _avg?: PurchaseOrderItemAvgAggregateInputType
+    _sum?: PurchaseOrderItemSumAggregateInputType
+    _min?: PurchaseOrderItemMinAggregateInputType
+    _max?: PurchaseOrderItemMaxAggregateInputType
+  }
+
+  export type PurchaseOrderItemGroupByOutputType = {
+    id: string
+    tenantId: string
+    purchaseOrderId: string
+    productName: string
+    barcode: string
+    quantity: number
+    unitCost: Decimal
+    unitPrice: Decimal
+    total: Decimal
+    _count: PurchaseOrderItemCountAggregateOutputType | null
+    _avg: PurchaseOrderItemAvgAggregateOutputType | null
+    _sum: PurchaseOrderItemSumAggregateOutputType | null
+    _min: PurchaseOrderItemMinAggregateOutputType | null
+    _max: PurchaseOrderItemMaxAggregateOutputType | null
+  }
+
+  type GetPurchaseOrderItemGroupByPayload<T extends PurchaseOrderItemGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PurchaseOrderItemGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PurchaseOrderItemGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PurchaseOrderItemGroupByOutputType[P]>
+            : GetScalarType<T[P], PurchaseOrderItemGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PurchaseOrderItemSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    purchaseOrderId?: boolean
+    productName?: boolean
+    barcode?: boolean
+    quantity?: boolean
+    unitCost?: boolean
+    unitPrice?: boolean
+    total?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    purchaseOrder?: boolean | PurchaseOrderDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["purchaseOrderItem"]>
+
+  export type PurchaseOrderItemSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    purchaseOrderId?: boolean
+    productName?: boolean
+    barcode?: boolean
+    quantity?: boolean
+    unitCost?: boolean
+    unitPrice?: boolean
+    total?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    purchaseOrder?: boolean | PurchaseOrderDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["purchaseOrderItem"]>
+
+  export type PurchaseOrderItemSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    purchaseOrderId?: boolean
+    productName?: boolean
+    barcode?: boolean
+    quantity?: boolean
+    unitCost?: boolean
+    unitPrice?: boolean
+    total?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    purchaseOrder?: boolean | PurchaseOrderDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["purchaseOrderItem"]>
+
+  export type PurchaseOrderItemSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    purchaseOrderId?: boolean
+    productName?: boolean
+    barcode?: boolean
+    quantity?: boolean
+    unitCost?: boolean
+    unitPrice?: boolean
+    total?: boolean
+  }
+
+  export type PurchaseOrderItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "purchaseOrderId" | "productName" | "barcode" | "quantity" | "unitCost" | "unitPrice" | "total", ExtArgs["result"]["purchaseOrderItem"]>
+  export type PurchaseOrderItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    purchaseOrder?: boolean | PurchaseOrderDefaultArgs<ExtArgs>
+  }
+  export type PurchaseOrderItemIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    purchaseOrder?: boolean | PurchaseOrderDefaultArgs<ExtArgs>
+  }
+  export type PurchaseOrderItemIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    purchaseOrder?: boolean | PurchaseOrderDefaultArgs<ExtArgs>
+  }
+
+  export type $PurchaseOrderItemPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PurchaseOrderItem"
+    objects: {
+      tenant: Prisma.$TenantPayload<ExtArgs>
+      purchaseOrder: Prisma.$PurchaseOrderPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tenantId: string
+      purchaseOrderId: string
+      productName: string
+      barcode: string
+      quantity: number
+      unitCost: Prisma.Decimal
+      unitPrice: Prisma.Decimal
+      total: Prisma.Decimal
+    }, ExtArgs["result"]["purchaseOrderItem"]>
+    composites: {}
+  }
+
+  type PurchaseOrderItemGetPayload<S extends boolean | null | undefined | PurchaseOrderItemDefaultArgs> = $Result.GetResult<Prisma.$PurchaseOrderItemPayload, S>
+
+  type PurchaseOrderItemCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PurchaseOrderItemFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PurchaseOrderItemCountAggregateInputType | true
+    }
+
+  export interface PurchaseOrderItemDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PurchaseOrderItem'], meta: { name: 'PurchaseOrderItem' } }
+    /**
+     * Find zero or one PurchaseOrderItem that matches the filter.
+     * @param {PurchaseOrderItemFindUniqueArgs} args - Arguments to find a PurchaseOrderItem
+     * @example
+     * // Get one PurchaseOrderItem
+     * const purchaseOrderItem = await prisma.purchaseOrderItem.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PurchaseOrderItemFindUniqueArgs>(args: SelectSubset<T, PurchaseOrderItemFindUniqueArgs<ExtArgs>>): Prisma__PurchaseOrderItemClient<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PurchaseOrderItem that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PurchaseOrderItemFindUniqueOrThrowArgs} args - Arguments to find a PurchaseOrderItem
+     * @example
+     * // Get one PurchaseOrderItem
+     * const purchaseOrderItem = await prisma.purchaseOrderItem.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PurchaseOrderItemFindUniqueOrThrowArgs>(args: SelectSubset<T, PurchaseOrderItemFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PurchaseOrderItemClient<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PurchaseOrderItem that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PurchaseOrderItemFindFirstArgs} args - Arguments to find a PurchaseOrderItem
+     * @example
+     * // Get one PurchaseOrderItem
+     * const purchaseOrderItem = await prisma.purchaseOrderItem.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PurchaseOrderItemFindFirstArgs>(args?: SelectSubset<T, PurchaseOrderItemFindFirstArgs<ExtArgs>>): Prisma__PurchaseOrderItemClient<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PurchaseOrderItem that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PurchaseOrderItemFindFirstOrThrowArgs} args - Arguments to find a PurchaseOrderItem
+     * @example
+     * // Get one PurchaseOrderItem
+     * const purchaseOrderItem = await prisma.purchaseOrderItem.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PurchaseOrderItemFindFirstOrThrowArgs>(args?: SelectSubset<T, PurchaseOrderItemFindFirstOrThrowArgs<ExtArgs>>): Prisma__PurchaseOrderItemClient<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PurchaseOrderItems that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PurchaseOrderItemFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PurchaseOrderItems
+     * const purchaseOrderItems = await prisma.purchaseOrderItem.findMany()
+     * 
+     * // Get first 10 PurchaseOrderItems
+     * const purchaseOrderItems = await prisma.purchaseOrderItem.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const purchaseOrderItemWithIdOnly = await prisma.purchaseOrderItem.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PurchaseOrderItemFindManyArgs>(args?: SelectSubset<T, PurchaseOrderItemFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PurchaseOrderItem.
+     * @param {PurchaseOrderItemCreateArgs} args - Arguments to create a PurchaseOrderItem.
+     * @example
+     * // Create one PurchaseOrderItem
+     * const PurchaseOrderItem = await prisma.purchaseOrderItem.create({
+     *   data: {
+     *     // ... data to create a PurchaseOrderItem
+     *   }
+     * })
+     * 
+     */
+    create<T extends PurchaseOrderItemCreateArgs>(args: SelectSubset<T, PurchaseOrderItemCreateArgs<ExtArgs>>): Prisma__PurchaseOrderItemClient<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PurchaseOrderItems.
+     * @param {PurchaseOrderItemCreateManyArgs} args - Arguments to create many PurchaseOrderItems.
+     * @example
+     * // Create many PurchaseOrderItems
+     * const purchaseOrderItem = await prisma.purchaseOrderItem.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PurchaseOrderItemCreateManyArgs>(args?: SelectSubset<T, PurchaseOrderItemCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PurchaseOrderItems and returns the data saved in the database.
+     * @param {PurchaseOrderItemCreateManyAndReturnArgs} args - Arguments to create many PurchaseOrderItems.
+     * @example
+     * // Create many PurchaseOrderItems
+     * const purchaseOrderItem = await prisma.purchaseOrderItem.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PurchaseOrderItems and only return the `id`
+     * const purchaseOrderItemWithIdOnly = await prisma.purchaseOrderItem.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PurchaseOrderItemCreateManyAndReturnArgs>(args?: SelectSubset<T, PurchaseOrderItemCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a PurchaseOrderItem.
+     * @param {PurchaseOrderItemDeleteArgs} args - Arguments to delete one PurchaseOrderItem.
+     * @example
+     * // Delete one PurchaseOrderItem
+     * const PurchaseOrderItem = await prisma.purchaseOrderItem.delete({
+     *   where: {
+     *     // ... filter to delete one PurchaseOrderItem
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PurchaseOrderItemDeleteArgs>(args: SelectSubset<T, PurchaseOrderItemDeleteArgs<ExtArgs>>): Prisma__PurchaseOrderItemClient<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PurchaseOrderItem.
+     * @param {PurchaseOrderItemUpdateArgs} args - Arguments to update one PurchaseOrderItem.
+     * @example
+     * // Update one PurchaseOrderItem
+     * const purchaseOrderItem = await prisma.purchaseOrderItem.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PurchaseOrderItemUpdateArgs>(args: SelectSubset<T, PurchaseOrderItemUpdateArgs<ExtArgs>>): Prisma__PurchaseOrderItemClient<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PurchaseOrderItems.
+     * @param {PurchaseOrderItemDeleteManyArgs} args - Arguments to filter PurchaseOrderItems to delete.
+     * @example
+     * // Delete a few PurchaseOrderItems
+     * const { count } = await prisma.purchaseOrderItem.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PurchaseOrderItemDeleteManyArgs>(args?: SelectSubset<T, PurchaseOrderItemDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PurchaseOrderItems.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PurchaseOrderItemUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PurchaseOrderItems
+     * const purchaseOrderItem = await prisma.purchaseOrderItem.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PurchaseOrderItemUpdateManyArgs>(args: SelectSubset<T, PurchaseOrderItemUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PurchaseOrderItems and returns the data updated in the database.
+     * @param {PurchaseOrderItemUpdateManyAndReturnArgs} args - Arguments to update many PurchaseOrderItems.
+     * @example
+     * // Update many PurchaseOrderItems
+     * const purchaseOrderItem = await prisma.purchaseOrderItem.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more PurchaseOrderItems and only return the `id`
+     * const purchaseOrderItemWithIdOnly = await prisma.purchaseOrderItem.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends PurchaseOrderItemUpdateManyAndReturnArgs>(args: SelectSubset<T, PurchaseOrderItemUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one PurchaseOrderItem.
+     * @param {PurchaseOrderItemUpsertArgs} args - Arguments to update or create a PurchaseOrderItem.
+     * @example
+     * // Update or create a PurchaseOrderItem
+     * const purchaseOrderItem = await prisma.purchaseOrderItem.upsert({
+     *   create: {
+     *     // ... data to create a PurchaseOrderItem
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PurchaseOrderItem we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PurchaseOrderItemUpsertArgs>(args: SelectSubset<T, PurchaseOrderItemUpsertArgs<ExtArgs>>): Prisma__PurchaseOrderItemClient<$Result.GetResult<Prisma.$PurchaseOrderItemPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PurchaseOrderItems.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PurchaseOrderItemCountArgs} args - Arguments to filter PurchaseOrderItems to count.
+     * @example
+     * // Count the number of PurchaseOrderItems
+     * const count = await prisma.purchaseOrderItem.count({
+     *   where: {
+     *     // ... the filter for the PurchaseOrderItems we want to count
+     *   }
+     * })
+    **/
+    count<T extends PurchaseOrderItemCountArgs>(
+      args?: Subset<T, PurchaseOrderItemCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PurchaseOrderItemCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PurchaseOrderItem.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PurchaseOrderItemAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PurchaseOrderItemAggregateArgs>(args: Subset<T, PurchaseOrderItemAggregateArgs>): Prisma.PrismaPromise<GetPurchaseOrderItemAggregateType<T>>
+
+    /**
+     * Group by PurchaseOrderItem.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PurchaseOrderItemGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PurchaseOrderItemGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PurchaseOrderItemGroupByArgs['orderBy'] }
+        : { orderBy?: PurchaseOrderItemGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PurchaseOrderItemGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPurchaseOrderItemGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PurchaseOrderItem model
+   */
+  readonly fields: PurchaseOrderItemFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PurchaseOrderItem.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PurchaseOrderItemClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    purchaseOrder<T extends PurchaseOrderDefaultArgs<ExtArgs> = {}>(args?: Subset<T, PurchaseOrderDefaultArgs<ExtArgs>>): Prisma__PurchaseOrderClient<$Result.GetResult<Prisma.$PurchaseOrderPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PurchaseOrderItem model
+   */
+  interface PurchaseOrderItemFieldRefs {
+    readonly id: FieldRef<"PurchaseOrderItem", 'String'>
+    readonly tenantId: FieldRef<"PurchaseOrderItem", 'String'>
+    readonly purchaseOrderId: FieldRef<"PurchaseOrderItem", 'String'>
+    readonly productName: FieldRef<"PurchaseOrderItem", 'String'>
+    readonly barcode: FieldRef<"PurchaseOrderItem", 'String'>
+    readonly quantity: FieldRef<"PurchaseOrderItem", 'Float'>
+    readonly unitCost: FieldRef<"PurchaseOrderItem", 'Decimal'>
+    readonly unitPrice: FieldRef<"PurchaseOrderItem", 'Decimal'>
+    readonly total: FieldRef<"PurchaseOrderItem", 'Decimal'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PurchaseOrderItem findUnique
+   */
+  export type PurchaseOrderItemFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+    /**
+     * Filter, which PurchaseOrderItem to fetch.
+     */
+    where: PurchaseOrderItemWhereUniqueInput
+  }
+
+  /**
+   * PurchaseOrderItem findUniqueOrThrow
+   */
+  export type PurchaseOrderItemFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+    /**
+     * Filter, which PurchaseOrderItem to fetch.
+     */
+    where: PurchaseOrderItemWhereUniqueInput
+  }
+
+  /**
+   * PurchaseOrderItem findFirst
+   */
+  export type PurchaseOrderItemFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+    /**
+     * Filter, which PurchaseOrderItem to fetch.
+     */
+    where?: PurchaseOrderItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PurchaseOrderItems to fetch.
+     */
+    orderBy?: PurchaseOrderItemOrderByWithRelationInput | PurchaseOrderItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PurchaseOrderItems.
+     */
+    cursor?: PurchaseOrderItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PurchaseOrderItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PurchaseOrderItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PurchaseOrderItems.
+     */
+    distinct?: PurchaseOrderItemScalarFieldEnum | PurchaseOrderItemScalarFieldEnum[]
+  }
+
+  /**
+   * PurchaseOrderItem findFirstOrThrow
+   */
+  export type PurchaseOrderItemFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+    /**
+     * Filter, which PurchaseOrderItem to fetch.
+     */
+    where?: PurchaseOrderItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PurchaseOrderItems to fetch.
+     */
+    orderBy?: PurchaseOrderItemOrderByWithRelationInput | PurchaseOrderItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PurchaseOrderItems.
+     */
+    cursor?: PurchaseOrderItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PurchaseOrderItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PurchaseOrderItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PurchaseOrderItems.
+     */
+    distinct?: PurchaseOrderItemScalarFieldEnum | PurchaseOrderItemScalarFieldEnum[]
+  }
+
+  /**
+   * PurchaseOrderItem findMany
+   */
+  export type PurchaseOrderItemFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+    /**
+     * Filter, which PurchaseOrderItems to fetch.
+     */
+    where?: PurchaseOrderItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PurchaseOrderItems to fetch.
+     */
+    orderBy?: PurchaseOrderItemOrderByWithRelationInput | PurchaseOrderItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PurchaseOrderItems.
+     */
+    cursor?: PurchaseOrderItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PurchaseOrderItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PurchaseOrderItems.
+     */
+    skip?: number
+    distinct?: PurchaseOrderItemScalarFieldEnum | PurchaseOrderItemScalarFieldEnum[]
+  }
+
+  /**
+   * PurchaseOrderItem create
+   */
+  export type PurchaseOrderItemCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PurchaseOrderItem.
+     */
+    data: XOR<PurchaseOrderItemCreateInput, PurchaseOrderItemUncheckedCreateInput>
+  }
+
+  /**
+   * PurchaseOrderItem createMany
+   */
+  export type PurchaseOrderItemCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PurchaseOrderItems.
+     */
+    data: PurchaseOrderItemCreateManyInput | PurchaseOrderItemCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PurchaseOrderItem createManyAndReturn
+   */
+  export type PurchaseOrderItemCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * The data used to create many PurchaseOrderItems.
+     */
+    data: PurchaseOrderItemCreateManyInput | PurchaseOrderItemCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PurchaseOrderItem update
+   */
+  export type PurchaseOrderItemUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PurchaseOrderItem.
+     */
+    data: XOR<PurchaseOrderItemUpdateInput, PurchaseOrderItemUncheckedUpdateInput>
+    /**
+     * Choose, which PurchaseOrderItem to update.
+     */
+    where: PurchaseOrderItemWhereUniqueInput
+  }
+
+  /**
+   * PurchaseOrderItem updateMany
+   */
+  export type PurchaseOrderItemUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PurchaseOrderItems.
+     */
+    data: XOR<PurchaseOrderItemUpdateManyMutationInput, PurchaseOrderItemUncheckedUpdateManyInput>
+    /**
+     * Filter which PurchaseOrderItems to update
+     */
+    where?: PurchaseOrderItemWhereInput
+    /**
+     * Limit how many PurchaseOrderItems to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PurchaseOrderItem updateManyAndReturn
+   */
+  export type PurchaseOrderItemUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * The data used to update PurchaseOrderItems.
+     */
+    data: XOR<PurchaseOrderItemUpdateManyMutationInput, PurchaseOrderItemUncheckedUpdateManyInput>
+    /**
+     * Filter which PurchaseOrderItems to update
+     */
+    where?: PurchaseOrderItemWhereInput
+    /**
+     * Limit how many PurchaseOrderItems to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PurchaseOrderItem upsert
+   */
+  export type PurchaseOrderItemUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PurchaseOrderItem to update in case it exists.
+     */
+    where: PurchaseOrderItemWhereUniqueInput
+    /**
+     * In case the PurchaseOrderItem found by the `where` argument doesn't exist, create a new PurchaseOrderItem with this data.
+     */
+    create: XOR<PurchaseOrderItemCreateInput, PurchaseOrderItemUncheckedCreateInput>
+    /**
+     * In case the PurchaseOrderItem was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PurchaseOrderItemUpdateInput, PurchaseOrderItemUncheckedUpdateInput>
+  }
+
+  /**
+   * PurchaseOrderItem delete
+   */
+  export type PurchaseOrderItemDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+    /**
+     * Filter which PurchaseOrderItem to delete.
+     */
+    where: PurchaseOrderItemWhereUniqueInput
+  }
+
+  /**
+   * PurchaseOrderItem deleteMany
+   */
+  export type PurchaseOrderItemDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PurchaseOrderItems to delete
+     */
+    where?: PurchaseOrderItemWhereInput
+    /**
+     * Limit how many PurchaseOrderItems to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PurchaseOrderItem without action
+   */
+  export type PurchaseOrderItemDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PurchaseOrderItem
+     */
+    select?: PurchaseOrderItemSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PurchaseOrderItem
+     */
+    omit?: PurchaseOrderItemOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PurchaseOrderItemInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model SupplierPayment
    */
 
@@ -21485,11 +22838,11 @@ export namespace Prisma {
   }
 
   export type SupplierPaymentAvgAggregateOutputType = {
-    amount: number | null
+    amount: Decimal | null
   }
 
   export type SupplierPaymentSumAggregateOutputType = {
-    amount: number | null
+    amount: Decimal | null
   }
 
   export type SupplierPaymentMinAggregateOutputType = {
@@ -21499,7 +22852,7 @@ export namespace Prisma {
     supplierName: string | null
     purchaseOrderId: string | null
     purchaseOrderNumber: string | null
-    amount: number | null
+    amount: Decimal | null
     method: string | null
     reference: string | null
     recordedBy: string | null
@@ -21515,7 +22868,7 @@ export namespace Prisma {
     supplierName: string | null
     purchaseOrderId: string | null
     purchaseOrderNumber: string | null
-    amount: number | null
+    amount: Decimal | null
     method: string | null
     reference: string | null
     recordedBy: string | null
@@ -21692,7 +23045,7 @@ export namespace Prisma {
     supplierName: string
     purchaseOrderId: string | null
     purchaseOrderNumber: string | null
-    amount: number
+    amount: Decimal
     method: string
     reference: string
     recordedBy: string
@@ -21817,7 +23170,7 @@ export namespace Prisma {
       supplierName: string
       purchaseOrderId: string | null
       purchaseOrderNumber: string | null
-      amount: number
+      amount: Prisma.Decimal
       method: string
       reference: string
       recordedBy: string
@@ -22255,7 +23608,7 @@ export namespace Prisma {
     readonly supplierName: FieldRef<"SupplierPayment", 'String'>
     readonly purchaseOrderId: FieldRef<"SupplierPayment", 'String'>
     readonly purchaseOrderNumber: FieldRef<"SupplierPayment", 'String'>
-    readonly amount: FieldRef<"SupplierPayment", 'Float'>
+    readonly amount: FieldRef<"SupplierPayment", 'Decimal'>
     readonly method: FieldRef<"SupplierPayment", 'String'>
     readonly reference: FieldRef<"SupplierPayment", 'String'>
     readonly recordedBy: FieldRef<"SupplierPayment", 'String'>
@@ -22689,25 +24042,25 @@ export namespace Prisma {
   }
 
   export type ShiftAvgAggregateOutputType = {
-    openingFloatUsd: number | null
-    cashSalesUsd: number | null
-    cashRefundsUsd: number | null
-    cashExpensesUsd: number | null
-    supplierPaymentsUsd: number | null
-    expectedCashUsd: number | null
-    closingCashUsd: number | null
-    differenceUsd: number | null
+    openingFloatUsd: Decimal | null
+    cashSalesUsd: Decimal | null
+    cashRefundsUsd: Decimal | null
+    cashExpensesUsd: Decimal | null
+    supplierPaymentsUsd: Decimal | null
+    expectedCashUsd: Decimal | null
+    closingCashUsd: Decimal | null
+    differenceUsd: Decimal | null
   }
 
   export type ShiftSumAggregateOutputType = {
-    openingFloatUsd: number | null
-    cashSalesUsd: number | null
-    cashRefundsUsd: number | null
-    cashExpensesUsd: number | null
-    supplierPaymentsUsd: number | null
-    expectedCashUsd: number | null
-    closingCashUsd: number | null
-    differenceUsd: number | null
+    openingFloatUsd: Decimal | null
+    cashSalesUsd: Decimal | null
+    cashRefundsUsd: Decimal | null
+    cashExpensesUsd: Decimal | null
+    supplierPaymentsUsd: Decimal | null
+    expectedCashUsd: Decimal | null
+    closingCashUsd: Decimal | null
+    differenceUsd: Decimal | null
   }
 
   export type ShiftMinAggregateOutputType = {
@@ -22717,14 +24070,14 @@ export namespace Prisma {
     status: $Enums.ShiftStatus | null
     openedAt: Date | null
     closedAt: Date | null
-    openingFloatUsd: number | null
-    cashSalesUsd: number | null
-    cashRefundsUsd: number | null
-    cashExpensesUsd: number | null
-    supplierPaymentsUsd: number | null
-    expectedCashUsd: number | null
-    closingCashUsd: number | null
-    differenceUsd: number | null
+    openingFloatUsd: Decimal | null
+    cashSalesUsd: Decimal | null
+    cashRefundsUsd: Decimal | null
+    cashExpensesUsd: Decimal | null
+    supplierPaymentsUsd: Decimal | null
+    expectedCashUsd: Decimal | null
+    closingCashUsd: Decimal | null
+    differenceUsd: Decimal | null
     openedById: string | null
     openedByName: string | null
     closedById: string | null
@@ -22739,14 +24092,14 @@ export namespace Prisma {
     status: $Enums.ShiftStatus | null
     openedAt: Date | null
     closedAt: Date | null
-    openingFloatUsd: number | null
-    cashSalesUsd: number | null
-    cashRefundsUsd: number | null
-    cashExpensesUsd: number | null
-    supplierPaymentsUsd: number | null
-    expectedCashUsd: number | null
-    closingCashUsd: number | null
-    differenceUsd: number | null
+    openingFloatUsd: Decimal | null
+    cashSalesUsd: Decimal | null
+    cashRefundsUsd: Decimal | null
+    cashExpensesUsd: Decimal | null
+    supplierPaymentsUsd: Decimal | null
+    expectedCashUsd: Decimal | null
+    closingCashUsd: Decimal | null
+    differenceUsd: Decimal | null
     openedById: string | null
     openedByName: string | null
     closedById: string | null
@@ -22960,14 +24313,14 @@ export namespace Prisma {
     status: $Enums.ShiftStatus
     openedAt: Date
     closedAt: Date | null
-    openingFloatUsd: number
-    cashSalesUsd: number | null
-    cashRefundsUsd: number | null
-    cashExpensesUsd: number | null
-    supplierPaymentsUsd: number | null
-    expectedCashUsd: number | null
-    closingCashUsd: number | null
-    differenceUsd: number | null
+    openingFloatUsd: Decimal | null
+    cashSalesUsd: Decimal | null
+    cashRefundsUsd: Decimal | null
+    cashExpensesUsd: Decimal | null
+    supplierPaymentsUsd: Decimal | null
+    expectedCashUsd: Decimal | null
+    closingCashUsd: Decimal | null
+    differenceUsd: Decimal | null
     openedById: string
     openedByName: string
     closedById: string | null
@@ -23122,14 +24475,14 @@ export namespace Prisma {
       status: $Enums.ShiftStatus
       openedAt: Date
       closedAt: Date | null
-      openingFloatUsd: number
-      cashSalesUsd: number | null
-      cashRefundsUsd: number | null
-      cashExpensesUsd: number | null
-      supplierPaymentsUsd: number | null
-      expectedCashUsd: number | null
-      closingCashUsd: number | null
-      differenceUsd: number | null
+      openingFloatUsd: Prisma.Decimal | null
+      cashSalesUsd: Prisma.Decimal | null
+      cashRefundsUsd: Prisma.Decimal | null
+      cashExpensesUsd: Prisma.Decimal | null
+      supplierPaymentsUsd: Prisma.Decimal | null
+      expectedCashUsd: Prisma.Decimal | null
+      closingCashUsd: Prisma.Decimal | null
+      differenceUsd: Prisma.Decimal | null
       openedById: string
       openedByName: string
       closedById: string | null
@@ -23567,14 +24920,14 @@ export namespace Prisma {
     readonly status: FieldRef<"Shift", 'ShiftStatus'>
     readonly openedAt: FieldRef<"Shift", 'DateTime'>
     readonly closedAt: FieldRef<"Shift", 'DateTime'>
-    readonly openingFloatUsd: FieldRef<"Shift", 'Float'>
-    readonly cashSalesUsd: FieldRef<"Shift", 'Float'>
-    readonly cashRefundsUsd: FieldRef<"Shift", 'Float'>
-    readonly cashExpensesUsd: FieldRef<"Shift", 'Float'>
-    readonly supplierPaymentsUsd: FieldRef<"Shift", 'Float'>
-    readonly expectedCashUsd: FieldRef<"Shift", 'Float'>
-    readonly closingCashUsd: FieldRef<"Shift", 'Float'>
-    readonly differenceUsd: FieldRef<"Shift", 'Float'>
+    readonly openingFloatUsd: FieldRef<"Shift", 'Decimal'>
+    readonly cashSalesUsd: FieldRef<"Shift", 'Decimal'>
+    readonly cashRefundsUsd: FieldRef<"Shift", 'Decimal'>
+    readonly cashExpensesUsd: FieldRef<"Shift", 'Decimal'>
+    readonly supplierPaymentsUsd: FieldRef<"Shift", 'Decimal'>
+    readonly expectedCashUsd: FieldRef<"Shift", 'Decimal'>
+    readonly closingCashUsd: FieldRef<"Shift", 'Decimal'>
+    readonly differenceUsd: FieldRef<"Shift", 'Decimal'>
     readonly openedById: FieldRef<"Shift", 'String'>
     readonly openedByName: FieldRef<"Shift", 'String'>
     readonly closedById: FieldRef<"Shift", 'String'>
@@ -25145,11 +26498,11 @@ export namespace Prisma {
   }
 
   export type ExpenseAvgAggregateOutputType = {
-    amount: number | null
+    amount: Decimal | null
   }
 
   export type ExpenseSumAggregateOutputType = {
-    amount: number | null
+    amount: Decimal | null
   }
 
   export type ExpenseMinAggregateOutputType = {
@@ -25158,7 +26511,7 @@ export namespace Prisma {
     expenseNumber: string | null
     vendor: string | null
     category: string | null
-    amount: number | null
+    amount: Decimal | null
     paymentMethod: string | null
     invoiceNumber: string | null
     note: string | null
@@ -25175,7 +26528,7 @@ export namespace Prisma {
     expenseNumber: string | null
     vendor: string | null
     category: string | null
-    amount: number | null
+    amount: Decimal | null
     paymentMethod: string | null
     invoiceNumber: string | null
     note: string | null
@@ -25357,7 +26710,7 @@ export namespace Prisma {
     expenseNumber: string
     vendor: string
     category: string
-    amount: number
+    amount: Decimal
     paymentMethod: string
     invoiceNumber: string
     note: string
@@ -25487,7 +26840,7 @@ export namespace Prisma {
       expenseNumber: string
       vendor: string
       category: string
-      amount: number
+      amount: Prisma.Decimal
       paymentMethod: string
       invoiceNumber: string
       note: string
@@ -25926,7 +27279,7 @@ export namespace Prisma {
     readonly expenseNumber: FieldRef<"Expense", 'String'>
     readonly vendor: FieldRef<"Expense", 'String'>
     readonly category: FieldRef<"Expense", 'String'>
-    readonly amount: FieldRef<"Expense", 'Float'>
+    readonly amount: FieldRef<"Expense", 'Decimal'>
     readonly paymentMethod: FieldRef<"Expense", 'String'>
     readonly invoiceNumber: FieldRef<"Expense", 'String'>
     readonly note: FieldRef<"Expense", 'String'>
@@ -26384,16 +27737,16 @@ export namespace Prisma {
     productId: number | null
     initialQuantity: number | null
     quantityRemaining: number | null
-    unitCost: number | null
-    unitPrice: number | null
+    unitCost: Decimal | null
+    unitPrice: Decimal | null
   }
 
   export type InventoryBatchSumAggregateOutputType = {
     productId: number | null
     initialQuantity: number | null
     quantityRemaining: number | null
-    unitCost: number | null
-    unitPrice: number | null
+    unitCost: Decimal | null
+    unitPrice: Decimal | null
   }
 
   export type InventoryBatchMinAggregateOutputType = {
@@ -26405,8 +27758,8 @@ export namespace Prisma {
     barcode: string | null
     initialQuantity: number | null
     quantityRemaining: number | null
-    unitCost: number | null
-    unitPrice: number | null
+    unitCost: Decimal | null
+    unitPrice: Decimal | null
     expiryDate: string | null
     supplierId: string | null
     supplierName: string | null
@@ -26424,8 +27777,8 @@ export namespace Prisma {
     barcode: string | null
     initialQuantity: number | null
     quantityRemaining: number | null
-    unitCost: number | null
-    unitPrice: number | null
+    unitCost: Decimal | null
+    unitPrice: Decimal | null
     expiryDate: string | null
     supplierId: string | null
     supplierName: string | null
@@ -26624,8 +27977,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal
+    unitPrice: Decimal
     expiryDate: string | null
     supplierId: string | null
     supplierName: string | null
@@ -26771,8 +28124,8 @@ export namespace Prisma {
       barcode: string
       initialQuantity: number
       quantityRemaining: number
-      unitCost: number
-      unitPrice: number
+      unitCost: Prisma.Decimal
+      unitPrice: Prisma.Decimal
       expiryDate: string | null
       supplierId: string | null
       supplierName: string | null
@@ -27213,8 +28566,8 @@ export namespace Prisma {
     readonly barcode: FieldRef<"InventoryBatch", 'String'>
     readonly initialQuantity: FieldRef<"InventoryBatch", 'Float'>
     readonly quantityRemaining: FieldRef<"InventoryBatch", 'Float'>
-    readonly unitCost: FieldRef<"InventoryBatch", 'Float'>
-    readonly unitPrice: FieldRef<"InventoryBatch", 'Float'>
+    readonly unitCost: FieldRef<"InventoryBatch", 'Decimal'>
+    readonly unitPrice: FieldRef<"InventoryBatch", 'Decimal'>
     readonly expiryDate: FieldRef<"InventoryBatch", 'String'>
     readonly supplierId: FieldRef<"InventoryBatch", 'String'>
     readonly supplierName: FieldRef<"InventoryBatch", 'String'>
@@ -27671,7 +29024,7 @@ export namespace Prisma {
     quantityBefore: number | null
     quantityChange: number | null
     quantityAfter: number | null
-    valueImpact: number | null
+    valueImpact: Decimal | null
   }
 
   export type StockAdjustmentSumAggregateOutputType = {
@@ -27679,7 +29032,7 @@ export namespace Prisma {
     quantityBefore: number | null
     quantityChange: number | null
     quantityAfter: number | null
-    valueImpact: number | null
+    valueImpact: Decimal | null
   }
 
   export type StockAdjustmentMinAggregateOutputType = {
@@ -27695,7 +29048,7 @@ export namespace Prisma {
     reason: string | null
     note: string | null
     batchId: string | null
-    valueImpact: number | null
+    valueImpact: Decimal | null
     createdAt: Date | null
   }
 
@@ -27712,7 +29065,7 @@ export namespace Prisma {
     reason: string | null
     note: string | null
     batchId: string | null
-    valueImpact: number | null
+    valueImpact: Decimal | null
     createdAt: Date | null
   }
 
@@ -27902,7 +29255,7 @@ export namespace Prisma {
     reason: string
     note: string | null
     batchId: string | null
-    valueImpact: number
+    valueImpact: Decimal
     createdAt: Date
     _count: StockAdjustmentCountAggregateOutputType | null
     _avg: StockAdjustmentAvgAggregateOutputType | null
@@ -28032,7 +29385,7 @@ export namespace Prisma {
       reason: string
       note: string | null
       batchId: string | null
-      valueImpact: number
+      valueImpact: Prisma.Decimal
       createdAt: Date
     }, ExtArgs["result"]["stockAdjustment"]>
     composites: {}
@@ -28471,7 +29824,7 @@ export namespace Prisma {
     readonly reason: FieldRef<"StockAdjustment", 'String'>
     readonly note: FieldRef<"StockAdjustment", 'String'>
     readonly batchId: FieldRef<"StockAdjustment", 'String'>
-    readonly valueImpact: FieldRef<"StockAdjustment", 'Float'>
+    readonly valueImpact: FieldRef<"StockAdjustment", 'Decimal'>
     readonly createdAt: FieldRef<"StockAdjustment", 'DateTime'>
   }
     
@@ -28900,13 +30253,13 @@ export namespace Prisma {
   }
 
   export type StockCountSessionAvgAggregateOutputType = {
-    totalVariance: number | null
-    totalValueImpact: number | null
+    totalVariance: Decimal | null
+    totalValueImpact: Decimal | null
   }
 
   export type StockCountSessionSumAggregateOutputType = {
-    totalVariance: number | null
-    totalValueImpact: number | null
+    totalVariance: Decimal | null
+    totalValueImpact: Decimal | null
   }
 
   export type StockCountSessionMinAggregateOutputType = {
@@ -28916,8 +30269,8 @@ export namespace Prisma {
     status: $Enums.StockCountStatus | null
     createdAt: Date | null
     completedAt: Date | null
-    totalVariance: number | null
-    totalValueImpact: number | null
+    totalVariance: Decimal | null
+    totalValueImpact: Decimal | null
   }
 
   export type StockCountSessionMaxAggregateOutputType = {
@@ -28927,8 +30280,8 @@ export namespace Prisma {
     status: $Enums.StockCountStatus | null
     createdAt: Date | null
     completedAt: Date | null
-    totalVariance: number | null
-    totalValueImpact: number | null
+    totalVariance: Decimal | null
+    totalValueImpact: Decimal | null
   }
 
   export type StockCountSessionCountAggregateOutputType = {
@@ -29081,8 +30434,8 @@ export namespace Prisma {
     status: $Enums.StockCountStatus
     createdAt: Date
     completedAt: Date | null
-    totalVariance: number
-    totalValueImpact: number
+    totalVariance: Decimal
+    totalValueImpact: Decimal
     _count: StockCountSessionCountAggregateOutputType | null
     _avg: StockCountSessionAvgAggregateOutputType | null
     _sum: StockCountSessionSumAggregateOutputType | null
@@ -29179,8 +30532,8 @@ export namespace Prisma {
       status: $Enums.StockCountStatus
       createdAt: Date
       completedAt: Date | null
-      totalVariance: number
-      totalValueImpact: number
+      totalVariance: Prisma.Decimal
+      totalValueImpact: Prisma.Decimal
     }, ExtArgs["result"]["stockCountSession"]>
     composites: {}
   }
@@ -29612,8 +30965,8 @@ export namespace Prisma {
     readonly status: FieldRef<"StockCountSession", 'StockCountStatus'>
     readonly createdAt: FieldRef<"StockCountSession", 'DateTime'>
     readonly completedAt: FieldRef<"StockCountSession", 'DateTime'>
-    readonly totalVariance: FieldRef<"StockCountSession", 'Float'>
-    readonly totalValueImpact: FieldRef<"StockCountSession", 'Float'>
+    readonly totalVariance: FieldRef<"StockCountSession", 'Decimal'>
+    readonly totalValueImpact: FieldRef<"StockCountSession", 'Decimal'>
   }
     
 
@@ -30069,7 +31422,7 @@ export namespace Prisma {
     expectedQuantity: number | null
     countedQuantity: number | null
     variance: number | null
-    valueImpact: number | null
+    valueImpact: Decimal | null
   }
 
   export type StockCountLineSumAggregateOutputType = {
@@ -30077,7 +31430,7 @@ export namespace Prisma {
     expectedQuantity: number | null
     countedQuantity: number | null
     variance: number | null
-    valueImpact: number | null
+    valueImpact: Decimal | null
   }
 
   export type StockCountLineMinAggregateOutputType = {
@@ -30090,7 +31443,7 @@ export namespace Prisma {
     expectedQuantity: number | null
     countedQuantity: number | null
     variance: number | null
-    valueImpact: number | null
+    valueImpact: Decimal | null
   }
 
   export type StockCountLineMaxAggregateOutputType = {
@@ -30103,7 +31456,7 @@ export namespace Prisma {
     expectedQuantity: number | null
     countedQuantity: number | null
     variance: number | null
-    valueImpact: number | null
+    valueImpact: Decimal | null
   }
 
   export type StockCountLineCountAggregateOutputType = {
@@ -30273,7 +31626,7 @@ export namespace Prisma {
     expectedQuantity: number
     countedQuantity: number | null
     variance: number
-    valueImpact: number
+    valueImpact: Decimal
     _count: StockCountLineCountAggregateOutputType | null
     _avg: StockCountLineAvgAggregateOutputType | null
     _sum: StockCountLineSumAggregateOutputType | null
@@ -30383,7 +31736,7 @@ export namespace Prisma {
       expectedQuantity: number
       countedQuantity: number | null
       variance: number
-      valueImpact: number
+      valueImpact: Prisma.Decimal
     }, ExtArgs["result"]["stockCountLine"]>
     composites: {}
   }
@@ -30818,7 +32171,7 @@ export namespace Prisma {
     readonly expectedQuantity: FieldRef<"StockCountLine", 'Float'>
     readonly countedQuantity: FieldRef<"StockCountLine", 'Float'>
     readonly variance: FieldRef<"StockCountLine", 'Float'>
-    readonly valueImpact: FieldRef<"StockCountLine", 'Float'>
+    readonly valueImpact: FieldRef<"StockCountLine", 'Decimal'>
   }
     
 
@@ -31248,21 +32601,21 @@ export namespace Prisma {
   export type DeliveryOrderAvgAggregateOutputType = {
     locationLat: number | null
     locationLng: number | null
-    itemsTotal: number | null
-    deliveryFee: number | null
-    total: number | null
-    paidAmount: number | null
-    changeRequired: number | null
+    itemsTotal: Decimal | null
+    deliveryFee: Decimal | null
+    total: Decimal | null
+    paidAmount: Decimal | null
+    changeRequired: Decimal | null
   }
 
   export type DeliveryOrderSumAggregateOutputType = {
     locationLat: number | null
     locationLng: number | null
-    itemsTotal: number | null
-    deliveryFee: number | null
-    total: number | null
-    paidAmount: number | null
-    changeRequired: number | null
+    itemsTotal: Decimal | null
+    deliveryFee: Decimal | null
+    total: Decimal | null
+    paidAmount: Decimal | null
+    changeRequired: Decimal | null
   }
 
   export type DeliveryOrderMinAggregateOutputType = {
@@ -31277,12 +32630,12 @@ export namespace Prisma {
     locationLat: number | null
     locationLng: number | null
     deliveryNote: string | null
-    itemsTotal: number | null
-    deliveryFee: number | null
-    total: number | null
+    itemsTotal: Decimal | null
+    deliveryFee: Decimal | null
+    total: Decimal | null
     paymentMethod: string | null
-    paidAmount: number | null
-    changeRequired: number | null
+    paidAmount: Decimal | null
+    changeRequired: Decimal | null
     assignedTo: string | null
     assignedName: string | null
     driverId: string | null
@@ -31307,12 +32660,12 @@ export namespace Prisma {
     locationLat: number | null
     locationLng: number | null
     deliveryNote: string | null
-    itemsTotal: number | null
-    deliveryFee: number | null
-    total: number | null
+    itemsTotal: Decimal | null
+    deliveryFee: Decimal | null
+    total: Decimal | null
     paymentMethod: string | null
-    paidAmount: number | null
-    changeRequired: number | null
+    paidAmount: Decimal | null
+    changeRequired: Decimal | null
     assignedTo: string | null
     assignedName: string | null
     driverId: string | null
@@ -31566,12 +32919,12 @@ export namespace Prisma {
     locationLat: number | null
     locationLng: number | null
     deliveryNote: string
-    itemsTotal: number
-    deliveryFee: number
-    total: number
+    itemsTotal: Decimal
+    deliveryFee: Decimal
+    total: Decimal
     paymentMethod: string
-    paidAmount: number
-    changeRequired: number
+    paidAmount: Decimal
+    changeRequired: Decimal
     assignedTo: string | null
     assignedName: string | null
     driverId: string | null
@@ -31773,12 +33126,12 @@ export namespace Prisma {
       locationLat: number | null
       locationLng: number | null
       deliveryNote: string
-      itemsTotal: number
-      deliveryFee: number
-      total: number
+      itemsTotal: Prisma.Decimal
+      deliveryFee: Prisma.Decimal
+      total: Prisma.Decimal
       paymentMethod: string
-      paidAmount: number
-      changeRequired: number
+      paidAmount: Prisma.Decimal
+      changeRequired: Prisma.Decimal
       assignedTo: string | null
       assignedName: string | null
       driverId: string | null
@@ -32227,12 +33580,12 @@ export namespace Prisma {
     readonly locationLat: FieldRef<"DeliveryOrder", 'Float'>
     readonly locationLng: FieldRef<"DeliveryOrder", 'Float'>
     readonly deliveryNote: FieldRef<"DeliveryOrder", 'String'>
-    readonly itemsTotal: FieldRef<"DeliveryOrder", 'Float'>
-    readonly deliveryFee: FieldRef<"DeliveryOrder", 'Float'>
-    readonly total: FieldRef<"DeliveryOrder", 'Float'>
+    readonly itemsTotal: FieldRef<"DeliveryOrder", 'Decimal'>
+    readonly deliveryFee: FieldRef<"DeliveryOrder", 'Decimal'>
+    readonly total: FieldRef<"DeliveryOrder", 'Decimal'>
     readonly paymentMethod: FieldRef<"DeliveryOrder", 'String'>
-    readonly paidAmount: FieldRef<"DeliveryOrder", 'Float'>
-    readonly changeRequired: FieldRef<"DeliveryOrder", 'Float'>
+    readonly paidAmount: FieldRef<"DeliveryOrder", 'Decimal'>
+    readonly changeRequired: FieldRef<"DeliveryOrder", 'Decimal'>
     readonly assignedTo: FieldRef<"DeliveryOrder", 'String'>
     readonly assignedName: FieldRef<"DeliveryOrder", 'String'>
     readonly driverId: FieldRef<"DeliveryOrder", 'String'>
@@ -32734,15 +34087,15 @@ export namespace Prisma {
   export type DeliveryOrderItemAvgAggregateOutputType = {
     productId: number | null
     quantity: number | null
-    unitPrice: number | null
-    total: number | null
+    unitPrice: Decimal | null
+    total: Decimal | null
   }
 
   export type DeliveryOrderItemSumAggregateOutputType = {
     productId: number | null
     quantity: number | null
-    unitPrice: number | null
-    total: number | null
+    unitPrice: Decimal | null
+    total: Decimal | null
   }
 
   export type DeliveryOrderItemMinAggregateOutputType = {
@@ -32752,8 +34105,8 @@ export namespace Prisma {
     productName: string | null
     barcode: string | null
     quantity: number | null
-    unitPrice: number | null
-    total: number | null
+    unitPrice: Decimal | null
+    total: Decimal | null
   }
 
   export type DeliveryOrderItemMaxAggregateOutputType = {
@@ -32763,8 +34116,8 @@ export namespace Prisma {
     productName: string | null
     barcode: string | null
     quantity: number | null
-    unitPrice: number | null
-    total: number | null
+    unitPrice: Decimal | null
+    total: Decimal | null
   }
 
   export type DeliveryOrderItemCountAggregateOutputType = {
@@ -32921,8 +34274,8 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
+    unitPrice: Decimal
+    total: Decimal
     _count: DeliveryOrderItemCountAggregateOutputType | null
     _avg: DeliveryOrderItemAvgAggregateOutputType | null
     _sum: DeliveryOrderItemSumAggregateOutputType | null
@@ -33014,8 +34367,8 @@ export namespace Prisma {
       productName: string
       barcode: string
       quantity: number
-      unitPrice: number
-      total: number
+      unitPrice: Prisma.Decimal
+      total: Prisma.Decimal
     }, ExtArgs["result"]["deliveryOrderItem"]>
     composites: {}
   }
@@ -33446,8 +34799,8 @@ export namespace Prisma {
     readonly productName: FieldRef<"DeliveryOrderItem", 'String'>
     readonly barcode: FieldRef<"DeliveryOrderItem", 'String'>
     readonly quantity: FieldRef<"DeliveryOrderItem", 'Float'>
-    readonly unitPrice: FieldRef<"DeliveryOrderItem", 'Float'>
-    readonly total: FieldRef<"DeliveryOrderItem", 'Float'>
+    readonly unitPrice: FieldRef<"DeliveryOrderItem", 'Decimal'>
+    readonly total: FieldRef<"DeliveryOrderItem", 'Decimal'>
   }
     
 
@@ -33875,48 +35228,48 @@ export namespace Prisma {
   }
 
   export type DailyCloseAvgAggregateOutputType = {
-    grossSales: number | null
-    refunds: number | null
-    netSales: number | null
-    costOfGoods: number | null
-    returnedCost: number | null
-    grossMargin: number | null
-    expenses: number | null
-    supplierPayments: number | null
-    netProfit: number | null
-    cashIn: number | null
-    cashOut: number | null
+    grossSales: Decimal | null
+    refunds: Decimal | null
+    netSales: Decimal | null
+    costOfGoods: Decimal | null
+    returnedCost: Decimal | null
+    grossMargin: Decimal | null
+    expenses: Decimal | null
+    supplierPayments: Decimal | null
+    netProfit: Decimal | null
+    cashIn: Decimal | null
+    cashOut: Decimal | null
   }
 
   export type DailyCloseSumAggregateOutputType = {
-    grossSales: number | null
-    refunds: number | null
-    netSales: number | null
-    costOfGoods: number | null
-    returnedCost: number | null
-    grossMargin: number | null
-    expenses: number | null
-    supplierPayments: number | null
-    netProfit: number | null
-    cashIn: number | null
-    cashOut: number | null
+    grossSales: Decimal | null
+    refunds: Decimal | null
+    netSales: Decimal | null
+    costOfGoods: Decimal | null
+    returnedCost: Decimal | null
+    grossMargin: Decimal | null
+    expenses: Decimal | null
+    supplierPayments: Decimal | null
+    netProfit: Decimal | null
+    cashIn: Decimal | null
+    cashOut: Decimal | null
   }
 
   export type DailyCloseMinAggregateOutputType = {
     id: string | null
     tenantId: string | null
     dateKey: string | null
-    grossSales: number | null
-    refunds: number | null
-    netSales: number | null
-    costOfGoods: number | null
-    returnedCost: number | null
-    grossMargin: number | null
-    expenses: number | null
-    supplierPayments: number | null
-    netProfit: number | null
-    cashIn: number | null
-    cashOut: number | null
+    grossSales: Decimal | null
+    refunds: Decimal | null
+    netSales: Decimal | null
+    costOfGoods: Decimal | null
+    returnedCost: Decimal | null
+    grossMargin: Decimal | null
+    expenses: Decimal | null
+    supplierPayments: Decimal | null
+    netProfit: Decimal | null
+    cashIn: Decimal | null
+    cashOut: Decimal | null
     note: string | null
     closedBy: string | null
     createdAt: Date | null
@@ -33926,17 +35279,17 @@ export namespace Prisma {
     id: string | null
     tenantId: string | null
     dateKey: string | null
-    grossSales: number | null
-    refunds: number | null
-    netSales: number | null
-    costOfGoods: number | null
-    returnedCost: number | null
-    grossMargin: number | null
-    expenses: number | null
-    supplierPayments: number | null
-    netProfit: number | null
-    cashIn: number | null
-    cashOut: number | null
+    grossSales: Decimal | null
+    refunds: Decimal | null
+    netSales: Decimal | null
+    costOfGoods: Decimal | null
+    returnedCost: Decimal | null
+    grossMargin: Decimal | null
+    expenses: Decimal | null
+    supplierPayments: Decimal | null
+    netProfit: Decimal | null
+    cashIn: Decimal | null
+    cashOut: Decimal | null
     note: string | null
     closedBy: string | null
     createdAt: Date | null
@@ -34143,17 +35496,17 @@ export namespace Prisma {
     id: string
     tenantId: string
     dateKey: string
-    grossSales: number
-    refunds: number
-    netSales: number
-    costOfGoods: number
-    returnedCost: number
-    grossMargin: number
-    expenses: number
-    supplierPayments: number | null
-    netProfit: number
-    cashIn: number
-    cashOut: number
+    grossSales: Decimal
+    refunds: Decimal
+    netSales: Decimal
+    costOfGoods: Decimal
+    returnedCost: Decimal
+    grossMargin: Decimal
+    expenses: Decimal
+    supplierPayments: Decimal | null
+    netProfit: Decimal
+    cashIn: Decimal
+    cashOut: Decimal
     note: string
     closedBy: string
     createdAt: Date
@@ -34281,17 +35634,17 @@ export namespace Prisma {
       id: string
       tenantId: string
       dateKey: string
-      grossSales: number
-      refunds: number
-      netSales: number
-      costOfGoods: number
-      returnedCost: number
-      grossMargin: number
-      expenses: number
-      supplierPayments: number | null
-      netProfit: number
-      cashIn: number
-      cashOut: number
+      grossSales: Prisma.Decimal
+      refunds: Prisma.Decimal
+      netSales: Prisma.Decimal
+      costOfGoods: Prisma.Decimal
+      returnedCost: Prisma.Decimal
+      grossMargin: Prisma.Decimal
+      expenses: Prisma.Decimal
+      supplierPayments: Prisma.Decimal | null
+      netProfit: Prisma.Decimal
+      cashIn: Prisma.Decimal
+      cashOut: Prisma.Decimal
       note: string
       closedBy: string
       createdAt: Date
@@ -34722,17 +36075,17 @@ export namespace Prisma {
     readonly id: FieldRef<"DailyClose", 'String'>
     readonly tenantId: FieldRef<"DailyClose", 'String'>
     readonly dateKey: FieldRef<"DailyClose", 'String'>
-    readonly grossSales: FieldRef<"DailyClose", 'Float'>
-    readonly refunds: FieldRef<"DailyClose", 'Float'>
-    readonly netSales: FieldRef<"DailyClose", 'Float'>
-    readonly costOfGoods: FieldRef<"DailyClose", 'Float'>
-    readonly returnedCost: FieldRef<"DailyClose", 'Float'>
-    readonly grossMargin: FieldRef<"DailyClose", 'Float'>
-    readonly expenses: FieldRef<"DailyClose", 'Float'>
-    readonly supplierPayments: FieldRef<"DailyClose", 'Float'>
-    readonly netProfit: FieldRef<"DailyClose", 'Float'>
-    readonly cashIn: FieldRef<"DailyClose", 'Float'>
-    readonly cashOut: FieldRef<"DailyClose", 'Float'>
+    readonly grossSales: FieldRef<"DailyClose", 'Decimal'>
+    readonly refunds: FieldRef<"DailyClose", 'Decimal'>
+    readonly netSales: FieldRef<"DailyClose", 'Decimal'>
+    readonly costOfGoods: FieldRef<"DailyClose", 'Decimal'>
+    readonly returnedCost: FieldRef<"DailyClose", 'Decimal'>
+    readonly grossMargin: FieldRef<"DailyClose", 'Decimal'>
+    readonly expenses: FieldRef<"DailyClose", 'Decimal'>
+    readonly supplierPayments: FieldRef<"DailyClose", 'Decimal'>
+    readonly netProfit: FieldRef<"DailyClose", 'Decimal'>
+    readonly cashIn: FieldRef<"DailyClose", 'Decimal'>
+    readonly cashOut: FieldRef<"DailyClose", 'Decimal'>
     readonly note: FieldRef<"DailyClose", 'String'>
     readonly closedBy: FieldRef<"DailyClose", 'String'>
     readonly createdAt: FieldRef<"DailyClose", 'DateTime'>
@@ -36592,6 +37945,21 @@ export namespace Prisma {
   export type PurchaseOrderScalarFieldEnum = (typeof PurchaseOrderScalarFieldEnum)[keyof typeof PurchaseOrderScalarFieldEnum]
 
 
+  export const PurchaseOrderItemScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    purchaseOrderId: 'purchaseOrderId',
+    productName: 'productName',
+    barcode: 'barcode',
+    quantity: 'quantity',
+    unitCost: 'unitCost',
+    unitPrice: 'unitPrice',
+    total: 'total'
+  };
+
+  export type PurchaseOrderItemScalarFieldEnum = (typeof PurchaseOrderItemScalarFieldEnum)[keyof typeof PurchaseOrderItemScalarFieldEnum]
+
+
   export const SupplierPaymentScalarFieldEnum: {
     id: 'id',
     tenantId: 'tenantId',
@@ -36928,16 +38296,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Float'
+   * Reference to a field of type 'Decimal'
    */
-  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+  export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
     
 
 
   /**
-   * Reference to a field of type 'Float[]'
+   * Reference to a field of type 'Decimal[]'
    */
-  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+  export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
     
 
 
@@ -36952,6 +38320,20 @@ export namespace Prisma {
    * Reference to a field of type 'Int[]'
    */
   export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float'
+   */
+  export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+  /**
+   * Reference to a field of type 'Float[]'
+   */
+  export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
 
@@ -37117,6 +38499,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentListRelationFilter
     suppliers?: SupplierListRelationFilter
     purchaseOrders?: PurchaseOrderListRelationFilter
+    purchaseOrderItems?: PurchaseOrderItemListRelationFilter
     supplierPayments?: SupplierPaymentListRelationFilter
     shifts?: ShiftListRelationFilter
     auditEvents?: AuditEventListRelationFilter
@@ -37146,6 +38529,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentOrderByRelationAggregateInput
     suppliers?: SupplierOrderByRelationAggregateInput
     purchaseOrders?: PurchaseOrderOrderByRelationAggregateInput
+    purchaseOrderItems?: PurchaseOrderItemOrderByRelationAggregateInput
     supplierPayments?: SupplierPaymentOrderByRelationAggregateInput
     shifts?: ShiftOrderByRelationAggregateInput
     auditEvents?: AuditEventOrderByRelationAggregateInput
@@ -37178,6 +38562,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentListRelationFilter
     suppliers?: SupplierListRelationFilter
     purchaseOrders?: PurchaseOrderListRelationFilter
+    purchaseOrderItems?: PurchaseOrderItemListRelationFilter
     supplierPayments?: SupplierPaymentListRelationFilter
     shifts?: ShiftListRelationFilter
     auditEvents?: AuditEventListRelationFilter
@@ -37254,6 +38639,7 @@ export namespace Prisma {
 
   export type StaffUserWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    tenantId_mobile?: StaffUserTenantIdMobileCompoundUniqueInput
     AND?: StaffUserWhereInput | StaffUserWhereInput[]
     OR?: StaffUserWhereInput[]
     NOT?: StaffUserWhereInput | StaffUserWhereInput[]
@@ -37270,7 +38656,7 @@ export namespace Prisma {
     closedShifts?: ShiftListRelationFilter
     expenses?: ExpenseListRelationFilter
     deliveryOrders?: DeliveryOrderListRelationFilter
-  }, "id">
+  }, "id" | "tenantId_mobile">
 
   export type StaffUserOrderByWithAggregationInput = {
     id?: SortOrder
@@ -37312,11 +38698,11 @@ export namespace Prisma {
     branchName?: StringFilter<"AppSettings"> | string
     phone?: StringFilter<"AppSettings"> | string
     address?: StringFilter<"AppSettings"> | string
-    vatRate?: FloatFilter<"AppSettings"> | number
-    usdToLbpRate?: FloatFilter<"AppSettings"> | number
+    vatRate?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
+    usdToLbpRate?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFilter<"AppSettings"> | string
     lowStockThreshold?: IntFilter<"AppSettings"> | number
-    deliveryFee?: FloatFilter<"AppSettings"> | number
+    deliveryFee?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFilter<"AppSettings"> | string
     whatsAppDriverEnabled?: BoolFilter<"AppSettings"> | boolean
     assignMode?: StringFilter<"AppSettings"> | string
@@ -37355,11 +38741,11 @@ export namespace Prisma {
     branchName?: StringFilter<"AppSettings"> | string
     phone?: StringFilter<"AppSettings"> | string
     address?: StringFilter<"AppSettings"> | string
-    vatRate?: FloatFilter<"AppSettings"> | number
-    usdToLbpRate?: FloatFilter<"AppSettings"> | number
+    vatRate?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
+    usdToLbpRate?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFilter<"AppSettings"> | string
     lowStockThreshold?: IntFilter<"AppSettings"> | number
-    deliveryFee?: FloatFilter<"AppSettings"> | number
+    deliveryFee?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFilter<"AppSettings"> | string
     whatsAppDriverEnabled?: BoolFilter<"AppSettings"> | boolean
     assignMode?: StringFilter<"AppSettings"> | string
@@ -37402,11 +38788,11 @@ export namespace Prisma {
     branchName?: StringWithAggregatesFilter<"AppSettings"> | string
     phone?: StringWithAggregatesFilter<"AppSettings"> | string
     address?: StringWithAggregatesFilter<"AppSettings"> | string
-    vatRate?: FloatWithAggregatesFilter<"AppSettings"> | number
-    usdToLbpRate?: FloatWithAggregatesFilter<"AppSettings"> | number
+    vatRate?: DecimalWithAggregatesFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
+    usdToLbpRate?: DecimalWithAggregatesFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringWithAggregatesFilter<"AppSettings"> | string
     lowStockThreshold?: IntWithAggregatesFilter<"AppSettings"> | number
-    deliveryFee?: FloatWithAggregatesFilter<"AppSettings"> | number
+    deliveryFee?: DecimalWithAggregatesFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringWithAggregatesFilter<"AppSettings"> | string
     whatsAppDriverEnabled?: BoolWithAggregatesFilter<"AppSettings"> | boolean
     assignMode?: StringWithAggregatesFilter<"AppSettings"> | string
@@ -37424,8 +38810,8 @@ export namespace Prisma {
     isParent?: BoolFilter<"Product"> | boolean
     variantName?: StringNullableFilter<"Product"> | string | null
     name?: StringFilter<"Product"> | string
-    price?: FloatFilter<"Product"> | number
-    cost?: FloatFilter<"Product"> | number
+    price?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
     stock?: FloatFilter<"Product"> | number
     barcode?: StringNullableFilter<"Product"> | string | null
     barcodeAliases?: StringNullableListFilter<"Product">
@@ -37490,8 +38876,8 @@ export namespace Prisma {
     isParent?: BoolFilter<"Product"> | boolean
     variantName?: StringNullableFilter<"Product"> | string | null
     name?: StringFilter<"Product"> | string
-    price?: FloatFilter<"Product"> | number
-    cost?: FloatFilter<"Product"> | number
+    price?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
     stock?: FloatFilter<"Product"> | number
     barcode?: StringNullableFilter<"Product"> | string | null
     barcodeAliases?: StringNullableListFilter<"Product">
@@ -37554,8 +38940,8 @@ export namespace Prisma {
     isParent?: BoolWithAggregatesFilter<"Product"> | boolean
     variantName?: StringNullableWithAggregatesFilter<"Product"> | string | null
     name?: StringWithAggregatesFilter<"Product"> | string
-    price?: FloatWithAggregatesFilter<"Product"> | number
-    cost?: FloatWithAggregatesFilter<"Product"> | number
+    price?: DecimalWithAggregatesFilter<"Product"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalWithAggregatesFilter<"Product"> | Decimal | DecimalJsLike | number | string
     stock?: FloatWithAggregatesFilter<"Product"> | number
     barcode?: StringNullableWithAggregatesFilter<"Product"> | string | null
     barcodeAliases?: StringNullableListFilter<"Product">
@@ -37582,12 +38968,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFilter<"Sale"> | $Enums.SalePaymentMethod
     customerId?: StringNullableFilter<"Sale"> | string | null
     customerName?: StringNullableFilter<"Sale"> | string | null
-    subtotal?: FloatFilter<"Sale"> | number
-    discountTotal?: FloatNullableFilter<"Sale"> | number | null
-    tax?: FloatFilter<"Sale"> | number
-    total?: FloatFilter<"Sale"> | number
-    cost?: FloatFilter<"Sale"> | number
-    profit?: FloatFilter<"Sale"> | number
+    subtotal?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    discountTotal?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     cashier?: StringFilter<"Sale"> | string
     cashierId?: StringNullableFilter<"Sale"> | string | null
     shiftId?: StringNullableFilter<"Sale"> | string | null
@@ -37636,12 +39022,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFilter<"Sale"> | $Enums.SalePaymentMethod
     customerId?: StringNullableFilter<"Sale"> | string | null
     customerName?: StringNullableFilter<"Sale"> | string | null
-    subtotal?: FloatFilter<"Sale"> | number
-    discountTotal?: FloatNullableFilter<"Sale"> | number | null
-    tax?: FloatFilter<"Sale"> | number
-    total?: FloatFilter<"Sale"> | number
-    cost?: FloatFilter<"Sale"> | number
-    profit?: FloatFilter<"Sale"> | number
+    subtotal?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    discountTotal?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     cashier?: StringFilter<"Sale"> | string
     cashierId?: StringNullableFilter<"Sale"> | string | null
     shiftId?: StringNullableFilter<"Sale"> | string | null
@@ -37690,12 +39076,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodWithAggregatesFilter<"Sale"> | $Enums.SalePaymentMethod
     customerId?: StringNullableWithAggregatesFilter<"Sale"> | string | null
     customerName?: StringNullableWithAggregatesFilter<"Sale"> | string | null
-    subtotal?: FloatWithAggregatesFilter<"Sale"> | number
-    discountTotal?: FloatNullableWithAggregatesFilter<"Sale"> | number | null
-    tax?: FloatWithAggregatesFilter<"Sale"> | number
-    total?: FloatWithAggregatesFilter<"Sale"> | number
-    cost?: FloatWithAggregatesFilter<"Sale"> | number
-    profit?: FloatWithAggregatesFilter<"Sale"> | number
+    subtotal?: DecimalWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    discountTotal?: DecimalNullableWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    profit?: DecimalWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     cashier?: StringWithAggregatesFilter<"Sale"> | string
     cashierId?: StringNullableWithAggregatesFilter<"Sale"> | string | null
     shiftId?: StringNullableWithAggregatesFilter<"Sale"> | string | null
@@ -37714,9 +39100,9 @@ export namespace Prisma {
     productName?: StringFilter<"SaleItem"> | string
     barcode?: StringFilter<"SaleItem"> | string
     quantity?: FloatFilter<"SaleItem"> | number
-    unitPrice?: FloatFilter<"SaleItem"> | number
-    total?: FloatFilter<"SaleItem"> | number
-    cost?: FloatFilter<"SaleItem"> | number
+    unitPrice?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
   }
 
@@ -37743,9 +39129,9 @@ export namespace Prisma {
     productName?: StringFilter<"SaleItem"> | string
     barcode?: StringFilter<"SaleItem"> | string
     quantity?: FloatFilter<"SaleItem"> | number
-    unitPrice?: FloatFilter<"SaleItem"> | number
-    total?: FloatFilter<"SaleItem"> | number
-    cost?: FloatFilter<"SaleItem"> | number
+    unitPrice?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
   }, "id">
 
@@ -37776,9 +39162,9 @@ export namespace Prisma {
     productName?: StringWithAggregatesFilter<"SaleItem"> | string
     barcode?: StringWithAggregatesFilter<"SaleItem"> | string
     quantity?: FloatWithAggregatesFilter<"SaleItem"> | number
-    unitPrice?: FloatWithAggregatesFilter<"SaleItem"> | number
-    total?: FloatWithAggregatesFilter<"SaleItem"> | number
-    cost?: FloatWithAggregatesFilter<"SaleItem"> | number
+    unitPrice?: DecimalWithAggregatesFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalWithAggregatesFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalWithAggregatesFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
   }
 
   export type SaleTenderWhereInput = {
@@ -37789,12 +39175,12 @@ export namespace Prisma {
     saleId?: StringFilter<"SaleTender"> | string
     currency?: StringFilter<"SaleTender"> | string
     exchangeRate?: FloatFilter<"SaleTender"> | number
-    paidUsd?: FloatFilter<"SaleTender"> | number
-    paidLbp?: FloatFilter<"SaleTender"> | number
-    paidTotalUsd?: FloatFilter<"SaleTender"> | number
-    paidTotalLbp?: FloatFilter<"SaleTender"> | number
-    changeUsd?: FloatFilter<"SaleTender"> | number
-    changeLbp?: FloatFilter<"SaleTender"> | number
+    paidUsd?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    paidLbp?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    paidTotalUsd?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    paidTotalLbp?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    changeUsd?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    changeLbp?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     changeCurrency?: StringFilter<"SaleTender"> | string
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
   }
@@ -37822,12 +39208,12 @@ export namespace Prisma {
     NOT?: SaleTenderWhereInput | SaleTenderWhereInput[]
     currency?: StringFilter<"SaleTender"> | string
     exchangeRate?: FloatFilter<"SaleTender"> | number
-    paidUsd?: FloatFilter<"SaleTender"> | number
-    paidLbp?: FloatFilter<"SaleTender"> | number
-    paidTotalUsd?: FloatFilter<"SaleTender"> | number
-    paidTotalLbp?: FloatFilter<"SaleTender"> | number
-    changeUsd?: FloatFilter<"SaleTender"> | number
-    changeLbp?: FloatFilter<"SaleTender"> | number
+    paidUsd?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    paidLbp?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    paidTotalUsd?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    paidTotalLbp?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    changeUsd?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    changeLbp?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     changeCurrency?: StringFilter<"SaleTender"> | string
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
   }, "id" | "saleId">
@@ -37859,12 +39245,12 @@ export namespace Prisma {
     saleId?: StringWithAggregatesFilter<"SaleTender"> | string
     currency?: StringWithAggregatesFilter<"SaleTender"> | string
     exchangeRate?: FloatWithAggregatesFilter<"SaleTender"> | number
-    paidUsd?: FloatWithAggregatesFilter<"SaleTender"> | number
-    paidLbp?: FloatWithAggregatesFilter<"SaleTender"> | number
-    paidTotalUsd?: FloatWithAggregatesFilter<"SaleTender"> | number
-    paidTotalLbp?: FloatWithAggregatesFilter<"SaleTender"> | number
-    changeUsd?: FloatWithAggregatesFilter<"SaleTender"> | number
-    changeLbp?: FloatWithAggregatesFilter<"SaleTender"> | number
+    paidUsd?: DecimalWithAggregatesFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    paidLbp?: DecimalWithAggregatesFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    paidTotalUsd?: DecimalWithAggregatesFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    paidTotalLbp?: DecimalWithAggregatesFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    changeUsd?: DecimalWithAggregatesFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
+    changeLbp?: DecimalWithAggregatesFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     changeCurrency?: StringWithAggregatesFilter<"SaleTender"> | string
   }
 
@@ -37881,7 +39267,7 @@ export namespace Prisma {
     customerName?: StringNullableFilter<"SaleRefund"> | string | null
     method?: EnumRefundMethodFilter<"SaleRefund"> | $Enums.RefundMethod
     reason?: StringFilter<"SaleRefund"> | string
-    total?: FloatFilter<"SaleRefund"> | number
+    total?: DecimalFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string
     cashier?: StringFilter<"SaleRefund"> | string
     cashierId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftId?: StringNullableFilter<"SaleRefund"> | string | null
@@ -37927,7 +39313,7 @@ export namespace Prisma {
     customerName?: StringNullableFilter<"SaleRefund"> | string | null
     method?: EnumRefundMethodFilter<"SaleRefund"> | $Enums.RefundMethod
     reason?: StringFilter<"SaleRefund"> | string
-    total?: FloatFilter<"SaleRefund"> | number
+    total?: DecimalFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string
     cashier?: StringFilter<"SaleRefund"> | string
     cashierId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftId?: StringNullableFilter<"SaleRefund"> | string | null
@@ -37974,7 +39360,7 @@ export namespace Prisma {
     customerName?: StringNullableWithAggregatesFilter<"SaleRefund"> | string | null
     method?: EnumRefundMethodWithAggregatesFilter<"SaleRefund"> | $Enums.RefundMethod
     reason?: StringWithAggregatesFilter<"SaleRefund"> | string
-    total?: FloatWithAggregatesFilter<"SaleRefund"> | number
+    total?: DecimalWithAggregatesFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string
     cashier?: StringWithAggregatesFilter<"SaleRefund"> | string
     cashierId?: StringNullableWithAggregatesFilter<"SaleRefund"> | string | null
     shiftId?: StringNullableWithAggregatesFilter<"SaleRefund"> | string | null
@@ -37992,9 +39378,9 @@ export namespace Prisma {
     productName?: StringFilter<"RefundItem"> | string
     barcode?: StringFilter<"RefundItem"> | string
     quantity?: FloatFilter<"RefundItem"> | number
-    unitPrice?: FloatFilter<"RefundItem"> | number
-    cost?: FloatNullableFilter<"RefundItem"> | number | null
-    total?: FloatFilter<"RefundItem"> | number
+    unitPrice?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalNullableFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string | null
+    total?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
     refund?: XOR<SaleRefundScalarRelationFilter, SaleRefundWhereInput>
   }
 
@@ -38021,9 +39407,9 @@ export namespace Prisma {
     productName?: StringFilter<"RefundItem"> | string
     barcode?: StringFilter<"RefundItem"> | string
     quantity?: FloatFilter<"RefundItem"> | number
-    unitPrice?: FloatFilter<"RefundItem"> | number
-    cost?: FloatNullableFilter<"RefundItem"> | number | null
-    total?: FloatFilter<"RefundItem"> | number
+    unitPrice?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalNullableFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string | null
+    total?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
     refund?: XOR<SaleRefundScalarRelationFilter, SaleRefundWhereInput>
   }, "id">
 
@@ -38054,9 +39440,9 @@ export namespace Prisma {
     productName?: StringWithAggregatesFilter<"RefundItem"> | string
     barcode?: StringWithAggregatesFilter<"RefundItem"> | string
     quantity?: FloatWithAggregatesFilter<"RefundItem"> | number
-    unitPrice?: FloatWithAggregatesFilter<"RefundItem"> | number
-    cost?: FloatNullableWithAggregatesFilter<"RefundItem"> | number | null
-    total?: FloatWithAggregatesFilter<"RefundItem"> | number
+    unitPrice?: DecimalWithAggregatesFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalNullableWithAggregatesFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string | null
+    total?: DecimalWithAggregatesFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
   }
 
   export type CustomerWhereInput = {
@@ -38068,7 +39454,7 @@ export namespace Prisma {
     name?: StringFilter<"Customer"> | string
     mobile?: StringFilter<"Customer"> | string
     pin?: StringFilter<"Customer"> | string
-    creditLimit?: FloatFilter<"Customer"> | number
+    creditLimit?: DecimalFilter<"Customer"> | Decimal | DecimalJsLike | number | string
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
@@ -38104,7 +39490,7 @@ export namespace Prisma {
     name?: StringFilter<"Customer"> | string
     mobile?: StringFilter<"Customer"> | string
     pin?: StringFilter<"Customer"> | string
-    creditLimit?: FloatFilter<"Customer"> | number
+    creditLimit?: DecimalFilter<"Customer"> | Decimal | DecimalJsLike | number | string
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
@@ -38140,7 +39526,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"Customer"> | string
     mobile?: StringWithAggregatesFilter<"Customer"> | string
     pin?: StringWithAggregatesFilter<"Customer"> | string
-    creditLimit?: FloatWithAggregatesFilter<"Customer"> | number
+    creditLimit?: DecimalWithAggregatesFilter<"Customer"> | Decimal | DecimalJsLike | number | string
     notes?: StringWithAggregatesFilter<"Customer"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Customer"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Customer"> | Date | string
@@ -38154,10 +39540,10 @@ export namespace Prisma {
     tenantId?: StringFilter<"DebtSale"> | string
     customerId?: StringFilter<"DebtSale"> | string
     saleNumber?: StringFilter<"DebtSale"> | string
-    subtotal?: FloatFilter<"DebtSale"> | number
-    discountTotal?: FloatNullableFilter<"DebtSale"> | number | null
-    tax?: FloatFilter<"DebtSale"> | number
-    total?: FloatFilter<"DebtSale"> | number
+    subtotal?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    discountTotal?: DecimalNullableFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"DebtSale"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     customer?: XOR<CustomerScalarRelationFilter, CustomerWhereInput>
@@ -38185,10 +39571,10 @@ export namespace Prisma {
     tenantId?: StringFilter<"DebtSale"> | string
     customerId?: StringFilter<"DebtSale"> | string
     saleNumber?: StringFilter<"DebtSale"> | string
-    subtotal?: FloatFilter<"DebtSale"> | number
-    discountTotal?: FloatNullableFilter<"DebtSale"> | number | null
-    tax?: FloatFilter<"DebtSale"> | number
-    total?: FloatFilter<"DebtSale"> | number
+    subtotal?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    discountTotal?: DecimalNullableFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"DebtSale"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     customer?: XOR<CustomerScalarRelationFilter, CustomerWhereInput>
@@ -38219,10 +39605,10 @@ export namespace Prisma {
     tenantId?: StringWithAggregatesFilter<"DebtSale"> | string
     customerId?: StringWithAggregatesFilter<"DebtSale"> | string
     saleNumber?: StringWithAggregatesFilter<"DebtSale"> | string
-    subtotal?: FloatWithAggregatesFilter<"DebtSale"> | number
-    discountTotal?: FloatNullableWithAggregatesFilter<"DebtSale"> | number | null
-    tax?: FloatWithAggregatesFilter<"DebtSale"> | number
-    total?: FloatWithAggregatesFilter<"DebtSale"> | number
+    subtotal?: DecimalWithAggregatesFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    discountTotal?: DecimalNullableWithAggregatesFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalWithAggregatesFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalWithAggregatesFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeWithAggregatesFilter<"DebtSale"> | Date | string
   }
 
@@ -38233,7 +39619,7 @@ export namespace Prisma {
     id?: StringFilter<"DebtPayment"> | string
     tenantId?: StringFilter<"DebtPayment"> | string
     customerId?: StringFilter<"DebtPayment"> | string
-    amount?: FloatFilter<"DebtPayment"> | number
+    amount?: DecimalFilter<"DebtPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringFilter<"DebtPayment"> | string
     reference?: StringFilter<"DebtPayment"> | string
     createdAt?: DateTimeFilter<"DebtPayment"> | Date | string
@@ -38260,7 +39646,7 @@ export namespace Prisma {
     NOT?: DebtPaymentWhereInput | DebtPaymentWhereInput[]
     tenantId?: StringFilter<"DebtPayment"> | string
     customerId?: StringFilter<"DebtPayment"> | string
-    amount?: FloatFilter<"DebtPayment"> | number
+    amount?: DecimalFilter<"DebtPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringFilter<"DebtPayment"> | string
     reference?: StringFilter<"DebtPayment"> | string
     createdAt?: DateTimeFilter<"DebtPayment"> | Date | string
@@ -38290,7 +39676,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"DebtPayment"> | string
     tenantId?: StringWithAggregatesFilter<"DebtPayment"> | string
     customerId?: StringWithAggregatesFilter<"DebtPayment"> | string
-    amount?: FloatWithAggregatesFilter<"DebtPayment"> | number
+    amount?: DecimalWithAggregatesFilter<"DebtPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringWithAggregatesFilter<"DebtPayment"> | string
     reference?: StringWithAggregatesFilter<"DebtPayment"> | string
     createdAt?: DateTimeWithAggregatesFilter<"DebtPayment"> | Date | string
@@ -38394,8 +39780,8 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFilter<"PurchaseOrder"> | $Enums.PaymentStatus
     invoiceNumber?: StringFilter<"PurchaseOrder"> | string
     note?: StringFilter<"PurchaseOrder"> | string
-    total?: FloatFilter<"PurchaseOrder"> | number
-    paidTotal?: FloatFilter<"PurchaseOrder"> | number
+    total?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     createdBy?: StringFilter<"PurchaseOrder"> | string
     shiftId?: StringNullableFilter<"PurchaseOrder"> | string | null
     shiftNumber?: StringNullableFilter<"PurchaseOrder"> | string | null
@@ -38403,6 +39789,7 @@ export namespace Prisma {
     receivedAt?: DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     supplier?: XOR<SupplierScalarRelationFilter, SupplierWhereInput>
+    items?: PurchaseOrderItemListRelationFilter
   }
 
   export type PurchaseOrderOrderByWithRelationInput = {
@@ -38424,6 +39811,7 @@ export namespace Prisma {
     receivedAt?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
     supplier?: SupplierOrderByWithRelationInput
+    items?: PurchaseOrderItemOrderByRelationAggregateInput
   }
 
   export type PurchaseOrderWhereUniqueInput = Prisma.AtLeast<{
@@ -38440,8 +39828,8 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFilter<"PurchaseOrder"> | $Enums.PaymentStatus
     invoiceNumber?: StringFilter<"PurchaseOrder"> | string
     note?: StringFilter<"PurchaseOrder"> | string
-    total?: FloatFilter<"PurchaseOrder"> | number
-    paidTotal?: FloatFilter<"PurchaseOrder"> | number
+    total?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     createdBy?: StringFilter<"PurchaseOrder"> | string
     shiftId?: StringNullableFilter<"PurchaseOrder"> | string | null
     shiftNumber?: StringNullableFilter<"PurchaseOrder"> | string | null
@@ -38449,6 +39837,7 @@ export namespace Prisma {
     receivedAt?: DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     supplier?: XOR<SupplierScalarRelationFilter, SupplierWhereInput>
+    items?: PurchaseOrderItemListRelationFilter
   }, "id" | "tenantId_poNumber">
 
   export type PurchaseOrderOrderByWithAggregationInput = {
@@ -38488,13 +39877,93 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusWithAggregatesFilter<"PurchaseOrder"> | $Enums.PaymentStatus
     invoiceNumber?: StringWithAggregatesFilter<"PurchaseOrder"> | string
     note?: StringWithAggregatesFilter<"PurchaseOrder"> | string
-    total?: FloatWithAggregatesFilter<"PurchaseOrder"> | number
-    paidTotal?: FloatWithAggregatesFilter<"PurchaseOrder"> | number
+    total?: DecimalWithAggregatesFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalWithAggregatesFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     createdBy?: StringWithAggregatesFilter<"PurchaseOrder"> | string
     shiftId?: StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
     shiftNumber?: StringNullableWithAggregatesFilter<"PurchaseOrder"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"PurchaseOrder"> | Date | string
     receivedAt?: DateTimeNullableWithAggregatesFilter<"PurchaseOrder"> | Date | string | null
+  }
+
+  export type PurchaseOrderItemWhereInput = {
+    AND?: PurchaseOrderItemWhereInput | PurchaseOrderItemWhereInput[]
+    OR?: PurchaseOrderItemWhereInput[]
+    NOT?: PurchaseOrderItemWhereInput | PurchaseOrderItemWhereInput[]
+    id?: StringFilter<"PurchaseOrderItem"> | string
+    tenantId?: StringFilter<"PurchaseOrderItem"> | string
+    purchaseOrderId?: StringFilter<"PurchaseOrderItem"> | string
+    productName?: StringFilter<"PurchaseOrderItem"> | string
+    barcode?: StringFilter<"PurchaseOrderItem"> | string
+    quantity?: FloatFilter<"PurchaseOrderItem"> | number
+    unitCost?: DecimalFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    purchaseOrder?: XOR<PurchaseOrderScalarRelationFilter, PurchaseOrderWhereInput>
+  }
+
+  export type PurchaseOrderItemOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    purchaseOrderId?: SortOrder
+    productName?: SortOrder
+    barcode?: SortOrder
+    quantity?: SortOrder
+    unitCost?: SortOrder
+    unitPrice?: SortOrder
+    total?: SortOrder
+    tenant?: TenantOrderByWithRelationInput
+    purchaseOrder?: PurchaseOrderOrderByWithRelationInput
+  }
+
+  export type PurchaseOrderItemWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: PurchaseOrderItemWhereInput | PurchaseOrderItemWhereInput[]
+    OR?: PurchaseOrderItemWhereInput[]
+    NOT?: PurchaseOrderItemWhereInput | PurchaseOrderItemWhereInput[]
+    tenantId?: StringFilter<"PurchaseOrderItem"> | string
+    purchaseOrderId?: StringFilter<"PurchaseOrderItem"> | string
+    productName?: StringFilter<"PurchaseOrderItem"> | string
+    barcode?: StringFilter<"PurchaseOrderItem"> | string
+    quantity?: FloatFilter<"PurchaseOrderItem"> | number
+    unitCost?: DecimalFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    purchaseOrder?: XOR<PurchaseOrderScalarRelationFilter, PurchaseOrderWhereInput>
+  }, "id">
+
+  export type PurchaseOrderItemOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    purchaseOrderId?: SortOrder
+    productName?: SortOrder
+    barcode?: SortOrder
+    quantity?: SortOrder
+    unitCost?: SortOrder
+    unitPrice?: SortOrder
+    total?: SortOrder
+    _count?: PurchaseOrderItemCountOrderByAggregateInput
+    _avg?: PurchaseOrderItemAvgOrderByAggregateInput
+    _max?: PurchaseOrderItemMaxOrderByAggregateInput
+    _min?: PurchaseOrderItemMinOrderByAggregateInput
+    _sum?: PurchaseOrderItemSumOrderByAggregateInput
+  }
+
+  export type PurchaseOrderItemScalarWhereWithAggregatesInput = {
+    AND?: PurchaseOrderItemScalarWhereWithAggregatesInput | PurchaseOrderItemScalarWhereWithAggregatesInput[]
+    OR?: PurchaseOrderItemScalarWhereWithAggregatesInput[]
+    NOT?: PurchaseOrderItemScalarWhereWithAggregatesInput | PurchaseOrderItemScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PurchaseOrderItem"> | string
+    tenantId?: StringWithAggregatesFilter<"PurchaseOrderItem"> | string
+    purchaseOrderId?: StringWithAggregatesFilter<"PurchaseOrderItem"> | string
+    productName?: StringWithAggregatesFilter<"PurchaseOrderItem"> | string
+    barcode?: StringWithAggregatesFilter<"PurchaseOrderItem"> | string
+    quantity?: FloatWithAggregatesFilter<"PurchaseOrderItem"> | number
+    unitCost?: DecimalWithAggregatesFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalWithAggregatesFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalWithAggregatesFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
   }
 
   export type SupplierPaymentWhereInput = {
@@ -38507,7 +39976,7 @@ export namespace Prisma {
     supplierName?: StringFilter<"SupplierPayment"> | string
     purchaseOrderId?: StringNullableFilter<"SupplierPayment"> | string | null
     purchaseOrderNumber?: StringNullableFilter<"SupplierPayment"> | string | null
-    amount?: FloatFilter<"SupplierPayment"> | number
+    amount?: DecimalFilter<"SupplierPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringFilter<"SupplierPayment"> | string
     reference?: StringFilter<"SupplierPayment"> | string
     recordedBy?: StringFilter<"SupplierPayment"> | string
@@ -38546,7 +40015,7 @@ export namespace Prisma {
     supplierName?: StringFilter<"SupplierPayment"> | string
     purchaseOrderId?: StringNullableFilter<"SupplierPayment"> | string | null
     purchaseOrderNumber?: StringNullableFilter<"SupplierPayment"> | string | null
-    amount?: FloatFilter<"SupplierPayment"> | number
+    amount?: DecimalFilter<"SupplierPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringFilter<"SupplierPayment"> | string
     reference?: StringFilter<"SupplierPayment"> | string
     recordedBy?: StringFilter<"SupplierPayment"> | string
@@ -38588,7 +40057,7 @@ export namespace Prisma {
     supplierName?: StringWithAggregatesFilter<"SupplierPayment"> | string
     purchaseOrderId?: StringNullableWithAggregatesFilter<"SupplierPayment"> | string | null
     purchaseOrderNumber?: StringNullableWithAggregatesFilter<"SupplierPayment"> | string | null
-    amount?: FloatWithAggregatesFilter<"SupplierPayment"> | number
+    amount?: DecimalWithAggregatesFilter<"SupplierPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringWithAggregatesFilter<"SupplierPayment"> | string
     reference?: StringWithAggregatesFilter<"SupplierPayment"> | string
     recordedBy?: StringWithAggregatesFilter<"SupplierPayment"> | string
@@ -38607,14 +40076,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFilter<"Shift"> | $Enums.ShiftStatus
     openedAt?: DateTimeFilter<"Shift"> | Date | string
     closedAt?: DateTimeNullableFilter<"Shift"> | Date | string | null
-    openingFloatUsd?: FloatFilter<"Shift"> | number
-    cashSalesUsd?: FloatNullableFilter<"Shift"> | number | null
-    cashRefundsUsd?: FloatNullableFilter<"Shift"> | number | null
-    cashExpensesUsd?: FloatNullableFilter<"Shift"> | number | null
-    supplierPaymentsUsd?: FloatNullableFilter<"Shift"> | number | null
-    expectedCashUsd?: FloatNullableFilter<"Shift"> | number | null
-    closingCashUsd?: FloatNullableFilter<"Shift"> | number | null
-    differenceUsd?: FloatNullableFilter<"Shift"> | number | null
+    openingFloatUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
     openedById?: StringFilter<"Shift"> | string
     openedByName?: StringFilter<"Shift"> | string
     closedById?: StringNullableFilter<"Shift"> | string | null
@@ -38632,7 +40101,7 @@ export namespace Prisma {
     status?: SortOrder
     openedAt?: SortOrder
     closedAt?: SortOrderInput | SortOrder
-    openingFloatUsd?: SortOrder
+    openingFloatUsd?: SortOrderInput | SortOrder
     cashSalesUsd?: SortOrderInput | SortOrder
     cashRefundsUsd?: SortOrderInput | SortOrder
     cashExpensesUsd?: SortOrderInput | SortOrder
@@ -38661,14 +40130,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFilter<"Shift"> | $Enums.ShiftStatus
     openedAt?: DateTimeFilter<"Shift"> | Date | string
     closedAt?: DateTimeNullableFilter<"Shift"> | Date | string | null
-    openingFloatUsd?: FloatFilter<"Shift"> | number
-    cashSalesUsd?: FloatNullableFilter<"Shift"> | number | null
-    cashRefundsUsd?: FloatNullableFilter<"Shift"> | number | null
-    cashExpensesUsd?: FloatNullableFilter<"Shift"> | number | null
-    supplierPaymentsUsd?: FloatNullableFilter<"Shift"> | number | null
-    expectedCashUsd?: FloatNullableFilter<"Shift"> | number | null
-    closingCashUsd?: FloatNullableFilter<"Shift"> | number | null
-    differenceUsd?: FloatNullableFilter<"Shift"> | number | null
+    openingFloatUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
     openedById?: StringFilter<"Shift"> | string
     openedByName?: StringFilter<"Shift"> | string
     closedById?: StringNullableFilter<"Shift"> | string | null
@@ -38686,7 +40155,7 @@ export namespace Prisma {
     status?: SortOrder
     openedAt?: SortOrder
     closedAt?: SortOrderInput | SortOrder
-    openingFloatUsd?: SortOrder
+    openingFloatUsd?: SortOrderInput | SortOrder
     cashSalesUsd?: SortOrderInput | SortOrder
     cashRefundsUsd?: SortOrderInput | SortOrder
     cashExpensesUsd?: SortOrderInput | SortOrder
@@ -38716,14 +40185,14 @@ export namespace Prisma {
     status?: EnumShiftStatusWithAggregatesFilter<"Shift"> | $Enums.ShiftStatus
     openedAt?: DateTimeWithAggregatesFilter<"Shift"> | Date | string
     closedAt?: DateTimeNullableWithAggregatesFilter<"Shift"> | Date | string | null
-    openingFloatUsd?: FloatWithAggregatesFilter<"Shift"> | number
-    cashSalesUsd?: FloatNullableWithAggregatesFilter<"Shift"> | number | null
-    cashRefundsUsd?: FloatNullableWithAggregatesFilter<"Shift"> | number | null
-    cashExpensesUsd?: FloatNullableWithAggregatesFilter<"Shift"> | number | null
-    supplierPaymentsUsd?: FloatNullableWithAggregatesFilter<"Shift"> | number | null
-    expectedCashUsd?: FloatNullableWithAggregatesFilter<"Shift"> | number | null
-    closingCashUsd?: FloatNullableWithAggregatesFilter<"Shift"> | number | null
-    differenceUsd?: FloatNullableWithAggregatesFilter<"Shift"> | number | null
+    openingFloatUsd?: DecimalNullableWithAggregatesFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: DecimalNullableWithAggregatesFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: DecimalNullableWithAggregatesFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: DecimalNullableWithAggregatesFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: DecimalNullableWithAggregatesFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: DecimalNullableWithAggregatesFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: DecimalNullableWithAggregatesFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: DecimalNullableWithAggregatesFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
     openedById?: StringWithAggregatesFilter<"Shift"> | string
     openedByName?: StringWithAggregatesFilter<"Shift"> | string
     closedById?: StringNullableWithAggregatesFilter<"Shift"> | string | null
@@ -38820,7 +40289,7 @@ export namespace Prisma {
     expenseNumber?: StringFilter<"Expense"> | string
     vendor?: StringFilter<"Expense"> | string
     category?: StringFilter<"Expense"> | string
-    amount?: FloatFilter<"Expense"> | number
+    amount?: DecimalFilter<"Expense"> | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFilter<"Expense"> | string
     invoiceNumber?: StringFilter<"Expense"> | string
     note?: StringFilter<"Expense"> | string
@@ -38862,7 +40331,7 @@ export namespace Prisma {
     expenseNumber?: StringFilter<"Expense"> | string
     vendor?: StringFilter<"Expense"> | string
     category?: StringFilter<"Expense"> | string
-    amount?: FloatFilter<"Expense"> | number
+    amount?: DecimalFilter<"Expense"> | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFilter<"Expense"> | string
     invoiceNumber?: StringFilter<"Expense"> | string
     note?: StringFilter<"Expense"> | string
@@ -38906,7 +40375,7 @@ export namespace Prisma {
     expenseNumber?: StringWithAggregatesFilter<"Expense"> | string
     vendor?: StringWithAggregatesFilter<"Expense"> | string
     category?: StringWithAggregatesFilter<"Expense"> | string
-    amount?: FloatWithAggregatesFilter<"Expense"> | number
+    amount?: DecimalWithAggregatesFilter<"Expense"> | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringWithAggregatesFilter<"Expense"> | string
     invoiceNumber?: StringWithAggregatesFilter<"Expense"> | string
     note?: StringWithAggregatesFilter<"Expense"> | string
@@ -38929,8 +40398,8 @@ export namespace Prisma {
     barcode?: StringFilter<"InventoryBatch"> | string
     initialQuantity?: FloatFilter<"InventoryBatch"> | number
     quantityRemaining?: FloatFilter<"InventoryBatch"> | number
-    unitCost?: FloatFilter<"InventoryBatch"> | number
-    unitPrice?: FloatFilter<"InventoryBatch"> | number
+    unitCost?: DecimalFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string
     expiryDate?: StringNullableFilter<"InventoryBatch"> | string | null
     supplierId?: StringNullableFilter<"InventoryBatch"> | string | null
     supplierName?: StringNullableFilter<"InventoryBatch"> | string | null
@@ -38976,8 +40445,8 @@ export namespace Prisma {
     barcode?: StringFilter<"InventoryBatch"> | string
     initialQuantity?: FloatFilter<"InventoryBatch"> | number
     quantityRemaining?: FloatFilter<"InventoryBatch"> | number
-    unitCost?: FloatFilter<"InventoryBatch"> | number
-    unitPrice?: FloatFilter<"InventoryBatch"> | number
+    unitCost?: DecimalFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string
     expiryDate?: StringNullableFilter<"InventoryBatch"> | string | null
     supplierId?: StringNullableFilter<"InventoryBatch"> | string | null
     supplierName?: StringNullableFilter<"InventoryBatch"> | string | null
@@ -39025,8 +40494,8 @@ export namespace Prisma {
     barcode?: StringWithAggregatesFilter<"InventoryBatch"> | string
     initialQuantity?: FloatWithAggregatesFilter<"InventoryBatch"> | number
     quantityRemaining?: FloatWithAggregatesFilter<"InventoryBatch"> | number
-    unitCost?: FloatWithAggregatesFilter<"InventoryBatch"> | number
-    unitPrice?: FloatWithAggregatesFilter<"InventoryBatch"> | number
+    unitCost?: DecimalWithAggregatesFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalWithAggregatesFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string
     expiryDate?: StringNullableWithAggregatesFilter<"InventoryBatch"> | string | null
     supplierId?: StringNullableWithAggregatesFilter<"InventoryBatch"> | string | null
     supplierName?: StringNullableWithAggregatesFilter<"InventoryBatch"> | string | null
@@ -39051,7 +40520,7 @@ export namespace Prisma {
     reason?: StringFilter<"StockAdjustment"> | string
     note?: StringNullableFilter<"StockAdjustment"> | string | null
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
-    valueImpact?: FloatFilter<"StockAdjustment"> | number
+    valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"StockAdjustment"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
@@ -39093,7 +40562,7 @@ export namespace Prisma {
     reason?: StringFilter<"StockAdjustment"> | string
     note?: StringNullableFilter<"StockAdjustment"> | string | null
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
-    valueImpact?: FloatFilter<"StockAdjustment"> | number
+    valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"StockAdjustment"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
@@ -39137,7 +40606,7 @@ export namespace Prisma {
     reason?: StringWithAggregatesFilter<"StockAdjustment"> | string
     note?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
     batchId?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
-    valueImpact?: FloatWithAggregatesFilter<"StockAdjustment"> | number
+    valueImpact?: DecimalWithAggregatesFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeWithAggregatesFilter<"StockAdjustment"> | Date | string
   }
 
@@ -39151,8 +40620,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusFilter<"StockCountSession"> | $Enums.StockCountStatus
     createdAt?: DateTimeFilter<"StockCountSession"> | Date | string
     completedAt?: DateTimeNullableFilter<"StockCountSession"> | Date | string | null
-    totalVariance?: FloatFilter<"StockCountSession"> | number
-    totalValueImpact?: FloatFilter<"StockCountSession"> | number
+    totalVariance?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     lines?: StockCountLineListRelationFilter
   }
@@ -39181,8 +40650,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusFilter<"StockCountSession"> | $Enums.StockCountStatus
     createdAt?: DateTimeFilter<"StockCountSession"> | Date | string
     completedAt?: DateTimeNullableFilter<"StockCountSession"> | Date | string | null
-    totalVariance?: FloatFilter<"StockCountSession"> | number
-    totalValueImpact?: FloatFilter<"StockCountSession"> | number
+    totalVariance?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     lines?: StockCountLineListRelationFilter
   }, "id" | "tenantId_countNumber">
@@ -39213,8 +40682,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusWithAggregatesFilter<"StockCountSession"> | $Enums.StockCountStatus
     createdAt?: DateTimeWithAggregatesFilter<"StockCountSession"> | Date | string
     completedAt?: DateTimeNullableWithAggregatesFilter<"StockCountSession"> | Date | string | null
-    totalVariance?: FloatWithAggregatesFilter<"StockCountSession"> | number
-    totalValueImpact?: FloatWithAggregatesFilter<"StockCountSession"> | number
+    totalVariance?: DecimalWithAggregatesFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalWithAggregatesFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineWhereInput = {
@@ -39230,7 +40699,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFilter<"StockCountLine"> | number
     countedQuantity?: FloatNullableFilter<"StockCountLine"> | number | null
     variance?: FloatFilter<"StockCountLine"> | number
-    valueImpact?: FloatFilter<"StockCountLine"> | number
+    valueImpact?: DecimalFilter<"StockCountLine"> | Decimal | DecimalJsLike | number | string
     session?: XOR<StockCountSessionScalarRelationFilter, StockCountSessionWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
   }
@@ -39263,7 +40732,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFilter<"StockCountLine"> | number
     countedQuantity?: FloatNullableFilter<"StockCountLine"> | number | null
     variance?: FloatFilter<"StockCountLine"> | number
-    valueImpact?: FloatFilter<"StockCountLine"> | number
+    valueImpact?: DecimalFilter<"StockCountLine"> | Decimal | DecimalJsLike | number | string
     session?: XOR<StockCountSessionScalarRelationFilter, StockCountSessionWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
   }, "id">
@@ -39299,7 +40768,7 @@ export namespace Prisma {
     expectedQuantity?: FloatWithAggregatesFilter<"StockCountLine"> | number
     countedQuantity?: FloatNullableWithAggregatesFilter<"StockCountLine"> | number | null
     variance?: FloatWithAggregatesFilter<"StockCountLine"> | number
-    valueImpact?: FloatWithAggregatesFilter<"StockCountLine"> | number
+    valueImpact?: DecimalWithAggregatesFilter<"StockCountLine"> | Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderWhereInput = {
@@ -39317,12 +40786,12 @@ export namespace Prisma {
     locationLat?: FloatNullableFilter<"DeliveryOrder"> | number | null
     locationLng?: FloatNullableFilter<"DeliveryOrder"> | number | null
     deliveryNote?: StringFilter<"DeliveryOrder"> | string
-    itemsTotal?: FloatFilter<"DeliveryOrder"> | number
-    deliveryFee?: FloatFilter<"DeliveryOrder"> | number
-    total?: FloatFilter<"DeliveryOrder"> | number
+    itemsTotal?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFilter<"DeliveryOrder"> | string
-    paidAmount?: FloatFilter<"DeliveryOrder"> | number
-    changeRequired?: FloatFilter<"DeliveryOrder"> | number
+    paidAmount?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
     assignedTo?: StringNullableFilter<"DeliveryOrder"> | string | null
     assignedName?: StringNullableFilter<"DeliveryOrder"> | string | null
     driverId?: StringNullableFilter<"DeliveryOrder"> | string | null
@@ -39389,12 +40858,12 @@ export namespace Prisma {
     locationLat?: FloatNullableFilter<"DeliveryOrder"> | number | null
     locationLng?: FloatNullableFilter<"DeliveryOrder"> | number | null
     deliveryNote?: StringFilter<"DeliveryOrder"> | string
-    itemsTotal?: FloatFilter<"DeliveryOrder"> | number
-    deliveryFee?: FloatFilter<"DeliveryOrder"> | number
-    total?: FloatFilter<"DeliveryOrder"> | number
+    itemsTotal?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFilter<"DeliveryOrder"> | string
-    paidAmount?: FloatFilter<"DeliveryOrder"> | number
-    changeRequired?: FloatFilter<"DeliveryOrder"> | number
+    paidAmount?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
     assignedTo?: StringNullableFilter<"DeliveryOrder"> | string | null
     assignedName?: StringNullableFilter<"DeliveryOrder"> | string | null
     driverId?: StringNullableFilter<"DeliveryOrder"> | string | null
@@ -39461,12 +40930,12 @@ export namespace Prisma {
     locationLat?: FloatNullableWithAggregatesFilter<"DeliveryOrder"> | number | null
     locationLng?: FloatNullableWithAggregatesFilter<"DeliveryOrder"> | number | null
     deliveryNote?: StringWithAggregatesFilter<"DeliveryOrder"> | string
-    itemsTotal?: FloatWithAggregatesFilter<"DeliveryOrder"> | number
-    deliveryFee?: FloatWithAggregatesFilter<"DeliveryOrder"> | number
-    total?: FloatWithAggregatesFilter<"DeliveryOrder"> | number
+    itemsTotal?: DecimalWithAggregatesFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalWithAggregatesFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalWithAggregatesFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringWithAggregatesFilter<"DeliveryOrder"> | string
-    paidAmount?: FloatWithAggregatesFilter<"DeliveryOrder"> | number
-    changeRequired?: FloatWithAggregatesFilter<"DeliveryOrder"> | number
+    paidAmount?: DecimalWithAggregatesFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalWithAggregatesFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
     assignedTo?: StringNullableWithAggregatesFilter<"DeliveryOrder"> | string | null
     assignedName?: StringNullableWithAggregatesFilter<"DeliveryOrder"> | string | null
     driverId?: StringNullableWithAggregatesFilter<"DeliveryOrder"> | string | null
@@ -39489,8 +40958,8 @@ export namespace Prisma {
     productName?: StringFilter<"DeliveryOrderItem"> | string
     barcode?: StringFilter<"DeliveryOrderItem"> | string
     quantity?: FloatFilter<"DeliveryOrderItem"> | number
-    unitPrice?: FloatFilter<"DeliveryOrderItem"> | number
-    total?: FloatFilter<"DeliveryOrderItem"> | number
+    unitPrice?: DecimalFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string
     deliveryOrder?: XOR<DeliveryOrderScalarRelationFilter, DeliveryOrderWhereInput>
   }
 
@@ -39516,8 +40985,8 @@ export namespace Prisma {
     productName?: StringFilter<"DeliveryOrderItem"> | string
     barcode?: StringFilter<"DeliveryOrderItem"> | string
     quantity?: FloatFilter<"DeliveryOrderItem"> | number
-    unitPrice?: FloatFilter<"DeliveryOrderItem"> | number
-    total?: FloatFilter<"DeliveryOrderItem"> | number
+    unitPrice?: DecimalFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string
     deliveryOrder?: XOR<DeliveryOrderScalarRelationFilter, DeliveryOrderWhereInput>
   }, "id">
 
@@ -39547,8 +41016,8 @@ export namespace Prisma {
     productName?: StringWithAggregatesFilter<"DeliveryOrderItem"> | string
     barcode?: StringWithAggregatesFilter<"DeliveryOrderItem"> | string
     quantity?: FloatWithAggregatesFilter<"DeliveryOrderItem"> | number
-    unitPrice?: FloatWithAggregatesFilter<"DeliveryOrderItem"> | number
-    total?: FloatWithAggregatesFilter<"DeliveryOrderItem"> | number
+    unitPrice?: DecimalWithAggregatesFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalWithAggregatesFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string
   }
 
   export type DailyCloseWhereInput = {
@@ -39558,17 +41027,17 @@ export namespace Prisma {
     id?: StringFilter<"DailyClose"> | string
     tenantId?: StringFilter<"DailyClose"> | string
     dateKey?: StringFilter<"DailyClose"> | string
-    grossSales?: FloatFilter<"DailyClose"> | number
-    refunds?: FloatFilter<"DailyClose"> | number
-    netSales?: FloatFilter<"DailyClose"> | number
-    costOfGoods?: FloatFilter<"DailyClose"> | number
-    returnedCost?: FloatFilter<"DailyClose"> | number
-    grossMargin?: FloatFilter<"DailyClose"> | number
-    expenses?: FloatFilter<"DailyClose"> | number
-    supplierPayments?: FloatNullableFilter<"DailyClose"> | number | null
-    netProfit?: FloatFilter<"DailyClose"> | number
-    cashIn?: FloatFilter<"DailyClose"> | number
-    cashOut?: FloatFilter<"DailyClose"> | number
+    grossSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    refunds?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    netSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    returnedCost?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    grossMargin?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    expenses?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    supplierPayments?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    netProfit?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    cashIn?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
     closedBy?: StringFilter<"DailyClose"> | string
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
@@ -39604,17 +41073,17 @@ export namespace Prisma {
     NOT?: DailyCloseWhereInput | DailyCloseWhereInput[]
     tenantId?: StringFilter<"DailyClose"> | string
     dateKey?: StringFilter<"DailyClose"> | string
-    grossSales?: FloatFilter<"DailyClose"> | number
-    refunds?: FloatFilter<"DailyClose"> | number
-    netSales?: FloatFilter<"DailyClose"> | number
-    costOfGoods?: FloatFilter<"DailyClose"> | number
-    returnedCost?: FloatFilter<"DailyClose"> | number
-    grossMargin?: FloatFilter<"DailyClose"> | number
-    expenses?: FloatFilter<"DailyClose"> | number
-    supplierPayments?: FloatNullableFilter<"DailyClose"> | number | null
-    netProfit?: FloatFilter<"DailyClose"> | number
-    cashIn?: FloatFilter<"DailyClose"> | number
-    cashOut?: FloatFilter<"DailyClose"> | number
+    grossSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    refunds?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    netSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    returnedCost?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    grossMargin?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    expenses?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    supplierPayments?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    netProfit?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    cashIn?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
     closedBy?: StringFilter<"DailyClose"> | string
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
@@ -39653,17 +41122,17 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"DailyClose"> | string
     tenantId?: StringWithAggregatesFilter<"DailyClose"> | string
     dateKey?: StringWithAggregatesFilter<"DailyClose"> | string
-    grossSales?: FloatWithAggregatesFilter<"DailyClose"> | number
-    refunds?: FloatWithAggregatesFilter<"DailyClose"> | number
-    netSales?: FloatWithAggregatesFilter<"DailyClose"> | number
-    costOfGoods?: FloatWithAggregatesFilter<"DailyClose"> | number
-    returnedCost?: FloatWithAggregatesFilter<"DailyClose"> | number
-    grossMargin?: FloatWithAggregatesFilter<"DailyClose"> | number
-    expenses?: FloatWithAggregatesFilter<"DailyClose"> | number
-    supplierPayments?: FloatNullableWithAggregatesFilter<"DailyClose"> | number | null
-    netProfit?: FloatWithAggregatesFilter<"DailyClose"> | number
-    cashIn?: FloatWithAggregatesFilter<"DailyClose"> | number
-    cashOut?: FloatWithAggregatesFilter<"DailyClose"> | number
+    grossSales?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    refunds?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    netSales?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    returnedCost?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    grossMargin?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    expenses?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    supplierPayments?: DecimalNullableWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    netProfit?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    cashIn?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    cashOut?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringWithAggregatesFilter<"DailyClose"> | string
     closedBy?: StringWithAggregatesFilter<"DailyClose"> | string
     createdAt?: DateTimeWithAggregatesFilter<"DailyClose"> | Date | string
@@ -39777,6 +41246,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -39806,6 +41276,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -39835,6 +41306,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -39864,6 +41336,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -40009,11 +41482,11 @@ export namespace Prisma {
     branchName: string
     phone: string
     address: string
-    vatRate: number
-    usdToLbpRate: number
+    vatRate: Decimal | DecimalJsLike | number | string
+    usdToLbpRate: Decimal | DecimalJsLike | number | string
     receiptFooter: string
     lowStockThreshold: number
-    deliveryFee?: number
+    deliveryFee?: Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: string
     whatsAppDriverEnabled?: boolean
     assignMode?: string
@@ -40029,11 +41502,11 @@ export namespace Prisma {
     branchName: string
     phone: string
     address: string
-    vatRate: number
-    usdToLbpRate: number
+    vatRate: Decimal | DecimalJsLike | number | string
+    usdToLbpRate: Decimal | DecimalJsLike | number | string
     receiptFooter: string
     lowStockThreshold: number
-    deliveryFee?: number
+    deliveryFee?: Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: string
     whatsAppDriverEnabled?: boolean
     assignMode?: string
@@ -40047,11 +41520,11 @@ export namespace Prisma {
     branchName?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
-    vatRate?: FloatFieldUpdateOperationsInput | number
-    usdToLbpRate?: FloatFieldUpdateOperationsInput | number
+    vatRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
     assignMode?: StringFieldUpdateOperationsInput | string
@@ -40067,11 +41540,11 @@ export namespace Prisma {
     branchName?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
-    vatRate?: FloatFieldUpdateOperationsInput | number
-    usdToLbpRate?: FloatFieldUpdateOperationsInput | number
+    vatRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
     assignMode?: StringFieldUpdateOperationsInput | string
@@ -40086,11 +41559,11 @@ export namespace Prisma {
     branchName: string
     phone: string
     address: string
-    vatRate: number
-    usdToLbpRate: number
+    vatRate: Decimal | DecimalJsLike | number | string
+    usdToLbpRate: Decimal | DecimalJsLike | number | string
     receiptFooter: string
     lowStockThreshold: number
-    deliveryFee?: number
+    deliveryFee?: Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: string
     whatsAppDriverEnabled?: boolean
     assignMode?: string
@@ -40104,11 +41577,11 @@ export namespace Prisma {
     branchName?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
-    vatRate?: FloatFieldUpdateOperationsInput | number
-    usdToLbpRate?: FloatFieldUpdateOperationsInput | number
+    vatRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
     assignMode?: StringFieldUpdateOperationsInput | string
@@ -40123,11 +41596,11 @@ export namespace Prisma {
     branchName?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
-    vatRate?: FloatFieldUpdateOperationsInput | number
-    usdToLbpRate?: FloatFieldUpdateOperationsInput | number
+    vatRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
     assignMode?: StringFieldUpdateOperationsInput | string
@@ -40139,8 +41612,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -40170,8 +41643,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -40196,8 +41669,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -40227,8 +41700,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -40256,8 +41729,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -40278,8 +41751,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -40303,8 +41776,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -40327,12 +41800,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -40352,12 +41825,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -40375,12 +41848,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40400,12 +41873,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40424,12 +41897,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -40444,12 +41917,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40465,12 +41938,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40485,9 +41958,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
-    cost?: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     sale: SaleCreateNestedOneWithoutItemsInput
   }
 
@@ -40498,9 +41971,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
-    cost?: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
   }
 
   export type SaleItemUpdateInput = {
@@ -40509,9 +41982,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     sale?: SaleUpdateOneRequiredWithoutItemsNestedInput
   }
 
@@ -40522,9 +41995,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type SaleItemCreateManyInput = {
@@ -40534,9 +42007,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
-    cost?: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
   }
 
   export type SaleItemUpdateManyMutationInput = {
@@ -40545,9 +42018,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type SaleItemUncheckedUpdateManyInput = {
@@ -40557,21 +42030,21 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type SaleTenderCreateInput = {
     id?: string
     currency: string
     exchangeRate: number
-    paidUsd?: number
-    paidLbp?: number
-    paidTotalUsd: number
-    paidTotalLbp: number
-    changeUsd?: number
-    changeLbp?: number
+    paidUsd?: Decimal | DecimalJsLike | number | string
+    paidLbp?: Decimal | DecimalJsLike | number | string
+    paidTotalUsd: Decimal | DecimalJsLike | number | string
+    paidTotalLbp: Decimal | DecimalJsLike | number | string
+    changeUsd?: Decimal | DecimalJsLike | number | string
+    changeLbp?: Decimal | DecimalJsLike | number | string
     changeCurrency: string
     sale: SaleCreateNestedOneWithoutTenderInput
   }
@@ -40581,12 +42054,12 @@ export namespace Prisma {
     saleId: string
     currency: string
     exchangeRate: number
-    paidUsd?: number
-    paidLbp?: number
-    paidTotalUsd: number
-    paidTotalLbp: number
-    changeUsd?: number
-    changeLbp?: number
+    paidUsd?: Decimal | DecimalJsLike | number | string
+    paidLbp?: Decimal | DecimalJsLike | number | string
+    paidTotalUsd: Decimal | DecimalJsLike | number | string
+    paidTotalLbp: Decimal | DecimalJsLike | number | string
+    changeUsd?: Decimal | DecimalJsLike | number | string
+    changeLbp?: Decimal | DecimalJsLike | number | string
     changeCurrency: string
   }
 
@@ -40594,12 +42067,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: FloatFieldUpdateOperationsInput | number
-    paidUsd?: FloatFieldUpdateOperationsInput | number
-    paidLbp?: FloatFieldUpdateOperationsInput | number
-    paidTotalUsd?: FloatFieldUpdateOperationsInput | number
-    paidTotalLbp?: FloatFieldUpdateOperationsInput | number
-    changeUsd?: FloatFieldUpdateOperationsInput | number
-    changeLbp?: FloatFieldUpdateOperationsInput | number
+    paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     changeCurrency?: StringFieldUpdateOperationsInput | string
     sale?: SaleUpdateOneRequiredWithoutTenderNestedInput
   }
@@ -40609,12 +42082,12 @@ export namespace Prisma {
     saleId?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: FloatFieldUpdateOperationsInput | number
-    paidUsd?: FloatFieldUpdateOperationsInput | number
-    paidLbp?: FloatFieldUpdateOperationsInput | number
-    paidTotalUsd?: FloatFieldUpdateOperationsInput | number
-    paidTotalLbp?: FloatFieldUpdateOperationsInput | number
-    changeUsd?: FloatFieldUpdateOperationsInput | number
-    changeLbp?: FloatFieldUpdateOperationsInput | number
+    paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     changeCurrency?: StringFieldUpdateOperationsInput | string
   }
 
@@ -40623,12 +42096,12 @@ export namespace Prisma {
     saleId: string
     currency: string
     exchangeRate: number
-    paidUsd?: number
-    paidLbp?: number
-    paidTotalUsd: number
-    paidTotalLbp: number
-    changeUsd?: number
-    changeLbp?: number
+    paidUsd?: Decimal | DecimalJsLike | number | string
+    paidLbp?: Decimal | DecimalJsLike | number | string
+    paidTotalUsd: Decimal | DecimalJsLike | number | string
+    paidTotalLbp: Decimal | DecimalJsLike | number | string
+    changeUsd?: Decimal | DecimalJsLike | number | string
+    changeLbp?: Decimal | DecimalJsLike | number | string
     changeCurrency: string
   }
 
@@ -40636,12 +42109,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: FloatFieldUpdateOperationsInput | number
-    paidUsd?: FloatFieldUpdateOperationsInput | number
-    paidLbp?: FloatFieldUpdateOperationsInput | number
-    paidTotalUsd?: FloatFieldUpdateOperationsInput | number
-    paidTotalLbp?: FloatFieldUpdateOperationsInput | number
-    changeUsd?: FloatFieldUpdateOperationsInput | number
-    changeLbp?: FloatFieldUpdateOperationsInput | number
+    paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     changeCurrency?: StringFieldUpdateOperationsInput | string
   }
 
@@ -40650,12 +42123,12 @@ export namespace Prisma {
     saleId?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: FloatFieldUpdateOperationsInput | number
-    paidUsd?: FloatFieldUpdateOperationsInput | number
-    paidLbp?: FloatFieldUpdateOperationsInput | number
-    paidTotalUsd?: FloatFieldUpdateOperationsInput | number
-    paidTotalLbp?: FloatFieldUpdateOperationsInput | number
-    changeUsd?: FloatFieldUpdateOperationsInput | number
-    changeLbp?: FloatFieldUpdateOperationsInput | number
+    paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     changeCurrency?: StringFieldUpdateOperationsInput | string
   }
 
@@ -40667,7 +42140,7 @@ export namespace Prisma {
     customerName?: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -40688,7 +42161,7 @@ export namespace Prisma {
     customerName?: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -40705,7 +42178,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40726,7 +42199,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40745,7 +42218,7 @@ export namespace Prisma {
     customerName?: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -40761,7 +42234,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40779,7 +42252,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -40793,9 +42266,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    cost?: number | null
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string | null
+    total: Decimal | DecimalJsLike | number | string
     refund: SaleRefundCreateNestedOneWithoutItemsInput
   }
 
@@ -40806,9 +42279,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    cost?: number | null
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string | null
+    total: Decimal | DecimalJsLike | number | string
   }
 
   export type RefundItemUpdateInput = {
@@ -40817,9 +42290,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    cost?: NullableFloatFieldUpdateOperationsInput | number | null
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     refund?: SaleRefundUpdateOneRequiredWithoutItemsNestedInput
   }
 
@@ -40830,9 +42303,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    cost?: NullableFloatFieldUpdateOperationsInput | number | null
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type RefundItemCreateManyInput = {
@@ -40842,9 +42315,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    cost?: number | null
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string | null
+    total: Decimal | DecimalJsLike | number | string
   }
 
   export type RefundItemUpdateManyMutationInput = {
@@ -40853,9 +42326,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    cost?: NullableFloatFieldUpdateOperationsInput | number | null
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type RefundItemUncheckedUpdateManyInput = {
@@ -40865,9 +42338,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    cost?: NullableFloatFieldUpdateOperationsInput | number | null
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type CustomerCreateInput = {
@@ -40875,7 +42348,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -40891,7 +42364,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -40905,7 +42378,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40921,7 +42394,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40936,7 +42409,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -40947,7 +42420,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40959,7 +42432,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -40968,10 +42441,10 @@ export namespace Prisma {
   export type DebtSaleCreateInput = {
     id?: string
     saleNumber: string
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutDebtSalesInput
     customer: CustomerCreateNestedOneWithoutDebtSalesInput
@@ -40982,20 +42455,20 @@ export namespace Prisma {
     tenantId: string
     customerId: string
     saleNumber: string
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
   export type DebtSaleUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutDebtSalesNestedInput
     customer?: CustomerUpdateOneRequiredWithoutDebtSalesNestedInput
@@ -41006,10 +42479,10 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -41018,20 +42491,20 @@ export namespace Prisma {
     tenantId: string
     customerId: string
     saleNumber: string
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
   export type DebtSaleUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -41040,16 +42513,16 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DebtPaymentCreateInput = {
     id?: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     createdAt?: Date | string
@@ -41061,7 +42534,7 @@ export namespace Prisma {
     id?: string
     tenantId: string
     customerId: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     createdAt?: Date | string
@@ -41069,7 +42542,7 @@ export namespace Prisma {
 
   export type DebtPaymentUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41081,7 +42554,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tenantId?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41091,7 +42564,7 @@ export namespace Prisma {
     id?: string
     tenantId: string
     customerId: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     createdAt?: Date | string
@@ -41099,7 +42572,7 @@ export namespace Prisma {
 
   export type DebtPaymentUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41109,7 +42582,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tenantId?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -41218,8 +42691,8 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     invoiceNumber?: string
     note?: string
-    total: number
-    paidTotal?: number
+    total: Decimal | DecimalJsLike | number | string
+    paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
     shiftId?: string | null
     shiftNumber?: string | null
@@ -41227,6 +42700,7 @@ export namespace Prisma {
     receivedAt?: Date | string | null
     tenant: TenantCreateNestedOneWithoutPurchaseOrdersInput
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
+    items?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
   }
 
   export type PurchaseOrderUncheckedCreateInput = {
@@ -41239,13 +42713,14 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     invoiceNumber?: string
     note?: string
-    total: number
-    paidTotal?: number
+    total: Decimal | DecimalJsLike | number | string
+    paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
     receivedAt?: Date | string | null
+    items?: PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
   }
 
   export type PurchaseOrderUpdateInput = {
@@ -41256,8 +42731,8 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
-    paidTotal?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41265,6 +42740,7 @@ export namespace Prisma {
     receivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     tenant?: TenantUpdateOneRequiredWithoutPurchaseOrdersNestedInput
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
+    items?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
   }
 
   export type PurchaseOrderUncheckedUpdateInput = {
@@ -41277,13 +42753,14 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
-    paidTotal?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     receivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    items?: PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
   }
 
   export type PurchaseOrderCreateManyInput = {
@@ -41296,8 +42773,8 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     invoiceNumber?: string
     note?: string
-    total: number
-    paidTotal?: number
+    total: Decimal | DecimalJsLike | number | string
+    paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
     shiftId?: string | null
     shiftNumber?: string | null
@@ -41313,8 +42790,8 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
-    paidTotal?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41332,8 +42809,8 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
-    paidTotal?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41341,12 +42818,94 @@ export namespace Prisma {
     receivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type PurchaseOrderItemCreateInput = {
+    id?: string
+    productName: string
+    barcode?: string
+    quantity: number
+    unitCost?: Decimal | DecimalJsLike | number | string
+    unitPrice?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    tenant: TenantCreateNestedOneWithoutPurchaseOrderItemsInput
+    purchaseOrder: PurchaseOrderCreateNestedOneWithoutItemsInput
+  }
+
+  export type PurchaseOrderItemUncheckedCreateInput = {
+    id?: string
+    tenantId: string
+    purchaseOrderId: string
+    productName: string
+    barcode?: string
+    quantity: number
+    unitCost?: Decimal | DecimalJsLike | number | string
+    unitPrice?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+  }
+
+  export type PurchaseOrderItemUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    productName?: StringFieldUpdateOperationsInput | string
+    barcode?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    tenant?: TenantUpdateOneRequiredWithoutPurchaseOrderItemsNestedInput
+    purchaseOrder?: PurchaseOrderUpdateOneRequiredWithoutItemsNestedInput
+  }
+
+  export type PurchaseOrderItemUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    purchaseOrderId?: StringFieldUpdateOperationsInput | string
+    productName?: StringFieldUpdateOperationsInput | string
+    barcode?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type PurchaseOrderItemCreateManyInput = {
+    id?: string
+    tenantId: string
+    purchaseOrderId: string
+    productName: string
+    barcode?: string
+    quantity: number
+    unitCost?: Decimal | DecimalJsLike | number | string
+    unitPrice?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+  }
+
+  export type PurchaseOrderItemUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    productName?: StringFieldUpdateOperationsInput | string
+    barcode?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type PurchaseOrderItemUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    purchaseOrderId?: StringFieldUpdateOperationsInput | string
+    productName?: StringFieldUpdateOperationsInput | string
+    barcode?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
   export type SupplierPaymentCreateInput = {
     id?: string
     supplierName: string
     purchaseOrderId?: string | null
     purchaseOrderNumber?: string | null
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     recordedBy: string
@@ -41364,7 +42923,7 @@ export namespace Prisma {
     supplierName: string
     purchaseOrderId?: string | null
     purchaseOrderNumber?: string | null
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     recordedBy: string
@@ -41378,7 +42937,7 @@ export namespace Prisma {
     supplierName?: StringFieldUpdateOperationsInput | string
     purchaseOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
@@ -41396,7 +42955,7 @@ export namespace Prisma {
     supplierName?: StringFieldUpdateOperationsInput | string
     purchaseOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
@@ -41412,7 +42971,7 @@ export namespace Prisma {
     supplierName: string
     purchaseOrderId?: string | null
     purchaseOrderNumber?: string | null
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     recordedBy: string
@@ -41426,7 +42985,7 @@ export namespace Prisma {
     supplierName?: StringFieldUpdateOperationsInput | string
     purchaseOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
@@ -41442,7 +43001,7 @@ export namespace Prisma {
     supplierName?: StringFieldUpdateOperationsInput | string
     purchaseOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
@@ -41457,14 +43016,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedByName: string
     closedByName?: string | null
     notes?: string | null
@@ -41480,14 +43039,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedById: string
     openedByName: string
     closedById?: string | null
@@ -41501,14 +43060,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41524,14 +43083,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedById?: StringFieldUpdateOperationsInput | string
     openedByName?: StringFieldUpdateOperationsInput | string
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41546,14 +43105,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedById: string
     openedByName: string
     closedById?: string | null
@@ -41567,14 +43126,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41587,14 +43146,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedById?: StringFieldUpdateOperationsInput | string
     openedByName?: StringFieldUpdateOperationsInput | string
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41697,7 +43256,7 @@ export namespace Prisma {
     expenseNumber: string
     vendor: string
     category: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     paymentMethod: string
     invoiceNumber?: string
     note?: string
@@ -41715,7 +43274,7 @@ export namespace Prisma {
     expenseNumber: string
     vendor: string
     category: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     paymentMethod: string
     invoiceNumber?: string
     note?: string
@@ -41731,7 +43290,7 @@ export namespace Prisma {
     expenseNumber?: StringFieldUpdateOperationsInput | string
     vendor?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
@@ -41749,7 +43308,7 @@ export namespace Prisma {
     expenseNumber?: StringFieldUpdateOperationsInput | string
     vendor?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
@@ -41766,7 +43325,7 @@ export namespace Prisma {
     expenseNumber: string
     vendor: string
     category: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     paymentMethod: string
     invoiceNumber?: string
     note?: string
@@ -41782,7 +43341,7 @@ export namespace Prisma {
     expenseNumber?: StringFieldUpdateOperationsInput | string
     vendor?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
@@ -41798,7 +43357,7 @@ export namespace Prisma {
     expenseNumber?: StringFieldUpdateOperationsInput | string
     vendor?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
@@ -41816,8 +43375,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierName?: string | null
     purchaseOrderNumber?: string | null
@@ -41837,8 +43396,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierId?: string | null
     supplierName?: string | null
@@ -41854,8 +43413,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41875,8 +43434,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierId?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41894,8 +43453,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierId?: string | null
     supplierName?: string | null
@@ -41911,8 +43470,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41929,8 +43488,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierId?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -41950,7 +43509,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
-    valueImpact: number
+    valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutStockAdjustmentsInput
     product: ProductCreateNestedOneWithoutAdjustmentsInput
@@ -41969,7 +43528,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
-    valueImpact: number
+    valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
@@ -41984,7 +43543,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutStockAdjustmentsNestedInput
     product?: ProductUpdateOneRequiredWithoutAdjustmentsNestedInput
@@ -42003,7 +43562,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -42020,7 +43579,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
-    valueImpact: number
+    valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
@@ -42035,7 +43594,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -42052,7 +43611,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -42062,8 +43621,8 @@ export namespace Prisma {
     status?: $Enums.StockCountStatus
     createdAt?: Date | string
     completedAt?: Date | string | null
-    totalVariance?: number
-    totalValueImpact?: number
+    totalVariance?: Decimal | DecimalJsLike | number | string
+    totalValueImpact?: Decimal | DecimalJsLike | number | string
     tenant: TenantCreateNestedOneWithoutStockCountsInput
     lines?: StockCountLineCreateNestedManyWithoutSessionInput
   }
@@ -42075,8 +43634,8 @@ export namespace Prisma {
     status?: $Enums.StockCountStatus
     createdAt?: Date | string
     completedAt?: Date | string | null
-    totalVariance?: number
-    totalValueImpact?: number
+    totalVariance?: Decimal | DecimalJsLike | number | string
+    totalValueImpact?: Decimal | DecimalJsLike | number | string
     lines?: StockCountLineUncheckedCreateNestedManyWithoutSessionInput
   }
 
@@ -42086,8 +43645,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusFieldUpdateOperationsInput | $Enums.StockCountStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    totalVariance?: FloatFieldUpdateOperationsInput | number
-    totalValueImpact?: FloatFieldUpdateOperationsInput | number
+    totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     tenant?: TenantUpdateOneRequiredWithoutStockCountsNestedInput
     lines?: StockCountLineUpdateManyWithoutSessionNestedInput
   }
@@ -42099,8 +43658,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusFieldUpdateOperationsInput | $Enums.StockCountStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    totalVariance?: FloatFieldUpdateOperationsInput | number
-    totalValueImpact?: FloatFieldUpdateOperationsInput | number
+    totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     lines?: StockCountLineUncheckedUpdateManyWithoutSessionNestedInput
   }
 
@@ -42111,8 +43670,8 @@ export namespace Prisma {
     status?: $Enums.StockCountStatus
     createdAt?: Date | string
     completedAt?: Date | string | null
-    totalVariance?: number
-    totalValueImpact?: number
+    totalVariance?: Decimal | DecimalJsLike | number | string
+    totalValueImpact?: Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountSessionUpdateManyMutationInput = {
@@ -42121,8 +43680,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusFieldUpdateOperationsInput | $Enums.StockCountStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    totalVariance?: FloatFieldUpdateOperationsInput | number
-    totalValueImpact?: FloatFieldUpdateOperationsInput | number
+    totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountSessionUncheckedUpdateManyInput = {
@@ -42132,8 +43691,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusFieldUpdateOperationsInput | $Enums.StockCountStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    totalVariance?: FloatFieldUpdateOperationsInput | number
-    totalValueImpact?: FloatFieldUpdateOperationsInput | number
+    totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineCreateInput = {
@@ -42144,7 +43703,7 @@ export namespace Prisma {
     expectedQuantity: number
     countedQuantity?: number | null
     variance?: number
-    valueImpact?: number
+    valueImpact?: Decimal | DecimalJsLike | number | string
     session: StockCountSessionCreateNestedOneWithoutLinesInput
     product: ProductCreateNestedOneWithoutStockCountLinesInput
   }
@@ -42159,7 +43718,7 @@ export namespace Prisma {
     expectedQuantity: number
     countedQuantity?: number | null
     variance?: number
-    valueImpact?: number
+    valueImpact?: Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineUpdateInput = {
@@ -42170,7 +43729,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFieldUpdateOperationsInput | number
     countedQuantity?: NullableFloatFieldUpdateOperationsInput | number | null
     variance?: FloatFieldUpdateOperationsInput | number
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     session?: StockCountSessionUpdateOneRequiredWithoutLinesNestedInput
     product?: ProductUpdateOneRequiredWithoutStockCountLinesNestedInput
   }
@@ -42185,7 +43744,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFieldUpdateOperationsInput | number
     countedQuantity?: NullableFloatFieldUpdateOperationsInput | number | null
     variance?: FloatFieldUpdateOperationsInput | number
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineCreateManyInput = {
@@ -42198,7 +43757,7 @@ export namespace Prisma {
     expectedQuantity: number
     countedQuantity?: number | null
     variance?: number
-    valueImpact?: number
+    valueImpact?: Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineUpdateManyMutationInput = {
@@ -42209,7 +43768,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFieldUpdateOperationsInput | number
     countedQuantity?: NullableFloatFieldUpdateOperationsInput | number | null
     variance?: FloatFieldUpdateOperationsInput | number
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineUncheckedUpdateManyInput = {
@@ -42222,7 +43781,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFieldUpdateOperationsInput | number
     countedQuantity?: NullableFloatFieldUpdateOperationsInput | number | null
     variance?: FloatFieldUpdateOperationsInput | number
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderCreateInput = {
@@ -42235,12 +43794,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverAssignedAt?: Date | string | null
@@ -42268,12 +43827,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverId?: string | null
@@ -42297,12 +43856,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -42330,12 +43889,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42361,12 +43920,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverId?: string | null
@@ -42389,12 +43948,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -42418,12 +43977,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -42442,8 +44001,8 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     deliveryOrder: DeliveryOrderCreateNestedOneWithoutItemsInput
   }
 
@@ -42454,8 +44013,8 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderItemUpdateInput = {
@@ -42464,8 +44023,8 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deliveryOrder?: DeliveryOrderUpdateOneRequiredWithoutItemsNestedInput
   }
 
@@ -42476,8 +44035,8 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderItemCreateManyInput = {
@@ -42487,8 +44046,8 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderItemUpdateManyMutationInput = {
@@ -42497,8 +44056,8 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderItemUncheckedUpdateManyInput = {
@@ -42508,24 +44067,24 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type DailyCloseCreateInput = {
     id?: string
     dateKey: string
-    grossSales: number
-    refunds?: number
-    netSales: number
-    costOfGoods?: number
-    returnedCost?: number
-    grossMargin?: number
-    expenses?: number
-    supplierPayments?: number | null
-    netProfit?: number
-    cashIn?: number
-    cashOut?: number
+    grossSales: Decimal | DecimalJsLike | number | string
+    refunds?: Decimal | DecimalJsLike | number | string
+    netSales: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string
+    returnedCost?: Decimal | DecimalJsLike | number | string
+    grossMargin?: Decimal | DecimalJsLike | number | string
+    expenses?: Decimal | DecimalJsLike | number | string
+    supplierPayments?: Decimal | DecimalJsLike | number | string | null
+    netProfit?: Decimal | DecimalJsLike | number | string
+    cashIn?: Decimal | DecimalJsLike | number | string
+    cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
     createdAt?: Date | string
@@ -42536,17 +44095,17 @@ export namespace Prisma {
     id?: string
     tenantId: string
     dateKey: string
-    grossSales: number
-    refunds?: number
-    netSales: number
-    costOfGoods?: number
-    returnedCost?: number
-    grossMargin?: number
-    expenses?: number
-    supplierPayments?: number | null
-    netProfit?: number
-    cashIn?: number
-    cashOut?: number
+    grossSales: Decimal | DecimalJsLike | number | string
+    refunds?: Decimal | DecimalJsLike | number | string
+    netSales: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string
+    returnedCost?: Decimal | DecimalJsLike | number | string
+    grossMargin?: Decimal | DecimalJsLike | number | string
+    expenses?: Decimal | DecimalJsLike | number | string
+    supplierPayments?: Decimal | DecimalJsLike | number | string | null
+    netProfit?: Decimal | DecimalJsLike | number | string
+    cashIn?: Decimal | DecimalJsLike | number | string
+    cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
     createdAt?: Date | string
@@ -42555,17 +44114,17 @@ export namespace Prisma {
   export type DailyCloseUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     dateKey?: StringFieldUpdateOperationsInput | string
-    grossSales?: FloatFieldUpdateOperationsInput | number
-    refunds?: FloatFieldUpdateOperationsInput | number
-    netSales?: FloatFieldUpdateOperationsInput | number
-    costOfGoods?: FloatFieldUpdateOperationsInput | number
-    returnedCost?: FloatFieldUpdateOperationsInput | number
-    grossMargin?: FloatFieldUpdateOperationsInput | number
-    expenses?: FloatFieldUpdateOperationsInput | number
-    supplierPayments?: NullableFloatFieldUpdateOperationsInput | number | null
-    netProfit?: FloatFieldUpdateOperationsInput | number
-    cashIn?: FloatFieldUpdateOperationsInput | number
-    cashOut?: FloatFieldUpdateOperationsInput | number
+    grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42576,17 +44135,17 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tenantId?: StringFieldUpdateOperationsInput | string
     dateKey?: StringFieldUpdateOperationsInput | string
-    grossSales?: FloatFieldUpdateOperationsInput | number
-    refunds?: FloatFieldUpdateOperationsInput | number
-    netSales?: FloatFieldUpdateOperationsInput | number
-    costOfGoods?: FloatFieldUpdateOperationsInput | number
-    returnedCost?: FloatFieldUpdateOperationsInput | number
-    grossMargin?: FloatFieldUpdateOperationsInput | number
-    expenses?: FloatFieldUpdateOperationsInput | number
-    supplierPayments?: NullableFloatFieldUpdateOperationsInput | number | null
-    netProfit?: FloatFieldUpdateOperationsInput | number
-    cashIn?: FloatFieldUpdateOperationsInput | number
-    cashOut?: FloatFieldUpdateOperationsInput | number
+    grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42596,17 +44155,17 @@ export namespace Prisma {
     id?: string
     tenantId: string
     dateKey: string
-    grossSales: number
-    refunds?: number
-    netSales: number
-    costOfGoods?: number
-    returnedCost?: number
-    grossMargin?: number
-    expenses?: number
-    supplierPayments?: number | null
-    netProfit?: number
-    cashIn?: number
-    cashOut?: number
+    grossSales: Decimal | DecimalJsLike | number | string
+    refunds?: Decimal | DecimalJsLike | number | string
+    netSales: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string
+    returnedCost?: Decimal | DecimalJsLike | number | string
+    grossMargin?: Decimal | DecimalJsLike | number | string
+    expenses?: Decimal | DecimalJsLike | number | string
+    supplierPayments?: Decimal | DecimalJsLike | number | string | null
+    netProfit?: Decimal | DecimalJsLike | number | string
+    cashIn?: Decimal | DecimalJsLike | number | string
+    cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
     createdAt?: Date | string
@@ -42615,17 +44174,17 @@ export namespace Prisma {
   export type DailyCloseUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     dateKey?: StringFieldUpdateOperationsInput | string
-    grossSales?: FloatFieldUpdateOperationsInput | number
-    refunds?: FloatFieldUpdateOperationsInput | number
-    netSales?: FloatFieldUpdateOperationsInput | number
-    costOfGoods?: FloatFieldUpdateOperationsInput | number
-    returnedCost?: FloatFieldUpdateOperationsInput | number
-    grossMargin?: FloatFieldUpdateOperationsInput | number
-    expenses?: FloatFieldUpdateOperationsInput | number
-    supplierPayments?: NullableFloatFieldUpdateOperationsInput | number | null
-    netProfit?: FloatFieldUpdateOperationsInput | number
-    cashIn?: FloatFieldUpdateOperationsInput | number
-    cashOut?: FloatFieldUpdateOperationsInput | number
+    grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42635,17 +44194,17 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tenantId?: StringFieldUpdateOperationsInput | string
     dateKey?: StringFieldUpdateOperationsInput | string
-    grossSales?: FloatFieldUpdateOperationsInput | number
-    refunds?: FloatFieldUpdateOperationsInput | number
-    netSales?: FloatFieldUpdateOperationsInput | number
-    costOfGoods?: FloatFieldUpdateOperationsInput | number
-    returnedCost?: FloatFieldUpdateOperationsInput | number
-    grossMargin?: FloatFieldUpdateOperationsInput | number
-    expenses?: FloatFieldUpdateOperationsInput | number
-    supplierPayments?: NullableFloatFieldUpdateOperationsInput | number | null
-    netProfit?: FloatFieldUpdateOperationsInput | number
-    cashIn?: FloatFieldUpdateOperationsInput | number
-    cashOut?: FloatFieldUpdateOperationsInput | number
+    grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -42840,6 +44399,12 @@ export namespace Prisma {
     none?: PurchaseOrderWhereInput
   }
 
+  export type PurchaseOrderItemListRelationFilter = {
+    every?: PurchaseOrderItemWhereInput
+    some?: PurchaseOrderItemWhereInput
+    none?: PurchaseOrderItemWhereInput
+  }
+
   export type SupplierPaymentListRelationFilter = {
     every?: SupplierPaymentWhereInput
     some?: SupplierPaymentWhereInput
@@ -42938,6 +44503,10 @@ export namespace Prisma {
   }
 
   export type PurchaseOrderOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PurchaseOrderItemOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -43060,6 +44629,11 @@ export namespace Prisma {
     isNot?: TenantWhereInput
   }
 
+  export type StaffUserTenantIdMobileCompoundUniqueInput = {
+    tenantId: string
+    mobile: string
+  }
+
   export type StaffUserCountOrderByAggregateInput = {
     id?: SortOrder
     tenantId?: SortOrder
@@ -43106,15 +44680,15 @@ export namespace Prisma {
     _max?: NestedEnumUserRoleFilter<$PrismaModel>
   }
 
-  export type FloatFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatFilter<$PrismaModel> | number
+  export type DecimalFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -43201,20 +44775,20 @@ export namespace Prisma {
     assignTimeout?: SortOrder
   }
 
-  export type FloatWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+  export type DecimalWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
     _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedFloatFilter<$PrismaModel>
-    _min?: NestedFloatFilter<$PrismaModel>
-    _max?: NestedFloatFilter<$PrismaModel>
+    _avg?: NestedDecimalFilter<$PrismaModel>
+    _sum?: NestedDecimalFilter<$PrismaModel>
+    _min?: NestedDecimalFilter<$PrismaModel>
+    _max?: NestedDecimalFilter<$PrismaModel>
   }
 
   export type IntWithAggregatesFilter<$PrismaModel = never> = {
@@ -43257,6 +44831,17 @@ export namespace Prisma {
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     mode?: QueryMode
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type FloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
   }
 
   export type StringNullableListFilter<$PrismaModel = never> = {
@@ -43419,6 +45004,22 @@ export namespace Prisma {
     _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
+  export type FloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
+  }
+
   export type EnumSalePaymentMethodFilter<$PrismaModel = never> = {
     equals?: $Enums.SalePaymentMethod | EnumSalePaymentMethodFieldRefInput<$PrismaModel>
     in?: $Enums.SalePaymentMethod[] | ListEnumSalePaymentMethodFieldRefInput<$PrismaModel>
@@ -43426,15 +45027,15 @@ export namespace Prisma {
     not?: NestedEnumSalePaymentMethodFilter<$PrismaModel> | $Enums.SalePaymentMethod
   }
 
-  export type FloatNullableFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  export type DecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
   export type EnumSaleStatusFilter<$PrismaModel = never> = {
@@ -43555,20 +45156,20 @@ export namespace Prisma {
     _max?: NestedEnumSalePaymentMethodFilter<$PrismaModel>
   }
 
-  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+  export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
     _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
   export type EnumSaleStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -44170,6 +45771,61 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
+  export type PurchaseOrderScalarRelationFilter = {
+    is?: PurchaseOrderWhereInput
+    isNot?: PurchaseOrderWhereInput
+  }
+
+  export type PurchaseOrderItemCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    purchaseOrderId?: SortOrder
+    productName?: SortOrder
+    barcode?: SortOrder
+    quantity?: SortOrder
+    unitCost?: SortOrder
+    unitPrice?: SortOrder
+    total?: SortOrder
+  }
+
+  export type PurchaseOrderItemAvgOrderByAggregateInput = {
+    quantity?: SortOrder
+    unitCost?: SortOrder
+    unitPrice?: SortOrder
+    total?: SortOrder
+  }
+
+  export type PurchaseOrderItemMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    purchaseOrderId?: SortOrder
+    productName?: SortOrder
+    barcode?: SortOrder
+    quantity?: SortOrder
+    unitCost?: SortOrder
+    unitPrice?: SortOrder
+    total?: SortOrder
+  }
+
+  export type PurchaseOrderItemMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    purchaseOrderId?: SortOrder
+    productName?: SortOrder
+    barcode?: SortOrder
+    quantity?: SortOrder
+    unitCost?: SortOrder
+    unitPrice?: SortOrder
+    total?: SortOrder
+  }
+
+  export type PurchaseOrderItemSumOrderByAggregateInput = {
+    quantity?: SortOrder
+    unitCost?: SortOrder
+    unitPrice?: SortOrder
+    total?: SortOrder
+  }
+
   export type SupplierPaymentCountOrderByAggregateInput = {
     id?: SortOrder
     tenantId?: SortOrder
@@ -44733,6 +46389,17 @@ export namespace Prisma {
     _max?: NestedEnumStockCountStatusFilter<$PrismaModel>
   }
 
+  export type FloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
   export type StockCountSessionScalarRelationFilter = {
     is?: StockCountSessionWhereInput
     isNot?: StockCountSessionWhereInput
@@ -44791,6 +46458,22 @@ export namespace Prisma {
     countedQuantity?: SortOrder
     variance?: SortOrder
     valueImpact?: SortOrder
+  }
+
+  export type FloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
   }
 
   export type EnumDeliveryOrderStatusFilter<$PrismaModel = never> = {
@@ -45199,6 +46882,13 @@ export namespace Prisma {
     connect?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
   }
 
+  export type PurchaseOrderItemCreateNestedManyWithoutTenantInput = {
+    create?: XOR<PurchaseOrderItemCreateWithoutTenantInput, PurchaseOrderItemUncheckedCreateWithoutTenantInput> | PurchaseOrderItemCreateWithoutTenantInput[] | PurchaseOrderItemUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PurchaseOrderItemCreateOrConnectWithoutTenantInput | PurchaseOrderItemCreateOrConnectWithoutTenantInput[]
+    createMany?: PurchaseOrderItemCreateManyTenantInputEnvelope
+    connect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+  }
+
   export type SupplierPaymentCreateNestedManyWithoutTenantInput = {
     create?: XOR<SupplierPaymentCreateWithoutTenantInput, SupplierPaymentUncheckedCreateWithoutTenantInput> | SupplierPaymentCreateWithoutTenantInput[] | SupplierPaymentUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: SupplierPaymentCreateOrConnectWithoutTenantInput | SupplierPaymentCreateOrConnectWithoutTenantInput[]
@@ -45336,6 +47026,13 @@ export namespace Prisma {
     connectOrCreate?: PurchaseOrderCreateOrConnectWithoutTenantInput | PurchaseOrderCreateOrConnectWithoutTenantInput[]
     createMany?: PurchaseOrderCreateManyTenantInputEnvelope
     connect?: PurchaseOrderWhereUniqueInput | PurchaseOrderWhereUniqueInput[]
+  }
+
+  export type PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput = {
+    create?: XOR<PurchaseOrderItemCreateWithoutTenantInput, PurchaseOrderItemUncheckedCreateWithoutTenantInput> | PurchaseOrderItemCreateWithoutTenantInput[] | PurchaseOrderItemUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PurchaseOrderItemCreateOrConnectWithoutTenantInput | PurchaseOrderItemCreateOrConnectWithoutTenantInput[]
+    createMany?: PurchaseOrderItemCreateManyTenantInputEnvelope
+    connect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
   }
 
   export type SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput = {
@@ -45550,6 +47247,20 @@ export namespace Prisma {
     update?: PurchaseOrderUpdateWithWhereUniqueWithoutTenantInput | PurchaseOrderUpdateWithWhereUniqueWithoutTenantInput[]
     updateMany?: PurchaseOrderUpdateManyWithWhereWithoutTenantInput | PurchaseOrderUpdateManyWithWhereWithoutTenantInput[]
     deleteMany?: PurchaseOrderScalarWhereInput | PurchaseOrderScalarWhereInput[]
+  }
+
+  export type PurchaseOrderItemUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<PurchaseOrderItemCreateWithoutTenantInput, PurchaseOrderItemUncheckedCreateWithoutTenantInput> | PurchaseOrderItemCreateWithoutTenantInput[] | PurchaseOrderItemUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PurchaseOrderItemCreateOrConnectWithoutTenantInput | PurchaseOrderItemCreateOrConnectWithoutTenantInput[]
+    upsert?: PurchaseOrderItemUpsertWithWhereUniqueWithoutTenantInput | PurchaseOrderItemUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: PurchaseOrderItemCreateManyTenantInputEnvelope
+    set?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    disconnect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    delete?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    connect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    update?: PurchaseOrderItemUpdateWithWhereUniqueWithoutTenantInput | PurchaseOrderItemUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: PurchaseOrderItemUpdateManyWithWhereWithoutTenantInput | PurchaseOrderItemUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: PurchaseOrderItemScalarWhereInput | PurchaseOrderItemScalarWhereInput[]
   }
 
   export type SupplierPaymentUpdateManyWithoutTenantNestedInput = {
@@ -45826,6 +47537,20 @@ export namespace Prisma {
     update?: PurchaseOrderUpdateWithWhereUniqueWithoutTenantInput | PurchaseOrderUpdateWithWhereUniqueWithoutTenantInput[]
     updateMany?: PurchaseOrderUpdateManyWithWhereWithoutTenantInput | PurchaseOrderUpdateManyWithWhereWithoutTenantInput[]
     deleteMany?: PurchaseOrderScalarWhereInput | PurchaseOrderScalarWhereInput[]
+  }
+
+  export type PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<PurchaseOrderItemCreateWithoutTenantInput, PurchaseOrderItemUncheckedCreateWithoutTenantInput> | PurchaseOrderItemCreateWithoutTenantInput[] | PurchaseOrderItemUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PurchaseOrderItemCreateOrConnectWithoutTenantInput | PurchaseOrderItemCreateOrConnectWithoutTenantInput[]
+    upsert?: PurchaseOrderItemUpsertWithWhereUniqueWithoutTenantInput | PurchaseOrderItemUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: PurchaseOrderItemCreateManyTenantInputEnvelope
+    set?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    disconnect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    delete?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    connect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    update?: PurchaseOrderItemUpdateWithWhereUniqueWithoutTenantInput | PurchaseOrderItemUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: PurchaseOrderItemUpdateManyWithWhereWithoutTenantInput | PurchaseOrderItemUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: PurchaseOrderItemScalarWhereInput | PurchaseOrderItemScalarWhereInput[]
   }
 
   export type SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput = {
@@ -46170,12 +47895,12 @@ export namespace Prisma {
     connect?: TenantWhereUniqueInput
   }
 
-  export type FloatFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
+  export type DecimalFieldUpdateOperationsInput = {
+    set?: Decimal | DecimalJsLike | number | string
+    increment?: Decimal | DecimalJsLike | number | string
+    decrement?: Decimal | DecimalJsLike | number | string
+    multiply?: Decimal | DecimalJsLike | number | string
+    divide?: Decimal | DecimalJsLike | number | string
   }
 
   export type IntFieldUpdateOperationsInput = {
@@ -46268,6 +47993,14 @@ export namespace Prisma {
 
   export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null
+  }
+
+  export type FloatFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
   }
 
   export type ProductUpdatebarcodeAliasesInput = {
@@ -46463,12 +48196,12 @@ export namespace Prisma {
     set?: $Enums.SalePaymentMethod
   }
 
-  export type NullableFloatFieldUpdateOperationsInput = {
-    set?: number | null
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
+  export type NullableDecimalFieldUpdateOperationsInput = {
+    set?: Decimal | DecimalJsLike | number | string | null
+    increment?: Decimal | DecimalJsLike | number | string
+    decrement?: Decimal | DecimalJsLike | number | string
+    multiply?: Decimal | DecimalJsLike | number | string
+    divide?: Decimal | DecimalJsLike | number | string
   }
 
   export type EnumSaleStatusFieldUpdateOperationsInput = {
@@ -47023,6 +48756,20 @@ export namespace Prisma {
     connect?: SupplierWhereUniqueInput
   }
 
+  export type PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput = {
+    create?: XOR<PurchaseOrderItemCreateWithoutPurchaseOrderInput, PurchaseOrderItemUncheckedCreateWithoutPurchaseOrderInput> | PurchaseOrderItemCreateWithoutPurchaseOrderInput[] | PurchaseOrderItemUncheckedCreateWithoutPurchaseOrderInput[]
+    connectOrCreate?: PurchaseOrderItemCreateOrConnectWithoutPurchaseOrderInput | PurchaseOrderItemCreateOrConnectWithoutPurchaseOrderInput[]
+    createMany?: PurchaseOrderItemCreateManyPurchaseOrderInputEnvelope
+    connect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+  }
+
+  export type PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput = {
+    create?: XOR<PurchaseOrderItemCreateWithoutPurchaseOrderInput, PurchaseOrderItemUncheckedCreateWithoutPurchaseOrderInput> | PurchaseOrderItemCreateWithoutPurchaseOrderInput[] | PurchaseOrderItemUncheckedCreateWithoutPurchaseOrderInput[]
+    connectOrCreate?: PurchaseOrderItemCreateOrConnectWithoutPurchaseOrderInput | PurchaseOrderItemCreateOrConnectWithoutPurchaseOrderInput[]
+    createMany?: PurchaseOrderItemCreateManyPurchaseOrderInputEnvelope
+    connect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+  }
+
   export type EnumPurchaseOrderStatusFieldUpdateOperationsInput = {
     set?: $Enums.PurchaseOrderStatus
   }
@@ -47049,6 +48796,62 @@ export namespace Prisma {
     upsert?: SupplierUpsertWithoutPurchaseOrdersInput
     connect?: SupplierWhereUniqueInput
     update?: XOR<XOR<SupplierUpdateToOneWithWhereWithoutPurchaseOrdersInput, SupplierUpdateWithoutPurchaseOrdersInput>, SupplierUncheckedUpdateWithoutPurchaseOrdersInput>
+  }
+
+  export type PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput = {
+    create?: XOR<PurchaseOrderItemCreateWithoutPurchaseOrderInput, PurchaseOrderItemUncheckedCreateWithoutPurchaseOrderInput> | PurchaseOrderItemCreateWithoutPurchaseOrderInput[] | PurchaseOrderItemUncheckedCreateWithoutPurchaseOrderInput[]
+    connectOrCreate?: PurchaseOrderItemCreateOrConnectWithoutPurchaseOrderInput | PurchaseOrderItemCreateOrConnectWithoutPurchaseOrderInput[]
+    upsert?: PurchaseOrderItemUpsertWithWhereUniqueWithoutPurchaseOrderInput | PurchaseOrderItemUpsertWithWhereUniqueWithoutPurchaseOrderInput[]
+    createMany?: PurchaseOrderItemCreateManyPurchaseOrderInputEnvelope
+    set?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    disconnect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    delete?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    connect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    update?: PurchaseOrderItemUpdateWithWhereUniqueWithoutPurchaseOrderInput | PurchaseOrderItemUpdateWithWhereUniqueWithoutPurchaseOrderInput[]
+    updateMany?: PurchaseOrderItemUpdateManyWithWhereWithoutPurchaseOrderInput | PurchaseOrderItemUpdateManyWithWhereWithoutPurchaseOrderInput[]
+    deleteMany?: PurchaseOrderItemScalarWhereInput | PurchaseOrderItemScalarWhereInput[]
+  }
+
+  export type PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput = {
+    create?: XOR<PurchaseOrderItemCreateWithoutPurchaseOrderInput, PurchaseOrderItemUncheckedCreateWithoutPurchaseOrderInput> | PurchaseOrderItemCreateWithoutPurchaseOrderInput[] | PurchaseOrderItemUncheckedCreateWithoutPurchaseOrderInput[]
+    connectOrCreate?: PurchaseOrderItemCreateOrConnectWithoutPurchaseOrderInput | PurchaseOrderItemCreateOrConnectWithoutPurchaseOrderInput[]
+    upsert?: PurchaseOrderItemUpsertWithWhereUniqueWithoutPurchaseOrderInput | PurchaseOrderItemUpsertWithWhereUniqueWithoutPurchaseOrderInput[]
+    createMany?: PurchaseOrderItemCreateManyPurchaseOrderInputEnvelope
+    set?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    disconnect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    delete?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    connect?: PurchaseOrderItemWhereUniqueInput | PurchaseOrderItemWhereUniqueInput[]
+    update?: PurchaseOrderItemUpdateWithWhereUniqueWithoutPurchaseOrderInput | PurchaseOrderItemUpdateWithWhereUniqueWithoutPurchaseOrderInput[]
+    updateMany?: PurchaseOrderItemUpdateManyWithWhereWithoutPurchaseOrderInput | PurchaseOrderItemUpdateManyWithWhereWithoutPurchaseOrderInput[]
+    deleteMany?: PurchaseOrderItemScalarWhereInput | PurchaseOrderItemScalarWhereInput[]
+  }
+
+  export type TenantCreateNestedOneWithoutPurchaseOrderItemsInput = {
+    create?: XOR<TenantCreateWithoutPurchaseOrderItemsInput, TenantUncheckedCreateWithoutPurchaseOrderItemsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutPurchaseOrderItemsInput
+    connect?: TenantWhereUniqueInput
+  }
+
+  export type PurchaseOrderCreateNestedOneWithoutItemsInput = {
+    create?: XOR<PurchaseOrderCreateWithoutItemsInput, PurchaseOrderUncheckedCreateWithoutItemsInput>
+    connectOrCreate?: PurchaseOrderCreateOrConnectWithoutItemsInput
+    connect?: PurchaseOrderWhereUniqueInput
+  }
+
+  export type TenantUpdateOneRequiredWithoutPurchaseOrderItemsNestedInput = {
+    create?: XOR<TenantCreateWithoutPurchaseOrderItemsInput, TenantUncheckedCreateWithoutPurchaseOrderItemsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutPurchaseOrderItemsInput
+    upsert?: TenantUpsertWithoutPurchaseOrderItemsInput
+    connect?: TenantWhereUniqueInput
+    update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutPurchaseOrderItemsInput, TenantUpdateWithoutPurchaseOrderItemsInput>, TenantUncheckedUpdateWithoutPurchaseOrderItemsInput>
+  }
+
+  export type PurchaseOrderUpdateOneRequiredWithoutItemsNestedInput = {
+    create?: XOR<PurchaseOrderCreateWithoutItemsInput, PurchaseOrderUncheckedCreateWithoutItemsInput>
+    connectOrCreate?: PurchaseOrderCreateOrConnectWithoutItemsInput
+    upsert?: PurchaseOrderUpsertWithoutItemsInput
+    connect?: PurchaseOrderWhereUniqueInput
+    update?: XOR<XOR<PurchaseOrderUpdateToOneWithWhereWithoutItemsInput, PurchaseOrderUpdateWithoutItemsInput>, PurchaseOrderUncheckedUpdateWithoutItemsInput>
   }
 
   export type TenantCreateNestedOneWithoutSupplierPaymentsInput = {
@@ -47319,6 +49122,14 @@ export namespace Prisma {
     connect?: ProductWhereUniqueInput
   }
 
+  export type NullableFloatFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type StockCountSessionUpdateOneRequiredWithoutLinesNestedInput = {
     create?: XOR<StockCountSessionCreateWithoutLinesInput, StockCountSessionUncheckedCreateWithoutLinesInput>
     connectOrCreate?: StockCountSessionCreateOrConnectWithoutLinesInput
@@ -47566,31 +49377,31 @@ export namespace Prisma {
     _max?: NestedEnumUserRoleFilter<$PrismaModel>
   }
 
-  export type NestedFloatFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatFilter<$PrismaModel> | number
+  export type NestedDecimalFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
   }
 
-  export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+  export type NestedDecimalWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
     _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedFloatFilter<$PrismaModel>
-    _min?: NestedFloatFilter<$PrismaModel>
-    _max?: NestedFloatFilter<$PrismaModel>
+    _avg?: NestedDecimalFilter<$PrismaModel>
+    _sum?: NestedDecimalFilter<$PrismaModel>
+    _min?: NestedDecimalFilter<$PrismaModel>
+    _max?: NestedDecimalFilter<$PrismaModel>
   }
 
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
@@ -47607,6 +49418,17 @@ export namespace Prisma {
     _sum?: NestedIntFilter<$PrismaModel>
     _min?: NestedIntFilter<$PrismaModel>
     _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type NestedFloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
   }
 
   export type NestedIntNullableFilter<$PrismaModel = never> = {
@@ -47678,11 +49500,38 @@ export namespace Prisma {
     _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
+  export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedFloatFilter<$PrismaModel>
+    _min?: NestedFloatFilter<$PrismaModel>
+    _max?: NestedFloatFilter<$PrismaModel>
+  }
+
   export type NestedEnumSalePaymentMethodFilter<$PrismaModel = never> = {
     equals?: $Enums.SalePaymentMethod | EnumSalePaymentMethodFieldRefInput<$PrismaModel>
     in?: $Enums.SalePaymentMethod[] | ListEnumSalePaymentMethodFieldRefInput<$PrismaModel>
     notIn?: $Enums.SalePaymentMethod[] | ListEnumSalePaymentMethodFieldRefInput<$PrismaModel>
     not?: NestedEnumSalePaymentMethodFilter<$PrismaModel> | $Enums.SalePaymentMethod
+  }
+
+  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
   export type NestedEnumSaleStatusFilter<$PrismaModel = never> = {
@@ -47702,20 +49551,20 @@ export namespace Prisma {
     _max?: NestedEnumSalePaymentMethodFilter<$PrismaModel>
   }
 
-  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+  export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
     _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedFloatNullableFilter<$PrismaModel>
-    _min?: NestedFloatNullableFilter<$PrismaModel>
-    _max?: NestedFloatNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumSaleStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -47878,6 +49727,22 @@ export namespace Prisma {
     _max?: NestedEnumStockCountStatusFilter<$PrismaModel>
   }
 
+  export type NestedFloatNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel> | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedFloatNullableFilter<$PrismaModel>
+    _min?: NestedFloatNullableFilter<$PrismaModel>
+    _max?: NestedFloatNullableFilter<$PrismaModel>
+  }
+
   export type NestedEnumDeliveryOrderStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.DeliveryOrderStatus | EnumDeliveryOrderStatusFieldRefInput<$PrismaModel>
     in?: $Enums.DeliveryOrderStatus[] | ListEnumDeliveryOrderStatusFieldRefInput<$PrismaModel>
@@ -47939,8 +49804,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -47968,8 +49833,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -48006,12 +49871,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -48029,12 +49894,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -48064,7 +49929,7 @@ export namespace Prisma {
     customerName?: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -48083,7 +49948,7 @@ export namespace Prisma {
     customerName?: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -48107,7 +49972,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -48121,7 +49986,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -48143,10 +50008,10 @@ export namespace Prisma {
   export type DebtSaleCreateWithoutTenantInput = {
     id?: string
     saleNumber: string
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     customer: CustomerCreateNestedOneWithoutDebtSalesInput
   }
@@ -48155,10 +50020,10 @@ export namespace Prisma {
     id?: string
     customerId: string
     saleNumber: string
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
@@ -48174,7 +50039,7 @@ export namespace Prisma {
 
   export type DebtPaymentCreateWithoutTenantInput = {
     id?: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     createdAt?: Date | string
@@ -48184,7 +50049,7 @@ export namespace Prisma {
   export type DebtPaymentUncheckedCreateWithoutTenantInput = {
     id?: string
     customerId: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     createdAt?: Date | string
@@ -48246,14 +50111,15 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     invoiceNumber?: string
     note?: string
-    total: number
-    paidTotal?: number
+    total: Decimal | DecimalJsLike | number | string
+    paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
     receivedAt?: Date | string | null
     supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
+    items?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
   }
 
   export type PurchaseOrderUncheckedCreateWithoutTenantInput = {
@@ -48265,13 +50131,14 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     invoiceNumber?: string
     note?: string
-    total: number
-    paidTotal?: number
+    total: Decimal | DecimalJsLike | number | string
+    paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
     receivedAt?: Date | string | null
+    items?: PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
   }
 
   export type PurchaseOrderCreateOrConnectWithoutTenantInput = {
@@ -48284,12 +50151,44 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type PurchaseOrderItemCreateWithoutTenantInput = {
+    id?: string
+    productName: string
+    barcode?: string
+    quantity: number
+    unitCost?: Decimal | DecimalJsLike | number | string
+    unitPrice?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    purchaseOrder: PurchaseOrderCreateNestedOneWithoutItemsInput
+  }
+
+  export type PurchaseOrderItemUncheckedCreateWithoutTenantInput = {
+    id?: string
+    purchaseOrderId: string
+    productName: string
+    barcode?: string
+    quantity: number
+    unitCost?: Decimal | DecimalJsLike | number | string
+    unitPrice?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+  }
+
+  export type PurchaseOrderItemCreateOrConnectWithoutTenantInput = {
+    where: PurchaseOrderItemWhereUniqueInput
+    create: XOR<PurchaseOrderItemCreateWithoutTenantInput, PurchaseOrderItemUncheckedCreateWithoutTenantInput>
+  }
+
+  export type PurchaseOrderItemCreateManyTenantInputEnvelope = {
+    data: PurchaseOrderItemCreateManyTenantInput | PurchaseOrderItemCreateManyTenantInput[]
+    skipDuplicates?: boolean
+  }
+
   export type SupplierPaymentCreateWithoutTenantInput = {
     id?: string
     supplierName: string
     purchaseOrderId?: string | null
     purchaseOrderNumber?: string | null
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     recordedBy: string
@@ -48305,7 +50204,7 @@ export namespace Prisma {
     supplierName: string
     purchaseOrderId?: string | null
     purchaseOrderNumber?: string | null
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     recordedBy: string
@@ -48330,14 +50229,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedByName: string
     closedByName?: string | null
     notes?: string | null
@@ -48351,14 +50250,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedById: string
     openedByName: string
     closedById?: string | null
@@ -48416,11 +50315,11 @@ export namespace Prisma {
     branchName: string
     phone: string
     address: string
-    vatRate: number
-    usdToLbpRate: number
+    vatRate: Decimal | DecimalJsLike | number | string
+    usdToLbpRate: Decimal | DecimalJsLike | number | string
     receiptFooter: string
     lowStockThreshold: number
-    deliveryFee?: number
+    deliveryFee?: Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: string
     whatsAppDriverEnabled?: boolean
     assignMode?: string
@@ -48434,11 +50333,11 @@ export namespace Prisma {
     branchName: string
     phone: string
     address: string
-    vatRate: number
-    usdToLbpRate: number
+    vatRate: Decimal | DecimalJsLike | number | string
+    usdToLbpRate: Decimal | DecimalJsLike | number | string
     receiptFooter: string
     lowStockThreshold: number
-    deliveryFee?: number
+    deliveryFee?: Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: string
     whatsAppDriverEnabled?: boolean
     assignMode?: string
@@ -48456,7 +50355,7 @@ export namespace Prisma {
     expenseNumber: string
     vendor: string
     category: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     paymentMethod: string
     invoiceNumber?: string
     note?: string
@@ -48472,7 +50371,7 @@ export namespace Prisma {
     expenseNumber: string
     vendor: string
     category: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     paymentMethod: string
     invoiceNumber?: string
     note?: string
@@ -48500,8 +50399,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierName?: string | null
     purchaseOrderNumber?: string | null
@@ -48519,8 +50418,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierId?: string | null
     supplierName?: string | null
@@ -48550,7 +50449,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
-    valueImpact: number
+    valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     product: ProductCreateNestedOneWithoutAdjustmentsInput
   }
@@ -48567,7 +50466,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
-    valueImpact: number
+    valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
@@ -48587,8 +50486,8 @@ export namespace Prisma {
     status?: $Enums.StockCountStatus
     createdAt?: Date | string
     completedAt?: Date | string | null
-    totalVariance?: number
-    totalValueImpact?: number
+    totalVariance?: Decimal | DecimalJsLike | number | string
+    totalValueImpact?: Decimal | DecimalJsLike | number | string
     lines?: StockCountLineCreateNestedManyWithoutSessionInput
   }
 
@@ -48598,8 +50497,8 @@ export namespace Prisma {
     status?: $Enums.StockCountStatus
     createdAt?: Date | string
     completedAt?: Date | string | null
-    totalVariance?: number
-    totalValueImpact?: number
+    totalVariance?: Decimal | DecimalJsLike | number | string
+    totalValueImpact?: Decimal | DecimalJsLike | number | string
     lines?: StockCountLineUncheckedCreateNestedManyWithoutSessionInput
   }
 
@@ -48616,17 +50515,17 @@ export namespace Prisma {
   export type DailyCloseCreateWithoutTenantInput = {
     id?: string
     dateKey: string
-    grossSales: number
-    refunds?: number
-    netSales: number
-    costOfGoods?: number
-    returnedCost?: number
-    grossMargin?: number
-    expenses?: number
-    supplierPayments?: number | null
-    netProfit?: number
-    cashIn?: number
-    cashOut?: number
+    grossSales: Decimal | DecimalJsLike | number | string
+    refunds?: Decimal | DecimalJsLike | number | string
+    netSales: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string
+    returnedCost?: Decimal | DecimalJsLike | number | string
+    grossMargin?: Decimal | DecimalJsLike | number | string
+    expenses?: Decimal | DecimalJsLike | number | string
+    supplierPayments?: Decimal | DecimalJsLike | number | string | null
+    netProfit?: Decimal | DecimalJsLike | number | string
+    cashIn?: Decimal | DecimalJsLike | number | string
+    cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
     createdAt?: Date | string
@@ -48635,17 +50534,17 @@ export namespace Prisma {
   export type DailyCloseUncheckedCreateWithoutTenantInput = {
     id?: string
     dateKey: string
-    grossSales: number
-    refunds?: number
-    netSales: number
-    costOfGoods?: number
-    returnedCost?: number
-    grossMargin?: number
-    expenses?: number
-    supplierPayments?: number | null
-    netProfit?: number
-    cashIn?: number
-    cashOut?: number
+    grossSales: Decimal | DecimalJsLike | number | string
+    refunds?: Decimal | DecimalJsLike | number | string
+    netSales: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string
+    returnedCost?: Decimal | DecimalJsLike | number | string
+    grossMargin?: Decimal | DecimalJsLike | number | string
+    expenses?: Decimal | DecimalJsLike | number | string
+    supplierPayments?: Decimal | DecimalJsLike | number | string | null
+    netProfit?: Decimal | DecimalJsLike | number | string
+    cashIn?: Decimal | DecimalJsLike | number | string
+    cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
     createdAt?: Date | string
@@ -48709,12 +50608,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverAssignedAt?: Date | string | null
@@ -48740,12 +50639,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverId?: string | null
@@ -48826,8 +50725,8 @@ export namespace Prisma {
     isParent?: BoolFilter<"Product"> | boolean
     variantName?: StringNullableFilter<"Product"> | string | null
     name?: StringFilter<"Product"> | string
-    price?: FloatFilter<"Product"> | number
-    cost?: FloatFilter<"Product"> | number
+    price?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFilter<"Product"> | Decimal | DecimalJsLike | number | string
     stock?: FloatFilter<"Product"> | number
     barcode?: StringNullableFilter<"Product"> | string | null
     barcodeAliases?: StringNullableListFilter<"Product">
@@ -48870,12 +50769,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFilter<"Sale"> | $Enums.SalePaymentMethod
     customerId?: StringNullableFilter<"Sale"> | string | null
     customerName?: StringNullableFilter<"Sale"> | string | null
-    subtotal?: FloatFilter<"Sale"> | number
-    discountTotal?: FloatNullableFilter<"Sale"> | number | null
-    tax?: FloatFilter<"Sale"> | number
-    total?: FloatFilter<"Sale"> | number
-    cost?: FloatFilter<"Sale"> | number
-    profit?: FloatFilter<"Sale"> | number
+    subtotal?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    discountTotal?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     cashier?: StringFilter<"Sale"> | string
     cashierId?: StringNullableFilter<"Sale"> | string | null
     shiftId?: StringNullableFilter<"Sale"> | string | null
@@ -48913,7 +50812,7 @@ export namespace Prisma {
     customerName?: StringNullableFilter<"SaleRefund"> | string | null
     method?: EnumRefundMethodFilter<"SaleRefund"> | $Enums.RefundMethod
     reason?: StringFilter<"SaleRefund"> | string
-    total?: FloatFilter<"SaleRefund"> | number
+    total?: DecimalFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string
     cashier?: StringFilter<"SaleRefund"> | string
     cashierId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftId?: StringNullableFilter<"SaleRefund"> | string | null
@@ -48946,7 +50845,7 @@ export namespace Prisma {
     name?: StringFilter<"Customer"> | string
     mobile?: StringFilter<"Customer"> | string
     pin?: StringFilter<"Customer"> | string
-    creditLimit?: FloatFilter<"Customer"> | number
+    creditLimit?: DecimalFilter<"Customer"> | Decimal | DecimalJsLike | number | string
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
@@ -48976,10 +50875,10 @@ export namespace Prisma {
     tenantId?: StringFilter<"DebtSale"> | string
     customerId?: StringFilter<"DebtSale"> | string
     saleNumber?: StringFilter<"DebtSale"> | string
-    subtotal?: FloatFilter<"DebtSale"> | number
-    discountTotal?: FloatNullableFilter<"DebtSale"> | number | null
-    tax?: FloatFilter<"DebtSale"> | number
-    total?: FloatFilter<"DebtSale"> | number
+    subtotal?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    discountTotal?: DecimalNullableFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"DebtSale"> | Date | string
   }
 
@@ -49006,7 +50905,7 @@ export namespace Prisma {
     id?: StringFilter<"DebtPayment"> | string
     tenantId?: StringFilter<"DebtPayment"> | string
     customerId?: StringFilter<"DebtPayment"> | string
-    amount?: FloatFilter<"DebtPayment"> | number
+    amount?: DecimalFilter<"DebtPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringFilter<"DebtPayment"> | string
     reference?: StringFilter<"DebtPayment"> | string
     createdAt?: DateTimeFilter<"DebtPayment"> | Date | string
@@ -49072,13 +50971,44 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFilter<"PurchaseOrder"> | $Enums.PaymentStatus
     invoiceNumber?: StringFilter<"PurchaseOrder"> | string
     note?: StringFilter<"PurchaseOrder"> | string
-    total?: FloatFilter<"PurchaseOrder"> | number
-    paidTotal?: FloatFilter<"PurchaseOrder"> | number
+    total?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFilter<"PurchaseOrder"> | Decimal | DecimalJsLike | number | string
     createdBy?: StringFilter<"PurchaseOrder"> | string
     shiftId?: StringNullableFilter<"PurchaseOrder"> | string | null
     shiftNumber?: StringNullableFilter<"PurchaseOrder"> | string | null
     createdAt?: DateTimeFilter<"PurchaseOrder"> | Date | string
     receivedAt?: DateTimeNullableFilter<"PurchaseOrder"> | Date | string | null
+  }
+
+  export type PurchaseOrderItemUpsertWithWhereUniqueWithoutTenantInput = {
+    where: PurchaseOrderItemWhereUniqueInput
+    update: XOR<PurchaseOrderItemUpdateWithoutTenantInput, PurchaseOrderItemUncheckedUpdateWithoutTenantInput>
+    create: XOR<PurchaseOrderItemCreateWithoutTenantInput, PurchaseOrderItemUncheckedCreateWithoutTenantInput>
+  }
+
+  export type PurchaseOrderItemUpdateWithWhereUniqueWithoutTenantInput = {
+    where: PurchaseOrderItemWhereUniqueInput
+    data: XOR<PurchaseOrderItemUpdateWithoutTenantInput, PurchaseOrderItemUncheckedUpdateWithoutTenantInput>
+  }
+
+  export type PurchaseOrderItemUpdateManyWithWhereWithoutTenantInput = {
+    where: PurchaseOrderItemScalarWhereInput
+    data: XOR<PurchaseOrderItemUpdateManyMutationInput, PurchaseOrderItemUncheckedUpdateManyWithoutTenantInput>
+  }
+
+  export type PurchaseOrderItemScalarWhereInput = {
+    AND?: PurchaseOrderItemScalarWhereInput | PurchaseOrderItemScalarWhereInput[]
+    OR?: PurchaseOrderItemScalarWhereInput[]
+    NOT?: PurchaseOrderItemScalarWhereInput | PurchaseOrderItemScalarWhereInput[]
+    id?: StringFilter<"PurchaseOrderItem"> | string
+    tenantId?: StringFilter<"PurchaseOrderItem"> | string
+    purchaseOrderId?: StringFilter<"PurchaseOrderItem"> | string
+    productName?: StringFilter<"PurchaseOrderItem"> | string
+    barcode?: StringFilter<"PurchaseOrderItem"> | string
+    quantity?: FloatFilter<"PurchaseOrderItem"> | number
+    unitCost?: DecimalFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"PurchaseOrderItem"> | Decimal | DecimalJsLike | number | string
   }
 
   export type SupplierPaymentUpsertWithWhereUniqueWithoutTenantInput = {
@@ -49107,7 +51037,7 @@ export namespace Prisma {
     supplierName?: StringFilter<"SupplierPayment"> | string
     purchaseOrderId?: StringNullableFilter<"SupplierPayment"> | string | null
     purchaseOrderNumber?: StringNullableFilter<"SupplierPayment"> | string | null
-    amount?: FloatFilter<"SupplierPayment"> | number
+    amount?: DecimalFilter<"SupplierPayment"> | Decimal | DecimalJsLike | number | string
     method?: StringFilter<"SupplierPayment"> | string
     reference?: StringFilter<"SupplierPayment"> | string
     recordedBy?: StringFilter<"SupplierPayment"> | string
@@ -49142,14 +51072,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFilter<"Shift"> | $Enums.ShiftStatus
     openedAt?: DateTimeFilter<"Shift"> | Date | string
     closedAt?: DateTimeNullableFilter<"Shift"> | Date | string | null
-    openingFloatUsd?: FloatFilter<"Shift"> | number
-    cashSalesUsd?: FloatNullableFilter<"Shift"> | number | null
-    cashRefundsUsd?: FloatNullableFilter<"Shift"> | number | null
-    cashExpensesUsd?: FloatNullableFilter<"Shift"> | number | null
-    supplierPaymentsUsd?: FloatNullableFilter<"Shift"> | number | null
-    expectedCashUsd?: FloatNullableFilter<"Shift"> | number | null
-    closingCashUsd?: FloatNullableFilter<"Shift"> | number | null
-    differenceUsd?: FloatNullableFilter<"Shift"> | number | null
+    openingFloatUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: DecimalNullableFilter<"Shift"> | Decimal | DecimalJsLike | number | string | null
     openedById?: StringFilter<"Shift"> | string
     openedByName?: StringFilter<"Shift"> | string
     closedById?: StringNullableFilter<"Shift"> | string | null
@@ -49206,11 +51136,11 @@ export namespace Prisma {
     branchName?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
-    vatRate?: FloatFieldUpdateOperationsInput | number
-    usdToLbpRate?: FloatFieldUpdateOperationsInput | number
+    vatRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
     assignMode?: StringFieldUpdateOperationsInput | string
@@ -49224,11 +51154,11 @@ export namespace Prisma {
     branchName?: StringFieldUpdateOperationsInput | string
     phone?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
-    vatRate?: FloatFieldUpdateOperationsInput | number
-    usdToLbpRate?: FloatFieldUpdateOperationsInput | number
+    vatRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
     assignMode?: StringFieldUpdateOperationsInput | string
@@ -49261,7 +51191,7 @@ export namespace Prisma {
     expenseNumber?: StringFilter<"Expense"> | string
     vendor?: StringFilter<"Expense"> | string
     category?: StringFilter<"Expense"> | string
-    amount?: FloatFilter<"Expense"> | number
+    amount?: DecimalFilter<"Expense"> | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFilter<"Expense"> | string
     invoiceNumber?: StringFilter<"Expense"> | string
     note?: StringFilter<"Expense"> | string
@@ -49300,8 +51230,8 @@ export namespace Prisma {
     barcode?: StringFilter<"InventoryBatch"> | string
     initialQuantity?: FloatFilter<"InventoryBatch"> | number
     quantityRemaining?: FloatFilter<"InventoryBatch"> | number
-    unitCost?: FloatFilter<"InventoryBatch"> | number
-    unitPrice?: FloatFilter<"InventoryBatch"> | number
+    unitCost?: DecimalFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFilter<"InventoryBatch"> | Decimal | DecimalJsLike | number | string
     expiryDate?: StringNullableFilter<"InventoryBatch"> | string | null
     supplierId?: StringNullableFilter<"InventoryBatch"> | string | null
     supplierName?: StringNullableFilter<"InventoryBatch"> | string | null
@@ -49342,7 +51272,7 @@ export namespace Prisma {
     reason?: StringFilter<"StockAdjustment"> | string
     note?: StringNullableFilter<"StockAdjustment"> | string | null
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
-    valueImpact?: FloatFilter<"StockAdjustment"> | number
+    valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"StockAdjustment"> | Date | string
   }
 
@@ -49372,8 +51302,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusFilter<"StockCountSession"> | $Enums.StockCountStatus
     createdAt?: DateTimeFilter<"StockCountSession"> | Date | string
     completedAt?: DateTimeNullableFilter<"StockCountSession"> | Date | string | null
-    totalVariance?: FloatFilter<"StockCountSession"> | number
-    totalValueImpact?: FloatFilter<"StockCountSession"> | number
+    totalVariance?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
   }
 
   export type DailyCloseUpsertWithWhereUniqueWithoutTenantInput = {
@@ -49399,17 +51329,17 @@ export namespace Prisma {
     id?: StringFilter<"DailyClose"> | string
     tenantId?: StringFilter<"DailyClose"> | string
     dateKey?: StringFilter<"DailyClose"> | string
-    grossSales?: FloatFilter<"DailyClose"> | number
-    refunds?: FloatFilter<"DailyClose"> | number
-    netSales?: FloatFilter<"DailyClose"> | number
-    costOfGoods?: FloatFilter<"DailyClose"> | number
-    returnedCost?: FloatFilter<"DailyClose"> | number
-    grossMargin?: FloatFilter<"DailyClose"> | number
-    expenses?: FloatFilter<"DailyClose"> | number
-    supplierPayments?: FloatNullableFilter<"DailyClose"> | number | null
-    netProfit?: FloatFilter<"DailyClose"> | number
-    cashIn?: FloatFilter<"DailyClose"> | number
-    cashOut?: FloatFilter<"DailyClose"> | number
+    grossSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    refunds?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    netSales?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    returnedCost?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    grossMargin?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    expenses?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    supplierPayments?: DecimalNullableFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string | null
+    netProfit?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    cashIn?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
+    cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
     closedBy?: StringFilter<"DailyClose"> | string
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
@@ -49480,12 +51410,12 @@ export namespace Prisma {
     locationLat?: FloatNullableFilter<"DeliveryOrder"> | number | null
     locationLng?: FloatNullableFilter<"DeliveryOrder"> | number | null
     deliveryNote?: StringFilter<"DeliveryOrder"> | string
-    itemsTotal?: FloatFilter<"DeliveryOrder"> | number
-    deliveryFee?: FloatFilter<"DeliveryOrder"> | number
-    total?: FloatFilter<"DeliveryOrder"> | number
+    itemsTotal?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFilter<"DeliveryOrder"> | string
-    paidAmount?: FloatFilter<"DeliveryOrder"> | number
-    changeRequired?: FloatFilter<"DeliveryOrder"> | number
+    paidAmount?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFilter<"DeliveryOrder"> | Decimal | DecimalJsLike | number | string
     assignedTo?: StringNullableFilter<"DeliveryOrder"> | string | null
     assignedName?: StringNullableFilter<"DeliveryOrder"> | string | null
     driverId?: StringNullableFilter<"DeliveryOrder"> | string | null
@@ -49513,6 +51443,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -49541,6 +51472,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -49565,14 +51497,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedByName: string
     closedByName?: string | null
     notes?: string | null
@@ -49587,14 +51519,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedByName: string
     closedById?: string | null
     closedByName?: string | null
@@ -49617,14 +51549,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedByName: string
     closedByName?: string | null
     notes?: string | null
@@ -49639,14 +51571,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedById: string
     openedByName: string
     closedByName?: string | null
@@ -49668,7 +51600,7 @@ export namespace Prisma {
     expenseNumber: string
     vendor: string
     category: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     paymentMethod: string
     invoiceNumber?: string
     note?: string
@@ -49685,7 +51617,7 @@ export namespace Prisma {
     expenseNumber: string
     vendor: string
     category: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     paymentMethod: string
     invoiceNumber?: string
     note?: string
@@ -49715,12 +51647,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverAssignedAt?: Date | string | null
@@ -49747,12 +51679,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverAssignedAt?: Date | string | null
@@ -49801,6 +51733,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -49829,6 +51762,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -49922,6 +51856,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -49950,6 +51885,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -49994,6 +51930,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -50022,6 +51959,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -50049,6 +51987,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -50077,6 +52016,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -50099,8 +52039,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -50129,8 +52069,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -50159,8 +52099,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -50188,8 +52128,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -50227,8 +52167,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierName?: string | null
     purchaseOrderNumber?: string | null
@@ -50246,8 +52186,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierId?: string | null
     supplierName?: string | null
@@ -50277,7 +52217,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
-    valueImpact: number
+    valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutStockAdjustmentsInput
   }
@@ -50294,7 +52234,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
-    valueImpact: number
+    valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
@@ -50316,7 +52256,7 @@ export namespace Prisma {
     expectedQuantity: number
     countedQuantity?: number | null
     variance?: number
-    valueImpact?: number
+    valueImpact?: Decimal | DecimalJsLike | number | string
     session: StockCountSessionCreateNestedOneWithoutLinesInput
   }
 
@@ -50329,7 +52269,7 @@ export namespace Prisma {
     expectedQuantity: number
     countedQuantity?: number | null
     variance?: number
-    valueImpact?: number
+    valueImpact?: Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineCreateOrConnectWithoutProductInput = {
@@ -50368,6 +52308,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -50396,6 +52337,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -50424,8 +52366,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -50454,8 +52396,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -50552,7 +52494,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFilter<"StockCountLine"> | number
     countedQuantity?: FloatNullableFilter<"StockCountLine"> | number | null
     variance?: FloatFilter<"StockCountLine"> | number
-    valueImpact?: FloatFilter<"StockCountLine"> | number
+    valueImpact?: DecimalFilter<"StockCountLine"> | Decimal | DecimalJsLike | number | string
   }
 
   export type TenantCreateWithoutSalesInput = {
@@ -50570,6 +52512,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -50598,6 +52541,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -50622,9 +52566,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
-    cost?: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
   }
 
   export type SaleItemUncheckedCreateWithoutSaleInput = {
@@ -50633,9 +52577,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
-    cost?: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
   }
 
   export type SaleItemCreateOrConnectWithoutSaleInput = {
@@ -50656,7 +52600,7 @@ export namespace Prisma {
     customerName?: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -50675,7 +52619,7 @@ export namespace Prisma {
     customerName?: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -50698,12 +52642,12 @@ export namespace Prisma {
     id?: string
     currency: string
     exchangeRate: number
-    paidUsd?: number
-    paidLbp?: number
-    paidTotalUsd: number
-    paidTotalLbp: number
-    changeUsd?: number
-    changeLbp?: number
+    paidUsd?: Decimal | DecimalJsLike | number | string
+    paidLbp?: Decimal | DecimalJsLike | number | string
+    paidTotalUsd: Decimal | DecimalJsLike | number | string
+    paidTotalLbp: Decimal | DecimalJsLike | number | string
+    changeUsd?: Decimal | DecimalJsLike | number | string
+    changeLbp?: Decimal | DecimalJsLike | number | string
     changeCurrency: string
   }
 
@@ -50711,12 +52655,12 @@ export namespace Prisma {
     id?: string
     currency: string
     exchangeRate: number
-    paidUsd?: number
-    paidLbp?: number
-    paidTotalUsd: number
-    paidTotalLbp: number
-    changeUsd?: number
-    changeLbp?: number
+    paidUsd?: Decimal | DecimalJsLike | number | string
+    paidLbp?: Decimal | DecimalJsLike | number | string
+    paidTotalUsd: Decimal | DecimalJsLike | number | string
+    paidTotalLbp: Decimal | DecimalJsLike | number | string
+    changeUsd?: Decimal | DecimalJsLike | number | string
+    changeLbp?: Decimal | DecimalJsLike | number | string
     changeCurrency: string
   }
 
@@ -50751,6 +52695,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -50779,6 +52724,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -50818,9 +52764,9 @@ export namespace Prisma {
     productName?: StringFilter<"SaleItem"> | string
     barcode?: StringFilter<"SaleItem"> | string
     quantity?: FloatFilter<"SaleItem"> | number
-    unitPrice?: FloatFilter<"SaleItem"> | number
-    total?: FloatFilter<"SaleItem"> | number
-    cost?: FloatFilter<"SaleItem"> | number
+    unitPrice?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
   }
 
   export type SaleRefundUpsertWithWhereUniqueWithoutSaleInput = {
@@ -50854,12 +52800,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: FloatFieldUpdateOperationsInput | number
-    paidUsd?: FloatFieldUpdateOperationsInput | number
-    paidLbp?: FloatFieldUpdateOperationsInput | number
-    paidTotalUsd?: FloatFieldUpdateOperationsInput | number
-    paidTotalLbp?: FloatFieldUpdateOperationsInput | number
-    changeUsd?: FloatFieldUpdateOperationsInput | number
-    changeLbp?: FloatFieldUpdateOperationsInput | number
+    paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     changeCurrency?: StringFieldUpdateOperationsInput | string
   }
 
@@ -50867,12 +52813,12 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     exchangeRate?: FloatFieldUpdateOperationsInput | number
-    paidUsd?: FloatFieldUpdateOperationsInput | number
-    paidLbp?: FloatFieldUpdateOperationsInput | number
-    paidTotalUsd?: FloatFieldUpdateOperationsInput | number
-    paidTotalLbp?: FloatFieldUpdateOperationsInput | number
-    changeUsd?: FloatFieldUpdateOperationsInput | number
-    changeLbp?: FloatFieldUpdateOperationsInput | number
+    paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotalLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     changeCurrency?: StringFieldUpdateOperationsInput | string
   }
 
@@ -50882,12 +52828,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -50906,12 +52852,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -50944,12 +52890,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50968,12 +52914,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -50990,12 +52936,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -51014,12 +52960,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -51052,12 +52998,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -51076,12 +53022,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -51107,6 +53053,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -51135,6 +53082,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -51159,12 +53107,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -51183,12 +53131,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -51210,9 +53158,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    cost?: number | null
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string | null
+    total: Decimal | DecimalJsLike | number | string
   }
 
   export type RefundItemUncheckedCreateWithoutRefundInput = {
@@ -51221,9 +53169,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    cost?: number | null
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string | null
+    total: Decimal | DecimalJsLike | number | string
   }
 
   export type RefundItemCreateOrConnectWithoutRefundInput = {
@@ -51262,6 +53210,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -51290,6 +53239,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -51320,12 +53270,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -51344,12 +53294,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -51386,9 +53336,9 @@ export namespace Prisma {
     productName?: StringFilter<"RefundItem"> | string
     barcode?: StringFilter<"RefundItem"> | string
     quantity?: FloatFilter<"RefundItem"> | number
-    unitPrice?: FloatFilter<"RefundItem"> | number
-    cost?: FloatNullableFilter<"RefundItem"> | number | null
-    total?: FloatFilter<"RefundItem"> | number
+    unitPrice?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
+    cost?: DecimalNullableFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string | null
+    total?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
   }
 
   export type SaleRefundCreateWithoutItemsInput = {
@@ -51399,7 +53349,7 @@ export namespace Prisma {
     customerName?: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -51419,7 +53369,7 @@ export namespace Prisma {
     customerName?: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -51451,7 +53401,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -51471,7 +53421,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -51494,6 +53444,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -51522,6 +53473,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -51543,10 +53495,10 @@ export namespace Prisma {
   export type DebtSaleCreateWithoutCustomerInput = {
     id?: string
     saleNumber: string
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutDebtSalesInput
   }
@@ -51555,10 +53507,10 @@ export namespace Prisma {
     id?: string
     tenantId: string
     saleNumber: string
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
@@ -51574,7 +53526,7 @@ export namespace Prisma {
 
   export type DebtPaymentCreateWithoutCustomerInput = {
     id?: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     createdAt?: Date | string
@@ -51584,7 +53536,7 @@ export namespace Prisma {
   export type DebtPaymentUncheckedCreateWithoutCustomerInput = {
     id?: string
     tenantId: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     createdAt?: Date | string
@@ -51610,12 +53562,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverAssignedAt?: Date | string | null
@@ -51641,12 +53593,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverId?: string | null
@@ -51696,6 +53648,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -51724,6 +53677,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -51800,6 +53754,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -51828,6 +53783,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -51851,7 +53807,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -51866,7 +53822,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -51905,6 +53861,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -51933,6 +53890,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -51962,7 +53920,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -51977,7 +53935,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -52000,6 +53958,7 @@ export namespace Prisma {
     debtSales?: DebtSaleCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -52028,6 +53987,7 @@ export namespace Prisma {
     debtSales?: DebtSaleUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -52051,7 +54011,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -52066,7 +54026,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -52105,6 +54065,7 @@ export namespace Prisma {
     debtSales?: DebtSaleUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -52133,6 +54094,7 @@ export namespace Prisma {
     debtSales?: DebtSaleUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -52162,7 +54124,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -52177,7 +54139,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -52200,6 +54162,7 @@ export namespace Prisma {
     debtSales?: DebtSaleCreateNestedManyWithoutTenantInput
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -52228,6 +54191,7 @@ export namespace Prisma {
     debtSales?: DebtSaleUncheckedCreateNestedManyWithoutTenantInput
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -52254,14 +54218,15 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     invoiceNumber?: string
     note?: string
-    total: number
-    paidTotal?: number
+    total: Decimal | DecimalJsLike | number | string
+    paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
     receivedAt?: Date | string | null
     tenant: TenantCreateNestedOneWithoutPurchaseOrdersInput
+    items?: PurchaseOrderItemCreateNestedManyWithoutPurchaseOrderInput
   }
 
   export type PurchaseOrderUncheckedCreateWithoutSupplierInput = {
@@ -52273,13 +54238,14 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     invoiceNumber?: string
     note?: string
-    total: number
-    paidTotal?: number
+    total: Decimal | DecimalJsLike | number | string
+    paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
     receivedAt?: Date | string | null
+    items?: PurchaseOrderItemUncheckedCreateNestedManyWithoutPurchaseOrderInput
   }
 
   export type PurchaseOrderCreateOrConnectWithoutSupplierInput = {
@@ -52297,7 +54263,7 @@ export namespace Prisma {
     supplierName: string
     purchaseOrderId?: string | null
     purchaseOrderNumber?: string | null
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     recordedBy: string
@@ -52313,7 +54279,7 @@ export namespace Prisma {
     supplierName: string
     purchaseOrderId?: string | null
     purchaseOrderNumber?: string | null
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     recordedBy: string
@@ -52339,8 +54305,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierName?: string | null
     purchaseOrderNumber?: string | null
@@ -52359,8 +54325,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierName?: string | null
     purchaseOrderNumber?: string | null
@@ -52404,6 +54370,7 @@ export namespace Prisma {
     debtSales?: DebtSaleUpdateManyWithoutTenantNestedInput
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -52432,6 +54399,7 @@ export namespace Prisma {
     debtSales?: DebtSaleUncheckedUpdateManyWithoutTenantNestedInput
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -52508,6 +54476,7 @@ export namespace Prisma {
     debtSales?: DebtSaleCreateNestedManyWithoutTenantInput
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -52536,6 +54505,7 @@ export namespace Prisma {
     debtSales?: DebtSaleUncheckedCreateNestedManyWithoutTenantInput
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -52587,6 +54557,38 @@ export namespace Prisma {
     create: XOR<SupplierCreateWithoutPurchaseOrdersInput, SupplierUncheckedCreateWithoutPurchaseOrdersInput>
   }
 
+  export type PurchaseOrderItemCreateWithoutPurchaseOrderInput = {
+    id?: string
+    productName: string
+    barcode?: string
+    quantity: number
+    unitCost?: Decimal | DecimalJsLike | number | string
+    unitPrice?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    tenant: TenantCreateNestedOneWithoutPurchaseOrderItemsInput
+  }
+
+  export type PurchaseOrderItemUncheckedCreateWithoutPurchaseOrderInput = {
+    id?: string
+    tenantId: string
+    productName: string
+    barcode?: string
+    quantity: number
+    unitCost?: Decimal | DecimalJsLike | number | string
+    unitPrice?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+  }
+
+  export type PurchaseOrderItemCreateOrConnectWithoutPurchaseOrderInput = {
+    where: PurchaseOrderItemWhereUniqueInput
+    create: XOR<PurchaseOrderItemCreateWithoutPurchaseOrderInput, PurchaseOrderItemUncheckedCreateWithoutPurchaseOrderInput>
+  }
+
+  export type PurchaseOrderItemCreateManyPurchaseOrderInputEnvelope = {
+    data: PurchaseOrderItemCreateManyPurchaseOrderInput | PurchaseOrderItemCreateManyPurchaseOrderInput[]
+    skipDuplicates?: boolean
+  }
+
   export type TenantUpsertWithoutPurchaseOrdersInput = {
     update: XOR<TenantUpdateWithoutPurchaseOrdersInput, TenantUncheckedUpdateWithoutPurchaseOrdersInput>
     create: XOR<TenantCreateWithoutPurchaseOrdersInput, TenantUncheckedCreateWithoutPurchaseOrdersInput>
@@ -52613,6 +54615,7 @@ export namespace Prisma {
     debtSales?: DebtSaleUpdateManyWithoutTenantNestedInput
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -52641,6 +54644,7 @@ export namespace Prisma {
     debtSales?: DebtSaleUncheckedUpdateManyWithoutTenantNestedInput
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -52693,6 +54697,246 @@ export namespace Prisma {
     inventoryBatches?: InventoryBatchUncheckedUpdateManyWithoutSupplierNestedInput
   }
 
+  export type PurchaseOrderItemUpsertWithWhereUniqueWithoutPurchaseOrderInput = {
+    where: PurchaseOrderItemWhereUniqueInput
+    update: XOR<PurchaseOrderItemUpdateWithoutPurchaseOrderInput, PurchaseOrderItemUncheckedUpdateWithoutPurchaseOrderInput>
+    create: XOR<PurchaseOrderItemCreateWithoutPurchaseOrderInput, PurchaseOrderItemUncheckedCreateWithoutPurchaseOrderInput>
+  }
+
+  export type PurchaseOrderItemUpdateWithWhereUniqueWithoutPurchaseOrderInput = {
+    where: PurchaseOrderItemWhereUniqueInput
+    data: XOR<PurchaseOrderItemUpdateWithoutPurchaseOrderInput, PurchaseOrderItemUncheckedUpdateWithoutPurchaseOrderInput>
+  }
+
+  export type PurchaseOrderItemUpdateManyWithWhereWithoutPurchaseOrderInput = {
+    where: PurchaseOrderItemScalarWhereInput
+    data: XOR<PurchaseOrderItemUpdateManyMutationInput, PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderInput>
+  }
+
+  export type TenantCreateWithoutPurchaseOrderItemsInput = {
+    id?: string
+    name: string
+    subdomain: string
+    suspended?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: StaffUserCreateNestedManyWithoutTenantInput
+    products?: ProductCreateNestedManyWithoutTenantInput
+    sales?: SaleCreateNestedManyWithoutTenantInput
+    refunds?: SaleRefundCreateNestedManyWithoutTenantInput
+    customers?: CustomerCreateNestedManyWithoutTenantInput
+    debtSales?: DebtSaleCreateNestedManyWithoutTenantInput
+    debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
+    suppliers?: SupplierCreateNestedManyWithoutTenantInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
+    shifts?: ShiftCreateNestedManyWithoutTenantInput
+    auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
+    settings?: AppSettingsCreateNestedOneWithoutTenantInput
+    expenses?: ExpenseCreateNestedManyWithoutTenantInput
+    inventoryBatches?: InventoryBatchCreateNestedManyWithoutTenantInput
+    stockAdjustments?: StockAdjustmentCreateNestedManyWithoutTenantInput
+    stockCounts?: StockCountSessionCreateNestedManyWithoutTenantInput
+    dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
+    syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantUncheckedCreateWithoutPurchaseOrderItemsInput = {
+    id?: string
+    name: string
+    subdomain: string
+    suspended?: boolean
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
+    products?: ProductUncheckedCreateNestedManyWithoutTenantInput
+    sales?: SaleUncheckedCreateNestedManyWithoutTenantInput
+    refunds?: SaleRefundUncheckedCreateNestedManyWithoutTenantInput
+    customers?: CustomerUncheckedCreateNestedManyWithoutTenantInput
+    debtSales?: DebtSaleUncheckedCreateNestedManyWithoutTenantInput
+    debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
+    suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
+    shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
+    auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
+    settings?: AppSettingsUncheckedCreateNestedOneWithoutTenantInput
+    expenses?: ExpenseUncheckedCreateNestedManyWithoutTenantInput
+    inventoryBatches?: InventoryBatchUncheckedCreateNestedManyWithoutTenantInput
+    stockAdjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutTenantInput
+    stockCounts?: StockCountSessionUncheckedCreateNestedManyWithoutTenantInput
+    dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
+    syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantCreateOrConnectWithoutPurchaseOrderItemsInput = {
+    where: TenantWhereUniqueInput
+    create: XOR<TenantCreateWithoutPurchaseOrderItemsInput, TenantUncheckedCreateWithoutPurchaseOrderItemsInput>
+  }
+
+  export type PurchaseOrderCreateWithoutItemsInput = {
+    id?: string
+    poNumber: string
+    supplierName: string
+    status?: $Enums.PurchaseOrderStatus
+    paymentStatus?: $Enums.PaymentStatus
+    invoiceNumber?: string
+    note?: string
+    total: Decimal | DecimalJsLike | number | string
+    paidTotal?: Decimal | DecimalJsLike | number | string
+    createdBy: string
+    shiftId?: string | null
+    shiftNumber?: string | null
+    createdAt?: Date | string
+    receivedAt?: Date | string | null
+    tenant: TenantCreateNestedOneWithoutPurchaseOrdersInput
+    supplier: SupplierCreateNestedOneWithoutPurchaseOrdersInput
+  }
+
+  export type PurchaseOrderUncheckedCreateWithoutItemsInput = {
+    id?: string
+    tenantId: string
+    poNumber: string
+    supplierId: string
+    supplierName: string
+    status?: $Enums.PurchaseOrderStatus
+    paymentStatus?: $Enums.PaymentStatus
+    invoiceNumber?: string
+    note?: string
+    total: Decimal | DecimalJsLike | number | string
+    paidTotal?: Decimal | DecimalJsLike | number | string
+    createdBy: string
+    shiftId?: string | null
+    shiftNumber?: string | null
+    createdAt?: Date | string
+    receivedAt?: Date | string | null
+  }
+
+  export type PurchaseOrderCreateOrConnectWithoutItemsInput = {
+    where: PurchaseOrderWhereUniqueInput
+    create: XOR<PurchaseOrderCreateWithoutItemsInput, PurchaseOrderUncheckedCreateWithoutItemsInput>
+  }
+
+  export type TenantUpsertWithoutPurchaseOrderItemsInput = {
+    update: XOR<TenantUpdateWithoutPurchaseOrderItemsInput, TenantUncheckedUpdateWithoutPurchaseOrderItemsInput>
+    create: XOR<TenantCreateWithoutPurchaseOrderItemsInput, TenantUncheckedCreateWithoutPurchaseOrderItemsInput>
+    where?: TenantWhereInput
+  }
+
+  export type TenantUpdateToOneWithWhereWithoutPurchaseOrderItemsInput = {
+    where?: TenantWhereInput
+    data: XOR<TenantUpdateWithoutPurchaseOrderItemsInput, TenantUncheckedUpdateWithoutPurchaseOrderItemsInput>
+  }
+
+  export type TenantUpdateWithoutPurchaseOrderItemsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: StaffUserUpdateManyWithoutTenantNestedInput
+    products?: ProductUpdateManyWithoutTenantNestedInput
+    sales?: SaleUpdateManyWithoutTenantNestedInput
+    refunds?: SaleRefundUpdateManyWithoutTenantNestedInput
+    customers?: CustomerUpdateManyWithoutTenantNestedInput
+    debtSales?: DebtSaleUpdateManyWithoutTenantNestedInput
+    debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
+    suppliers?: SupplierUpdateManyWithoutTenantNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
+    shifts?: ShiftUpdateManyWithoutTenantNestedInput
+    auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
+    settings?: AppSettingsUpdateOneWithoutTenantNestedInput
+    expenses?: ExpenseUpdateManyWithoutTenantNestedInput
+    inventoryBatches?: InventoryBatchUpdateManyWithoutTenantNestedInput
+    stockAdjustments?: StockAdjustmentUpdateManyWithoutTenantNestedInput
+    stockCounts?: StockCountSessionUpdateManyWithoutTenantNestedInput
+    dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
+    syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantUncheckedUpdateWithoutPurchaseOrderItemsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
+    products?: ProductUncheckedUpdateManyWithoutTenantNestedInput
+    sales?: SaleUncheckedUpdateManyWithoutTenantNestedInput
+    refunds?: SaleRefundUncheckedUpdateManyWithoutTenantNestedInput
+    customers?: CustomerUncheckedUpdateManyWithoutTenantNestedInput
+    debtSales?: DebtSaleUncheckedUpdateManyWithoutTenantNestedInput
+    debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
+    auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
+    settings?: AppSettingsUncheckedUpdateOneWithoutTenantNestedInput
+    expenses?: ExpenseUncheckedUpdateManyWithoutTenantNestedInput
+    inventoryBatches?: InventoryBatchUncheckedUpdateManyWithoutTenantNestedInput
+    stockAdjustments?: StockAdjustmentUncheckedUpdateManyWithoutTenantNestedInput
+    stockCounts?: StockCountSessionUncheckedUpdateManyWithoutTenantNestedInput
+    dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
+    syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+  }
+
+  export type PurchaseOrderUpsertWithoutItemsInput = {
+    update: XOR<PurchaseOrderUpdateWithoutItemsInput, PurchaseOrderUncheckedUpdateWithoutItemsInput>
+    create: XOR<PurchaseOrderCreateWithoutItemsInput, PurchaseOrderUncheckedCreateWithoutItemsInput>
+    where?: PurchaseOrderWhereInput
+  }
+
+  export type PurchaseOrderUpdateToOneWithWhereWithoutItemsInput = {
+    where?: PurchaseOrderWhereInput
+    data: XOR<PurchaseOrderUpdateWithoutItemsInput, PurchaseOrderUncheckedUpdateWithoutItemsInput>
+  }
+
+  export type PurchaseOrderUpdateWithoutItemsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    poNumber?: StringFieldUpdateOperationsInput | string
+    supplierName?: StringFieldUpdateOperationsInput | string
+    status?: EnumPurchaseOrderStatusFieldUpdateOperationsInput | $Enums.PurchaseOrderStatus
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdBy?: StringFieldUpdateOperationsInput | string
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    receivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    tenant?: TenantUpdateOneRequiredWithoutPurchaseOrdersNestedInput
+    supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
+  }
+
+  export type PurchaseOrderUncheckedUpdateWithoutItemsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    poNumber?: StringFieldUpdateOperationsInput | string
+    supplierId?: StringFieldUpdateOperationsInput | string
+    supplierName?: StringFieldUpdateOperationsInput | string
+    status?: EnumPurchaseOrderStatusFieldUpdateOperationsInput | $Enums.PurchaseOrderStatus
+    paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
+    invoiceNumber?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    createdBy?: StringFieldUpdateOperationsInput | string
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    receivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
   export type TenantCreateWithoutSupplierPaymentsInput = {
     id?: string
     name: string
@@ -52709,6 +54953,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
     settings?: AppSettingsCreateNestedOneWithoutTenantInput
@@ -52737,6 +54982,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
     settings?: AppSettingsUncheckedCreateNestedOneWithoutTenantInput
@@ -52814,6 +55060,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
     settings?: AppSettingsUpdateOneWithoutTenantNestedInput
@@ -52842,6 +55089,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
     settings?: AppSettingsUncheckedUpdateOneWithoutTenantNestedInput
@@ -52909,6 +55157,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
     settings?: AppSettingsCreateNestedOneWithoutTenantInput
@@ -52937,6 +55186,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
     settings?: AppSettingsUncheckedCreateNestedOneWithoutTenantInput
@@ -53051,6 +55301,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
     settings?: AppSettingsUpdateOneWithoutTenantNestedInput
@@ -53079,6 +55330,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
     settings?: AppSettingsUncheckedUpdateOneWithoutTenantNestedInput
@@ -53189,6 +55441,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     settings?: AppSettingsCreateNestedOneWithoutTenantInput
@@ -53217,6 +55470,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     settings?: AppSettingsUncheckedCreateNestedOneWithoutTenantInput
@@ -53261,6 +55515,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     settings?: AppSettingsUpdateOneWithoutTenantNestedInput
@@ -53289,6 +55544,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     settings?: AppSettingsUncheckedUpdateOneWithoutTenantNestedInput
@@ -53317,6 +55573,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -53345,6 +55602,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -53424,6 +55682,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -53452,6 +55711,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -53521,6 +55781,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -53549,6 +55810,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -53570,8 +55832,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -53600,8 +55862,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -53686,6 +55948,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -53714,6 +55977,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -53741,8 +56005,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -53771,8 +56035,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -53847,6 +56111,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -53875,6 +56140,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -53896,8 +56162,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -53926,8 +56192,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -53979,6 +56245,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -54007,6 +56274,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -54034,8 +56302,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -54064,8 +56332,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -54101,6 +56369,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -54129,6 +56398,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -54154,7 +56424,7 @@ export namespace Prisma {
     expectedQuantity: number
     countedQuantity?: number | null
     variance?: number
-    valueImpact?: number
+    valueImpact?: Decimal | DecimalJsLike | number | string
     product: ProductCreateNestedOneWithoutStockCountLinesInput
   }
 
@@ -54167,7 +56437,7 @@ export namespace Prisma {
     expectedQuantity: number
     countedQuantity?: number | null
     variance?: number
-    valueImpact?: number
+    valueImpact?: Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineCreateOrConnectWithoutSessionInput = {
@@ -54207,6 +56477,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -54235,6 +56506,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -54269,8 +56541,8 @@ export namespace Prisma {
     status?: $Enums.StockCountStatus
     createdAt?: Date | string
     completedAt?: Date | string | null
-    totalVariance?: number
-    totalValueImpact?: number
+    totalVariance?: Decimal | DecimalJsLike | number | string
+    totalValueImpact?: Decimal | DecimalJsLike | number | string
     tenant: TenantCreateNestedOneWithoutStockCountsInput
   }
 
@@ -54281,8 +56553,8 @@ export namespace Prisma {
     status?: $Enums.StockCountStatus
     createdAt?: Date | string
     completedAt?: Date | string | null
-    totalVariance?: number
-    totalValueImpact?: number
+    totalVariance?: Decimal | DecimalJsLike | number | string
+    totalValueImpact?: Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountSessionCreateOrConnectWithoutLinesInput = {
@@ -54294,8 +56566,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -54324,8 +56596,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -54367,8 +56639,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusFieldUpdateOperationsInput | $Enums.StockCountStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    totalVariance?: FloatFieldUpdateOperationsInput | number
-    totalValueImpact?: FloatFieldUpdateOperationsInput | number
+    totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     tenant?: TenantUpdateOneRequiredWithoutStockCountsNestedInput
   }
 
@@ -54379,8 +56651,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusFieldUpdateOperationsInput | $Enums.StockCountStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    totalVariance?: FloatFieldUpdateOperationsInput | number
-    totalValueImpact?: FloatFieldUpdateOperationsInput | number
+    totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type ProductUpsertWithoutStockCountLinesInput = {
@@ -54398,8 +56670,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -54428,8 +56700,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -54465,6 +56737,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -54493,6 +56766,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -54515,7 +56789,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -54530,7 +56804,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -54584,8 +56858,8 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderItemUncheckedCreateWithoutDeliveryOrderInput = {
@@ -54594,8 +56868,8 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderItemCreateOrConnectWithoutDeliveryOrderInput = {
@@ -54635,6 +56909,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -54663,6 +56938,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -54691,7 +56967,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -54706,7 +56982,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -54781,8 +57057,8 @@ export namespace Prisma {
     productName?: StringFilter<"DeliveryOrderItem"> | string
     barcode?: StringFilter<"DeliveryOrderItem"> | string
     quantity?: FloatFilter<"DeliveryOrderItem"> | number
-    unitPrice?: FloatFilter<"DeliveryOrderItem"> | number
-    total?: FloatFilter<"DeliveryOrderItem"> | number
+    unitPrice?: DecimalFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string
+    total?: DecimalFilter<"DeliveryOrderItem"> | Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderCreateWithoutItemsInput = {
@@ -54795,12 +57071,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverAssignedAt?: Date | string | null
@@ -54827,12 +57103,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverId?: string | null
@@ -54871,12 +57147,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -54903,12 +57179,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -54937,6 +57213,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -54965,6 +57242,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -55009,6 +57287,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -55037,6 +57316,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -55065,6 +57345,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
     suppliers?: SupplierCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
     shifts?: ShiftCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
@@ -55093,6 +57374,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
     suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
     shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
     auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
@@ -55137,6 +57419,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
@@ -55165,6 +57448,7 @@ export namespace Prisma {
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
     suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
     shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
     auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
@@ -55194,8 +57478,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -55218,12 +57502,12 @@ export namespace Prisma {
     paymentMethod: $Enums.SalePaymentMethod
     customerId?: string | null
     customerName?: string | null
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
-    cost?: number
-    profit?: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
+    profit?: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -55241,7 +57525,7 @@ export namespace Prisma {
     customerName?: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -55254,7 +57538,7 @@ export namespace Prisma {
     name: string
     mobile: string
     pin?: string
-    creditLimit?: number
+    creditLimit?: Decimal | DecimalJsLike | number | string
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -55264,17 +57548,17 @@ export namespace Prisma {
     id?: string
     customerId: string
     saleNumber: string
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
   export type DebtPaymentCreateManyTenantInput = {
     id?: string
     customerId: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     createdAt?: Date | string
@@ -55300,13 +57584,24 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     invoiceNumber?: string
     note?: string
-    total: number
-    paidTotal?: number
+    total: Decimal | DecimalJsLike | number | string
+    paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
     shiftId?: string | null
     shiftNumber?: string | null
     createdAt?: Date | string
     receivedAt?: Date | string | null
+  }
+
+  export type PurchaseOrderItemCreateManyTenantInput = {
+    id?: string
+    purchaseOrderId: string
+    productName: string
+    barcode?: string
+    quantity: number
+    unitCost?: Decimal | DecimalJsLike | number | string
+    unitPrice?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
   }
 
   export type SupplierPaymentCreateManyTenantInput = {
@@ -55315,7 +57610,7 @@ export namespace Prisma {
     supplierName: string
     purchaseOrderId?: string | null
     purchaseOrderNumber?: string | null
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     recordedBy: string
@@ -55330,14 +57625,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedById: string
     openedByName: string
     closedById?: string | null
@@ -55362,7 +57657,7 @@ export namespace Prisma {
     expenseNumber: string
     vendor: string
     category: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     paymentMethod: string
     invoiceNumber?: string
     note?: string
@@ -55381,8 +57676,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierId?: string | null
     supplierName?: string | null
@@ -55403,7 +57698,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
-    valueImpact: number
+    valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
@@ -55413,24 +57708,24 @@ export namespace Prisma {
     status?: $Enums.StockCountStatus
     createdAt?: Date | string
     completedAt?: Date | string | null
-    totalVariance?: number
-    totalValueImpact?: number
+    totalVariance?: Decimal | DecimalJsLike | number | string
+    totalValueImpact?: Decimal | DecimalJsLike | number | string
   }
 
   export type DailyCloseCreateManyTenantInput = {
     id?: string
     dateKey: string
-    grossSales: number
-    refunds?: number
-    netSales: number
-    costOfGoods?: number
-    returnedCost?: number
-    grossMargin?: number
-    expenses?: number
-    supplierPayments?: number | null
-    netProfit?: number
-    cashIn?: number
-    cashOut?: number
+    grossSales: Decimal | DecimalJsLike | number | string
+    refunds?: Decimal | DecimalJsLike | number | string
+    netSales: Decimal | DecimalJsLike | number | string
+    costOfGoods?: Decimal | DecimalJsLike | number | string
+    returnedCost?: Decimal | DecimalJsLike | number | string
+    grossMargin?: Decimal | DecimalJsLike | number | string
+    expenses?: Decimal | DecimalJsLike | number | string
+    supplierPayments?: Decimal | DecimalJsLike | number | string | null
+    netProfit?: Decimal | DecimalJsLike | number | string
+    cashIn?: Decimal | DecimalJsLike | number | string
+    cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
     createdAt?: Date | string
@@ -55461,12 +57756,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverId?: string | null
@@ -55524,8 +57819,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -55553,8 +57848,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -55581,8 +57876,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -55605,12 +57900,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -55628,12 +57923,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -55651,12 +57946,12 @@ export namespace Prisma {
     paymentMethod?: EnumSalePaymentMethodFieldUpdateOperationsInput | $Enums.SalePaymentMethod
     customerId?: NullableStringFieldUpdateOperationsInput | string | null
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
-    profit?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -55673,7 +57968,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -55692,7 +57987,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -55710,7 +58005,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -55723,7 +58018,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55737,7 +58032,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55751,7 +58046,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     mobile?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
-    creditLimit?: FloatFieldUpdateOperationsInput | number
+    creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55760,10 +58055,10 @@ export namespace Prisma {
   export type DebtSaleUpdateWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     customer?: CustomerUpdateOneRequiredWithoutDebtSalesNestedInput
   }
@@ -55772,10 +58067,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -55783,16 +58078,16 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DebtPaymentUpdateWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55802,7 +58097,7 @@ export namespace Prisma {
   export type DebtPaymentUncheckedUpdateWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55811,7 +58106,7 @@ export namespace Prisma {
   export type DebtPaymentUncheckedUpdateManyWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55864,14 +58159,15 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
-    paidTotal?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     receivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     supplier?: SupplierUpdateOneRequiredWithoutPurchaseOrdersNestedInput
+    items?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
   }
 
   export type PurchaseOrderUncheckedUpdateWithoutTenantInput = {
@@ -55883,13 +58179,14 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
-    paidTotal?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     receivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    items?: PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
   }
 
   export type PurchaseOrderUncheckedUpdateManyWithoutTenantInput = {
@@ -55901,8 +58198,8 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
-    paidTotal?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -55910,12 +58207,45 @@ export namespace Prisma {
     receivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type PurchaseOrderItemUpdateWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    productName?: StringFieldUpdateOperationsInput | string
+    barcode?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    purchaseOrder?: PurchaseOrderUpdateOneRequiredWithoutItemsNestedInput
+  }
+
+  export type PurchaseOrderItemUncheckedUpdateWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    purchaseOrderId?: StringFieldUpdateOperationsInput | string
+    productName?: StringFieldUpdateOperationsInput | string
+    barcode?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type PurchaseOrderItemUncheckedUpdateManyWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    purchaseOrderId?: StringFieldUpdateOperationsInput | string
+    productName?: StringFieldUpdateOperationsInput | string
+    barcode?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
   export type SupplierPaymentUpdateWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     supplierName?: StringFieldUpdateOperationsInput | string
     purchaseOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
@@ -55931,7 +58261,7 @@ export namespace Prisma {
     supplierName?: StringFieldUpdateOperationsInput | string
     purchaseOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
@@ -55946,7 +58276,7 @@ export namespace Prisma {
     supplierName?: StringFieldUpdateOperationsInput | string
     purchaseOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
@@ -55961,14 +58291,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
@@ -55982,14 +58312,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedById?: StringFieldUpdateOperationsInput | string
     openedByName?: StringFieldUpdateOperationsInput | string
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56003,14 +58333,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedById?: StringFieldUpdateOperationsInput | string
     openedByName?: StringFieldUpdateOperationsInput | string
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56059,7 +58389,7 @@ export namespace Prisma {
     expenseNumber?: StringFieldUpdateOperationsInput | string
     vendor?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
@@ -56075,7 +58405,7 @@ export namespace Prisma {
     expenseNumber?: StringFieldUpdateOperationsInput | string
     vendor?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
@@ -56091,7 +58421,7 @@ export namespace Prisma {
     expenseNumber?: StringFieldUpdateOperationsInput | string
     vendor?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
@@ -56109,8 +58439,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56128,8 +58458,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierId?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56146,8 +58476,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierId?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56167,7 +58497,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     product?: ProductUpdateOneRequiredWithoutAdjustmentsNestedInput
   }
@@ -56184,7 +58514,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -56200,7 +58530,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -56210,8 +58540,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusFieldUpdateOperationsInput | $Enums.StockCountStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    totalVariance?: FloatFieldUpdateOperationsInput | number
-    totalValueImpact?: FloatFieldUpdateOperationsInput | number
+    totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     lines?: StockCountLineUpdateManyWithoutSessionNestedInput
   }
 
@@ -56221,8 +58551,8 @@ export namespace Prisma {
     status?: EnumStockCountStatusFieldUpdateOperationsInput | $Enums.StockCountStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    totalVariance?: FloatFieldUpdateOperationsInput | number
-    totalValueImpact?: FloatFieldUpdateOperationsInput | number
+    totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     lines?: StockCountLineUncheckedUpdateManyWithoutSessionNestedInput
   }
 
@@ -56232,24 +58562,24 @@ export namespace Prisma {
     status?: EnumStockCountStatusFieldUpdateOperationsInput | $Enums.StockCountStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    totalVariance?: FloatFieldUpdateOperationsInput | number
-    totalValueImpact?: FloatFieldUpdateOperationsInput | number
+    totalVariance?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    totalValueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type DailyCloseUpdateWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     dateKey?: StringFieldUpdateOperationsInput | string
-    grossSales?: FloatFieldUpdateOperationsInput | number
-    refunds?: FloatFieldUpdateOperationsInput | number
-    netSales?: FloatFieldUpdateOperationsInput | number
-    costOfGoods?: FloatFieldUpdateOperationsInput | number
-    returnedCost?: FloatFieldUpdateOperationsInput | number
-    grossMargin?: FloatFieldUpdateOperationsInput | number
-    expenses?: FloatFieldUpdateOperationsInput | number
-    supplierPayments?: NullableFloatFieldUpdateOperationsInput | number | null
-    netProfit?: FloatFieldUpdateOperationsInput | number
-    cashIn?: FloatFieldUpdateOperationsInput | number
-    cashOut?: FloatFieldUpdateOperationsInput | number
+    grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -56258,17 +58588,17 @@ export namespace Prisma {
   export type DailyCloseUncheckedUpdateWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     dateKey?: StringFieldUpdateOperationsInput | string
-    grossSales?: FloatFieldUpdateOperationsInput | number
-    refunds?: FloatFieldUpdateOperationsInput | number
-    netSales?: FloatFieldUpdateOperationsInput | number
-    costOfGoods?: FloatFieldUpdateOperationsInput | number
-    returnedCost?: FloatFieldUpdateOperationsInput | number
-    grossMargin?: FloatFieldUpdateOperationsInput | number
-    expenses?: FloatFieldUpdateOperationsInput | number
-    supplierPayments?: NullableFloatFieldUpdateOperationsInput | number | null
-    netProfit?: FloatFieldUpdateOperationsInput | number
-    cashIn?: FloatFieldUpdateOperationsInput | number
-    cashOut?: FloatFieldUpdateOperationsInput | number
+    grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -56277,17 +58607,17 @@ export namespace Prisma {
   export type DailyCloseUncheckedUpdateManyWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     dateKey?: StringFieldUpdateOperationsInput | string
-    grossSales?: FloatFieldUpdateOperationsInput | number
-    refunds?: FloatFieldUpdateOperationsInput | number
-    netSales?: FloatFieldUpdateOperationsInput | number
-    costOfGoods?: FloatFieldUpdateOperationsInput | number
-    returnedCost?: FloatFieldUpdateOperationsInput | number
-    grossMargin?: FloatFieldUpdateOperationsInput | number
-    expenses?: FloatFieldUpdateOperationsInput | number
-    supplierPayments?: NullableFloatFieldUpdateOperationsInput | number | null
-    netProfit?: FloatFieldUpdateOperationsInput | number
-    cashIn?: FloatFieldUpdateOperationsInput | number
-    cashOut?: FloatFieldUpdateOperationsInput | number
+    grossSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    refunds?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    netSales?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    costOfGoods?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    returnedCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    grossMargin?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    expenses?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    supplierPayments?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    netProfit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashIn?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -56345,12 +58675,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -56376,12 +58706,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56406,12 +58736,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56431,14 +58761,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedByName: string
     closedById?: string | null
     closedByName?: string | null
@@ -56452,14 +58782,14 @@ export namespace Prisma {
     status?: $Enums.ShiftStatus
     openedAt?: Date | string
     closedAt?: Date | string | null
-    openingFloatUsd?: number
-    cashSalesUsd?: number | null
-    cashRefundsUsd?: number | null
-    cashExpensesUsd?: number | null
-    supplierPaymentsUsd?: number | null
-    expectedCashUsd?: number | null
-    closingCashUsd?: number | null
-    differenceUsd?: number | null
+    openingFloatUsd?: Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: Decimal | DecimalJsLike | number | string | null
     openedById: string
     openedByName: string
     closedByName?: string | null
@@ -56472,7 +58802,7 @@ export namespace Prisma {
     expenseNumber: string
     vendor: string
     category: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     paymentMethod: string
     invoiceNumber?: string
     note?: string
@@ -56494,12 +58824,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverAssignedAt?: Date | string | null
@@ -56517,14 +58847,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56539,14 +58869,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedByName?: StringFieldUpdateOperationsInput | string
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56560,14 +58890,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedByName?: StringFieldUpdateOperationsInput | string
     closedById?: NullableStringFieldUpdateOperationsInput | string | null
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56580,14 +58910,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
     notes?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56602,14 +58932,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedById?: StringFieldUpdateOperationsInput | string
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56623,14 +58953,14 @@ export namespace Prisma {
     status?: EnumShiftStatusFieldUpdateOperationsInput | $Enums.ShiftStatus
     openedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    openingFloatUsd?: FloatFieldUpdateOperationsInput | number
-    cashSalesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashRefundsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    cashExpensesUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    supplierPaymentsUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    expectedCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    closingCashUsd?: NullableFloatFieldUpdateOperationsInput | number | null
-    differenceUsd?: NullableFloatFieldUpdateOperationsInput | number | null
+    openingFloatUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashSalesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashRefundsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cashExpensesUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    supplierPaymentsUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    expectedCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    closingCashUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    differenceUsd?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     openedById?: StringFieldUpdateOperationsInput | string
     openedByName?: StringFieldUpdateOperationsInput | string
     closedByName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56642,7 +58972,7 @@ export namespace Prisma {
     expenseNumber?: StringFieldUpdateOperationsInput | string
     vendor?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
@@ -56659,7 +58989,7 @@ export namespace Prisma {
     expenseNumber?: StringFieldUpdateOperationsInput | string
     vendor?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
@@ -56675,7 +59005,7 @@ export namespace Prisma {
     expenseNumber?: StringFieldUpdateOperationsInput | string
     vendor?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
@@ -56695,12 +59025,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -56727,12 +59057,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -56757,12 +59087,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -56780,8 +59110,8 @@ export namespace Prisma {
     isParent?: boolean
     variantName?: string | null
     name: string
-    price: number
-    cost?: number
+    price: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
@@ -56806,8 +59136,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierId?: string | null
     supplierName?: string | null
@@ -56828,7 +59158,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
-    valueImpact: number
+    valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
@@ -56841,15 +59171,15 @@ export namespace Prisma {
     expectedQuantity: number
     countedQuantity?: number | null
     variance?: number
-    valueImpact?: number
+    valueImpact?: Decimal | DecimalJsLike | number | string
   }
 
   export type ProductUpdateWithoutParentInput = {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -56877,8 +59207,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -56905,8 +59235,8 @@ export namespace Prisma {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
-    price?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
@@ -56930,8 +59260,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56949,8 +59279,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierId?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56967,8 +59297,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierId?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56988,7 +59318,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutStockAdjustmentsNestedInput
   }
@@ -57005,7 +59335,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -57021,7 +59351,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -57033,7 +59363,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFieldUpdateOperationsInput | number
     countedQuantity?: NullableFloatFieldUpdateOperationsInput | number | null
     variance?: FloatFieldUpdateOperationsInput | number
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     session?: StockCountSessionUpdateOneRequiredWithoutLinesNestedInput
   }
 
@@ -57046,7 +59376,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFieldUpdateOperationsInput | number
     countedQuantity?: NullableFloatFieldUpdateOperationsInput | number | null
     variance?: FloatFieldUpdateOperationsInput | number
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineUncheckedUpdateManyWithoutProductInput = {
@@ -57058,7 +59388,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFieldUpdateOperationsInput | number
     countedQuantity?: NullableFloatFieldUpdateOperationsInput | number | null
     variance?: FloatFieldUpdateOperationsInput | number
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type SaleItemCreateManySaleInput = {
@@ -57067,9 +59397,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
-    cost?: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string
   }
 
   export type SaleRefundCreateManySaleInput = {
@@ -57081,7 +59411,7 @@ export namespace Prisma {
     customerName?: string | null
     method: $Enums.RefundMethod
     reason: string
-    total: number
+    total: Decimal | DecimalJsLike | number | string
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -57095,9 +59425,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type SaleItemUncheckedUpdateWithoutSaleInput = {
@@ -57106,9 +59436,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type SaleItemUncheckedUpdateManyWithoutSaleInput = {
@@ -57117,9 +59447,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
-    cost?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type SaleRefundUpdateWithoutSaleInput = {
@@ -57130,7 +59460,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57149,7 +59479,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57167,7 +59497,7 @@ export namespace Prisma {
     customerName?: NullableStringFieldUpdateOperationsInput | string | null
     method?: EnumRefundMethodFieldUpdateOperationsInput | $Enums.RefundMethod
     reason?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57181,9 +59511,9 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    cost?: number | null
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    cost?: Decimal | DecimalJsLike | number | string | null
+    total: Decimal | DecimalJsLike | number | string
   }
 
   export type RefundItemUpdateWithoutRefundInput = {
@@ -57192,9 +59522,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    cost?: NullableFloatFieldUpdateOperationsInput | number | null
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type RefundItemUncheckedUpdateWithoutRefundInput = {
@@ -57203,9 +59533,9 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    cost?: NullableFloatFieldUpdateOperationsInput | number | null
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type RefundItemUncheckedUpdateManyWithoutRefundInput = {
@@ -57214,26 +59544,26 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    cost?: NullableFloatFieldUpdateOperationsInput | number | null
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type DebtSaleCreateManyCustomerInput = {
     id?: string
     tenantId: string
     saleNumber: string
-    subtotal: number
-    discountTotal?: number | null
-    tax: number
-    total: number
+    subtotal: Decimal | DecimalJsLike | number | string
+    discountTotal?: Decimal | DecimalJsLike | number | string | null
+    tax: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
 
   export type DebtPaymentCreateManyCustomerInput = {
     id?: string
     tenantId: string
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     createdAt?: Date | string
@@ -57250,12 +59580,12 @@ export namespace Prisma {
     locationLat?: number | null
     locationLng?: number | null
     deliveryNote?: string
-    itemsTotal: number
-    deliveryFee?: number
-    total: number
+    itemsTotal: Decimal | DecimalJsLike | number | string
+    deliveryFee?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
     paymentMethod?: string
-    paidAmount?: number
-    changeRequired?: number
+    paidAmount?: Decimal | DecimalJsLike | number | string
+    changeRequired?: Decimal | DecimalJsLike | number | string
     assignedTo?: string | null
     assignedName?: string | null
     driverId?: string | null
@@ -57271,10 +59601,10 @@ export namespace Prisma {
   export type DebtSaleUpdateWithoutCustomerInput = {
     id?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutDebtSalesNestedInput
   }
@@ -57283,10 +59613,10 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tenantId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -57294,16 +59624,16 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tenantId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
-    subtotal?: FloatFieldUpdateOperationsInput | number
-    discountTotal?: NullableFloatFieldUpdateOperationsInput | number | null
-    tax?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type DebtPaymentUpdateWithoutCustomerInput = {
     id?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -57313,7 +59643,7 @@ export namespace Prisma {
   export type DebtPaymentUncheckedUpdateWithoutCustomerInput = {
     id?: StringFieldUpdateOperationsInput | string
     tenantId?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -57322,7 +59652,7 @@ export namespace Prisma {
   export type DebtPaymentUncheckedUpdateManyWithoutCustomerInput = {
     id?: StringFieldUpdateOperationsInput | string
     tenantId?: StringFieldUpdateOperationsInput | string
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -57338,12 +59668,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverAssignedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -57369,12 +59699,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57399,12 +59729,12 @@ export namespace Prisma {
     locationLat?: NullableFloatFieldUpdateOperationsInput | number | null
     locationLng?: NullableFloatFieldUpdateOperationsInput | number | null
     deliveryNote?: StringFieldUpdateOperationsInput | string
-    itemsTotal?: FloatFieldUpdateOperationsInput | number
-    deliveryFee?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    itemsTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paymentMethod?: StringFieldUpdateOperationsInput | string
-    paidAmount?: FloatFieldUpdateOperationsInput | number
-    changeRequired?: FloatFieldUpdateOperationsInput | number
+    paidAmount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    changeRequired?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     assignedTo?: NullableStringFieldUpdateOperationsInput | string | null
     assignedName?: NullableStringFieldUpdateOperationsInput | string | null
     driverId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57426,8 +59756,8 @@ export namespace Prisma {
     paymentStatus?: $Enums.PaymentStatus
     invoiceNumber?: string
     note?: string
-    total: number
-    paidTotal?: number
+    total: Decimal | DecimalJsLike | number | string
+    paidTotal?: Decimal | DecimalJsLike | number | string
     createdBy: string
     shiftId?: string | null
     shiftNumber?: string | null
@@ -57441,7 +59771,7 @@ export namespace Prisma {
     supplierName: string
     purchaseOrderId?: string | null
     purchaseOrderNumber?: string | null
-    amount: number
+    amount: Decimal | DecimalJsLike | number | string
     method: string
     reference?: string
     recordedBy: string
@@ -57459,8 +59789,8 @@ export namespace Prisma {
     barcode: string
     initialQuantity: number
     quantityRemaining: number
-    unitCost: number
-    unitPrice: number
+    unitCost: Decimal | DecimalJsLike | number | string
+    unitPrice: Decimal | DecimalJsLike | number | string
     expiryDate?: string | null
     supplierName?: string | null
     purchaseOrderNumber?: string | null
@@ -57476,14 +59806,15 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
-    paidTotal?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     receivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     tenant?: TenantUpdateOneRequiredWithoutPurchaseOrdersNestedInput
+    items?: PurchaseOrderItemUpdateManyWithoutPurchaseOrderNestedInput
   }
 
   export type PurchaseOrderUncheckedUpdateWithoutSupplierInput = {
@@ -57495,13 +59826,14 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
-    paidTotal?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     receivedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    items?: PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderNestedInput
   }
 
   export type PurchaseOrderUncheckedUpdateManyWithoutSupplierInput = {
@@ -57513,8 +59845,8 @@ export namespace Prisma {
     paymentStatus?: EnumPaymentStatusFieldUpdateOperationsInput | $Enums.PaymentStatus
     invoiceNumber?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
-    total?: FloatFieldUpdateOperationsInput | number
-    paidTotal?: FloatFieldUpdateOperationsInput | number
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    paidTotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdBy?: StringFieldUpdateOperationsInput | string
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57527,7 +59859,7 @@ export namespace Prisma {
     supplierName?: StringFieldUpdateOperationsInput | string
     purchaseOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
@@ -57543,7 +59875,7 @@ export namespace Prisma {
     supplierName?: StringFieldUpdateOperationsInput | string
     purchaseOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
@@ -57558,7 +59890,7 @@ export namespace Prisma {
     supplierName?: StringFieldUpdateOperationsInput | string
     purchaseOrderId?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
-    amount?: FloatFieldUpdateOperationsInput | number
+    amount?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     method?: StringFieldUpdateOperationsInput | string
     reference?: StringFieldUpdateOperationsInput | string
     recordedBy?: StringFieldUpdateOperationsInput | string
@@ -57574,8 +59906,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57594,8 +59926,8 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
@@ -57612,13 +59944,57 @@ export namespace Prisma {
     barcode?: StringFieldUpdateOperationsInput | string
     initialQuantity?: FloatFieldUpdateOperationsInput | number
     quantityRemaining?: FloatFieldUpdateOperationsInput | number
-    unitCost?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
+  }
+
+  export type PurchaseOrderItemCreateManyPurchaseOrderInput = {
+    id?: string
+    tenantId: string
+    productName: string
+    barcode?: string
+    quantity: number
+    unitCost?: Decimal | DecimalJsLike | number | string
+    unitPrice?: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
+  }
+
+  export type PurchaseOrderItemUpdateWithoutPurchaseOrderInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    productName?: StringFieldUpdateOperationsInput | string
+    barcode?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    tenant?: TenantUpdateOneRequiredWithoutPurchaseOrderItemsNestedInput
+  }
+
+  export type PurchaseOrderItemUncheckedUpdateWithoutPurchaseOrderInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    productName?: StringFieldUpdateOperationsInput | string
+    barcode?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type PurchaseOrderItemUncheckedUpdateManyWithoutPurchaseOrderInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    productName?: StringFieldUpdateOperationsInput | string
+    barcode?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    unitCost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineCreateManySessionInput = {
@@ -57630,7 +60006,7 @@ export namespace Prisma {
     expectedQuantity: number
     countedQuantity?: number | null
     variance?: number
-    valueImpact?: number
+    valueImpact?: Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineUpdateWithoutSessionInput = {
@@ -57641,7 +60017,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFieldUpdateOperationsInput | number
     countedQuantity?: NullableFloatFieldUpdateOperationsInput | number | null
     variance?: FloatFieldUpdateOperationsInput | number
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     product?: ProductUpdateOneRequiredWithoutStockCountLinesNestedInput
   }
 
@@ -57654,7 +60030,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFieldUpdateOperationsInput | number
     countedQuantity?: NullableFloatFieldUpdateOperationsInput | number | null
     variance?: FloatFieldUpdateOperationsInput | number
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type StockCountLineUncheckedUpdateManyWithoutSessionInput = {
@@ -57666,7 +60042,7 @@ export namespace Prisma {
     expectedQuantity?: FloatFieldUpdateOperationsInput | number
     countedQuantity?: NullableFloatFieldUpdateOperationsInput | number | null
     variance?: FloatFieldUpdateOperationsInput | number
-    valueImpact?: FloatFieldUpdateOperationsInput | number
+    valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderItemCreateManyDeliveryOrderInput = {
@@ -57675,8 +60051,8 @@ export namespace Prisma {
     productName: string
     barcode: string
     quantity: number
-    unitPrice: number
-    total: number
+    unitPrice: Decimal | DecimalJsLike | number | string
+    total: Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderItemUpdateWithoutDeliveryOrderInput = {
@@ -57685,8 +60061,8 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderItemUncheckedUpdateWithoutDeliveryOrderInput = {
@@ -57695,8 +60071,8 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
   export type DeliveryOrderItemUncheckedUpdateManyWithoutDeliveryOrderInput = {
@@ -57705,8 +60081,8 @@ export namespace Prisma {
     productName?: StringFieldUpdateOperationsInput | string
     barcode?: StringFieldUpdateOperationsInput | string
     quantity?: FloatFieldUpdateOperationsInput | number
-    unitPrice?: FloatFieldUpdateOperationsInput | number
-    total?: FloatFieldUpdateOperationsInput | number
+    unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
 

@@ -34,6 +34,7 @@ import DeliveryPage from "../pages/delivery/DeliveryPage"
 import DriversPage from "../pages/drivers/DriversPage"
 
 const AUTO_LOCK_MS = 10 * 60 * 1000
+const MotionDiv = motion.div as any
 
 function Shell({ children }: { children: ReactNode }) {
   const location = useLocation()
@@ -85,12 +86,14 @@ function Shell({ children }: { children: ReactNode }) {
     return <LoginScreen />
   }
 
+  const isPosRoute = location.pathname === "/"
+
   return (
     <AppLayout>
       <Sidebar />
 
-      <div className="flex min-w-0 flex-1 flex-col pb-20">
-        <Topbar />
+      <div className={`flex min-w-0 flex-1 flex-col ${isPosRoute ? "pb-20 md:pb-0" : "pb-20 md:pb-0"}`}>
+        {!isPosRoute && <Topbar />}
           {suspended && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}>
               <div className="bg-slate-900 border border-rose-800/50 rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
@@ -104,7 +107,7 @@ function Shell({ children }: { children: ReactNode }) {
           )}
           <ErrorBoundary>
             <AnimatePresence mode="wait">
-              <motion.div
+              <MotionDiv
                 key={location.pathname}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -113,7 +116,7 @@ function Shell({ children }: { children: ReactNode }) {
                 className="flex min-h-0 flex-1 flex-col"
               >
                 {children}
-              </motion.div>
+              </MotionDiv>
             </AnimatePresence>
           </ErrorBoundary>
       </div>

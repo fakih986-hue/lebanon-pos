@@ -7,6 +7,7 @@ interface Department {
   label: string
   Icon: LucideIcon
   productCount: number
+  stockCount?: number
 }
 
 interface Props {
@@ -19,8 +20,8 @@ const DepartmentTabs = memo(function DepartmentTabs({ departments, selected, onS
   return (
     <div
       role="tablist"
-      className="flex gap-1.5 overflow-x-auto rounded-xl p-1.5 [scrollbar-width:none]"
-      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+      className="flex gap-2 overflow-x-auto p-2 [scrollbar-width:none] md:min-h-0 md:flex-col md:overflow-y-auto md:overflow-x-hidden"
+      style={{ background: "var(--surface-2)" }}
     >
       {departments.map((dept) => {
         const active = selected === dept.name
@@ -33,26 +34,35 @@ const DepartmentTabs = memo(function DepartmentTabs({ departments, selected, onS
             role="tab"
             aria-selected={active}
             onClick={() => onSelect(dept.name)}
-            className="flex h-10 touch-manipulation shrink-0 items-center gap-2 rounded-lg px-3 text-[13px] font-semibold transition-all"
+            className={`flex min-h-[58px] min-w-[112px] touch-manipulation shrink-0 items-center gap-2 rounded-lg border px-3 text-left transition-all md:w-full ${
+              active ? "shadow-sm" : "hover:bg-white"
+            }`}
             style={active ? {
-              background: "var(--brand)",
-              color: "#fff",
-              boxShadow: "0 2px 8px rgba(16,185,129,0.3)",
+              background: "#ffffff",
+              borderColor: "var(--brand)",
+              color: "var(--brand-text)",
             } : {
-              background: "transparent",
+              background: "var(--surface)",
+              borderColor: "var(--border)",
               color: "var(--text-2)",
             }}
           >
-            <Icon size={15} />
-            <span>{dept.label}</span>
             <span
-              className="rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
               style={active
-                ? { background: "rgba(255,255,255,0.2)", color: "#fff" }
-                : { background: "var(--surface-2)", color: "var(--text-3)" }
+                ? { background: "var(--brand)", color: "white" }
+                : { background: "var(--surface-3)", color: "var(--text-3)" }
               }
             >
-              {formatNumber(dept.productCount)}
+              <Icon size={18} />
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-[14px] font-black leading-tight">
+                {dept.label}
+              </span>
+              <span className="mt-1 block text-[11px] font-bold leading-none opacity-70">
+                {formatNumber(dept.productCount)} items
+              </span>
             </span>
           </button>
         )

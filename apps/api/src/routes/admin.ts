@@ -1,22 +1,25 @@
 import { Router } from "express"
-import { createHash } from "crypto"
+import { timingSafeEqual, randomInt } from "crypto"
 import { z } from "zod"
+import bcrypt from "bcryptjs"
+import type { ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
-import { signToken, requireAuth } from "../middleware/auth.js"
+import { signToken, requireAuth, json } from "../middleware/auth.js"
 import type { AuthRequest } from "../middleware/auth.js"
 
 const router = Router()
 
-function requireAdmin(req: AuthRequest, res: any, next: () => void) {
+function requireAdmin(req: AuthRequest, res: ServerResponse, next: (err?: unknown) => void) {
   if (!req.auth || req.auth.userId !== "__admin__") {
-    res.status(403).json({ error: "Admin access required" })
+    json(res, { error: "Admin access required" }, 403)
     return
   }
   next()
 }
 
-function hashSha256Pin(pin: string) {
-  return createHash("sha256").update(pin).digest("base64")
+/** Generate a random numeric PIN of the given length */
+function generateRandomPin(length = 6): string {
+  return Array.from({ length }, () => randomInt(0, 10)).join("")
 }
 
 const createTenantSchema = z.object({
@@ -27,23 +30,37 @@ const createTenantSchema = z.object({
   adminPin: z.string().trim().min(4, "PIN must be at least 4 characters"),
 })
 
-router.post("/login", async (req: any, res: any) => {
+const updateTenantSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  subdomain: z.string().trim().toLowerCase().regex(/^[a-z0-9-]{3,}$/).optional(),
+  suspended: z.boolean().optional(),
+})
+
+router.post("/login", async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const { password } = req.body || {}
-    const masterPassword = process.env.ADMIN_PASSWORD
-    if (!masterPassword || password !== masterPassword) {
-      res.status(401).json({ error: "Invalid admin credentials" })
+    const { password } = (req.body as { password?: string }) || {}
+    const masterPassword = process.env.ADMIN_PASSWORD ?? ""
+    // Always run timingSafeEqual to prevent timing attacks (even when password missing)
+    const inputBuf = Buffer.from(password ?? "")
+    const masterBuf = Buffer.from(masterPassword)
+    const passwordsMatch =
+      inputBuf.length > 0 &&
+      masterBuf.length > 0 &&
+      inputBuf.length === masterBuf.length &&
+      timingSafeEqual(inputBuf, masterBuf)
+    if (!masterPassword || !passwordsMatch) {
+      json(res, { error: "Invalid admin credentials" }, 401)
       return
     }
     const token = signToken({ userId: "__admin__", tenantId: "", role: "Admin" })
-    res.json({ token })
+    json(res, { token })
   } catch (err) {
     console.error("Admin login error:", err)
-    res.status(500).json({ error: "Admin login failed" })
+    json(res, { error: "Admin login failed" }, 500)
   }
 })
 
-router.get("/tenants", requireAuth, requireAdmin, async (_req: any, res: any) => {
+router.get("/tenants", requireAuth, requireAdmin, async (_req: AuthRequest, res: ServerResponse) => {
   try {
     const tenants = await prisma.tenant.findMany({
       orderBy: { createdAt: "desc" },
@@ -56,74 +73,71 @@ router.get("/tenants", requireAuth, requireAdmin, async (_req: any, res: any) =>
         _count: { select: { users: true, products: true, sales: true } },
       },
     })
-    res.json(tenants)
+    json(res, tenants)
   } catch (err) {
     console.error("List tenants error:", err)
-    res.status(500).json({ error: "Failed to list tenants" })
+    json(res, { error: "Failed to list tenants" }, 500)
   }
 })
 
-router.get("/tenants/:id", requireAuth, requireAdmin, async (req: any, res: any) => {
+router.get("/tenants/:id", requireAuth, requireAdmin, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenant = await prisma.tenant.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params?.id },
       select: { id: true, name: true, subdomain: true, suspended: true, createdAt: true },
     })
-    if (!tenant) { res.status(404).json({ error: "Tenant not found" }); return }
-    res.json(tenant)
+    if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
+    json(res, tenant)
   } catch (err) {
     console.error("Get tenant error:", err)
-    res.status(500).json({ error: "Failed to get tenant" })
+    json(res, { error: "Failed to get tenant" }, 500)
   }
 })
 
-const updateTenantSchema = z.object({
-  name: z.string().trim().min(1).optional(),
-  subdomain: z.string().trim().toLowerCase().regex(/^[a-z0-9-]{3,}$/).optional(),
-  suspended: z.boolean().optional(),
-})
-
-router.put("/tenants/:id", requireAuth, requireAdmin, async (req: any, res: any) => {
+router.put("/tenants/:id", requireAuth, requireAdmin, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const parsed = updateTenantSchema.safeParse(req.body)
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.errors[0].message })
+      json(res, { error: parsed.error.errors[0].message }, 400)
       return
     }
-    const tenant = await prisma.tenant.findUnique({ where: { id: req.params.id } })
-    if (!tenant) { res.status(404).json({ error: "Tenant not found" }); return }
+    const tenant = await prisma.tenant.findUnique({ where: { id: req.params?.id } })
+    if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
     if (parsed.data.subdomain && parsed.data.subdomain !== tenant.subdomain) {
       const existing = await prisma.tenant.findUnique({ where: { subdomain: parsed.data.subdomain } })
-      if (existing) { res.status(409).json({ error: "Subdomain is already taken" }); return }
+      if (existing) { json(res, { error: "Subdomain is already taken" }, 409); return }
     }
     const updated = await prisma.tenant.update({
-      where: { id: req.params.id },
+      where: { id: req.params?.id },
       data: parsed.data,
       select: { id: true, name: true, subdomain: true, suspended: true, createdAt: true },
     })
-    res.json(updated)
+    json(res, updated)
   } catch (err) {
     console.error("Update tenant error:", err)
-    res.status(500).json({ error: "Failed to update tenant" })
+    json(res, { error: "Failed to update tenant" }, 500)
   }
 })
 
-router.post("/tenants", requireAuth, requireAdmin, async (req: any, res: any) => {
+router.post("/tenants", requireAuth, requireAdmin, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const parsed = createTenantSchema.safeParse(req.body)
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.errors[0].message })
+      json(res, { error: parsed.error.errors[0].message }, 400)
       return
     }
     const { storeName, subdomain, adminName, adminMobile, adminPin } = parsed.data
 
     const existing = await prisma.tenant.findUnique({ where: { subdomain } })
     if (existing) {
-      res.status(409).json({ error: "Subdomain is already taken" })
+      json(res, { error: "Subdomain is already taken" }, 409)
       return
     }
 
-    const result = await prisma.$transaction(async (tx: any) => {
+    // Generate a random PIN if the caller sent the insecure default "0000" or left it empty
+    const effectivePin = (!adminPin || adminPin === "0000") ? generateRandomPin(6) : adminPin
+
+    const result = await prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
         data: { name: storeName, subdomain },
       })
@@ -132,7 +146,8 @@ router.post("/tenants", requireAuth, requireAdmin, async (req: any, res: any) =>
           tenantId: tenant.id,
           name: adminName,
           mobile: adminMobile,
-          pin: hashSha256Pin(adminPin),
+          // bcrypt — consistent with staff PINs from seed.ts
+          pin: await bcrypt.hash(effectivePin, 12),
           role: "Admin",
           active: true,
         },
@@ -159,7 +174,7 @@ router.post("/tenants", requireAuth, requireAdmin, async (req: any, res: any) =>
       role: result.user.role,
     })
 
-    res.status(201).json({
+    json(res, {
       tenant: {
         id: result.tenant.id,
         name: result.tenant.name,
@@ -167,13 +182,13 @@ router.post("/tenants", requireAuth, requireAdmin, async (req: any, res: any) =>
       },
       credentials: {
         subdomain,
-        pin: adminPin,
+        pin: effectivePin,   // plain-text shown once so operator can hand to customer
       },
       userToken,
-    })
+    }, 201)
   } catch (err) {
     console.error("Create tenant error:", err)
-    res.status(500).json({ error: "Failed to create tenant" })
+    json(res, { error: "Failed to create tenant" }, 500)
   }
 })
 

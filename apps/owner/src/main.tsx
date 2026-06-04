@@ -1,6 +1,41 @@
-import { StrictMode, useState, useEffect } from "react"
+import { StrictMode, useState, useEffect, Component, type ReactNode, type ErrorInfo } from "react"
 import { createRoot } from "react-dom/client"
 import "./index.css"
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { error: null }
+  }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("[OwnerApp] Uncaught error:", error, info)
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="min-h-dvh flex items-center justify-center bg-slate-950 p-8">
+          <div className="max-w-md w-full text-center">
+            <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-white mb-2">Something went wrong</h2>
+            <p className="text-sm text-slate-400 mb-6 font-mono">{this.state.error.message}</p>
+            <button
+              onClick={() => { this.setState({ error: null }); window.location.reload() }}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm"
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 const BASE = ""
 const TOKEN_KEY = "lebanonpos.owner.token"
@@ -15,6 +50,11 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
     ...options,
     headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options?.headers },
   })
+  if (res.status === 401) {
+    clearToken()
+    window.location.reload()
+    throw new Error("Session expired — please sign in again")
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error(body.error || `Request failed: ${res.status}`)
@@ -78,7 +118,7 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [showCreate, setShowCreate] = useState(false)
-  const [form, setForm] = useState({ storeName: "", subdomain: "", adminName: "Admin", adminMobile: "", adminPin: "0000" })
+  const [form, setForm] = useState({ storeName: "", subdomain: "", adminName: "Admin", adminMobile: "", adminPin: "" })
   const [creating, setCreating] = useState(false)
   const [createdResult, setCreatedResult] = useState<{ subdomain: string; pin: string } | null>(null)
   const [formError, setFormError] = useState("")
@@ -288,4 +328,10 @@ function App() {
   return <TenantsPage onLogout={() => setAuthed(false)} />
 }
 
-createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>)
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  </StrictMode>
+)

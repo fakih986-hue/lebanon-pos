@@ -2,7 +2,8 @@ import type { HeldSale } from "../services/heldSale.service"
 
 export function parseMoney(value: string) {
   const parsedValue = Number(value.replace(/,/g, "").trim())
-  return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0
+  if (!Number.isFinite(parsedValue)) return 0
+  return Math.max(0, Math.min(parsedValue, 1_000_000_000))
 }
 
 export function formatVatRate(value: number) {

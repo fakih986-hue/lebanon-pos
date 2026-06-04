@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { adminApi } from "../app/api"
+import { api } from "../app/api"
 
 type Tenant = {
   id: string
@@ -22,7 +22,7 @@ export function TenantsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [showCreate, setShowCreate] = useState(false)
-  const [form, setForm] = useState<NewTenant>({ storeName: "", subdomain: "", adminName: "Admin", adminMobile: "", adminPin: "0000" })
+  const [form, setForm] = useState<NewTenant>({ storeName: "", subdomain: "", adminName: "Admin", adminMobile: "", adminPin: "" })
   const [creating, setCreating] = useState(false)
   const [createdResult, setCreatedResult] = useState<{ subdomain: string; pin: string } | null>(null)
   const [formError, setFormError] = useState("")
@@ -32,7 +32,7 @@ export function TenantsPage() {
   async function loadTenants() {
     setLoading(true)
     try {
-      const data = await adminApi<Tenant[]>("/api/admin/tenants")
+      const data = await api<Tenant[]>("/api/admin/tenants")
       setTenants(data)
     } catch (err) {
       setError((err as Error).message)
@@ -45,12 +45,12 @@ export function TenantsPage() {
     setFormError("")
     setCreating(true)
     try {
-      const res = await adminApi<{ tenant: { id: string; name: string; subdomain: string }; credentials: { subdomain: string; pin: string } }>("/api/admin/tenants", {
+      const res = await api<{ tenant: { id: string; name: string; subdomain: string }; credentials: { subdomain: string; pin: string } }>("/api/admin/tenants", {
         method: "POST",
         body: JSON.stringify(form),
       })
       setCreatedResult(res.credentials)
-      setForm({ storeName: "", subdomain: "", adminName: "Admin", adminMobile: "", adminPin: "0000" })
+      setForm({ storeName: "", subdomain: "", adminName: "Admin", adminMobile: "", adminPin: "" })
       loadTenants()
     } catch (err) {
       setFormError((err as Error).message)

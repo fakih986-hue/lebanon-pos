@@ -4,60 +4,78 @@
   "description": "Lebanon POS — Local Server Desktop App",
   "main": "dist/main.js",
   "scripts": {
-    "build":    "tsc -p tsconfig.json",
-    "start":    "electron dist/main.js",
-    "dist":     "npm run build && electron-builder",
-    "dist:win": "npm run build && electron-builder --win"
+    "build": "tsc -p tsconfig.json",
+    "start": "electron dist/main.js",
+    "package": "npm run build && electron-builder --win",
+    "package:dir": "npm run build && electron-builder --win --dir"
   },
   "devDependencies": {
-    "@types/node":      "^24.0.0",
-    "electron":         "42.2.0",
+    "@types/node": "^24.0.0",
+    "electron": "42.2.0",
     "electron-builder": "^25.0.0",
-    "typescript":       "~6.0.3"
+    "typescript": "~6.0.3"
   },
   "build": {
-    "appId":       "com.lebanonpos.app",
+    "appId": "com.lebtech.lebanonpos",
     "productName": "Lebanon POS",
-    "copyright":   "Copyright © 2025 LebanonPOS",
+    "copyright": "Copyright © 2026 LebTech",
     "directories": {
       "output": "dist-electron"
     },
     "files": [
       "dist/**/*",
-      "assets/**/*"
+      "assets/icon.png",
+      "assets/icon.ico"
     ],
     "extraResources": [
       {
-        "from": "../../apps/api/dist",
-        "to":   "api/dist"
+        "from": "../../apps/api/bundle",
+        "to":   "api",
+        "filter": ["**/*", "!**/node_modules/**", "!**/.pnpm/**"]
       },
       {
-        "from": "../../apps/api/prisma",
-        "to":   "api/prisma"
-      },
-      {
-        "from": "../../apps/api/node_modules",
-        "to":   "api/node_modules"
-      },
-      {
-        "from": "../../apps/api/public",
-        "to":   "api/public"
+        "from": "assets/pg",
+        "to":   "pg"
       }
     ],
+    "publish": {
+      "provider": "github",
+      "owner": "your-github-username",
+      "repo": "lebanon-pos-releases"
+    },
     "win": {
-      "target": "nsis",
-      "icon":   "assets/icon.ico"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "requireAdministrator"
     },
     "nsis": {
-      "oneClick":                           false,
+      "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut":              true,
-      "createStartMenuShortcut":            true,
-      "shortcutName":                       "Lebanon POS"
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Lebanon POS"
     },
     "mac": {
       "target": "dmg",
-      "icon":   "assets/icon.png"
+      "icon": "assets/icon.png"
     }
+  },
+  "dependencies": {
+    "@types/pg": "^8.20.0",
+    "electron-updater": "^6.8.3",
+    "pg": "^8.21.0"
   }
 }

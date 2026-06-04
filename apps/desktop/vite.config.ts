@@ -7,6 +7,6 @@ export default defineConfig({
   server: {
     port: 5174,
     strictPort: true,
-    host: true,   // expose on all network interfaces (LAN + phone)
+    host: true,
   },
 })

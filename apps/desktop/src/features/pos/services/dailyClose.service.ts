@@ -1,7 +1,7 @@
 import { getCurrentUser, recordAuditEvent } from "./security.service"
 import { enqueueSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
-import { canUseStorage } from "../lib/storage"
+import { canUseStorage, createId } from "../lib/storage"
 
 const DAILY_CLOSES_KEY = "lebanonpos.daily-closes.v1"
 const DAILY_CLOSES_EVENT = "lebanonpos-daily-closes-changed"
@@ -77,7 +77,7 @@ export function closeBusinessDay(input: CloseBusinessDayInput) {
   const user = getCurrentUser()
   const close: DailyClose = {
     ...input,
-    id: crypto.randomUUID(),
+    id: createId(),
     note: input.note.trim(),
     closedBy: user.name,
     createdAt: new Date().toISOString(),

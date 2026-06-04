@@ -4,7 +4,7 @@ import { restoreInventoryBatches } from "./inventoryBatch.service"
 import { increaseProductStock } from "./product.service"
 import { reverseDebtSale } from "./customer.service"
 import { getSettings } from "./settings.service"
-import { canUseStorage } from "../lib/storage"
+import { canUseStorage, createId } from "../lib/storage"
 import {
   getActiveShift,
   getCurrentUser,
@@ -236,7 +236,7 @@ export function recordSale(input: RecordSaleInput) {
   const currentUser = getCurrentUser()
   const activeShift = getActiveShift()
   const sale: Sale = {
-    id: crypto.randomUUID(),
+    id: createId(),
     saleNumber: input.saleNumber,
     paymentMethod: input.paymentMethod,
     customerId: input.customerId,
@@ -286,7 +286,7 @@ export function recordRefund(input: RecordRefundInput) {
   const currentUser = getCurrentUser()
   const activeShift = getActiveShift()
   const refund: SaleRefund = {
-    id: crypto.randomUUID(),
+    id: createId(),
     refundNumber: `R-${Date.now().toString().slice(-6)}`,
     saleId: input.saleId,
     saleNumber: input.saleNumber,

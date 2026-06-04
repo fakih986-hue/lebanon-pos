@@ -14,6 +14,33 @@ const SUSPEND_EVENT  = "lebanonpos-suspended-changed"
  *  and stop counting as "pending" in the badge. */
 const MAX_ATTEMPTS = 5
 
+/** Mutex flags — prevent concurrent flush/pull from racing on the same localStorage keys */
+let _flushing = false
+let _pulling  = false
+
+/**
+ * Exponential backoff delay for a sync operation.
+ * attempt=1 → 2s, attempt=2 → 4s, attempt=3 → 8s … capped at 5 minutes.
+ */
+function backoffMs(attempts: number): number {
+  return Math.min(Math.pow(2, attempts) * 1000, 5 * 60 * 1000)
+}
+
+/**
+ * Real connectivity check — navigator.onLine returns true even when the server
+ * is unreachable. This probes the actual API health endpoint instead.
+ */
+async function isServerReachable(): Promise<boolean> {
+  const apiUrl = getApiUrl()
+  if (!apiUrl) return false
+  try {
+    const res = await fetch(`${apiUrl}/api/health`, { method: "HEAD", cache: "no-store" })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 const PULL_TARGETS: Record<string, { key: string; event: string }> = {
   products:         { key: "lebanonpos.products.v1",              event: "lebanonpos-products-changed" },
   sales:            { key: "lebanonpos.sales.v1",                 event: "lebanonpos-sales-changed" },
@@ -215,11 +242,17 @@ function readQueue(): SyncOperation[] {
 
 function writeQueue(queue: SyncOperation[]) {
   if (!canUseStorage()) return
-  // Keep newest 300, purge synced entries older than 7 days to prevent bloat
   const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
-  const trimmed = queue
-    .filter((op) => !(op.status === "Synced" && new Date(op.createdAt).getTime() < cutoff))
-    .slice(0, 300)
+
+  // Separate pending/failed (must keep) from synced (purgeable)
+  const active  = queue.filter((op) => op.status !== "Synced")
+  const synced  = queue
+    .filter((op) => op.status === "Synced" && new Date(op.createdAt).getTime() >= cutoff)
+    .slice(0, Math.max(0, 300 - active.length))   // fill remaining budget with recent synced
+
+  // Active ops always survive; synced ops fill the rest — new ops are NEVER silently dropped
+  const trimmed = [...active, ...synced]
+
   window.localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(trimmed))
   putMany("sync-queue", trimmed).catch(() => {})
   dispatchSyncChanged()
@@ -235,8 +268,9 @@ function writeLastSyncedAt(value: string) {
 }
 
 function scheduleAutoFlush() {
-  if (typeof window === "undefined" || !isBrowserOnline()) return
+  if (typeof window === "undefined") return
   window.clearTimeout(autoFlushTimer)
+  // Short debounce — actual reachability check happens inside _flushSyncQueue
   autoFlushTimer = window.setTimeout(() => { flushSyncQueue().catch(() => {}) }, 900)
 }
 
@@ -292,21 +326,39 @@ export function enqueueSyncOperation(input: EnqueueSyncInput) {
 }
 
 export async function flushSyncQueue() {
+  if (_flushing) return { synced: 0, skipped: 0 }
+  _flushing = true
+  try {
+    return await _flushSyncQueue()
+  } finally {
+    _flushing = false
+  }
+}
+
+async function _flushSyncQueue() {
   if (isSuspended()) return { synced: 0, skipped: 0 }
 
   const queue = readQueue()
   const apiUrl = getApiUrl()
   const token = getAuthToken()
 
-  if (!isBrowserOnline() || !apiUrl || !token) {
+  if (!apiUrl || !token) {
     dispatchSyncChanged()
     return { synced: 0, skipped: queue.filter((op) => op.status === "Pending").length }
   }
 
-  // Only try operations that are Pending and haven't exceeded max attempts
-  const pending = queue.filter(
-    (op) => (op.status === "Pending" || op.status === "Failed") && op.attempts < MAX_ATTEMPTS
-  )
+  // Only try operations that are Pending/Failed, haven't exceeded max attempts,
+  // AND whose backoff window has elapsed
+  const now = Date.now()
+  const pending = queue.filter((op) => {
+    if (op.status === "Synced") return false
+    if (op.attempts >= MAX_ATTEMPTS) return false
+    if (op.status === "Failed" && op.lastAttemptAt) {
+      const elapsed = now - new Date(op.lastAttemptAt).getTime()
+      if (elapsed < backoffMs(op.attempts)) return false
+    }
+    return true
+  })
 
   if (pending.length === 0) {
     dispatchSyncChanged()
@@ -386,6 +438,16 @@ export async function flushSyncQueue() {
  * pull, an empty array is authoritative and replaces local.
  */
 export async function pullFromServer(full = false) {
+  if (_pulling) return
+  _pulling = true
+  try {
+    await _pullFromServer(full)
+  } finally {
+    _pulling = false
+  }
+}
+
+async function _pullFromServer(full = false) {
   if (isSuspended()) return
 
   const apiUrl = getApiUrl()

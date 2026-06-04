@@ -128,9 +128,10 @@ router.post("/order", async (req: any, res: ServerResponse) => {
       return
     }
 
-    const itemsTotal = body.items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0)
-    const deliveryFee = body.deliveryFee ?? 0
-    const total = itemsTotal + deliveryFee
+    const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
+    const itemsTotal = round2(body.items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0))
+    const deliveryFee = round2(body.deliveryFee ?? 0)
+    const total = round2(itemsTotal + deliveryFee)
 
     const orderCount = await prisma.deliveryOrder.count({ where: { tenantId: body.tenantId } })
     const orderNumber = `DEL-${String(orderCount + 1).padStart(6, "0")}`
@@ -156,7 +157,7 @@ router.post("/order", async (req: any, res: ServerResponse) => {
             barcode: i.barcode,
             quantity: i.quantity,
             unitPrice: i.unitPrice,
-            total: i.quantity * i.unitPrice,
+            total: round2(i.quantity * i.unitPrice),
           })),
         },
       },
@@ -366,17 +367,34 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerRes
     // Verify ownership before mutating
     const existing = await prisma.deliveryOrder.findFirst({
       where: { id: req.params?.id as string, tenantId },
-      select: { id: true },
+      select: { id: true, status: true },
     })
     if (!existing) {
       json(res, { error: "Not found" }, 404)
       return
     }
 
-    const order = await prisma.deliveryOrder.update({
-      where: { id: existing.id },
-      data: updateData as any,
-      include: { items: true },
+    const wasDelivered = existing.status === "Delivered"
+    const becomingDelivered = body.status === "Delivered" && !wasDelivered
+
+    const order = await prisma.$transaction(async (tx) => {
+      const updated = await tx.deliveryOrder.update({
+        where: { id: existing.id },
+        data: updateData as any,
+        include: { items: true },
+      })
+
+      // Decrement product stock exactly once when order transitions → Delivered
+      if (becomingDelivered && updated.items.length > 0) {
+        for (const item of updated.items) {
+          await tx.product.updateMany({
+            where: { id: item.productId, tenantId },
+            data: { stock: { decrement: item.quantity } },
+          })
+        }
+      }
+
+      return updated
     })
 
     // Broadcast changes via WebSocket
@@ -470,18 +488,34 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
     }
 
     const updateData: Record<string, unknown> = { status: newStatus }
+    const becomingDelivered = newStatus === "Delivered" && order.status !== "Delivered"
     if (newStatus === "Delivered") {
       updateData.deliveredAt = new Date()
       if (typeof paidAmount === "number") {
+        const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
         updateData.paidAmount = paidAmount
-        updateData.changeRequired = Math.max(0, paidAmount - (order.total ?? 0))
+        updateData.changeRequired = round2(Math.max(0, paidAmount - Number(order.total ?? 0)))
       }
     }
 
-    const updated = await prisma.deliveryOrder.update({
-      where: { id: orderId },
-      data: updateData as any,
-      include: { items: true },
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.deliveryOrder.update({
+        where: { id: orderId },
+        data: updateData as any,
+        include: { items: true },
+      })
+
+      // Decrement product stock exactly once when driver marks → Delivered
+      if (becomingDelivered && result.items.length > 0) {
+        for (const item of result.items) {
+          await tx.product.updateMany({
+            where: { id: item.productId, tenantId: order.tenantId },
+            data: { stock: { decrement: item.quantity } },
+          })
+        }
+      }
+
+      return result
     })
 
     // Notify tenant and customer tracking page
@@ -635,14 +669,14 @@ router.post("/customer/signup", async (req: any, res: ServerResponse) => {
       }
       const updated = await prisma.customer.update({
         where: { id: existing.id },
-        data: { name, pin: createHash("sha256").update(pin).digest("base64") },
+        data: { name, pin: await bcrypt.hash(pin, 12) },
         select: { id: true, name: true, mobile: true },
       })
       json(res, { customer: updated }, 200)
       return
     }
     const customer = await prisma.customer.create({
-      data: { tenantId, name, mobile, pin: createHash("sha256").update(pin).digest("base64") },
+      data: { tenantId, name, mobile, pin: await bcrypt.hash(pin, 12) },
       select: { id: true, name: true, mobile: true },
     })
     json(res, { customer }, 201)
@@ -668,8 +702,8 @@ router.post("/customer/login", async (req: any, res: ServerResponse) => {
       json(res, { error: "No account found with this phone number" }, 401)
       return
     }
-    const hashed = createHash("sha256").update(pin).digest("base64")
-    if (customer.pin !== hashed) {
+    const pinValid = await bcrypt.compare(pin, customer.pin)
+    if (!pinValid) {
       json(res, { error: "Invalid PIN" }, 401)
       return
     }

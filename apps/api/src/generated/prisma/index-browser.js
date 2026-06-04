@@ -328,6 +328,18 @@ exports.Prisma.PurchaseOrderScalarFieldEnum = {
   receivedAt: 'receivedAt'
 };
 
+exports.Prisma.PurchaseOrderItemScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  purchaseOrderId: 'purchaseOrderId',
+  productName: 'productName',
+  barcode: 'barcode',
+  quantity: 'quantity',
+  unitCost: 'unitCost',
+  unitPrice: 'unitPrice',
+  total: 'total'
+};
+
 exports.Prisma.SupplierPaymentScalarFieldEnum = {
   id: 'id',
   tenantId: 'tenantId',
@@ -636,6 +648,7 @@ exports.Prisma.ModelName = {
   DebtPayment: 'DebtPayment',
   Supplier: 'Supplier',
   PurchaseOrder: 'PurchaseOrder',
+  PurchaseOrderItem: 'PurchaseOrderItem',
   SupplierPayment: 'SupplierPayment',
   Shift: 'Shift',
   AuditEvent: 'AuditEvent',

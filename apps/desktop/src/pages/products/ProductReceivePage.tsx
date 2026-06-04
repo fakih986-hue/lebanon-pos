@@ -34,6 +34,7 @@ import {
   type Html5QrcodeInstance,
 } from "../../features/pos/lib/cameraScanner"
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
+import { createId } from "../../features/pos/lib/storage"
 import {
   findProductByBarcode,
   generateProductBarcode,
@@ -91,7 +92,7 @@ const RECEIVE_CAMERA_READER_ID = "lebanonpos-receive-camera-reader"
 
 function createRow(defaults?: Partial<BatchRow>): BatchRow {
   return {
-    id: crypto.randomUUID(),
+    id: createId(),
     name: "",
     category: "",
     quantity: 0,

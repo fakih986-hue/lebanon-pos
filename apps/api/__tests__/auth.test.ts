@@ -92,7 +92,7 @@ describe("POST /api/auth/login", () => {
     expect(res.status).toBe(401)
   })
 
-  it("returns 401 when driver code is missing for driver login", async () => {
+  it("returns 400 when driver code is missing for driver login", async () => {
     const res = await request("POST", "/api/auth/login", { body: { pin: "1234", role: "Driver" } })
     expect(res.status).toBe(400)
     expect(res.body.error).toContain("code")
@@ -100,7 +100,7 @@ describe("POST /api/auth/login", () => {
 
   it("returns 401 when driver code does not match", async () => {
     vi.mocked(prisma.staffUser.findFirst).mockResolvedValue(null)
-    const res = await request("POST", "/api/auth/login", { body: { pin: "1234", role: "Driver", code: "X999" } })
+    const res = await request("POST", "/api/auth/login", { body: { pin: "1234", role: "Driver", code: "X999", tenantSubdomain: "test" } })
     expect(res.status).toBe(401)
   })
 

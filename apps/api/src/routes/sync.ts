@@ -1,10 +1,10 @@
 import { Router } from "express"
-import type { Response } from "express"
+import type { ServerResponse } from "node:http"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
 import prisma from "../lib/prisma.js"
 
-import { requireAuth, type AuthRequest } from "../middleware/auth.js"
+import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
 const router = Router()
 
@@ -48,26 +48,26 @@ const syncPushSchema = z.object({
 
 type SyncOperationInput = z.infer<typeof syncOperationSchema>
 
-router.get("/status", requireAuth, async (req: AuthRequest, res: Response) => {
+router.get("/status", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: req.auth!.tenantId },
       select: { name: true, subdomain: true, suspended: true },
     })
-    if (!tenant) { res.status(404).json({ error: "Tenant not found" }); return }
-    res.json(tenant)
+    if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
+    json(res, tenant)
   } catch (err) {
     console.error("Tenant status error:", err)
-    res.status(500).json({ error: "Failed to get tenant status" })
+    json(res, { error: "Failed to get tenant status" }, 500)
   }
 })
 
-router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Response) => {
+router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
   const parsed = syncPushSchema.safeParse(req.body)
   const tenantId = req.auth!.tenantId
 
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid sync payload", details: parsed.error.flatten() })
+    json(res, { error: "Invalid sync payload", details: parsed.error.flatten() }, 400)
     return
   }
 
@@ -148,10 +148,11 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Respon
     }
   }
 
-  res.json({ results })
+  json(res, { results })
 })
 
-router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: Response) => {
+router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+  try {
   const tenantId = req.auth!.tenantId
   const since = req.query.since as string | undefined
   const sinceDate = since ? new Date(since) : undefined
@@ -261,12 +262,16 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: Respons
     }),
   ])
 
-  res.json({
+  json(res, {
     products, sales, refunds, customers, debtSales, debtPayments,
     suppliers, purchaseOrders, supplierPayments, users, shifts,
     auditEvents, settings: settings ? [settings] : [], expenses, batches,
     adjustments, stockCounts: counts, dailyCloses, deliveryOrders,
   })
+  } catch (err) {
+    console.error("Sync pull error:", err)
+    json(res, { error: "Failed to pull sync data" }, 500)
+  }
 })
 
 async function processOperation(
@@ -541,12 +546,31 @@ async function processOperation(
     }
     case "purchase-order": {
       if (action === "create" || action === "update") {
-        const { items: _i, ...poData } = payload ?? {}
+        const { items, ...poData } = payload ?? {}
         await db.purchaseOrder.upsert({
           where: { id: payload?.id as string },
           create: { ...poData, tenantId } as any,
           update: { ...poData } as any,
         })
+        // Persist line items — delete existing then re-insert (idempotent)
+        if (Array.isArray(items) && items.length > 0) {
+          await db.purchaseOrderItem.deleteMany({
+            where: { purchaseOrderId: payload?.id as string, tenantId },
+          })
+          await db.purchaseOrderItem.createMany({
+            data: items.map((item: any) => ({
+              id: item.id ?? undefined,
+              tenantId,
+              purchaseOrderId: payload?.id as string,
+              productName: item.name ?? item.productName ?? "",
+              barcode: item.barcode ?? "",
+              quantity: item.quantity ?? 0,
+              unitCost: item.unitCost ?? 0,
+              unitPrice: item.unitPrice ?? item.price ?? 0,
+              total: item.total ?? 0,
+            })),
+          })
+        }
       }
       break
     }

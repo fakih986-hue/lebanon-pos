@@ -1,7 +1,18 @@
 import { PrismaClient } from '../src/generated/prisma/index.js'
 import bcrypt from 'bcryptjs'
+import { randomInt } from 'node:crypto'
 
 const prisma = new PrismaClient()
+
+/** Generate a random numeric PIN. In dev, reads SEED_ADMIN_PIN env var first. */
+function seedPin(envVar?: string): string {
+  if (envVar) return envVar
+  // Fail loudly in production; allow random for dev convenience
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL: seed must not run in production without explicit PIN env vars')
+  }
+  return Array.from({ length: 6 }, () => randomInt(0, 10)).join('')
+}
 
 async function main() {
   const tenant = await prisma.tenant.upsert({
@@ -10,10 +21,19 @@ async function main() {
     create: { name: 'Default Tenant', subdomain: 'default' },
   })
 
+  const adminPin    = seedPin(process.env.SEED_ADMIN_PIN)
+  const managerPin  = seedPin(process.env.SEED_MANAGER_PIN)
+  const cashierPin  = seedPin(process.env.SEED_CASHIER_PIN)
+
+  console.log('\n⚠️  SEED PINs (save these — shown once):')
+  console.log(`   Domain Admin  PIN: ${adminPin}`)
+  console.log(`   Store Manager PIN: ${managerPin}`)
+  console.log(`   Cashier       PIN: ${cashierPin}\n`)
+
   const staff = [
-    { name: 'Domain Admin', mobile: '96170123456', pin: '0000', role: 'Admin' as const },
-    { name: 'Store Manager', mobile: '96170345678', pin: '0000', role: 'Manager' as const },
-    { name: 'Cashier', mobile: '96170567890', pin: '0000', role: 'Cashier' as const },
+    { name: 'Domain Admin', mobile: '96170123456', pin: adminPin, role: 'Admin' as const },
+    { name: 'Store Manager', mobile: '96170345678', pin: managerPin, role: 'Manager' as const },
+    { name: 'Cashier', mobile: '96170567890', pin: cashierPin, role: 'Cashier' as const },
   ]
   for (const s of staff) {
     const existing = await prisma.staffUser.findFirst({ where: { tenantId: tenant.id, mobile: s.mobile } })

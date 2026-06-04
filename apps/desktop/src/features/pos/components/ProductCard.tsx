@@ -1,136 +1,142 @@
 import { memo } from "react"
-import { Star } from "lucide-react"
+import { ShoppingCart, Star } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
-import { formatCurrency } from "../lib/currency"
+
+import { formatCurrency, formatLbpCurrency, usdToLbp } from "../lib/currency"
 import type { Product, ProductAccent } from "../types/product"
 
 type Props = {
   product: Product
+  exchangeRate: number
   onClick: () => void
   onFavoriteToggle?: () => void
 }
 
-const accentColors: Record<ProductAccent, { bar: string; bg: string; text: string }> = {
-  amber:   { bar: "#F59E0B", bg: "rgba(245,158,11,0.08)", text: "#B45309" },
-  cyan:    { bar: "#06B6D4", bg: "rgba(6,182,212,0.08)",  text: "#0E7490" },
-  emerald: { bar: "#10B981", bg: "rgba(16,185,129,0.08)", text: "#047857" },
-  indigo:  { bar: "#6366F1", bg: "rgba(99,102,241,0.08)", text: "#4338CA" },
-  rose:    { bar: "#F43F5E", bg: "rgba(244,63,94,0.08)",  text: "#BE123C" },
-  violet:  { bar: "#8B5CF6", bg: "rgba(139,92,246,0.08)", text: "#6D28D9" },
+const accents: Record<ProductAccent, { bg: string; border: string; text: string; top: string }> = {
+  amber: { bg: "var(--amber-soft)", border: "rgba(217,119,6,0.28)", text: "var(--amber-text)", top: "#d97706" },
+  cyan: { bg: "var(--cyan-soft)", border: "rgba(8,145,178,0.22)", text: "#0e7490", top: "#0891b2" },
+  emerald: { bg: "var(--brand-soft)", border: "var(--brand-border)", text: "var(--brand-text)", top: "#047857" },
+  indigo: { bg: "var(--blue-soft)", border: "rgba(37,99,235,0.22)", text: "var(--blue-text)", top: "#6366f1" },
+  rose: { bg: "var(--rose-soft)", border: "rgba(220,38,38,0.22)", text: "var(--rose-text)", top: "#e11d48" },
+  violet: { bg: "var(--blue-soft)", border: "rgba(37,99,235,0.22)", text: "var(--blue-text)", top: "#8b5cf6" },
 }
 
-const ProductCard = memo(function ProductCard({ product, onClick, onFavoriteToggle }: Props) {
+const ProductCard = memo(function ProductCard({
+  product,
+  exchangeRate,
+  onClick,
+  onFavoriteToggle,
+}: Props) {
   const { t } = useI18n()
   const outOfStock = product.stock <= 0
   const lowStock = !outOfStock && product.stock <= 5
-  const accent = accentColors[product.accent] ?? accentColors.emerald
-  const stockLabel = outOfStock
-    ? { text: t("pos.out_of_stock"), dot: "var(--rose)" }
+  const accent = accents[product.accent] ?? accents.emerald
+
+  const stockTone = outOfStock
+    ? { bg: "var(--rose-soft)", text: "var(--rose-text)", label: t("pos.out_of_stock") }
     : lowStock
-      ? { text: `${product.stock} left`, dot: "var(--amber)" }
-      : { text: `${product.stock} in stock`, dot: "#22C55E" }
+      ? { bg: "var(--amber-soft)", text: "var(--amber-text)", label: `${product.stock} in stock` }
+      : { bg: "var(--brand-soft)", text: "var(--brand-text)", label: `${product.stock} in stock` }
 
   return (
     <article
-      className={`group relative rounded-xl border overflow-hidden transition-all duration-150 select-none
-        ${outOfStock ? "opacity-45" : "cursor-pointer hover:-translate-y-0.5 hover:shadow-md"}`}
-      style={{
-        background: "var(--surface)",
-        borderColor: "var(--border)",
-        boxShadow: "var(--shadow-xs)",
-      }}
+      className={`pos-product-tile group relative select-none overflow-hidden ${
+        outOfStock ? "opacity-50" : "cursor-pointer"
+      }`}
+      style={{ borderTop: `3px solid ${accent.top}` }}
     >
       <button
         type="button"
         onClick={onClick}
         disabled={outOfStock}
-        className="flex h-full w-full flex-col text-left"
-        style={{ minHeight: 136 }}
+        className="flex min-h-[150px] w-full flex-col p-3 text-left"
       >
-        <div style={{ height: 4, background: accent.bar }} />
+        <div className="flex items-start justify-between gap-2">
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-12 w-12 shrink-0 rounded-lg object-cover"
+              style={{ border: "1px solid var(--border)" }}
+            />
+          ) : (
+            <span
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-lg font-black"
+              style={{
+                background: accent.bg,
+                border: `1px solid ${accent.border}`,
+                color: accent.text,
+              }}
+            >
+              {product.name.charAt(0).toUpperCase()}
+            </span>
+          )}
 
-        <div className="flex flex-1 flex-col gap-2 p-3 pt-2.5">
-          <div className="flex items-start gap-2.5">
-            {product.image ? (
-              <img
-                src={product.image}
-                alt={product.name}
-                className="mt-0.5 h-11 w-11 shrink-0 rounded-lg object-cover"
-                style={{ border: "1px solid var(--border)" }}
-              />
-            ) : (
-              <div
-                className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-sm font-bold"
-                style={{
-                  background: accent.bg,
-                  color: accent.text,
-                  border: "1px solid",
-                  borderColor: accent.bar,
-                }}
-              >
-                {product.name.charAt(0).toUpperCase()}
+          <span
+            className="rounded-lg px-2 py-1 text-[10px] font-black"
+            style={{ background: stockTone.bg, color: stockTone.text }}
+          >
+            {stockTone.label}
+          </span>
+        </div>
+
+        <div className="mt-3 flex min-h-0 flex-1 flex-col">
+          <p className="line-clamp-2 min-h-[34px] text-[13px] font-black leading-tight" style={{ color: "var(--text)" }}>
+            {product.name}
+          </p>
+          <p className="mt-1 truncate text-[10px] font-bold tabular-nums" style={{ color: "var(--text-3)" }}>
+            {product.barcode || product.category}
+          </p>
+
+          <div className="mt-auto pt-2.5">
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <span className="block text-[20px] font-black leading-none tabular-nums" style={{ color: "var(--text)" }}>
+                  {formatCurrency(product.price)}
+                </span>
+                <span className="mt-1 block text-[10px] font-bold tabular-nums" style={{ color: "var(--text-3)" }}>
+                  {formatLbpCurrency(usdToLbp(product.price, exchangeRate))}
+                </span>
               </div>
-            )}
 
-            <div className="min-w-0 flex-1">
-              <p
-                className="line-clamp-2 text-[14px] font-semibold leading-snug pr-5"
-                style={{ color: "var(--text)" }}
+              <span
+                className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-lg text-white"
+                style={{ background: outOfStock ? "var(--surface-3)" : "var(--brand)" }}
               >
-                {product.name}
-              </p>
-              <p
-                className="mt-0.5 truncate text-[11px] font-medium"
-                style={{ color: "var(--text-3)" }}
+                <ShoppingCart size={16} />
+              </span>
+            </div>
+
+            <div className="mt-2.5 flex items-center justify-between gap-2">
+              <span
+                className="truncate rounded-lg px-2 py-1 text-[10px] font-black"
+                style={{ background: accent.bg, color: accent.text }}
               >
                 {product.category}
-              </p>
+              </span>
             </div>
-          </div>
-
-          <div className="mt-auto flex items-end justify-between gap-2">
-            <span
-              className="text-[18px] font-bold tabular-nums leading-none"
-              style={{ color: "var(--text)" }}
-            >
-              {formatCurrency(product.price)}
-            </span>
-
-            <span className="flex items-center gap-1.5 text-[11px] font-semibold leading-none whitespace-nowrap" style={{ color: "var(--text-3)" }}>
-              <span
-                className="inline-block h-2 w-2 rounded-full"
-                style={{ background: stockLabel.dot }}
-              />
-              {stockLabel.text}
-            </span>
           </div>
         </div>
       </button>
 
-      {onFavoriteToggle && (
+      {onFavoriteToggle ? (
         <button
           type="button"
-          onClick={(e) => { e.stopPropagation(); onFavoriteToggle() }}
-          className="absolute right-2 top-2.5 flex h-6 w-6 items-center justify-center rounded-md border transition hover:opacity-100"
-          style={product.favorite
-            ? { borderColor: "rgba(245,158,11,0.4)", background: "rgba(245,158,11,0.1)", color: "#F59E0B", opacity: 1 }
-            : { borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-3)", opacity: 0.5 }
+          onClick={(event) => {
+            event.stopPropagation()
+            onFavoriteToggle()
+          }}
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-lg border transition"
+          style={
+            product.favorite
+              ? { borderColor: "rgba(217,119,6,0.34)", background: "var(--amber-soft)", color: "var(--amber)" }
+              : { borderColor: "var(--border)", background: "rgba(255,255,255,0.9)", color: "var(--text-3)" }
           }
+          aria-label={product.favorite ? "Remove favorite" : "Add favorite"}
         >
-          <Star size={11} fill={product.favorite ? "currentColor" : "none"} />
+          <Star size={13} fill={product.favorite ? "currentColor" : "none"} />
         </button>
-      )}
-
-      {outOfStock && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl">
-          <span
-            className="rounded-lg px-3 py-1 text-[11px] font-bold uppercase tracking-wide shadow-sm"
-            style={{ background: "var(--surface)", color: "var(--text-3)", border: "1px solid var(--border)" }}
-          >
-            {t("pos.out_of_stock")}
-          </span>
-        </div>
-      )}
+      ) : null}
     </article>
   )
 })

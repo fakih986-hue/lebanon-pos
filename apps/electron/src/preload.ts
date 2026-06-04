@@ -8,9 +8,9 @@
 import { contextBridge, ipcRenderer } from "electron"
 
 contextBridge.exposeInMainWorld("electronAPI", {
-  /**
-   * Returns the server machine's LAN IP address.
-   * The POS can show "Other devices: http://192.168.x.x:3001" to the cashier.
-   */
+  /** Returns the server machine's LAN IP for "Other devices: http://x.x.x.x:3001" */
   getLocalIP: (): Promise<string> => ipcRenderer.invoke("get-local-ip"),
+
+  /** Returns the current app version string */
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke("get-app-version"),
 })

@@ -43,8 +43,15 @@ export function getCorsOptions(): CorsOptions {
   return {
     credentials: true,
     origin(origin, callback) {
-      if (!origin || allowedOrigins.length === 0) {
+      // No origin = same-origin request (server-side, curl, etc.) — always allow
+      if (!origin) {
         callback(null, true)
+        return
+      }
+
+      // If no allowlist configured, deny all cross-origin requests
+      if (allowedOrigins.length === 0) {
+        callback(new Error("CORS: no origins configured — set CORS_ORIGINS env var"))
         return
       }
 
@@ -88,7 +95,12 @@ export const securityHeaders: Handler = (_req, res, next) => {
 export function rateLimit({ windowMs, max, bucket = "api" }: RateLimitOptions) {
   return (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => {
     const now = Date.now()
-    const key = `${bucket}:${req.socket.remoteAddress ?? "unknown"}`
+    // Prefer X-Forwarded-For (set by Railway/nginx) over socket address
+    const forwarded = (req.headers as Record<string, string | string[] | undefined>)["x-forwarded-for"]
+    const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(",")[0])?.trim()
+      ?? req.socket.remoteAddress
+      ?? "unknown"
+    const key = `${bucket}:${ip}`
     const current = rateLimitBuckets.get(key)
 
     if (!current || current.resetAt <= now) {

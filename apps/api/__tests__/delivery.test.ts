@@ -11,23 +11,27 @@ vi.mock("../src/lib/prisma", () => {
     create: vi.fn(),
     upsert: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     deleteMany: vi.fn(),
     count: vi.fn(),
     ...overrides,
   })
 
-  return {
-    default: {
-      deliveryOrder: model(),
-      deliveryOrderItem: model(),
-      staffUser: model(),
-      appSettings: { findUnique: vi.fn(), upsert: vi.fn() },
-      tenant: { findUnique: vi.fn(), count: vi.fn().mockResolvedValue(1) },
-      customer: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
-      $connect: vi.fn(),
-      $disconnect: vi.fn(),
-    },
+  // $transaction calls the callback with the same mock client (no real DB transaction in tests)
+  const client = {
+    deliveryOrder: model(),
+    deliveryOrderItem: model(),
+    staffUser: model(),
+    product: model(),
+    appSettings: { findUnique: vi.fn(), upsert: vi.fn() },
+    tenant: { findUnique: vi.fn(), count: vi.fn().mockResolvedValue(1) },
+    customer: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
+    $connect: vi.fn(),
+    $disconnect: vi.fn(),
+    $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(client)),
   }
+
+  return { default: client }
 })
 
 const adminToken = signToken({ userId: "u1", tenantId: "t1", role: "Admin" })
@@ -120,8 +124,8 @@ describe("PATCH /api/delivery/orders/:id", () => {
   })
 
   it("returns 200 for valid status update", async () => {
-    vi.mocked(prisma.deliveryOrder.findFirst).mockResolvedValue({ id: "do1" })
-    vi.mocked(prisma.deliveryOrder.update).mockResolvedValue({ id: "do1", status: "Confirmed" } as any)
+    vi.mocked(prisma.deliveryOrder.findFirst).mockResolvedValue({ id: "do1", status: "Pending" } as any)
+    vi.mocked(prisma.deliveryOrder.update).mockResolvedValue({ id: "do1", status: "Confirmed", items: [], driverId: null } as any)
 
     const res = await request("PATCH", "/api/delivery/orders/do1", {
       token: adminToken,
@@ -175,7 +179,7 @@ describe("PATCH /api/delivery/driver/orders/:id/status", () => {
       const data = args.data as Record<string, unknown>
       const change = data.changeRequired as number
       expect(Number.isNaN(change)).toBe(false)
-      return { id: "do1", ...data }
+      return { id: "do1", items: [], tenantId: "t1", ...data }
     })
 
     const res = await request("PATCH", "/api/delivery/driver/orders/do1/status", {

@@ -124,7 +124,7 @@ router.post("/save-all", requireAuth, async (req: AuthRequest, res: ServerRespon
   }
 })
 
-router.post("/generate", async (req: IncomingMessage, res: ServerResponse) => {
+router.post("/generate", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   const { name } = (req as any).body ?? {}
   if (!name || typeof name !== "string") {
     json(res, { error: "Product name is required" }, 400)
@@ -261,8 +261,6 @@ router.get("/debug", requireAuth, async (req: AuthRequest, res: ServerResponse) 
   json(res, info)
 })
 
-router.get("/token", requireAuth, async (_req: AuthRequest, res: ServerResponse) => {
-  json(res, { token: HF_TOKEN || null, model: HF_MODEL })
-})
+// /token endpoint removed — HuggingFace token must never be exposed to clients
 
 export default router
