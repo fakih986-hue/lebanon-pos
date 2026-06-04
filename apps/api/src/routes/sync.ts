@@ -89,6 +89,14 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
 
       validateSyncOperation(op)
 
+      // Cashiers cannot void sales or issue refunds — requires Manager+
+      if (["void"].includes(op.action) && ["sale", "refund"].includes(op.entity)) {
+        if (req.auth!.role === "Cashier") {
+          results.push({ id: op.id, status: "error", error: "Only managers can void transactions" })
+          continue
+        }
+      }
+
       await prisma.$transaction(async (tx) => {
         await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma)
 

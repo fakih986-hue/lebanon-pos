@@ -285,25 +285,34 @@ router.get("/tenant", async (req: any, res: ServerResponse) => {
 // Customer-facing: list products for ordering
 router.get("/products", async (req: any, res: ServerResponse) => {
   try {
-    const tenantId = (req.query as Record<string, string>)?.tenantId
+    const q = (req.query as Record<string, string>) ?? {}
+    const tenantId = q.tenantId
     if (!tenantId) {
       json(res, { error: "tenantId query param required" }, 400)
       return
     }
-    const products = await prisma.product.findMany({
-      where: { tenantId, isParent: false },
-      select: {
-        id: true, name: true, price: true, barcode: true, category: true,
-        image: true, stock: true, isParent: true, parentId: true, variantName: true,
-        parent: { select: { name: true, image: true } },
-      },
-      orderBy: { name: "asc" },
-    })
+    const skip = Math.max(0, parseInt(q.skip ?? "0") || 0)
+    const limit = Math.min(500, Math.max(1, parseInt(q.limit ?? "500") || 500))
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where: { tenantId, isParent: false },
+        select: {
+          id: true, name: true, price: true, barcode: true, category: true,
+          image: true, stock: true, isParent: true, parentId: true, variantName: true,
+          parent: { select: { name: true, image: true } },
+        },
+        orderBy: { name: "asc" },
+        skip,
+        take: limit,
+      }),
+      prisma.product.count({ where: { tenantId, isParent: false } }),
+    ])
     const result = products.map(p => ({
       ...p,
       image: p.image ? true : false,
       parent: p.parent ? { ...p.parent, image: p.parent.image ? true : false } : null,
     }))
+    res.setHeader("X-Total-Count", total.toString())
     json(res, result)
   } catch (err) {
     console.error("Delivery products error:", err)
@@ -317,15 +326,22 @@ router.get("/orders", requireAuth, async (req: AuthRequest, res: ServerResponse)
     const tenantId = req.auth!.tenantId
     const q = (req.query as Record<string, string>) ?? {}
     const statusFilter = q.status
+    const skip = Math.max(0, parseInt(q.skip ?? "0") || 0)
+    const limit = Math.min(200, Math.max(1, parseInt(q.limit ?? "100") || 100))
     const where: Record<string, unknown> = { tenantId }
     if (statusFilter && statusFilter !== "All") where.status = statusFilter
 
-    const orders = await prisma.deliveryOrder.findMany({
-      where: where as any,
-      include: { items: true },
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    })
+    const [orders, total] = await Promise.all([
+      prisma.deliveryOrder.findMany({
+        where: where as any,
+        include: { items: true },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.deliveryOrder.count({ where: where as any }),
+    ])
+    res.setHeader("X-Total-Count", total.toString())
     json(res, orders)
   } catch (err) {
     console.error("Delivery orders list error:", err)
