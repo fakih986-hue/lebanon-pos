@@ -38,7 +38,6 @@ type PaymentOption = { label: PaymentMethod; icon: LucideIcon; color: string }
 
 const paymentOptions: PaymentOption[] = [
   { label: "Cash",   icon: Landmark,    color: "emerald" },
-  { label: "Card",   icon: CreditCard,  color: "indigo"  },
   { label: "Wallet", icon: WalletCards, color: "violet"  },
   { label: "Debt",   icon: HandCoins,   color: "amber"   },
 ]

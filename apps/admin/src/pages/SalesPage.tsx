@@ -98,7 +98,6 @@ export function SalesPage() {
           className="h-10 rounded-xl border px-3 text-sm font-semibold outline-none" style={{ background: "var(--surface-input)", borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}>
           <option value="All">All Payments</option>
           <option value="Cash">Cash</option>
-          <option value="Card">Card</option>
           <option value="Wallet">Wallet</option>
           <option value="Debt">Debt</option>
         </select>

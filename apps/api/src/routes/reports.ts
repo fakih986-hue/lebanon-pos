@@ -81,14 +81,9 @@ router.get("/x-report", requireAuth, async (req: AuthRequest, res: ServerRespons
       }),
     ])
 
-    const [cashSales, cardSales, walletSales] = await Promise.all([
+    const [cashSales, walletSales] = await Promise.all([
       prisma.sale.aggregate({
         where: { tenantId, status: "Completed", paymentMethod: "Cash", createdAt: { gte: since } },
-        _sum: { total: true },
-        _count: true,
-      }),
-      prisma.sale.aggregate({
-        where: { tenantId, status: "Completed", paymentMethod: "Card", createdAt: { gte: since } },
         _sum: { total: true },
         _count: true,
       }),
@@ -124,9 +119,8 @@ router.get("/x-report", requireAuth, async (req: AuthRequest, res: ServerRespons
         total: Number(supplierPayments._sum.amount ?? 0),
       },
       paymentBreakdown: {
-        cash: { count: cashSales._count, total: Number(cashSales._sum.total ?? 0) },
-        card: { count: cardSales._count, total: Number(cardSales._sum.total ?? 0) },
-        wallet: { total: Number(walletSales._sum.total ?? 0) },
+      cashSales: { count: cashSales._count, total: Number(cashSales._sum.total ?? 0) },
+      wallet: { total: Number(walletSales._sum.total ?? 0) },
       },
       netCash: Number(cashSales._sum.total ?? 0) - Number(refunds._sum.total ?? 0) - Number(expenses._sum.amount ?? 0),
       generatedAt: new Date().toISOString(),
