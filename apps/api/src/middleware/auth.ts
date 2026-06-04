@@ -9,6 +9,10 @@ import { Decimal } from "@prisma/client/runtime/library"
  */
 function serializeDecimals(value: unknown): unknown {
   if (value instanceof Decimal) return value.toNumber()
+  // Fallback: Decimal-like object from Prisma that instanceof misses (ESM module duplication)
+  if (value !== null && typeof value === "object" && !Array.isArray(value) && "s" in value && "d" in value && (value as any).toNumber) {
+    return (value as any).toNumber()
+  }
   if (Array.isArray(value)) return value.map(serializeDecimals)
   if (value !== null && typeof value === "object") {
     return Object.fromEntries(
@@ -44,7 +48,14 @@ type Handler = (
 export function json(res: ServerResponse, data: unknown, statusCode = 200) {
   res.statusCode = statusCode
   res.setHeader("Content-Type", "application/json")
-  res.end(JSON.stringify(serializeDecimals(data)))
+  // serializeDecimals handles most cases; JSON.stringify replacer catches any missed
+  res.end(JSON.stringify(serializeDecimals(data), (key: string, value: unknown) => {
+    if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      if (value instanceof Decimal) return value.toNumber()
+      if ("toNumber" in value && typeof (value as any).toNumber === "function") return (value as any).toNumber()
+    }
+    return value
+  }))
 }
 
 export const requireAuth: Handler = (req, res, next) => {

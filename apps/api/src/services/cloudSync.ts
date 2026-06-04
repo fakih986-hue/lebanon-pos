@@ -204,9 +204,16 @@ function fixDecimalObjects(value: unknown): unknown {
   if (typeof value !== "object") return value
   if (Array.isArray(value)) { for (let i = 0; i < value.length; i++) value[i] = fixDecimalObjects(value[i]); return value }
   const obj = value as Record<string, unknown>
-  if ("s" in obj && "e" in obj && "d" in obj && Array.isArray(obj.d)) {
-    const s = obj.s as number; const e = obj.e as number; const digits = obj.d[0] as number
-    return s * digits * Math.pow(10, e)
+  // Catch Prisma Decimal objects { s, e, d } from Railway JSON
+  if ("s" in obj && "e" in obj && "d" in obj && Array.isArray(obj.d) && typeof obj.s === "number" && typeof obj.e === "number") {
+    const arr = obj.d as number[]
+    let mantissa = ""
+    for (let i = 0; i < arr.length; i++) {
+      let s = arr[i].toString()
+      if (i < arr.length - 1) s = s.padStart(4, "0")
+      mantissa = s + mantissa
+    }
+    return Number((obj.s < 0 ? "-" : "") + mantissa + "e" + obj.e)
   }
   for (const k of Object.keys(obj)) obj[k] = fixDecimalObjects(obj[k])
   return obj
