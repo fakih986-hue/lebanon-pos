@@ -2,8 +2,10 @@ import { Router } from "express"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import bcrypt from "bcryptjs"
 import { createHash } from "crypto"
+import crypto from "crypto"
 import jwt from "jsonwebtoken"
 import prisma from "../lib/prisma.js"
+import { decrementProductStock } from "../lib/inventory.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 import { broadcastToTenant, broadcastToUser, getConnectedDrivers } from "../ws/index.js"
 
@@ -51,7 +53,7 @@ router.post("/drivers", requireAuth, async (req: AuthRequest, res: ServerRespons
         name,
         mobile: mobile ?? "",
         code,
-        pin: await bcrypt.hash(pin, 10),
+        pin: await bcrypt.hash(pin, 12),
         role: "Driver",
         active: true,
       },
@@ -134,7 +136,8 @@ router.post("/order", async (req: any, res: ServerResponse) => {
     const total = round2(itemsTotal + deliveryFee)
 
     const orderCount = await prisma.deliveryOrder.count({ where: { tenantId: body.tenantId } })
-    const orderNumber = `DEL-${String(orderCount + 1).padStart(6, "0")}`
+    const suffix = crypto.randomInt(1000, 9999)
+    const orderNumber = `DEL-${String(orderCount + 1).padStart(6, "0")}-${suffix}`
 
     const order = await prisma.deliveryOrder.create({
       data: {
@@ -386,24 +389,7 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerRes
 
       // Decrement product stock exactly once when order transitions → Delivered
       if (becomingDelivered && updated.items.length > 0) {
-        const ids = updated.items.map((i: any) => i.productId)
-        const prods = await tx.product.findMany({
-          where: { tenantId, id: { in: ids } },
-          select: { id: true, stock: true, name: true },
-        })
-        const stockMap = new Map(prods.map((p: any) => [p.id, { stock: Number(p.stock), name: p.name }]))
-        for (const item of updated.items) {
-          const info = stockMap.get(item.productId) ?? { stock: 0, name: item.productName ?? `ID ${item.productId}` }
-          if (info.stock < item.quantity) {
-            throw new Error(`Insufficient stock for "${info.name}": ${info.stock} available, ${item.quantity} required`)
-          }
-        }
-        for (const item of updated.items) {
-          await tx.product.updateMany({
-            where: { id: item.productId, tenantId },
-            data: { stock: { decrement: item.quantity } },
-          })
-        }
+        await decrementProductStock(tx, tenantId, updated.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
       }
 
       return updated
@@ -519,24 +505,7 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
 
       // Decrement product stock exactly once when driver marks → Delivered
       if (becomingDelivered && result.items.length > 0) {
-        const ids = result.items.map((i: any) => i.productId)
-        const prods = await tx.product.findMany({
-          where: { tenantId: order.tenantId, id: { in: ids } },
-          select: { id: true, stock: true, name: true },
-        })
-        const stockMap = new Map(prods.map((p: any) => [p.id, { stock: Number(p.stock), name: p.name }]))
-        for (const item of result.items) {
-          const info = stockMap.get(item.productId) ?? { stock: 0, name: item.productName ?? `ID ${item.productId}` }
-          if (info.stock < item.quantity) {
-            throw new Error(`Insufficient stock for "${info.name}": ${info.stock} available, ${item.quantity} required`)
-          }
-        }
-        for (const item of result.items) {
-          await tx.product.updateMany({
-            where: { id: item.productId, tenantId: order.tenantId },
-            data: { stock: { decrement: item.quantity } },
-          })
-        }
+        await decrementProductStock(tx, order.tenantId, result.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
       }
 
       return result

@@ -4,6 +4,7 @@ import path from "node:path"
 import fs from "node:fs"
 import { fileURLToPath } from "node:url"
 import { json } from "./middleware/auth.js"
+import prisma from "./lib/prisma.js"
 import { Decimal } from "@prisma/client/runtime/library"
 import cors from "cors"
 
@@ -51,6 +52,7 @@ app.use("/api/delivery/customer/login", rateLimit({ windowMs: 60_000, max: 10, b
 app.use("/api/dashboard", rateLimit({ windowMs: 60_000, max: 120, bucket: "dashboard" }))
 app.use("/api/setup", rateLimit({ windowMs: 60_000, max: 20, bucket: "setup" }))
 app.use("/api/images", rateLimit({ windowMs: 60_000, max: 60, bucket: "images" }))
+app.use("/api/admin/login", rateLimit({ windowMs: 60_000, max: 5, bucket: "admin-login" }))
 app.use("/api/admin", rateLimit({ windowMs: 60_000, max: 60, bucket: "admin" }))
 app.use("/api/reports", rateLimit({ windowMs: 60_000, max: 60, bucket: "reports" }))
 app.use("/api/delivery", rateLimit({ windowMs: 60_000, max: 120, bucket: "delivery" }))
@@ -64,8 +66,13 @@ app.use("/api/images", imageRoutes)
 app.use("/api/admin", adminRoutes)
 app.use("/api/reports", reportsRoutes)
 
-app.get("/api/health", (_req: IncomingMessage, res: ServerResponse) => {
-  json(res, { status: "ok", timestamp: new Date().toISOString() })
+app.get("/api/health", async (_req: IncomingMessage, res: ServerResponse) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    json(res, { status: "ok", timestamp: new Date().toISOString() })
+  } catch {
+    json(res, { status: "error", timestamp: new Date().toISOString() }, 503)
+  }
 })
 
 app.use(express.static("public"))

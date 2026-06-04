@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs"
 import { z } from "zod"
 import prisma from "../lib/prisma.js"
 
+import { decrementProductStock } from "../lib/inventory.js"
 import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
 const router = Router()
@@ -392,24 +393,7 @@ async function processOperation(
 
         // Only decrement stock for NEW sales (avoid double-decrement on retry)
         if (!existingSale) {
-          const ids = prismaItems.map((i: any) => i.productId)
-          const prods = await db.product.findMany({
-            where: { tenantId, id: { in: ids } },
-            select: { id: true, stock: true, name: true },
-          })
-          const stockMap = new Map(prods.map((p: any) => [p.id, { stock: Number(p.stock), name: p.name }]))
-          for (const item of prismaItems) {
-            const info = stockMap.get(item.productId) ?? { stock: 0, name: item.productName ?? `ID ${item.productId}` }
-            if (info.stock < item.quantity) {
-              throw new Error(`Insufficient stock for "${info.name}": ${info.stock} available, ${item.quantity} required`)
-            }
-          }
-          for (const item of prismaItems) {
-            await db.product.updateMany({
-              where: { tenantId, id: item.productId },
-              data: { stock: { decrement: item.quantity } },
-            })
-          }
+          await decrementProductStock(db, tenantId, prismaItems.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
         }
       }
       break
@@ -707,7 +691,7 @@ async function hashStaffPayload(payload?: Record<string, unknown>) {
   const pin = typeof data.pin === "string" ? data.pin : ""
 
   if (pin && !pin.startsWith("$2") && !isSha256Base64(pin)) {
-    data.pin = await bcrypt.hash(pin, 10)
+    data.pin = await bcrypt.hash(pin, 12)
   }
 
   return data

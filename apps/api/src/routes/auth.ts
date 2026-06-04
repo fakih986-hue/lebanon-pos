@@ -153,6 +153,32 @@ router.post("/login", async (req: any, res: any) => {
 
     const tenantFilter = tenantSubdomain ? { tenant: { subdomain: tenantSubdomain } } : {}
 
+    // Fast path: code-based lookup using the indexed code column
+    if (code) {
+      const candidate = await prisma.staffUser.findFirst({
+        where: { code, active: true, ...tenantFilter },
+        include: { tenant: true },
+      })
+      if (candidate) {
+        const pinMatches = candidate.pin.startsWith("$2")
+          ? await bcrypt.compare(pin, candidate.pin)
+          : candidate.pin === hashSha256Pin(pin)
+        if (pinMatches) {
+          const token = signToken({ userId: candidate.id, tenantId: candidate.tenantId, role: candidate.role })
+          res.json({
+            token, user: { id: candidate.id, name: candidate.name, role: candidate.role, tenantId: candidate.tenantId, tenantName: candidate.tenant.name },
+          })
+          // Migrate legacy SHA-256 PIN to bcrypt
+          if (!candidate.pin.startsWith("$2")) {
+            prisma.staffUser.update({ where: { id: candidate.id }, data: { pin: await bcrypt.hash(pin, 12) } }).catch((e) => console.error("[auth] PIN migration failed:", e))
+          }
+          return
+        }
+      }
+      res.status(401).json({ error: "Invalid credentials" })
+      return
+    }
+
     const rolePriority: Record<string, number> = { Admin: 4, Manager: 3, Cashier: 2, Driver: 1 }
     const betterRole = (a: any, b: any) =>
       (rolePriority[b.role] ?? 0) > (rolePriority[a.role] ?? 0) ? b : a

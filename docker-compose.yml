@@ -1,3 +1,6 @@
+# WARNING: This is a DEV compose file with hardcoded credentials.
+# DO NOT use in production. For production, use docker-compose.prod.yml
+# which reads secrets from environment variables.
 services:
   api:
     build:
