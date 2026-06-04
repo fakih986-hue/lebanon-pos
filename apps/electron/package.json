@@ -58,8 +58,7 @@
           ]
         }
       ],
-      "icon": "assets/icon.ico",
-      "requestedExecutionLevel": "requireAdministrator"
+      "icon": "assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,

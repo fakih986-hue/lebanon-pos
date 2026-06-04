@@ -130,10 +130,45 @@ function getPgPassword(): string {
   return pw
 }
 
+const pgExe = (exe: string) => path.join(PG_BIN_DIR, exe + (process.platform === "win32" ? ".exe" : ""))
+
+/**
+ * Real usability probe: can we actually open a connection on our port?
+ * This is stronger than `pg_ctl status`, which reports false-positives for
+ * orphaned/zombie postgres child processes that aren't serving the port.
+ */
+async function canConnectPg(password: string): Promise<boolean> {
+  const client = new Client({
+    host: "localhost", port: PG_PORT, user: PG_USER, password,
+    database: "postgres", connectionTimeoutMillis: 2000,
+  })
+  try {
+    await client.connect()
+    await client.end()
+    return true
+  } catch {
+    try { await client.end() } catch { /* ignore */ }
+    return false
+  }
+}
+
+/** Remove a stale postmaster.pid (left by a crashed/killed server). */
+function clearStalePidFile(): void {
+  const pid = path.join(PG_DATA, "postmaster.pid")
+  if (fs.existsSync(pid)) {
+    try { fs.unlinkSync(pid); console.log("[pg] removed stale postmaster.pid") } catch { /* ignore */ }
+  }
+}
+
 async function startPostgres(password: string): Promise<void> {
-  const pg     = (exe: string) => path.join(PG_BIN_DIR, exe + (process.platform === "win32" ? ".exe" : ""))
-  const initdb = pg("initdb")
-  const pgCtl  = pg("pg_ctl")
+  const initdb = pgExe("initdb")
+  const pgCtl  = pgExe("pg_ctl")
+
+  // Already serving on our port (previous instance still up)? Reuse it.
+  if (await canConnectPg(password)) {
+    console.log("[pg] server already accepting connections — reusing")
+    return
+  }
 
   // First run: initialize the data directory
   const isNew = !fs.existsSync(path.join(PG_DATA, "PG_VERSION"))
@@ -157,13 +192,26 @@ async function startPostgres(password: string): Promise<void> {
       `host    all       ${PG_USER}  127.0.0.1/32  md5`,
       `host    all       ${PG_USER}  ::1/128        md5`,
     ].join("\n"))
+  } else {
+    // Existing data dir but server not running — clear any stale lock first
+    clearStalePidFile()
   }
 
-  // Start the server via pg_ctl
-  execSync(
-    `"${pgCtl}" start --pgdata="${PG_DATA}" --wait --timeout=30 -o "-p ${PG_PORT}"`,
-    { stdio: "pipe", env: process.env }
-  )
+  // Start the server via pg_ctl. Log to a file so failures are diagnosable.
+  const pgLog = path.join(USER_DATA, "pg.log")
+  try {
+    execSync(
+      `"${pgCtl}" start --pgdata="${PG_DATA}" --wait --timeout=30 -l "${pgLog}" -o "-p ${PG_PORT}"`,
+      { stdio: "pipe", env: process.env }
+    )
+  } catch (err) {
+    // Surface the Postgres log tail so the error dialog is actionable
+    let tail = ""
+    try { tail = fs.readFileSync(pgLog, "utf-8").split(/\r?\n/).slice(-12).join("\n") } catch { /* no log */ }
+    throw new Error(
+      `PostgreSQL failed to start.\n${(err as Error).message}\n\n--- pg.log ---\n${tail}`
+    )
+  }
 
   // Create the application database on first run
   if (isNew) {
