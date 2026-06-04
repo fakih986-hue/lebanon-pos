@@ -1,5 +1,4 @@
-import { CheckCircle2, Eraser, MessageCircle, Printer, ReceiptText } from "lucide-react"
-import { Link } from "react-router"
+import { CheckCircle2, Eraser, MessageCircle, Printer } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatLbpCurrency } from "../lib/currency"
 
@@ -23,72 +22,47 @@ export default function LastSaleBanner({ sale, onNewSale, onPrintReceipt, onWhat
 
   return (
     <div
-      className="flex flex-col gap-3 rounded-xl border p-3 xl:flex-row xl:items-center xl:justify-between"
+      className="flex items-center gap-3 rounded-lg border px-3 py-2"
       style={{
         background: "var(--brand-soft)",
         borderColor: "var(--brand-border)",
       }}
     >
-      <div className="flex items-center gap-3">
-        <CheckCircle2 size={20} style={{ color: "var(--brand)" }} />
-        <div>
-          <p className="text-[14px] font-bold" style={{ color: "var(--text)" }}>
-            {t("pos.last_sale.completed", { number: sale.number })}
-          </p>
-          <p className="text-[12px]" style={{ color: "var(--text-2)" }}>
-            {formatCurrency(sale.total)} / {formatLbpCurrency(sale.totalLbp)}
-            {sale.customerName ? ` · ${sale.customerName}` : ""}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
+      <CheckCircle2 size={16} className="shrink-0" style={{ color: "var(--brand)" }} />
+      <span className="text-[12px] font-semibold truncate" style={{ color: "var(--text)" }}>
+        {t("pos.last_sale.completed", { number: sale.number })}
+        <span className="ml-1.5 font-bold tabular-nums" style={{ color: "var(--brand-text)" }}>
+          {formatCurrency(sale.total)}
+        </span>
+      </span>
+      <div className="ml-auto flex shrink-0 items-center gap-1.5">
         <button
           type="button"
           onClick={onNewSale}
-          className="btn btn-primary h-9 gap-2"
+          className="flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-bold text-white transition hover:opacity-90"
+          style={{ background: "var(--brand)" }}
         >
-          <Eraser size={14} />
+          <Eraser size={12} />
           {t("pos.new_sale")}
         </button>
         <button
           type="button"
           onClick={onPrintReceipt}
-          className="btn h-9 gap-2"
-          style={{
-            background: "var(--surface)",
-            borderColor: "var(--brand-border)",
-            color: "var(--brand-text)",
-            border: "1px solid",
-          }}
+          className="flex h-7 items-center gap-1 rounded-md border px-2 text-[11px] font-bold transition hover:opacity-80"
+          style={{ borderColor: "var(--brand-border)", color: "var(--brand-text)", background: "white" }}
         >
-          <Printer size={14} />
-          {t("pos.receipt")}
+          <Printer size={12} />
         </button>
         {onWhatsApp && (
           <button
             type="button"
             onClick={onWhatsApp}
-            className="btn h-9 gap-2"
-            style={{ background: "var(--surface)", borderColor: "var(--border)", color: "#25D366", border: "1px solid" }}
+            className="flex h-7 items-center gap-1 rounded-md border px-2 text-[11px] font-bold transition hover:opacity-80"
+            style={{ borderColor: "var(--border)", color: "#25D366", background: "white" }}
           >
-            <MessageCircle size={14} />
-            WhatsApp
+            <MessageCircle size={12} />
           </button>
         )}
-        <Link
-          to="/sales?tab=receipts"
-          className="btn h-9 gap-2"
-          style={{
-            background: "var(--surface)",
-            borderColor: "var(--border)",
-            color: "var(--text-2)",
-            border: "1px solid",
-          }}
-        >
-          <ReceiptText size={14} />
-          {t("pos.history")}
-        </Link>
       </div>
     </div>
   )

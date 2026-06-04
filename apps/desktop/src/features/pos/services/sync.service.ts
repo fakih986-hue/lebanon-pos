@@ -65,8 +65,15 @@ const PULL_TARGETS: Record<string, { key: string; event: string }> = {
 
 export function getApiUrl(): string | null {
   const raw = localStorage.getItem(API_URL_KEY)
-  // Strip trailing slashes so `${apiUrl}/api/...` never produces a double slash
-  return raw ? raw.replace(/\/+$/, "") : raw
+  if (raw) return raw.replace(/\/+$/, "")
+  // In Electron (the hub), default to the local API on this machine's own origin
+  // so SPA → local Postgres → cloud bridge is the single data path with no setup.
+  const electronUrl =
+    typeof window !== "undefined"
+      ? (window as { __LBPOS_API_URL__?: string }).__LBPOS_API_URL__
+      : undefined
+  if (electronUrl) return electronUrl.replace(/\/+$/, "")
+  return raw
 }
 export function getAuthToken(): string | null {
   return localStorage.getItem(AUTH_TOKEN_KEY)

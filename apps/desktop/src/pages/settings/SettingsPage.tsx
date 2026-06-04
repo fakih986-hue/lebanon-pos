@@ -45,6 +45,11 @@ import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
 type SettingsWorkspace = "Business" | "Cloud sync" | "Security" | "Backup" | "Delivery"
 
+// Pre-baked Railway URL (shown read-only in Cloud sync). Overridable for dev.
+const CLOUD_URL_DISPLAY =
+  (typeof window !== "undefined" && (window as { __LBPOS_CLOUD_URL__?: string }).__LBPOS_CLOUD_URL__) ||
+  "https://lebanon-pos-production.up.railway.app"
+
 function normalizeNumber(value: string) {
   const parsedValue = Number(value)
 
@@ -84,6 +89,13 @@ export default function SettingsPage() {
   const [syncQueue, setSyncQueue] = useState<SyncOperation[]>(getSyncQueue())
   const [apiUrl, setApiUrlState] = useState(getApiUrl() ?? "")
   const [authToken, setAuthTokenState] = useState(getAuthToken() ?? "")
+
+  // ── Cloud bridge config (hub only) ──
+  const [cloudTenantId, setCloudTenantId] = useState("")
+  const [cloudApiKey, setCloudApiKey] = useState("")
+  const [cloudAdminPw, setCloudAdminPw] = useState("")
+  const [cloudSaving, setCloudSaving] = useState(false)
+  const [cloudStatus, setCloudStatus] = useState<{ configured: boolean; running: boolean; tenantId?: string; lastPullAt?: string; hubOnly?: boolean } | null>(null)
   const [activeWorkspace, setActiveWorkspace] =
     useState<SettingsWorkspace>("Business")
   const [drivers, setDrivers] = useState<Array<{ id: string; name: string }>>([])
@@ -111,6 +123,43 @@ export default function SettingsPage() {
       }),
     []
   )
+
+  // Load cloud bridge status when the Cloud sync tab opens (hub-only endpoint)
+  useEffect(() => {
+    if (activeWorkspace !== "Cloud sync") return
+    fetch("/api/setup/cloud-config")
+      .then(r => r.status === 403 ? { hubOnly: true } : r.json())
+      .then(setCloudStatus)
+      .catch(() => setCloudStatus(null))
+  }, [activeWorkspace])
+
+  async function handleSaveCloudConfig() {
+    if (!cloudTenantId.trim() || !cloudApiKey.trim() || !cloudAdminPw.trim()) {
+      showToast("Enter Tenant ID, Cloud API Key, and Admin Password.", "error")
+      return
+    }
+    setCloudSaving(true)
+    try {
+      const res = await fetch("/api/setup/cloud-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenantId: cloudTenantId.trim(),
+          apiKey: cloudApiKey.trim(),
+          adminPassword: cloudAdminPw.trim(),
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error ?? `Failed (HTTP ${res.status})`)
+      setCloudStatus(data)
+      setCloudApiKey("")
+      setCloudAdminPw("")
+      showToast("Cloud connected. Pulling store data…", "success")
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to connect cloud", "error")
+    }
+    setCloudSaving(false)
+  }
 
   function updateSettings(patch: Partial<AppSettings>) {
     setSettings((currentSettings) => ({
@@ -745,45 +794,93 @@ export default function SettingsPage() {
                 <Cloud size={21} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-zinc-950">Server connection</h2>
-                <p className="text-sm text-zinc-500">API endpoint and authentication for cloud sync.</p>
+                <h2 className="text-lg font-bold text-zinc-950">Cloud connection</h2>
+                <p className="text-sm text-zinc-500">Link this store to the cloud so the owner sees its data.</p>
               </div>
             </div>
 
-            <label className="mt-4 block text-sm font-bold text-zinc-700">
-              API URL
-              <input
-                value={apiUrl}
-                onChange={(e) => setApiUrlState(e.target.value)}
-                placeholder="https://api.example.com"
-                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              />
-            </label>
+            {cloudStatus?.hubOnly ? (
+              /* This device is a client pointing at the hub — cloud is managed on the hub */
+              <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm font-medium text-zinc-700">
+                <div className="flex items-center gap-2">
+                  <CloudOff size={18} className="text-zinc-400" />
+                  Cloud sync is configured on the <strong>main (hub) device</strong> only.
+                </div>
+                <p className="mt-2 text-zinc-500">
+                  This device syncs to the hub on your local network. No cloud setup needed here.
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Status banner */}
+                <div className={`mt-4 flex items-center gap-2 rounded-lg border p-3 text-sm font-semibold ${
+                  cloudStatus?.running
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-amber-200 bg-amber-50 text-amber-800"
+                }`}>
+                  {cloudStatus?.running ? <Cloud size={18} /> : <CloudOff size={18} />}
+                  {cloudStatus?.running
+                    ? `Connected — tenant ${cloudStatus.tenantId?.slice(0, 8)}… · last pull ${formatDateTime(cloudStatus.lastPullAt)}`
+                    : "Not connected to cloud yet"}
+                </div>
 
-            <label className="mt-3 block text-sm font-bold text-zinc-700">
-              Auth token
-              <input
-                type="password"
-                value={authToken}
-                onChange={(e) => setAuthTokenState(e.target.value)}
-                placeholder="Paste your JWT token here"
-                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-mono text-xs outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              />
-            </label>
+                <label className="mt-4 block text-sm font-bold text-zinc-700">
+                  Server URL
+                  <input
+                    value={CLOUD_URL_DISPLAY}
+                    readOnly
+                    className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-100 px-3 font-mono text-xs text-zinc-500 outline-none"
+                  />
+                </label>
 
-            <button
-              type="button"
-              onClick={handleSaveServer}
-              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-3 text-sm font-bold text-white transition hover:bg-sky-500"
-            >
-              <Save size={16} />
-              Save Connection
-            </button>
+                <label className="mt-3 block text-sm font-bold text-zinc-700">
+                  Tenant ID
+                  <input
+                    value={cloudTenantId}
+                    onChange={(e) => setCloudTenantId(e.target.value)}
+                    placeholder="From the owner portal (Settings → Cloud)"
+                    className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-mono text-xs outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  />
+                </label>
 
-            <div className="mt-3 rounded-lg border border-sky-100 bg-sky-50 p-3 text-sm font-medium text-sky-900">
-              Cloud is the shared company record. This register stays fast
-              offline, queues work locally, then syncs when the token and API are valid.
-            </div>
+                <label className="mt-3 block text-sm font-bold text-zinc-700">
+                  Cloud API Key
+                  <input
+                    type="password"
+                    value={cloudApiKey}
+                    onChange={(e) => setCloudApiKey(e.target.value)}
+                    placeholder="Per-store key from the owner portal"
+                    className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-mono text-xs outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  />
+                </label>
+
+                <label className="mt-3 block text-sm font-bold text-zinc-700">
+                  Admin Password
+                  <input
+                    type="password"
+                    value={cloudAdminPw}
+                    onChange={(e) => setCloudAdminPw(e.target.value)}
+                    placeholder="This hub's admin password (from the tray menu)"
+                    className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleSaveCloudConfig}
+                  disabled={cloudSaving}
+                  className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-3 text-sm font-bold text-white transition hover:bg-sky-500 disabled:opacity-50"
+                >
+                  <Save size={16} />
+                  {cloudSaving ? "Connecting…" : "Connect to Cloud"}
+                </button>
+
+                <div className="mt-3 rounded-lg border border-sky-100 bg-sky-50 p-3 text-sm font-medium text-sky-900">
+                  This register stays fast offline and queues work locally, then syncs
+                  to the cloud whenever the internet is available.
+                </div>
+              </>
+            )}
           </section>
           ) : null}
 

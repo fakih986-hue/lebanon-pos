@@ -5,9 +5,10 @@ import { useI18n } from "@lebanonpos/shared"
 import { PackageSearch, ShoppingCart } from "lucide-react"
 
 import ConfirmDialog from "../../../components/ConfirmDialog"
-import Spinner from "../../../components/ui/Spinner"
 import EmptyState from "../../../components/ui/EmptyState"
 import ProductGrid from "../components/ProductGrid"
+import ProductSkeletonGrid from "../components/ProductSkeletonGrid"
+import ErrorBoundary from "../components/ErrorBoundary"
 import SearchToolbar from "../components/SearchToolbar"
 import DepartmentTabs from "../components/DepartmentTabs"
 import LastSaleBanner from "../components/LastSaleBanner"
@@ -15,7 +16,7 @@ import CartDrawer from "../components/CartDrawer"
 import CartPanel from "../components/CartPanel"
 import VariantPicker from "../components/VariantPicker"
 import QuickPOSMode from "../components/QuickPOSMode"
-import { StaleRateBanner } from "../components/RateManager"
+import KeyboardShortcutsModal from "../components/KeyboardShortcutsModal"
 import { openWhatsAppShare, receiptMessage } from "../lib/whatsapp"
 import {
   formatCurrency,
@@ -104,6 +105,7 @@ export default function POSPage() {
     useState<Product | null>(null)
   const [saleNote, setSaleNote] = useState("")
   const [quickMode, setQuickMode] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   const productListRef = useRef<HTMLDivElement | null>(null)
 
@@ -127,7 +129,12 @@ export default function POSPage() {
     },
     {
       key: "Escape",
-      handler: () => { if (isCartOpen) setIsCartOpen(false) },
+      handler: () => { if (isCartOpen) setIsCartOpen(false); if (shortcutsOpen) setShortcutsOpen(false) },
+    },
+    {
+      key: "/",
+      modifiers: ["shift"],
+      handler: () => setShortcutsOpen((v) => !v),
     },
   ])
 
@@ -175,11 +182,6 @@ export default function POSPage() {
     }).sort((a, b) => Number(Boolean(b.favorite)) - Number(Boolean(a.favorite)))
   }, [products, scanCode, search, selectedCategory])
 
-  const selectedDepartment =
-    departmentSummaries.find(
-      (department) => department.name === selectedCategory
-    ) ?? departmentSummaries[0]
-
   const canApplyDiscount = userCan("sales.discount")
   const grossSubtotal = roundMoney(items.reduce(
     (sum, item) => sum + item.price * item.quantity, 0
@@ -206,6 +208,11 @@ export default function POSPage() {
   const heldSalesItemCount = heldSales.reduce(
     (sum, heldSale) => sum + getHeldSaleItemCount(heldSale), 0
   )
+  const cartQuantities = useMemo(() => {
+    const map: Record<number, number> = {}
+    for (const item of items) map[item.id] = item.quantity
+    return map
+  }, [items])
   const paidUsdAmount = tenderMode === "LBP" ? 0 : parseMoney(paidUsd)
   const paidLbpAmount = tenderMode === "USD" ? 0 : parseMoney(paidLbp)
   const paidTotalUsd = roundMoney(paidUsdAmount + lbpToUsd(paidLbpAmount, exchangeRate))
@@ -605,8 +612,7 @@ export default function POSPage() {
       <div className="flex h-full min-h-0">
         {/* ── Left: Product area ── */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <section className="flex h-full min-w-0 flex-col gap-4 overflow-hidden p-3 pb-28 sm:p-4 md:pb-4 xl:p-5">
-            <StaleRateBanner />
+          <section className="flex h-full min-w-0 flex-col gap-3 overflow-hidden p-3 pb-28 sm:p-4 md:pb-4 xl:p-5">
             <LastSaleBanner
               sale={lastSale}
               onNewSale={cleanSale}
@@ -672,58 +678,41 @@ export default function POSPage() {
                   onScanCapture={handleScanCapture}
                   quickMode={quickMode}
                   onToggleQuickMode={() => setQuickMode(true)}
+                  onShowShortcuts={() => setShortcutsOpen(true)}
                 />
 
-                <div className="pos-section-card grid min-h-0 flex-1 grid-cols-1 overflow-hidden md:grid-cols-[184px_minmax(0,1fr)]">
-                  <DepartmentTabs
-                    departments={departmentSummaries}
-                    selected={selectedCategory}
-                    onSelect={selectDepartment}
-                  />
+                <DepartmentTabs
+                  departments={departmentSummaries}
+                  selected={selectedCategory}
+                  onSelect={selectDepartment}
+                />
 
-                  <div className="flex min-h-0 flex-col border-t md:border-l md:border-t-0" style={{ borderColor: "var(--border)" }}>
-                    <div
-                      ref={productListRef}
-                      className="flex scroll-mt-5 items-center justify-between gap-3 border-b px-4 py-3"
-                      style={{ borderColor: "var(--border)", background: "var(--surface)" }}
-                    >
-                      <div>
-                        <h3 className="text-lg font-black tracking-tight" style={{ color: "var(--text)" }}>
-                          {selectedDepartment?.label ?? t("pos.quick_sale")}
-                        </h3>
-                        <p className="text-[12px] font-semibold" style={{ color: "var(--text-3)" }}>
-                          {formatNumber(filteredProducts.length)} items ready
-                        </p>
-                      </div>
-                      <div className="rounded-lg px-3 py-2 text-right" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
-                        <p className="text-[10px] font-black uppercase tracking-[0.12em]">Cart</p>
-                        <p className="text-lg font-black tabular-nums">{formatNumber(itemCount)}</p>
-                      </div>
-                    </div>
-
-                    <div className="min-h-0 flex-1 overflow-y-auto p-3">
-                      {isLoading ? (
-                        <div className="flex h-full min-h-80 items-center justify-center">
-                          <Spinner label={t("pos.loading_products")} />
-                        </div>
-                      ) : filteredProducts.length > 0 ? (
-                        <ProductGrid
-                          products={filteredProducts}
-                          exchangeRate={exchangeRate}
-                          onAddProduct={addProductToSale}
-                          onToggleFavorite={toggleFavorite}
-                          wholesale={!!(selectedCustomer?.isWholesale)}
-                        />
-                      ) : (
-                        <EmptyState
-                          icon={PackageSearch}
-                          title={t("pos.no_products")}
-                          description={t("pos.try_another")}
-                          className="min-h-80 bg-white"
-                        />
-                      )}
-                    </div>
-                  </div>
+                <div
+                  ref={productListRef}
+                  className="min-h-0 flex-1 overflow-y-auto"
+                >
+                  <ErrorBoundary fallbackLabel="Failed to load products">
+                  {isLoading ? (
+                    <ProductSkeletonGrid count={12} />
+                  ) : filteredProducts.length > 0 ? (
+                    <ProductGrid
+                      products={filteredProducts}
+                      exchangeRate={exchangeRate}
+                      onAddProduct={addProductToSale}
+                      onToggleFavorite={toggleFavorite}
+                      wholesale={!!(selectedCustomer?.isWholesale)}
+                      cartQuantities={cartQuantities}
+                      searchQuery={debouncedSearch}
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={PackageSearch}
+                      title={t("pos.no_products")}
+                      description={t("pos.try_another")}
+                      className="min-h-80 bg-white"
+                    />
+                  )}
+                  </ErrorBoundary>
                 </div>
               </>
             )}
@@ -733,7 +722,8 @@ export default function POSPage() {
           <button
             type="button"
             onClick={() => setIsCartOpen(true)}
-            className={`lg:hidden absolute bottom-20 left-3 right-3 z-30 flex items-center justify-between gap-3 rounded-lg bg-zinc-950 px-4 py-3 text-left text-white shadow-2xl transition hover:bg-zinc-800 md:bottom-5 md:min-w-64 md:px-5 md:py-4 ${dir === "rtl" ? "md:left-5 md:right-auto" : "md:left-auto md:right-5"}`}
+            className={`lg:hidden absolute bottom-24 left-3 right-3 z-30 flex items-center justify-between gap-3 rounded-lg bg-zinc-950 px-4 py-3 text-left text-white shadow-2xl transition hover:bg-zinc-800 md:bottom-5 md:min-w-64 md:px-5 md:py-4 ${dir === "rtl" ? "md:left-5 md:right-auto" : "md:left-auto md:right-5"}`}
+            style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
           >
             <span className="flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-400 text-zinc-950">
@@ -900,6 +890,8 @@ export default function POSPage() {
           onClose={() => setVariantPickerProduct(null)}
         />
       ) : null}
+
+      <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
     </main>
   )

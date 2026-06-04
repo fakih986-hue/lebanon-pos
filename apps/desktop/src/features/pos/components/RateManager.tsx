@@ -140,33 +140,31 @@ export function StaleRateBanner() {
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between"
+    <div className="flex items-center gap-2 rounded-lg border px-3 py-1.5"
       style={{ background: "var(--amber-soft)", borderColor: "rgba(245,158,11,0.3)" }}>
-      <div className="flex items-center gap-2">
-        <TrendingUp size={16} style={{ color: "var(--amber)" }} />
-        <span className="text-[13px] font-semibold" style={{ color: "var(--amber-text)" }}>
-          Exchange rate {rateAgeLabel()} — currently {formatNumber(getCurrentRate())} LBP/USD. Still correct?
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
+      <TrendingUp size={14} className="shrink-0" style={{ color: "var(--amber)" }} />
+      <span className="text-[12px] font-semibold truncate" style={{ color: "var(--amber-text)" }}>
+        Rate {rateAgeLabel()} — {formatNumber(getCurrentRate())} LBP/USD
+      </span>
+      <div className="ml-auto flex shrink-0 items-center gap-1.5">
         {editing ? (
           <>
             <input type="number" value={input} onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") apply() }}
-              className="input w-28 text-right font-bold" style={{ height: 34, fontSize: 13 }} autoFocus />
-            <button type="button" onClick={apply} className="btn btn-primary h-8 px-3 text-[12px]">Save</button>
+              className="input w-24 text-right font-bold" style={{ height: 28, fontSize: 12 }} autoFocus />
+            <button type="button" onClick={apply} className="btn btn-primary h-7 px-2.5 text-[11px]">Save</button>
           </>
         ) : (
           <button type="button" onClick={() => { setInput(String(getCurrentRate())); setEditing(true) }}
-            className="btn h-8 px-3 text-[12px] font-bold" style={{ background: "var(--amber)", color: "#fff" }}>
-            Update rate
+            className="h-7 rounded-md px-2.5 text-[11px] font-bold transition hover:opacity-80" style={{ background: "var(--amber)", color: "#fff" }}>
+            Update
           </button>
         )}
         <button type="button" onClick={() => { updateRate(getCurrentRate(), "manual"); setDismissed(true) }}
-          className="h-8 px-3 text-[12px] font-semibold rounded-lg transition hover:opacity-70" style={{ color: "var(--amber-text)" }}>
-          Still correct
+          className="h-7 rounded-md px-2 text-[11px] font-semibold transition hover:opacity-70" style={{ color: "var(--amber-text)" }}>
+          OK
         </button>
-        <button type="button" onClick={() => setDismissed(true)} style={{ color: "var(--amber-text)" }}><X size={16} /></button>
+        <button type="button" onClick={() => setDismissed(true)} style={{ color: "var(--amber-text)" }}><X size={14} /></button>
       </div>
     </div>
   )

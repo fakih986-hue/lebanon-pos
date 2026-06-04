@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { timingSafeEqual, randomInt } from "crypto"
+import { timingSafeEqual, randomInt, randomBytes } from "crypto"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
 import type { ServerResponse } from "node:http"
@@ -20,6 +20,11 @@ function requireAdmin(req: AuthRequest, res: ServerResponse, next: (err?: unknow
 /** Generate a random numeric PIN of the given length */
 function generateRandomPin(length = 6): string {
   return Array.from({ length }, () => randomInt(0, 10)).join("")
+}
+
+/** Generate a per-tenant cloud sync API key (64-char hex) */
+function generateCloudApiKey(): string {
+  return randomBytes(32).toString("hex")
 }
 
 const createTenantSchema = z.object({
@@ -136,10 +141,12 @@ router.post("/tenants", requireAuth, requireAdmin, async (req: AuthRequest, res:
 
     // Generate a random PIN if the caller sent the insecure default "0000" or left it empty
     const effectivePin = (!adminPin || adminPin === "0000") ? generateRandomPin(6) : adminPin
+    // Per-tenant cloud sync key — handed to the store and entered in Settings → Cloud
+    const cloudApiKey = generateCloudApiKey()
 
     const result = await prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
-        data: { name: storeName, subdomain },
+        data: { name: storeName, subdomain, cloudApiKey },
       })
       const user = await tx.staffUser.create({
         data: {
@@ -181,8 +188,10 @@ router.post("/tenants", requireAuth, requireAdmin, async (req: AuthRequest, res:
         subdomain: result.tenant.subdomain,
       },
       credentials: {
+        tenantId:    result.tenant.id,   // operator enters this in Settings → Cloud
         subdomain,
-        pin: effectivePin,   // plain-text shown once so operator can hand to customer
+        pin:         effectivePin,        // plain-text shown once
+        cloudApiKey,                      // plain-text shown once — per-tenant sync key
       },
       userToken,
     }, 201)

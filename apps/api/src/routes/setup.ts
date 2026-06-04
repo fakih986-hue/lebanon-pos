@@ -13,14 +13,20 @@
 import fs   from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { timingSafeEqual } from "node:crypto"
 import { Router } from "express"
 import type { Response } from "express"
 import type { IncomingMessage } from "node:http"
+import jwt from "jsonwebtoken"
 import prisma from "../lib/prisma.js"
+import { triggerFullPull, saveCloudConfig, getCloudStatus } from "../services/cloudSync.js"
 
+interface AuthPayload { userId: string; tenantId: string; role: string }
 type Req = IncomingMessage & { body?: unknown }
 
 const router = Router()
+
+const JWT_SECRET = process.env.JWT_SECRET!
 
 const __dirname  = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR   = path.resolve(__dirname, "../../data")
@@ -37,6 +43,43 @@ function requireCloudKey(req: Req, res: Response): boolean {
     return false
   }
   return true
+}
+
+/** True if the request originates from the local machine (the hub itself). */
+function isLocalRequest(req: Req): boolean {
+  const addr = req.socket?.remoteAddress ?? ""
+  return addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1"
+}
+
+/** Constant-time comparison tolerant of length mismatch. */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a)
+  const bb = Buffer.from(b)
+  return ab.length === bb.length && timingSafeEqual(ab, bb)
+}
+
+/** Accept X-Cloud-Key header OR a valid JWT (Bearer token) */
+async function requireCloudKeyOrJwt(req: Req, res: Response): Promise<boolean> {
+  const expectedKey = process.env.CLOUD_API_KEY
+  const incomingKey = req.headers["x-cloud-key"]
+  if (expectedKey && incomingKey === expectedKey) return true
+
+  const header = req.headers.authorization
+  if (!header?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Missing X-Cloud-Key or Authorization header" })
+    return false
+  }
+  try {
+    const payload = jwt.verify(header.slice(7), JWT_SECRET) as AuthPayload
+    if (!payload.tenantId) {
+      res.status(401).json({ error: "Invalid token" })
+      return false
+    }
+    return true
+  } catch {
+    res.status(401).json({ error: "Invalid or expired token" })
+    return false
+  }
 }
 
 // ─── GET /api/setup/check ────────────────────────────────────────────────────
@@ -67,26 +110,16 @@ router.get("/check", async (_req: Req, res: Response) => {
 })
 
 // ─── POST /api/setup/pull-from-cloud ─────────────────────────────────────────
-// Requires X-Cloud-Key. Clears lastPullAt so the cloud bridge triggers a full
-// pull on its next cycle. Useful for:
-//   • Restoring a crashed local server
-//   • Onboarding a new local server to existing Railway data
+// Accepts X-Cloud-Key header or JWT (Bearer token). Triggers an immediate full
+// pull from Railway so data is available right away (instead of waiting 30s for
+// the next bridge cycle). Used by the desktop connect flow.
 
-router.post("/pull-from-cloud", (req: Req, res: Response) => {
-  if (!requireCloudKey(req, res)) return
+router.post("/pull-from-cloud", async (req: Req, res: Response) => {
+  if (!(await requireCloudKeyOrJwt(req, res))) return
 
   try {
-    // Clear lastPullAt → next bridge pull cycle will do a full pull
-    const current: Record<string, unknown> = (() => {
-      try { return JSON.parse(fs.readFileSync(STATE_FILE, "utf-8")) } catch { return {} }
-    })()
-
-    delete current.lastPullAt
-
-    fs.mkdirSync(DATA_DIR, { recursive: true })
-    fs.writeFileSync(STATE_FILE, JSON.stringify(current, null, 2))
-
-    res.json({ ok: true, message: "lastPullAt cleared — next bridge cycle will do a full pull from Railway" })
+    await triggerFullPull()
+    res.json({ ok: true, message: "Full pull from Railway completed" })
   } catch (err) {
     res.status(500).json({ error: (err as Error).message })
   }
@@ -98,7 +131,7 @@ router.post("/pull-from-cloud", (req: Req, res: Response) => {
 // local servers to create the correct tenant row in the local database.
 
 router.get("/tenant-info", async (req: Req, res: Response) => {
-  if (!requireCloudKey(req, res)) return
+  if (!(await requireCloudKeyOrJwt(req, res))) return
 
   const tenantId = req.headers["x-tenant-id"] as string | undefined
   if (!tenantId) {
@@ -118,6 +151,51 @@ router.get("/tenant-info", async (req: Req, res: Response) => {
     }
 
     res.json(tenant)
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message })
+  }
+})
+
+// ─── GET /api/setup/cloud-config ─────────────────────────────────────────────
+// Localhost-only. Returns current cloud connection status (no secrets).
+
+router.get("/cloud-config", (req: Req, res: Response) => {
+  if (!isLocalRequest(req)) {
+    res.status(403).json({ error: "Only available on the hub machine" })
+    return
+  }
+  res.json(getCloudStatus())
+})
+
+// ─── POST /api/setup/cloud-config ────────────────────────────────────────────
+// Localhost-only + admin password. Persists the tenant ID + per-tenant API key,
+// restarts the sync bridge, and triggers an immediate full pull.
+// Body: { tenantId, apiKey, adminPassword }
+
+router.post("/cloud-config", async (req: Req, res: Response) => {
+  if (!isLocalRequest(req)) {
+    res.status(403).json({ error: "Only available on the hub machine" })
+    return
+  }
+
+  const { tenantId, apiKey, adminPassword } =
+    (req.body as { tenantId?: string; apiKey?: string; adminPassword?: string }) || {}
+
+  const master = process.env.ADMIN_PASSWORD ?? ""
+  if (!master || !adminPassword || !safeEqual(adminPassword, master)) {
+    res.status(401).json({ error: "Invalid admin password" })
+    return
+  }
+  if (!tenantId || !apiKey) {
+    res.status(400).json({ error: "tenantId and apiKey are required" })
+    return
+  }
+
+  try {
+    saveCloudConfig(tenantId.trim(), apiKey.trim())
+    // Give the restarted bridge a moment, then force a full pull
+    await triggerFullPull().catch(() => { /* first pull may lag — bridge will retry */ })
+    res.json({ ok: true, ...getCloudStatus() })
   } catch (err) {
     res.status(500).json({ error: (err as Error).message })
   }

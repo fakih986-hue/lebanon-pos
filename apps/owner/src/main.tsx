@@ -120,7 +120,7 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState({ storeName: "", subdomain: "", adminName: "Admin", adminMobile: "", adminPin: "" })
   const [creating, setCreating] = useState(false)
-  const [createdResult, setCreatedResult] = useState<{ subdomain: string; pin: string } | null>(null)
+  const [createdResult, setCreatedResult] = useState<{ tenantId: string; subdomain: string; pin: string; cloudApiKey: string } | null>(null)
   const [formError, setFormError] = useState("")
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
   const [editForm, setEditForm] = useState({ name: "", subdomain: "", suspended: false })
@@ -140,9 +140,9 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
     setFormError("")
     setCreating(true)
     try {
-      const res = await api<{ credentials: { subdomain: string; pin: string } }>("/api/admin/tenants", { method: "POST", body: JSON.stringify(form) })
+      const res = await api<{ credentials: { tenantId: string; subdomain: string; pin: string; cloudApiKey: string } }>("/api/admin/tenants", { method: "POST", body: JSON.stringify(form) })
       setCreatedResult(res.credentials)
-      setForm({ storeName: "", subdomain: "", adminName: "Admin", adminMobile: "", adminPin: "0000" })
+      setForm({ storeName: "", subdomain: "", adminName: "Admin", adminMobile: "", adminPin: "" })
       loadTenants()
     } catch (err) { setFormError((err as Error).message) }
     setCreating(false)
@@ -180,19 +180,28 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
             <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           </div>
           <h2 className="text-xl font-bold mb-2 text-white">Store Created!</h2>
-          <p className="text-sm text-slate-400 mb-6">Give these credentials to the customer:</p>
-          <div className="max-w-xs mx-auto space-y-3 mb-6">
+          <p className="text-sm text-slate-400 mb-2">Give these to the store owner. <span className="text-amber-400 font-semibold">Shown once — copy them now.</span></p>
+          <p className="text-xs text-slate-500 mb-6">PIN = login on the device. Tenant ID + Cloud Key = enter in Settings → Cloud to sync.</p>
+          <div className="max-w-md mx-auto space-y-3 mb-6 text-left">
             <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Server URL</p>
-              <p className="text-sm font-bold font-mono text-white">https://lebanon-pos-production.up.railway.app</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Server URL (pre-set in app)</p>
+              <p className="text-sm font-bold font-mono text-white break-all">https://lebanon-pos-production.up.railway.app</p>
             </div>
             <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
               <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Subdomain</p>
-              <p className="text-lg font-bold font-mono tracking-wider text-white">{createdResult.subdomain}</p>
+              <p className="text-lg font-bold font-mono tracking-wider text-white break-all select-all">{createdResult.subdomain}</p>
             </div>
             <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
               <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Admin PIN</p>
-              <p className="text-lg font-bold font-mono tracking-widest text-white">{createdResult.pin}</p>
+              <p className="text-lg font-bold font-mono tracking-widest text-white select-all">{createdResult.pin}</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl p-4 border border-indigo-700/50">
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-indigo-400">Tenant ID (Settings → Cloud)</p>
+              <p className="text-xs font-bold font-mono text-white break-all select-all">{createdResult.tenantId}</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl p-4 border border-indigo-700/50">
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-indigo-400">Cloud API Key (Settings → Cloud)</p>
+              <p className="text-xs font-bold font-mono text-white break-all select-all">{createdResult.cloudApiKey}</p>
             </div>
           </div>
           <button onClick={() => setCreatedResult(null)} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm">Create Another Store</button>

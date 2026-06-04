@@ -4051,6 +4051,7 @@ export namespace Prisma {
     name: string | null
     subdomain: string | null
     suspended: boolean | null
+    cloudApiKey: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4060,6 +4061,7 @@ export namespace Prisma {
     name: string | null
     subdomain: string | null
     suspended: boolean | null
+    cloudApiKey: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4069,6 +4071,7 @@ export namespace Prisma {
     name: number
     subdomain: number
     suspended: number
+    cloudApiKey: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -4080,6 +4083,7 @@ export namespace Prisma {
     name?: true
     subdomain?: true
     suspended?: true
+    cloudApiKey?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4089,6 +4093,7 @@ export namespace Prisma {
     name?: true
     subdomain?: true
     suspended?: true
+    cloudApiKey?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4098,6 +4103,7 @@ export namespace Prisma {
     name?: true
     subdomain?: true
     suspended?: true
+    cloudApiKey?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -4180,6 +4186,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended: boolean
+    cloudApiKey: string
     createdAt: Date
     updatedAt: Date
     _count: TenantCountAggregateOutputType | null
@@ -4206,6 +4213,7 @@ export namespace Prisma {
     name?: boolean
     subdomain?: boolean
     suspended?: boolean
+    cloudApiKey?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     users?: boolean | Tenant$usersArgs<ExtArgs>
@@ -4237,6 +4245,7 @@ export namespace Prisma {
     name?: boolean
     subdomain?: boolean
     suspended?: boolean
+    cloudApiKey?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["tenant"]>
@@ -4246,6 +4255,7 @@ export namespace Prisma {
     name?: boolean
     subdomain?: boolean
     suspended?: boolean
+    cloudApiKey?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["tenant"]>
@@ -4255,11 +4265,12 @@ export namespace Prisma {
     name?: boolean
     subdomain?: boolean
     suspended?: boolean
+    cloudApiKey?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
+  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "cloudApiKey" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
   export type TenantInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     users?: boolean | Tenant$usersArgs<ExtArgs>
     products?: boolean | Tenant$productsArgs<ExtArgs>
@@ -4317,6 +4328,7 @@ export namespace Prisma {
       name: string
       subdomain: string
       suspended: boolean
+      cloudApiKey: string
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["tenant"]>
@@ -4767,6 +4779,7 @@ export namespace Prisma {
     readonly name: FieldRef<"Tenant", 'String'>
     readonly subdomain: FieldRef<"Tenant", 'String'>
     readonly suspended: FieldRef<"Tenant", 'Boolean'>
+    readonly cloudApiKey: FieldRef<"Tenant", 'String'>
     readonly createdAt: FieldRef<"Tenant", 'DateTime'>
     readonly updatedAt: FieldRef<"Tenant", 'DateTime'>
   }
@@ -38851,6 +38864,7 @@ export namespace Prisma {
     name: 'name',
     subdomain: 'subdomain',
     suspended: 'suspended',
+    cloudApiKey: 'cloudApiKey',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -39651,6 +39665,7 @@ export namespace Prisma {
     name?: StringFilter<"Tenant"> | string
     subdomain?: StringFilter<"Tenant"> | string
     suspended?: BoolFilter<"Tenant"> | boolean
+    cloudApiKey?: StringFilter<"Tenant"> | string
     createdAt?: DateTimeFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeFilter<"Tenant"> | Date | string
     users?: StaffUserListRelationFilter
@@ -39681,6 +39696,7 @@ export namespace Prisma {
     name?: SortOrder
     subdomain?: SortOrder
     suspended?: SortOrder
+    cloudApiKey?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     users?: StaffUserOrderByRelationAggregateInput
@@ -39714,6 +39730,7 @@ export namespace Prisma {
     NOT?: TenantWhereInput | TenantWhereInput[]
     name?: StringFilter<"Tenant"> | string
     suspended?: BoolFilter<"Tenant"> | boolean
+    cloudApiKey?: StringFilter<"Tenant"> | string
     createdAt?: DateTimeFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeFilter<"Tenant"> | Date | string
     users?: StaffUserListRelationFilter
@@ -39744,6 +39761,7 @@ export namespace Prisma {
     name?: SortOrder
     subdomain?: SortOrder
     suspended?: SortOrder
+    cloudApiKey?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: TenantCountOrderByAggregateInput
@@ -39759,6 +39777,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"Tenant"> | string
     subdomain?: StringWithAggregatesFilter<"Tenant"> | string
     suspended?: BoolWithAggregatesFilter<"Tenant"> | boolean
+    cloudApiKey?: StringWithAggregatesFilter<"Tenant"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Tenant"> | Date | string
   }
@@ -42463,6 +42482,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -42493,6 +42513,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -42523,6 +42544,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -42553,6 +42575,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -42583,6 +42606,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -42592,6 +42616,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -42601,6 +42626,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -45853,6 +45879,7 @@ export namespace Prisma {
     name?: SortOrder
     subdomain?: SortOrder
     suspended?: SortOrder
+    cloudApiKey?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -45862,6 +45889,7 @@ export namespace Prisma {
     name?: SortOrder
     subdomain?: SortOrder
     suspended?: SortOrder
+    cloudApiKey?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -45871,6 +45899,7 @@ export namespace Prisma {
     name?: SortOrder
     subdomain?: SortOrder
     suspended?: SortOrder
+    cloudApiKey?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -52782,6 +52811,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     products?: ProductCreateNestedManyWithoutTenantInput
@@ -52811,6 +52841,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     products?: ProductUncheckedCreateNestedManyWithoutTenantInput
@@ -53072,6 +53103,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: ProductUpdateManyWithoutTenantNestedInput
@@ -53101,6 +53133,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: ProductUncheckedUpdateManyWithoutTenantNestedInput
@@ -53194,6 +53227,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -53223,6 +53257,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -53268,6 +53303,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -53297,6 +53333,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -53326,6 +53363,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -53355,6 +53393,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -53651,6 +53690,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -53680,6 +53720,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -53857,6 +53898,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -53886,6 +53928,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -54040,6 +54083,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -54069,6 +54113,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -54398,6 +54443,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -54427,6 +54473,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -54555,6 +54602,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -54584,6 +54632,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -54789,6 +54838,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -54818,6 +54868,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -54993,6 +55044,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -55022,6 +55074,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -55099,6 +55152,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -55128,6 +55182,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -55208,6 +55263,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -55237,6 +55293,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -55307,6 +55364,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -55336,6 +55394,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -55416,6 +55475,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -55445,6 +55505,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -55515,6 +55576,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -55544,6 +55606,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -55723,6 +55786,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -55752,6 +55816,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -55829,6 +55894,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -55858,6 +55924,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -55968,6 +56035,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -55997,6 +56065,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -56081,6 +56150,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -56110,6 +56180,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -56198,6 +56269,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -56227,6 +56299,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -56305,6 +56378,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -56334,6 +56408,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -56412,6 +56487,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -56441,6 +56517,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -56509,6 +56586,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -56538,6 +56616,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -56653,6 +56732,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -56682,6 +56762,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -56793,6 +56874,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -56822,6 +56904,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -56867,6 +56950,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -56896,6 +56980,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -56925,6 +57010,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -56954,6 +57040,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -57034,6 +57121,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -57063,6 +57151,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -57133,6 +57222,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -57162,6 +57252,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -57302,6 +57393,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -57331,6 +57423,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -57467,6 +57560,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -57496,6 +57590,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -57603,6 +57698,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -57632,6 +57728,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -57729,6 +57826,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -57758,6 +57856,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -57837,6 +57936,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -57866,6 +57966,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -58101,6 +58202,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -58130,6 +58232,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -58275,6 +58378,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -58304,6 +58408,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -58581,6 +58686,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -58610,6 +58716,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -58655,6 +58762,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -58684,6 +58792,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -58713,6 +58822,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -58742,6 +58852,7 @@ export namespace Prisma {
     name: string
     subdomain: string
     suspended?: boolean
+    cloudApiKey?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -58787,6 +58898,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -58816,6 +58928,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput

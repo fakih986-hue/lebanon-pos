@@ -6,10 +6,12 @@
  *   • Push every 5s — forwards pending SyncOperations to Railway
  *   • Pull every 30s — fetches Railway changes and upserts into local PostgreSQL
  *
- * Required env vars (local server only):
- *   CLOUD_API_URL    — Railway base URL, e.g. https://myapp.railway.app
- *   CLOUD_API_KEY    — Shared secret (same value set on Railway as CLOUD_API_KEY)
- *   CLOUD_TENANT_ID  — Tenant UUID to sync
+ * Configuration:
+ *   CLOUD_API_URL   — Railway base URL (env var, pre-baked into the installer)
+ *   Tenant ID + API key — entered once in Settings → Cloud, persisted to
+ *                         apps/api/data/cloud-config.json. Falls back to the
+ *                         CLOUD_TENANT_ID / CLOUD_API_KEY env vars if the file
+ *                         is absent (backward compatibility / server deploys).
  *
  * Sync state (lastPullAt) is persisted to apps/api/data/sync-state.json so it
  * survives restarts. A missing file triggers a full pull on first boot, which
@@ -23,9 +25,8 @@ import prisma from "../lib/prisma.js"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
+// Railway URL is always from env (pre-baked into the build / Railway dashboard)
 const CLOUD_API_URL = process.env.CLOUD_API_URL?.replace(/\/+$/, "")
-const CLOUD_API_KEY = process.env.CLOUD_API_KEY
-const CLOUD_TENANT  = process.env.CLOUD_TENANT_ID
 
 const PUSH_INTERVAL_MS  =  5_000   // 5s
 const PULL_INTERVAL_MS  = 30_000   // 30s
@@ -37,6 +38,49 @@ const FETCH_TIMEOUT_MS  = 20_000
 const __dirname    = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR     = path.resolve(__dirname, "../../data")
 const STATE_FILE   = path.join(DATA_DIR, "sync-state.json")
+const CONFIG_FILE  = path.join(DATA_DIR, "cloud-config.json")
+
+// ─── Runtime cloud credentials (tenant ID + API key) ──────────────────────────
+// Loaded from cloud-config.json (written by Settings → Cloud) with env fallback.
+
+interface CloudConfig { tenantId?: string; apiKey?: string }
+
+let CLOUD_TENANT:  string | undefined
+let CLOUD_API_KEY: string | undefined
+
+function loadCloudConfig(): void {
+  let fileCfg: CloudConfig = {}
+  try {
+    fileCfg = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf-8")) as CloudConfig
+  } catch { /* no file yet — use env fallback */ }
+  CLOUD_TENANT  = fileCfg.tenantId || process.env.CLOUD_TENANT_ID
+  CLOUD_API_KEY = fileCfg.apiKey   || process.env.CLOUD_API_KEY
+}
+loadCloudConfig()
+
+/** Persist cloud credentials and (re)start the bridge with them. */
+export function saveCloudConfig(tenantId: string, apiKey: string): void {
+  fs.mkdirSync(DATA_DIR, { recursive: true })
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify({ tenantId, apiKey }, null, 2), { mode: 0o600 })
+  restartCloudSyncBridge()
+}
+
+/** Current cloud connection status for the Settings UI. */
+export function getCloudStatus(): { configured: boolean; running: boolean; tenantId?: string; lastPullAt?: string } {
+  return {
+    configured: !!(CLOUD_API_URL && CLOUD_TENANT && CLOUD_API_KEY),
+    running,
+    tenantId:   CLOUD_TENANT,
+    lastPullAt: readState().lastPullAt,
+  }
+}
+
+/** Reload config from disk and restart the loops. */
+export function restartCloudSyncBridge(): void {
+  stopCloudSyncBridge()
+  loadCloudConfig()
+  startCloudSyncBridge()
+}
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -64,6 +108,20 @@ function writeState(state: SyncState): void {
 let running    = false
 let pushTimer: ReturnType<typeof setTimeout> | null = null
 let pullTimer: ReturnType<typeof setTimeout> | null = null
+
+/**
+ * Trigger an immediate full pull from Railway.
+ * Used by /api/setup/pull-from-cloud so the connect flow doesn't wait 30s.
+ */
+export async function triggerFullPull(): Promise<void> {
+  if (!CLOUD_API_URL || !CLOUD_API_KEY || !CLOUD_TENANT) {
+    throw new Error("Cloud sync not configured (missing env vars)")
+  }
+  const state = readState()
+  delete state.lastPullAt
+  writeState(state)
+  await pullFromCloud()
+}
 
 export function startCloudSyncBridge(): void {
   if (!CLOUD_API_URL || !CLOUD_API_KEY || !CLOUD_TENANT) {

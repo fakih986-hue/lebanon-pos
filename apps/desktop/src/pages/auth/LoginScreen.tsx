@@ -127,6 +127,16 @@ export default function LoginScreen() {
         subdomain: cSubdomain.trim(),
       })
 
+      // Trigger immediate cloud sync so PostgreSQL is populated before we pull
+      try {
+        await fetch(`${url}/api/setup/pull-from-cloud`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${data.token}` },
+        })
+      } catch {
+        // Non-critical — sync will catch up on the next bridge cycle (≤30s)
+      }
+
       try {
         await pullFromServer(true)  // full pull → all data + users land locally
 

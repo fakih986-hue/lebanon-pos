@@ -1,21 +1,25 @@
 /**
  * Cloud Auth Middleware
  *
- * Extends the standard JWT auth to also accept a shared API key for
+ * Extends the standard JWT auth to also accept a PER-TENANT API key for
  * server-to-server calls from the local cloud sync bridge.
  *
  * The bridge sends:
- *   X-Cloud-Key: <CLOUD_API_KEY env var value>
+ *   X-Cloud-Key: <the tenant's own cloudApiKey>
  *   X-Tenant-Id: <tenant UUID>
  *
- * If the key matches and a tenant ID is present, auth is injected directly.
- * Falls back to standard JWT Bearer auth for all other requests.
+ * The key is validated against that tenant's stored `cloudApiKey` (not a single
+ * global secret). A leaked key only exposes ONE store. Falls back to standard
+ * JWT Bearer auth for all other requests.
  *
- * If CLOUD_API_KEY env var is unset, the cloud key path is disabled entirely.
+ * Legacy: if CLOUD_API_KEY env var is set, it is still accepted as a global
+ * master key for backward compatibility / server-to-server admin tooling.
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http"
+import { timingSafeEqual } from "node:crypto"
 import { requireAuth, type AuthRequest } from "./auth.js"
+import prisma from "../lib/prisma.js"
 
 type Handler = (
   req: IncomingMessage,
@@ -23,20 +27,39 @@ type Handler = (
   next: (err?: unknown) => void
 ) => void
 
-export const requireCloudOrJwtAuth: Handler = (req, res, next) => {
-  const expectedKey = process.env.CLOUD_API_KEY
+/** Constant-time string comparison that tolerates length mismatch. */
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a)
+  const bb = Buffer.from(b)
+  return ab.length === bb.length && timingSafeEqual(ab, bb)
+}
+
+export const requireCloudOrJwtAuth: Handler = async (req, res, next) => {
   const incomingKey = (req.headers as Record<string, string | undefined>)["x-cloud-key"]
   const tenantId    = (req.headers as Record<string, string | undefined>)["x-tenant-id"]
 
-  // Cloud key path: only active when CLOUD_API_KEY is configured
-  if (expectedKey && incomingKey === expectedKey && tenantId) {
-    ;(req as AuthRequest).auth = {
-      userId:   "cloud-bridge",
-      tenantId,
-      role:     "Admin",
+  if (incomingKey && tenantId) {
+    try {
+      // 1. Per-tenant key: validate against the tenant's own stored cloudApiKey
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { cloudApiKey: true },
+      })
+      const perTenantOk = !!tenant?.cloudApiKey && safeEqual(incomingKey, tenant.cloudApiKey)
+
+      // 2. Legacy global key (optional, backward compatibility)
+      const globalKey = process.env.CLOUD_API_KEY
+      const globalOk  = !!globalKey && safeEqual(incomingKey, globalKey)
+
+      if (perTenantOk || globalOk) {
+        ;(req as AuthRequest).auth = { userId: "cloud-bridge", tenantId, role: "Admin" }
+        next()
+        return
+      }
+    } catch (err) {
+      console.error("[cloudAuth] tenant key lookup failed:", err)
+      // fall through to JWT auth
     }
-    next()
-    return
   }
 
   // Fall back to standard JWT auth

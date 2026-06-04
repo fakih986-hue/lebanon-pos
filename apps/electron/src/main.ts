@@ -49,6 +49,10 @@ const PG_BIN_DIR = IS_PACKAGED
 const ICON_PNG   = path.join(__dirname, "../assets/icon.png")
 const ICON_ICO   = path.join(__dirname, "../assets/icon.ico")
 const API_URL    = "http://localhost:3001"
+
+// Pre-baked Railway URL written into the hub's .env so the cloud bridge knows
+// where to sync. Tenant ID + per-tenant key are entered later in Settings → Cloud.
+const CLOUD_API_URL = process.env.LBPOS_CLOUD_URL || "https://lebanon-pos-production.up.railway.app"
 const HEALTH_URL = `${API_URL}/api/health`
 const ENV_PATH   = path.join(USER_DATA, ".env")
 const PG_DATA    = path.join(USER_DATA, "pgdata")
@@ -196,14 +200,15 @@ function writeApiEnv(pgPassword: string): void {
     `JWT_SECRET="${jwt}"`,
     `PORT=3001`,
     `ADMIN_PASSWORD="${adminPass}"`,
-    `CORS_ORIGINS=http://localhost:3001`,
+    // LAN clients connect to the hub by IP, so allow any origin on the local network
+    `CORS_ORIGINS=`,
+    ``,
+    // Cloud bridge: URL is pre-baked; tenant ID + key are entered in Settings → Cloud
+    // (persisted to data/cloud-config.json). IS_LOCAL_SERVER keeps the bridge enabled.
+    `IS_LOCAL_SERVER=true`,
+    `CLOUD_API_URL=${CLOUD_API_URL}`,
     ``,
     `# Admin portal password: ${adminPass}`,
-    `# Cloud sync (configure in Settings → Cloud Sync):`,
-    `# CLOUD_API_URL=`,
-    `# CLOUD_API_KEY=`,
-    `# CLOUD_TENANT_ID=`,
-    `# IS_LOCAL_SERVER=true`,
   ].join("\n"), { mode: 0o600 })
 
   // Show admin password once on first run

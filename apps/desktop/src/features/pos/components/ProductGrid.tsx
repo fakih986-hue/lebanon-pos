@@ -8,6 +8,8 @@ type Props = {
   onToggleFavorite: (product: Product) => void
   exchangeRate: number
   wholesale?: boolean
+  cartQuantities?: Record<number, number>
+  searchQuery?: string
 }
 
 const ProductGrid = memo(function ProductGrid({
@@ -16,6 +18,8 @@ const ProductGrid = memo(function ProductGrid({
   onToggleFavorite,
   exchangeRate,
   wholesale,
+  cartQuantities,
+  searchQuery,
 }: Props) {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 pb-4 sm:grid-cols-[repeat(auto-fill,minmax(168px,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(178px,1fr))]">
@@ -27,6 +31,8 @@ const ProductGrid = memo(function ProductGrid({
           onClick={() => onAddProduct(product, "tap")}
           onFavoriteToggle={() => onToggleFavorite(product)}
           wholesale={wholesale}
+          cartQuantity={cartQuantities?.[product.id] ?? 0}
+          searchQuery={searchQuery}
         />
       ))}
     </div>

@@ -16,6 +16,7 @@ apps/api/public/index.html
 apps/api/public/vendor/
 apps/api/scripts/
 apps/electron/dist-electron/
+apps/electron/assets/pg/
 mockups/
 AGENTS.md
 *.tmp

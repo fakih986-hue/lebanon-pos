@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useI18n } from "@lebanonpos/shared"
 import {
   BadgePercent,
@@ -122,6 +122,13 @@ export default function CartBody({
   const [discountOpen, setDiscountOpen] = useState(false)
   const [heldOpen, setHeldOpen] = useState(false)
   const { t } = useI18n()
+  const usdInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (paymentMethod === "Cash" && usdInputRef.current) {
+      usdInputRef.current.focus()
+    }
+  }, [paymentMethod])
 
   const checkoutLabel = creditLimitExceeded
     ? t("pos.credit_exceeded")
@@ -376,6 +383,7 @@ export default function CartBody({
               <label className="block text-[11px] font-bold" style={{ color: "var(--brand-text)" }}>
                 {t("pos.paid_usd")}
                 <input
+                  ref={usdInputRef}
                   type="number" min="0" step="0.01"
                   value={paidUsd}
                   onChange={(e) => onPaidUsdChange(e.target.value)}
@@ -416,19 +424,27 @@ export default function CartBody({
           )}
 
           {cashTenderValid && paidTotalUsd > 0 && (
-            <div className="rounded-lg p-2.5 space-y-1" style={{ background: "rgba(255,255,255,0.5)" }}>
+            <div className="rounded-lg p-3 space-y-1.5" style={{ background: "rgba(255,255,255,0.5)" }}>
               <div className="flex justify-between text-[12px]" style={{ color: "var(--brand-text)" }}>
                 <span>{t("pos.paid_total")}</span>
                 <span className="font-bold">{formatCurrency(paidTotalUsd)} / {formatLbpCurrency(paidTotalLbp)}</span>
               </div>
-              <div className="flex justify-between text-[12px] font-bold" style={{ color: cashChangeUsd > 0 ? "#059669" : "var(--rose)" }}>
-                <span>{cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}</span>
-                <span>
+              <div className="flex justify-between items-center border-t pt-2" style={{ borderColor: "var(--brand-border)" }}>
+                <span className="text-[14px] font-bold" style={{ color: cashChangeUsd > 0 ? "#059669" : "var(--rose)" }}>
+                  {cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}
+                </span>
+                <span className="text-[20px] font-black tabular-nums" style={{ color: cashChangeUsd > 0 ? "#059669" : "var(--rose)" }}>
                   {cashChangeUsd > 0
-                    ? `${formatCurrency(cashChangeUsd)} / ${formatLbpCurrency(cashChangeLbp)}`
-                    : `${formatCurrency(cashStillDueUsd)} / ${formatLbpCurrency(usdToLbp(cashStillDueUsd, exchangeRate))}`
+                    ? `${formatCurrency(cashChangeUsd)}`
+                    : `${formatCurrency(cashStillDueUsd)}`
                   }
                 </span>
+              </div>
+              <div className="text-right text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
+                {cashChangeUsd > 0
+                  ? formatLbpCurrency(cashChangeLbp)
+                  : formatLbpCurrency(usdToLbp(cashStillDueUsd, exchangeRate))
+                }
               </div>
             </div>
           )}
@@ -498,6 +514,9 @@ export default function CartBody({
               <span>{t("pos.discount")}</span>
               <span className="font-bold">-{formatCurrency(discountTotal)}</span>
             </div>
+            <div className="rounded-lg px-2.5 py-1.5 text-center text-[11px] font-bold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+              You save {formatCurrency(discountTotal)}
+            </div>
           </>
         )}
         <div className="flex justify-between text-[13px]" style={{ color: "var(--text-3)" }}>
@@ -508,9 +527,9 @@ export default function CartBody({
           <span>{t("pos.vat")} {formatVatRate(vatRate)}</span>
           <span className="font-semibold" style={{ color: "var(--text-2)" }}>{formatCurrency(tax)}</span>
         </div>
-        <div className="flex justify-between border-t pt-2" style={{ borderColor: "var(--border)" }}>
-          <span className="text-[18px] font-bold" style={{ color: "var(--text)" }}>{t("pos.total_usd")}</span>
-          <span className="text-[22px] font-black tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(total)}</span>
+        <div className="flex justify-between border-t pt-3" style={{ borderColor: "var(--border)" }}>
+          <span className="text-[20px] font-bold" style={{ color: "var(--text)" }}>{t("pos.total_usd")}</span>
+          <span className="text-[28px] font-black tabular-nums leading-none" style={{ color: "var(--text)" }}>{formatCurrency(total)}</span>
         </div>
         <div className="flex justify-between text-[12px]" style={{ color: "var(--text-3)" }}>
           <span>{t("pos.total_lbp")}</span>

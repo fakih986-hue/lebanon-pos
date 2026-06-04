@@ -59,8 +59,11 @@ export function getCorsOptions(): CorsOptions {
     process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN
   )
 
-  // Default dev origins: Vite servers for desktop + admin + ordering + driver
-  const devOrigins = /^http:\/\/localhost:\d+$/
+  // Local/LAN origins: localhost dev servers AND private-network IPs (LAN hub clients).
+  // The hub serves the SPA to other devices at http://192.168.x.x:3001 — those clients
+  // send an Origin header on POSTs, so they must be allowed without manual config.
+  const localOrInternal =
+    /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/
 
   return {
     credentials: true,
@@ -71,10 +74,12 @@ export function getCorsOptions(): CorsOptions {
         return
       }
 
-      // If no allowlist configured, allow localhost dev servers
+      // Always allow localhost + private LAN origins (the offline hub topology)
+      if (localOrInternal.test(origin)) { callback(null, true); return }
+
+      // Otherwise require an explicit allowlist (cloud / public deployments)
       if (allowedOrigins.length === 0) {
-        if (devOrigins.test(origin)) { callback(null, true); return }
-        callback(new Error("CORS: no origins configured — set CORS_ORIGINS env var"))
+        callback(new Error("CORS: origin not allowed — set CORS_ORIGINS env var"))
         return
       }
 

@@ -3,7 +3,12 @@ import type { Server, IncomingMessage } from "node:http"
 import jwt from "jsonwebtoken"
 import type { AuthPayload } from "../middleware/auth.js"
 
-const JWT_SECRET = process.env.JWT_SECRET!
+// Read lazily at use time — process.env may not be populated at module-load.
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret) throw new Error("JWT_SECRET is not set")
+  return secret
+}
 
 interface ClientInfo {
   ws: WebSocket
@@ -75,7 +80,7 @@ function handleMessage(ws: WebSocket, info: ClientInfo, msg: any) {
   switch (msg.type) {
     case "auth":
       try {
-        const payload = jwt.verify(msg.token, JWT_SECRET) as AuthPayload
+        const payload = jwt.verify(msg.token, getJwtSecret()) as AuthPayload
         info.userId = payload.userId
         info.tenantId = payload.tenantId
         info.role = payload.role
@@ -92,7 +97,7 @@ function handleMessage(ws: WebSocket, info: ClientInfo, msg: any) {
         // Re-verify token on every subscribe to catch expiry between auth and subscribe
         if (info.token) {
           try {
-            jwt.verify(info.token, JWT_SECRET)
+            jwt.verify(info.token, getJwtSecret())
           } catch {
             send(ws, { type: "auth:error", data: { message: "Token expired — reconnect to refresh" } })
             ws.close()

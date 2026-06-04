@@ -22,7 +22,13 @@ function serializeDecimals(value: unknown): unknown {
   return value
 }
 
-const JWT_SECRET = process.env.JWT_SECRET!
+// Read lazily at call time — NOT at module load. The .env may not be loaded into
+// process.env yet when this module is first imported (load-order safety).
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret) throw new Error("JWT_SECRET is not set")
+  return secret
+}
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN ||
   "30d") as SignOptions["expiresIn"]
 
@@ -67,7 +73,7 @@ export const requireAuth: Handler = (req, res, next) => {
 
   try {
     const token = header.slice(7)
-    const payload = jwt.verify(token, JWT_SECRET) as AuthPayload
+    const payload = jwt.verify(token, getJwtSecret()) as AuthPayload
     req.auth = payload
     next()
   } catch {
@@ -76,5 +82,5 @@ export const requireAuth: Handler = (req, res, next) => {
 }
 
 export function signToken(payload: AuthPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN })
 }

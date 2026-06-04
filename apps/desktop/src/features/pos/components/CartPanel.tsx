@@ -1,5 +1,5 @@
 import { useI18n } from "@lebanonpos/shared"
-import { Eraser, PauseCircle, ShoppingCart } from "lucide-react"
+import { BadgePercent, Eraser, PauseCircle, ShoppingCart } from "lucide-react"
 
 import CartBody from "./CartBody"
 import { formatCurrency, formatNumber } from "../lib/currency"
@@ -156,7 +156,7 @@ export default function CartPanel({
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid grid-cols-3 gap-2">
           <button
             type="button"
             onClick={onHold}
@@ -177,13 +177,13 @@ export default function CartPanel({
           </button>
           <button
             type="button"
-            onClick={onClean}
             disabled={items.length === 0}
-            className="btn btn-ghost h-10 text-[13px]"
-            aria-label={t("pos.clean_sale")}
+            className="btn btn-ghost h-9 text-[12px]"
+            style={items.length > 0 ? { color: "var(--brand-text)", borderColor: "var(--brand-border)" } : undefined}
+            title={items.length > 0 ? "Scroll down to apply discount" : undefined}
           >
-            <Eraser size={15} />
-            {t("pos.clean")}
+            <BadgePercent size={14} />
+            Discount
           </button>
         </div>
       </div>
