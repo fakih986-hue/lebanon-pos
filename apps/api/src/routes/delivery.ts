@@ -418,6 +418,25 @@ function requireDriver(req: AuthRequest, res: ServerResponse, next: () => void) 
   next()
 }
 
+function requireCustomerAuth(req: AuthRequest, res: ServerResponse, next: () => void) {
+  const header = req.headers.authorization
+  if (!header?.startsWith("Bearer ")) {
+    json(res, { error: "Authentication required" }, 401)
+    return
+  }
+  try {
+    const payload = jwt.verify(header.slice(7), process.env.JWT_SECRET!) as any
+    if (!payload.customerId || payload.role !== "Customer") {
+      json(res, { error: "Customer access required" }, 403)
+      return
+    }
+    req.auth = { userId: payload.customerId, tenantId: payload.tenantId, role: payload.role as any }
+    next()
+  } catch {
+    json(res, { error: "Invalid or expired token" }, 401)
+  }
+}
+
 // Admin: get online driver IDs
 router.get("/drivers/online", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
@@ -716,26 +735,11 @@ router.post("/customer/login", async (req: any, res: ServerResponse) => {
 })
 
 // Customer: get my orders
-router.get("/customer/orders", async (req: any, res: ServerResponse) => {
+router.get("/customer/orders", requireCustomerAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const authHeader = req.headers?.authorization
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      json(res, { error: "Authentication required" }, 401)
-      return
-    }
-    let payload: { customerId?: string; tenantId?: string; role?: string }
-    try {
-      payload = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET!) as any
-    } catch {
-      json(res, { error: "Invalid or expired token" }, 401)
-      return
-    }
-    if (!payload.customerId || payload.role !== "Customer") {
-      json(res, { error: "Customer access required" }, 403)
-      return
-    }
+    const payload = req.auth!
     const orders = await prisma.deliveryOrder.findMany({
-      where: { customerId: payload.customerId, tenantId: payload.tenantId },
+      where: { customerId: payload.userId as string, tenantId: payload.tenantId },
       include: { items: true },
       orderBy: { createdAt: "desc" },
       take: 30,

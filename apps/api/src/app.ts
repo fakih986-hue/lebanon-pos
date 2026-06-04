@@ -7,6 +7,7 @@ import { json } from "./middleware/auth.js"
 import prisma from "./lib/prisma.js"
 import { Decimal } from "@prisma/client/runtime/library"
 import cors from "cors"
+import morgan from "morgan"
 
 // Ensure Express's res.json() also converts Prisma Decimals → numbers
 // (some routes use res.json() directly instead of the json() helper)
@@ -39,6 +40,7 @@ app.disable("x-powered-by")
 app.set("json replacer", decimalReplacer)  // converts Prisma Decimals → numbers in res.json()
 app.use(securityHeaders)
 app.use(cors(getCorsOptions()))
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"))
 app.use(express.json({ limit: "10mb" }))
 
 // Auth + sync (high-frequency, calibrated limits)
