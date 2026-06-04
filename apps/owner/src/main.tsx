@@ -172,6 +172,25 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
     setSaving(false)
   }
 
+  async function handleDelete() {
+    if (!editingTenant) return
+    const typed = window.prompt(
+      `This permanently deletes "${editingTenant.name}" and ALL its data (sales, products, staff, customers). This cannot be undone.\n\nType the subdomain "${editingTenant.subdomain}" to confirm:`
+    )
+    if (typed !== editingTenant.subdomain) {
+      if (typed !== null) setSaveError("Confirmation text did not match — not deleted.")
+      return
+    }
+    setSaveError("")
+    setSaving(true)
+    try {
+      await api(`/api/admin/tenants/${editingTenant.id}`, { method: "DELETE" })
+      setTenants(prev => prev.filter(t => t.id !== editingTenant.id))
+      setEditingTenant(null)
+    } catch (err) { setSaveError((err as Error).message) }
+    setSaving(false)
+  }
+
   if (createdResult) {
     return (
       <div className="max-w-2xl mx-auto py-12 px-4">
@@ -319,9 +338,12 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                   <p className="text-xs text-slate-500">Block this store from syncing to the platform</p>
                 </div>
               </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setEditingTenant(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-sm border border-slate-700 hover:bg-slate-700 transition-colors">Cancel</button>
-                <button type="submit" disabled={saving} className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm disabled:opacity-50">{saving ? "Saving…" : "Save Changes"}</button>
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <button type="button" onClick={handleDelete} disabled={saving} className="px-4 py-2 rounded-xl bg-rose-600/10 text-rose-400 text-sm border border-rose-600/30 hover:bg-rose-600/20 transition-colors disabled:opacity-50">Delete Store</button>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setEditingTenant(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-sm border border-slate-700 hover:bg-slate-700 transition-colors">Cancel</button>
+                  <button type="submit" disabled={saving} className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm disabled:opacity-50">{saving ? "Saving…" : "Save Changes"}</button>
+                </div>
               </div>
             </form>
           </div>

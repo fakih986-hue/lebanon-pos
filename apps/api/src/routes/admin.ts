@@ -124,6 +124,58 @@ router.put("/tenants/:id", requireAuth, requireAdmin, async (req: AuthRequest, r
   }
 })
 
+/**
+ * Delete a tenant and ALL of its data. Children are removed in FK-dependency
+ * order inside a transaction; tables with onDelete:Cascade (sale items, tender,
+ * refund items, delivery-order items, stock-count lines, PO items) are removed
+ * automatically when their parent is deleted.
+ */
+async function deleteTenantCascade(tenantId: string) {
+  await prisma.$transaction(async (tx) => {
+    const where = { tenantId }
+    // 1. Records that reference customers / staff / products / suppliers
+    await tx.deliveryOrder.deleteMany({ where })       // → deliveryOrderItem cascades
+    await tx.saleRefund.deleteMany({ where })          // → refundItem cascades
+    await tx.sale.deleteMany({ where })                // → saleItem + saleTender cascade
+    await tx.debtPayment.deleteMany({ where })
+    await tx.debtSale.deleteMany({ where })
+    await tx.expense.deleteMany({ where })
+    await tx.shift.deleteMany({ where })
+    await tx.stockAdjustment.deleteMany({ where })
+    await tx.stockCountSession.deleteMany({ where })   // → stockCountLine cascades
+    await tx.inventoryBatch.deleteMany({ where })
+    await tx.purchaseOrder.deleteMany({ where })       // → purchaseOrderItem cascades
+    await tx.supplierPayment.deleteMany({ where })
+    await tx.auditEvent.deleteMany({ where })
+    await tx.dailyClose.deleteMany({ where })
+    await tx.syncOperation.deleteMany({ where })
+    // 2. Products self-reference via parentId — break the link before deleting
+    await tx.product.updateMany({ where, data: { parentId: null } })
+    await tx.product.deleteMany({ where })
+    // 3. Now the principals
+    await tx.customer.deleteMany({ where })
+    await tx.supplier.deleteMany({ where })
+    await tx.staffUser.deleteMany({ where })
+    await tx.appSettings.deleteMany({ where })
+    // 4. Finally the tenant itself
+    await tx.tenant.delete({ where: { id: tenantId } })
+  })
+}
+
+router.delete("/tenants/:id", requireAuth, requireAdmin, async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const id = req.params?.id
+    if (!id) { json(res, { error: "Tenant id required" }, 400); return }
+    const tenant = await prisma.tenant.findUnique({ where: { id }, select: { id: true } })
+    if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
+    await deleteTenantCascade(id)
+    json(res, { ok: true, deleted: id })
+  } catch (err) {
+    console.error("Delete tenant error:", err)
+    json(res, { error: "Failed to delete tenant" }, 500)
+  }
+})
+
 router.post("/tenants", requireAuth, requireAdmin, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const parsed = createTenantSchema.safeParse(req.body)
