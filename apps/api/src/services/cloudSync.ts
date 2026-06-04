@@ -198,6 +198,20 @@ async function pushToCloud(): Promise<void> {
   console.log(`[cloud-sync] Push done — ✓ ${okCount} synced, ✗ ${errCount} failed`)
 }
 
+// Convert Decimal-like objects { s, e, d } from JSON → plain numbers
+function fixDecimalObjects(value: unknown): unknown {
+  if (value === null || value === undefined) return value
+  if (typeof value !== "object") return value
+  if (Array.isArray(value)) { for (let i = 0; i < value.length; i++) value[i] = fixDecimalObjects(value[i]); return value }
+  const obj = value as Record<string, unknown>
+  if ("s" in obj && "e" in obj && "d" in obj && Array.isArray(obj.d)) {
+    const s = obj.s as number; const e = obj.e as number; const digits = obj.d[0] as number
+    return s * digits * Math.pow(10, e)
+  }
+  for (const k of Object.keys(obj)) obj[k] = fixDecimalObjects(obj[k])
+  return obj
+}
+
 // ─── Pull: Railway changes → local PostgreSQL ────────────────────────────────
 
 async function pullFromCloud(): Promise<void> {
@@ -214,6 +228,7 @@ async function pullFromCloud(): Promise<void> {
   }
 
   const data = (await res.json()) as PullResponse
+  fixDecimalObjects(data)
 
   await upsertPulledData(tenantId, data)
 
