@@ -44,6 +44,7 @@ WORKDIR /app
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/src/generated ./dist/generated
 COPY --from=builder /app/apps/api/prisma ./prisma
+COPY --from=builder /app/apps/api/prisma.config.ts ./prisma.config.ts
 
 # Copy built SPAs
 COPY --from=builder /app/apps/admin/dist ./public/admin
