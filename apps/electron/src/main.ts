@@ -213,16 +213,28 @@ async function startPostgres(password: string): Promise<void> {
     )
   }
 
-  // Create the application database on first run
-  if (isNew) {
-    setStatus("Creating database…")
-    const client = new Client({ host: "localhost", port: PG_PORT, user: PG_USER, password, database: "postgres" })
-    await client.connect()
-    try {
-      await client.query(`CREATE DATABASE ${PG_DB}`)
-    } finally {
-      await client.end()
+  // Ensure the application database exists — ALWAYS, not just on first init.
+  // A previous launch may have run initdb (PG_VERSION exists) but crashed before
+  // creating the DB, which would otherwise leave "database does not exist" forever.
+  await ensureDatabase(password)
+}
+
+/** Idempotently create the application database if it's missing. */
+async function ensureDatabase(password: string): Promise<void> {
+  setStatus("Preparing database…")
+  const client = new Client({ host: "localhost", port: PG_PORT, user: PG_USER, password, database: "postgres" })
+  await client.connect()
+  try {
+    const { rows } = await client.query("SELECT 1 FROM pg_database WHERE datname = $1", [PG_DB])
+    if (rows.length === 0) {
+      setStatus("Creating database…")
+      await client.query(`CREATE DATABASE "${PG_DB}"`)
+      console.log(`[pg] created database ${PG_DB}`)
+    } else {
+      console.log(`[pg] database ${PG_DB} already exists`)
     }
+  } finally {
+    await client.end()
   }
 }
 
