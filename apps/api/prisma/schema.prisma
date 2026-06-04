@@ -200,6 +200,7 @@ model Sale {
   @@unique([tenantId, saleNumber])
   @@index([tenantId, createdAt])
   @@index([tenantId, customerId])
+  @@index([tenantId, status, createdAt])
 }
 
 model SaleItem {
@@ -291,19 +292,20 @@ model Customer {
 }
 
 model DebtSale {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  customerId  String
-  customer    Customer @relation(fields: [customerId], references: [id])
-  saleNumber  String
-  subtotal    Decimal  @db.Decimal(18, 4)
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id])
+  saleNumber    String
+  subtotal      Decimal  @db.Decimal(18, 4)
   discountTotal Decimal? @db.Decimal(18, 4)
-  tax         Decimal  @db.Decimal(18, 4)
-  total       Decimal  @db.Decimal(18, 4)
-  createdAt   DateTime @default(now())
+  tax           Decimal  @db.Decimal(18, 4)
+  total         Decimal  @db.Decimal(18, 4)
+  createdAt     DateTime @default(now())
 
   @@index([tenantId, customerId])
+  @@index([tenantId, createdAt])
 }
 
 model DebtPayment {
@@ -318,6 +320,7 @@ model DebtPayment {
   createdAt   DateTime @default(now())
 
   @@index([tenantId, customerId])
+  @@index([tenantId, createdAt])
 }
 
 model Supplier {
@@ -426,6 +429,7 @@ model Shift {
   notes             String?
 
   @@unique([tenantId, shiftNumber])
+  @@index([tenantId, status])
 }
 
 model AuditEvent {
@@ -464,6 +468,7 @@ model Expense {
   createdAt     DateTime @default(now())
 
   @@unique([tenantId, expenseNumber])
+  @@index([tenantId, createdAt])
 }
 
 model InventoryBatch {

@@ -1,0 +1,404 @@
+import { useState, useEffect } from "react"
+import { api } from "../app/api"
+import { getToken } from "../main"
+
+function formatCurrency(n: number) { return n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 2 }) }
+function formatPct(n: number) { return n.toFixed(1) + "%" }
+
+type LowStockItem = {
+  id: number; name: string; barcode: string; category: string
+  stock: number; cost: number; price: number
+  reorderPoint: number; reorderQuantity: number; supplierName: string
+  deficit: number; suggestedReorder: number
+}
+type XReportData = {
+  type: string
+  shift: { number: string; openedAt: string; openedBy: string; openingFloat: number }
+  sales: { count: number; total: number; cost: number; profit: number }
+  refunds: { count: number; total: number }
+  expenses: { count: number; total: number }
+  supplierPayments: { total: number }
+  paymentBreakdown: { cash: { count: number; total: number }; card: { count: number; total: number }; wallet: { total: number } }
+  netCash: number
+  generatedAt: string
+}
+type ZReportData = XReportData & {
+  cashReconciliation: { openingFloat: number; cashSales: number; cashRefunds: number; cashExpenses: number; expectedCash: number; closingCash: number; difference: number }
+}
+type MarginData = {
+  period: string
+  summary: { totalRevenue: number; totalCost: number; totalMargin: number; marginPct: number }
+  byCategory: Array<{ category: string; revenue: number; cost: number; margin: number; marginPct: number }>
+  byProduct: Array<{ productId: number; name: string; category: string; quantity: number; revenue: number; cost: number; margin: number; marginPct: number }>
+}
+type DebtAgingData = {
+  totalOutstanding: number
+  customers: Array<{ customerId: string; name: string; mobile: string; creditLimit: number; totalDebt: number; totalPaid: number; outstanding: number; current: number; days30: number; days60: number; days90: number; lastSaleDate: string }>
+}
+
+function downloadCsv(url: string, filename: string) {
+  const token = getToken()
+  fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    .then(r => r.blob())
+    .then(blob => {
+      const a = document.createElement("a")
+      a.href = URL.createObjectURL(blob)
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(a.href)
+    })
+}
+
+function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: "indigo" | "emerald" | "amber" | "rose" | "violet" }) {
+  const gradients: Record<string, string> = {
+    indigo: "from-indigo-500/20 to-indigo-600/10 border-indigo-500/30",
+    emerald: "from-emerald-500/20 to-emerald-600/10 border-emerald-500/30",
+    amber: "from-amber-500/20 to-amber-600/10 border-amber-500/30",
+    rose: "from-rose-500/20 to-rose-600/10 border-rose-500/30",
+    violet: "from-violet-500/20 to-violet-600/10 border-violet-500/30",
+  }
+  return (
+    <div className={`data-card p-5 rounded-xl bg-gradient-to-br border ${gradients[color ?? "indigo"]}`}>
+      <p className="text-xs font-medium tracking-wide opacity-60 mb-1">{label}</p>
+      <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{value}</p>
+      {sub && <p className="text-xs mt-1 opacity-50">{sub}</p>}
+    </div>
+  )
+}
+
+export function ReportsPage() {
+  const [activeTab, setActiveTab] = useState<"low-stock" | "x-report" | "margin" | "debt">("low-stock")
+
+  // Low stock
+  const [lowStock, setLowStock] = useState<LowStockItem[]>([])
+  const [lowStockLoading, setLowStockLoading] = useState(false)
+
+  // X report
+  const [xReport, setXReport] = useState<XReportData | null>(null)
+  const [xLoading, setXLoading] = useState(false)
+  const [xError, setXError] = useState<string | null>(null)
+
+  // Z report
+  const [zReport, setZReport] = useState<ZReportData | null>(null)
+  const [zLoading, setZLoading] = useState(false)
+  const [closingCash, setClosingCash] = useState("")
+  const [zNotes, setZNotes] = useState("")
+
+  // Margin
+  const [margin, setMargin] = useState<MarginData | null>(null)
+  const [marginDays, setMarginDays] = useState(30)
+  const [marginLoading, setMarginLoading] = useState(false)
+
+  // Debt aging
+  const [debt, setDebt] = useState<DebtAgingData | null>(null)
+  const [debtLoading, setDebtLoading] = useState(false)
+
+  useEffect(() => {
+    if (activeTab === "low-stock" && lowStock.length === 0) loadLowStock()
+    if (activeTab === "debt" && !debt) loadDebtAging()
+  }, [activeTab])
+
+  async function loadLowStock() {
+    setLowStockLoading(true)
+    try {
+      const data = await api<{ items: LowStockItem[] }>("/api/reports/low-stock")
+      setLowStock(data.items)
+    } catch { /* ignore */ }
+    setLowStockLoading(false)
+  }
+
+  async function loadXReport() {
+    setXLoading(true); setXError(null)
+    try {
+      const data = await api<XReportData>("/api/reports/x-report")
+      setXReport(data)
+    } catch (e: any) { setXError(e.message ?? "Failed to load X report") }
+    setXLoading(false)
+  }
+
+  async function loadZReport() {
+    const cash = parseFloat(closingCash)
+    if (isNaN(cash) || cash < 0) return
+    setZLoading(true)
+    try {
+      const body: Record<string, unknown> = { closingCash: cash }
+      if (zNotes) body.notes = zNotes
+      const data = await api<ZReportData>("/api/reports/z-report", { method: "POST", body: JSON.stringify(body) })
+      setZReport(data)
+    } catch { /* ignore */ }
+    setZLoading(false)
+  }
+
+  async function loadMargin() {
+    setMarginLoading(true)
+    try {
+      const data = await api<MarginData>(`/api/reports/margin?days=${marginDays}`)
+      setMargin(data)
+    } catch { /* ignore */ }
+    setMarginLoading(false)
+  }
+
+  async function loadDebtAging() {
+    setDebtLoading(true)
+    try {
+      const data = await api<DebtAgingData>("/api/reports/debt-aging")
+      setDebt(data)
+    } catch { /* ignore */ }
+    setDebtLoading(false)
+  }
+
+  const tabs = [
+    { key: "low-stock" as const, label: "Low Stock" },
+    { key: "x-report" as const, label: "X Report" },
+    { key: "margin" as const, label: "Margin" },
+    { key: "debt" as const, label: "Debt Aging" },
+  ]
+
+  return (
+    <div className="animate-slide-up">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Reports</h1>
+          <p className="text-sm opacity-60">Low stock alerts, shift summaries, margin analysis, and debt tracking</p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 bg-white/5 rounded-xl p-1 w-fit">
+        {tabs.map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === tab.key ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"}`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Low Stock Tab */}
+      {activeTab === "low-stock" && (
+        <div>
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <button onClick={loadLowStock} disabled={lowStockLoading}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all duration-200 disabled:opacity-50">
+              {lowStockLoading ? "Loading..." : "Refresh"}
+            </button>
+            <button onClick={() => downloadCsv("/api/reports/export/low-stock", `low-stock-${new Date().toISOString().slice(0, 10)}.csv`)}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-sm font-medium transition-all duration-200">
+              Export CSV
+            </button>
+          </div>
+          {lowStock.length === 0 && !lowStockLoading ? (
+            <p className="text-sm opacity-50 py-8 text-center">No products below reorder point</p>
+          ) : (
+            <div className="grid gap-3">
+              {lowStock.map(item => (
+                <div key={item.id} className="data-card p-4 rounded-xl flex items-center gap-4 flex-wrap">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold" style={{ color: "var(--text-primary)" }}>{item.name}</p>
+                    <p className="text-xs opacity-50">{item.barcode} &middot; {item.category} {item.supplierName ? `· ${item.supplierName}` : ""}</p>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-rose-400 font-bold">{item.stock} left</span>
+                    <span className="opacity-50">reorder at {item.reorderPoint}</span>
+                    <span className="bg-amber-500/20 text-amber-300 px-2 py-1 rounded-lg font-medium">Need {item.suggestedReorder}</span>
+                    <span className="opacity-40">{formatCurrency(item.price)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* X Report Tab */}
+      {activeTab === "x-report" && (
+        <div>
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <button onClick={loadXReport} disabled={xLoading}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all duration-200 disabled:opacity-50">
+              {xLoading ? "Loading..." : "Generate X Report"}
+            </button>
+            <button onClick={() => downloadCsv("/api/reports/export/x-report", `x-report.csv`)}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-sm font-medium transition-all duration-200">
+              Export CSV
+            </button>
+          </div>
+          {xError && <p className="text-rose-400 text-sm mb-4">{xError}</p>}
+          {xReport && (
+            <div className="space-y-4">
+              <div className="data-card p-5 rounded-xl">
+                <p className="font-bold mb-2">Shift #{xReport.shift.number}</p>
+                <p className="text-sm opacity-60">Opened {new Date(xReport.shift.openedAt).toLocaleString()} by {xReport.shift.openedBy}</p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <StatCard label="Sales" value={xReport.sales.count.toString()} sub={formatCurrency(xReport.sales.total)} color="emerald" />
+                <StatCard label="Refunds" value={xReport.refunds.count.toString()} sub={formatCurrency(xReport.refunds.total)} color="rose" />
+                <StatCard label="Expenses" value={xReport.expenses.count.toString()} sub={formatCurrency(xReport.expenses.total)} color="amber" />
+                <StatCard label="Net Cash" value={formatCurrency(xReport.netCash)} color="indigo" />
+              </div>
+              <div className="data-card p-5 rounded-xl">
+                <p className="font-semibold mb-2">Payment Breakdown</p>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div><span className="opacity-50">Cash:</span> {xReport.paymentBreakdown.cash.count} · {formatCurrency(xReport.paymentBreakdown.cash.total)}</div>
+                  <div><span className="opacity-50">Card:</span> {xReport.paymentBreakdown.card.count} · {formatCurrency(xReport.paymentBreakdown.card.total)}</div>
+                  <div><span className="opacity-50">Wallet:</span> {formatCurrency(xReport.paymentBreakdown.wallet.total)}</div>
+                </div>
+              </div>
+
+              {/* Z Report (close shift) */}
+              <div className="data-card p-5 rounded-xl border border-rose-500/20">
+                <p className="font-bold mb-3 text-rose-400">Close Shift (Z Report)</p>
+                <div className="flex flex-wrap items-end gap-3">
+                  <div>
+                    <label className="block text-xs opacity-50 mb-1">Closing Cash ($)</label>
+                    <input value={closingCash} onChange={e => setClosingCash(e.target.value)} type="number" min="0" step="0.01"
+                      className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm w-32" placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label className="block text-xs opacity-50 mb-1">Notes</label>
+                    <input value={zNotes} onChange={e => setZNotes(e.target.value)}
+                      className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm w-48" placeholder="Optional" />
+                  </div>
+                  <button onClick={loadZReport} disabled={zLoading || !closingCash}
+                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold transition-all duration-200 disabled:opacity-50">
+                    {zLoading ? "Closing..." : "Close Shift & Print Z"}
+                  </button>
+                </div>
+                {zReport && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <p className="font-bold text-emerald-400 mb-2">Shift Closed</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                      <div><span className="opacity-50">Expected Cash:</span><br/>{formatCurrency(zReport.cashReconciliation.expectedCash)}</div>
+                      <div><span className="opacity-50">Closing Cash:</span><br/>{formatCurrency(zReport.cashReconciliation.closingCash)}</div>
+                      <div><span className="opacity-50">Difference:</span><br/><span className={zReport.cashReconciliation.difference !== 0 ? "text-rose-400" : "text-emerald-400"}>{formatCurrency(zReport.cashReconciliation.difference)}</span></div>
+                      <div><span className="opacity-50">Profit:</span><br/>{formatCurrency(zReport.sales.profit)}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {!xReport && !xError && !xLoading && <p className="text-sm opacity-50 py-8 text-center">Click "Generate X Report" to view current shift summary</p>}
+        </div>
+      )}
+
+      {/* Margin Tab */}
+      {activeTab === "margin" && (
+        <div>
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <select value={marginDays} onChange={e => setMarginDays(Number(e.target.value))}
+              className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">
+              <option value={7}>7 days</option>
+              <option value={30}>30 days</option>
+              <option value={60}>60 days</option>
+              <option value={90}>90 days</option>
+            </select>
+            <button onClick={loadMargin} disabled={marginLoading}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all duration-200 disabled:opacity-50">
+              {marginLoading ? "Loading..." : "Generate"}
+            </button>
+            <button onClick={() => downloadCsv("/api/reports/export/margin", `margin-report.csv`)}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-sm font-medium transition-all duration-200">
+              Export CSV
+            </button>
+          </div>
+          {margin && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <StatCard label="Revenue" value={formatCurrency(margin.summary.totalRevenue)} color="emerald" />
+                <StatCard label="Cost" value={formatCurrency(margin.summary.totalCost)} color="rose" />
+                <StatCard label="Margin" value={formatCurrency(margin.summary.totalMargin)} color="indigo" />
+                <StatCard label="Margin %" value={formatPct(margin.summary.marginPct)} color="violet" />
+              </div>
+              <div className="data-card p-5 rounded-xl">
+                <p className="font-semibold mb-3">By Category</p>
+                <div className="space-y-2">
+                  {margin.byCategory.map(c => (
+                    <div key={c.category} className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{c.category}</span>
+                      <div className="flex gap-4">
+                        <span className="opacity-50">{formatCurrency(c.revenue)}</span>
+                        <span className={c.margin >= 0 ? "text-emerald-400" : "text-rose-400"}>{formatCurrency(c.margin)} ({formatPct(c.marginPct)})</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="data-card p-5 rounded-xl overflow-auto">
+                <p className="font-semibold mb-3">By Product (top 50)</p>
+                <table className="w-full text-sm">
+                  <thead><tr className="text-left opacity-50">
+                    <th className="pb-2 pr-4">Product</th><th className="pb-2 pr-4">Category</th><th className="pb-2 pr-4">Qty</th>
+                    <th className="pb-2 pr-4">Revenue</th><th className="pb-2 pr-4">Cost</th><th className="pb-2 pr-4">Margin</th><th className="pb-2">%</th>
+                  </tr></thead>
+                  <tbody>
+                    {margin.byProduct.slice(0, 50).map(p => (
+                      <tr key={p.productId} className="border-t border-white/5">
+                        <td className="py-2 pr-4">{p.name}</td>
+                        <td className="py-2 pr-4 opacity-50">{p.category}</td>
+                        <td className="py-2 pr-4">{p.quantity}</td>
+                        <td className="py-2 pr-4">{formatCurrency(p.revenue)}</td>
+                        <td className="py-2 pr-4">{formatCurrency(p.cost)}</td>
+                        <td className={`py-2 pr-4 ${p.margin >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{formatCurrency(p.margin)}</td>
+                        <td className="py-2">{formatPct(p.marginPct)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {!margin && !marginLoading && <p className="text-sm opacity-50 py-8 text-center">Select period and click Generate</p>}
+        </div>
+      )}
+
+      {/* Debt Aging Tab */}
+      {activeTab === "debt" && (
+        <div>
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
+            <button onClick={loadDebtAging} disabled={debtLoading}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all duration-200 disabled:opacity-50">
+              {debtLoading ? "Loading..." : "Refresh"}
+            </button>
+            <button onClick={() => downloadCsv("/api/reports/export/debt-aging", `debt-aging-${new Date().toISOString().slice(0, 10)}.csv`)}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-sm font-medium transition-all duration-200">
+              Export CSV
+            </button>
+          </div>
+          {debt && (
+            <div className="space-y-4">
+              <StatCard label="Total Outstanding" value={formatCurrency(debt.totalOutstanding)} color={debt.totalOutstanding > 0 ? "rose" : "emerald"} />
+              {debt.customers.length === 0 ? (
+                <p className="text-sm opacity-50 py-4 text-center">No outstanding debt</p>
+              ) : (
+                <div className="data-card p-5 rounded-xl overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="text-left opacity-50">
+                      <th className="pb-2 pr-4">Customer</th><th className="pb-2 pr-4">Mobile</th><th className="pb-2 pr-4">Outstanding</th>
+                      <th className="pb-2 pr-4">Credit Limit</th><th className="pb-2 pr-4">Current</th><th className="pb-2 pr-4">31-60d</th>
+                      <th className="pb-2 pr-4">61-90d</th><th className="pb-2">90d+</th>
+                    </tr></thead>
+                    <tbody>
+                      {debt.customers.map(c => (
+                        <tr key={c.customerId} className="border-t border-white/5">
+                          <td className="py-2 pr-4 font-medium">{c.name}</td>
+                          <td className="py-2 pr-4 opacity-50">{c.mobile || "-"}</td>
+                          <td className={`py-2 pr-4 font-bold ${c.outstanding > (c.creditLimit || 99999) ? "text-rose-400" : "text-emerald-400"}`}>{formatCurrency(c.outstanding)}</td>
+                          <td className="py-2 pr-4">{formatCurrency(c.creditLimit)}</td>
+                          <td className="py-2 pr-4">{formatCurrency(c.current)}</td>
+                          <td className="py-2 pr-4 text-amber-400">{formatCurrency(c.days30)}</td>
+                          <td className="py-2 pr-4 text-orange-400">{formatCurrency(c.days60)}</td>
+                          <td className="py-2 text-rose-400">{formatCurrency(c.days90)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+          {!debt && !debtLoading && <p className="text-sm opacity-50 py-8 text-center">Click Refresh to load debt aging</p>}
+        </div>
+      )}
+    </div>
+  )
+}

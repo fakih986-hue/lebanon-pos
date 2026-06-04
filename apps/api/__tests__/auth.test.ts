@@ -2,6 +2,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vites
 import { startServer, stopServer, request } from "./helpers"
 import prisma from "../src/lib/prisma"
 import { signToken } from "../src/middleware/auth"
+import { createHash } from "crypto"
+
+const hashPin = (pin: string) => createHash("sha256").update(pin).digest("base64")
 
 vi.mock("../src/lib/prisma", () => {
   const model = () => ({
@@ -111,7 +114,7 @@ describe("POST /api/auth/login", () => {
       name: "Cashier One",
       role: "Cashier",
       tenantId: "t1",
-      pin: "1234",
+      pin: hashPin("1234"),
       mobile: "700",
       active: true,
       createdAt: new Date(),

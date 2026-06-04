@@ -19,6 +19,7 @@ import dashboardRoutes from "./routes/dashboard.js"
 import deliveryRoutes from "./routes/delivery.js"
 import imageRoutes from "./routes/image.js"
 import adminRoutes from "./routes/admin.js"
+import reportsRoutes from "./routes/reports.js"
 import { errorHandler } from "./middleware/errorHandler.js"
 import {
   getCorsOptions,
@@ -51,6 +52,7 @@ app.use("/api/dashboard", rateLimit({ windowMs: 60_000, max: 120, bucket: "dashb
 app.use("/api/setup", rateLimit({ windowMs: 60_000, max: 20, bucket: "setup" }))
 app.use("/api/images", rateLimit({ windowMs: 60_000, max: 60, bucket: "images" }))
 app.use("/api/admin", rateLimit({ windowMs: 60_000, max: 60, bucket: "admin" }))
+app.use("/api/reports", rateLimit({ windowMs: 60_000, max: 60, bucket: "reports" }))
 app.use("/api/delivery", rateLimit({ windowMs: 60_000, max: 120, bucket: "delivery" }))
 
 app.use("/api/auth", authRoutes)
@@ -60,6 +62,7 @@ app.use("/api/dashboard", dashboardRoutes)
 app.use("/api/delivery", deliveryRoutes)
 app.use("/api/images", imageRoutes)
 app.use("/api/admin", adminRoutes)
+app.use("/api/reports", reportsRoutes)
 
 app.get("/api/health", (_req: IncomingMessage, res: ServerResponse) => {
   json(res, { status: "ok", timestamp: new Date().toISOString() })

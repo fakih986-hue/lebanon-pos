@@ -46,6 +46,8 @@ router.post("/tenant/setup", async (req: any, res: any) => {
       return
     }
 
+    const adminPinHash = await bcrypt.hash(adminPin, 12)
+
     const result = await prisma.$transaction(async (tx: any) => {
       const tenant = await tx.tenant.create({
         data: { name: storeName, subdomain },
@@ -55,7 +57,7 @@ router.post("/tenant/setup", async (req: any, res: any) => {
           tenantId: tenant.id,
           name: adminName,
           mobile: adminMobile,
-          pin: hashSha256Pin(adminPin),
+          pin: adminPinHash,
           role: "Admin",
           active: true,
         },
@@ -129,7 +131,7 @@ router.post("/login", async (req: any, res: any) => {
       }
       const pinMatches = driver.pin.startsWith("$2")
         ? await bcrypt.compare(pin, driver.pin)
-        : driver.pin === pin || driver.pin === hashSha256Pin(pin)
+        : driver.pin === hashSha256Pin(pin)
       if (!pinMatches) {
         res.status(401).json({ error: "Invalid credentials" })
         return
@@ -165,7 +167,7 @@ router.post("/login", async (req: any, res: any) => {
     for (const candidate of candidates) {
       const matches = candidate.pin.startsWith("$2")
         ? await bcrypt.compare(pin, candidate.pin)
-        : (candidate.pin === sha256Pin || candidate.pin === pin)
+        : candidate.pin === sha256Pin
       if (matches) {
         user = user ? betterRole(user, candidate) : candidate
       }
