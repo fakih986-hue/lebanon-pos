@@ -241,7 +241,6 @@ async function ensureDatabase(password: string): Promise<void> {
   // Prefer system psql (avoid pg.Client compatibility issues in Electron's bundled Node)
   const psqlPath = "C:\\Program Files\\PostgreSQL\\18\\bin\\psql.exe"
   if (fs.existsSync(psqlPath)) {
-    console.log("[dbg] using system psql at", psqlPath)
     const psqlEnv = { ...process.env, PGPASSWORD: password }
     const commonArgs = `-h localhost -p ${PG_PORT} -U ${PG_USER} -d postgres`
     try {
@@ -258,10 +257,10 @@ async function ensureDatabase(password: string): Promise<void> {
       }
       return
     } catch (err) {
-      console.log("[dbg] psql failed, falling back to pg.Client:", (err as Error).message)
+      console.log("[pg] psql check failed:", (err as Error).message)
     }
   } else {
-    console.log("[dbg] system psql not found, using pg.Client")
+    console.log("[pg] system psql not found, using pg.Client")
   }
 
   // Fallback: pg.Client
@@ -461,21 +460,32 @@ function setStatus(msg: string) {
 
 function showLoadingWindow() {
   loadWindow = new BrowserWindow({
-    width: 440, height: 280, resizable: false, frame: false,
+    width: 400, height: 260, resizable: false, frame: false,
     center: true, alwaysOnTop: true, backgroundColor: "#0f172a",
     webPreferences: { nodeIntegration: false, contextIsolation: true },
   })
   loadWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`<!DOCTYPE html>
-<html><body style="margin:0;display:flex;flex-direction:column;align-items:center;
-justify-content:center;height:100vh;background:#0f172a;color:#e2e8f0;font-family:system-ui;
--webkit-app-region:drag">
-<div style="font-size:52px;margin-bottom:14px">🏪</div>
-<div style="font-size:20px;font-weight:700;margin-bottom:8px">Lebanon POS</div>
-<div id="s" style="font-size:13px;color:#94a3b8;margin-bottom:24px">${loadMsg}</div>
-<div style="width:220px;height:3px;background:#1e293b;border-radius:9px;overflow:hidden">
-<div style="width:40%;height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);
-animation:s 1.4s ease-in-out infinite alternate;border-radius:9px"></div></div>
-<style>@keyframes s{from{margin-left:0}to{margin-left:60%}}</style>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;
+background:#0f172a;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+-webkit-app-region:drag;gap:16px;padding:24px}
+.logo{width:48px;height:48px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:14px;
+display:flex;align-items:center;justify-content:center;font-size:24px}
+.title{font-size:18px;font-weight:700}
+.status{font-size:12px;color:#94a3b8;text-align:center;min-height:18px}
+.bar{width:200px;height:3px;background:#1e293b;border-radius:99px;overflow:hidden}
+.bar-inner{width:35%;height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);
+border-radius:99px;animation:slide 1.2s ease-in-out infinite alternate}
+@keyframes slide{from{margin-left:-10%}to{margin-left:75%}}
+</style></head>
+<body>
+<div class="logo">🏪</div>
+<div class="title">Lebanon POS</div>
+<div class="status" id="s">${loadMsg}</div>
+<div class="bar"><div class="bar-inner"></div></div>
 </body></html>`)}`)
 }
 
@@ -489,7 +499,6 @@ function showActivationWindow() {
   closeLoadingWindow()
   closeActivationWindow()
 
-  // Read the admin password from .env (written by writeApiEnv earlier)
   let adminPassword = ""
   try {
     const envContent = fs.readFileSync(ENV_PATH, "utf-8")
@@ -498,70 +507,92 @@ function showActivationWindow() {
   } catch { /* use empty fallback */ }
 
   activationWindow = new BrowserWindow({
-    width: 520, height: 760, resizable: false,
-    center: true, title: "Lebanon POS — Activate Store",
+    width: 500, height: 680, resizable: false,
+    center: true, title: "Lebanon POS — Connect to Cloud",
     backgroundColor: "#f8fafc",
     webPreferences: { nodeIntegration: true, contextIsolation: false },
   })
 
   const cloudUrl = CLOUD_API_URL
   const html = `<!DOCTYPE html>
-<html><body style="margin:0;padding:24px;background:#f8fafc;font-family:system-ui;
-display:flex;flex-direction:column">
-<div style="font-size:28px;font-weight:800;color:#0f172a;margin-bottom:4px">🏪 Lebanon POS</div>
-<p style="font-size:14px;color:#64748b;margin:0 0 20px 0">Connect this store to the cloud to download your data.</p>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{margin:0;padding:24px;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+display:flex;flex-direction:column;min-height:100vh}
+.header{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.header-icon{width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:12px;
+display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.header-text{font-size:20px;font-weight:800;color:#0f172a}
+.sub{font-size:13px;color:#64748b;margin-bottom:20px}
+.banner{background:#fef9c3;border:1px solid #eab308;border-radius:10px;padding:14px;margin-bottom:20px}
+.banner-title{font-size:12px;font-weight:700;color:#854d0e;margin-bottom:6px}
+.banner-pw{font-size:18px;font-weight:800;color:#0f172a;font-family:monospace;letter-spacing:1px;user-select:all}
+.banner-hint{font-size:11px;color:#a16207;margin-top:6px}
+.form{display:flex;flex-direction:column;flex:1}
+.field{margin-bottom:14px}
+.field-label{font-size:12px;font-weight:700;color:#334155;margin-bottom:5px}
+.input{width:100%;height:42px;padding:0 12px;border:1px solid #e2e8f0;border-radius:8px;background:white;
+font-size:13px;outline:none;transition:border-color .15s}
+.input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.15)}
+.input-readonly{background:#f1f5f9;color:#64748b;font-family:monospace;font-size:12px}
+.btn{width:100%;height:46px;border:none;border-radius:10px;background:#0f172a;color:white;
+font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s;margin-top:auto}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.err{display:none;margin-top:12px;padding:12px;border-radius:8px;background:#fef2f2;
+color:#991b1b;font-size:13px;font-weight:600}
+.success{display:flex;flex-direction:column;align-items:center;justify-content:center;
+text-align:center;padding:40px 24px}
+.success-icon{font-size:48px;margin-bottom:12px}
+.success-title{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:8px}
+.success-text{font-size:14px;color:#64748b;margin-bottom:24px}
+.pin-card{background:#f1f5f9;border:2px dashed #cbd5e1;border-radius:12px;padding:16px;
+margin-bottom:20px;width:100%;max-width:320px}
+.pin-label{font-size:12px;color:#64748b;margin-bottom:4px}
+.pin-value{font-size:28px;font-weight:800;color:#0f172a;letter-spacing:6px;font-family:monospace;user-select:all}
+.pin-hint{font-size:11px;color:#94a3b8;margin-top:6px}
+</style></head>
+<body>
+<div class="header">
+<div class="header-icon">🏪</div>
+<div class="header-text">Lebanon POS</div>
+</div>
+<p class="sub">Connect this store to the cloud to download your products, staff, and sales.</p>
 
-<div style="background:#fef9c3;border:1px solid #eab308;border-radius:10px;padding:14px;margin-bottom:20px">
-<div style="font-size:12px;font-weight:700;color:#854d0e;margin-bottom:6px">🔑 This hub's admin password (save this)</div>
-<div style="font-size:20px;font-weight:800;color:#0f172a;font-family:monospace;letter-spacing:1px;user-select:all">${adminPassword}</div>
-<div style="font-size:11px;color:#a16207;margin-top:6px">Use this password for the "Hub Admin Password" field below. You can also click the tray icon → "Show Admin Password" later.</div>
+<div class="banner">
+<div class="banner-title">🔑 Admin password — save this</div>
+<div class="banner-pw">${adminPassword}</div>
+<div class="banner-hint">Also available from the tray icon: Show Admin Password</div>
 </div>
 
-<form id="f" onsubmit="return connect()">
-<label style="font-size:13px;font-weight:700;color:#334155">Server URL</label>
-<input id="url" value="${cloudUrl}" readonly
-  style="width:100%;height:42px;margin:6px 0 16px;padding:0 12px;border:1px solid #e2e8f0;
-  border-radius:8px;background:#f1f5f9;font-size:13px;color:#64748b;font-family:monospace;outline:none">
-
-<label style="font-size:13px;font-weight:700;color:#334155">Tenant ID</label>
-<input id="tid" placeholder="From the owner portal"
-  style="width:100%;height:42px;margin:6px 0 16px;padding:0 12px;border:1px solid #e2e8f0;
-  border-radius:8px;background:white;font-size:13px;outline:none"
-  onfocus="this.style.borderColor='#10b981'"
-  onblur="this.style.borderColor='#e2e8f0'">
-
-<label style="font-size:13px;font-weight:700;color:#334155">Cloud API Key</label>
-<input id="key" type="password" placeholder="Per-store key from the owner portal"
-  style="width:100%;height:42px;margin:6px 0 16px;padding:0 12px;border:1px solid #e2e8f0;
-  border-radius:8px;background:white;font-size:13px;outline:none"
-  onfocus="this.style.borderColor='#10b981'"
-  onblur="this.style.borderColor='#e2e8f0'">
-
-<label style="font-size:13px;font-weight:700;color:#334155">Store PIN (from owner portal)</label>
-<input id="pin" placeholder="Staff PIN to log into the POS"
-  style="width:100%;height:42px;margin:6px 0 16px;padding:0 12px;border:1px solid #e2e8f0;
-  border-radius:8px;background:white;font-size:13px;font-family:monospace;letter-spacing:2px;outline:none"
-  onfocus="this.style.borderColor='#10b981'"
-  onblur="this.style.borderColor='#e2e8f0'">
-
-<label style="font-size:13px;font-weight:700;color:#334155">Hub Admin Password</label>
-<input id="pw" type="password" value="${adminPassword}"
-  style="width:100%;height:42px;margin:6px 0 24px;padding:0 12px;border:1px solid #e2e8f0;
-  border-radius:8px;background:white;font-size:13px;outline:none"
-  onfocus="this.style.borderColor='#10b981'"
-  onblur="this.style.borderColor='#e2e8f0'">
-
-<button type="submit" id="btn"
-  style="width:100%;height:48px;border:none;border-radius:10px;background:#0f172a;
-  color:white;font-size:15px;font-weight:700;cursor:pointer">Connect & Download My Data</button>
+<form id="f" class="form" onsubmit="return connect()">
+<div class="field">
+<div class="field-label">Server URL</div>
+<input class="input input-readonly" id="url" value="${cloudUrl}" readonly>
+</div>
+<div class="field">
+<div class="field-label">Tenant ID</div>
+<input class="input" id="tid" placeholder="From the owner portal" autocomplete="off">
+</div>
+<div class="field">
+<div class="field-label">Cloud API Key</div>
+<input class="input" id="key" type="password" placeholder="From the owner portal" autocomplete="off">
+</div>
+<div class="field">
+<div class="field-label">Admin Password</div>
+<input class="input" id="pw" type="password" value="${adminPassword}">
+</div>
+<button type="submit" class="btn" id="btn">Connect &amp; Download My Data</button>
+<div class="err" id="err"></div>
 </form>
-<div id="err" style="display:none;margin-top:12px;padding:12px;border-radius:8px;
-background:#fef2f2;color:#991b1b;font-size:13px;font-weight:600"></div>
+
 <script>
-async function connect() {
+async function connect(){
   const btn=document.getElementById('btn'),err=document.getElementById('err')
   btn.disabled=true;btn.textContent='Connecting…';err.style.display='none'
-  try {
+  try{
     const r=await fetch('${API_URL}/api/setup/cloud-config',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -573,18 +604,13 @@ async function connect() {
     })
     const d=await r.json()
     if(!r.ok) throw new Error(d.error||'Connection failed')
-    const pin=document.getElementById('pin').value.trim()
-    document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:24px;text-align:center">'+
-      '<div style="font-size:48px;margin-bottom:12px">✅</div>'+
-      '<div style="font-size:18px;font-weight:700;color:#0f172a">Store Connected!</div>'+
-      '<p style="font-size:14px;color:#64748b;margin-top:8px;margin-bottom:20px">Your data has been downloaded. Log in with your PIN below.</p>'+
-      (pin?'<div style="background:#f1f5f9;border:2px dashed #cbd5e1;border-radius:12px;padding:16px;margin-bottom:20px;width:100%">'+
-        '<div style="font-size:12px;color:#64748b;margin-bottom:4px">Your login PIN</div>'+
-        '<div style="font-size:28px;font-weight:800;color:#0f172a;letter-spacing:6px;font-family:monospace;user-select:all">'+pin+'</div>'+
-        '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Use this PIN to log into the POS</div></div>':'')+
-      '<p style="font-size:13px;color:#94a3b8">Opening POS…</p></div>'
-    setTimeout(()=>{require('electron').ipcRenderer.send('activation-done', d.token||'')},3000)
-  } catch(e){
+    document.body.innerHTML='<div class="success">'+
+      '<div class="success-icon">✅</div>'+
+      '<div class="success-title">Store Connected!</div>'+
+      '<div class="success-text">Your data has been downloaded. Staff will appear on the login screen.</div>'+
+      '</div>'
+    setTimeout(()=>{require('electron').ipcRenderer.send('activation-done')},2000)
+  }catch(e){
     err.textContent=e.message;err.style.display='block'
     btn.disabled=false;btn.textContent='Connect & Download My Data'
   }
