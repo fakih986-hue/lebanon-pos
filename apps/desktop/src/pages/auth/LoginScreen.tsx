@@ -30,9 +30,18 @@ function roleBadge(role: StaffUser["role"]) {
 
 export default function LoginScreen() {
   const { t } = useI18n()
+  const [userTick, setUserTick] = useState(0)
   const users = getUsers().filter((u) => u.active)
   const [pin, setPin] = useState("")
   const [status, setStatus] = useState(t("desktop.lock_hint"))
+
+  // Re-render the user list when synced data lands (e.g. hub auto-sync below)
+  useEffect(() => {
+    const refresh = () => setUserTick((n) => n + 1)
+    window.addEventListener("lebanonpos-security-changed", refresh)
+    return () => window.removeEventListener("lebanonpos-security-changed", refresh)
+  }, [])
+  void userTick  // dependency for the recompute above
 
   // ── Connect-to-store (disaster recovery on a new/empty device) ──
   const [connectOpen, setConnectOpen] = useState(false)
@@ -45,25 +54,42 @@ export default function LoginScreen() {
 
   const [changePinUser, setChangePinUser] = useState<StaffUser | null>(null)
 
-  // Auto-pull from local API after hub activation (no PIN in URL)
+  // Hub auto-sync: on the local hub only, fetch a fresh token from the local API
+  // and pull cloud data into IndexedDB. Runs once per app session (no reload loop),
+  // on activation AND every launch, so staff/products are always present at login.
   useEffect(() => {
-    if (window.location.search.includes("hub-activated=1")) {
-      const token = localStorage.getItem("lebanonpos.auth-token")
-      const apiUrl = localStorage.getItem("lebanonpos.api-url") || "http://localhost:3001"
-      if (token) {
-        setStatus("Activating store — downloading your data…")
+    const isHub = typeof window !== "undefined" &&
+      !!(window as { __LBPOS_API_URL__?: string }).__LBPOS_API_URL__
+    if (!isHub) return
+    if (sessionStorage.getItem("lebanonpos.hub-synced") === "1") return
+
+    const apiUrl = (getApiUrl() ?? "http://localhost:3001").replace(/\/+$/, "")
+    ;(async () => {
+      try {
+        // Only proceed if cloud is configured on this hub
+        const cfg = await fetch(`${apiUrl}/api/setup/cloud-config`)
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null)
+        if (!cfg?.configured) return
+
+        const auto = await fetch(`${apiUrl}/api/setup/auto-login`, { method: "POST" })
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null)
+        if (!auto?.token) return
+
         setApiUrl(apiUrl)
-        setAuthToken(token)
-        // Remove the flag from URL so refresh doesn't re-trigger
-        window.history.replaceState({}, "", "/")
-        pullFromServer(true).then(() => {
-          window.location.reload()
-        }).catch((err) => {
-          console.error("[hub-activation] pull failed:", err)
-          setStatus("Sync completed with some issues. Try logging in.")
-        })
+        setAuthToken(auto.token)
+        sessionStorage.setItem("lebanonpos.hub-synced", "1")
+        setStatus("Syncing your store data…")
+        await pullFromServer(true)
+        // Refresh the user/data lists in place — no full reload (avoids a loop)
+        window.dispatchEvent(new Event("lebanonpos-security-changed"))
+        setStatus(t("desktop.lock_hint"))
+      } catch (err) {
+        console.error("[hub auto-sync] failed:", err)
       }
-    }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleUnlock() {

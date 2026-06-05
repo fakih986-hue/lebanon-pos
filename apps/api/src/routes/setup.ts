@@ -195,16 +195,35 @@ router.post("/cloud-config", async (req: Req, res: Response) => {
     saveCloudConfig(tenantId.trim(), apiKey.trim())
     // Give the restarted bridge a moment, then force a full pull
     await triggerFullPull().catch(() => { /* first pull may lag — bridge will retry */ })
-    // Sign a hub JWT so the SPA can auto-pull data into IndexedDB without a second login
-    const token = jwt.sign(
-      { userId: "__admin__", tenantId: "", role: "Admin" },
-      JWT_SECRET,
-      { expiresIn: "1h" }
-    )
-    res.json({ ok: true, token, ...getCloudStatus() })
+    // No token here — the SPA obtains one from /api/setup/auto-login (single path)
+    res.json({ ok: true, ...getCloudStatus() })
   } catch (err) {
     res.status(500).json({ error: (err as Error).message })
   }
+})
+
+// ─── POST /api/setup/auto-login ──────────────────────────────────────────────
+// Localhost-only. Mints a hub JWT scoped to the CONFIGURED tenant so the hub SPA
+// can pull local data into IndexedDB without a manual login. The SPA calls this
+// on every launch (token is re-minted each time), so a long life is fine and the
+// always-on hub never hits a mid-day 401. Returns 409 if cloud isn't configured.
+
+router.post("/auto-login", (req: Req, res: Response) => {
+  if (!isLocalRequest(req)) {
+    res.status(403).json({ error: "Only available on the hub machine" })
+    return
+  }
+  const { tenantId } = getCloudStatus()
+  if (!tenantId) {
+    res.status(409).json({ error: "Cloud not configured yet" })
+    return
+  }
+  const token = jwt.sign(
+    { userId: "__admin__", tenantId, role: "Admin" },
+    JWT_SECRET,
+    { expiresIn: "30d" }
+  )
+  res.json({ token, tenantId })
 })
 
 export default router

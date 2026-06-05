@@ -599,7 +599,7 @@ function closeActivationWindow() { activationWindow?.close(); activationWindow =
 
 // ─── Main window ─────────────────────────────────────────────────────────────
 
-function createMainWindow(hubToken?: string) {
+function createMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     mainWindow = new BrowserWindow({
       width: 1600, height: 900, minWidth: 1024, minHeight: 600,
@@ -614,26 +614,9 @@ function createMainWindow(hubToken?: string) {
     mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: "deny" } })
   }
 
-  if (hubToken) {
-    // Inject the hub token into the SPA's localStorage, then reload with auto-pull flag
-    mainWindow.loadURL(API_URL)
-    mainWindow.webContents.once("did-finish-load", () => {
-      mainWindow?.webContents.executeJavaScript(`
-        try {
-          localStorage.setItem('lebanonpos.auth-token', ${JSON.stringify(hubToken)});
-          localStorage.setItem('lebanonpos.api-url', ${JSON.stringify(API_URL)});
-        } catch(e) { console.error('[hub] token store failed', e) }
-        document.title = 'hub-activated'
-      `).then(() => {
-        mainWindow?.loadURL(`${API_URL}/?hub-activated=1`)
-      }).catch(() => {
-        mainWindow?.loadURL(`${API_URL}/?hub-activated=1`)
-      })
-    })
-  } else {
-    mainWindow.loadURL(API_URL)
-    mainWindow.once("ready-to-show", () => mainWindow?.show())
-  }
+  // The SPA handles hub auto-sync itself (preload exposes __LBPOS_API_URL__).
+  mainWindow.loadURL(API_URL)
+  mainWindow.show()
 }
 
 // ─── Tray ────────────────────────────────────────────────────────────────────
@@ -709,9 +692,11 @@ ipcMain.handle("get-local-ip", () => {
 ipcMain.handle("get-app-version", () => app.getVersion())
 
 // Activation window → main window transition
-ipcMain.on("activation-done", (_event: Electron.IpcMainEvent, token?: string) => {
+ipcMain.on("activation-done", () => {
+  // The SPA self-syncs on the hub (GET /cloud-config → POST /auto-login → pull),
+  // so no token needs to be passed through here.
   closeActivationWindow()
-  createMainWindow(token)
+  createMainWindow()
   createTray()
   if (IS_PACKAGED) setupAutoUpdater()
 })
