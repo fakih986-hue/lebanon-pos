@@ -317,7 +317,7 @@ export function getSyncStatus(): SyncStatus {
   }
 }
 
-export function enqueueSyncOperation(input: EnqueueSyncInput) {
+export async function enqueueSyncOperation(input: EnqueueSyncInput) {
   if (!canUseStorage()) return undefined
   const operation: SyncOperation = {
     id: createId(),
@@ -330,6 +330,30 @@ export function enqueueSyncOperation(input: EnqueueSyncInput) {
     createdAt: new Date().toISOString(),
   }
   writeQueue([operation, ...getSyncQueue()])
+  
+  // Write-through: try to push to hub API immediately
+  // This makes the hub the single authority — no local-first conflicts
+  const apiUrl = getApiUrl()
+  const token = getAuthToken()
+  if (apiUrl && token && !isSuspended()) {
+    try {
+      const response = await fetch(`${apiUrl}/api/sync/push`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ operations: [{ id: operation.id, entity: operation.entity, action: operation.action, payload: operation.payload }] }),
+        signal: AbortSignal.timeout(5_000),
+      })
+      if (response.ok) {
+        // Mark as synced locally — hub processed it
+        writeQueue(getSyncQueue().map((op) => op.id === operation.id ? { ...op, status: "Synced" as const } : op))
+        dispatchSyncChanged()
+        return operation
+      }
+    } catch {
+      // Hub unreachable — stays in local queue for background retry
+    }
+  }
+  
   scheduleAutoFlush()
   return operation
 }

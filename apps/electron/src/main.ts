@@ -543,6 +543,7 @@ font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s;margin-top
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .err{display:none;margin-top:12px;padding:12px;border-radius:8px;background:#fef2f2;
 color:#991b1b;font-size:13px;font-weight:600}
+.hint{font-size:11px;color:#64748b;margin-top:4px;margin-bottom:0}
 .success{display:flex;flex-direction:column;align-items:center;justify-content:center;
 text-align:center;padding:40px 24px}
 .success-icon{font-size:48px;margin-bottom:12px}
@@ -578,11 +579,13 @@ margin-bottom:20px;width:100%;max-width:320px}
 </div>
 <div class="field">
 <div class="field-label">Cloud API Key</div>
-<input class="input" id="key" type="password" placeholder="From the owner portal" autocomplete="off">
+<input class="input" id="key" type="password" placeholder="64-character hex key from owner portal">
+<p class="hint">Looks like: a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4</p>
 </div>
 <div class="field">
 <div class="field-label">Admin Password</div>
 <input class="input" id="pw" type="password" value="${adminPassword}">
+<p class="hint">The yellow password above — pre-filled for you</p>
 </div>
 <button type="submit" class="btn" id="btn">Connect &amp; Download My Data</button>
 <div class="err" id="err"></div>
@@ -590,20 +593,26 @@ margin-bottom:20px;width:100%;max-width:320px}
 
 <script>
 async function connect(){
-  const btn=document.getElementById('btn'),err=document.getElementById('err')
+  const btn=document.getElementById('btn'),err=document.getElementById('err'),
+    tid=document.getElementById('tid').value.trim(),
+    key=document.getElementById('key').value.trim(),
+    pw=document.getElementById('pw').value.trim()
+  if(tid.length<10){err.textContent='Tenant ID looks too short';err.style.display='block';return false}
+  if(key.length<32){err.textContent='Cloud API Key looks too short — it should be 64 hex characters from the owner portal (not the admin password above)';err.style.display='block';return false}
   btn.disabled=true;btn.textContent='Connecting…';err.style.display='none'
   try{
     const r=await fetch('${API_URL}/api/setup/cloud-config',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        tenantId:document.getElementById('tid').value.trim(),
-        apiKey:document.getElementById('key').value.trim(),
-        adminPassword:document.getElementById('pw').value.trim(),
+        tenantId:tid,
+        apiKey:key,
+        adminPassword:pw,
       })
     })
     const d=await r.json()
     if(!r.ok) throw new Error(d.error||'Connection failed')
+    if(d.pullError) throw new Error('Cloud sync failed: '+d.pullError)
     document.body.innerHTML='<div class="success">'+
       '<div class="success-icon">✅</div>'+
       '<div class="success-title">Store Connected!</div>'+

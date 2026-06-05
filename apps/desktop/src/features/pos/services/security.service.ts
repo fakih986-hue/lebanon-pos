@@ -113,38 +113,7 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
   Cashier: ["sales.checkout", "customers.manage"],
 }
 
-const initialUsers: StaffUser[] = [
-  {
-    id: "user-admin",
-    name: "Domain Admin",
-    mobile: "+961 00 000 000",
-    pin: "mvFbM25qlhmShTffMLLmojdlafz51+dz7M7eZWBlKaA=",
-    role: "Admin",
-    active: true,
-    createdAt: new Date().toISOString(),
-    pinChanged: false,
-  },
-  {
-    id: "user-manager",
-    name: "Store Manager",
-    mobile: "+961 70 000 000",
-    pin: "D/4avRoIIVNTwjPW4AlhPpXuxCU4Mqdhryj/N6xaFQw=",
-    role: "Manager",
-    active: true,
-    createdAt: new Date().toISOString(),
-    pinChanged: false,
-  },
-  {
-    id: "user-cashier",
-    name: "Cashier",
-    mobile: "+961 71 000 000",
-    pin: "7e4p+IJUO5VmILJtDuDn6VA5mxxCIvXeBeBkJbTJlek=",
-    role: "Cashier",
-    active: true,
-    createdAt: new Date().toISOString(),
-    pinChanged: false,
-  },
-]
+const initialUsers: StaffUser[] = []
 
 export async function hashPin(pin: string): Promise<string> {
   try {
@@ -278,11 +247,11 @@ function ensureSecurityData() {
     window.localStorage.setItem(USERS_KEY, JSON.stringify(initialUsers))
   }
 
-  if (!window.localStorage.getItem(CURRENT_USER_KEY)) {
+  if (!window.localStorage.getItem(CURRENT_USER_KEY) && initialUsers.length > 0) {
     window.localStorage.setItem(CURRENT_USER_KEY, initialUsers[0].id)
   }
 
-  if (!window.localStorage.getItem(SHIFTS_KEY)) {
+  if (!window.localStorage.getItem(SHIFTS_KEY) && initialUsers.length > 0) {
     const shift: Shift = {
       id: "shift-preview",
       shiftNumber: "SHIFT-001",
@@ -296,7 +265,7 @@ function ensureSecurityData() {
     window.localStorage.setItem(SHIFTS_KEY, JSON.stringify([shift]))
   }
 
-  if (!window.localStorage.getItem(AUDIT_KEY)) {
+  if (!window.localStorage.getItem(AUDIT_KEY) && initialUsers.length > 0) {
     const event: AuditEvent = {
       id: "audit-preview",
       action: "system.ready",
@@ -348,7 +317,7 @@ export function getCurrentUser() {
   return (
     users.find((user) => user.id === currentUserId && user.active) ??
     users.find((user) => user.active) ??
-    initialUsers[0]
+    users[0] ?? null
   )
 }
 

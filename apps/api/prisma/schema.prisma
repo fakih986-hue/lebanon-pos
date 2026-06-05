@@ -93,6 +93,7 @@ model Tenant {
   dailyCloses         DailyClose[]
   syncOperations      SyncOperation[]
   deliveryOrders      DeliveryOrder[]
+  stockMovements      StockMovement[]
 }
 
 model StaffUser {
@@ -164,9 +165,10 @@ model Product {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  batches       InventoryBatch[]
-  adjustments   StockAdjustment[]
-  stockCountLines StockCountLine[]
+  batches          InventoryBatch[]
+  adjustments      StockAdjustment[]
+  stockCountLines  StockCountLine[]
+  stockMovements   StockMovement[]
 
   @@unique([tenantId, barcode])
   @@index([tenantId, category])
@@ -664,4 +666,21 @@ model RateLimitEntry {
 
   @@unique([bucket, key])
   @@index([resetAt])
+}
+
+model StockMovement {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  productId  Int
+  product    Product  @relation(fields: [productId], references: [id])
+  type       String   // Receive | Sale | Refund | Adjustment | WriteOff
+  quantity   Float
+  balance    Float    // running balance after this movement
+  reference  String   // sale ID, batch ID, adjustment ID, etc.
+  note       String   @default("")
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, productId])
+  @@index([tenantId, createdAt])
 }

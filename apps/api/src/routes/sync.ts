@@ -314,6 +314,22 @@ async function processOperation(
     return pid || 0
   }
 
+  // Record a stock movement for the audit trail (ledger-based stock)
+  const recordMovement = async (productId: number, type: string, quantity: number, reference: string, note = "") => {
+    if (!productId || productId <= 0) return
+    // Calculate running balance
+    const lastMovement = await db.stockMovement.findFirst({
+      where: { tenantId, productId },
+      orderBy: { createdAt: "desc" },
+      select: { balance: true },
+    })
+    const prevBalance = lastMovement?.balance ?? 0
+    const balance = prevBalance + quantity
+    await db.stockMovement.create({
+      data: { tenantId, productId, type, quantity, balance, reference, note },
+    })
+  }
+
   switch (entity) {
     case "product": {
       if (action === "create" || action === "update") {
@@ -356,6 +372,8 @@ async function processOperation(
               where: { tenantId, id: item.productId },
               data: { stock: { increment: item.quantity } },
             })
+            // Record the void as a Refund movement (stock comes back)
+            await recordMovement(item.productId, "Refund", item.quantity, `void:${id}`, `Void sale ${saleNumber ?? id}`)
           }
 
           // Clean up tender record to prevent stale tender data in reports
@@ -426,6 +444,10 @@ async function processOperation(
         // Only decrement stock for NEW sales (avoid double-decrement on retry)
         if (!existingSale) {
           await decrementProductStock(db, tenantId, prismaItems.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+          // Record stock movements for audit trail
+          for (const item of prismaItems) {
+            await recordMovement(item.productId, "Sale", -item.quantity, saleData.id as string)
+          }
         }
       }
       break
@@ -555,6 +577,8 @@ async function processOperation(
             update: batchData,
             create: { ...batchData, id: batchId, tenantId } as any,
           })
+          // Record the stock movement (quantity is the net change)
+          await recordMovement(productId, "Receive", Number(item.quantityRemaining ?? item.initialQuantity ?? 0), batchId as string, `Batch ${item.batchNumber ?? ""}`)
         }
       } else if (action === "adjust") {
         await db.stockAdjustment.upsert({
@@ -562,6 +586,8 @@ async function processOperation(
           update: payload as any,
           create: { ...payload, tenantId } as any,
         })
+        const adj = payload as any
+        await recordMovement(Number(adj.productId ?? adj.id), "Adjustment", Number(adj.quantityChange ?? 0), adj.id as string, adj.reason ?? "")
       } else if (action === "count") {
         const data = payload as any
         const { lines: _l, ...sessionData } = data
