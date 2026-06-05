@@ -101,13 +101,15 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
       await prisma.$transaction(async (tx) => {
         await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma)
 
+        // Mark as Pending so the cloud sync bridge picks it up and pushes to Railway.
+        // (The phone already has it synced — this is for the hub→Railway direction.)
         const operationData = {
           entity: op.entity,
           action: op.action,
           summary: `${op.action} ${op.entity}`,
           payload: (op.payload ?? {}) as any,
-          status: "Synced",
-          syncedAt: new Date(),
+          status: "Pending",
+          syncedAt: null,
           lastAttemptAt: new Date(),
           error: null,
         }
