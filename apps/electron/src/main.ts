@@ -56,7 +56,7 @@ const CLOUD_API_URL = process.env.LBPOS_CLOUD_URL || "https://lebanon-pos-produc
 const HEALTH_URL = `${API_URL}/api/health`
 const ENV_PATH   = path.join(USER_DATA, ".env")
 const PG_DATA    = path.join(USER_DATA, "pgdata")
-const PG_PORT    = 5433   // use 5433 to avoid conflict with any existing PG install
+const PG_PORT    = 5434   // 5433 conflicts with global PG installations; moved to 5434
 const PG_USER    = "lbpos"
 const PG_DB      = "lebanonpos"
 
@@ -113,6 +113,20 @@ app.whenReady().then(async () => {
     return
   }
 
+  // Check if cloud is already configured — if not, show activation screen
+  try {
+    const res = await fetch(`${API_URL}/api/setup/cloud-config`, {
+      signal: AbortSignal.timeout(5_000),
+    })
+    if (res.ok) {
+      const status = await res.json() as { configured: boolean }
+      if (!status.configured) {
+        showActivationWindow()
+        return // activation-done IPC event will continue to createMainWindow
+      }
+    }
+  } catch { /* demo mode — skip activation */ }
+
   closeLoadingWindow()
   createMainWindow()
   createTray()
@@ -162,11 +176,11 @@ function clearStalePidFile(): void {
 
 async function startPostgres(password: string): Promise<void> {
   const initdb = pgExe("initdb")
-  const pgCtl  = pgExe("pg_ctl")
 
   // Already serving on our port (previous instance still up)? Reuse it.
   if (await canConnectPg(password)) {
     console.log("[pg] server already accepting connections — reusing")
+    await ensureDatabase(password)
     return
   }
 
@@ -184,7 +198,6 @@ async function startPostgres(password: string): Promise<void> {
     } finally {
       fs.unlinkSync(pwFile)
     }
-    // Write pg_hba.conf to allow local password auth
     const hba = path.join(PG_DATA, "pg_hba.conf")
     fs.writeFileSync(hba, [
       "# TYPE  DATABASE  USER      ADDRESS    METHOD",
@@ -193,35 +206,65 @@ async function startPostgres(password: string): Promise<void> {
       `host    all       ${PG_USER}  ::1/128        md5`,
     ].join("\n"))
   } else {
-    // Existing data dir but server not running — clear any stale lock first
     clearStalePidFile()
   }
 
-  // Start the server via pg_ctl. Log to a file so failures are diagnosable.
+  // Start postgres directly (pg_ctl PID detection is unreliable with bundled PG on Windows)
   const pgLog = path.join(USER_DATA, "pg.log")
-  try {
-    execSync(
-      `"${pgCtl}" start --pgdata="${PG_DATA}" --wait --timeout=30 -l "${pgLog}" -o "-p ${PG_PORT}"`,
-      { stdio: "pipe", env: process.env }
-    )
-  } catch (err) {
-    // Surface the Postgres log tail so the error dialog is actionable
+  const pgLogFd = fs.openSync(pgLog, "a")
+  spawn(pgExe("postgres"), ["-D", PG_DATA, "-p", String(PG_PORT)], {
+    stdio: ["ignore", pgLogFd, pgLogFd],
+    windowsHide: true,
+    env: process.env,
+  }).unref()
+  fs.closeSync(pgLogFd)
+
+  // Poll for readiness (up to 30 seconds)
+  const deadline = Date.now() + 30_000
+  while (Date.now() < deadline) {
+    if (await canConnectPg(password)) break
+    await sleep(500)
+  }
+  if (!await canConnectPg(password)) {
     let tail = ""
     try { tail = fs.readFileSync(pgLog, "utf-8").split(/\r?\n/).slice(-12).join("\n") } catch { /* no log */ }
-    throw new Error(
-      `PostgreSQL failed to start.\n${(err as Error).message}\n\n--- pg.log ---\n${tail}`
-    )
+    throw new Error(`PostgreSQL did not become ready within 30 seconds.\n\n--- pg.log ---\n${tail}`)
   }
 
-  // Ensure the application database exists — ALWAYS, not just on first init.
-  // A previous launch may have run initdb (PG_VERSION exists) but crashed before
-  // creating the DB, which would otherwise leave "database does not exist" forever.
   await ensureDatabase(password)
 }
 
 /** Idempotently create the application database if it's missing. */
 async function ensureDatabase(password: string): Promise<void> {
   setStatus("Preparing database…")
+
+  // Prefer system psql (avoid pg.Client compatibility issues in Electron's bundled Node)
+  const psqlPath = "C:\\Program Files\\PostgreSQL\\18\\bin\\psql.exe"
+  if (fs.existsSync(psqlPath)) {
+    console.log("[dbg] using system psql at", psqlPath)
+    const psqlEnv = { ...process.env, PGPASSWORD: password }
+    const commonArgs = `-h localhost -p ${PG_PORT} -U ${PG_USER} -d postgres`
+    try {
+      const result = execSync(
+        `"${psqlPath}" ${commonArgs} -t -A -c "SELECT 1 FROM pg_database WHERE datname = '${PG_DB}'"`,
+        { encoding: "utf-8", env: psqlEnv }
+      ).toString().trim()
+      if (!result) {
+        setStatus("Creating database…")
+        execSync(`"${psqlPath}" ${commonArgs} -c "CREATE DATABASE ${PG_DB}"`, { env: psqlEnv })
+        console.log(`[pg] created database ${PG_DB}`)
+      } else {
+        console.log(`[pg] database ${PG_DB} already exists`)
+      }
+      return
+    } catch (err) {
+      console.log("[dbg] psql failed, falling back to pg.Client:", (err as Error).message)
+    }
+  } else {
+    console.log("[dbg] system psql not found, using pg.Client")
+  }
+
+  // Fallback: pg.Client
   const client = new Client({ host: "localhost", port: PG_PORT, user: PG_USER, password, database: "postgres" })
   await client.connect()
   try {
@@ -239,11 +282,14 @@ async function ensureDatabase(password: string): Promise<void> {
 }
 
 async function stopPostgres(): Promise<void> {
-  const pgCtl = path.join(PG_BIN_DIR, "pg_ctl" + (process.platform === "win32" ? ".exe" : ""))
   if (!fs.existsSync(path.join(PG_DATA, "PG_VERSION"))) return
   try {
-    execSync(`"${pgCtl}" stop --pgdata="${PG_DATA}" --mode=fast --wait`, { stdio: "pipe" })
-  } catch { /* may already be stopped */ }
+    const result = execSync(`netstat -ano | findstr ":${PG_PORT}"`, { encoding: "utf-8" }) as string
+    const pids = [...result.matchAll(/LISTENING\s+(\d+)/g)].map(m => m[1]).filter((v,i,a) => a.indexOf(v)===i)
+    for (const pid of pids) {
+      try { execSync(`taskkill /f /pid ${pid}`, { stdio: "pipe" }) } catch { /* already dead */ }
+    }
+  } catch { /* no process on our port */ }
 }
 
 // ─── API configuration & spawn ───────────────────────────────────────────────
@@ -374,6 +420,7 @@ function spawnApi(): void {
     PATH:               process.env.PATH ?? "",
     HOME:               process.env.HOME ?? os.homedir(),
     DOTENV_CONFIG_PATH: ENV_PATH,
+    PRISMA_QUERY_ENGINE_LIBRARY: path.join(API_DIR, "generated/prisma/query_engine-windows.dll.node"),
   }
 
   apiProcess = spawn(process.execPath, [API_ENTRY], {
@@ -433,6 +480,122 @@ animation:s 1.4s ease-in-out infinite alternate;border-radius:9px"></div></div>
 }
 
 function closeLoadingWindow() { loadWindow?.close(); loadWindow = null }
+
+// ─── Activation window (first-run cloud setup) ───────────────────────────
+
+let activationWindow: BrowserWindow | null = null
+
+function showActivationWindow() {
+  closeLoadingWindow()
+  closeActivationWindow()
+
+  // Read the admin password from .env (written by writeApiEnv earlier)
+  let adminPassword = ""
+  try {
+    const envContent = fs.readFileSync(ENV_PATH, "utf-8")
+    const m = envContent.match(/ADMIN_PASSWORD="([^"]+)"/)
+    if (m) adminPassword = m[1]
+  } catch { /* use empty fallback */ }
+
+  activationWindow = new BrowserWindow({
+    width: 520, height: 760, resizable: false,
+    center: true, title: "Lebanon POS — Activate Store",
+    backgroundColor: "#f8fafc",
+    webPreferences: { nodeIntegration: true, contextIsolation: false },
+  })
+
+  const cloudUrl = CLOUD_API_URL
+  const html = `<!DOCTYPE html>
+<html><body style="margin:0;padding:24px;background:#f8fafc;font-family:system-ui;
+display:flex;flex-direction:column">
+<div style="font-size:28px;font-weight:800;color:#0f172a;margin-bottom:4px">🏪 Lebanon POS</div>
+<p style="font-size:14px;color:#64748b;margin:0 0 20px 0">Connect this store to the cloud to download your data.</p>
+
+<div style="background:#fef9c3;border:1px solid #eab308;border-radius:10px;padding:14px;margin-bottom:20px">
+<div style="font-size:12px;font-weight:700;color:#854d0e;margin-bottom:6px">🔑 This hub's admin password (save this)</div>
+<div style="font-size:20px;font-weight:800;color:#0f172a;font-family:monospace;letter-spacing:1px;user-select:all">${adminPassword}</div>
+<div style="font-size:11px;color:#a16207;margin-top:6px">Use this password for the "Hub Admin Password" field below. You can also click the tray icon → "Show Admin Password" later.</div>
+</div>
+
+<form id="f" onsubmit="return connect()">
+<label style="font-size:13px;font-weight:700;color:#334155">Server URL</label>
+<input id="url" value="${cloudUrl}" readonly
+  style="width:100%;height:42px;margin:6px 0 16px;padding:0 12px;border:1px solid #e2e8f0;
+  border-radius:8px;background:#f1f5f9;font-size:13px;color:#64748b;font-family:monospace;outline:none">
+
+<label style="font-size:13px;font-weight:700;color:#334155">Tenant ID</label>
+<input id="tid" placeholder="From the owner portal"
+  style="width:100%;height:42px;margin:6px 0 16px;padding:0 12px;border:1px solid #e2e8f0;
+  border-radius:8px;background:white;font-size:13px;outline:none"
+  onfocus="this.style.borderColor='#10b981'"
+  onblur="this.style.borderColor='#e2e8f0'">
+
+<label style="font-size:13px;font-weight:700;color:#334155">Cloud API Key</label>
+<input id="key" type="password" placeholder="Per-store key from the owner portal"
+  style="width:100%;height:42px;margin:6px 0 16px;padding:0 12px;border:1px solid #e2e8f0;
+  border-radius:8px;background:white;font-size:13px;outline:none"
+  onfocus="this.style.borderColor='#10b981'"
+  onblur="this.style.borderColor='#e2e8f0'">
+
+<label style="font-size:13px;font-weight:700;color:#334155">Store PIN (from owner portal)</label>
+<input id="pin" placeholder="Staff PIN to log into the POS"
+  style="width:100%;height:42px;margin:6px 0 16px;padding:0 12px;border:1px solid #e2e8f0;
+  border-radius:8px;background:white;font-size:13px;font-family:monospace;letter-spacing:2px;outline:none"
+  onfocus="this.style.borderColor='#10b981'"
+  onblur="this.style.borderColor='#e2e8f0'">
+
+<label style="font-size:13px;font-weight:700;color:#334155">Hub Admin Password</label>
+<input id="pw" type="password" value="${adminPassword}"
+  style="width:100%;height:42px;margin:6px 0 24px;padding:0 12px;border:1px solid #e2e8f0;
+  border-radius:8px;background:white;font-size:13px;outline:none"
+  onfocus="this.style.borderColor='#10b981'"
+  onblur="this.style.borderColor='#e2e8f0'">
+
+<button type="submit" id="btn"
+  style="width:100%;height:48px;border:none;border-radius:10px;background:#0f172a;
+  color:white;font-size:15px;font-weight:700;cursor:pointer">Connect & Download My Data</button>
+</form>
+<div id="err" style="display:none;margin-top:12px;padding:12px;border-radius:8px;
+background:#fef2f2;color:#991b1b;font-size:13px;font-weight:600"></div>
+<script>
+async function connect() {
+  const btn=document.getElementById('btn'),err=document.getElementById('err')
+  btn.disabled=true;btn.textContent='Connecting…';err.style.display='none'
+  try {
+    const r=await fetch('${API_URL}/api/setup/cloud-config',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        tenantId:document.getElementById('tid').value.trim(),
+        apiKey:document.getElementById('key').value.trim(),
+        adminPassword:document.getElementById('pw').value.trim(),
+      })
+    })
+    const d=await r.json()
+    if(!r.ok) throw new Error(d.error||'Connection failed')
+    const pin=document.getElementById('pin').value.trim()
+    document.body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:24px;text-align:center">'+
+      '<div style="font-size:48px;margin-bottom:12px">✅</div>'+
+      '<div style="font-size:18px;font-weight:700;color:#0f172a">Store Connected!</div>'+
+      '<p style="font-size:14px;color:#64748b;margin-top:8px;margin-bottom:20px">Your data has been downloaded. Log in with your PIN below.</p>'+
+      (pin?'<div style="background:#f1f5f9;border:2px dashed #cbd5e1;border-radius:12px;padding:16px;margin-bottom:20px;width:100%">'+
+        '<div style="font-size:12px;color:#64748b;margin-bottom:4px">Your login PIN</div>'+
+        '<div style="font-size:28px;font-weight:800;color:#0f172a;letter-spacing:6px;font-family:monospace;user-select:all">'+pin+'</div>'+
+        '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Use this PIN to log into the POS</div></div>':'')+
+      '<p style="font-size:13px;color:#94a3b8">Opening POS…</p></div>'
+    setTimeout(()=>{require('electron').ipcRenderer.send('activation-done')},3000)
+  } catch(e){
+    err.textContent=e.message;err.style.display='block'
+    btn.disabled=false;btn.textContent='Connect & Download My Data'
+  }
+  return false
+}
+<\/script>
+</body></html>`
+  activationWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+}
+
+function closeActivationWindow() { activationWindow?.close(); activationWindow = null }
 
 // ─── Main window ─────────────────────────────────────────────────────────────
 
@@ -522,6 +685,14 @@ ipcMain.handle("get-local-ip", () => {
   return "localhost"
 })
 ipcMain.handle("get-app-version", () => app.getVersion())
+
+// Activation window → main window transition
+ipcMain.on("activation-done", () => {
+  closeActivationWindow()
+  createMainWindow()
+  createTray()
+  if (IS_PACKAGED) setupAutoUpdater()
+})
 
 // ─── Shutdown ────────────────────────────────────────────────────────────────
 

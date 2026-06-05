@@ -122,6 +122,8 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
   const [creating, setCreating] = useState(false)
   const [createdResult, setCreatedResult] = useState<{ tenantId: string; subdomain: string; pin: string; cloudApiKey: string } | null>(null)
   const [formError, setFormError] = useState("")
+  const [revealedApiKey, setRevealedApiKey] = useState<string | null>(null)
+  const [revealLoading, setRevealLoading] = useState(false)
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
   const [editForm, setEditForm] = useState({ name: "", subdomain: "", suspended: false })
   const [saving, setSaving] = useState(false)
@@ -189,6 +191,15 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
       setEditingTenant(null)
     } catch (err) { setSaveError((err as Error).message) }
     setSaving(false)
+  }
+
+  async function handleRevealApiKey(tenantId: string) {
+    setRevealLoading(true)
+    try {
+      const tenant = await api<{ id: string; cloudApiKey: string }>(`/api/admin/tenants/${tenantId}`)
+      setRevealedApiKey(tenant.cloudApiKey || "(none)")
+    } catch { setRevealedApiKey("(failed to load)") }
+    setRevealLoading(false)
   }
 
   if (createdResult) {
@@ -302,6 +313,7 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                   <span>{t._count.sales} sales</span>
                 </div>
                 {t.suspended && <span className="text-[10px] uppercase tracking-wider font-bold text-rose-400 bg-rose-500/10 px-2 py-1 rounded-lg">Suspended</span>}
+                <button onClick={() => handleRevealApiKey(t.id)} disabled={revealLoading} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700" title="Show Cloud API Key">🔑</button>
                 <button onClick={() => openEdit(t)} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700">Edit</button>
               </div>
             </div>
@@ -346,6 +358,19 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {revealedApiKey !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setRevealedApiKey(null)}>
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+            <h2 className="font-semibold text-white mb-2">Cloud API Key</h2>
+            <p className="text-xs text-slate-400 mb-4">Used in Settings → Cloud on the hub device.</p>
+            <div className="bg-slate-800 rounded-xl p-4 border border-indigo-700/50 mb-4">
+              <p className="text-xs font-bold font-mono text-white break-all select-all">{revealedApiKey}</p>
+            </div>
+            <button onClick={() => setRevealedApiKey(null)} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm">Got it</button>
           </div>
         </div>
       )}

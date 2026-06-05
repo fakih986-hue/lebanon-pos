@@ -77,6 +77,9 @@ export function getCorsOptions(): CorsOptions {
       // Always allow localhost + private LAN origins (the offline hub topology)
       if (localOrInternal.test(origin)) { callback(null, true); return }
 
+      // Allow null origin (data: / file: URLs used by Electron activation window)
+      if (origin === "null") { callback(null, true); return }
+
       // Otherwise require an explicit allowlist (cloud / public deployments)
       if (allowedOrigins.length === 0) {
         callback(new Error("CORS: origin not allowed — set CORS_ORIGINS env var"))

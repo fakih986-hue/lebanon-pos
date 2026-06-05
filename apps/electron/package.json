@@ -20,7 +20,7 @@
     "productName": "Lebanon POS",
     "copyright": "Copyright © 2026 LebTech",
     "directories": {
-      "output": "dist-electron"
+      "output": "dist-v6"
     },
     "files": [
       "dist/**/*",
@@ -32,6 +32,10 @@
         "from": "../../apps/api/bundle",
         "to":   "api",
         "filter": ["**/*", "!**/node_modules/**", "!**/.pnpm/**"]
+      },
+      {
+        "from": "../../apps/api/node_modules/@prisma/client",
+        "to":   "api/node_modules/@prisma/client"
       },
       {
         "from": "assets/pg",

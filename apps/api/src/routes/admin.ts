@@ -89,7 +89,7 @@ router.get("/tenants/:id", requireAuth, requireAdmin, async (req: AuthRequest, r
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: req.params?.id },
-      select: { id: true, name: true, subdomain: true, suspended: true, createdAt: true },
+      select: { id: true, name: true, subdomain: true, suspended: true, cloudApiKey: true, createdAt: true },
     })
     if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
     json(res, tenant)
