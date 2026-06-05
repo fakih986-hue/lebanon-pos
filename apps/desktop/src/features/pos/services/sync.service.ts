@@ -83,9 +83,11 @@ export function setApiUrl(url: string) {
 }
 export function setAuthToken(token: string) {
   localStorage.setItem(AUTH_TOKEN_KEY, token)
+  setupBackgroundSync()
 }
 export function clearAuthToken() {
   localStorage.removeItem(AUTH_TOKEN_KEY)
+  stopBackgroundSync()
 }
 
 // ── Multi-store support ──────────────────────────────────────────────
@@ -567,16 +569,20 @@ export function subscribeSync(callback: () => void) {
   }
 }
 
-const BACKGROUND_SYNC_MS = 30_000
-const BACKGROUND_PULL_MS = 120_000
+const BACKGROUND_SYNC_MS = 5_000
+const BACKGROUND_PULL_MS = 10_000
 const BACKGROUND_STATUS_MS = 300_000
 let bgSyncInterval: ReturnType<typeof setInterval> | undefined
 let bgPullInterval: ReturnType<typeof setInterval> | undefined
 let bgStatusInterval: ReturnType<typeof setInterval> | undefined
+let wsClient: WebSocket | null = null
+let wsReconnectTimer: ReturnType<typeof setTimeout> | undefined
 
 export function setupBackgroundSync() {
   if (typeof window === "undefined") return
   stopBackgroundSync()
+  // Connect WebSocket for instant push notifications
+  connectSyncWebSocket()
   // Immediately check tenant status on startup
   checkTenantStatus().catch((e) => console.error("[sync] tenant status check failed:", e))
   bgStatusInterval = window.setInterval(() => {
@@ -586,19 +592,75 @@ export function setupBackgroundSync() {
   }, BACKGROUND_STATUS_MS)
   bgSyncInterval = window.setInterval(() => {
     if (isBrowserOnline() && getApiUrl() && getAuthToken()) {
-      if (!isSuspended()) flushSyncQueue().catch((e) => console.error("[sync] flush on visibility change failed:", e))
+      if (!isSuspended()) flushSyncQueue().catch((e) => console.error("[sync] flush failed:", e))
     }
   }, BACKGROUND_SYNC_MS)
   bgPullInterval = window.setInterval(() => {
     if (isBrowserOnline() && getApiUrl() && getAuthToken()) {
-      if (!isSuspended()) flushSyncQueue().then(() => pullFromServer()).catch((e) => console.error("[sync] online pull from visibility change failed:", e))
+      if (!isSuspended()) flushSyncQueue().then(() => pullFromServer()).catch((e) => console.error("[sync] pull failed:", e))
     }
   }, BACKGROUND_PULL_MS)
 }
 
 export function stopBackgroundSync() {
+  disconnectSyncWebSocket()
   if (bgSyncInterval) { clearInterval(bgSyncInterval); bgSyncInterval = undefined }
   if (bgPullInterval) { clearInterval(bgPullInterval); bgPullInterval = undefined }
   if (bgStatusInterval) { clearInterval(bgStatusInterval); bgStatusInterval = undefined }
   clearTimeout(autoFlushTimer)
+}
+
+// ── WebSocket for instant cross-device sync ──────────────────────────
+
+function connectSyncWebSocket() {
+  disconnectSyncWebSocket()
+  const apiUrl = getApiUrl()
+  const token = getAuthToken()
+  if (!apiUrl || !token) return
+
+  try {
+    const wsUrl = apiUrl.replace(/^http/, "ws") + "/ws"
+    wsClient = new WebSocket(wsUrl)
+
+    wsClient.onopen = () => {
+      // Authenticate with JWT
+      wsClient?.send(JSON.stringify({ type: "auth", token }))
+    }
+
+    wsClient.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data)
+        if (msg.type === "sync:data-changed") {
+          // Data changed on another device — pull immediately
+          if (getApiUrl() && getAuthToken()) {
+            pullFromServer().catch((e) => console.error("[ws-sync] pull failed:", e))
+          }
+        }
+      } catch { /* ignore parse errors */ }
+    }
+
+    wsClient.onclose = () => {
+      wsClient = null
+      // Reconnect after 5s if still authenticated
+      if (getAuthToken()) {
+        clearTimeout(wsReconnectTimer)
+        wsReconnectTimer = setTimeout(connectSyncWebSocket, 5000)
+      }
+    }
+
+    wsClient.onerror = () => {
+      // onclose will fire and handle reconnection
+    }
+  } catch (e) {
+    console.error("[ws] connection failed:", e)
+  }
+}
+
+function disconnectSyncWebSocket() {
+  clearTimeout(wsReconnectTimer)
+  if (wsClient) {
+    wsClient.onclose = null // prevent reconnect
+    wsClient.close()
+    wsClient = null
+  }
 }

@@ -7,6 +7,7 @@ import prisma from "../lib/prisma.js"
 import { decrementProductStock } from "../lib/inventory.js"
 import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
+import { broadcastToTenant } from "../ws/index.js"
 const router = Router()
 
 const syncOperationSchema = z.object({
@@ -155,6 +156,11 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
 
       results.push({ id: op.id, status: "error", error: errorMessage })
     }
+  }
+
+  // Notify all connected devices in this tenant that data has changed
+  if (results.some((r) => r.status === "ok")) {
+    try { broadcastToTenant(tenantId, "sync:data-changed", {}) } catch { /* no-op */ }
   }
 
   json(res, { results })

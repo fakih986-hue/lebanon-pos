@@ -85,6 +85,8 @@ function handleMessage(ws: WebSocket, info: ClientInfo, msg: any) {
         info.tenantId = payload.tenantId
         info.role = payload.role
         info.token = msg.token  // store for re-validation on subscribe
+        // Auto-subscribe to the device's tenant channel for sync notifications
+        info.subscribedChannels.add(`tenant:${payload.tenantId}`)
         send(ws, { type: "auth:ok", data: { userId: payload.userId, role: payload.role } })
       } catch {
         send(ws, { type: "auth:error", data: { message: "Invalid or expired token" } })
