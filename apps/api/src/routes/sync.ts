@@ -298,6 +298,22 @@ async function processOperation(
   payload?: Record<string, unknown>,
   db: typeof prisma = prisma
 ) {
+  // Helper: resolve a product ID from cross-device sync. The phone may use a
+  // different local ID than the hub. Falls back to barcode lookup.
+  const resolveProductId = async (idOrProduct: any): Promise<number> => {
+    let pid = Number(idOrProduct.productId ?? idOrProduct.id ?? idOrProduct)
+    if (pid > 0) {
+      const exists = await db.product.findFirst({ where: { tenantId, id: pid }, select: { id: true } })
+      if (exists) return pid
+    }
+    const barcode = idOrProduct.barcode
+    if (barcode) {
+      const product = await db.product.findFirst({ where: { tenantId, barcode }, select: { id: true } })
+      if (product) return product.id
+    }
+    return pid || 0
+  }
+
   switch (entity) {
     case "product": {
       if (action === "create" || action === "update") {
@@ -361,26 +377,15 @@ async function processOperation(
         }
       } else if (action === "create") {
         const data = payload as any
-        // Resolve product IDs by barcode — cross-device sync uses different local IDs
-        const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => {
-          let productId = Number(item.id)
-          if (isNaN(productId) && item.barcode) {
-            const product = await db.product.findFirst({
-              where: { tenantId, barcode: item.barcode },
-              select: { id: true },
-            })
-            if (product) productId = product.id
-          }
-          return {
-            productId,
-            productName: item.name,
-            barcode: item.barcode,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.total,
-            cost: item.cost ?? 0,
-          }
-        }))
+        const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => ({
+          productId: await resolveProductId(item),
+          productName: item.name,
+          barcode: item.barcode,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total,
+          cost: item.cost ?? 0,
+        })))
         const { saleId: _s, ...prismaTender } = data.tender ?? {}
         const hasTender = Object.keys(prismaTender).length > 0
         const { items: _i, tender: _t, ...saleData } = data
@@ -433,16 +438,8 @@ async function processOperation(
           "Refund Credit": "Debt_Credit",
         }
         const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => {
-          let productId = Number(item.id)
-          if (isNaN(productId) && item.barcode) {
-            const product = await db.product.findFirst({
-              where: { tenantId, barcode: item.barcode },
-              select: { id: true },
-            })
-            if (product) productId = product.id
-          }
           return {
-            productId,
+            productId: await resolveProductId(item),
             productName: item.name,
             barcode: item.barcode,
             quantity: item.quantity,
@@ -541,7 +538,11 @@ async function processOperation(
         for (const item of items) {
           // Resolve product ID by barcode for cross-device sync
           let productId = Number(item?.productId ?? item?.id)
-          if (isNaN(productId) && item?.barcode) {
+          if (productId) {
+            const exists = await db.product.findFirst({ where: { tenantId, id: productId }, select: { id: true } })
+            if (!exists) productId = 0 // trigger barcode fallback
+          }
+          if ((!productId || isNaN(productId)) && item?.barcode) {
             const product = await db.product.findFirst({
               where: { tenantId, barcode: item.barcode },
               select: { id: true },
@@ -564,26 +565,16 @@ async function processOperation(
       } else if (action === "count") {
         const data = payload as any
         const { lines: _l, ...sessionData } = data
-        const prismaLines = await Promise.all((data.lines ?? []).map(async (line: any) => {
-          let productId = Number(line.productId ?? line.id)
-          if (isNaN(productId) && line.barcode) {
-            const product = await db.product.findFirst({
-              where: { tenantId, barcode: line.barcode },
-              select: { id: true },
-            })
-            if (product) productId = product.id
-          }
-          return {
-            productId,
-            productName: line.productName ?? line.name,
-            barcode: line.barcode,
-            category: line.category ?? "",
-            expectedQuantity: line.expectedQuantity ?? 0,
-            countedQuantity: line.countedQuantity ?? null,
-            variance: line.variance ?? 0,
-            valueImpact: line.valueImpact ?? 0,
-          }
-        }))
+        const prismaLines = await Promise.all((data.lines ?? []).map(async (line: any) => ({
+          productId: await resolveProductId(line),
+          productName: line.productName ?? line.name,
+          barcode: line.barcode,
+          category: line.category ?? "",
+          expectedQuantity: line.expectedQuantity ?? 0,
+          countedQuantity: line.countedQuantity ?? null,
+          variance: line.variance ?? 0,
+          valueImpact: line.valueImpact ?? 0,
+        })))
         await db.stockCountSession.upsert({
           where: { id: sessionData.id as string },
           update: sessionData,
@@ -676,24 +667,14 @@ async function processOperation(
       if (action === "create") {
         const data = payload as any
         const { items: _i, ...orderData } = data
-        const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => {
-          let productId = Number(item.productId ?? item.id)
-          if (isNaN(productId) && item.barcode) {
-            const product = await db.product.findFirst({
-              where: { tenantId, barcode: item.barcode },
-              select: { id: true },
-            })
-            if (product) productId = product.id
-          }
-          return {
-            productId,
-            productName: item.productName ?? item.name,
-            barcode: item.barcode,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.total ?? item.quantity * item.unitPrice,
-          }
-        }))
+        const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => ({
+          productId: await resolveProductId(item),
+          productName: item.productName ?? item.name,
+          barcode: item.barcode,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total ?? item.quantity * item.unitPrice,
+        })))
         await db.deliveryOrder.upsert({
           where: { id: orderData.id as string },
           update: orderData,
