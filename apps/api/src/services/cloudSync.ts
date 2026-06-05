@@ -304,12 +304,14 @@ async function pullFromCloud(): Promise<void> {
 // ─── Upsert all pulled entities into local PostgreSQL ────────────────────────
 
 async function upsertPulledData(tenantId: string, data: PullResponse): Promise<void> {
-  // Helper: run one upsert, log errors without stopping other entities
+  // Helper: run one upsert, log errors to file + stderr without stopping other entities
   const run = async (label: string, fn: () => Promise<unknown>) => {
     try {
       await fn()
     } catch (err) {
-      console.error(`[cloud-sync] upsert ${label}:`, (err as Error).message)
+      const msg = `[cloud-sync] upsert ${label}: ${(err as Error).message}`
+      console.error(msg)
+      try { fs.appendFileSync(path.join(DATA_DIR, "sync-error.log"), `${new Date().toISOString()} ${msg}\n${(err as Error).stack ?? ""}\n`) } catch {}
     }
   }
 

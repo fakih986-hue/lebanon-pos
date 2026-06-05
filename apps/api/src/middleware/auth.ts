@@ -13,6 +13,8 @@ function serializeDecimals(value: unknown): unknown {
   if (value !== null && typeof value === "object" && !Array.isArray(value) && "s" in value && "d" in value && (value as any).toNumber) {
     return (value as any).toNumber()
   }
+  // Date objects — serialize to ISO string (before generic object branch that strips them)
+  if (value instanceof Date) return value.toISOString()
   if (Array.isArray(value)) return value.map(serializeDecimals)
   if (value !== null && typeof value === "object") {
     return Object.fromEntries(
