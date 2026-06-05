@@ -539,11 +539,20 @@ async function processOperation(
       if (action === "receive") {
         const items = Array.isArray(payload) ? payload : [payload]
         for (const item of items) {
-          const { id: batchId, ...batchData } = item ?? {}
+          // Resolve product ID by barcode for cross-device sync
+          let productId = Number(item?.productId ?? item?.id)
+          if (isNaN(productId) && item?.barcode) {
+            const product = await db.product.findFirst({
+              where: { tenantId, barcode: item.barcode },
+              select: { id: true },
+            })
+            if (product) productId = product.id
+          }
+          const { id: batchId, ...batchData } = { ...item, productId }
           await db.inventoryBatch.upsert({
             where: { id: batchId as string },
             update: batchData,
-            create: { ...item, tenantId } as any,
+            create: { ...batchData, id: batchId, tenantId } as any,
           })
         }
       } else if (action === "adjust") {
@@ -555,15 +564,25 @@ async function processOperation(
       } else if (action === "count") {
         const data = payload as any
         const { lines: _l, ...sessionData } = data
-        const prismaLines = (data.lines ?? []).map((line: any) => ({
-          productId: Number(line.productId ?? line.id),
-          productName: line.productName ?? line.name,
-          barcode: line.barcode,
-          category: line.category ?? "",
-          expectedQuantity: line.expectedQuantity ?? 0,
-          countedQuantity: line.countedQuantity ?? null,
-          variance: line.variance ?? 0,
-          valueImpact: line.valueImpact ?? 0,
+        const prismaLines = await Promise.all((data.lines ?? []).map(async (line: any) => {
+          let productId = Number(line.productId ?? line.id)
+          if (isNaN(productId) && line.barcode) {
+            const product = await db.product.findFirst({
+              where: { tenantId, barcode: line.barcode },
+              select: { id: true },
+            })
+            if (product) productId = product.id
+          }
+          return {
+            productId,
+            productName: line.productName ?? line.name,
+            barcode: line.barcode,
+            category: line.category ?? "",
+            expectedQuantity: line.expectedQuantity ?? 0,
+            countedQuantity: line.countedQuantity ?? null,
+            variance: line.variance ?? 0,
+            valueImpact: line.valueImpact ?? 0,
+          }
         }))
         await db.stockCountSession.upsert({
           where: { id: sessionData.id as string },
@@ -657,13 +676,23 @@ async function processOperation(
       if (action === "create") {
         const data = payload as any
         const { items: _i, ...orderData } = data
-        const prismaItems = (data.items ?? []).map((item: any) => ({
-          productId: Number(item.productId ?? item.id),
-          productName: item.productName ?? item.name,
-          barcode: item.barcode,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          total: item.total ?? item.quantity * item.unitPrice,
+        const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => {
+          let productId = Number(item.productId ?? item.id)
+          if (isNaN(productId) && item.barcode) {
+            const product = await db.product.findFirst({
+              where: { tenantId, barcode: item.barcode },
+              select: { id: true },
+            })
+            if (product) productId = product.id
+          }
+          return {
+            productId,
+            productName: item.productName ?? item.name,
+            barcode: item.barcode,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.total ?? item.quantity * item.unitPrice,
+          }
         }))
         await db.deliveryOrder.upsert({
           where: { id: orderData.id as string },
