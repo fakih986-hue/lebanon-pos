@@ -6,6 +6,7 @@ import { z } from "zod"
 import prisma from "../lib/prisma.js"
 
 import { signToken, json, type AuthRequest, requireAuth } from "../middleware/auth.js"
+import { getCloudStatus } from "../services/cloudSync.js"
 
 const setupSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required"),
@@ -143,15 +144,32 @@ router.post("/login", async (req: any, res: any) => {
       return
     }
 
-    if (!tenantSubdomain) {
+    let effectiveSubdomain = tenantSubdomain
+
+    if (!effectiveSubdomain) {
       const tenantCount = await prisma.tenant.count()
       if (tenantCount > 1) {
-        res.status(400).json({ error: "Store subdomain is required" })
-        return
+        // On the hub, fall back to the cloud-configured tenant
+        const { tenantId } = getCloudStatus()
+        if (tenantId) {
+          const cloudTenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { subdomain: true },
+          })
+          if (cloudTenant?.subdomain) {
+            effectiveSubdomain = cloudTenant.subdomain
+          } else {
+            res.status(400).json({ error: "Store subdomain is required" })
+            return
+          }
+        } else {
+          res.status(400).json({ error: "Store subdomain is required" })
+          return
+        }
       }
     }
 
-    const tenantFilter = tenantSubdomain ? { tenant: { subdomain: tenantSubdomain } } : {}
+    const tenantFilter = effectiveSubdomain ? { tenant: { subdomain: effectiveSubdomain } } : {}
 
     // Fast path: code-based lookup using the indexed code column
     if (code) {
