@@ -1,4 +1,4 @@
-import { enqueueSyncOperation } from "./sync.service"
+import { enqueueSyncOperation, getApiUrl } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 
@@ -388,6 +388,38 @@ export async function unlockWithPin(pin: string) {
       staffUser.active && (staffUser.pin === pinHash || staffUser.pin === cleanPin)
   )
   console.log("[unlockWithPin] matches:", matches.length, matches.map((u) => u.name))
+
+  // If no local match, try the API (handles cloud-synced users with bcrypt PINs on the hub)
+  if (matches.length === 0) {
+    const apiUrl = getApiUrl()
+    if (apiUrl) {
+      try {
+        const res = await fetch(`${apiUrl}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pin: cleanPin }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.user?.id) {
+            // Update this user's PIN from bcrypt to SHA-256 for future offline unlocks
+            for (const u of users) {
+              if (u.id === data.user.id) {
+                u.pin = pinHash
+                u.pinChanged = true
+                writeCollection(USERS_KEY, users)
+                console.log("[unlockWithPin] converted bcrypt PIN to SHA-256 for", u.name)
+                matches.push(u)
+                break
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("[unlockWithPin] API fallback failed:", e)
+      }
+    }
+  }
 
   const user = matches.sort(
     (a, b) => (rolePriority[b.role] ?? 0) - (rolePriority[a.role] ?? 0)
