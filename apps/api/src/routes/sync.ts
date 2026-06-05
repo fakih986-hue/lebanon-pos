@@ -361,14 +361,25 @@ async function processOperation(
         }
       } else if (action === "create") {
         const data = payload as any
-        const prismaItems = (data.items ?? []).map((item: any) => ({
-          productId: Number(item.id),
-          productName: item.name,
-          barcode: item.barcode,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          total: item.total,
-          cost: item.cost ?? 0,
+        // Resolve product IDs by barcode — cross-device sync uses different local IDs
+        const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => {
+          let productId = Number(item.id)
+          if (isNaN(productId) && item.barcode) {
+            const product = await db.product.findFirst({
+              where: { tenantId, barcode: item.barcode },
+              select: { id: true },
+            })
+            if (product) productId = product.id
+          }
+          return {
+            productId,
+            productName: item.name,
+            barcode: item.barcode,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.total,
+            cost: item.cost ?? 0,
+          }
         }))
         const { saleId: _s, ...prismaTender } = data.tender ?? {}
         const hasTender = Object.keys(prismaTender).length > 0
@@ -421,14 +432,24 @@ async function processOperation(
           "Debt Credit": "Debt_Credit",
           "Refund Credit": "Debt_Credit",
         }
-        const prismaItems = (data.items ?? []).map((item: any) => ({
-          productId: Number(item.id),
-          productName: item.name,
-          barcode: item.barcode,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          total: item.total,
-          cost: item.cost ?? 0,
+        const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => {
+          let productId = Number(item.id)
+          if (isNaN(productId) && item.barcode) {
+            const product = await db.product.findFirst({
+              where: { tenantId, barcode: item.barcode },
+              select: { id: true },
+            })
+            if (product) productId = product.id
+          }
+          return {
+            productId,
+            productName: item.name,
+            barcode: item.barcode,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.total,
+            cost: item.cost ?? 0,
+          }
         }))
         const { items: _i, ...refundData } = data
         await db.saleRefund.upsert({
