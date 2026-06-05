@@ -5,7 +5,6 @@ import {
   Keyboard,
   MoreVertical,
   ScanBarcode,
-  Search,
   ShoppingCart,
   Zap,
 } from "lucide-react"
@@ -71,7 +70,7 @@ export default function SearchToolbar({
     <div className="flex flex-col gap-2">
       <div className="flex items-stretch gap-1.5">
         <label className="relative min-w-0 flex-1">
-          <Search
+          <ScanBarcode
             size={18}
             className="pointer-events-none absolute"
             style={{ color: "var(--text-3)", [dir === "rtl" ? "right" : "left"]: "14px", top: "50%", transform: "translateY(-50%)" }}

@@ -43,29 +43,46 @@ export default function Topbar() {
 
   useEffect(() => subscribeSecurity(() => setSecurityVersion((version) => version + 1)), [])
 
+  const isPosRoute = location.pathname === "/"
+
   return (
-    <header className="topbar-shell flex min-h-[64px] shrink-0 items-center justify-between gap-3 border-b px-4 sm:px-6">
-      <div className="min-w-0">
-        <h2 className="truncate text-lg font-black leading-tight tracking-tight sm:text-xl" style={{ color: "var(--text)" }}>
-          {t(page.titleKey)}
-        </h2>
-        <p className="hidden text-[12px] font-semibold sm:block" style={{ color: "var(--text-3)" }}>
-          {today}
-        </p>
-      </div>
+    <header className={`topbar-shell flex shrink-0 items-center justify-between gap-3 border-b px-4 sm:px-6 ${isPosRoute ? "min-h-[44px]" : "min-h-[64px]"}`}>
+      {!isPosRoute && (
+        <div className="min-w-0">
+          <h2 className="truncate text-lg font-black leading-tight tracking-tight sm:text-xl" style={{ color: "var(--text)" }}>
+            {t(page.titleKey)}
+          </h2>
+          <p className="hidden text-[12px] font-semibold sm:block" style={{ color: "var(--text-3)" }}>
+            {today}
+          </p>
+        </div>
+      )}
+
+      {isPosRoute && (
+        <div className="flex items-center gap-2">
+          <span className={`h-2 w-2 rounded-full ${activeShift ? "bg-emerald-500" : "bg-zinc-400"}`} />
+          <span className="text-[12px] font-bold" style={{ color: activeShift ? "var(--brand-text)" : "var(--text-3)" }}>
+            {activeShift?.shiftNumber ?? t("desktop.no_shift")}
+          </span>
+          <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>·</span>
+          <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{today}</span>
+        </div>
+      )}
 
       <div className="flex items-center gap-1.5 sm:gap-2">
-        <div
-          className="hidden h-8 items-center gap-1.5 rounded-lg border px-3 text-[12px] font-bold md:flex"
-          style={
-            activeShift
-              ? { background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }
-              : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }
-          }
-        >
-          <span className={`h-1.5 w-1.5 rounded-full ${activeShift ? "bg-emerald-500" : "bg-zinc-400"}`} />
-          {activeShift?.shiftNumber ?? t("desktop.no_shift")}
-        </div>
+        {!isPosRoute && (
+          <div
+            className="hidden h-8 items-center gap-1.5 rounded-lg border px-3 text-[12px] font-bold md:flex"
+            style={
+              activeShift
+                ? { background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }
+                : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }
+            }
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${activeShift ? "bg-emerald-500" : "bg-zinc-400"}`} />
+            {activeShift?.shiftNumber ?? t("desktop.no_shift")}
+          </div>
+        )}
 
         <SyncStatus />
         <NotificationCenter />

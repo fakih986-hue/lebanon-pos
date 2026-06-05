@@ -93,7 +93,7 @@ function Shell({ children }: { children: ReactNode }) {
       <Sidebar />
 
       <div className={`flex min-w-0 flex-1 flex-col ${isPosRoute ? "pb-20 md:pb-0" : "pb-20 md:pb-0"}`}>
-        {!isPosRoute && <Topbar />}
+        <Topbar />
           {suspended && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}>
               <div className="bg-slate-900 border border-rose-800/50 rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">

@@ -712,7 +712,27 @@ export default function POSPage() {
                       className="min-h-80 bg-white"
                     />
                   )}
-                  </ErrorBoundary>
+                    </ErrorBoundary>
+                </div>
+
+                {/* Keyboard shortcuts reference strip */}
+                <div className="flex flex-wrap gap-1.5 p-2 mt-auto" style={{ background: "var(--surface-2)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
+                  <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: "var(--text-3)" }}>
+                    <span className="rounded bg-black/5 px-1.5 py-0.5 font-mono">Ctrl+F</span>
+                    Search
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: "var(--text-3)" }}>
+                    <span className="rounded bg-black/5 px-1.5 py-0.5 font-mono">F8</span>
+                    Cart
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: "var(--text-3)" }}>
+                    <span className="rounded bg-black/5 px-1.5 py-0.5 font-mono">Esc</span>
+                    Close
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: "var(--text-3)" }}>
+                    <span className="rounded bg-black/5 px-1.5 py-0.5 font-mono">?</span>
+                    Help
+                  </span>
                 </div>
               </>
             )}
