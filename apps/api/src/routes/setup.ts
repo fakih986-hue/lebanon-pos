@@ -195,7 +195,13 @@ router.post("/cloud-config", async (req: Req, res: Response) => {
     saveCloudConfig(tenantId.trim(), apiKey.trim())
     // Give the restarted bridge a moment, then force a full pull
     await triggerFullPull().catch(() => { /* first pull may lag — bridge will retry */ })
-    res.json({ ok: true, ...getCloudStatus() })
+    // Sign a hub JWT so the SPA can auto-pull data into IndexedDB without a second login
+    const token = jwt.sign(
+      { userId: "__admin__", tenantId: "", role: "Admin" },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    )
+    res.json({ ok: true, token, ...getCloudStatus() })
   } catch (err) {
     res.status(500).json({ error: (err as Error).message })
   }

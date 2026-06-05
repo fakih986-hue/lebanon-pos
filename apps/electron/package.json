@@ -6,8 +6,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "electron dist/main.js",
-    "package": "npm run build && electron-builder --win",
-    "package:dir": "npm run build && electron-builder --win --dir"
+    "build:spa": "pnpm --prefix ../../apps/desktop build && pnpm --prefix ../../apps/api bundle",
+    "package": "npm run build:spa && npm run build && electron-builder --win",
+    "package:dir": "npm run build:spa && npm run build && electron-builder --win --dir"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

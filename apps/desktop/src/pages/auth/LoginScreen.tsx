@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CloudDownload, KeyRound, LockKeyhole, ShieldCheck, Store, X, Save } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
@@ -44,6 +44,27 @@ export default function LoginScreen() {
   const knownStores = getKnownStores()
 
   const [changePinUser, setChangePinUser] = useState<StaffUser | null>(null)
+
+  // Auto-pull from local API after hub activation (no PIN in URL)
+  useEffect(() => {
+    if (window.location.search.includes("hub-activated=1")) {
+      const token = localStorage.getItem("lebanonpos.auth-token")
+      const apiUrl = localStorage.getItem("lebanonpos.api-url") || "http://localhost:3001"
+      if (token) {
+        setStatus("Activating store — downloading your data…")
+        setApiUrl(apiUrl)
+        setAuthToken(token)
+        // Remove the flag from URL so refresh doesn't re-trigger
+        window.history.replaceState({}, "", "/")
+        pullFromServer(true).then(() => {
+          window.location.reload()
+        }).catch((err) => {
+          console.error("[hub-activation] pull failed:", err)
+          setStatus("Sync completed with some issues. Try logging in.")
+        })
+      }
+    }
+  }, [])
 
   async function handleUnlock() {
     try {

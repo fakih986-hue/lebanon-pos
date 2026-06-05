@@ -583,7 +583,7 @@ async function connect() {
         '<div style="font-size:28px;font-weight:800;color:#0f172a;letter-spacing:6px;font-family:monospace;user-select:all">'+pin+'</div>'+
         '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Use this PIN to log into the POS</div></div>':'')+
       '<p style="font-size:13px;color:#94a3b8">Opening POS…</p></div>'
-    setTimeout(()=>{require('electron').ipcRenderer.send('activation-done')},3000)
+    setTimeout(()=>{require('electron').ipcRenderer.send('activation-done', d.token||'')},3000)
   } catch(e){
     err.textContent=e.message;err.style.display='block'
     btn.disabled=false;btn.textContent='Connect & Download My Data'
@@ -599,19 +599,41 @@ function closeActivationWindow() { activationWindow?.close(); activationWindow =
 
 // ─── Main window ─────────────────────────────────────────────────────────────
 
-function createMainWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1600, height: 900, minWidth: 1024, minHeight: 600,
-    show: false, title: "Lebanon POS",
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      nodeIntegration: false, contextIsolation: true,
-    },
-  })
-  mainWindow.loadURL(API_URL)
-  mainWindow.once("ready-to-show", () => mainWindow?.show())
-  mainWindow.on("close", e => { if (!isQuitting) { e.preventDefault(); mainWindow?.hide() } })
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: "deny" } })
+function createMainWindow(hubToken?: string) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    mainWindow = new BrowserWindow({
+      width: 1600, height: 900, minWidth: 1024, minHeight: 600,
+      show: false, title: "Lebanon POS",
+      webPreferences: {
+        preload: path.join(__dirname, "preload.js"),
+        nodeIntegration: false, contextIsolation: true,
+      },
+    })
+    mainWindow.once("ready-to-show", () => mainWindow?.show())
+    mainWindow.on("close", e => { if (!isQuitting) { e.preventDefault(); mainWindow?.hide() } })
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: "deny" } })
+  }
+
+  if (hubToken) {
+    // Inject the hub token into the SPA's localStorage, then reload with auto-pull flag
+    mainWindow.loadURL(API_URL)
+    mainWindow.webContents.once("did-finish-load", () => {
+      mainWindow?.webContents.executeJavaScript(`
+        try {
+          localStorage.setItem('lebanonpos.auth-token', ${JSON.stringify(hubToken)});
+          localStorage.setItem('lebanonpos.api-url', ${JSON.stringify(API_URL)});
+        } catch(e) { console.error('[hub] token store failed', e) }
+        document.title = 'hub-activated'
+      `).then(() => {
+        mainWindow?.loadURL(`${API_URL}/?hub-activated=1`)
+      }).catch(() => {
+        mainWindow?.loadURL(`${API_URL}/?hub-activated=1`)
+      })
+    })
+  } else {
+    mainWindow.loadURL(API_URL)
+    mainWindow.once("ready-to-show", () => mainWindow?.show())
+  }
 }
 
 // ─── Tray ────────────────────────────────────────────────────────────────────
@@ -687,9 +709,9 @@ ipcMain.handle("get-local-ip", () => {
 ipcMain.handle("get-app-version", () => app.getVersion())
 
 // Activation window → main window transition
-ipcMain.on("activation-done", () => {
+ipcMain.on("activation-done", (_event: Electron.IpcMainEvent, token?: string) => {
   closeActivationWindow()
-  createMainWindow()
+  createMainWindow(token)
   createTray()
   if (IS_PACKAGED) setupAutoUpdater()
 })
