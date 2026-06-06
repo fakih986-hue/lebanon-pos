@@ -1,6 +1,6 @@
 {
   "name": "lebanon-pos",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lebanon POS — Local Server Desktop App",
   "main": "dist/main.js",
   "scripts": {
@@ -50,8 +50,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "your-github-username",
-      "repo": "lebanon-pos-releases"
+      "owner": "fakih986-hue",
+      "repo": "lebanon-pos"
     },
     "win": {
       "target": [
