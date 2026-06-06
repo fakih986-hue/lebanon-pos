@@ -223,7 +223,7 @@ const ReceiptPreview = memo(function ReceiptPreview({
         </div>
 
         {sale.tender ? (
-          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">
+          <div className="mt-4 rounded-lg p-3 text-sm text-white" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
             <div className="flex justify-between gap-3">
               <span>{t("pos.paid_total")}</span>
               <strong>
@@ -242,9 +242,9 @@ const ReceiptPreview = memo(function ReceiptPreview({
           </div>
         ) : null}
 
-        <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3">
+        <div className="mt-4 rounded-lg p-3" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-rose-950">
+            <div className="flex items-center gap-2 text-sm font-bold text-white">
               <RotateCcw size={17} />
               {t("pos.returns")}
             </div>

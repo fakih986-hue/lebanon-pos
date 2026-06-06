@@ -424,7 +424,7 @@ export default function CartBody({
               style={{ background: "var(--brand-soft)", border: "1px solid var(--brand-border)" }}
             >
               {/* Paid total row */}
-              <div className="flex items-center justify-between text-[12px]" style={{ color: "var(--brand-text)" }}>
+              <div className="flex items-center justify-between text-[12px] text-white">
                 <span className="font-semibold">{t("pos.paid_total")}</span>
                 <span className="font-bold tabular-nums">
                   {formatCurrency(paidTotalUsd)}
@@ -442,17 +442,15 @@ export default function CartBody({
                 }}
               >
                 <span
-                  className="text-[13px] font-bold"
-                  style={{ color: cashChangeUsd > 0 ? "var(--green, #10b981)" : "var(--rose)" }}
+                  className="text-[13px] font-bold text-white"
                 >
                   {cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}
                 </span>
                 <div className="text-right">
                   <span
-                    className="block tabular-nums leading-none font-black"
+                    className="block tabular-nums leading-none font-black text-white"
                     style={{
                       fontSize: cashChangeUsd > 0 ? 22 : 28,
-                      color: cashChangeUsd > 0 ? "var(--green, #10b981)" : "var(--rose)",
                     }}
                   >
                     {cashChangeUsd > 0 ? formatCurrency(cashChangeUsd) : formatCurrency(cashStillDueUsd)}

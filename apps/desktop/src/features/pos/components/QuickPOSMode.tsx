@@ -351,8 +351,7 @@ export default function QuickPOSMode({
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: "spring", stiffness: 400, damping: 22 }}
                 >
-                  <p className="text-[11px] font-bold uppercase tracking-wide"
-                    style={{ color: cashChangeUsd > 0 ? "var(--green,#10b981)" : "var(--rose)" }}>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-white">
                     {cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}
                   </p>
                   <MotionP
@@ -360,7 +359,7 @@ export default function QuickPOSMode({
                     className="mt-1 font-black tabular-nums leading-none"
                     style={{
                       fontSize: 44,
-                      color: cashChangeUsd > 0 ? "var(--green,#10b981)" : "var(--rose)",
+                      color: "#fff",
                     }}
                     initial={{ scale: 1.1 }} animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 500, damping: 24 }}
