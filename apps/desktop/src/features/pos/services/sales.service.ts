@@ -287,7 +287,7 @@ export function recordRefund(input: RecordRefundInput) {
   const activeShift = getActiveShift()
   const refund: SaleRefund = {
     id: createId(),
-    refundNumber: `R-${Date.now().toString().slice(-6)}`,
+    refundNumber: `R-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`,
     saleId: input.saleId,
     saleNumber: input.saleNumber,
     customerId: input.customerId,
@@ -329,7 +329,7 @@ export function recordRefund(input: RecordRefundInput) {
   return refund
 }
 
-export function voidSale(saleId: string) {
+export function voidSale(saleId: string, restoreStock = true) {
   const sales = getSales()
   const sale = sales.find((item) => item.id === saleId)
   if (!sale) return
@@ -342,10 +342,13 @@ export function voidSale(saleId: string) {
   )
   writeSales(nextSales)
 
-  // 1. Restore product stock for every line item
-  increaseProductStock(
-    sale.items.map((item) => ({ productId: item.id, quantity: item.quantity }))
-  )
+  // 1. Restore product stock for every line item (unless the caller
+  //    knows stock was never decremented, e.g. partial error recovery)
+  if (restoreStock) {
+    increaseProductStock(
+      sale.items.map((item) => ({ productId: item.id, quantity: item.quantity }))
+    )
+  }
 
   // 2. Return consumed inventory batches (FIFO restore)
   restoreInventoryBatches(

@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react"
-import { Check, ShoppingCart, Star, X, ZoomIn } from "lucide-react"
+import { AnimatePresence, motion } from "framer-motion"
+import { Check, Plus, Star, X, ZoomIn } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../lib/currency"
@@ -15,13 +16,13 @@ type Props = {
   searchQuery?: string
 }
 
-const accents: Record<ProductAccent, { bg: string; border: string; text: string; top: string }> = {
-  amber: { bg: "var(--amber-soft)", border: "rgba(217,119,6,0.28)", text: "var(--amber-text)", top: "#d97706" },
-  cyan: { bg: "var(--cyan-soft)", border: "rgba(8,145,178,0.22)", text: "#0e7490", top: "#0891b2" },
-  emerald: { bg: "var(--brand-soft)", border: "var(--brand-border)", text: "var(--brand-text)", top: "#047857" },
-  indigo: { bg: "var(--blue-soft)", border: "rgba(37,99,235,0.22)", text: "var(--blue-text)", top: "#6366f1" },
-  rose: { bg: "var(--rose-soft)", border: "rgba(220,38,38,0.22)", text: "var(--rose-text)", top: "#e11d48" },
-  violet: { bg: "var(--blue-soft)", border: "rgba(37,99,235,0.22)", text: "var(--blue-text)", top: "#8b5cf6" },
+const accents: Record<ProductAccent, { solid: string; soft: string }> = {
+  amber:   { solid: "#d97706", soft: "rgba(217,119,6,0.08)"   },
+  cyan:    { solid: "#0891b2", soft: "rgba(8,145,178,0.08)"   },
+  emerald: { solid: "#047857", soft: "rgba(4,120,87,0.08)"    },
+  indigo:  { solid: "#6366f1", soft: "rgba(99,102,241,0.08)"  },
+  rose:    { solid: "#e11d48", soft: "rgba(225,29,72,0.08)"   },
+  violet:  { solid: "#8b5cf6", soft: "rgba(139,92,246,0.08)"  },
 }
 
 function HighlightedText({ text, query }: { text: string; query?: string }) {
@@ -39,6 +40,10 @@ function HighlightedText({ text, query }: { text: string; query?: string }) {
   )
 }
 
+const MotionDiv = motion.div as any
+const MotionSpan = motion.span as any
+const MotionArticle = motion.article as any
+
 const ProductCard = memo(function ProductCard({
   product,
   exchangeRate,
@@ -49,187 +54,182 @@ const ProductCard = memo(function ProductCard({
   searchQuery,
 }: Props) {
   const { t } = useI18n()
-  const outOfStock = product.stock <= 0
-  const lowStock = !outOfStock && product.stock <= 5
-  const accent = accents[product.accent] ?? accents.emerald
-  const effectivePrice = wholesale && product.wholesalePrice != null ? Number(product.wholesalePrice) : product.price
+  const outOfStock     = product.stock <= 0
+  const lowStock       = !outOfStock && product.stock <= 5
+  const accent         = accents[product.accent] ?? accents.emerald
+  const effectivePrice = wholesale && product.wholesalePrice != null
+    ? Number(product.wholesalePrice)
+    : product.price
+
   const [justAdded, setJustAdded] = useState(false)
   const [imageZoom, setImageZoom] = useState(false)
-  const justAddedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [addCount,  setAddCount]  = useState(0)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  const stockTone = outOfStock
-    ? { bg: "var(--rose-soft)", text: "var(--rose-text)", label: t("pos.out_of_stock") }
+  const stockLabel = outOfStock
+    ? t("pos.out_of_stock")
     : lowStock
-      ? { bg: "var(--amber-soft)", text: "var(--amber-text)", label: `${product.stock} in stock` }
-      : { bg: "var(--brand-soft)", text: "var(--brand-text)", label: `${product.stock} in stock` }
+    ? `${product.stock} left`
+    : `${product.stock} in stock`
+
+  const stockColor = outOfStock
+    ? "#EF4444"
+    : lowStock
+    ? "#F59E0B"
+    : "var(--text-3)"
 
   const handleClick = useCallback(() => {
     if (outOfStock) return
     onClick()
     setJustAdded(true)
-    if (justAddedTimer.current) clearTimeout(justAddedTimer.current)
-    justAddedTimer.current = setTimeout(() => setJustAdded(false), 1200)
+    setAddCount((c) => c + 1)
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => setJustAdded(false), 550)
   }, [onClick, outOfStock])
 
-  useEffect(() => {
-    return () => { if (justAddedTimer.current) clearTimeout(justAddedTimer.current) }
-  }, [])
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
 
   return (
     <>
-      <article
-        className={`pos-product-tile group relative select-none overflow-hidden ${
-          outOfStock ? "opacity-50" : "cursor-pointer"
+      <MotionArticle
+        className={`pos-product-tile group relative select-none rounded-xl border ${
+          outOfStock ? "opacity-40" : "cursor-pointer active:scale-[0.97]"
         }`}
         style={{
-          borderTop: `3px solid ${accent.top}`,
-          transform: justAdded ? "scale(1.03)" : undefined,
-          transition: "transform 200ms ease",
+          background: "var(--surface)",
+          borderColor: justAdded ? accent.solid : "var(--border)",
+          transition: "border-color 200ms ease, transform 150ms ease",
         }}
+        whileTap={!outOfStock ? { scale: 0.97 } : undefined}
+        animate={{ scale: justAdded ? 1.02 : 1 }}
+        transition={{ type: "spring", stiffness: 400, damping: 20 }}
       >
         <button
           type="button"
           onClick={handleClick}
           disabled={outOfStock}
-          className="flex min-h-[150px] w-full flex-col p-3 text-left"
+          className="flex w-full flex-col gap-1.5 p-2.5 text-left"
         >
-          <div className="flex items-start justify-between gap-2">
+          {/* Row 1: Image + Name + Stock */}
+          <div className="flex items-start gap-2">
+            {/* Image / Initial */}
             {product.image ? (
-              <div className="relative">
+              <div className="relative shrink-0">
                 <img
                   src={product.image}
                   alt={product.name}
-                  className="h-12 w-12 shrink-0 rounded-lg object-cover"
-                  style={{ border: "1px solid var(--border)" }}
+                  className="h-8 w-8 rounded-md object-cover"
+                  style={{ border: `1px solid var(--border)` }}
                 />
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setImageZoom(true) }}
-                  className="absolute inset-0 flex items-center justify-center rounded-lg opacity-0 transition group-hover:opacity-100"
-                  style={{ background: "rgba(0,0,0,0.3)" }}
+                  className="absolute inset-0 flex items-center justify-center rounded-md opacity-0 transition group-hover:opacity-100"
+                  style={{ background: "rgba(0,0,0,0.45)" }}
                 >
-                  <ZoomIn size={14} className="text-white" />
+                  <ZoomIn size={10} className="text-white" />
                 </button>
               </div>
             ) : (
               <span
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-lg font-black"
-                style={{
-                  background: accent.bg,
-                  border: `1px solid ${accent.border}`,
-                  color: accent.text,
-                }}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[12px] font-black text-white"
+                style={{ background: accent.solid }}
               >
                 {product.name.charAt(0).toUpperCase()}
               </span>
             )}
 
-            <span
-              className="rounded-lg px-2 py-1 text-[10px] font-black"
-              style={{ background: stockTone.bg, color: stockTone.text }}
-            >
-              {stockTone.label}
-            </span>
+            {/* Name + Stock */}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[12px] font-bold leading-tight" style={{ color: "var(--text)" }}>
+                <HighlightedText text={product.name} query={searchQuery} />
+              </p>
+              <p className="text-[10px] font-medium leading-tight mt-0.5" style={{ color: stockColor }}>
+                {stockLabel}
+                {wholesale && product.wholesalePrice != null && (
+                  <span className="ml-1.5 rounded px-1 py-px text-[8px] font-black text-white" style={{ background: accent.solid }}>WS</span>
+                )}
+              </p>
+            </div>
+
+            {/* Cart quantity badge */}
+            {cartQuantity > 0 && (
+              <MotionSpan
+                key={cartQuantity}
+                className="flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full text-[10px] font-black"
+                style={{ background: accent.solid, color: "#fff" }}
+                initial={{ scale: 1.4, opacity: 0.6 }}
+                animate={{ scale: 1,   opacity: 1   }}
+                transition={{ type: "spring", stiffness: 500, damping: 20 }}
+              >
+                {cartQuantity}
+              </MotionSpan>
+            )}
           </div>
 
-          <div className="mt-3 flex min-h-0 flex-1 flex-col">
-            <p className="line-clamp-2 min-h-[34px] text-[13px] font-black leading-tight" style={{ color: "var(--text)" }}>
-              <HighlightedText text={product.name} query={searchQuery} />
-            </p>
-            <p className="mt-1 truncate text-[10px] font-bold tabular-nums opacity-0 transition group-hover:opacity-100" style={{ color: "var(--text-3)" }}>
-              {product.barcode || product.category}
-            </p>
-
-            <div className="mt-auto pt-2.5">
-              <div className="flex items-end justify-between gap-3">
-                <div className="min-w-0">
-                  <span className="block text-[20px] font-black leading-none tabular-nums" style={{ color: wholesale && product.wholesalePrice != null ? "var(--green)" : "var(--text)" }}>
-                    {formatCurrency(effectivePrice)}
-                  </span>
-                  {wholesale && product.wholesalePrice != null && (
-                    <span className="block text-[10px] font-bold line-through mt-0.5" style={{ color: "var(--text-3)" }}>
-                      {formatCurrency(product.price)}
-                    </span>
-                  )}
-                  <span className="mt-1 block text-[10px] font-bold tabular-nums" style={{ color: "var(--text-3)" }}>
-                    {formatLbpCurrency(usdToLbp(effectivePrice, exchangeRate))}
-                  </span>
-                </div>
-
-                <span
-                  className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-lg text-white"
-                  style={{ background: outOfStock ? "var(--surface-3)" : "var(--brand)" }}
-                >
-                  <ShoppingCart size={16} />
-                </span>
-              </div>
-
-              <div className="mt-2.5 flex items-center justify-between gap-2">
-                <span
-                  className="truncate rounded-lg px-2 py-1 text-[10px] font-black"
-                  style={{ background: accent.bg, color: accent.text }}
-                >
-                  {product.category}
-                </span>
-              </div>
+          {/* Row 2: Price + Cart button */}
+          <div className="flex items-end justify-between gap-2">
+            <div className="min-w-0 leading-none">
+              <span className="text-[15px] font-black tabular-nums" style={{ color: "var(--text)" }}>
+                {formatCurrency(effectivePrice)}
+              </span>
+              <span className="ml-1 text-[10px] font-medium tabular-nums" style={{ color: "var(--text-3)" }}>
+                {formatLbpCurrency(usdToLbp(effectivePrice, exchangeRate))}
+              </span>
             </div>
+
+            <span
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors"
+              style={{
+                background: outOfStock ? "var(--surface-3)" : accent.solid,
+                color: "#fff",
+              }}
+            >
+              <Plus size={13} strokeWidth={2.5} />
+            </span>
           </div>
         </button>
 
-        {cartQuantity > 0 && (
-          <span
-            className="absolute left-2 top-2 flex h-6 min-w-[24px] items-center justify-center rounded-full px-1.5 text-[11px] font-black text-white"
-            style={{ background: "var(--brand)" }}
-          >
-            {cartQuantity}
-          </span>
-        )}
+        {/* Ring burst on add */}
+        <AnimatePresence>
+          {justAdded && (
+            <MotionDiv
+              key={`ring-${addCount}`}
+              className="pointer-events-none absolute inset-0"
+              style={{ border: `2px solid ${accent.solid}`, borderRadius: 12, zIndex: 20 }}
+              initial={{ opacity: 0.8, scale: 0.9 }}
+              animate={{ opacity: 0,   scale: 1.08 }}
+              exit={{}}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            />
+          )}
+        </AnimatePresence>
 
-        {wholesale && product.wholesalePrice != null && (
-          <span
-            className="absolute left-2 bottom-2 rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-white"
-            style={{ background: "#059669" }}
-          >
-            Wholesale
-          </span>
-        )}
-
-        {justAdded && (
-          <div
-            className="absolute inset-0 flex items-center justify-center rounded-lg"
-            style={{ background: "rgba(4, 120, 87, 0.85)" }}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <Check size={28} className="text-white" strokeWidth={3} />
-              <span className="text-[11px] font-black text-white">Added</span>
-            </div>
-          </div>
-        )}
-
-        {onFavoriteToggle ? (
+        {/* Favorite star — top right */}
+        {onFavoriteToggle && (
           <button
             type="button"
-            onClick={(event) => {
-              event.stopPropagation()
-              onFavoriteToggle()
-            }}
-            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md border transition"
-            style={
-              product.favorite
-                ? { borderColor: "rgba(217,119,6,0.34)", background: "var(--amber-soft)", color: "var(--amber)" }
-                : { borderColor: "var(--border)", background: "rgba(255,255,255,0.9)", color: "var(--text-3)" }
+            onClick={(e) => { e.stopPropagation(); onFavoriteToggle() }}
+            className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full transition"
+            style={product.favorite
+              ? { background: "rgba(214,166,58,0.15)", color: "#D6A63A" }
+              : { background: "transparent", color: "transparent" }
             }
             aria-label={product.favorite ? "Remove favorite" : "Add favorite"}
           >
-            <Star size={11} fill={product.favorite ? "currentColor" : "none"} />
+            <Star size={10} fill={product.favorite ? "currentColor" : "none"}
+              className={!product.favorite ? "opacity-0 transition-opacity group-hover:opacity-60" : ""}
+              style={!product.favorite ? { color: "var(--text-3)" } : undefined}
+            />
           </button>
-        ) : null}
-      </article>
+        )}
+      </MotionArticle>
 
+      {/* Image zoom modal */}
       {imageZoom && product.image && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-8"
-          style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}
+          style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)" }}
           onClick={() => setImageZoom(false)}
         >
           <button

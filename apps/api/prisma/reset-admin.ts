@@ -1,20 +1,19 @@
 /**
  * Emergency admin reset.
- * Ensures every tenant has an active Admin user with PIN "0000".
+ * Ensures every tenant has an active Admin user with a random recovery PIN.
  *
- * Run via Railway (injects DATABASE_URL automatically):
+ * Run via Railway:
  *   railway run npx tsx prisma/reset-admin.ts
  *
- * Or locally with DATABASE_URL set:
- *   DATABASE_URL="postgres://..." npx tsx prisma/reset-admin.ts
+ * Or locally:
+ *   npx tsx prisma/reset-admin.ts "postgresql://user:pass@host:port/railway"
  *
- * After logging in, change the PIN from Staff → Change PIN.
+ * Save the printed recovery PIN immediately; it is not stored in plain text.
  */
-import { PrismaClient } from "../src/generated/prisma/index.js"
+import { randomInt } from "node:crypto"
 import bcrypt from "bcryptjs"
+import { PrismaClient } from "../src/generated/prisma/index.js"
 
-// Accept the DB URL as the first CLI arg (avoids .env interference).
-// Usage: npx tsx prisma/reset-admin.ts "postgresql://...:PORT/railway"
 const dbUrl = process.argv[2] || process.env.DATABASE_URL
 
 if (!dbUrl) {
@@ -28,6 +27,10 @@ const prisma = new PrismaClient({
   datasources: { db: { url: dbUrl } },
 })
 
+function generateRecoveryPin() {
+  return Array.from({ length: 6 }, () => randomInt(0, 10)).join("")
+}
+
 async function main() {
   const tenants = await prisma.tenant.findMany()
   if (tenants.length === 0) {
@@ -35,10 +38,10 @@ async function main() {
     return
   }
 
-  const hashed = await bcrypt.hash("0000", 10)
-
   for (const tenant of tenants) {
-    // Find an existing admin for this tenant
+    const recoveryPin = generateRecoveryPin()
+    const hashed = await bcrypt.hash(recoveryPin, 12)
+
     const existingAdmin = await prisma.staffUser.findFirst({
       where: { tenantId: tenant.id, role: "Admin" },
     })
@@ -48,23 +51,25 @@ async function main() {
         where: { id: existingAdmin.id },
         data: { pin: hashed, active: true },
       })
-      console.log(`✓ Reset Admin "${existingAdmin.name}" PIN to 0000 for store "${tenant.name}" (subdomain: ${tenant.subdomain})`)
+      console.log(`Reset Admin "${existingAdmin.name}" for store "${tenant.name}" (subdomain: ${tenant.subdomain})`)
+      console.log(`  Recovery PIN: ${recoveryPin}`)
     } else {
       const created = await prisma.staffUser.create({
         data: {
           tenantId: tenant.id,
           name: "Recovery Admin",
-          mobile: "",
+          mobile: `recovery-${tenant.id}`,
           pin: hashed,
           role: "Admin",
           active: true,
         },
       })
-      console.log(`✓ Created new Admin "${created.name}" with PIN 0000 for store "${tenant.name}" (subdomain: ${tenant.subdomain})`)
+      console.log(`Created new Admin "${created.name}" for store "${tenant.name}" (subdomain: ${tenant.subdomain})`)
+      console.log(`  Recovery PIN: ${recoveryPin}`)
     }
   }
 
-  console.log("\nDone. Log in with PIN 0000, then change it in Staff → Change PIN.")
+  console.log("\nDone. Save the recovery PINs now; they are not stored in plain text.")
 }
 
 main()

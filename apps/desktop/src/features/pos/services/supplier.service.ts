@@ -158,12 +158,33 @@ export function deleteSupplier(supplierId: string) {
   const supplier = suppliers.find((item) => item.id === supplierId)
   if (!supplier) return
 
+  const removedOrders = getPurchaseOrders().filter((o) => o.supplierId === supplierId)
+  const removedPayments = getSupplierPayments().filter((p) => p.supplierId === supplierId)
+
   writeCollection(SUPPLIERS_KEY, suppliers.filter((item) => item.id !== supplierId))
   // Clean up orphan purchase orders and payments
   const orders = getPurchaseOrders().filter((o) => o.supplierId !== supplierId)
   const payments = getSupplierPayments().filter((p) => p.supplierId !== supplierId)
   writeCollection(PURCHASE_ORDERS_KEY, orders)
   writeCollection(SUPPLIER_PAYMENTS_KEY, payments)
+
+  for (const po of removedOrders) {
+    enqueueSyncOperation({
+      entity: "purchase-order",
+      action: "delete",
+      summary: `PO ${po.poNumber} removed with supplier.`,
+      payload: { id: po.id },
+    })
+  }
+  for (const p of removedPayments) {
+    enqueueSyncOperation({
+      entity: "supplier-payment",
+      action: "delete",
+      summary: `Supplier payment removed with supplier.`,
+      payload: { id: p.id },
+    })
+  }
+
   recordAuditEvent({
     action: "supplier.delete",
     entity: "supplier",
@@ -256,6 +277,18 @@ function updatePurchaseOrderPaidTotal(purchaseOrderId: string) {
   })
 
   writePurchaseOrders(nextPurchaseOrders)
+
+  for (const po of nextPurchaseOrders) {
+    const original = purchaseOrders.find(p => p.id === po.id)
+    if (original && (original.paidTotal !== po.paidTotal || original.status !== po.status)) {
+      enqueueSyncOperation({
+        entity: "purchase-order",
+        action: "update",
+        summary: `${po.poNumber} payment status updated.`,
+        payload: po,
+      })
+    }
+  }
 }
 
 export function recordSupplierPayment(input: RecordSupplierPaymentInput) {

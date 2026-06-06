@@ -1,5 +1,4 @@
 import { AlertTriangle, Boxes, Layers3, PackageCheck } from "lucide-react"
-
 import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatNumber } from "../lib/currency"
 
@@ -10,78 +9,85 @@ type Props = {
   urgentReorderCount: number
 }
 
-export default function KpiCards({
-  totalProducts,
-  totalStock,
-  totalValue,
-  urgentReorderCount,
-}: Props) {
+const cards = [
+  {
+    key: "products",
+    icon: PackageCheck,
+    gradient: "linear-gradient(135deg,#10b981,#047857)",
+    glow: "rgba(16,185,129,0.35)",
+  },
+  {
+    key: "stock",
+    icon: Boxes,
+    gradient: "linear-gradient(135deg,#818cf8,#4338ca)",
+    glow: "rgba(99,102,241,0.35)",
+  },
+  {
+    key: "value",
+    icon: Layers3,
+    gradient: "linear-gradient(135deg,#fbbf24,#d97706)",
+    glow: "rgba(251,191,36,0.35)",
+  },
+  {
+    key: "reorder",
+    icon: AlertTriangle,
+    gradient: "linear-gradient(135deg,#fb923c,#dc2626)",
+    glow: "rgba(249,115,22,0.35)",
+  },
+]
+
+export default function KpiCards({ totalProducts, totalStock, totalValue, urgentReorderCount }: Props) {
   const { t } = useI18n()
+
+  const values = [
+    { label: t("pos.kpi.active_products"), value: formatNumber(totalProducts) },
+    { label: t("pos.kpi.units_in_stock"),  value: formatNumber(totalStock)    },
+    { label: t("pos.kpi.stock_value"),     value: formatCurrency(totalValue)  },
+    {
+      label: t("pos.kpi.reorder_needed"),
+      value: formatNumber(urgentReorderCount),
+      alert: urgentReorderCount > 0,
+    },
+  ]
+
   return (
-    <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
-      <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
-            <PackageCheck size={21} />
+    <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      {cards.map((card, i) => {
+        const Icon = card.icon
+        const item = values[i]
+        return (
+          <div
+            key={card.key}
+            className="flex items-center gap-3 rounded-2xl border p-4 transition-shadow"
+            style={{
+              background: "var(--surface)",
+              borderColor: "var(--border)",
+              boxShadow: "var(--shadow-xs)",
+            }}
+          >
+            <span
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+              style={{
+                background: card.gradient,
+                boxShadow: `0 4px 12px ${card.glow}`,
+              }}
+            >
+              <Icon size={20} strokeWidth={1.9} color="white" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
+                {item.label}
+              </p>
+              <p
+                className="text-[22px] font-black tabular-nums leading-tight"
+                style={{ color: item.alert ? "var(--rose)" : "var(--text)" }}
+              >
+                {item.value}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium text-zinc-500">
-              {t("pos.kpi.active_products")}
-            </p>
-            <p className="text-2xl font-bold text-zinc-950">
-              {formatNumber(totalProducts)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
-            <Boxes size={21} />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-zinc-500">
-              {t("pos.kpi.units_in_stock")}
-            </p>
-            <p className="text-2xl font-bold text-zinc-950">
-              {formatNumber(totalStock)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-            <Layers3 size={21} />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-zinc-500">
-              {t("pos.kpi.stock_value")}
-            </p>
-            <p className="text-2xl font-bold text-zinc-950">
-              {formatCurrency(totalValue)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-rose-100 text-rose-700">
-            <AlertTriangle size={21} />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-zinc-500">
-              {t("pos.kpi.reorder_needed")}
-            </p>
-            <p className="text-2xl font-bold text-zinc-950">
-              {formatNumber(urgentReorderCount)}
-            </p>
-          </div>
-        </div>
-      </div>
+        )
+      })}
     </section>
   )
 }

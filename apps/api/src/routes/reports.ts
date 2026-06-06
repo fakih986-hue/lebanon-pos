@@ -182,8 +182,8 @@ router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerRespon
     const difference = (closingCash ?? 0) - expectedCash
 
     const now = new Date()
-    await prisma.shift.update({
-      where: { id: shift.id },
+    const updateResult = await prisma.shift.updateMany({
+      where: { id: shift.id, status: "Open" },
       data: {
         status: "Closed",
         closedAt: now,
@@ -199,6 +199,11 @@ router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerRespon
         notes: notes ?? undefined,
       },
     })
+
+    if (updateResult.count === 0) {
+      json(res, { error: "Shift already closed" }, 409)
+      return
+    }
 
     json(res, {
       type: "Z",

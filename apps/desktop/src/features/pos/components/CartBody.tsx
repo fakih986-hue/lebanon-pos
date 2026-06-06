@@ -249,29 +249,24 @@ export default function CartBody({
       </div>
 
       {/* Payment method */}
-      <div>
-        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
-          {t("pos.payment_method")}
-        </p>
-        <div className="grid grid-cols-4 gap-1.5">
-          {paymentOptions.map(({ label, icon: Icon, color }) => {
-            const active = paymentMethod === label
-            const colors = paymentColors[color]
-            return (
-              <button
-                key={label}
-                type="button"
-                onClick={() => onSelectPayment(label)}
-                className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 text-[11px] font-bold transition shadow-sm ${
-                  active ? colors.active : colors.inactive
-                }`}
-              >
-                <Icon size={18} />
-                {t("pos.payment." + label.toLowerCase())}
-              </button>
-            )
-          })}
-        </div>
+      <div className="flex items-center gap-1.5">
+        {paymentOptions.map(({ label, icon: Icon, color }) => {
+          const active = paymentMethod === label
+          const colors = paymentColors[color]
+          return (
+            <button
+              key={label}
+              type="button"
+              onClick={() => onSelectPayment(label)}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-1.5 text-[11px] font-bold transition ${
+                active ? colors.active : colors.inactive
+              }`}
+            >
+              <Icon size={13} />
+              {t("pos.payment." + label.toLowerCase())}
+            </button>
+          )
+        })}
       </div>
 
       {/* Discount */}
@@ -424,27 +419,51 @@ export default function CartBody({
           )}
 
           {cashTenderValid && paidTotalUsd > 0 && (
-            <div className="rounded-lg p-3 space-y-1.5" style={{ background: "rgba(255,255,255,0.5)" }}>
-              <div className="flex justify-between text-[12px]" style={{ color: "var(--brand-text)" }}>
-                <span>{t("pos.paid_total")}</span>
-                <span className="font-bold">{formatCurrency(paidTotalUsd)} / {formatLbpCurrency(paidTotalLbp)}</span>
+            <div
+              className="rounded-xl p-3 space-y-2"
+              style={{ background: "var(--brand-soft)", border: "1px solid var(--brand-border)" }}
+            >
+              {/* Paid total row */}
+              <div className="flex items-center justify-between text-[12px]" style={{ color: "var(--brand-text)" }}>
+                <span className="font-semibold">{t("pos.paid_total")}</span>
+                <span className="font-bold tabular-nums">
+                  {formatCurrency(paidTotalUsd)}
+                  <span className="mx-1 opacity-40">/</span>
+                  {formatLbpCurrency(paidTotalLbp)}
+                </span>
               </div>
-              <div className="flex justify-between items-center border-t pt-2" style={{ borderColor: "var(--brand-border)" }}>
-                <span className="text-[14px] font-bold" style={{ color: cashChangeUsd > 0 ? "#059669" : "var(--rose)" }}>
+
+              {/* Change / Remaining row */}
+              <div
+                className="flex items-center justify-between rounded-lg px-3 py-2"
+                style={{
+                  background: cashChangeUsd > 0 ? "rgba(16,185,129,0.12)" : "rgba(244,63,94,0.10)",
+                  border: `1px solid ${cashChangeUsd > 0 ? "rgba(16,185,129,0.25)" : "rgba(244,63,94,0.20)"}`,
+                }}
+              >
+                <span
+                  className="text-[13px] font-bold"
+                  style={{ color: cashChangeUsd > 0 ? "var(--green, #10b981)" : "var(--rose)" }}
+                >
                   {cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}
                 </span>
-                <span className="text-[20px] font-black tabular-nums" style={{ color: cashChangeUsd > 0 ? "#059669" : "var(--rose)" }}>
-                  {cashChangeUsd > 0
-                    ? `${formatCurrency(cashChangeUsd)}`
-                    : `${formatCurrency(cashStillDueUsd)}`
-                  }
-                </span>
-              </div>
-              <div className="text-right text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
-                {cashChangeUsd > 0
-                  ? formatLbpCurrency(cashChangeLbp)
-                  : formatLbpCurrency(usdToLbp(cashStillDueUsd, exchangeRate))
-                }
+                <div className="text-right">
+                  <span
+                    className="block tabular-nums leading-none font-black"
+                    style={{
+                      fontSize: cashChangeUsd > 0 ? 22 : 28,
+                      color: cashChangeUsd > 0 ? "var(--green, #10b981)" : "var(--rose)",
+                    }}
+                  >
+                    {cashChangeUsd > 0 ? formatCurrency(cashChangeUsd) : formatCurrency(cashStillDueUsd)}
+                  </span>
+                  <span className="block text-[11px] font-semibold tabular-nums mt-0.5" style={{ color: "var(--text-3)" }}>
+                    {cashChangeUsd > 0
+                      ? formatLbpCurrency(cashChangeLbp)
+                      : formatLbpCurrency(usdToLbp(cashStillDueUsd, exchangeRate))
+                    }
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -503,38 +522,52 @@ export default function CartBody({
       )}
 
       {/* Totals */}
-      <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+      <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+
+        {/* Secondary lines — subtotal, discount, vat */}
+        <div className="space-y-1 mb-2">
+          {hasDiscount && (
+            <>
+              <div className="flex justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
+                <span>{t("pos.items_subtotal")}</span>
+                <span className="tabular-nums">{formatCurrency(grossSubtotal)}</span>
+              </div>
+              <div className="flex justify-between text-[11px]" style={{ color: "var(--brand-text)" }}>
+                <span>{t("pos.discount")}</span>
+                <span className="font-bold tabular-nums">-{formatCurrency(discountTotal)}</span>
+              </div>
+            </>
+          )}
+          <div className="flex justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
+            <span>{t("pos.subtotal")}</span>
+            <span className="tabular-nums">{formatCurrency(subtotal)}</span>
+          </div>
+          <div className="flex justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
+            <span>{t("pos.vat")} {formatVatRate(vatRate)}</span>
+            <span className="tabular-nums">{formatCurrency(tax)}</span>
+          </div>
+        </div>
+
+        {/* THE number — total */}
+        <div className="flex items-end justify-between border-t pt-2.5" style={{ borderColor: "var(--border)" }}>
+          <div>
+            <span className="block text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
+              {t("pos.total_usd")}
+            </span>
+            <span className="block text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>
+              {formatLbpCurrency(totalLbp)}
+            </span>
+          </div>
+          <span className="text-[32px] font-black tabular-nums leading-none" style={{ color: "var(--text)" }}>
+            {formatCurrency(total)}
+          </span>
+        </div>
+
         {hasDiscount && (
-          <>
-            <div className="flex justify-between text-[13px]" style={{ color: "var(--text-3)" }}>
-              <span>{t("pos.items_subtotal")}</span>
-              <span className="font-semibold" style={{ color: "var(--text-2)" }}>{formatCurrency(grossSubtotal)}</span>
-            </div>
-            <div className="flex justify-between text-[13px]" style={{ color: "var(--brand-text)" }}>
-              <span>{t("pos.discount")}</span>
-              <span className="font-bold">-{formatCurrency(discountTotal)}</span>
-            </div>
-            <div className="rounded-lg px-2.5 py-1.5 text-center text-[11px] font-bold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
-              You save {formatCurrency(discountTotal)}
-            </div>
-          </>
+          <div className="mt-2 rounded-lg px-2.5 py-1 text-center text-[10px] font-bold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+            You save {formatCurrency(discountTotal)}
+          </div>
         )}
-        <div className="flex justify-between text-[13px]" style={{ color: "var(--text-3)" }}>
-          <span>{t("pos.subtotal")}</span>
-          <span className="font-semibold" style={{ color: "var(--text-2)" }}>{formatCurrency(subtotal)}</span>
-        </div>
-        <div className="flex justify-between text-[13px]" style={{ color: "var(--text-3)" }}>
-          <span>{t("pos.vat")} {formatVatRate(vatRate)}</span>
-          <span className="font-semibold" style={{ color: "var(--text-2)" }}>{formatCurrency(tax)}</span>
-        </div>
-        <div className="flex justify-between border-t pt-3" style={{ borderColor: "var(--border)" }}>
-          <span className="text-[20px] font-bold" style={{ color: "var(--text)" }}>{t("pos.total_usd")}</span>
-          <span className="text-[28px] font-black tabular-nums leading-none" style={{ color: "var(--text)" }}>{formatCurrency(total)}</span>
-        </div>
-        <div className="flex justify-between text-[12px]" style={{ color: "var(--text-3)" }}>
-          <span>{t("pos.total_lbp")}</span>
-          <span className="font-semibold">{formatLbpCurrency(totalLbp)}</span>
-        </div>
       </div>
 
       {/* Checkout button */}

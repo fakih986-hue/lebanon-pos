@@ -30,6 +30,9 @@ function isOriginAllowed(origin: string | undefined): boolean {
 
   // No origin = server-side / same-origin request — allow
   if (!origin) return true
+  // Allow localhost / private LAN origins (same regex as HTTP CORS middleware)
+  const lanRegex = /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/
+  if (lanRegex.test(origin)) return true
   // No allowlist configured — deny all cross-origin WS connections
   if (allowedOrigins.length === 0) return false
   return allowedOrigins.includes(origin)

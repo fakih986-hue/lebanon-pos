@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { AlertTriangle, Cloud, CloudOff, RotateCw, X } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
@@ -12,13 +12,29 @@ import {
   type SyncStatus as RegisterSyncStatus,
 } from "../../features/pos/services/sync.service"
 
+type RejectedToast = { entity: string; error: string }
+
 export default function SyncStatus() {
   const { t } = useI18n()
   const [status, setStatus] = useState<RegisterSyncStatus>(getSyncStatus())
   const [open, setOpen] = useState(false)
+  const [toast, setToast] = useState<RejectedToast | null>(null)
+  const toastTimer = useRef<number>(undefined)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => subscribeSync(() => setStatus(getSyncStatus())), [])
+
+  useEffect(() => {
+    function onRejected(e: Event) {
+      const op = (e as CustomEvent).detail
+      setToast({ entity: op.entity, error: op.error ?? "Sync rejected" })
+      clearTimeout(toastTimer.current)
+      toastTimer.current = window.setTimeout(() => setToast(null), 6000)
+      setStatus(getSyncStatus())
+    }
+    window.addEventListener("sync:operation-rejected", onRejected)
+    return () => window.removeEventListener("sync:operation-rejected", onRejected)
+  }, [])
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -38,7 +54,6 @@ export default function SyncStatus() {
   const pendingWork = status.pending + status.failed
   const hasDead = status.dead > 0
 
-  // Determine pill appearance + label
   let pillStyle: React.CSSProperties
   let label: string
   let Icon = Cloud
@@ -63,6 +78,24 @@ export default function SyncStatus() {
 
   return (
     <div className="relative hidden lg:block" ref={ref}>
+      {toast && (
+        <div
+          className="fixed left-1/2 top-4 z-[999] -translate-x-1/2 animate-slide-down rounded-xl border px-4 py-3 shadow-xl"
+          style={{ background: "var(--rose-soft)", borderColor: "rgba(244,63,94,0.3)", maxWidth: "420px" }}
+        >
+          <div className="flex items-start gap-2">
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" style={{ color: "var(--rose-text)" }} />
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold" style={{ color: "var(--rose-text)" }}>Sync error — {toast.entity}</p>
+              <p className="text-[12px] mt-0.5 leading-snug" style={{ color: "var(--rose-text)", opacity: 0.85 }}>{toast.error}</p>
+            </div>
+            <button onClick={() => setToast(null)} className="shrink-0" style={{ color: "var(--rose-text)" }}>
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -83,7 +116,6 @@ export default function SyncStatus() {
             <button onClick={() => setOpen(false)} style={{ color: "var(--text-3)" }}><X size={15} /></button>
           </div>
 
-          {/* Connection */}
           <div className="flex items-center gap-2 mb-3">
             <span className={`h-2 w-2 rounded-full ${status.online ? "bg-emerald-500" : "bg-rose-500"}`} />
             <span className="text-[13px]" style={{ color: "var(--text-2)" }}>
@@ -91,7 +123,6 @@ export default function SyncStatus() {
             </span>
           </div>
 
-          {/* Counts */}
           <div className="grid grid-cols-3 gap-2 mb-3">
             {[
               { label: "Pending", value: status.pending, color: "var(--amber-text)" },
@@ -105,7 +136,6 @@ export default function SyncStatus() {
             ))}
           </div>
 
-          {/* Errors */}
           {status.recentErrors.length > 0 && (
             <div className="mb-3 rounded-lg p-2.5" style={{ background: "var(--rose-soft)" }}>
               <p className="text-[11px] font-bold mb-1" style={{ color: "var(--rose-text)" }}>Recent errors</p>
@@ -121,7 +151,6 @@ export default function SyncStatus() {
             </p>
           )}
 
-          {/* Actions */}
           <div className="flex gap-2">
             <button
               type="button"

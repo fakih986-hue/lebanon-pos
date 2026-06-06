@@ -346,8 +346,7 @@ export async function unlockWithPin(pin: string) {
   const pinHash = await hashPin(cleanPin)
   const users = getUsers()
 
-  // Collect every active user whose PIN matches, then prefer the highest-privilege role
-  // (handles seeded accounts that all share the same PIN, e.g. 0000).
+  // Collect every active user whose PIN matches, then prefer the highest-privilege role.
   const rolePriority: Record<string, number> = { Admin: 4, Manager: 3, Cashier: 2, Driver: 1 }
   const matches = users.filter(
     (staffUser) =>

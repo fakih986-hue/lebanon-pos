@@ -35,7 +35,7 @@ export default function WorkspaceTabs<T extends string>({ tabs, active, onChange
                 ? "text-white"
                 : "text-[var(--text-2)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"
             )}
-            style={selected ? { background: "var(--brand)", boxShadow: "0 10px 18px rgba(4,120,87,0.18)" } : undefined}
+            style={selected ? { background: "var(--brand)", boxShadow: "0 4px 14px var(--brand-soft)" } : undefined}
           >
             {tab.icon}
             {tab.label}

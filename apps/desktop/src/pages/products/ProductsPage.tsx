@@ -638,67 +638,51 @@ export default function ProductsPage() {
       />
 
       {activeProductView === "Lots" ? (
-      <section className="mt-5 rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className="mt-5 overflow-hidden rounded-2xl border" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+        <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: "var(--border)" }}>
           <div>
-            <h2 className="text-xl font-bold text-zinc-950">
-              Batch / lot inventory
-            </h2>
-            <p className="text-sm text-zinc-500">
-              Stock is tracked by received lot, cost, expiry, and remaining quantity.
+            <h2 className="text-[16px] font-black" style={{ color: "var(--text)" }}>Batch / Lot Inventory</h2>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>
+              Stock tracked by received lot, cost, expiry and remaining quantity.
             </p>
           </div>
-          <span className="rounded-lg bg-zinc-100 px-3 py-2 text-sm font-bold text-zinc-700">
+          <span className="rounded-xl px-3 py-1.5 text-[12px] font-bold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)", border: "1px solid var(--brand-border)" }}>
             {formatNumber(openBatches.length)} open lots
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full border-separate border-spacing-0 text-sm">
+          <table className="min-w-full border-separate border-spacing-0 text-[13px]">
             <thead>
-              <tr className="text-start text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
-                <th className="border-b border-zinc-200 px-4 py-3">Lot</th>
-                <th className="border-b border-zinc-200 px-4 py-3">Product</th>
-                <th className="border-b border-zinc-200 px-4 py-3">Supplier</th>
-                <th className="border-b border-zinc-200 px-4 py-3 text-end">Qty</th>
-                <th className="border-b border-zinc-200 px-4 py-3 text-end">Cost</th>
-                <th className="border-b border-zinc-200 px-4 py-3">Expiry</th>
+              <tr>
+                {["Lot", "Product", "Supplier", "Qty", "Cost", "Expiry"].map((h, i) => (
+                  <th key={h} className="border-b px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.14em]"
+                    style={{ borderColor: "var(--border)", color: "var(--text-3)", textAlign: i >= 3 && i <= 4 ? "right" : "left" }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {openBatches.slice(0, 12).map((batch) => (
-                <tr key={batch.id} className="hover:bg-zinc-50">
-                  <td className="border-b border-zinc-100 px-4 py-4 font-bold text-zinc-950">
-                    {batch.batchNumber}
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-zinc-700">
-                    {batch.productName}
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
-                    {batch.supplierName ?? "-"}
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-end font-bold text-zinc-950">
-                    {formatNumber(batch.quantityRemaining)}
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-end text-zinc-700">
-                    {formatCurrency(batch.unitCost)}
-                  </td>
-                  <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
-                    {batch.expiryDate ? formatDate(batch.expiryDate) : "-"}
+                <tr key={batch.id} className="transition-colors hover:bg-[var(--surface-hover)]">
+                  <td className="border-b px-4 py-3 font-bold tabular-nums" style={{ borderColor: "var(--border)", color: "var(--brand)" }}>{batch.batchNumber}</td>
+                  <td className="border-b px-4 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{batch.productName}</td>
+                  <td className="border-b px-4 py-3" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{batch.supplierName ?? "—"}</td>
+                  <td className="border-b px-4 py-3 text-right font-black tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{formatNumber(batch.quantityRemaining)}</td>
+                  <td className="border-b px-4 py-3 text-right tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{formatCurrency(batch.unitCost)}</td>
+                  <td className="border-b px-4 py-3" style={{ borderColor: "var(--border)", color: batch.expiryDate ? "var(--text-2)" : "var(--text-3)" }}>
+                    {batch.expiryDate ? formatDate(batch.expiryDate) : "—"}
                   </td>
                 </tr>
               ))}
-
-              {openBatches.length === 0 ? (
+              {openBatches.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-10 text-center text-sm font-medium text-zinc-500"
-                  >
-                    New receiving batches will appear here.
+                  <td colSpan={6} className="px-4 py-12 text-center text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
+                    Receiving batches will appear here.
                   </td>
                 </tr>
-              ) : null}
+              )}
             </tbody>
           </table>
         </div>
@@ -782,17 +766,17 @@ export default function ProductsPage() {
       />
 
       {selectedProduct && !selectedProduct.parentId ? (
-      <section className="mt-5 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+      <section className="mt-5 rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <label className="flex cursor-pointer items-start gap-3">
           <input
             type="checkbox"
             checked={isParent}
             onChange={(event) => setIsParent(event.target.checked)}
-            className="mt-0.5 h-5 w-5 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950"
+            className="mt-0.5 h-5 w-5 rounded"
           />
           <div>
-            <span className="font-bold text-zinc-950">This product has variants</span>
-            <p className="text-sm text-zinc-500">
+            <span className="text-[14px] font-bold" style={{ color: "var(--text)" }}>This product has variants</span>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>
               Enable to add versions like different sizes, colours, or flavours.
             </p>
           </div>
@@ -801,63 +785,55 @@ export default function ProductsPage() {
       ) : null}
 
       {selectedProduct?.parentId ? (
-      <section className="mt-5 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-lg font-bold text-zinc-950">Variant settings</h3>
-        <label className="block text-sm font-bold text-zinc-700">
-          Variant name
+      <section className="mt-5 rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+        <h3 className="mb-3 text-[14px] font-black" style={{ color: "var(--text)" }}>Variant settings</h3>
+        <label className="block">
+          <span className="block text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-3)" }}>Variant name</span>
           <input
             value={variantName}
             onChange={(event) => setVariantName(event.target.value)}
             placeholder="e.g. Small, Red, 1L"
-            className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+            className="input w-full"
           />
         </label>
-        <p className="mt-1 text-xs text-zinc-500">
-          Save the product setup to apply the variant name change.
+        <p className="mt-1.5 text-[11px]" style={{ color: "var(--text-3)" }}>
+          Save product setup to apply the change.
         </p>
       </section>
       ) : null}
 
       {(isParent || selectedProduct?.isParent) && selectedProduct ? (
-      <section className="mt-5 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-        <h3 className="mb-3 text-lg font-bold text-zinc-950">Variants</h3>
+      <section className="mt-5 overflow-hidden rounded-2xl border" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+        <div className="border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
+          <h3 className="text-[14px] font-black" style={{ color: "var(--text)" }}>Variants</h3>
+        </div>
 
         {parentVariants.length > 0 ? (
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
+          <table className="min-w-full text-[13px]">
             <thead>
-              <tr className="text-start text-xs font-bold uppercase text-zinc-500">
-                <th className="border-b border-zinc-200 px-3 py-2">Name</th>
-                <th className="border-b border-zinc-200 px-3 py-2 text-end">Price</th>
-                <th className="border-b border-zinc-200 px-3 py-2 text-end">Stock</th>
-                <th className="border-b border-zinc-200 px-3 py-2">Barcode</th>
-                <th className="border-b border-zinc-200 px-3 py-2">
-                  <span className="sr-only">Remove</span>
-                </th>
+              <tr>
+                {["Name","Price","Stock","Barcode",""].map((h) => (
+                  <th key={h} className="border-b px-4 py-2.5 text-left text-[10px] font-black uppercase tracking-wide"
+                    style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
               {parentVariants.map((variant) => (
-                <tr key={variant.id} className="hover:bg-zinc-50">
-                  <td className="border-b border-zinc-100 px-3 py-2 font-medium text-zinc-950">
-                    {variant.variantName}
-                  </td>
-                  <td className="border-b border-zinc-100 px-3 py-2 text-end text-zinc-800">
-                    {formatCurrency(variant.price)}
-                  </td>
-                  <td className="border-b border-zinc-100 px-3 py-2 text-end text-zinc-800">
-                    {formatNumber(variant.stock)}
-                  </td>
-                  <td className="border-b border-zinc-100 px-3 py-2 text-zinc-600">
-                    {variant.barcode}
-                  </td>
-                  <td className="border-b border-zinc-100 px-3 py-2">
-                    <button
-                      onClick={() => setDeleteVariantId(variant.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                      aria-label={`Remove ${variant.variantName}`}
-                    >
-                      <X size={14} />
+                <tr key={variant.id} className="hover:bg-[var(--surface-hover)] transition-colors">
+                  <td className="border-b px-4 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{variant.variantName}</td>
+                  <td className="border-b px-4 py-3 tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{formatCurrency(variant.price)}</td>
+                  <td className="border-b px-4 py-3 tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{formatNumber(variant.stock)}</td>
+                  <td className="border-b px-4 py-3 font-mono text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{variant.barcode}</td>
+                  <td className="border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
+                    <button onClick={() => setDeleteVariantId(variant.id)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
+                      style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--rose)"; e.currentTarget.style.borderColor = "var(--rose)" }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-3)"; e.currentTarget.style.borderColor = "var(--border)" }}
+                      aria-label={`Remove ${variant.variantName}`}>
+                      <X size={13} />
                     </button>
                   </td>
                 </tr>
@@ -866,48 +842,23 @@ export default function ProductsPage() {
           </table>
         </div>
         ) : (
-        <p className="text-sm text-zinc-500">No variants yet. Add one below.</p>
+        <p className="px-4 py-6 text-[13px]" style={{ color: "var(--text-3)" }}>No variants yet. Add one below.</p>
         )}
 
-        <div className="mt-4 border-t border-zinc-200 pt-4">
-          <h4 className="mb-3 text-sm font-bold text-zinc-700">Add variant</h4>
-          <div className="grid gap-3 sm:grid-cols-4">
-            <input
-              value={newVariantName}
-              onChange={(event) => setNewVariantName(event.target.value)}
-              placeholder="Variant name"
-              className="h-11 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-            />
-            <input
-              type="number"
-              min="0"
-              value={newVariantPrice}
-              onChange={(event) => setNewVariantPrice(event.target.value)}
-              placeholder="Price"
-              className="h-11 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-            />
-            <input
-              type="number"
-              min="0"
-              value={newVariantStock}
-              onChange={(event) => setNewVariantStock(event.target.value)}
-              placeholder="Stock"
-              className="h-11 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-            />
+        <div className="border-t p-4" style={{ borderColor: "var(--border)" }}>
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Add variant</p>
+          <div className="grid gap-2 sm:grid-cols-4">
+            <input value={newVariantName} onChange={(e) => setNewVariantName(e.target.value)}
+              placeholder="Variant name" className="input" />
+            <input type="number" min="0" value={newVariantPrice} onChange={(e) => setNewVariantPrice(e.target.value)}
+              placeholder="Price" className="input" />
+            <input type="number" min="0" value={newVariantStock} onChange={(e) => setNewVariantStock(e.target.value)}
+              placeholder="Stock" className="input" />
             <div className="flex gap-2">
-              <input
-                value={newVariantBarcode}
-                onChange={(event) => setNewVariantBarcode(event.target.value)}
-                placeholder="Barcode"
-                className="h-11 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              />
-              <button
-                type="button"
-                onClick={addVariant}
-                className="flex h-11 items-center gap-2 rounded-lg bg-zinc-950 px-4 text-sm font-bold text-white transition hover:bg-zinc-800"
-              >
-                <Plus size={16} />
-                Add
+              <input value={newVariantBarcode} onChange={(e) => setNewVariantBarcode(e.target.value)}
+                placeholder="Barcode" className="input flex-1" />
+              <button type="button" onClick={addVariant} className="btn btn-primary gap-1.5 px-3">
+                <Plus size={14} /> Add
               </button>
             </div>
           </div>
@@ -928,53 +879,44 @@ export default function ProductsPage() {
       {activeProductView === "Catalog" ? (
       <>
       {bulkEditOpen && (
-        <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
-          <h3 className="mb-3 text-sm font-bold text-indigo-900">Bulk Price Edit</h3>
-          <div className="flex flex-wrap gap-3">
-            <select value={bulkEditCategory} onChange={(e) => setBulkEditCategory(e.target.value)}
-              className="h-10 rounded-lg border border-indigo-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none">
+        <div className="mb-4 rounded-2xl border p-4" style={{ background: "var(--blue-soft)", border: "1px solid var(--brand-border)" }}>
+          <h3 className="mb-3 text-[13px] font-black" style={{ color: "var(--text)" }}>Bulk Price Edit</h3>
+          <div className="flex flex-wrap gap-2">
+            <select value={bulkEditCategory} onChange={(e) => setBulkEditCategory(e.target.value)} className="input h-9 text-[13px]">
               <option value="All">All Categories</option>
               {categories.filter((c) => c !== "All").map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            <select value={bulkEditField} onChange={(e) => setBulkEditField(e.target.value as "price" | "cost")}
-              className="h-10 rounded-lg border border-indigo-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none">
+            <select value={bulkEditField} onChange={(e) => setBulkEditField(e.target.value as "price" | "cost")} className="input h-9 text-[13px]">
               <option value="price">Price</option>
               <option value="cost">Cost</option>
             </select>
-            <select value={bulkEditMode} onChange={(e) => setBulkEditMode(e.target.value as "percent" | "fixed")}
-              className="h-10 rounded-lg border border-indigo-200 bg-white px-3 text-sm font-semibold text-zinc-800 outline-none">
+            <select value={bulkEditMode} onChange={(e) => setBulkEditMode(e.target.value as "percent" | "fixed")} className="input h-9 text-[13px]">
               <option value="percent">% change</option>
               <option value="fixed">Fixed ± $</option>
             </select>
             <input type="number" value={bulkEditValue} onChange={(e) => setBulkEditValue(e.target.value)}
               placeholder={bulkEditMode === "percent" ? "e.g. 10 = +10%" : "e.g. 0.50"}
-              className="h-10 w-32 rounded-lg border border-indigo-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-200" />
-            <button type="button" onClick={applyBulkPriceEdit}
-              className="h-10 rounded-lg bg-indigo-700 px-4 text-sm font-bold text-white transition hover:bg-indigo-600">
-              Apply
-            </button>
-            <button type="button" onClick={() => setBulkEditOpen(false)}
-              className="h-10 rounded-lg border border-zinc-200 bg-white px-4 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50">
-              Cancel
-            </button>
+              className="input h-9 w-32 text-[13px]" />
+            <button type="button" onClick={applyBulkPriceEdit} className="btn btn-primary h-9 px-4 text-[13px]">Apply</button>
+            <button type="button" onClick={() => setBulkEditOpen(false)} className="btn btn-default h-9 px-4 text-[13px]">Cancel</button>
           </div>
-          <p className="mt-2 text-xs text-indigo-700">
-            Affects {products.filter((p) => !p.isParent && (bulkEditCategory === "All" || p.category === bulkEditCategory)).length} products. Changes are applied immediately.
+          <p className="mt-2 text-[11px]" style={{ color: "var(--text-3)" }}>
+            Affects {products.filter((p) => !p.isParent && (bulkEditCategory === "All" || p.category === bulkEditCategory)).length} products. Applied immediately.
           </p>
         </div>
       )}
       {!bulkEditOpen && (
         <div className="mb-3 flex items-center justify-end gap-2">
           {genImageStatus && (
-            <span className="mr-auto text-xs text-zinc-500">{genImageStatus}</span>
+            <span className="mr-auto text-[11px]" style={{ color: "var(--text-3)" }}>{genImageStatus}</span>
           )}
           <button type="button" onClick={generateProductImages} disabled={generatingImages}
-            className="flex h-9 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50">
-            <ImagePlus size={14} />
-            {generatingImages ? "Generating..." : "Generate Images"}
+            className="btn btn-default h-9 gap-1.5 text-[12px] disabled:opacity-50">
+            <ImagePlus size={13} />
+            {generatingImages ? "Generating…" : "Generate Images"}
           </button>
           <button type="button" onClick={() => setBulkEditOpen(true)}
-            className="flex h-9 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50">
+            className="btn btn-default h-9 gap-1.5 text-[12px]">
             ± Bulk Edit Prices
           </button>
         </div>

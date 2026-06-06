@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "electron dist/main.js",
-    "build:spa": "pnpm --prefix ../../apps/desktop build && pnpm --prefix ../../apps/api bundle",
+    "make-icons": "node make-icons.mjs",
+    "build:spa": "pnpm --prefix ../../apps/desktop build && node copy-desktop-spa.mjs && pnpm --prefix ../../apps/api bundle",
     "package": "npm run build:spa && npm run build && electron-builder --win",
     "package:dir": "npm run build:spa && npm run build && electron-builder --win --dir"
   },
@@ -17,11 +18,11 @@
     "typescript": "~6.0.3"
   },
   "build": {
-    "appId": "com.lebtech.lebanonpos",
-    "productName": "Lebanon POS",
-    "copyright": "Copyright © 2026 LebTech",
+    "appId": "com.titan.pos",
+    "productName": "Titan POS",
+    "copyright": "Copyright © 2026 Titan Powerful Systems",
     "directories": {
-      "output": "dist-v6"
+      "output": "dist-v7"
     },
     "files": [
       "dist/**/*",
@@ -31,16 +32,20 @@
     "extraResources": [
       {
         "from": "../../apps/api/bundle",
-        "to":   "api",
-        "filter": ["**/*", "!**/node_modules/**", "!**/.pnpm/**"]
+        "to": "api",
+        "filter": [
+          "**/*",
+          "!**/node_modules/**",
+          "!**/.pnpm/**"
+        ]
       },
       {
         "from": "../../apps/api/node_modules/@prisma/client",
-        "to":   "api/node_modules/@prisma/client"
+        "to": "api/node_modules/@prisma/client"
       },
       {
         "from": "assets/pg",
-        "to":   "pg"
+        "to": "pg"
       }
     ],
     "publish": {
@@ -70,7 +75,10 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Lebanon POS"
+      "shortcutName": "Titan POS",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico"
     },
     "mac": {
       "target": "dmg",

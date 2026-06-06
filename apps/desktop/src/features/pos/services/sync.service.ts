@@ -26,19 +26,44 @@ function backoffMs(attempts: number): number {
   return Math.min(Math.pow(2, attempts) * 1000, 5 * 60 * 1000)
 }
 
+let _reachCached: boolean | undefined
+let _reachCachedAt = 0
+let _reachInflight: Promise<boolean> | null = null
+const REACH_CACHE_TTL_MS = 30_000
+
+/**
+ * Invalidate the health-check cache so the next call re-pings the server.
+ * Call this when a WebSocket message is received or the browser goes online.
+ */
+export function invalidateHealthCache(): void {
+  _reachCachedAt = 0
+}
+
 /**
  * Real connectivity check — navigator.onLine returns true even when the server
  * is unreachable. This probes the actual API health endpoint instead.
+ * Cached for REACH_CACHE_TTL_MS to avoid hammering /api/health on every cycle.
  */
 async function isServerReachable(): Promise<boolean> {
+  const now = Date.now()
+  if (_reachCached !== undefined && now - _reachCachedAt < REACH_CACHE_TTL_MS) {
+    return _reachCached
+  }
+  if (_reachInflight) return _reachInflight
   const apiUrl = getApiUrl()
   if (!apiUrl) return false
-  try {
-    const res = await fetch(`${apiUrl}/api/health`, { method: "HEAD", cache: "no-store" })
-    return res.ok
-  } catch {
-    return false
-  }
+  _reachInflight = (async () => {
+    try {
+      const res = await fetch(`${apiUrl}/api/health`, { method: "HEAD", cache: "no-store" })
+      _reachCached = res.ok
+    } catch {
+      _reachCached = false
+    }
+    _reachCachedAt = Date.now()
+    _reachInflight = null
+    return _reachCached
+  })()
+  return _reachInflight
 }
 
 const PULL_TARGETS: Record<string, { key: string; event: string }> = {
@@ -61,6 +86,29 @@ const PULL_TARGETS: Record<string, { key: string; event: string }> = {
   stockCounts:      { key: "lebanonpos.stock-counts.v1",          event: "lebanonpos-stock-counts-changed" },
   dailyCloses:      { key: "lebanonpos.daily-closes.v1",          event: "lebanonpos-daily-closes-changed" },
   deliveryOrders:   { key: "lebanonpos.delivery-orders.v1",       event: "lebanonpos-delivery-changed" },
+}
+
+const DELETE_TARGETS: Record<string, Array<{ key: string; event: string }>> = {
+  product:          [PULL_TARGETS.products],
+  sale:             [PULL_TARGETS.sales],
+  refund:           [PULL_TARGETS.refunds],
+  customer:         [PULL_TARGETS.customers],
+  debt:             [PULL_TARGETS.debtSales, PULL_TARGETS.debtPayments],
+  expense:          [PULL_TARGETS.expenses],
+  "daily-close":    [PULL_TARGETS.dailyCloses],
+  supplier:         [PULL_TARGETS.suppliers],
+  "purchase-order": [PULL_TARGETS.purchaseOrders],
+  "supplier-payment": [PULL_TARGETS.supplierPayments],
+  staff:            [PULL_TARGETS.users],
+  shift:            [PULL_TARGETS.shifts],
+  inventory:        [PULL_TARGETS.batches, PULL_TARGETS.adjustments, PULL_TARGETS.stockCounts],
+  "delivery-order": [PULL_TARGETS.deliveryOrders],
+}
+
+type PulledDeletion = {
+  entity?: string
+  id?: string | number
+  saleNumber?: string
 }
 
 export function getApiUrl(): string | null {
@@ -120,7 +168,7 @@ export function rememberStore(store: KnownStore) {
  * Wipe all store DATA from this device (keeps the known-stores list).
  * Used when switching stores so store B's data never mixes with store A's.
  */
-export function clearStoreData() {
+export async function clearStoreData() {
   for (const { key } of Object.values(PULL_TARGETS)) {
     localStorage.removeItem(key)
   }
@@ -131,7 +179,7 @@ export function clearStoreData() {
   localStorage.removeItem("lebanonpos.current-user.v1")
   localStorage.removeItem("lebanonpos.held-sales.v1")
   // Also clear IndexedDB to prevent stale data accumulation across stores
-  clearIndexedDB().catch((e) => console.error("[sync] clearIndexedDB failed:", e))
+  try { await clearIndexedDB() } catch (e) { console.error("[sync] clearIndexedDB failed:", e) }
 }
 
 // ── Suspension enforcement ──────────────────────────────────────────
@@ -193,12 +241,13 @@ export type SyncEntity =
   | "sale" | "refund" | "product" | "customer" | "debt"
   | "expense" | "daily-close" | "supplier" | "purchase-order"
   | "supplier-payment" | "staff" | "shift" | "inventory" | "settings"
+  | "delivery-order" | "held-sale"
 
 export type SyncAction =
   | "create" | "update" | "delete" | "receive"
   | "payment" | "close" | "open" | "adjust" | "count" | "void"
 
-export type SyncOperationStatus = "Pending" | "Synced" | "Failed"
+export type SyncOperationStatus = "Pending" | "Synced" | "Failed" | "Rejected"
 
 export type SyncOperation = {
   id: string
@@ -233,8 +282,37 @@ function dispatchSyncChanged() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(SYNC_EVENT))
 }
 
+function dispatchOperationRejected(op: SyncOperation) {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("sync:operation-rejected", { detail: op }))
+  }
+}
+
 function isBrowserOnline() {
   return typeof navigator === "undefined" ? true : navigator.onLine
+}
+
+/**
+ * Try to refresh the JWT token via the hub's auto-login endpoint.
+ * Only works on the hub machine (localhost). Returns true on success.
+ */
+async function tryRefreshHubToken(): Promise<boolean> {
+  const apiUrl = getApiUrl()
+  if (!apiUrl) return false
+  try {
+    const hostname = new URL(apiUrl).hostname
+    if (hostname !== "localhost" && hostname !== "127.0.0.1" && hostname !== "::1") {
+      return false // LAN clients can't auto-login
+    }
+    const res = await fetch(`${apiUrl}/api/setup/auto-login`, { method: "POST" })
+    if (!res.ok) return false
+    const { token } = await res.json()
+    if (!token) return false
+    setAuthToken(token)
+    return true
+  } catch {
+    return false
+  }
 }
 
 function readQueue(): SyncOperation[] {
@@ -254,7 +332,11 @@ function writeQueue(queue: SyncOperation[]) {
   const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
 
   // Separate pending/failed (must keep) from synced (purgeable)
-  const active  = queue.filter((op) => op.status !== "Synced")
+  const retryable = queue.filter((op) => op.status !== "Synced" && op.attempts < MAX_ATTEMPTS)
+  const dead = queue
+    .filter((op) => op.status !== "Synced" && op.attempts >= MAX_ATTEMPTS)
+    .slice(0, 100)
+  const active  = [...retryable, ...dead]
   const synced  = queue
     .filter((op) => op.status === "Synced" && new Date(op.createdAt).getTime() >= cutoff)
     .slice(0, Math.max(0, 300 - active.length))   // fill remaining budget with recent synced
@@ -262,7 +344,11 @@ function writeQueue(queue: SyncOperation[]) {
   // Active ops always survive; synced ops fill the rest — new ops are NEVER silently dropped
   const trimmed = [...active, ...synced]
 
-  window.localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(trimmed))
+  try {
+    window.localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(trimmed))
+  } catch (e) {
+    console.error("[sync] failed to persist sync queue:", e)
+  }
   putMany("sync-queue", trimmed).catch((e) => console.error("[sync] sync-queue write failed:", e))
   dispatchSyncChanged()
 }
@@ -274,6 +360,48 @@ function readLastSyncedAt() {
 
 function writeLastSyncedAt(value: string) {
   if (canUseStorage()) window.localStorage.setItem(LAST_SYNC_KEY, value)
+}
+
+function matchesDeletion(item: unknown, deletion: PulledDeletion): boolean {
+  if (!item || typeof item !== "object") return false
+  const record = item as Record<string, unknown>
+  const id = deletion.id
+  const saleNumber = deletion.saleNumber
+  return (
+    (id !== undefined && String(record.id) === String(id)) ||
+    (saleNumber !== undefined && String(record.saleNumber) === String(saleNumber))
+  )
+}
+
+function applyPulledDeletions(deletions: PulledDeletion[]) {
+  if (!canUseStorage() || deletions.length === 0) return
+
+  const changedEvents = new Set<string>()
+
+  for (const deletion of deletions) {
+    if (!deletion.entity || (deletion.id === undefined && deletion.saleNumber === undefined)) continue
+
+    for (const target of DELETE_TARGETS[deletion.entity] ?? []) {
+      const raw = window.localStorage.getItem(target.key)
+      if (!raw) continue
+
+      try {
+        const local = JSON.parse(raw)
+        if (!Array.isArray(local)) continue
+        const next = local.filter((item) => !matchesDeletion(item, deletion))
+        if (next.length === local.length) continue
+
+        writeLocalWithIndexedDB(target.key, next)
+        changedEvents.add(target.event)
+      } catch {
+        // Ignore malformed local storage; the next full pull can repair it.
+      }
+    }
+  }
+
+  for (const event of changedEvents) {
+    window.dispatchEvent(new Event(event))
+  }
 }
 
 function scheduleAutoFlush() {
@@ -294,7 +422,7 @@ export function getSyncStatus(): SyncStatus {
   for (const op of queue) {
     if (op.status === "Synced") {
       synced++
-    } else if (op.attempts >= MAX_ATTEMPTS) {
+    } else if (op.status === "Rejected" || op.attempts >= MAX_ATTEMPTS) {
       dead++
       if (op.error && recentErrors.length < 3) recentErrors.push(`${op.entity}: ${op.error}`)
     } else if (op.status === "Pending") {
@@ -344,10 +472,20 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
         signal: AbortSignal.timeout(5_000),
       })
       if (response.ok) {
-        // Mark as synced locally — hub processed it
-        writeQueue(getSyncQueue().map((op) => op.id === operation.id ? { ...op, status: "Synced" as const } : op))
-        dispatchSyncChanged()
-        return operation
+        const body = await response.json().catch(() => ({ results: [] as any[] }))
+        const result = body.results?.find((r: { id: string }) => r.id === operation.id)
+        if (result?.status === "rejected") {
+          const rejected = { ...operation, status: "Rejected" as const, attempts: 5, lastAttemptAt: new Date().toISOString(), error: result.error ?? "Rejected by server" }
+          writeQueue(getSyncQueue().map((op) => op.id === operation.id ? rejected : op))
+          dispatchOperationRejected(rejected)
+          dispatchSyncChanged()
+          return operation
+        }
+        if (!result || result.status === "ok") {
+          writeQueue(getSyncQueue().map((op) => op.id === operation.id ? { ...op, status: "Synced" as const } : op))
+          dispatchSyncChanged()
+          return operation
+        }
       }
     } catch {
       // Hub unreachable — stays in local queue for background retry
@@ -380,11 +518,16 @@ async function _flushSyncQueue() {
     return { synced: 0, skipped: queue.filter((op) => op.status === "Pending").length }
   }
 
+  if (!(await isServerReachable())) {
+    dispatchSyncChanged()
+    return { synced: 0, skipped: queue.filter((op) => op.status !== "Synced" && op.attempts < MAX_ATTEMPTS).length }
+  }
+
   // Only try operations that are Pending/Failed, haven't exceeded max attempts,
-  // AND whose backoff window has elapsed
+  // AND whose backoff window has elapsed. Rejected ops are never retried.
   const now = Date.now()
   const pending = queue.filter((op) => {
-    if (op.status === "Synced") return false
+    if (op.status === "Synced" || op.status === "Rejected") return false
     if (op.attempts >= MAX_ATTEMPTS) return false
     if (op.status === "Failed" && op.lastAttemptAt) {
       const elapsed = now - new Date(op.lastAttemptAt).getTime()
@@ -397,6 +540,10 @@ async function _flushSyncQueue() {
     dispatchSyncChanged()
     return { synced: 0, skipped: 0 }
   }
+
+  // Send oldest-first so dependent operations (e.g., product created before
+  // a sale referencing it) are processed in the correct order by the API.
+  pending.reverse()
 
   try {
     const response = await fetch(`${apiUrl}/api/sync/push`, {
@@ -416,8 +563,13 @@ async function _flushSyncQueue() {
     })
 
     if (!response.ok) {
-      // If 401 — token expired, mark all pending as failed so we don't retry endlessly
+      // If 401 — token expired
       if (response.status === 401) {
+        // On the hub (localhost), try to refresh the token via auto-login
+        if (await tryRefreshHubToken()) {
+          // Retry flush with fresh token
+          return await _flushSyncQueue()
+        }
         const nextQueue = queue.map((op) =>
           op.status === "Pending"
             ? { ...op, status: "Failed" as const, attempts: op.attempts + 1, error: "Token expired — re-enter in Settings" }
@@ -441,6 +593,10 @@ async function _flushSyncQueue() {
       if (syncResult?.status === "ok") {
         synced++
         return { ...op, status: "Synced" as const, attempts: op.attempts + 1, lastAttemptAt: now, syncedAt: now, error: undefined }
+      }
+      if (syncResult?.status === "rejected") {
+        dispatchOperationRejected({ ...op, status: "Rejected", attempts: 5, lastAttemptAt: now, error: syncResult.error ?? "Rejected by server" })
+        return { ...op, status: "Rejected" as const, attempts: 5, lastAttemptAt: now, error: syncResult.error ?? "Rejected by server" }
       }
       return { ...op, status: "Failed" as const, attempts: op.attempts + 1, lastAttemptAt: now, error: syncResult?.error ?? "Server error" }
     })
@@ -480,6 +636,49 @@ export async function pullFromServer(full = false) {
   }
 }
 
+// Map PULL_TARGETS keys to API entity paths for per-entity full pull
+const FULL_PULL_ENTITY_MAP: Record<string, string> = {
+  products: "products",
+  sales: "sales",
+  refunds: "refunds",
+  customers: "customers",
+  debtSales: "debt-sales",
+  debtPayments: "debt-payments",
+  suppliers: "suppliers",
+  purchaseOrders: "purchase-orders",
+  supplierPayments: "supplier-payments",
+  batches: "batches",
+  adjustments: "adjustments",
+  stockCounts: "stock-counts",
+  dailyCloses: "daily-closes",
+  deliveryOrders: "delivery-orders",
+  expenses: "expenses",
+  users: "users",
+  shifts: "shifts",
+  auditEvents: "audit-events",
+}
+
+async function pullFullEntity(apiUrl: string, token: string, entityPath: string, target: { key: string; event: string }): Promise<void> {
+  let cursor: string | undefined
+  const all: any[] = []
+  while (true) {
+    const params = new URLSearchParams({ limit: "5000" })
+    if (cursor) params.set("cursor", cursor)
+    const res = await fetch(`${apiUrl}/api/sync/pull/full/${entityPath}?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) throw new Error(`Pull ${entityPath} failed: ${res.status}`)
+    const page = await res.json()
+    const arr = Array.isArray(page.items) ? page.items : []
+    all.push(...arr)
+    if (!page.hasMore) break
+    cursor = page.nextCursor ? String(page.nextCursor) : undefined
+    if (!cursor) break
+  }
+  writeLocalWithIndexedDB(target.key, all)
+  window.dispatchEvent(new Event(target.event))
+}
+
 async function _pullFromServer(full = false) {
   if (isSuspended()) return
 
@@ -488,60 +687,139 @@ async function _pullFromServer(full = false) {
   if (!apiUrl || !token) return
 
   try {
-    const lastSync = full ? undefined : readLastSyncedAt()
-    const url = lastSync
-      ? `${apiUrl}/api/sync/pull?since=${encodeURIComponent(lastSync)}`
-      : `${apiUrl}/api/sync/pull`
-
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-    if (!response.ok) throw new Error(`Sync pull failed: ${response.status}`)
-
-    const data = await response.json()
     const now = new Date().toISOString()
 
-    for (const [key, value] of Object.entries(data)) {
-      const target = PULL_TARGETS[key]
-      if (!target || value === null || value === undefined) continue
-      const arr = Array.isArray(value) ? value : [value]
-      if (!full) {
-        if (arr.length === 0) continue
-        // Collections whose items have no `id` (e.g. settings) cannot be merged —
-        // always do a full replace so server updates are never silently dropped.
-        if ((arr[0] as any)?.id === undefined) {
-          writeLocalWithIndexedDB(target.key, arr)
-          window.dispatchEvent(new Event(target.event))
-          continue
-        }
-        // Merge incremental pull into existing local data by id
-        const raw = window.localStorage.getItem(target.key)
-        if (raw) {
-          try {
-            const local = JSON.parse(raw)
-            if (Array.isArray(local) && local.length > 0) {
-              const merged = local.slice()
-              for (const item of arr) {
-                if (item && typeof item.id !== "undefined") {
-                  const idx = merged.findIndex((e) => e.id === item.id)
-                  if (idx >= 0) merged[idx] = item
-                  else merged.push(item)
-                }
-              }
-              writeLocalWithIndexedDB(target.key, merged)
-              window.dispatchEvent(new Event(target.event))
-              continue
-            }
-          } catch { /* fall through to write directly */ }
+    if (full) {
+      // Per-entity full pull — paginate across every entity independently
+      for (const [key, target] of Object.entries(PULL_TARGETS)) {
+        const entityPath = FULL_PULL_ENTITY_MAP[key]
+        if (entityPath) {
+          await pullFullEntity(apiUrl, token, entityPath, target)
         }
       }
-      writeLocalWithIndexedDB(target.key, arr)
-      window.dispatchEvent(new Event(target.event))
+      // Fetch settings as a single-page entity
+      {
+        const res = await fetch(`${apiUrl}/api/sync/pull/full/settings?limit=1`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+          const page = await res.json()
+          const arr = Array.isArray(page.items) ? page.items : []
+          const target = PULL_TARGETS["settings"]
+          if (target && arr.length > 0) {
+            writeLocalWithIndexedDB(target.key, arr)
+            window.dispatchEvent(new Event(target.event))
+          }
+        }
+      }
+      // Fetch deletions with pagination (can be many tombstones)
+      {
+        let delCursor: string | undefined
+        const allDeletions: any[] = []
+        while (true) {
+          const params = new URLSearchParams({ limit: "5000" })
+          if (delCursor) params.set("cursor", delCursor)
+          const res = await fetch(`${apiUrl}/api/sync/pull/full/deletions?${params}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (!res.ok) break
+          const page = await res.json()
+          const arr = Array.isArray(page.items) ? page.items : []
+          allDeletions.push(...arr)
+          if (!page.hasMore) break
+          delCursor = page.nextCursor ? String(page.nextCursor) : undefined
+          if (!delCursor) break
+        }
+        if (allDeletions.length > 0) {
+          applyPulledDeletions(allDeletions.map((d: any) => ({
+            entity: d.entity,
+            id: d.payload?.id,
+            saleNumber: d.payload?.saleNumber,
+            deletedAt: d.createdAt,
+          })))
+        }
+      }
+      writeLastSyncedAt(now)
+      dispatchSyncChanged()
+    } else {
+      await _incrementalPull(apiUrl, token)
     }
-
-    writeLastSyncedAt(now)
-    dispatchSyncChanged()
   } catch (err) {
     console.warn("[sync] Pull failed:", err)
   }
+
+}
+
+async function _incrementalPull(apiUrl: string, token: string): Promise<void> {
+  const lastSync = readLastSyncedAt()
+  const url = lastSync
+    ? `${apiUrl}/api/sync/pull?since=${encodeURIComponent(lastSync)}`
+    : `${apiUrl}/api/sync/pull`
+
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  if (!response.ok) throw new Error(`Sync pull failed: ${response.status}`)
+
+  const data = await response.json()
+  applyPulledDeletions(Array.isArray(data.deletions) ? data.deletions : [])
+
+  for (const [key, value] of Object.entries(data)) {
+    const target = PULL_TARGETS[key]
+    if (!target || value === null || value === undefined) continue
+    const arr = Array.isArray(value) ? value : [value]
+    if (arr.length === 0) continue
+    if ((arr[0] as any)?.id === undefined) {
+      writeLocalWithIndexedDB(target.key, arr)
+      window.dispatchEvent(new Event(target.event))
+      continue
+    }
+    const raw = window.localStorage.getItem(target.key)
+    if (raw) {
+      try {
+        const local = JSON.parse(raw)
+        if (Array.isArray(local) && local.length > 0) {
+          const merged = local.slice()
+          for (const item of arr) {
+            if (item && typeof item.id !== "undefined") {
+              const idx = merged.findIndex((e) => e.id === item.id)
+              if (idx >= 0) merged[idx] = item
+              else merged.push(item)
+            }
+          }
+          if (key === "products" && arr.length > 0) {
+            const serverBarcodes = new Map<string, Set<number>>()
+            for (const item of arr) {
+              if (item?.barcode && typeof item.id !== "undefined") {
+                const bc = String(item.barcode)
+                if (!serverBarcodes.has(bc)) serverBarcodes.set(bc, new Set())
+                serverBarcodes.get(bc)!.add(item.id)
+              }
+            }
+            if (serverBarcodes.size > 0) {
+              const deduped: typeof merged = []
+              for (const item of merged) {
+                if (item?.barcode && serverBarcodes.has(String(item.barcode))) {
+                  const validIds = serverBarcodes.get(String(item.barcode))!
+                  if (validIds.has(item.id)) deduped.push(item)
+                } else {
+                  deduped.push(item)
+                }
+              }
+              merged.splice(0, merged.length, ...deduped)
+            }
+          }
+          writeLocalWithIndexedDB(target.key, merged)
+          window.dispatchEvent(new Event(target.event))
+          continue
+        }
+      } catch { /* fall through to write directly */ }
+    }
+    writeLocalWithIndexedDB(target.key, arr)
+    window.dispatchEvent(new Event(target.event))
+  }
+
+  const cursorTime = data.serverTime ?? data.lastSyncAt ?? new Date().toISOString()
+  writeLastSyncedAt(cursorTime)
+  dispatchSyncChanged()
 }
 
 export function retryFailedSync() {
@@ -578,7 +856,7 @@ export function clearAllSyncOperations() {
 export function subscribeSync(callback: () => void) {
   if (typeof window === "undefined") return () => undefined
   const onChange = () => callback()
-  const onOnline  = () => { scheduleAutoFlush(); flushSyncQueue().then(() => pullFromServer()).catch((e) => console.error("[sync] online flush failed:", e)) }
+  const onOnline  = () => { invalidateHealthCache(); scheduleAutoFlush(); flushSyncQueue().then(() => pullFromServer()).catch((e) => console.error("[sync] online flush failed:", e)) }
   window.addEventListener(SYNC_EVENT,  onChange)
   window.addEventListener("storage",   onChange)
   window.addEventListener("online",    onChange)
@@ -601,6 +879,9 @@ let bgPullInterval: ReturnType<typeof setInterval> | undefined
 let bgStatusInterval: ReturnType<typeof setInterval> | undefined
 let wsClient: WebSocket | null = null
 let wsReconnectTimer: ReturnType<typeof setTimeout> | undefined
+let wsReconnectAttempts = 0
+const WS_MAX_RETRIES = 30
+const WS_RETRY_BASE_MS = 5000
 
 export function setupBackgroundSync() {
   if (typeof window === "undefined") return
@@ -648,13 +929,19 @@ function connectSyncWebSocket() {
 
     wsClient.onopen = () => {
       // Authenticate with JWT
+      wsReconnectAttempts = 0
       wsClient?.send(JSON.stringify({ type: "auth", token }))
     }
 
     wsClient.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data)
+        if (msg.type === "auth:ok") {
+          invalidateHealthCache()
+          flushSyncQueue().then(() => pullFromServer()).catch((e) => console.error("[ws-sync] reconnect pull failed:", e))
+        }
         if (msg.type === "sync:data-changed") {
+          invalidateHealthCache()
           // Data changed on another device — pull immediately
           if (getApiUrl() && getAuthToken()) {
             pullFromServer().catch((e) => console.error("[ws-sync] pull failed:", e))
@@ -665,10 +952,12 @@ function connectSyncWebSocket() {
 
     wsClient.onclose = () => {
       wsClient = null
-      // Reconnect after 5s if still authenticated
-      if (getAuthToken()) {
+      if (getAuthToken() && wsReconnectAttempts < WS_MAX_RETRIES) {
+        wsReconnectAttempts++
         clearTimeout(wsReconnectTimer)
-        wsReconnectTimer = setTimeout(connectSyncWebSocket, 5000)
+        // Try to refresh token on hub before reconnecting
+        tryRefreshHubToken().catch(() => {})
+        wsReconnectTimer = setTimeout(connectSyncWebSocket, WS_RETRY_BASE_MS * Math.min(wsReconnectAttempts, 6))
       }
     }
 
@@ -682,6 +971,7 @@ function connectSyncWebSocket() {
 
 function disconnectSyncWebSocket() {
   clearTimeout(wsReconnectTimer)
+  wsReconnectAttempts = 0
   if (wsClient) {
     wsClient.onclose = null // prevent reconnect
     wsClient.close()

@@ -153,6 +153,11 @@ export type SyncOperation = $Result.DefaultSelection<Prisma.$SyncOperationPayloa
  * 
  */
 export type RateLimitEntry = $Result.DefaultSelection<Prisma.$RateLimitEntryPayload>
+/**
+ * Model StockMovement
+ * 
+ */
+export type StockMovement = $Result.DefaultSelection<Prisma.$StockMovementPayload>
 
 /**
  * Enums
@@ -690,6 +695,16 @@ export class PrismaClient<
     * ```
     */
   get rateLimitEntry(): Prisma.RateLimitEntryDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.stockMovement`: Exposes CRUD operations for the **StockMovement** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more StockMovements
+    * const stockMovements = await prisma.stockMovement.findMany()
+    * ```
+    */
+  get stockMovement(): Prisma.StockMovementDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1158,7 +1173,8 @@ export namespace Prisma {
     DeliveryOrderItem: 'DeliveryOrderItem',
     DailyClose: 'DailyClose',
     SyncOperation: 'SyncOperation',
-    RateLimitEntry: 'RateLimitEntry'
+    RateLimitEntry: 'RateLimitEntry',
+    StockMovement: 'StockMovement'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1177,7 +1193,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "syncOperation" | "rateLimitEntry"
+      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "syncOperation" | "rateLimitEntry" | "stockMovement"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3253,6 +3269,80 @@ export namespace Prisma {
           }
         }
       }
+      StockMovement: {
+        payload: Prisma.$StockMovementPayload<ExtArgs>
+        fields: Prisma.StockMovementFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.StockMovementFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StockMovementPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.StockMovementFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StockMovementPayload>
+          }
+          findFirst: {
+            args: Prisma.StockMovementFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StockMovementPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.StockMovementFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StockMovementPayload>
+          }
+          findMany: {
+            args: Prisma.StockMovementFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StockMovementPayload>[]
+          }
+          create: {
+            args: Prisma.StockMovementCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StockMovementPayload>
+          }
+          createMany: {
+            args: Prisma.StockMovementCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.StockMovementCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StockMovementPayload>[]
+          }
+          delete: {
+            args: Prisma.StockMovementDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StockMovementPayload>
+          }
+          update: {
+            args: Prisma.StockMovementUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StockMovementPayload>
+          }
+          deleteMany: {
+            args: Prisma.StockMovementDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.StockMovementUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.StockMovementUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StockMovementPayload>[]
+          }
+          upsert: {
+            args: Prisma.StockMovementUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StockMovementPayload>
+          }
+          aggregate: {
+            args: Prisma.StockMovementAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateStockMovement>
+          }
+          groupBy: {
+            args: Prisma.StockMovementGroupByArgs<ExtArgs>
+            result: $Utils.Optional<StockMovementGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.StockMovementCountArgs<ExtArgs>
+            result: $Utils.Optional<StockMovementCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -3377,6 +3467,7 @@ export namespace Prisma {
     dailyClose?: DailyCloseOmit
     syncOperation?: SyncOperationOmit
     rateLimitEntry?: RateLimitEntryOmit
+    stockMovement?: StockMovementOmit
   }
 
   /* Types for Logging */
@@ -3477,6 +3568,7 @@ export namespace Prisma {
     dailyCloses: number
     syncOperations: number
     deliveryOrders: number
+    stockMovements: number
   }
 
   export type TenantCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3500,6 +3592,7 @@ export namespace Prisma {
     dailyCloses?: boolean | TenantCountOutputTypeCountDailyClosesArgs
     syncOperations?: boolean | TenantCountOutputTypeCountSyncOperationsArgs
     deliveryOrders?: boolean | TenantCountOutputTypeCountDeliveryOrdersArgs
+    stockMovements?: boolean | TenantCountOutputTypeCountStockMovementsArgs
   }
 
   // Custom InputTypes
@@ -3653,6 +3746,13 @@ export namespace Prisma {
     where?: DeliveryOrderWhereInput
   }
 
+  /**
+   * TenantCountOutputType without action
+   */
+  export type TenantCountOutputTypeCountStockMovementsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: StockMovementWhereInput
+  }
+
 
   /**
    * Count Type StaffUserCountOutputType
@@ -3721,6 +3821,7 @@ export namespace Prisma {
     batches: number
     adjustments: number
     stockCountLines: number
+    stockMovements: number
   }
 
   export type ProductCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3728,6 +3829,7 @@ export namespace Prisma {
     batches?: boolean | ProductCountOutputTypeCountBatchesArgs
     adjustments?: boolean | ProductCountOutputTypeCountAdjustmentsArgs
     stockCountLines?: boolean | ProductCountOutputTypeCountStockCountLinesArgs
+    stockMovements?: boolean | ProductCountOutputTypeCountStockMovementsArgs
   }
 
   // Custom InputTypes
@@ -3767,6 +3869,13 @@ export namespace Prisma {
    */
   export type ProductCountOutputTypeCountStockCountLinesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: StockCountLineWhereInput
+  }
+
+  /**
+   * ProductCountOutputType without action
+   */
+  export type ProductCountOutputTypeCountStockMovementsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: StockMovementWhereInput
   }
 
 
@@ -4237,6 +4346,7 @@ export namespace Prisma {
     dailyCloses?: boolean | Tenant$dailyClosesArgs<ExtArgs>
     syncOperations?: boolean | Tenant$syncOperationsArgs<ExtArgs>
     deliveryOrders?: boolean | Tenant$deliveryOrdersArgs<ExtArgs>
+    stockMovements?: boolean | Tenant$stockMovementsArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenant"]>
 
@@ -4293,6 +4403,7 @@ export namespace Prisma {
     dailyCloses?: boolean | Tenant$dailyClosesArgs<ExtArgs>
     syncOperations?: boolean | Tenant$syncOperationsArgs<ExtArgs>
     deliveryOrders?: boolean | Tenant$deliveryOrdersArgs<ExtArgs>
+    stockMovements?: boolean | Tenant$stockMovementsArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type TenantIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -4322,6 +4433,7 @@ export namespace Prisma {
       dailyCloses: Prisma.$DailyClosePayload<ExtArgs>[]
       syncOperations: Prisma.$SyncOperationPayload<ExtArgs>[]
       deliveryOrders: Prisma.$DeliveryOrderPayload<ExtArgs>[]
+      stockMovements: Prisma.$StockMovementPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -4746,6 +4858,7 @@ export namespace Prisma {
     dailyCloses<T extends Tenant$dailyClosesArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$dailyClosesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DailyClosePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     syncOperations<T extends Tenant$syncOperationsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$syncOperationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SyncOperationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     deliveryOrders<T extends Tenant$deliveryOrdersArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$deliveryOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DeliveryOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    stockMovements<T extends Tenant$stockMovementsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$stockMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5669,6 +5782,30 @@ export namespace Prisma {
   }
 
   /**
+   * Tenant.stockMovements
+   */
+  export type Tenant$stockMovementsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+    where?: StockMovementWhereInput
+    orderBy?: StockMovementOrderByWithRelationInput | StockMovementOrderByWithRelationInput[]
+    cursor?: StockMovementWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: StockMovementScalarFieldEnum | StockMovementScalarFieldEnum[]
+  }
+
+  /**
    * Tenant without action
    */
   export type TenantDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5707,6 +5844,7 @@ export namespace Prisma {
     role: $Enums.UserRole | null
     active: boolean | null
     createdAt: Date | null
+    updatedAt: Date | null
   }
 
   export type StaffUserMaxAggregateOutputType = {
@@ -5719,6 +5857,7 @@ export namespace Prisma {
     role: $Enums.UserRole | null
     active: boolean | null
     createdAt: Date | null
+    updatedAt: Date | null
   }
 
   export type StaffUserCountAggregateOutputType = {
@@ -5731,6 +5870,7 @@ export namespace Prisma {
     role: number
     active: number
     createdAt: number
+    updatedAt: number
     _all: number
   }
 
@@ -5745,6 +5885,7 @@ export namespace Prisma {
     role?: true
     active?: true
     createdAt?: true
+    updatedAt?: true
   }
 
   export type StaffUserMaxAggregateInputType = {
@@ -5757,6 +5898,7 @@ export namespace Prisma {
     role?: true
     active?: true
     createdAt?: true
+    updatedAt?: true
   }
 
   export type StaffUserCountAggregateInputType = {
@@ -5769,6 +5911,7 @@ export namespace Prisma {
     role?: true
     active?: true
     createdAt?: true
+    updatedAt?: true
     _all?: true
   }
 
@@ -5854,6 +5997,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active: boolean
     createdAt: Date
+    updatedAt: Date
     _count: StaffUserCountAggregateOutputType | null
     _min: StaffUserMinAggregateOutputType | null
     _max: StaffUserMaxAggregateOutputType | null
@@ -5883,6 +6027,7 @@ export namespace Prisma {
     role?: boolean
     active?: boolean
     createdAt?: boolean
+    updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedShifts?: boolean | StaffUser$openedShiftsArgs<ExtArgs>
     closedShifts?: boolean | StaffUser$closedShiftsArgs<ExtArgs>
@@ -5901,6 +6046,7 @@ export namespace Prisma {
     role?: boolean
     active?: boolean
     createdAt?: boolean
+    updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["staffUser"]>
 
@@ -5914,6 +6060,7 @@ export namespace Prisma {
     role?: boolean
     active?: boolean
     createdAt?: boolean
+    updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["staffUser"]>
 
@@ -5927,9 +6074,10 @@ export namespace Prisma {
     role?: boolean
     active?: boolean
     createdAt?: boolean
+    updatedAt?: boolean
   }
 
-  export type StaffUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "code" | "pin" | "role" | "active" | "createdAt", ExtArgs["result"]["staffUser"]>
+  export type StaffUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "code" | "pin" | "role" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["staffUser"]>
   export type StaffUserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedShifts?: boolean | StaffUser$openedShiftsArgs<ExtArgs>
@@ -5964,6 +6112,7 @@ export namespace Prisma {
       role: $Enums.UserRole
       active: boolean
       createdAt: Date
+      updatedAt: Date
     }, ExtArgs["result"]["staffUser"]>
     composites: {}
   }
@@ -6401,6 +6550,7 @@ export namespace Prisma {
     readonly role: FieldRef<"StaffUser", 'UserRole'>
     readonly active: FieldRef<"StaffUser", 'Boolean'>
     readonly createdAt: FieldRef<"StaffUser", 'DateTime'>
+    readonly updatedAt: FieldRef<"StaffUser", 'DateTime'>
   }
     
 
@@ -8534,6 +8684,7 @@ export namespace Prisma {
     batches?: boolean | Product$batchesArgs<ExtArgs>
     adjustments?: boolean | Product$adjustmentsArgs<ExtArgs>
     stockCountLines?: boolean | Product$stockCountLinesArgs<ExtArgs>
+    stockMovements?: boolean | Product$stockMovementsArgs<ExtArgs>
     _count?: boolean | ProductCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["product"]>
 
@@ -8627,6 +8778,7 @@ export namespace Prisma {
     batches?: boolean | Product$batchesArgs<ExtArgs>
     adjustments?: boolean | Product$adjustmentsArgs<ExtArgs>
     stockCountLines?: boolean | Product$stockCountLinesArgs<ExtArgs>
+    stockMovements?: boolean | Product$stockMovementsArgs<ExtArgs>
     _count?: boolean | ProductCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type ProductIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8647,6 +8799,7 @@ export namespace Prisma {
       batches: Prisma.$InventoryBatchPayload<ExtArgs>[]
       adjustments: Prisma.$StockAdjustmentPayload<ExtArgs>[]
       stockCountLines: Prisma.$StockCountLinePayload<ExtArgs>[]
+      stockMovements: Prisma.$StockMovementPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
@@ -9072,6 +9225,7 @@ export namespace Prisma {
     batches<T extends Product$batchesArgs<ExtArgs> = {}>(args?: Subset<T, Product$batchesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InventoryBatchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     adjustments<T extends Product$adjustmentsArgs<ExtArgs> = {}>(args?: Subset<T, Product$adjustmentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockAdjustmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     stockCountLines<T extends Product$stockCountLinesArgs<ExtArgs> = {}>(args?: Subset<T, Product$stockCountLinesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockCountLinePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    stockMovements<T extends Product$stockMovementsArgs<ExtArgs> = {}>(args?: Subset<T, Product$stockMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -9632,6 +9786,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: StockCountLineScalarFieldEnum | StockCountLineScalarFieldEnum[]
+  }
+
+  /**
+   * Product.stockMovements
+   */
+  export type Product$stockMovementsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+    where?: StockMovementWhereInput
+    orderBy?: StockMovementOrderByWithRelationInput | StockMovementOrderByWithRelationInput[]
+    cursor?: StockMovementWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: StockMovementScalarFieldEnum | StockMovementScalarFieldEnum[]
   }
 
   /**
@@ -38846,6 +39024,1166 @@ export namespace Prisma {
 
 
   /**
+   * Model StockMovement
+   */
+
+  export type AggregateStockMovement = {
+    _count: StockMovementCountAggregateOutputType | null
+    _avg: StockMovementAvgAggregateOutputType | null
+    _sum: StockMovementSumAggregateOutputType | null
+    _min: StockMovementMinAggregateOutputType | null
+    _max: StockMovementMaxAggregateOutputType | null
+  }
+
+  export type StockMovementAvgAggregateOutputType = {
+    productId: number | null
+    quantity: number | null
+    balance: number | null
+  }
+
+  export type StockMovementSumAggregateOutputType = {
+    productId: number | null
+    quantity: number | null
+    balance: number | null
+  }
+
+  export type StockMovementMinAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    productId: number | null
+    type: string | null
+    quantity: number | null
+    balance: number | null
+    reference: string | null
+    note: string | null
+    createdAt: Date | null
+  }
+
+  export type StockMovementMaxAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    productId: number | null
+    type: string | null
+    quantity: number | null
+    balance: number | null
+    reference: string | null
+    note: string | null
+    createdAt: Date | null
+  }
+
+  export type StockMovementCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    productId: number
+    type: number
+    quantity: number
+    balance: number
+    reference: number
+    note: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type StockMovementAvgAggregateInputType = {
+    productId?: true
+    quantity?: true
+    balance?: true
+  }
+
+  export type StockMovementSumAggregateInputType = {
+    productId?: true
+    quantity?: true
+    balance?: true
+  }
+
+  export type StockMovementMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    productId?: true
+    type?: true
+    quantity?: true
+    balance?: true
+    reference?: true
+    note?: true
+    createdAt?: true
+  }
+
+  export type StockMovementMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    productId?: true
+    type?: true
+    quantity?: true
+    balance?: true
+    reference?: true
+    note?: true
+    createdAt?: true
+  }
+
+  export type StockMovementCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    productId?: true
+    type?: true
+    quantity?: true
+    balance?: true
+    reference?: true
+    note?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type StockMovementAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which StockMovement to aggregate.
+     */
+    where?: StockMovementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StockMovements to fetch.
+     */
+    orderBy?: StockMovementOrderByWithRelationInput | StockMovementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: StockMovementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StockMovements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StockMovements.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned StockMovements
+    **/
+    _count?: true | StockMovementCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: StockMovementAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: StockMovementSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: StockMovementMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: StockMovementMaxAggregateInputType
+  }
+
+  export type GetStockMovementAggregateType<T extends StockMovementAggregateArgs> = {
+        [P in keyof T & keyof AggregateStockMovement]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateStockMovement[P]>
+      : GetScalarType<T[P], AggregateStockMovement[P]>
+  }
+
+
+
+
+  export type StockMovementGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: StockMovementWhereInput
+    orderBy?: StockMovementOrderByWithAggregationInput | StockMovementOrderByWithAggregationInput[]
+    by: StockMovementScalarFieldEnum[] | StockMovementScalarFieldEnum
+    having?: StockMovementScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: StockMovementCountAggregateInputType | true
+    _avg?: StockMovementAvgAggregateInputType
+    _sum?: StockMovementSumAggregateInputType
+    _min?: StockMovementMinAggregateInputType
+    _max?: StockMovementMaxAggregateInputType
+  }
+
+  export type StockMovementGroupByOutputType = {
+    id: string
+    tenantId: string
+    productId: number
+    type: string
+    quantity: number
+    balance: number
+    reference: string
+    note: string
+    createdAt: Date
+    _count: StockMovementCountAggregateOutputType | null
+    _avg: StockMovementAvgAggregateOutputType | null
+    _sum: StockMovementSumAggregateOutputType | null
+    _min: StockMovementMinAggregateOutputType | null
+    _max: StockMovementMaxAggregateOutputType | null
+  }
+
+  type GetStockMovementGroupByPayload<T extends StockMovementGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<StockMovementGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof StockMovementGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], StockMovementGroupByOutputType[P]>
+            : GetScalarType<T[P], StockMovementGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type StockMovementSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    productId?: boolean
+    type?: boolean
+    quantity?: boolean
+    balance?: boolean
+    reference?: boolean
+    note?: boolean
+    createdAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["stockMovement"]>
+
+  export type StockMovementSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    productId?: boolean
+    type?: boolean
+    quantity?: boolean
+    balance?: boolean
+    reference?: boolean
+    note?: boolean
+    createdAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["stockMovement"]>
+
+  export type StockMovementSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    productId?: boolean
+    type?: boolean
+    quantity?: boolean
+    balance?: boolean
+    reference?: boolean
+    note?: boolean
+    createdAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["stockMovement"]>
+
+  export type StockMovementSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    productId?: boolean
+    type?: boolean
+    quantity?: boolean
+    balance?: boolean
+    reference?: boolean
+    note?: boolean
+    createdAt?: boolean
+  }
+
+  export type StockMovementOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "productId" | "type" | "quantity" | "balance" | "reference" | "note" | "createdAt", ExtArgs["result"]["stockMovement"]>
+  export type StockMovementInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+  }
+  export type StockMovementIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+  }
+  export type StockMovementIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+    product?: boolean | ProductDefaultArgs<ExtArgs>
+  }
+
+  export type $StockMovementPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "StockMovement"
+    objects: {
+      tenant: Prisma.$TenantPayload<ExtArgs>
+      product: Prisma.$ProductPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tenantId: string
+      productId: number
+      type: string
+      quantity: number
+      balance: number
+      reference: string
+      note: string
+      createdAt: Date
+    }, ExtArgs["result"]["stockMovement"]>
+    composites: {}
+  }
+
+  type StockMovementGetPayload<S extends boolean | null | undefined | StockMovementDefaultArgs> = $Result.GetResult<Prisma.$StockMovementPayload, S>
+
+  type StockMovementCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<StockMovementFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: StockMovementCountAggregateInputType | true
+    }
+
+  export interface StockMovementDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['StockMovement'], meta: { name: 'StockMovement' } }
+    /**
+     * Find zero or one StockMovement that matches the filter.
+     * @param {StockMovementFindUniqueArgs} args - Arguments to find a StockMovement
+     * @example
+     * // Get one StockMovement
+     * const stockMovement = await prisma.stockMovement.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends StockMovementFindUniqueArgs>(args: SelectSubset<T, StockMovementFindUniqueArgs<ExtArgs>>): Prisma__StockMovementClient<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one StockMovement that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {StockMovementFindUniqueOrThrowArgs} args - Arguments to find a StockMovement
+     * @example
+     * // Get one StockMovement
+     * const stockMovement = await prisma.stockMovement.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends StockMovementFindUniqueOrThrowArgs>(args: SelectSubset<T, StockMovementFindUniqueOrThrowArgs<ExtArgs>>): Prisma__StockMovementClient<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first StockMovement that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StockMovementFindFirstArgs} args - Arguments to find a StockMovement
+     * @example
+     * // Get one StockMovement
+     * const stockMovement = await prisma.stockMovement.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends StockMovementFindFirstArgs>(args?: SelectSubset<T, StockMovementFindFirstArgs<ExtArgs>>): Prisma__StockMovementClient<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first StockMovement that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StockMovementFindFirstOrThrowArgs} args - Arguments to find a StockMovement
+     * @example
+     * // Get one StockMovement
+     * const stockMovement = await prisma.stockMovement.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends StockMovementFindFirstOrThrowArgs>(args?: SelectSubset<T, StockMovementFindFirstOrThrowArgs<ExtArgs>>): Prisma__StockMovementClient<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more StockMovements that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StockMovementFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all StockMovements
+     * const stockMovements = await prisma.stockMovement.findMany()
+     * 
+     * // Get first 10 StockMovements
+     * const stockMovements = await prisma.stockMovement.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const stockMovementWithIdOnly = await prisma.stockMovement.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends StockMovementFindManyArgs>(args?: SelectSubset<T, StockMovementFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a StockMovement.
+     * @param {StockMovementCreateArgs} args - Arguments to create a StockMovement.
+     * @example
+     * // Create one StockMovement
+     * const StockMovement = await prisma.stockMovement.create({
+     *   data: {
+     *     // ... data to create a StockMovement
+     *   }
+     * })
+     * 
+     */
+    create<T extends StockMovementCreateArgs>(args: SelectSubset<T, StockMovementCreateArgs<ExtArgs>>): Prisma__StockMovementClient<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many StockMovements.
+     * @param {StockMovementCreateManyArgs} args - Arguments to create many StockMovements.
+     * @example
+     * // Create many StockMovements
+     * const stockMovement = await prisma.stockMovement.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends StockMovementCreateManyArgs>(args?: SelectSubset<T, StockMovementCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many StockMovements and returns the data saved in the database.
+     * @param {StockMovementCreateManyAndReturnArgs} args - Arguments to create many StockMovements.
+     * @example
+     * // Create many StockMovements
+     * const stockMovement = await prisma.stockMovement.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many StockMovements and only return the `id`
+     * const stockMovementWithIdOnly = await prisma.stockMovement.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends StockMovementCreateManyAndReturnArgs>(args?: SelectSubset<T, StockMovementCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a StockMovement.
+     * @param {StockMovementDeleteArgs} args - Arguments to delete one StockMovement.
+     * @example
+     * // Delete one StockMovement
+     * const StockMovement = await prisma.stockMovement.delete({
+     *   where: {
+     *     // ... filter to delete one StockMovement
+     *   }
+     * })
+     * 
+     */
+    delete<T extends StockMovementDeleteArgs>(args: SelectSubset<T, StockMovementDeleteArgs<ExtArgs>>): Prisma__StockMovementClient<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one StockMovement.
+     * @param {StockMovementUpdateArgs} args - Arguments to update one StockMovement.
+     * @example
+     * // Update one StockMovement
+     * const stockMovement = await prisma.stockMovement.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends StockMovementUpdateArgs>(args: SelectSubset<T, StockMovementUpdateArgs<ExtArgs>>): Prisma__StockMovementClient<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more StockMovements.
+     * @param {StockMovementDeleteManyArgs} args - Arguments to filter StockMovements to delete.
+     * @example
+     * // Delete a few StockMovements
+     * const { count } = await prisma.stockMovement.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends StockMovementDeleteManyArgs>(args?: SelectSubset<T, StockMovementDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more StockMovements.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StockMovementUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many StockMovements
+     * const stockMovement = await prisma.stockMovement.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends StockMovementUpdateManyArgs>(args: SelectSubset<T, StockMovementUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more StockMovements and returns the data updated in the database.
+     * @param {StockMovementUpdateManyAndReturnArgs} args - Arguments to update many StockMovements.
+     * @example
+     * // Update many StockMovements
+     * const stockMovement = await prisma.stockMovement.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more StockMovements and only return the `id`
+     * const stockMovementWithIdOnly = await prisma.stockMovement.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends StockMovementUpdateManyAndReturnArgs>(args: SelectSubset<T, StockMovementUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one StockMovement.
+     * @param {StockMovementUpsertArgs} args - Arguments to update or create a StockMovement.
+     * @example
+     * // Update or create a StockMovement
+     * const stockMovement = await prisma.stockMovement.upsert({
+     *   create: {
+     *     // ... data to create a StockMovement
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the StockMovement we want to update
+     *   }
+     * })
+     */
+    upsert<T extends StockMovementUpsertArgs>(args: SelectSubset<T, StockMovementUpsertArgs<ExtArgs>>): Prisma__StockMovementClient<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of StockMovements.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StockMovementCountArgs} args - Arguments to filter StockMovements to count.
+     * @example
+     * // Count the number of StockMovements
+     * const count = await prisma.stockMovement.count({
+     *   where: {
+     *     // ... the filter for the StockMovements we want to count
+     *   }
+     * })
+    **/
+    count<T extends StockMovementCountArgs>(
+      args?: Subset<T, StockMovementCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], StockMovementCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a StockMovement.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StockMovementAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends StockMovementAggregateArgs>(args: Subset<T, StockMovementAggregateArgs>): Prisma.PrismaPromise<GetStockMovementAggregateType<T>>
+
+    /**
+     * Group by StockMovement.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StockMovementGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends StockMovementGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: StockMovementGroupByArgs['orderBy'] }
+        : { orderBy?: StockMovementGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, StockMovementGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetStockMovementGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the StockMovement model
+   */
+  readonly fields: StockMovementFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for StockMovement.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__StockMovementClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    product<T extends ProductDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProductDefaultArgs<ExtArgs>>): Prisma__ProductClient<$Result.GetResult<Prisma.$ProductPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the StockMovement model
+   */
+  interface StockMovementFieldRefs {
+    readonly id: FieldRef<"StockMovement", 'String'>
+    readonly tenantId: FieldRef<"StockMovement", 'String'>
+    readonly productId: FieldRef<"StockMovement", 'Int'>
+    readonly type: FieldRef<"StockMovement", 'String'>
+    readonly quantity: FieldRef<"StockMovement", 'Float'>
+    readonly balance: FieldRef<"StockMovement", 'Float'>
+    readonly reference: FieldRef<"StockMovement", 'String'>
+    readonly note: FieldRef<"StockMovement", 'String'>
+    readonly createdAt: FieldRef<"StockMovement", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * StockMovement findUnique
+   */
+  export type StockMovementFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+    /**
+     * Filter, which StockMovement to fetch.
+     */
+    where: StockMovementWhereUniqueInput
+  }
+
+  /**
+   * StockMovement findUniqueOrThrow
+   */
+  export type StockMovementFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+    /**
+     * Filter, which StockMovement to fetch.
+     */
+    where: StockMovementWhereUniqueInput
+  }
+
+  /**
+   * StockMovement findFirst
+   */
+  export type StockMovementFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+    /**
+     * Filter, which StockMovement to fetch.
+     */
+    where?: StockMovementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StockMovements to fetch.
+     */
+    orderBy?: StockMovementOrderByWithRelationInput | StockMovementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for StockMovements.
+     */
+    cursor?: StockMovementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StockMovements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StockMovements.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of StockMovements.
+     */
+    distinct?: StockMovementScalarFieldEnum | StockMovementScalarFieldEnum[]
+  }
+
+  /**
+   * StockMovement findFirstOrThrow
+   */
+  export type StockMovementFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+    /**
+     * Filter, which StockMovement to fetch.
+     */
+    where?: StockMovementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StockMovements to fetch.
+     */
+    orderBy?: StockMovementOrderByWithRelationInput | StockMovementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for StockMovements.
+     */
+    cursor?: StockMovementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StockMovements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StockMovements.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of StockMovements.
+     */
+    distinct?: StockMovementScalarFieldEnum | StockMovementScalarFieldEnum[]
+  }
+
+  /**
+   * StockMovement findMany
+   */
+  export type StockMovementFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+    /**
+     * Filter, which StockMovements to fetch.
+     */
+    where?: StockMovementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StockMovements to fetch.
+     */
+    orderBy?: StockMovementOrderByWithRelationInput | StockMovementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing StockMovements.
+     */
+    cursor?: StockMovementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StockMovements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StockMovements.
+     */
+    skip?: number
+    distinct?: StockMovementScalarFieldEnum | StockMovementScalarFieldEnum[]
+  }
+
+  /**
+   * StockMovement create
+   */
+  export type StockMovementCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+    /**
+     * The data needed to create a StockMovement.
+     */
+    data: XOR<StockMovementCreateInput, StockMovementUncheckedCreateInput>
+  }
+
+  /**
+   * StockMovement createMany
+   */
+  export type StockMovementCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many StockMovements.
+     */
+    data: StockMovementCreateManyInput | StockMovementCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * StockMovement createManyAndReturn
+   */
+  export type StockMovementCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * The data used to create many StockMovements.
+     */
+    data: StockMovementCreateManyInput | StockMovementCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * StockMovement update
+   */
+  export type StockMovementUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+    /**
+     * The data needed to update a StockMovement.
+     */
+    data: XOR<StockMovementUpdateInput, StockMovementUncheckedUpdateInput>
+    /**
+     * Choose, which StockMovement to update.
+     */
+    where: StockMovementWhereUniqueInput
+  }
+
+  /**
+   * StockMovement updateMany
+   */
+  export type StockMovementUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update StockMovements.
+     */
+    data: XOR<StockMovementUpdateManyMutationInput, StockMovementUncheckedUpdateManyInput>
+    /**
+     * Filter which StockMovements to update
+     */
+    where?: StockMovementWhereInput
+    /**
+     * Limit how many StockMovements to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * StockMovement updateManyAndReturn
+   */
+  export type StockMovementUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * The data used to update StockMovements.
+     */
+    data: XOR<StockMovementUpdateManyMutationInput, StockMovementUncheckedUpdateManyInput>
+    /**
+     * Filter which StockMovements to update
+     */
+    where?: StockMovementWhereInput
+    /**
+     * Limit how many StockMovements to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * StockMovement upsert
+   */
+  export type StockMovementUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+    /**
+     * The filter to search for the StockMovement to update in case it exists.
+     */
+    where: StockMovementWhereUniqueInput
+    /**
+     * In case the StockMovement found by the `where` argument doesn't exist, create a new StockMovement with this data.
+     */
+    create: XOR<StockMovementCreateInput, StockMovementUncheckedCreateInput>
+    /**
+     * In case the StockMovement was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<StockMovementUpdateInput, StockMovementUncheckedUpdateInput>
+  }
+
+  /**
+   * StockMovement delete
+   */
+  export type StockMovementDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+    /**
+     * Filter which StockMovement to delete.
+     */
+    where: StockMovementWhereUniqueInput
+  }
+
+  /**
+   * StockMovement deleteMany
+   */
+  export type StockMovementDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which StockMovements to delete
+     */
+    where?: StockMovementWhereInput
+    /**
+     * Limit how many StockMovements to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * StockMovement without action
+   */
+  export type StockMovementDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StockMovement
+     */
+    select?: StockMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StockMovement
+     */
+    omit?: StockMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: StockMovementInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -38881,7 +40219,8 @@ export namespace Prisma {
     pin: 'pin',
     role: 'role',
     active: 'active',
-    createdAt: 'createdAt'
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
   };
 
   export type StaffUserScalarFieldEnum = (typeof StaffUserScalarFieldEnum)[keyof typeof StaffUserScalarFieldEnum]
@@ -39377,6 +40716,21 @@ export namespace Prisma {
   export type RateLimitEntryScalarFieldEnum = (typeof RateLimitEntryScalarFieldEnum)[keyof typeof RateLimitEntryScalarFieldEnum]
 
 
+  export const StockMovementScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    productId: 'productId',
+    type: 'type',
+    quantity: 'quantity',
+    balance: 'balance',
+    reference: 'reference',
+    note: 'note',
+    createdAt: 'createdAt'
+  };
+
+  export type StockMovementScalarFieldEnum = (typeof StockMovementScalarFieldEnum)[keyof typeof StockMovementScalarFieldEnum]
+
+
   export const SortOrder: {
     asc: 'asc',
     desc: 'desc'
@@ -39689,6 +41043,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseListRelationFilter
     syncOperations?: SyncOperationListRelationFilter
     deliveryOrders?: DeliveryOrderListRelationFilter
+    stockMovements?: StockMovementListRelationFilter
   }
 
   export type TenantOrderByWithRelationInput = {
@@ -39720,6 +41075,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseOrderByRelationAggregateInput
     syncOperations?: SyncOperationOrderByRelationAggregateInput
     deliveryOrders?: DeliveryOrderOrderByRelationAggregateInput
+    stockMovements?: StockMovementOrderByRelationAggregateInput
   }
 
   export type TenantWhereUniqueInput = Prisma.AtLeast<{
@@ -39754,6 +41110,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseListRelationFilter
     syncOperations?: SyncOperationListRelationFilter
     deliveryOrders?: DeliveryOrderListRelationFilter
+    stockMovements?: StockMovementListRelationFilter
   }, "id" | "subdomain">
 
   export type TenantOrderByWithAggregationInput = {
@@ -39795,6 +41152,7 @@ export namespace Prisma {
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
+    updatedAt?: DateTimeFilter<"StaffUser"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     openedShifts?: ShiftListRelationFilter
     closedShifts?: ShiftListRelationFilter
@@ -39812,6 +41170,7 @@ export namespace Prisma {
     role?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
     openedShifts?: ShiftOrderByRelationAggregateInput
     closedShifts?: ShiftOrderByRelationAggregateInput
@@ -39833,6 +41192,7 @@ export namespace Prisma {
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
+    updatedAt?: DateTimeFilter<"StaffUser"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     openedShifts?: ShiftListRelationFilter
     closedShifts?: ShiftListRelationFilter
@@ -39850,6 +41210,7 @@ export namespace Prisma {
     role?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
     _count?: StaffUserCountOrderByAggregateInput
     _max?: StaffUserMaxOrderByAggregateInput
     _min?: StaffUserMinOrderByAggregateInput
@@ -39868,6 +41229,7 @@ export namespace Prisma {
     role?: EnumUserRoleWithAggregatesFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolWithAggregatesFilter<"StaffUser"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"StaffUser"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"StaffUser"> | Date | string
   }
 
   export type AppSettingsWhereInput = {
@@ -40015,6 +41377,7 @@ export namespace Prisma {
     batches?: InventoryBatchListRelationFilter
     adjustments?: StockAdjustmentListRelationFilter
     stockCountLines?: StockCountLineListRelationFilter
+    stockMovements?: StockMovementListRelationFilter
   }
 
   export type ProductOrderByWithRelationInput = {
@@ -40047,6 +41410,7 @@ export namespace Prisma {
     batches?: InventoryBatchOrderByRelationAggregateInput
     adjustments?: StockAdjustmentOrderByRelationAggregateInput
     stockCountLines?: StockCountLineOrderByRelationAggregateInput
+    stockMovements?: StockMovementOrderByRelationAggregateInput
   }
 
   export type ProductWhereUniqueInput = Prisma.AtLeast<{
@@ -40083,6 +41447,7 @@ export namespace Prisma {
     batches?: InventoryBatchListRelationFilter
     adjustments?: StockAdjustmentListRelationFilter
     stockCountLines?: StockCountLineListRelationFilter
+    stockMovements?: StockMovementListRelationFilter
   }, "id" | "tenantId_barcode">
 
   export type ProductOrderByWithAggregationInput = {
@@ -42477,6 +43842,86 @@ export namespace Prisma {
     resetAt?: DateTimeWithAggregatesFilter<"RateLimitEntry"> | Date | string
   }
 
+  export type StockMovementWhereInput = {
+    AND?: StockMovementWhereInput | StockMovementWhereInput[]
+    OR?: StockMovementWhereInput[]
+    NOT?: StockMovementWhereInput | StockMovementWhereInput[]
+    id?: StringFilter<"StockMovement"> | string
+    tenantId?: StringFilter<"StockMovement"> | string
+    productId?: IntFilter<"StockMovement"> | number
+    type?: StringFilter<"StockMovement"> | string
+    quantity?: FloatFilter<"StockMovement"> | number
+    balance?: FloatFilter<"StockMovement"> | number
+    reference?: StringFilter<"StockMovement"> | string
+    note?: StringFilter<"StockMovement"> | string
+    createdAt?: DateTimeFilter<"StockMovement"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
+  }
+
+  export type StockMovementOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    productId?: SortOrder
+    type?: SortOrder
+    quantity?: SortOrder
+    balance?: SortOrder
+    reference?: SortOrder
+    note?: SortOrder
+    createdAt?: SortOrder
+    tenant?: TenantOrderByWithRelationInput
+    product?: ProductOrderByWithRelationInput
+  }
+
+  export type StockMovementWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: StockMovementWhereInput | StockMovementWhereInput[]
+    OR?: StockMovementWhereInput[]
+    NOT?: StockMovementWhereInput | StockMovementWhereInput[]
+    tenantId?: StringFilter<"StockMovement"> | string
+    productId?: IntFilter<"StockMovement"> | number
+    type?: StringFilter<"StockMovement"> | string
+    quantity?: FloatFilter<"StockMovement"> | number
+    balance?: FloatFilter<"StockMovement"> | number
+    reference?: StringFilter<"StockMovement"> | string
+    note?: StringFilter<"StockMovement"> | string
+    createdAt?: DateTimeFilter<"StockMovement"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+    product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
+  }, "id">
+
+  export type StockMovementOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    productId?: SortOrder
+    type?: SortOrder
+    quantity?: SortOrder
+    balance?: SortOrder
+    reference?: SortOrder
+    note?: SortOrder
+    createdAt?: SortOrder
+    _count?: StockMovementCountOrderByAggregateInput
+    _avg?: StockMovementAvgOrderByAggregateInput
+    _max?: StockMovementMaxOrderByAggregateInput
+    _min?: StockMovementMinOrderByAggregateInput
+    _sum?: StockMovementSumOrderByAggregateInput
+  }
+
+  export type StockMovementScalarWhereWithAggregatesInput = {
+    AND?: StockMovementScalarWhereWithAggregatesInput | StockMovementScalarWhereWithAggregatesInput[]
+    OR?: StockMovementScalarWhereWithAggregatesInput[]
+    NOT?: StockMovementScalarWhereWithAggregatesInput | StockMovementScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"StockMovement"> | string
+    tenantId?: StringWithAggregatesFilter<"StockMovement"> | string
+    productId?: IntWithAggregatesFilter<"StockMovement"> | number
+    type?: StringWithAggregatesFilter<"StockMovement"> | string
+    quantity?: FloatWithAggregatesFilter<"StockMovement"> | number
+    balance?: FloatWithAggregatesFilter<"StockMovement"> | number
+    reference?: StringWithAggregatesFilter<"StockMovement"> | string
+    note?: StringWithAggregatesFilter<"StockMovement"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"StockMovement"> | Date | string
+  }
+
   export type TenantCreateInput = {
     id?: string
     name: string
@@ -42506,6 +43951,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateInput = {
@@ -42537,6 +43983,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUpdateInput = {
@@ -42568,6 +44015,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateInput = {
@@ -42599,6 +44047,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateManyInput = {
@@ -42640,6 +44089,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutUsersInput
     openedShifts?: ShiftCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftCreateNestedManyWithoutClosedByInput
@@ -42657,6 +44107,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftUncheckedCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseUncheckedCreateNestedManyWithoutRecordedByUserInput
@@ -42672,6 +44123,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
     openedShifts?: ShiftUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUpdateManyWithoutClosedByNestedInput
@@ -42689,6 +44141,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUncheckedUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUncheckedUpdateManyWithoutRecordedByUserNestedInput
@@ -42705,6 +44158,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type StaffUserUpdateManyMutationInput = {
@@ -42716,6 +44170,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type StaffUserUncheckedUpdateManyInput = {
@@ -42728,6 +44183,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type AppSettingsCreateInput = {
@@ -42889,6 +44345,7 @@ export namespace Prisma {
     batches?: InventoryBatchCreateNestedManyWithoutProductInput
     adjustments?: StockAdjustmentCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateInput = {
@@ -42919,6 +44376,7 @@ export namespace Prisma {
     batches?: InventoryBatchUncheckedCreateNestedManyWithoutProductInput
     adjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineUncheckedCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductUpdateInput = {
@@ -42948,6 +44406,7 @@ export namespace Prisma {
     batches?: InventoryBatchUpdateManyWithoutProductNestedInput
     adjustments?: StockAdjustmentUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateInput = {
@@ -42978,6 +44437,7 @@ export namespace Prisma {
     batches?: InventoryBatchUncheckedUpdateManyWithoutProductNestedInput
     adjustments?: StockAdjustmentUncheckedUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUncheckedUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type ProductCreateManyInput = {
@@ -45638,6 +47098,88 @@ export namespace Prisma {
     resetAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type StockMovementCreateInput = {
+    id?: string
+    type: string
+    quantity: number
+    balance: number
+    reference: string
+    note?: string
+    createdAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutStockMovementsInput
+    product: ProductCreateNestedOneWithoutStockMovementsInput
+  }
+
+  export type StockMovementUncheckedCreateInput = {
+    id?: string
+    tenantId: string
+    productId: number
+    type: string
+    quantity: number
+    balance: number
+    reference: string
+    note?: string
+    createdAt?: Date | string
+  }
+
+  export type StockMovementUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    balance?: FloatFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutStockMovementsNestedInput
+    product?: ProductUpdateOneRequiredWithoutStockMovementsNestedInput
+  }
+
+  export type StockMovementUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    productId?: IntFieldUpdateOperationsInput | number
+    type?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    balance?: FloatFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StockMovementCreateManyInput = {
+    id?: string
+    tenantId: string
+    productId: number
+    type: string
+    quantity: number
+    balance: number
+    reference: string
+    note?: string
+    createdAt?: Date | string
+  }
+
+  export type StockMovementUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    balance?: FloatFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StockMovementUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    productId?: IntFieldUpdateOperationsInput | number
+    type?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    balance?: FloatFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -45794,6 +47336,12 @@ export namespace Prisma {
     none?: DeliveryOrderWhereInput
   }
 
+  export type StockMovementListRelationFilter = {
+    every?: StockMovementWhereInput
+    some?: StockMovementWhereInput
+    none?: StockMovementWhereInput
+  }
+
   export type StaffUserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -45871,6 +47419,10 @@ export namespace Prisma {
   }
 
   export type DeliveryOrderOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type StockMovementOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -45971,6 +47523,7 @@ export namespace Prisma {
     role?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type StaffUserMaxOrderByAggregateInput = {
@@ -45983,6 +47536,7 @@ export namespace Prisma {
     role?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type StaffUserMinOrderByAggregateInput = {
@@ -45995,6 +47549,7 @@ export namespace Prisma {
     role?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type EnumUserRoleWithAggregatesFilter<$PrismaModel = never> = {
@@ -48191,6 +49746,54 @@ export namespace Prisma {
     count?: SortOrder
   }
 
+  export type StockMovementCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    productId?: SortOrder
+    type?: SortOrder
+    quantity?: SortOrder
+    balance?: SortOrder
+    reference?: SortOrder
+    note?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type StockMovementAvgOrderByAggregateInput = {
+    productId?: SortOrder
+    quantity?: SortOrder
+    balance?: SortOrder
+  }
+
+  export type StockMovementMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    productId?: SortOrder
+    type?: SortOrder
+    quantity?: SortOrder
+    balance?: SortOrder
+    reference?: SortOrder
+    note?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type StockMovementMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    productId?: SortOrder
+    type?: SortOrder
+    quantity?: SortOrder
+    balance?: SortOrder
+    reference?: SortOrder
+    note?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type StockMovementSumOrderByAggregateInput = {
+    productId?: SortOrder
+    quantity?: SortOrder
+    balance?: SortOrder
+  }
+
   export type StaffUserCreateNestedManyWithoutTenantInput = {
     create?: XOR<StaffUserCreateWithoutTenantInput, StaffUserUncheckedCreateWithoutTenantInput> | StaffUserCreateWithoutTenantInput[] | StaffUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: StaffUserCreateOrConnectWithoutTenantInput | StaffUserCreateOrConnectWithoutTenantInput[]
@@ -48337,6 +49940,13 @@ export namespace Prisma {
     connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
   }
 
+  export type StockMovementCreateNestedManyWithoutTenantInput = {
+    create?: XOR<StockMovementCreateWithoutTenantInput, StockMovementUncheckedCreateWithoutTenantInput> | StockMovementCreateWithoutTenantInput[] | StockMovementUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: StockMovementCreateOrConnectWithoutTenantInput | StockMovementCreateOrConnectWithoutTenantInput[]
+    createMany?: StockMovementCreateManyTenantInputEnvelope
+    connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+  }
+
   export type StaffUserUncheckedCreateNestedManyWithoutTenantInput = {
     create?: XOR<StaffUserCreateWithoutTenantInput, StaffUserUncheckedCreateWithoutTenantInput> | StaffUserCreateWithoutTenantInput[] | StaffUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: StaffUserCreateOrConnectWithoutTenantInput | StaffUserCreateOrConnectWithoutTenantInput[]
@@ -48481,6 +50091,13 @@ export namespace Prisma {
     connectOrCreate?: DeliveryOrderCreateOrConnectWithoutTenantInput | DeliveryOrderCreateOrConnectWithoutTenantInput[]
     createMany?: DeliveryOrderCreateManyTenantInputEnvelope
     connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
+  }
+
+  export type StockMovementUncheckedCreateNestedManyWithoutTenantInput = {
+    create?: XOR<StockMovementCreateWithoutTenantInput, StockMovementUncheckedCreateWithoutTenantInput> | StockMovementCreateWithoutTenantInput[] | StockMovementUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: StockMovementCreateOrConnectWithoutTenantInput | StockMovementCreateOrConnectWithoutTenantInput[]
+    createMany?: StockMovementCreateManyTenantInputEnvelope
+    connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -48785,6 +50402,20 @@ export namespace Prisma {
     deleteMany?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
   }
 
+  export type StockMovementUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<StockMovementCreateWithoutTenantInput, StockMovementUncheckedCreateWithoutTenantInput> | StockMovementCreateWithoutTenantInput[] | StockMovementUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: StockMovementCreateOrConnectWithoutTenantInput | StockMovementCreateOrConnectWithoutTenantInput[]
+    upsert?: StockMovementUpsertWithWhereUniqueWithoutTenantInput | StockMovementUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: StockMovementCreateManyTenantInputEnvelope
+    set?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    disconnect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    delete?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    update?: StockMovementUpdateWithWhereUniqueWithoutTenantInput | StockMovementUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: StockMovementUpdateManyWithWhereWithoutTenantInput | StockMovementUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
+  }
+
   export type StaffUserUncheckedUpdateManyWithoutTenantNestedInput = {
     create?: XOR<StaffUserCreateWithoutTenantInput, StaffUserUncheckedCreateWithoutTenantInput> | StaffUserCreateWithoutTenantInput[] | StaffUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: StaffUserCreateOrConnectWithoutTenantInput | StaffUserCreateOrConnectWithoutTenantInput[]
@@ -49075,6 +50706,20 @@ export namespace Prisma {
     deleteMany?: DeliveryOrderScalarWhereInput | DeliveryOrderScalarWhereInput[]
   }
 
+  export type StockMovementUncheckedUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<StockMovementCreateWithoutTenantInput, StockMovementUncheckedCreateWithoutTenantInput> | StockMovementCreateWithoutTenantInput[] | StockMovementUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: StockMovementCreateOrConnectWithoutTenantInput | StockMovementCreateOrConnectWithoutTenantInput[]
+    upsert?: StockMovementUpsertWithWhereUniqueWithoutTenantInput | StockMovementUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: StockMovementCreateManyTenantInputEnvelope
+    set?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    disconnect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    delete?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    update?: StockMovementUpdateWithWhereUniqueWithoutTenantInput | StockMovementUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: StockMovementUpdateManyWithWhereWithoutTenantInput | StockMovementUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
+  }
+
   export type TenantCreateNestedOneWithoutUsersInput = {
     create?: XOR<TenantCreateWithoutUsersInput, TenantUncheckedCreateWithoutUsersInput>
     connectOrCreate?: TenantCreateOrConnectWithoutUsersInput
@@ -49335,6 +50980,13 @@ export namespace Prisma {
     connect?: StockCountLineWhereUniqueInput | StockCountLineWhereUniqueInput[]
   }
 
+  export type StockMovementCreateNestedManyWithoutProductInput = {
+    create?: XOR<StockMovementCreateWithoutProductInput, StockMovementUncheckedCreateWithoutProductInput> | StockMovementCreateWithoutProductInput[] | StockMovementUncheckedCreateWithoutProductInput[]
+    connectOrCreate?: StockMovementCreateOrConnectWithoutProductInput | StockMovementCreateOrConnectWithoutProductInput[]
+    createMany?: StockMovementCreateManyProductInputEnvelope
+    connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+  }
+
   export type ProductUncheckedCreateNestedManyWithoutParentInput = {
     create?: XOR<ProductCreateWithoutParentInput, ProductUncheckedCreateWithoutParentInput> | ProductCreateWithoutParentInput[] | ProductUncheckedCreateWithoutParentInput[]
     connectOrCreate?: ProductCreateOrConnectWithoutParentInput | ProductCreateOrConnectWithoutParentInput[]
@@ -49361,6 +51013,13 @@ export namespace Prisma {
     connectOrCreate?: StockCountLineCreateOrConnectWithoutProductInput | StockCountLineCreateOrConnectWithoutProductInput[]
     createMany?: StockCountLineCreateManyProductInputEnvelope
     connect?: StockCountLineWhereUniqueInput | StockCountLineWhereUniqueInput[]
+  }
+
+  export type StockMovementUncheckedCreateNestedManyWithoutProductInput = {
+    create?: XOR<StockMovementCreateWithoutProductInput, StockMovementUncheckedCreateWithoutProductInput> | StockMovementCreateWithoutProductInput[] | StockMovementUncheckedCreateWithoutProductInput[]
+    connectOrCreate?: StockMovementCreateOrConnectWithoutProductInput | StockMovementCreateOrConnectWithoutProductInput[]
+    createMany?: StockMovementCreateManyProductInputEnvelope
+    connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
   }
 
   export type NullableStringFieldUpdateOperationsInput = {
@@ -49470,6 +51129,20 @@ export namespace Prisma {
     deleteMany?: StockCountLineScalarWhereInput | StockCountLineScalarWhereInput[]
   }
 
+  export type StockMovementUpdateManyWithoutProductNestedInput = {
+    create?: XOR<StockMovementCreateWithoutProductInput, StockMovementUncheckedCreateWithoutProductInput> | StockMovementCreateWithoutProductInput[] | StockMovementUncheckedCreateWithoutProductInput[]
+    connectOrCreate?: StockMovementCreateOrConnectWithoutProductInput | StockMovementCreateOrConnectWithoutProductInput[]
+    upsert?: StockMovementUpsertWithWhereUniqueWithoutProductInput | StockMovementUpsertWithWhereUniqueWithoutProductInput[]
+    createMany?: StockMovementCreateManyProductInputEnvelope
+    set?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    disconnect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    delete?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    update?: StockMovementUpdateWithWhereUniqueWithoutProductInput | StockMovementUpdateWithWhereUniqueWithoutProductInput[]
+    updateMany?: StockMovementUpdateManyWithWhereWithoutProductInput | StockMovementUpdateManyWithWhereWithoutProductInput[]
+    deleteMany?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
+  }
+
   export type ProductUncheckedUpdateManyWithoutParentNestedInput = {
     create?: XOR<ProductCreateWithoutParentInput, ProductUncheckedCreateWithoutParentInput> | ProductCreateWithoutParentInput[] | ProductUncheckedCreateWithoutParentInput[]
     connectOrCreate?: ProductCreateOrConnectWithoutParentInput | ProductCreateOrConnectWithoutParentInput[]
@@ -49524,6 +51197,20 @@ export namespace Prisma {
     update?: StockCountLineUpdateWithWhereUniqueWithoutProductInput | StockCountLineUpdateWithWhereUniqueWithoutProductInput[]
     updateMany?: StockCountLineUpdateManyWithWhereWithoutProductInput | StockCountLineUpdateManyWithWhereWithoutProductInput[]
     deleteMany?: StockCountLineScalarWhereInput | StockCountLineScalarWhereInput[]
+  }
+
+  export type StockMovementUncheckedUpdateManyWithoutProductNestedInput = {
+    create?: XOR<StockMovementCreateWithoutProductInput, StockMovementUncheckedCreateWithoutProductInput> | StockMovementCreateWithoutProductInput[] | StockMovementUncheckedCreateWithoutProductInput[]
+    connectOrCreate?: StockMovementCreateOrConnectWithoutProductInput | StockMovementCreateOrConnectWithoutProductInput[]
+    upsert?: StockMovementUpsertWithWhereUniqueWithoutProductInput | StockMovementUpsertWithWhereUniqueWithoutProductInput[]
+    createMany?: StockMovementCreateManyProductInputEnvelope
+    set?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    disconnect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    delete?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+    update?: StockMovementUpdateWithWhereUniqueWithoutProductInput | StockMovementUpdateWithWhereUniqueWithoutProductInput[]
+    updateMany?: StockMovementUpdateManyWithWhereWithoutProductInput | StockMovementUpdateManyWithWhereWithoutProductInput[]
+    deleteMany?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
   }
 
   export type TenantCreateNestedOneWithoutSalesInput = {
@@ -50652,6 +52339,34 @@ export namespace Prisma {
     update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutSyncOperationsInput, TenantUpdateWithoutSyncOperationsInput>, TenantUncheckedUpdateWithoutSyncOperationsInput>
   }
 
+  export type TenantCreateNestedOneWithoutStockMovementsInput = {
+    create?: XOR<TenantCreateWithoutStockMovementsInput, TenantUncheckedCreateWithoutStockMovementsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutStockMovementsInput
+    connect?: TenantWhereUniqueInput
+  }
+
+  export type ProductCreateNestedOneWithoutStockMovementsInput = {
+    create?: XOR<ProductCreateWithoutStockMovementsInput, ProductUncheckedCreateWithoutStockMovementsInput>
+    connectOrCreate?: ProductCreateOrConnectWithoutStockMovementsInput
+    connect?: ProductWhereUniqueInput
+  }
+
+  export type TenantUpdateOneRequiredWithoutStockMovementsNestedInput = {
+    create?: XOR<TenantCreateWithoutStockMovementsInput, TenantUncheckedCreateWithoutStockMovementsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutStockMovementsInput
+    upsert?: TenantUpsertWithoutStockMovementsInput
+    connect?: TenantWhereUniqueInput
+    update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutStockMovementsInput, TenantUpdateWithoutStockMovementsInput>, TenantUncheckedUpdateWithoutStockMovementsInput>
+  }
+
+  export type ProductUpdateOneRequiredWithoutStockMovementsNestedInput = {
+    create?: XOR<ProductCreateWithoutStockMovementsInput, ProductUncheckedCreateWithoutStockMovementsInput>
+    connectOrCreate?: ProductCreateOrConnectWithoutStockMovementsInput
+    upsert?: ProductUpsertWithoutStockMovementsInput
+    connect?: ProductWhereUniqueInput
+    update?: XOR<XOR<ProductUpdateToOneWithWhereWithoutStockMovementsInput, ProductUpdateWithoutStockMovementsInput>, ProductUncheckedUpdateWithoutStockMovementsInput>
+  }
+
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -51141,6 +52856,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     openedShifts?: ShiftCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseCreateNestedManyWithoutRecordedByUserInput
@@ -51156,6 +52872,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftUncheckedCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseUncheckedCreateNestedManyWithoutRecordedByUserInput
@@ -51198,6 +52915,7 @@ export namespace Prisma {
     batches?: InventoryBatchCreateNestedManyWithoutProductInput
     adjustments?: StockAdjustmentCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutTenantInput = {
@@ -51227,6 +52945,7 @@ export namespace Prisma {
     batches?: InventoryBatchUncheckedCreateNestedManyWithoutProductInput
     adjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineUncheckedCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutTenantInput = {
@@ -52044,6 +53763,38 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type StockMovementCreateWithoutTenantInput = {
+    id?: string
+    type: string
+    quantity: number
+    balance: number
+    reference: string
+    note?: string
+    createdAt?: Date | string
+    product: ProductCreateNestedOneWithoutStockMovementsInput
+  }
+
+  export type StockMovementUncheckedCreateWithoutTenantInput = {
+    id?: string
+    productId: number
+    type: string
+    quantity: number
+    balance: number
+    reference: string
+    note?: string
+    createdAt?: Date | string
+  }
+
+  export type StockMovementCreateOrConnectWithoutTenantInput = {
+    where: StockMovementWhereUniqueInput
+    create: XOR<StockMovementCreateWithoutTenantInput, StockMovementUncheckedCreateWithoutTenantInput>
+  }
+
+  export type StockMovementCreateManyTenantInputEnvelope = {
+    data: StockMovementCreateManyTenantInput | StockMovementCreateManyTenantInput[]
+    skipDuplicates?: boolean
+  }
+
   export type StaffUserUpsertWithWhereUniqueWithoutTenantInput = {
     where: StaffUserWhereUniqueInput
     update: XOR<StaffUserUpdateWithoutTenantInput, StaffUserUncheckedUpdateWithoutTenantInput>
@@ -52073,6 +53824,7 @@ export namespace Prisma {
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
+    updatedAt?: DateTimeFilter<"StaffUser"> | Date | string
   }
 
   export type ProductUpsertWithWhereUniqueWithoutTenantInput = {
@@ -52806,6 +54558,37 @@ export namespace Prisma {
     cancelledAt?: DateTimeNullableFilter<"DeliveryOrder"> | Date | string | null
   }
 
+  export type StockMovementUpsertWithWhereUniqueWithoutTenantInput = {
+    where: StockMovementWhereUniqueInput
+    update: XOR<StockMovementUpdateWithoutTenantInput, StockMovementUncheckedUpdateWithoutTenantInput>
+    create: XOR<StockMovementCreateWithoutTenantInput, StockMovementUncheckedCreateWithoutTenantInput>
+  }
+
+  export type StockMovementUpdateWithWhereUniqueWithoutTenantInput = {
+    where: StockMovementWhereUniqueInput
+    data: XOR<StockMovementUpdateWithoutTenantInput, StockMovementUncheckedUpdateWithoutTenantInput>
+  }
+
+  export type StockMovementUpdateManyWithWhereWithoutTenantInput = {
+    where: StockMovementScalarWhereInput
+    data: XOR<StockMovementUpdateManyMutationInput, StockMovementUncheckedUpdateManyWithoutTenantInput>
+  }
+
+  export type StockMovementScalarWhereInput = {
+    AND?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
+    OR?: StockMovementScalarWhereInput[]
+    NOT?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
+    id?: StringFilter<"StockMovement"> | string
+    tenantId?: StringFilter<"StockMovement"> | string
+    productId?: IntFilter<"StockMovement"> | number
+    type?: StringFilter<"StockMovement"> | string
+    quantity?: FloatFilter<"StockMovement"> | number
+    balance?: FloatFilter<"StockMovement"> | number
+    reference?: StringFilter<"StockMovement"> | string
+    note?: StringFilter<"StockMovement"> | string
+    createdAt?: DateTimeFilter<"StockMovement"> | Date | string
+  }
+
   export type TenantCreateWithoutUsersInput = {
     id?: string
     name: string
@@ -52834,6 +54617,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutUsersInput = {
@@ -52864,6 +54648,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutUsersInput = {
@@ -53126,6 +54911,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutUsersInput = {
@@ -53156,6 +54942,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ShiftUpsertWithWhereUniqueWithoutOpenedByInput = {
@@ -53250,6 +55037,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSettingsInput = {
@@ -53280,6 +55068,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSettingsInput = {
@@ -53326,6 +55115,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSettingsInput = {
@@ -53356,6 +55146,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutProductsInput = {
@@ -53386,6 +55177,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutProductsInput = {
@@ -53416,6 +55208,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutProductsInput = {
@@ -53449,6 +55242,7 @@ export namespace Prisma {
     batches?: InventoryBatchCreateNestedManyWithoutProductInput
     adjustments?: StockAdjustmentCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutVariantsInput = {
@@ -53478,6 +55272,7 @@ export namespace Prisma {
     batches?: InventoryBatchUncheckedCreateNestedManyWithoutProductInput
     adjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineUncheckedCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutVariantsInput = {
@@ -53511,6 +55306,7 @@ export namespace Prisma {
     batches?: InventoryBatchCreateNestedManyWithoutProductInput
     adjustments?: StockAdjustmentCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutParentInput = {
@@ -53540,6 +55336,7 @@ export namespace Prisma {
     batches?: InventoryBatchUncheckedCreateNestedManyWithoutProductInput
     adjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineUncheckedCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutParentInput = {
@@ -53674,6 +55471,38 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type StockMovementCreateWithoutProductInput = {
+    id?: string
+    type: string
+    quantity: number
+    balance: number
+    reference: string
+    note?: string
+    createdAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutStockMovementsInput
+  }
+
+  export type StockMovementUncheckedCreateWithoutProductInput = {
+    id?: string
+    tenantId: string
+    type: string
+    quantity: number
+    balance: number
+    reference: string
+    note?: string
+    createdAt?: Date | string
+  }
+
+  export type StockMovementCreateOrConnectWithoutProductInput = {
+    where: StockMovementWhereUniqueInput
+    create: XOR<StockMovementCreateWithoutProductInput, StockMovementUncheckedCreateWithoutProductInput>
+  }
+
+  export type StockMovementCreateManyProductInputEnvelope = {
+    data: StockMovementCreateManyProductInput | StockMovementCreateManyProductInput[]
+    skipDuplicates?: boolean
+  }
+
   export type TenantUpsertWithoutProductsInput = {
     update: XOR<TenantUpdateWithoutProductsInput, TenantUncheckedUpdateWithoutProductsInput>
     create: XOR<TenantCreateWithoutProductsInput, TenantUncheckedCreateWithoutProductsInput>
@@ -53713,6 +55542,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutProductsInput = {
@@ -53743,6 +55573,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ProductUpsertWithoutVariantsInput = {
@@ -53782,6 +55613,7 @@ export namespace Prisma {
     batches?: InventoryBatchUpdateManyWithoutProductNestedInput
     adjustments?: StockAdjustmentUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutVariantsInput = {
@@ -53811,6 +55643,7 @@ export namespace Prisma {
     batches?: InventoryBatchUncheckedUpdateManyWithoutProductNestedInput
     adjustments?: StockAdjustmentUncheckedUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUncheckedUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUpsertWithWhereUniqueWithoutParentInput = {
@@ -53893,6 +55726,22 @@ export namespace Prisma {
     valueImpact?: DecimalFilter<"StockCountLine"> | Decimal | DecimalJsLike | number | string
   }
 
+  export type StockMovementUpsertWithWhereUniqueWithoutProductInput = {
+    where: StockMovementWhereUniqueInput
+    update: XOR<StockMovementUpdateWithoutProductInput, StockMovementUncheckedUpdateWithoutProductInput>
+    create: XOR<StockMovementCreateWithoutProductInput, StockMovementUncheckedCreateWithoutProductInput>
+  }
+
+  export type StockMovementUpdateWithWhereUniqueWithoutProductInput = {
+    where: StockMovementWhereUniqueInput
+    data: XOR<StockMovementUpdateWithoutProductInput, StockMovementUncheckedUpdateWithoutProductInput>
+  }
+
+  export type StockMovementUpdateManyWithWhereWithoutProductInput = {
+    where: StockMovementScalarWhereInput
+    data: XOR<StockMovementUpdateManyMutationInput, StockMovementUncheckedUpdateManyWithoutProductInput>
+  }
+
   export type TenantCreateWithoutSalesInput = {
     id?: string
     name: string
@@ -53921,6 +55770,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSalesInput = {
@@ -53951,6 +55801,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSalesInput = {
@@ -54106,6 +55957,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSalesInput = {
@@ -54136,6 +55988,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SaleItemUpsertWithWhereUniqueWithoutSaleInput = {
@@ -54466,6 +56319,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutRefundsInput = {
@@ -54496,6 +56350,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutRefundsInput = {
@@ -54625,6 +56480,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutRefundsInput = {
@@ -54655,6 +56511,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SaleUpsertWithoutRefundsInput = {
@@ -54861,6 +56718,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutCustomersInput = {
@@ -54891,6 +56749,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutCustomersInput = {
@@ -55067,6 +56926,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutCustomersInput = {
@@ -55097,6 +56957,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type DebtSaleUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -55175,6 +57036,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDebtSalesInput = {
@@ -55205,6 +57067,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDebtSalesInput = {
@@ -55286,6 +57149,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDebtSalesInput = {
@@ -55316,6 +57180,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type CustomerUpsertWithoutDebtSalesInput = {
@@ -55387,6 +57252,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDebtPaymentsInput = {
@@ -55417,6 +57283,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDebtPaymentsInput = {
@@ -55498,6 +57365,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDebtPaymentsInput = {
@@ -55528,6 +57396,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type CustomerUpsertWithoutDebtPaymentsInput = {
@@ -55599,6 +57468,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSuppliersInput = {
@@ -55629,6 +57499,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSuppliersInput = {
@@ -55809,6 +57680,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSuppliersInput = {
@@ -55839,6 +57711,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type PurchaseOrderUpsertWithWhereUniqueWithoutSupplierInput = {
@@ -55917,6 +57790,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutPurchaseOrdersInput = {
@@ -55947,6 +57821,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutPurchaseOrdersInput = {
@@ -56058,6 +57933,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutPurchaseOrdersInput = {
@@ -56088,6 +57964,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SupplierUpsertWithoutPurchaseOrdersInput = {
@@ -56173,6 +58050,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutPurchaseOrderItemsInput = {
@@ -56203,6 +58081,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutPurchaseOrderItemsInput = {
@@ -56292,6 +58171,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutPurchaseOrderItemsInput = {
@@ -56322,6 +58202,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type PurchaseOrderUpsertWithoutItemsInput = {
@@ -56401,6 +58282,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSupplierPaymentsInput = {
@@ -56431,6 +58313,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSupplierPaymentsInput = {
@@ -56510,6 +58393,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSupplierPaymentsInput = {
@@ -56540,6 +58424,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SupplierUpsertWithoutSupplierPaymentsInput = {
@@ -56609,6 +58494,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutShiftsInput = {
@@ -56639,6 +58525,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutShiftsInput = {
@@ -56655,6 +58542,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutUsersInput
     closedShifts?: ShiftCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseCreateNestedManyWithoutRecordedByUserInput
@@ -56671,6 +58559,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     closedShifts?: ShiftUncheckedCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseUncheckedCreateNestedManyWithoutRecordedByUserInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutDriverInput
@@ -56690,6 +58579,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutUsersInput
     openedShifts?: ShiftCreateNestedManyWithoutOpenedByInput
     expenses?: ExpenseCreateNestedManyWithoutRecordedByUserInput
@@ -56706,6 +58596,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
     expenses?: ExpenseUncheckedCreateNestedManyWithoutRecordedByUserInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutDriverInput
@@ -56755,6 +58646,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutShiftsInput = {
@@ -56785,6 +58677,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type StaffUserUpsertWithoutOpenedShiftsInput = {
@@ -56807,6 +58700,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
     closedShifts?: ShiftUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUpdateManyWithoutRecordedByUserNestedInput
@@ -56823,6 +58717,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedShifts?: ShiftUncheckedUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUncheckedUpdateManyWithoutRecordedByUserNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutDriverNestedInput
@@ -56848,6 +58743,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
     openedShifts?: ShiftUpdateManyWithoutOpenedByNestedInput
     expenses?: ExpenseUpdateManyWithoutRecordedByUserNestedInput
@@ -56864,6 +58760,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
     expenses?: ExpenseUncheckedUpdateManyWithoutRecordedByUserNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutDriverNestedInput
@@ -56897,6 +58794,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutAuditEventsInput = {
@@ -56927,6 +58825,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutAuditEventsInput = {
@@ -56973,6 +58872,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutAuditEventsInput = {
@@ -57003,6 +58903,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutExpensesInput = {
@@ -57033,6 +58934,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutExpensesInput = {
@@ -57063,6 +58965,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutExpensesInput = {
@@ -57079,6 +58982,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutUsersInput
     openedShifts?: ShiftCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftCreateNestedManyWithoutClosedByInput
@@ -57095,6 +58999,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftUncheckedCreateNestedManyWithoutClosedByInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutDriverInput
@@ -57144,6 +59049,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutExpensesInput = {
@@ -57174,6 +59080,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type StaffUserUpsertWithoutExpensesInput = {
@@ -57196,6 +59103,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
     openedShifts?: ShiftUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUpdateManyWithoutClosedByNestedInput
@@ -57212,6 +59120,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUncheckedUpdateManyWithoutClosedByNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutDriverNestedInput
@@ -57245,6 +59154,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutInventoryBatchesInput = {
@@ -57275,6 +59185,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutInventoryBatchesInput = {
@@ -57308,6 +59219,7 @@ export namespace Prisma {
     variants?: ProductCreateNestedManyWithoutParentInput
     adjustments?: StockAdjustmentCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutBatchesInput = {
@@ -57337,6 +59249,7 @@ export namespace Prisma {
     variants?: ProductUncheckedCreateNestedManyWithoutParentInput
     adjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineUncheckedCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutBatchesInput = {
@@ -57416,6 +59329,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutInventoryBatchesInput = {
@@ -57446,6 +59360,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ProductUpsertWithoutBatchesInput = {
@@ -57485,6 +59400,7 @@ export namespace Prisma {
     variants?: ProductUpdateManyWithoutParentNestedInput
     adjustments?: StockAdjustmentUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutBatchesInput = {
@@ -57514,6 +59430,7 @@ export namespace Prisma {
     variants?: ProductUncheckedUpdateManyWithoutParentNestedInput
     adjustments?: StockAdjustmentUncheckedUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUncheckedUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type SupplierUpsertWithoutInventoryBatchesInput = {
@@ -57583,6 +59500,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutStockAdjustmentsInput = {
@@ -57613,6 +59531,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutStockAdjustmentsInput = {
@@ -57646,6 +59565,7 @@ export namespace Prisma {
     variants?: ProductCreateNestedManyWithoutParentInput
     batches?: InventoryBatchCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutAdjustmentsInput = {
@@ -57675,6 +59595,7 @@ export namespace Prisma {
     variants?: ProductUncheckedCreateNestedManyWithoutParentInput
     batches?: InventoryBatchUncheckedCreateNestedManyWithoutProductInput
     stockCountLines?: StockCountLineUncheckedCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutAdjustmentsInput = {
@@ -57721,6 +59642,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutStockAdjustmentsInput = {
@@ -57751,6 +59673,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ProductUpsertWithoutAdjustmentsInput = {
@@ -57790,6 +59713,7 @@ export namespace Prisma {
     variants?: ProductUpdateManyWithoutParentNestedInput
     batches?: InventoryBatchUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutAdjustmentsInput = {
@@ -57819,6 +59743,7 @@ export namespace Prisma {
     variants?: ProductUncheckedUpdateManyWithoutParentNestedInput
     batches?: InventoryBatchUncheckedUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUncheckedUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type TenantCreateWithoutStockCountsInput = {
@@ -57849,6 +59774,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutStockCountsInput = {
@@ -57879,6 +59805,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutStockCountsInput = {
@@ -57959,6 +59886,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutStockCountsInput = {
@@ -57989,6 +59917,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type StockCountLineUpsertWithWhereUniqueWithoutSessionInput = {
@@ -58060,6 +59989,7 @@ export namespace Prisma {
     variants?: ProductCreateNestedManyWithoutParentInput
     batches?: InventoryBatchCreateNestedManyWithoutProductInput
     adjustments?: StockAdjustmentCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementCreateNestedManyWithoutProductInput
   }
 
   export type ProductUncheckedCreateWithoutStockCountLinesInput = {
@@ -58089,6 +60019,7 @@ export namespace Prisma {
     variants?: ProductUncheckedCreateNestedManyWithoutParentInput
     batches?: InventoryBatchUncheckedCreateNestedManyWithoutProductInput
     adjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutProductInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutProductInput
   }
 
   export type ProductCreateOrConnectWithoutStockCountLinesInput = {
@@ -58166,6 +60097,7 @@ export namespace Prisma {
     variants?: ProductUpdateManyWithoutParentNestedInput
     batches?: InventoryBatchUpdateManyWithoutProductNestedInput
     adjustments?: StockAdjustmentUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutStockCountLinesInput = {
@@ -58195,6 +60127,7 @@ export namespace Prisma {
     variants?: ProductUncheckedUpdateManyWithoutParentNestedInput
     batches?: InventoryBatchUncheckedUpdateManyWithoutProductNestedInput
     adjustments?: StockAdjustmentUncheckedUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type TenantCreateWithoutDeliveryOrdersInput = {
@@ -58225,6 +60158,7 @@ export namespace Prisma {
     stockCounts?: StockCountSessionCreateNestedManyWithoutTenantInput
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDeliveryOrdersInput = {
@@ -58255,6 +60189,7 @@ export namespace Prisma {
     stockCounts?: StockCountSessionUncheckedCreateNestedManyWithoutTenantInput
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDeliveryOrdersInput = {
@@ -58306,6 +60241,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutUsersInput
     openedShifts?: ShiftCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftCreateNestedManyWithoutClosedByInput
@@ -58322,6 +60258,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
     closedShifts?: ShiftUncheckedCreateNestedManyWithoutClosedByInput
     expenses?: ExpenseUncheckedCreateNestedManyWithoutRecordedByUserInput
@@ -58401,6 +60338,7 @@ export namespace Prisma {
     stockCounts?: StockCountSessionUpdateManyWithoutTenantNestedInput
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDeliveryOrdersInput = {
@@ -58431,6 +60369,7 @@ export namespace Prisma {
     stockCounts?: StockCountSessionUncheckedUpdateManyWithoutTenantNestedInput
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type CustomerUpsertWithoutDeliveryOrdersInput = {
@@ -58494,6 +60433,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
     openedShifts?: ShiftUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUpdateManyWithoutClosedByNestedInput
@@ -58510,6 +60450,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUncheckedUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUncheckedUpdateManyWithoutRecordedByUserNestedInput
@@ -58709,6 +60650,7 @@ export namespace Prisma {
     stockCounts?: StockCountSessionCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDailyClosesInput = {
@@ -58739,6 +60681,7 @@ export namespace Prisma {
     stockCounts?: StockCountSessionUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDailyClosesInput = {
@@ -58785,6 +60728,7 @@ export namespace Prisma {
     stockCounts?: StockCountSessionUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDailyClosesInput = {
@@ -58815,6 +60759,7 @@ export namespace Prisma {
     stockCounts?: StockCountSessionUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutSyncOperationsInput = {
@@ -58845,6 +60790,7 @@ export namespace Prisma {
     stockCounts?: StockCountSessionCreateNestedManyWithoutTenantInput
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSyncOperationsInput = {
@@ -58875,6 +60821,7 @@ export namespace Prisma {
     stockCounts?: StockCountSessionUncheckedCreateNestedManyWithoutTenantInput
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSyncOperationsInput = {
@@ -58921,6 +60868,7 @@ export namespace Prisma {
     stockCounts?: StockCountSessionUpdateManyWithoutTenantNestedInput
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSyncOperationsInput = {
@@ -58951,6 +60899,281 @@ export namespace Prisma {
     stockCounts?: StockCountSessionUncheckedUpdateManyWithoutTenantNestedInput
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantCreateWithoutStockMovementsInput = {
+    id?: string
+    name: string
+    subdomain: string
+    suspended?: boolean
+    cloudApiKey?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: StaffUserCreateNestedManyWithoutTenantInput
+    products?: ProductCreateNestedManyWithoutTenantInput
+    sales?: SaleCreateNestedManyWithoutTenantInput
+    refunds?: SaleRefundCreateNestedManyWithoutTenantInput
+    customers?: CustomerCreateNestedManyWithoutTenantInput
+    debtSales?: DebtSaleCreateNestedManyWithoutTenantInput
+    debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
+    suppliers?: SupplierCreateNestedManyWithoutTenantInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
+    supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
+    shifts?: ShiftCreateNestedManyWithoutTenantInput
+    auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
+    settings?: AppSettingsCreateNestedOneWithoutTenantInput
+    expenses?: ExpenseCreateNestedManyWithoutTenantInput
+    inventoryBatches?: InventoryBatchCreateNestedManyWithoutTenantInput
+    stockAdjustments?: StockAdjustmentCreateNestedManyWithoutTenantInput
+    stockCounts?: StockCountSessionCreateNestedManyWithoutTenantInput
+    dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
+    syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantUncheckedCreateWithoutStockMovementsInput = {
+    id?: string
+    name: string
+    subdomain: string
+    suspended?: boolean
+    cloudApiKey?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
+    products?: ProductUncheckedCreateNestedManyWithoutTenantInput
+    sales?: SaleUncheckedCreateNestedManyWithoutTenantInput
+    refunds?: SaleRefundUncheckedCreateNestedManyWithoutTenantInput
+    customers?: CustomerUncheckedCreateNestedManyWithoutTenantInput
+    debtSales?: DebtSaleUncheckedCreateNestedManyWithoutTenantInput
+    debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
+    suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
+    supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
+    shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
+    auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
+    settings?: AppSettingsUncheckedCreateNestedOneWithoutTenantInput
+    expenses?: ExpenseUncheckedCreateNestedManyWithoutTenantInput
+    inventoryBatches?: InventoryBatchUncheckedCreateNestedManyWithoutTenantInput
+    stockAdjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutTenantInput
+    stockCounts?: StockCountSessionUncheckedCreateNestedManyWithoutTenantInput
+    dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
+    syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantCreateOrConnectWithoutStockMovementsInput = {
+    where: TenantWhereUniqueInput
+    create: XOR<TenantCreateWithoutStockMovementsInput, TenantUncheckedCreateWithoutStockMovementsInput>
+  }
+
+  export type ProductCreateWithoutStockMovementsInput = {
+    isParent?: boolean
+    variantName?: string | null
+    name: string
+    price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
+    cost?: Decimal | DecimalJsLike | number | string
+    stock?: number
+    barcode?: string | null
+    barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    category: string
+    accent?: string
+    favorite?: boolean
+    reorderPoint?: number | null
+    reorderQuantity?: number | null
+    supplierId?: string | null
+    supplierName?: string | null
+    expiryDate?: string | null
+    image?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutProductsInput
+    parent?: ProductCreateNestedOneWithoutVariantsInput
+    variants?: ProductCreateNestedManyWithoutParentInput
+    batches?: InventoryBatchCreateNestedManyWithoutProductInput
+    adjustments?: StockAdjustmentCreateNestedManyWithoutProductInput
+    stockCountLines?: StockCountLineCreateNestedManyWithoutProductInput
+  }
+
+  export type ProductUncheckedCreateWithoutStockMovementsInput = {
+    id?: number
+    tenantId: string
+    parentId?: number | null
+    isParent?: boolean
+    variantName?: string | null
+    name: string
+    price: Decimal | DecimalJsLike | number | string
+    wholesalePrice?: Decimal | DecimalJsLike | number | string | null
+    cost?: Decimal | DecimalJsLike | number | string
+    stock?: number
+    barcode?: string | null
+    barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    category: string
+    accent?: string
+    favorite?: boolean
+    reorderPoint?: number | null
+    reorderQuantity?: number | null
+    supplierId?: string | null
+    supplierName?: string | null
+    expiryDate?: string | null
+    image?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    variants?: ProductUncheckedCreateNestedManyWithoutParentInput
+    batches?: InventoryBatchUncheckedCreateNestedManyWithoutProductInput
+    adjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutProductInput
+    stockCountLines?: StockCountLineUncheckedCreateNestedManyWithoutProductInput
+  }
+
+  export type ProductCreateOrConnectWithoutStockMovementsInput = {
+    where: ProductWhereUniqueInput
+    create: XOR<ProductCreateWithoutStockMovementsInput, ProductUncheckedCreateWithoutStockMovementsInput>
+  }
+
+  export type TenantUpsertWithoutStockMovementsInput = {
+    update: XOR<TenantUpdateWithoutStockMovementsInput, TenantUncheckedUpdateWithoutStockMovementsInput>
+    create: XOR<TenantCreateWithoutStockMovementsInput, TenantUncheckedCreateWithoutStockMovementsInput>
+    where?: TenantWhereInput
+  }
+
+  export type TenantUpdateToOneWithWhereWithoutStockMovementsInput = {
+    where?: TenantWhereInput
+    data: XOR<TenantUpdateWithoutStockMovementsInput, TenantUncheckedUpdateWithoutStockMovementsInput>
+  }
+
+  export type TenantUpdateWithoutStockMovementsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: StaffUserUpdateManyWithoutTenantNestedInput
+    products?: ProductUpdateManyWithoutTenantNestedInput
+    sales?: SaleUpdateManyWithoutTenantNestedInput
+    refunds?: SaleRefundUpdateManyWithoutTenantNestedInput
+    customers?: CustomerUpdateManyWithoutTenantNestedInput
+    debtSales?: DebtSaleUpdateManyWithoutTenantNestedInput
+    debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
+    suppliers?: SupplierUpdateManyWithoutTenantNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
+    supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
+    shifts?: ShiftUpdateManyWithoutTenantNestedInput
+    auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
+    settings?: AppSettingsUpdateOneWithoutTenantNestedInput
+    expenses?: ExpenseUpdateManyWithoutTenantNestedInput
+    inventoryBatches?: InventoryBatchUpdateManyWithoutTenantNestedInput
+    stockAdjustments?: StockAdjustmentUpdateManyWithoutTenantNestedInput
+    stockCounts?: StockCountSessionUpdateManyWithoutTenantNestedInput
+    dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
+    syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantUncheckedUpdateWithoutStockMovementsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
+    products?: ProductUncheckedUpdateManyWithoutTenantNestedInput
+    sales?: SaleUncheckedUpdateManyWithoutTenantNestedInput
+    refunds?: SaleRefundUncheckedUpdateManyWithoutTenantNestedInput
+    customers?: CustomerUncheckedUpdateManyWithoutTenantNestedInput
+    debtSales?: DebtSaleUncheckedUpdateManyWithoutTenantNestedInput
+    debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
+    supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
+    auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
+    settings?: AppSettingsUncheckedUpdateOneWithoutTenantNestedInput
+    expenses?: ExpenseUncheckedUpdateManyWithoutTenantNestedInput
+    inventoryBatches?: InventoryBatchUncheckedUpdateManyWithoutTenantNestedInput
+    stockAdjustments?: StockAdjustmentUncheckedUpdateManyWithoutTenantNestedInput
+    stockCounts?: StockCountSessionUncheckedUpdateManyWithoutTenantNestedInput
+    dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
+    syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+  }
+
+  export type ProductUpsertWithoutStockMovementsInput = {
+    update: XOR<ProductUpdateWithoutStockMovementsInput, ProductUncheckedUpdateWithoutStockMovementsInput>
+    create: XOR<ProductCreateWithoutStockMovementsInput, ProductUncheckedCreateWithoutStockMovementsInput>
+    where?: ProductWhereInput
+  }
+
+  export type ProductUpdateToOneWithWhereWithoutStockMovementsInput = {
+    where?: ProductWhereInput
+    data: XOR<ProductUpdateWithoutStockMovementsInput, ProductUncheckedUpdateWithoutStockMovementsInput>
+  }
+
+  export type ProductUpdateWithoutStockMovementsInput = {
+    isParent?: BoolFieldUpdateOperationsInput | boolean
+    variantName?: NullableStringFieldUpdateOperationsInput | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    stock?: FloatFieldUpdateOperationsInput | number
+    barcode?: NullableStringFieldUpdateOperationsInput | string | null
+    barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    category?: StringFieldUpdateOperationsInput | string
+    accent?: StringFieldUpdateOperationsInput | string
+    favorite?: BoolFieldUpdateOperationsInput | boolean
+    reorderPoint?: NullableIntFieldUpdateOperationsInput | number | null
+    reorderQuantity?: NullableIntFieldUpdateOperationsInput | number | null
+    supplierId?: NullableStringFieldUpdateOperationsInput | string | null
+    supplierName?: NullableStringFieldUpdateOperationsInput | string | null
+    expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutProductsNestedInput
+    parent?: ProductUpdateOneWithoutVariantsNestedInput
+    variants?: ProductUpdateManyWithoutParentNestedInput
+    batches?: InventoryBatchUpdateManyWithoutProductNestedInput
+    adjustments?: StockAdjustmentUpdateManyWithoutProductNestedInput
+    stockCountLines?: StockCountLineUpdateManyWithoutProductNestedInput
+  }
+
+  export type ProductUncheckedUpdateWithoutStockMovementsInput = {
+    id?: IntFieldUpdateOperationsInput | number
+    tenantId?: StringFieldUpdateOperationsInput | string
+    parentId?: NullableIntFieldUpdateOperationsInput | number | null
+    isParent?: BoolFieldUpdateOperationsInput | boolean
+    variantName?: NullableStringFieldUpdateOperationsInput | string | null
+    name?: StringFieldUpdateOperationsInput | string
+    price?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    wholesalePrice?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    stock?: FloatFieldUpdateOperationsInput | number
+    barcode?: NullableStringFieldUpdateOperationsInput | string | null
+    barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    category?: StringFieldUpdateOperationsInput | string
+    accent?: StringFieldUpdateOperationsInput | string
+    favorite?: BoolFieldUpdateOperationsInput | boolean
+    reorderPoint?: NullableIntFieldUpdateOperationsInput | number | null
+    reorderQuantity?: NullableIntFieldUpdateOperationsInput | number | null
+    supplierId?: NullableStringFieldUpdateOperationsInput | string | null
+    supplierName?: NullableStringFieldUpdateOperationsInput | string | null
+    expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
+    image?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    variants?: ProductUncheckedUpdateManyWithoutParentNestedInput
+    batches?: InventoryBatchUncheckedUpdateManyWithoutProductNestedInput
+    adjustments?: StockAdjustmentUncheckedUpdateManyWithoutProductNestedInput
+    stockCountLines?: StockCountLineUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type StaffUserCreateManyTenantInput = {
@@ -58962,6 +61185,7 @@ export namespace Prisma {
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
+    updatedAt?: Date | string
   }
 
   export type ProductCreateManyTenantInput = {
@@ -59268,6 +61492,17 @@ export namespace Prisma {
     cancelledAt?: Date | string | null
   }
 
+  export type StockMovementCreateManyTenantInput = {
+    id?: string
+    productId: number
+    type: string
+    quantity: number
+    balance: number
+    reference: string
+    note?: string
+    createdAt?: Date | string
+  }
+
   export type StaffUserUpdateWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
@@ -59277,6 +61512,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUpdateManyWithoutRecordedByUserNestedInput
@@ -59292,6 +61528,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
     closedShifts?: ShiftUncheckedUpdateManyWithoutClosedByNestedInput
     expenses?: ExpenseUncheckedUpdateManyWithoutRecordedByUserNestedInput
@@ -59307,6 +61544,7 @@ export namespace Prisma {
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type ProductUpdateWithoutTenantInput = {
@@ -59335,6 +61573,7 @@ export namespace Prisma {
     batches?: InventoryBatchUpdateManyWithoutProductNestedInput
     adjustments?: StockAdjustmentUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutTenantInput = {
@@ -59364,6 +61603,7 @@ export namespace Prisma {
     batches?: InventoryBatchUncheckedUpdateManyWithoutProductNestedInput
     adjustments?: StockAdjustmentUncheckedUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUncheckedUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateManyWithoutTenantInput = {
@@ -60254,6 +62494,39 @@ export namespace Prisma {
     cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
+  export type StockMovementUpdateWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    balance?: FloatFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    product?: ProductUpdateOneRequiredWithoutStockMovementsNestedInput
+  }
+
+  export type StockMovementUncheckedUpdateWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    productId?: IntFieldUpdateOperationsInput | number
+    type?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    balance?: FloatFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StockMovementUncheckedUpdateManyWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    productId?: IntFieldUpdateOperationsInput | number
+    type?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    balance?: FloatFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type ShiftCreateManyOpenedByInput = {
     id?: string
     tenantId: string
@@ -60675,6 +62948,17 @@ export namespace Prisma {
     valueImpact?: Decimal | DecimalJsLike | number | string
   }
 
+  export type StockMovementCreateManyProductInput = {
+    id?: string
+    tenantId: string
+    type: string
+    quantity: number
+    balance: number
+    reference: string
+    note?: string
+    createdAt?: Date | string
+  }
+
   export type ProductUpdateWithoutParentInput = {
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -60701,6 +62985,7 @@ export namespace Prisma {
     batches?: InventoryBatchUpdateManyWithoutProductNestedInput
     adjustments?: StockAdjustmentUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateWithoutParentInput = {
@@ -60730,6 +63015,7 @@ export namespace Prisma {
     batches?: InventoryBatchUncheckedUpdateManyWithoutProductNestedInput
     adjustments?: StockAdjustmentUncheckedUpdateManyWithoutProductNestedInput
     stockCountLines?: StockCountLineUncheckedUpdateManyWithoutProductNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutProductNestedInput
   }
 
   export type ProductUncheckedUpdateManyWithoutParentInput = {
@@ -60893,6 +63179,39 @@ export namespace Prisma {
     countedQuantity?: NullableFloatFieldUpdateOperationsInput | number | null
     variance?: FloatFieldUpdateOperationsInput | number
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type StockMovementUpdateWithoutProductInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    balance?: FloatFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutStockMovementsNestedInput
+  }
+
+  export type StockMovementUncheckedUpdateWithoutProductInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    balance?: FloatFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type StockMovementUncheckedUpdateManyWithoutProductInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    quantity?: FloatFieldUpdateOperationsInput | number
+    balance?: FloatFieldUpdateOperationsInput | number
+    reference?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SaleItemCreateManySaleInput = {

@@ -140,7 +140,8 @@ exports.Prisma.StaffUserScalarFieldEnum = {
   pin: 'pin',
   role: 'role',
   active: 'active',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.AppSettingsScalarFieldEnum = {
@@ -555,6 +556,18 @@ exports.Prisma.RateLimitEntryScalarFieldEnum = {
   resetAt: 'resetAt'
 };
 
+exports.Prisma.StockMovementScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  productId: 'productId',
+  type: 'type',
+  quantity: 'quantity',
+  balance: 'balance',
+  reference: 'reference',
+  note: 'note',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -672,7 +685,8 @@ exports.Prisma.ModelName = {
   DeliveryOrderItem: 'DeliveryOrderItem',
   DailyClose: 'DailyClose',
   SyncOperation: 'SyncOperation',
-  RateLimitEntry: 'RateLimitEntry'
+  RateLimitEntry: 'RateLimitEntry',
+  StockMovement: 'StockMovement'
 };
 
 /**

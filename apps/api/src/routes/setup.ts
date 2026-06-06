@@ -62,6 +62,18 @@ function safeEqual(a: string, b: string): boolean {
 async function requireCloudKeyOrJwt(req: Req, res: Response): Promise<boolean> {
   const expectedKey = process.env.CLOUD_API_KEY
   const incomingKey = req.headers["x-cloud-key"]
+  const tenantId = req.headers["x-tenant-id"] as string | undefined
+
+  if (incomingKey && tenantId) {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { cloudApiKey: true },
+    })
+    if (tenant?.cloudApiKey && safeEqual(String(incomingKey), tenant.cloudApiKey)) {
+      return true
+    }
+  }
+
   if (expectedKey && incomingKey === expectedKey) return true
 
   const header = req.headers.authorization
@@ -194,9 +206,14 @@ router.post("/cloud-config", async (req: Req, res: Response) => {
   try {
     saveCloudConfig(tenantId.trim(), apiKey.trim())
     // Give the restarted bridge a moment, then force a full pull
-    await triggerFullPull().catch(() => { /* first pull may lag — bridge will retry */ })
-    // No token here — the SPA obtains one from /api/setup/auto-login (single path)
-    res.json({ ok: true, ...getCloudStatus() })
+    let pullError: string | null = null
+    try {
+      await triggerFullPull()
+    } catch (err) {
+      pullError = (err as Error).message
+      console.error("[cloud-config] bridge pull failed:", pullError)
+    }
+    res.json({ ok: true, pullError, ...getCloudStatus() })
   } catch (err) {
     res.status(500).json({ error: (err as Error).message })
   }

@@ -41,7 +41,7 @@ router.post("/drivers", requireAuth, async (req: AuthRequest, res: ServerRespons
       return
     }
     const existing = await prisma.staffUser.findFirst({
-      where: { code, role: "Driver" },
+      where: { code, role: "Driver", tenantId: req.auth!.tenantId },
     })
     if (existing) {
       json(res, { error: "Driver with this code already exists" }, 409)
@@ -83,7 +83,7 @@ router.patch("/drivers/:id", requireAuth, async (req: AuthRequest, res: ServerRe
     if (mobile !== undefined) updateData.mobile = mobile
     if (code !== undefined) {
       if (code !== existing.code) {
-        const dup = await prisma.staffUser.findFirst({ where: { code, role: "Driver", id: { not: driverId } } })
+        const dup = await prisma.staffUser.findFirst({ where: { code, role: "Driver", id: { not: driverId }, tenantId: req.auth!.tenantId } })
         if (dup) { json(res, { error: "Code already in use" }, 409); return }
       }
       updateData.code = code
@@ -114,9 +114,8 @@ router.post("/order", async (req: any, res: ServerResponse) => {
       locationLat?: number
       locationLng?: number
       deliveryNote?: string
-      deliveryFee?: number
       customerId?: string
-      items?: Array<{ productId: number; productName: string; barcode: string; quantity: number; unitPrice: number }>
+      items?: Array<{ productId: number; quantity: number }>
     }
 
     if (!body.tenantId || !body.customerName || !body.customerPhone || !body.address || !body.items?.length) {
@@ -130,9 +129,56 @@ router.post("/order", async (req: any, res: ServerResponse) => {
       return
     }
 
+    const normalizedItems = new Map<number, number>()
+    for (const item of body.items) {
+      const productId = Number(item.productId)
+      const quantity = Number(item.quantity)
+      if (!Number.isInteger(productId) || productId <= 0 || !Number.isFinite(quantity) || quantity <= 0) {
+        json(res, { error: "Each item must include a valid productId and quantity" }, 400)
+        return
+      }
+      normalizedItems.set(productId, (normalizedItems.get(productId) ?? 0) + quantity)
+    }
+
+    const productIds = [...normalizedItems.keys()]
+    const products = await prisma.product.findMany({
+      where: { tenantId: body.tenantId, id: { in: productIds }, isParent: false },
+      select: { id: true, name: true, barcode: true, price: true, stock: true },
+    })
+
+    if (products.length !== productIds.length) {
+      json(res, { error: "One or more products are not available for this store" }, 400)
+      return
+    }
+
+    for (const product of products) {
+      const quantity = normalizedItems.get(product.id) ?? 0
+      if (product.stock < quantity) {
+        json(res, { error: `${product.name} does not have enough stock` }, 409)
+        return
+      }
+    }
+
+    const settings = await prisma.appSettings.findUnique({
+      where: { tenantId: body.tenantId },
+      select: { deliveryFee: true, assignMode: true, defaultDriverId: true },
+    })
+
     const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
-    const itemsTotal = round2(body.items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0))
-    const deliveryFee = round2(body.deliveryFee ?? 0)
+    const resolvedItems = products.map((product) => {
+      const quantity = normalizedItems.get(product.id) ?? 0
+      const unitPrice = Number(product.price)
+      return {
+        productId: product.id,
+        productName: product.name,
+        barcode: product.barcode ?? "",
+        quantity,
+        unitPrice,
+        total: round2(quantity * unitPrice),
+      }
+    })
+    const itemsTotal = round2(resolvedItems.reduce((sum, i) => sum + i.total, 0))
+    const deliveryFee = round2(Number(settings?.deliveryFee ?? 0))
     const total = round2(itemsTotal + deliveryFee)
 
     const orderCount = await prisma.deliveryOrder.count({ where: { tenantId: body.tenantId } })
@@ -154,14 +200,7 @@ router.post("/order", async (req: any, res: ServerResponse) => {
         total,
         customerId: body.customerId || null,
         items: {
-          create: body.items.map((i) => ({
-            productId: i.productId,
-            productName: i.productName,
-            barcode: i.barcode,
-            quantity: i.quantity,
-            unitPrice: i.unitPrice,
-            total: round2(i.quantity * i.unitPrice),
-          })),
+          create: resolvedItems,
         },
       },
       include: { items: true },
@@ -171,11 +210,6 @@ router.post("/order", async (req: any, res: ServerResponse) => {
     broadcastToTenant(body.tenantId, "order:new", { order })
 
     // Check settings for assign mode and default driver
-    const settings = await prisma.appSettings.findUnique({
-      where: { tenantId: body.tenantId },
-      select: { assignMode: true, defaultDriverId: true },
-    })
-
     // Auto-assign if default driver is configured
     if (settings?.defaultDriverId) {
       const driver = await prisma.staffUser.findUnique({
@@ -216,8 +250,27 @@ router.post("/order", async (req: any, res: ServerResponse) => {
 // Customer-facing: check order status (full details for tracking page)
 router.get("/order/:orderNumber/status", async (req: any, res: ServerResponse) => {
   try {
+    const q = (req.query as Record<string, string>) ?? {}
+    const tenantIdFromQuery = q.tenantId
+    const tenantSubdomain = q.tenantSubdomain ?? q.subdomain
+    let tenantId: string | undefined = tenantIdFromQuery
+
+    if (!tenantId && tenantSubdomain) {
+      const tenant = await prisma.tenant.findUnique({
+        where: { subdomain: tenantSubdomain },
+        select: { id: true },
+      })
+      tenantId = tenant?.id
+    }
+
+    if (!tenantId) {
+      json(res, { error: "tenantId or tenantSubdomain query param required" }, 400)
+      return
+    }
+    const scopedTenantId = tenantId
+
     const order = await prisma.deliveryOrder.findFirst({
-      where: { orderNumber: req.params?.orderNumber as string },
+      where: { orderNumber: req.params?.orderNumber as string, tenantId: scopedTenantId },
       include: {
         items: true,
         driver: { select: { name: true, mobile: true, code: true } },
@@ -393,22 +446,25 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerRes
       return
     }
 
-    const wasDelivered = existing.status === "Delivered"
-    const becomingDelivered = body.status === "Delivered" && !wasDelivered
-
     const order = await prisma.$transaction(async (tx) => {
-      const updated = await tx.deliveryOrder.update({
+      // Atomic status transition: use updateMany with a status guard so
+      // concurrent requests cannot both decrement stock (only the first
+      // request that transitions to Delivered will do so).
+      const updateResult = await tx.deliveryOrder.updateMany({
+        where: { id: existing.id, status: { notIn: ["Cancelled", "Delivered"] } },
+        data: { ...updateData, updatedAt: new Date() } as any,
+      })
+
+      const updated = await tx.deliveryOrder.findUnique({
         where: { id: existing.id },
-        data: updateData as any,
         include: { items: true },
       })
 
-      // Decrement product stock exactly once when order transitions → Delivered
-      if (becomingDelivered && updated.items.length > 0) {
+      if (updateResult.count > 0 && body.status === "Delivered" && updated && updated.items.length > 0) {
         await decrementProductStock(tx, tenantId, updated.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
       }
 
-      return updated
+      return updated!
     })
 
     // Broadcast changes via WebSocket
@@ -521,7 +577,6 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
     }
 
     const updateData: Record<string, unknown> = { status: newStatus }
-    const becomingDelivered = newStatus === "Delivered" && order.status !== "Delivered"
     if (newStatus === "Delivered") {
       updateData.deliveredAt = new Date()
       if (typeof paidAmount === "number") {
@@ -532,18 +587,23 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      const result = await tx.deliveryOrder.update({
+      // Atomic status transition: use updateMany with a status guard so
+      // concurrent driver requests cannot both decrement stock.
+      const updateResult = await tx.deliveryOrder.updateMany({
+        where: { id: orderId, status: { notIn: ["Cancelled", "Delivered"] } },
+        data: { ...updateData, updatedAt: new Date() } as any,
+      })
+
+      const result = await tx.deliveryOrder.findUnique({
         where: { id: orderId },
-        data: updateData as any,
         include: { items: true },
       })
 
-      // Decrement product stock exactly once when driver marks → Delivered
-      if (becomingDelivered && result.items.length > 0) {
+      if (updateResult.count > 0 && newStatus === "Delivered" && result && result.items.length > 0) {
         await decrementProductStock(tx, order.tenantId, result.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
       }
 
-      return result
+      return result!
     })
 
     // Notify tenant and customer tracking page
@@ -622,26 +682,10 @@ router.post("/driver/orders/:id/accept", requireAuth, requireDriver, async (req:
   try {
     const orderId = req.params?.id as string
     const driverId = req.auth!.userId
+    const tenantId = req.auth!.tenantId
 
-    const order = await prisma.deliveryOrder.findUnique({
-      where: { id: orderId },
-      select: { id: true, driverId: true, tenantId: true, status: true },
-    })
-    if (!order) {
-      json(res, { error: "Order not found" }, 404)
-      return
-    }
-    if (order.driverId) {
-      json(res, { error: "Order already assigned", assignedTo: order.driverId }, 409)
-      return
-    }
-    if (order.status !== "Pending" && order.status !== "Confirmed") {
-      json(res, { error: "Order is not available for acceptance" }, 400)
-      return
-    }
-
-    const driver = await prisma.staffUser.findUnique({
-      where: { id: driverId },
+    const driver = await prisma.staffUser.findFirst({
+      where: { id: driverId, tenantId, role: "Driver", active: true },
       select: { name: true },
     })
     if (!driver) {
@@ -649,27 +693,62 @@ router.post("/driver/orders/:id/accept", requireAuth, requireDriver, async (req:
       return
     }
 
-    const updated = await prisma.deliveryOrder.update({
-      where: { id: orderId },
-      data: {
-        driverId,
-        assignedName: driver.name,
-        assignedTo: driver.name,
-        driverAssignedAt: new Date(),
-        status: "Confirmed",
-      },
-      include: { items: true },
+    const updated = await prisma.$transaction(async (tx) => {
+      const claim = await tx.deliveryOrder.updateMany({
+        where: {
+          id: orderId,
+          tenantId,
+          driverId: null,
+          status: { in: ["Pending", "Confirmed"] },
+        },
+        data: {
+          driverId,
+          assignedName: driver.name,
+          assignedTo: driver.name,
+          driverAssignedAt: new Date(),
+          updatedAt: new Date(),
+          status: "Confirmed",
+        },
+      })
+
+      if (claim.count !== 1) {
+        const current = await tx.deliveryOrder.findFirst({
+          where: { id: orderId, tenantId },
+          select: { id: true, driverId: true, status: true },
+        })
+        if (!current) {
+          throw Object.assign(new Error("Order not found"), { statusCode: 404 })
+        }
+        if (current.driverId) {
+          throw Object.assign(new Error("Order already assigned"), {
+            statusCode: 409,
+            assignedTo: current.driverId,
+          })
+        }
+        throw Object.assign(new Error("Order is not available for acceptance"), { statusCode: 400 })
+      }
+
+      return tx.deliveryOrder.findUniqueOrThrow({
+        where: { id: orderId },
+        include: { items: true },
+      })
     })
 
     // Notify: order:assigned to drivers channel (so other drivers hide their Accept button)
-    broadcastToTenant(order.tenantId, "order:assigned", { orderId: updated.id, driverId })
+    broadcastToTenant(tenantId, "order:assigned", { orderId: updated.id, driverId })
     // Notify: order:updated to the assigning driver
     broadcastToUser(driverId, "order:updated", { order: updated })
     // Notify admin
-    broadcastToTenant(order.tenantId, "order:updated", { order: updated })
+    broadcastToTenant(tenantId, "order:updated", { order: updated })
 
     json(res, updated)
   } catch (err) {
+    const statusCode = (err as { statusCode?: number }).statusCode
+    if (statusCode) {
+      const assignedTo = (err as { assignedTo?: string }).assignedTo
+      json(res, { error: (err as Error).message, ...(assignedTo ? { assignedTo } : {}) }, statusCode)
+      return
+    }
     console.error("Driver accept order error:", err)
     json(res, { error: "Failed to accept order" }, 500)
   }

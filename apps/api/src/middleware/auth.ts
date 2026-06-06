@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 import jwt, { type SignOptions } from "jsonwebtoken"
-import { Decimal } from "@prisma/client/runtime/library"
+import { Decimal } from "../generated/prisma/runtime/library.js"
 
 /**
  * Recursively convert Prisma Decimal values to plain JS numbers.

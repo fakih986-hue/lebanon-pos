@@ -1,32 +1,18 @@
 import { Link, useLocation } from "react-router"
 import {
-  Calculator,
-  CircleDollarSign,
-  ClipboardList,
-  ClipboardPlus,
-  Gauge,
-  LayoutDashboard,
-  PackageSearch,
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelRightClose,
-  PanelRightOpen,
-  ReceiptText,
-  Settings,
-  ShieldCheck,
-  Truck,
-  UsersRound,
+  BarChart3, Banknote, Boxes, Building2, Car,
+  CircleDollarSign, PackagePlus, PanelLeftClose, PanelLeftOpen,
+  PanelRightClose, PanelRightOpen, ReceiptText, ScanLine,
+  SlidersHorizontal, Truck, UserCog, Users,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useI18n } from "@lebanonpos/shared"
 
+import TitanLogo from "../TitanLogo"
 import { formatCurrency } from "../../features/pos/lib/currency"
 import {
-  getActiveShift,
-  userCan,
-  subscribeSecurity,
-  type Permission,
+  getActiveShift, userCan, subscribeSecurity, type Permission,
 } from "../../features/pos/services/security.service"
 import { getSyncStatus, subscribeSync } from "../../features/pos/services/sync.service"
 
@@ -34,37 +20,38 @@ const SIDEBAR_EXPANDED_KEY = "lebanonpos.sidebar-expanded.v1"
 
 type MenuItem = {
   label: string
-  detail: string
   labelKey: string
-  detailKey: string
   path: string
   icon: LucideIcon
   permission: Permission
-  group: "Register" | "Stock" | "Operations" | "Online" | "System"
+  group: "Register" | "Inventory" | "Finance" | "Team" | "System"
 }
 
 export const menuItems: MenuItem[] = [
-  { label: "POS", detail: "Checkout", labelKey: "desktop.nav.pos", detailKey: "desktop.nav.checkout", path: "/", icon: LayoutDashboard, permission: "sales.checkout", group: "Register" },
-  { label: "Sales", detail: "History", labelKey: "desktop.nav.sales", detailKey: "desktop.nav.history", path: "/sales", icon: ReceiptText, permission: "reports.view", group: "Register" },
-  { label: "Customers", detail: "Debts", labelKey: "nav.customers", detailKey: "desktop.nav.debts", path: "/customers", icon: UsersRound, permission: "customers.manage", group: "Register" },
-  { label: "Products", detail: "Inventory", labelKey: "nav.products", detailKey: "desktop.nav.inventory", path: "/products", icon: PackageSearch, permission: "inventory.manage", group: "Stock" },
-  { label: "Receiving", detail: "Batches", labelKey: "desktop.nav.receiving", detailKey: "desktop.nav.batches", path: "/products/new", icon: ClipboardPlus, permission: "inventory.manage", group: "Stock" },
-  { label: "Dashboard", detail: "Overview", labelKey: "nav.dashboard", detailKey: "desktop.nav.command", path: "/dashboard", icon: Gauge, permission: "reports.view", group: "Operations" },
-  { label: "Accounting", detail: "Profit", labelKey: "desktop.nav.accounting", detailKey: "desktop.nav.profit", path: "/accounting", icon: Calculator, permission: "accounting.manage", group: "Operations" },
-  { label: "Suppliers", detail: "Payables", labelKey: "desktop.nav.suppliers", detailKey: "desktop.nav.payables", path: "/suppliers", icon: ClipboardList, permission: "accounting.manage", group: "Operations" },
-  { label: "Staff", detail: "Shifts", labelKey: "desktop.nav.staff", detailKey: "desktop.nav.shifts", path: "/staff", icon: ShieldCheck, permission: "staff.manage", group: "Operations" },
-  { label: "Delivery", detail: "Orders", labelKey: "nav.delivery", detailKey: "desktop.nav.orders", path: "/delivery", icon: Truck, permission: "delivery.manage", group: "Online" },
-  { label: "Drivers", detail: "Manage", labelKey: "nav.drivers", detailKey: "drivers.subtitle", path: "/delivery/drivers", icon: UsersRound, permission: "delivery.manage", group: "Online" },
-  { label: "Settings", detail: "System", labelKey: "nav.settings", detailKey: "desktop.nav.system", path: "/settings", icon: Settings, permission: "settings.manage", group: "System" },
+  { label: "POS",        labelKey: "desktop.nav.pos",         path: "/",                 icon: ScanLine,          permission: "sales.checkout",   group: "Register"  },
+  { label: "Sales",      labelKey: "desktop.nav.sales",       path: "/sales",            icon: ReceiptText,       permission: "reports.view",     group: "Register"  },
+  { label: "Customers",  labelKey: "nav.customers",           path: "/customers",        icon: Users,             permission: "customers.manage", group: "Register"  },
+  { label: "Products",   labelKey: "nav.products",            path: "/products",         icon: Boxes,             permission: "inventory.manage", group: "Inventory" },
+  { label: "Receiving",  labelKey: "desktop.nav.receiving",   path: "/products/new",     icon: PackagePlus,       permission: "inventory.manage", group: "Inventory" },
+  { label: "Suppliers",  labelKey: "desktop.nav.suppliers",   path: "/suppliers",        icon: Building2,         permission: "accounting.manage",group: "Inventory" },
+  { label: "Dashboard",  labelKey: "nav.dashboard",           path: "/dashboard",        icon: BarChart3,         permission: "reports.view",     group: "Finance"   },
+  { label: "Accounting", labelKey: "desktop.nav.accounting",  path: "/accounting",       icon: Banknote,          permission: "accounting.manage",group: "Finance"   },
+  { label: "Staff",      labelKey: "desktop.nav.staff",       path: "/staff",            icon: UserCog,           permission: "staff.manage",     group: "Team"      },
+  { label: "Delivery",   labelKey: "nav.delivery",            path: "/delivery",         icon: Truck,             permission: "delivery.manage",  group: "Team"      },
+  { label: "Drivers",    labelKey: "nav.drivers",             path: "/delivery/drivers", icon: Car,               permission: "delivery.manage",  group: "Team"      },
+  { label: "Settings",   labelKey: "nav.settings",            path: "/settings",         icon: SlidersHorizontal, permission: "settings.manage",  group: "System"    },
 ]
 
-const menuGroups: MenuItem["group"][] = ["Register", "Stock", "Operations", "Online", "System"]
+const menuGroups: MenuItem["group"][] = ["Register", "Inventory", "Finance", "Team", "System"]
 
 function isActivePath(pathname: string, path: string) {
   if (path === "/") return pathname === "/"
   if (path === "/products" || path === "/products/new" || path === "/delivery/drivers") return pathname === path
   return pathname === path || pathname.startsWith(`${path}/`)
 }
+
+const EXPANDED_W = 200
+const COLLAPSED_W = 56
 
 export default function Sidebar() {
   const location = useLocation()
@@ -88,129 +75,192 @@ export default function Sidebar() {
     })
   }
 
+  const NavLink = ({ item }: { item: MenuItem }) => {
+    const active = isActivePath(location.pathname, item.path)
+    const Icon = item.icon
+
+    return (
+      <Link
+        to={item.path}
+        title={expanded ? undefined : t(item.labelKey)}
+        className={`relative flex items-center rounded-[8px] transition-all ${expanded ? "mx-1.5 gap-2.5 px-2.5 py-2" : "mx-1.5 justify-center py-2"}`}
+        style={{
+          background: active
+            ? "linear-gradient(90deg, rgba(214,166,58,0.20) 0%, rgba(214,166,58,0.08) 45%, rgba(214,166,58,0.02) 100%)"
+            : "transparent",
+          borderLeft: active && expanded ? "3px solid #D6A63A" : "3px solid transparent",
+          boxShadow: active
+            ? "inset 0 0 0 1px rgba(214,166,58,0.10), 0 0 24px rgba(214,166,58,0.08)"
+            : "none",
+          color: active ? "#FFFFFF" : "#94A3B8",
+          transition: "all 200ms ease",
+        }}
+        onMouseEnter={(e) => {
+          if (!active) {
+            e.currentTarget.style.background = "#111827"
+            e.currentTarget.style.color = "#F8FAFC"
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!active) {
+            e.currentTarget.style.background = "transparent"
+            e.currentTarget.style.color = "#94A3B8"
+          }
+        }}
+      >
+        {/* Icon */}
+        <span
+          className="flex shrink-0 items-center justify-center rounded-md transition-colors duration-150"
+          style={{
+            width: 28,
+            height: 28,
+            background: active ? "rgba(214,166,58,0.12)" : "transparent",
+            color: active ? "#F2D27A" : "#94A3B8",
+          }}
+        >
+          <Icon size={16} strokeWidth={1.75} />
+        </span>
+
+        {/* Label — only when expanded */}
+        {expanded && (
+          <span
+            className="truncate text-[12.5px] font-medium"
+            style={{ color: active ? "#FFFFFF" : "#94A3B8" }}
+          >
+            {t(item.labelKey)}
+          </span>
+        )}
+      </Link>
+    )
+  }
+
   return (
     <aside
-      style={{ background: "var(--sidebar-bg)", borderColor: "var(--sidebar-border)" }}
-      className={`hidden h-full shrink-0 flex-col text-white transition-[width] duration-200 md:flex ${expanded ? "w-64" : "w-[72px]"} ${dir === "rtl" ? "border-l" : "border-r"}`}
+      className={`hidden h-full shrink-0 flex-col overflow-hidden md:flex ${dir === "rtl" ? "border-l" : "border-r"}`}
+      style={{
+        width: expanded ? EXPANDED_W : COLLAPSED_W,
+        background: "var(--sidebar-bg)",
+        borderColor: "var(--sidebar-border)",
+        transition: "width 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+      }}
     >
-      {/* Logo + Toggle */}
-      <div
-        className={`flex shrink-0 items-center gap-3 border-b px-3 py-3 ${expanded ? "justify-between" : "flex-col justify-center"}`}
-        style={{ borderColor: "var(--sidebar-border)", minHeight: 64 }}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white" style={{ background: "var(--brand)" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>
-            </svg>
-          </div>
+      {/* ──────────────── Logo ──────────────── */}
+      <div className="flex shrink-0 items-center" style={{ height: expanded ? 76 : 72 }}>
+        <Link to="/" className={`flex min-w-0 items-center gap-2.5 ${expanded ? "px-3" : "mx-auto"}`}>
+          <TitanLogo size={expanded ? 44 : 46} />
           {expanded && (
-            <div className="min-w-0 animate-fade-in">
-              <p className="truncate text-[13px] font-bold leading-tight" style={{ color: "var(--sidebar-text)" }}>Lebanon POS</p>
-              <p className="truncate text-[11px]" style={{ color: "var(--sidebar-text-2)" }}>Retail Suite</p>
+            <div className="min-w-0">
+              <p className="truncate text-[16px] font-black tracking-[0.06em]" style={{ color: "var(--sidebar-text)" }}>
+                TITAN
+              </p>
+              <p className="truncate text-[8.5px] font-semibold tracking-[0.22em] uppercase" style={{ color: "var(--sidebar-text-2)", opacity: 0.5 }}>
+                Powerful Systems
+              </p>
             </div>
           )}
-        </div>
-
-        <button
-          type="button"
-          onClick={toggleExpanded}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition"
-          style={{ color: "var(--sidebar-text-2)" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--sidebar-text)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--sidebar-text-2)")}
-          aria-label={expanded ? t("desktop.collapse_menu") : t("desktop.expand_menu")}
-        >
-          {expanded
-            ? (dir === "rtl" ? <PanelRightClose size={16} /> : <PanelLeftClose size={16} />)
-            : (dir === "rtl" ? <PanelRightOpen size={16}  /> : <PanelLeftOpen size={16}  />)
-          }
-        </button>
+        </Link>
       </div>
 
-      {/* Nav */}
-      <nav className={`min-h-0 flex-1 overflow-y-auto [scrollbar-width:none] ${expanded ? "px-2 py-3" : "px-2 py-3"}`}>
-        {menuGroups.map((group) => {
+      {/* ──────────────── Nav ──────────────── */}
+      <nav className="min-h-0 flex-1 overflow-y-auto py-2 [scrollbar-width:none]">
+        {menuGroups.map((group, gi) => {
           const items = visibleMenuItems.filter((item) => item.group === group)
           if (items.length === 0) return null
 
           return (
-            <div key={group} className={expanded ? "mb-5" : "mb-4"}>
+            <div key={group} className={gi > 0 ? "mt-4" : ""}>
+              {/* Group label */}
               {expanded && (
                 <p
-                  className="mb-1.5 px-2 text-[10px] font-bold uppercase tracking-[0.16em]"
-                  style={{ color: "var(--sidebar-text-2)" }}
+                  className="mx-3.5 mb-1 text-[11px] font-bold uppercase tracking-[0.12em]"
+                  style={{ color: "#64748B" }}
                 >
                   {t(`desktop.group.${group}`)}
                 </p>
               )}
+
+              {/* Divider between groups when collapsed */}
+              {!expanded && gi > 0 && (
+                <div
+                  className="mx-3.5 my-1.5 h-px"
+                  style={{ background: "var(--sidebar-border)" }}
+                />
+              )}
+
               <div className="space-y-0.5">
-                {items.map((item) => {
-                  const active = isActivePath(location.pathname, item.path)
-                  const Icon = item.icon
-
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      title={expanded ? undefined : t(item.labelKey)}
-                      className={`sidebar-link ${active ? "active" : ""} ${expanded ? "" : "justify-center"}`}
-                    >
-                      <span className="sidebar-icon">
-                        <Icon size={17} />
-                      </span>
-
-                      {expanded && (
-                        <span className="min-w-0 flex-1 animate-fade-in">
-                          <span
-                            className="block text-[13px] font-semibold leading-tight"
-                            style={{ color: active ? "var(--sidebar-active-text)" : "var(--sidebar-text)" }}
-                          >
-                            {t(item.labelKey)}
-                          </span>
-                        </span>
-                      )}
-                    </Link>
-                  )
-                })}
+                {items.map((item) => (
+                  <NavLink key={item.path} item={item} />
+                ))}
               </div>
             </div>
           )
         })}
       </nav>
 
-      {/* Bottom: shift + sync status */}
-      {expanded && (
-        <div className="shrink-0 border-t p-3 space-y-2" style={{ borderColor: "var(--sidebar-border)" }}>
-          <div
-            className="rounded-lg px-3 py-2.5 flex items-center justify-between gap-2"
-            style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}
-          >
-            <div className="flex items-center gap-2">
-              <span className={`h-2 w-2 rounded-full ${activeShift ? "bg-emerald-400" : "bg-zinc-500"}`} />
-              <span className="text-[12px] font-semibold" style={{ color: activeShift ? "#6EE7B7" : "var(--sidebar-text-2)" }}>
+      {/* ──────────────── Footer ──────────────── */}
+      <div
+        className="shrink-0 space-y-1.5 border-t p-2"
+        style={{ borderColor: "var(--sidebar-border)" }}
+      >
+        {/* Shift status */}
+        <div
+          className={`flex items-center gap-2 rounded-[8px] px-2 py-1.5 ${!expanded ? "justify-center" : ""}`}
+          style={{
+            background: activeShift ? "rgba(34,197,94,0.06)" : "transparent",
+            border: activeShift ? "1px solid rgba(34,197,94,0.15)" : "1px solid transparent",
+          }}
+        >
+          <span
+            className="h-1.5 w-1.5 shrink-0 rounded-full"
+            style={{
+              background: activeShift ? "#22C55E" : "#52525b",
+              boxShadow: activeShift ? "0 0 6px rgba(34,197,94,0.5)" : "none",
+            }}
+          />
+          {expanded && (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[10px] font-semibold" style={{ color: activeShift ? "#22C55E" : "var(--sidebar-text-2)" }}>
                 {activeShift ? activeShift.shiftNumber : t("desktop.closed")}
-              </span>
-            </div>
-            {activeShift && (
-              <span className="text-[11px] font-semibold" style={{ color: "#6EE7B7" }}>
-                <CircleDollarSign size={13} className="inline mr-0.5" />
-                {formatCurrency(activeShift.openingFloatUsd)}
-              </span>
-            )}
-          </div>
-
-          {syncPending > 0 && (
-            <div
-              className="rounded-lg px-3 py-2 flex items-center gap-2"
-              style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.15)" }}
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-[11px] font-semibold text-amber-400">{syncPending} pending sync</span>
+              </p>
+              {activeShift && (
+                <p className="text-[9px] font-medium" style={{ color: "rgba(34,197,94,0.55)" }}>
+                  <CircleDollarSign size={7} className="inline mr-0.5" />
+                  {formatCurrency(activeShift.openingFloatUsd)}
+                </p>
+              )}
             </div>
           )}
         </div>
-      )}
+
+        {/* Pending sync */}
+        {syncPending > 0 && (
+          <div
+            className={`flex items-center gap-1.5 rounded-[8px] px-2 py-1.5 ${!expanded ? "justify-center" : ""}`}
+            style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}
+          >
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+            {expanded && (
+              <span className="text-[10px] font-semibold text-red-400">
+                {syncPending} pending
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Collapse toggle */}
+        <button
+          type="button"
+          onClick={toggleExpanded}
+          className="flex h-7 w-full items-center justify-center rounded-[8px] transition-colors hover:bg-white/5"
+          style={{ color: "var(--sidebar-text-2)" }}
+          aria-label={expanded ? t("desktop.collapse_menu") : t("desktop.expand_menu")}
+        >
+          {expanded
+            ? (dir === "rtl" ? <PanelRightClose size={14} /> : <PanelLeftClose size={14} />)
+            : (dir === "rtl" ? <PanelRightOpen  size={14} /> : <PanelLeftOpen  size={14} />)
+          }
+        </button>
+      </div>
     </aside>
   )
 }
@@ -224,26 +274,47 @@ export function BottomNav() {
 
   return (
     <nav
-      className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] pt-1.5 backdrop-blur-xl md:hidden"
+      className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 md:hidden"
+      style={{
+        background: "var(--sidebar-bg)",
+        borderTop: "1px solid var(--sidebar-border)",
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 4px)",
+      }}
     >
-      <div className="mx-auto flex max-w-6xl gap-0.5 overflow-x-auto [scrollbar-width:none]">
+      <div className="flex gap-0 overflow-x-auto px-1 [scrollbar-width:none] [-webkit-overflow-scrolling:touch]">
         {visibleMenuItems.map((item) => {
           const active = isActivePath(location.pathname, item.path)
-          const Icon = item.icon
           return (
             <Link
               key={item.path}
               to={item.path}
               aria-label={t(item.labelKey)}
-              className={`flex min-w-[72px] flex-none flex-col items-center gap-1 rounded-lg px-2 py-2 text-[10px] font-bold transition ${
-                active
-                  ? "text-white"
-                  : "text-[var(--text-3)] hover:text-[var(--text)]"
-              }`}
-              style={active ? { background: "var(--brand)" } : undefined}
+              className="relative flex min-w-[56px] flex-1 flex-col items-center justify-center gap-0.5 py-2 select-none touch-manipulation active:opacity-70 transition-opacity"
             >
-              <Icon size={18} />
-              <span className="leading-none">{t(item.labelKey)}</span>
+              {/* Active indicator dot */}
+              {active && (
+                <span
+                  className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-5 rounded-b-full"
+                  style={{ background: "#D6A63A" }}
+                />
+              )}
+
+              <span
+                className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors duration-150"
+                style={{
+                  background: active ? "var(--sidebar-icon-active)" : "transparent",
+                  color: active ? "var(--sidebar-icon-active-color)" : "var(--sidebar-icon-color)",
+                }}
+              >
+                <item.icon size={17} strokeWidth={1.75} />
+              </span>
+
+              <span
+                className="text-[10px] font-semibold leading-none mt-0.5"
+                style={{ color: active ? "var(--sidebar-active-text)" : "var(--sidebar-text-2)" }}
+              >
+                {t(item.labelKey)}
+              </span>
             </Link>
           )
         })}

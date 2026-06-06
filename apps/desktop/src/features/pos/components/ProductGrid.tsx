@@ -22,7 +22,7 @@ const ProductGrid = memo(function ProductGrid({
   searchQuery,
 }: Props) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 pb-4 sm:grid-cols-[repeat(auto-fill,minmax(168px,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(178px,1fr))]">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2 pb-4 sm:grid-cols-[repeat(auto-fill,minmax(155px,1fr))] xl:grid-cols-[repeat(auto-fill,minmax(165px,1fr))]">
       {products.map((product) => (
         <ProductCard
           key={product.id}

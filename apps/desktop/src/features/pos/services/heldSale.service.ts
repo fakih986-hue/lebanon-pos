@@ -1,6 +1,7 @@
 import type { Product } from "../types/product"
 
 import { writeLocalWithIndexedDB } from "./storage.service"
+import { enqueueSyncOperation } from "./sync.service"
 import { canUseStorage, createId } from "../lib/storage"
 
 const HELD_SALES_KEY = "lebanonpos.held-sales.v1"
@@ -62,17 +63,30 @@ export function holdSale(input: Omit<HeldSale, "id" | "holdNumber" | "createdAt"
   const heldSale: HeldSale = {
     ...input,
     id: createId(),
-    holdNumber: `H-${Date.now().toString().slice(-6)}`,
+    holdNumber: `H-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`,
     createdAt: new Date().toISOString(),
   }
 
   writeHeldSales([heldSale, ...heldSales])
+
+  enqueueSyncOperation({
+    entity: "held-sale",
+    action: "create",
+    summary: `Sale held #${heldSale.holdNumber}.`,
+    payload: heldSale,
+  })
 
   return heldSale
 }
 
 export function removeHeldSale(heldSaleId: string) {
   writeHeldSales(getHeldSales().filter((heldSale) => heldSale.id !== heldSaleId))
+  enqueueSyncOperation({
+    entity: "held-sale",
+    action: "delete",
+    summary: `Held sale ${heldSaleId} removed.`,
+    payload: { id: heldSaleId },
+  })
 }
 
 export function subscribeHeldSales(callback: (heldSales: HeldSale[]) => void) {

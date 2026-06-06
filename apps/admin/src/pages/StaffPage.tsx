@@ -2,6 +2,22 @@ import { useEffect, useState } from "react"
 import { api } from "../app/api"
 import { useI18n } from "@lebanonpos/shared"
 
+/** SHA-256 hash a string, return base64 (matches server-side hashSha256Pin).
+ *  Falls back to plain text if crypto.subtle unavailable (HTTP) — the API
+ *  hashStaffPayload will bcrypt-hash it server-side. */
+async function hashPin(pin: string): Promise<string> {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.subtle?.digest === "function") {
+      const encoder = new TextEncoder()
+      const data = encoder.encode(pin)
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data)
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      return btoa(String.fromCharCode(...hashArray))
+    }
+  } catch { /* crypto.subtle unavailable — fall through */ }
+  return pin
+}
+
 type StaffUser = {
   id: string
   name: string
@@ -89,6 +105,7 @@ export function StaffPage() {
     setAddLoading(true)
     setAddError("")
     try {
+      const hashedPin = await hashPin(newPin.trim())
       await api("/api/sync/push", {
         method: "POST",
         body: JSON.stringify({
@@ -96,7 +113,7 @@ export function StaffPage() {
             id: crypto.randomUUID(),
             entity: "staff",
             action: "create",
-            payload: { id: crypto.randomUUID(), name: newName.trim(), mobile: newMobile.trim(), pin: newPin, role: newRole, code: "", active: true },
+            payload: { id: crypto.randomUUID(), name: newName.trim(), mobile: newMobile.trim(), pin: hashedPin, role: newRole, code: "", active: true },
           }],
         }),
       })

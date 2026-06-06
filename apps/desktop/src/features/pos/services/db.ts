@@ -82,6 +82,9 @@ function getDb(): Promise<IDBPDatabase> {
           db.createObjectStore("delivery-orders", { keyPath: "id" })
         }
       },
+    }).catch((err) => {
+      dbPromise = null
+      throw err
     })
   }
   return dbPromise

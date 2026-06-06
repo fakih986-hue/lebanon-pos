@@ -34,7 +34,9 @@ vi.mock("../src/lib/prisma", () => {
     expense: model(),
     inventoryBatch: model(),
     stockAdjustment: model(),
+    stockMovement: model(),
     stockCountSession: { ...model() },
+    stockCountLine: model(),
     dailyClose: model(),
     deliveryOrder: model(),
     syncOperation: model(),
@@ -115,6 +117,7 @@ describe("GET /api/sync/pull", () => {
     vi.mocked(prisma.stockCountSession.findMany).mockResolvedValue(empty)
     vi.mocked(prisma.dailyClose.findMany).mockResolvedValue(empty)
     vi.mocked(prisma.deliveryOrder.findMany).mockResolvedValue(empty)
+    vi.mocked(prisma.syncOperation.findMany).mockResolvedValue(empty)
   }
 
   beforeEach(() => { vi.clearAllMocks() })
@@ -145,6 +148,49 @@ describe("GET /api/sync/pull", () => {
       where: { tenantId: "t1" },
   })
 })
+
+  it("returns 400 when 'since' is an invalid date (fix #5)", async () => {
+    const res = await request("GET", "/api/sync/pull?since=garbage", { token })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe("Invalid 'since' date parameter")
+  })
+
+  it("returns 400 when 'since' is a nonsense string", async () => {
+    const res = await request("GET", "/api/sync/pull?since=not-a-date", { token })
+    expect(res.status).toBe(400)
+  })
+
+  it("uses createdFilter (createdAt only) for staff when since is provided", async () => {
+    mockAllEmpty()
+    await request("GET", "/api/sync/pull?since=2026-01-01T00:00:00Z", { token })
+
+    const staffWhere = vi.mocked(prisma.staffUser.findMany).mock.calls[0][0]?.where
+    expect(staffWhere).toBeDefined()
+    expect(staffWhere.tenantId).toBe("t1")
+    // StaffUser has no updatedAt — use createdAt filter only
+    expect(staffWhere.createdAt).toBeDefined()
+    expect(staffWhere.OR).toBeUndefined()
+  })
+
+  it("uses updatedFilter (not createdFilter) for products with since", async () => {
+    mockAllEmpty()
+    await request("GET", "/api/sync/pull?since=2026-01-01T00:00:00Z", { token })
+
+    const productWhere = vi.mocked(prisma.product.findMany).mock.calls[0][0]?.where
+    expect(productWhere.OR).toBeDefined()
+    expect(productWhere.OR[0].createdAt).toBeDefined()
+    expect(productWhere.OR[1].updatedAt).toBeDefined()
+  })
+
+  it("uses createdFilter (no OR) for sales with since", async () => {
+    mockAllEmpty()
+    await request("GET", "/api/sync/pull?since=2026-01-01T00:00:00Z", { token })
+
+    const saleWhere = vi.mocked(prisma.sale.findMany).mock.calls[0][0]?.where
+    // Sales use createdFilter (createdAt only, no OR)
+    expect(saleWhere.createdAt).toBeDefined()
+    expect(saleWhere.OR).toBeUndefined()
+  })
 
 describe("POST /api/sync/push — sale stock integrity", () => {
   beforeEach(() => { vi.clearAllMocks() })
@@ -224,6 +270,8 @@ describe("POST /api/sync/push — sale stock integrity", () => {
       { id: 1, stock: 1, name: "Cola" } as any,   // only 1 in stock, need 2
       { id: 2, stock: 5, name: "Chips" } as any,
     ])
+    // Atomic decrement returns count 0 — stock check fails inline
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 0 } as any)
 
     const res = await request("POST", "/api/sync/push", {
       token,
@@ -233,10 +281,199 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     })
 
     expect(res.status).toBe(200)
-    expect(res.body.results[0].status).toBe("error")
+    expect(res.body.results[0].status).toBe("rejected")
     expect(res.body.results[0].error).toContain("Insufficient stock")
-    // updateMany should NOT be called (stock check failed before decrement)
-    expect(vi.mocked(prisma.product.updateMany).mock.calls.length).toBe(0)
+    // updateMany IS called (it's the atomic check itself), but returns count 0
+    expect(vi.mocked(prisma.product.updateMany).mock.calls.length).toBe(1)
+  })
+})
+
+describe("POST /api/sync/push — product delete cascading", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it("deletes inventoryBatch and stockAdjustment when product is deleted", async () => {
+    vi.mocked(prisma.inventoryBatch.deleteMany).mockResolvedValue({ count: 2 } as any)
+    vi.mocked(prisma.stockAdjustment.deleteMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.stockCountSession.findMany).mockResolvedValue([])
+    vi.mocked(prisma.product.deleteMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{
+          id: "op-delete-1",
+          entity: "product",
+          action: "delete",
+          payload: { id: 42 },
+        }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+
+    // Verify cascading deleteMany calls
+    expect(vi.mocked(prisma.inventoryBatch.deleteMany).mock.calls[0][0]).toMatchObject({
+      where: { tenantId: "t1", productId: 42 },
+    })
+    expect(vi.mocked(prisma.stockAdjustment.deleteMany).mock.calls[0][0]).toMatchObject({
+      where: { tenantId: "t1", productId: 42 },
+    })
+    // Final product delete
+    expect(vi.mocked(prisma.product.deleteMany).mock.calls[0][0]).toMatchObject({
+      where: { tenantId: "t1", id: 42 },
+    })
+  })
+
+  it("deletes stockCountLines when product has count sessions", async () => {
+    vi.mocked(prisma.inventoryBatch.deleteMany).mockResolvedValue({ count: 0 } as any)
+    vi.mocked(prisma.stockAdjustment.deleteMany).mockResolvedValue({ count: 0 } as any)
+    vi.mocked(prisma.stockCountSession.findMany).mockResolvedValue([
+      { id: "session-1" },
+      { id: "session-2" },
+    ] as any)
+    vi.mocked(prisma.stockCountLine.deleteMany).mockResolvedValue({ count: 2 } as any)
+    vi.mocked(prisma.product.deleteMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{
+          id: "op-delete-2",
+          entity: "product",
+          action: "delete",
+          payload: { id: 99 },
+        }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    // Verify stockCountLine was deleted for the found sessions
+    expect(vi.mocked(prisma.stockCountLine.deleteMany).mock.calls[0][0]).toMatchObject({
+      where: { productId: 99, sessionId: { in: ["session-1", "session-2"] } },
+    })
+  })
+
+  it("skips stockCountLine deletion when no count sessions exist", async () => {
+    vi.mocked(prisma.inventoryBatch.deleteMany).mockResolvedValue({ count: 0 } as any)
+    vi.mocked(prisma.stockAdjustment.deleteMany).mockResolvedValue({ count: 0 } as any)
+    vi.mocked(prisma.stockCountSession.findMany).mockResolvedValue([])
+    vi.mocked(prisma.product.deleteMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{
+          id: "op-delete-3",
+          entity: "product",
+          action: "delete",
+          payload: { id: 7 },
+        }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    // stockCountLine.deleteMany should NOT be called
+    expect(vi.mocked(prisma.stockCountLine.deleteMany).mock.calls.length).toBe(0)
+  })
+})
+
+describe("POST /api/sync/push — concurrent stock race", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it("only one of two concurrent sales succeeds when product stock is insufficient", async () => {
+    // Two devices sell the same last unit simultaneously.
+    // Product has stock=1, each sale needs 1.
+    vi.mocked(prisma.sale.findUnique).mockResolvedValue(null)
+
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      { id: 1, stock: 1, name: "Cola" } as any,
+    ])
+
+    // First product.updateMany succeeds, second fails (stock race)
+    let productUpdateCalls = 0
+    vi.mocked(prisma.product.updateMany).mockImplementation(() => {
+      productUpdateCalls++
+      return productUpdateCalls <= 1
+        ? Promise.resolve({ count: 1 } as any)
+        : Promise.resolve({ count: 0 } as any)
+    })
+
+    vi.mocked(prisma.sale.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
+
+    const salePayload = (suffix: string) => ({
+      id: `sale-concurrent-${suffix}`,
+      saleNumber: `S-CON-${suffix}`,
+      paymentMethod: "Cash",
+      subtotal: 10,
+      total: 10,
+      cashier: "Dev",
+      items: [{ id: 1, name: "Cola", barcode: "111", quantity: 1, unitPrice: 10, total: 10, cost: 5 }],
+    })
+
+    const [res1, res2] = await Promise.all([
+      request("POST", "/api/sync/push", {
+        token,
+        body: { operations: [{ id: "op-con-a", entity: "sale", action: "create", payload: salePayload("a") }] },
+      }),
+      request("POST", "/api/sync/push", {
+        token,
+        body: { operations: [{ id: "op-con-b", entity: "sale", action: "create", payload: salePayload("b") }] },
+      }),
+    ])
+
+    const statuses = [res1.body.results[0].status, res2.body.results[0].status].sort()
+    expect(statuses).toEqual(["ok", "rejected"])
+    const rejectedResult = res1.body.results[0].status === "rejected" ? res1.body.results[0] : res2.body.results[0]
+    expect(rejectedResult.error).toContain("Insufficient stock")
+  })
+
+  it("idempotent push does not race with first-time push", async () => {
+    // Device 1 pushes a new sale; Device 2 pushes the same sale (retry).
+    // The duplicate should be safely skipped without error.
+    vi.mocked(prisma.sale.findUnique)
+      .mockResolvedValueOnce(null)   // Device 1: sale doesn't exist
+      .mockResolvedValueOnce({ id: "sale-con-retry" } as any)  // Device 2: sale exists
+
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      { id: 1, stock: 10, name: "Cola" } as any,
+    ])
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.sale.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
+
+    const salePayload = {
+      id: "sale-con-retry",
+      saleNumber: "S-CON-RETRY",
+      paymentMethod: "Cash",
+      subtotal: 10,
+      total: 10,
+      cashier: "Dev",
+      items: [{ id: 1, name: "Cola", barcode: "111", quantity: 1, unitPrice: 10, total: 10, cost: 5 }],
+    }
+
+    const [res1, res2] = await Promise.all([
+      request("POST", "/api/sync/push", {
+        token,
+        body: { operations: [{ id: "op-retry-1", entity: "sale", action: "create", payload: salePayload }] },
+      }),
+      request("POST", "/api/sync/push", {
+        token,
+        body: { operations: [{ id: "op-retry-2", entity: "sale", action: "create", payload: salePayload }] },
+      }),
+    ])
+
+    // Both should be "ok" — the duplicate is idempotent
+    expect(res1.body.results[0].status).toBe("ok")
+    expect(res2.body.results[0].status).toBe("ok")
+    // Product stock should only decrement once
+    const productUpdateCalls = vi.mocked(prisma.product.updateMany).mock.calls
+    const decrementCalls = productUpdateCalls.filter((c: any) => c[0]?.data?.stock?.decrement !== undefined)
+    expect(decrementCalls.length).toBe(1)
   })
 })
 })

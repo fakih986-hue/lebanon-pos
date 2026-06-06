@@ -12,6 +12,7 @@ import ErrorBoundary from "../components/ErrorBoundary"
 import SearchToolbar from "../components/SearchToolbar"
 import DepartmentTabs from "../components/DepartmentTabs"
 import LastSaleBanner from "../components/LastSaleBanner"
+import SaleCompleteOverlay from "../components/SaleCompleteOverlay"
 import CartDrawer from "../components/CartDrawer"
 import CartPanel from "../components/CartPanel"
 import VariantPicker from "../components/VariantPicker"
@@ -142,6 +143,17 @@ export default function POSPage() {
     if (!quickMode) return
     window.requestAnimationFrame(() => scanInputRef.current?.focus())
   }, [quickMode, scanInputRef])
+
+  // --- Listen for rejected sync operations (e.g. insufficient stock) ---
+  useEffect(() => {
+    const onRejected = (e: Event) => {
+      const op = (e as CustomEvent).detail
+      const msg = op?.error ? `⚠️ ${op.error}` : "⚠️ Sale was not completed by server"
+      setScannerStatus(msg)
+    }
+    window.addEventListener("sync:operation-rejected", onRejected)
+    return () => window.removeEventListener("sync:operation-rejected", onRejected)
+  }, [])
 
   // --- Computed values ---
   const departmentSummaries = useMemo(() => {
@@ -499,7 +511,7 @@ export default function POSPage() {
   const completeSale = useCallback(function completeSale() {
     if (checkoutBlocked) return
 
-    const saleNumber = `S-${Date.now().toString().slice(-6)}`
+    const saleNumber = `S-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`
 
     let batchesConsumed = false
     let recordedSaleId: string | undefined
@@ -584,8 +596,7 @@ export default function POSPage() {
     } catch (err) {
       // Reverse completed steps — cart is preserved so user can retry
       if (recordedSaleId) {
-        // voidSale restores stock + batches + debt internally — don't double-restore
-        voidSale(recordedSaleId)
+        voidSale(recordedSaleId, stockDecreased)
       } else {
         // Sale was NOT recorded — manually restore what was consumed
         if (stockDecreased) {
@@ -612,7 +623,7 @@ export default function POSPage() {
       <div className="flex h-full min-h-0">
         {/* ── Left: Product area ── */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <section className="flex h-full min-w-0 flex-col gap-3 overflow-hidden p-3 pb-28 sm:p-4 md:pb-4 xl:p-5">
+          <section className="flex h-full min-w-0 flex-col gap-3 overflow-hidden p-3 pb-24 sm:p-4 md:pb-4 xl:p-5">
             <LastSaleBanner
               sale={lastSale}
               onNewSale={cleanSale}
@@ -650,12 +661,31 @@ export default function POSPage() {
                 onSetQuantity={setItemQuantity}
                 onSetPrice={setItemPrice}
                 onCleanSale={cleanSale}
-                onCartOpen={() => setIsCartOpen(true)}
                 onExit={() => setQuickMode(false)}
                 itemCount={itemCount}
                 total={total}
                 totalLbp={totalLbp}
                 exchangeRate={exchangeRate}
+                paymentMethod={paymentMethod}
+                onSelectPayment={setPaymentMethod}
+                tenderMode={tenderMode}
+                onSelectTenderMode={selectTenderMode}
+                paidUsd={paidUsd}
+                paidLbp={paidLbp}
+                onPaidUsdChange={setPaidUsd}
+                onPaidLbpChange={setPaidLbp}
+                onFillExactTender={fillExactTender}
+                customers={customers}
+                selectedCustomerId={selectedCustomerId}
+                onSelectCustomer={setSelectedCustomerId}
+                paidTotalUsd={paidTotalUsd}
+                paidTotalLbp={paidTotalLbp}
+                cashChangeUsd={cashChangeUsd}
+                cashChangeLbp={cashChangeLbp}
+                cashStillDueUsd={cashStillDueUsd}
+                cashTenderValid={cashTenderValid}
+                checkoutBlocked={checkoutBlocked}
+                onCompleteSale={completeSale}
               />
             ) : (
               <>
@@ -715,8 +745,8 @@ export default function POSPage() {
                     </ErrorBoundary>
                 </div>
 
-                {/* Keyboard shortcuts reference strip */}
-                <div className="flex flex-wrap gap-1.5 p-2 mt-auto" style={{ background: "var(--surface-2)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
+                {/* Keyboard shortcuts reference strip — desktop only */}
+                <div className="hidden md:flex flex-wrap gap-1.5 p-2 mt-auto" style={{ background: "var(--surface-2)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
                   <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: "var(--text-3)" }}>
                     <span className="rounded bg-black/5 px-1.5 py-0.5 font-mono">Ctrl+F</span>
                     Search
@@ -738,15 +768,21 @@ export default function POSPage() {
             )}
           </section>
 
-          {/* ── Mobile floating cart button (hidden on desktop) ── */}
+          {/* ── Mobile floating cart button ── */}
           <button
             type="button"
             onClick={() => setIsCartOpen(true)}
-            className={`lg:hidden absolute bottom-24 left-3 right-3 z-30 flex items-center justify-between gap-3 rounded-lg bg-zinc-950 px-4 py-3 text-left text-white shadow-2xl transition hover:bg-zinc-800 md:bottom-5 md:min-w-64 md:px-5 md:py-4 ${dir === "rtl" ? "md:left-5 md:right-auto" : "md:left-auto md:right-5"}`}
-            style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+            className={`lg:hidden fixed bottom-20 left-3 right-3 z-30 flex items-center justify-between gap-3 rounded-xl shadow-2xl transition active:scale-[0.98] md:bottom-6 md:left-auto md:right-5 md:min-w-64 md:max-w-sm`}
+            style={{
+              background: "var(--sidebar-bg)",
+              border: "1px solid var(--sidebar-border)",
+              color: "var(--sidebar-text)",
+              padding: "12px 16px",
+              paddingBottom: "max(12px, calc(env(safe-area-inset-bottom) + 4px))",
+            }}
           >
             <span className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-400 text-zinc-950">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500 text-white">
                 <ShoppingCart size={22} />
               </span>
               <span>
@@ -912,6 +948,8 @@ export default function POSPage() {
       ) : null}
 
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      <SaleCompleteOverlay sale={lastSale} />
 
     </main>
   )

@@ -5,7 +5,7 @@ import fs from "node:fs"
 import { fileURLToPath } from "node:url"
 import { json } from "./middleware/auth.js"
 import prisma from "./lib/prisma.js"
-import { Decimal } from "@prisma/client/runtime/library"
+import { Decimal } from "./generated/prisma/runtime/library.js"
 import cors from "cors"
 import morgan from "morgan"
 
@@ -81,16 +81,21 @@ app.use(express.static("public"))
 
 function spaHandler(publicDir: string) {
   return (_req: IncomingMessage, res: ServerResponse) => {
-    try {
-      const html = fs.readFileSync(
-        path.join(__dirname, "..", "public", publicDir, "index.html"),
-        "utf-8"
-      )
-      res.setHeader("Content-Type", "text/html")
-      res.end(html)
-    } catch {
-      json(res, { error: `${publicDir} app not found` }, 503)
+    const paths = [
+      path.join(__dirname, "..", "public", publicDir, "index.html"),
+      path.join(__dirname, "public", publicDir, "index.html"),
+    ]
+    for (const p of paths) {
+      if (fs.existsSync(p)) {
+        try {
+          const html = fs.readFileSync(p, "utf-8")
+          res.setHeader("Content-Type", "text/html")
+          res.end(html)
+          return
+        } catch { /* try next */ }
+      }
     }
+    json(res, { error: `${publicDir} app not found` }, 503)
   }
 }
 

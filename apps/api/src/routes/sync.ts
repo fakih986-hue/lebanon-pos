@@ -28,6 +28,7 @@ const syncOperationSchema = z.object({
     "inventory",
     "settings",
     "delivery-order",
+    "held-sale",
   ]),
   action: z.enum([
     "create",
@@ -74,7 +75,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
   }
 
   const { operations } = parsed.data
-  const results: Array<{ id: string; status: "ok" | "error"; error?: string }> = []
+  const results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string }> = []
 
   for (const op of operations) {
     try {
@@ -130,6 +131,13 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
     } catch (err) {
       const errorMessage = (err as Error).message
 
+      // Classify rejection errors — these are non-retryable business conflicts
+      const isRejected =
+        errorMessage.includes("Insufficient stock") ||
+        errorMessage.includes("was voided") ||
+        errorMessage.includes("Insufficient stock in batch")
+      const opStatus = isRejected ? "Rejected" : "Failed"
+
       await prisma.syncOperation
         .upsert({
           where: { id: op.id },
@@ -140,14 +148,14 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
             action: op.action,
             summary: `${op.action} ${op.entity}`,
             payload: (op.payload ?? {}) as any,
-            status: "Failed",
-            attempts: 1,
+            status: opStatus,
+            attempts: isRejected ? 5 : 1,
             lastAttemptAt: new Date(),
             error: errorMessage,
           },
           update: {
-            status: "Failed",
-            attempts: { increment: 1 },
+            status: opStatus,
+            attempts: isRejected ? 5 : { increment: 1 },
             lastAttemptAt: new Date(),
             error: errorMessage,
           },
@@ -156,7 +164,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
           console.error("Failed to record sync error:", syncLogError)
         })
 
-      results.push({ id: op.id, status: "error", error: errorMessage })
+      results.push({ id: op.id, status: isRejected ? "rejected" : "error", error: errorMessage })
     }
   }
 
@@ -173,6 +181,10 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
   const tenantId = req.auth!.tenantId
   const since = req.query.since as string | undefined
   const sinceDate = since ? new Date(since) : undefined
+  if (since && (!sinceDate || isNaN(sinceDate.getTime()))) {
+    json(res, { error: "Invalid 'since' date parameter" }, 400)
+    return
+  }
 
   // Helper to build a date filter for models with createdAt only
   const createdFilter = sinceDate ? { gte: sinceDate } : undefined
@@ -185,7 +197,7 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
     products, sales, refunds, customers, debtSales, debtPayments,
     suppliers, purchaseOrders, supplierPayments, users, shifts,
     auditEvents, settings, expenses, batches, adjustments,
-    counts, dailyCloses, deliveryOrders,
+    counts, dailyCloses, deliveryOrders, deletions,
   ] = await Promise.all([
     prisma.product.findMany({
       where: { tenantId, ...(sinceDate ? updatedFilter : {}) },
@@ -195,13 +207,13 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
       include: { items: true, tender: true },
       orderBy: { createdAt: "desc" },
-      take: 2000,
+      take: sinceDate ? 2000 : undefined,
     }),
     prisma.saleRefund.findMany({
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
       include: { items: true },
       orderBy: { createdAt: "desc" },
-      take: 1000,
+      take: sinceDate ? 1000 : undefined,
     }),
     prisma.customer.findMany({
       where: { tenantId, ...(sinceDate ? updatedFilter : {}) },
@@ -210,12 +222,12 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
     prisma.debtSale.findMany({
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
       orderBy: { createdAt: "desc" },
-      take: 2000,
+      take: sinceDate ? 2000 : undefined,
     }),
     prisma.debtPayment.findMany({
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
       orderBy: { createdAt: "desc" },
-      take: 2000,
+      take: sinceDate ? 2000 : undefined,
     }),
     prisma.supplier.findMany({
       where: { tenantId, ...(sinceDate ? updatedFilter : {}) },
@@ -224,12 +236,12 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
     prisma.purchaseOrder.findMany({
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
       orderBy: { createdAt: "desc" },
-      take: 1000,
+      take: sinceDate ? 1000 : undefined,
     }),
     prisma.supplierPayment.findMany({
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
       orderBy: { createdAt: "desc" },
-      take: 1000,
+      take: sinceDate ? 1000 : undefined,
     }),
     prisma.staffUser.findMany({
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
@@ -237,57 +249,202 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
     prisma.shift.findMany({
       where: { tenantId, ...(createdFilter ? { openedAt: createdFilter } : {}) },
       orderBy: { openedAt: "desc" },
-      take: 500,
+      take: sinceDate ? 500 : undefined,
     }),
     prisma.auditEvent.findMany({
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
       orderBy: { createdAt: "desc" },
-      take: 2000,
+      take: sinceDate ? 2000 : undefined,
     }),
     prisma.appSettings.findUnique({ where: { tenantId } }),
     prisma.expense.findMany({
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
       orderBy: { createdAt: "desc" },
-      take: 1000,
+      take: sinceDate ? 1000 : undefined,
     }),
     prisma.inventoryBatch.findMany({
       where: { tenantId, ...(createdFilter ? { receivedAt: createdFilter } : {}) },
       orderBy: { receivedAt: "desc" },
-      take: 1000,
+      take: sinceDate ? 1000 : undefined,
     }),
     prisma.stockAdjustment.findMany({
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
       orderBy: { createdAt: "desc" },
-      take: 1000,
+      take: sinceDate ? 1000 : undefined,
     }),
     prisma.stockCountSession.findMany({
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
       include: { lines: true },
       orderBy: { createdAt: "desc" },
-      take: 200,
+      take: sinceDate ? 200 : undefined,
     }),
     prisma.dailyClose.findMany({
       where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
       orderBy: { createdAt: "desc" },
-      take: 365,
+      take: sinceDate ? 365 : undefined,
     }),
     prisma.deliveryOrder.findMany({
       where: { tenantId, ...(sinceDate ? updatedFilter : {}) },
       include: { items: true },
       orderBy: { updatedAt: "desc" },
-      take: 500,
+      take: sinceDate ? 500 : undefined,
+    }),
+    prisma.syncOperation.findMany({
+      where: {
+        tenantId,
+        action: "delete",
+        ...(createdFilter ? { createdAt: createdFilter } : {}),
+      },
+      select: { entity: true, payload: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
+      take: sinceDate ? 1000 : undefined,
     }),
   ])
 
   json(res, {
+    serverTime: new Date().toISOString(),
     products, sales, refunds, customers, debtSales, debtPayments,
     suppliers, purchaseOrders, supplierPayments, users, shifts,
     auditEvents, settings: settings ? [settings] : [], expenses, batches,
     adjustments, stockCounts: counts, dailyCloses, deliveryOrders,
+    deletions: deletions.map((op) => ({
+      entity: op.entity,
+      id: (op.payload as any)?.id,
+      saleNumber: (op.payload as any)?.saleNumber,
+      deletedAt: op.createdAt,
+    })),
   })
   } catch (err) {
     console.error("Sync pull error:", err)
     json(res, { error: "Failed to pull sync data" }, 500)
+  }
+})
+
+// ─── Per-entity paginated full pull (cursor-based) ──────────────────────────
+
+type EntityConfig = {
+  include?: Record<string, any>
+  cursorType: "string" | "number"
+}
+
+const PULL_FULL_ENTITIES: Record<string, EntityConfig> = {
+  products:          { cursorType: "number" },
+  sales:             { cursorType: "string", include: { items: true, tender: true } },
+  refunds:           { cursorType: "string", include: { items: true } },
+  customers:         { cursorType: "string" },
+  "debt-sales":      { cursorType: "string" },
+  "debt-payments":   { cursorType: "string" },
+  suppliers:         { cursorType: "string" },
+  "purchase-orders": { cursorType: "string" },
+  "supplier-payments": { cursorType: "string" },
+  batches:           { cursorType: "string" },
+  adjustments:       { cursorType: "string" },
+  "stock-counts":    { cursorType: "string", include: { lines: true } },
+  "daily-closes":    { cursorType: "string" },
+  "delivery-orders": { cursorType: "string", include: { items: true } },
+  expenses:          { cursorType: "string" },
+  users:             { cursorType: "string" },
+  shifts:            { cursorType: "string" },
+  "audit-events":    { cursorType: "string" },
+}
+
+const MODEL_MAP: Record<string, string> = {
+  products:          "product",
+  sales:             "sale",
+  refunds:           "saleRefund",
+  customers:         "customer",
+  "debt-sales":      "debtSale",
+  "debt-payments":   "debtPayment",
+  suppliers:         "supplier",
+  "purchase-orders": "purchaseOrder",
+  "supplier-payments": "supplierPayment",
+  batches:           "inventoryBatch",
+  adjustments:       "stockAdjustment",
+  "stock-counts":    "stockCountSession",
+  "daily-closes":    "dailyClose",
+  "delivery-orders": "deliveryOrder",
+  expenses:          "expense",
+  users:             "staffUser",
+  shifts:            "shift",
+  "audit-events":    "auditEvent",
+}
+
+router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const tenantId = req.auth!.tenantId
+    const entity = ((req as any).params?.entity as string) || ""
+
+    const rawCursor = req.query.cursor as string | undefined
+    const rawLimit = req.query.limit as string | undefined
+    const limit = Math.min(Math.max(1, Number(rawLimit) || 5000), 10000)
+
+    // Special entities that don't follow findMany pattern
+    if (entity === "settings") {
+      const settings = await prisma.appSettings.findUnique({ where: { tenantId } })
+      json(res, { entity, items: settings ? [settings] : [], hasMore: false, nextCursor: null })
+      return
+    }
+    if (entity === "deletions") {
+      const cursor = rawCursor ?? undefined
+      const where: any = { tenantId, action: "delete" }
+      if (cursor) where.id = { gt: cursor }
+      const items = await prisma.syncOperation.findMany({
+        where,
+        orderBy: { id: "asc" },
+        take: limit + 1,
+        select: { entity: true, payload: true, createdAt: true, id: true },
+      })
+      const hasMore = items.length > limit
+      if (hasMore) items.pop()
+      const nextCursor = hasMore ? items[items.length - 1]?.id : null
+      json(res, { entity, items, hasMore, nextCursor: nextCursor ?? null })
+      return
+    }
+
+    const config = PULL_FULL_ENTITIES[entity as keyof typeof PULL_FULL_ENTITIES]
+    if (!config) {
+      json(res, { error: `Unknown entity: ${entity}` }, 400)
+      return
+    }
+
+    const modelName = MODEL_MAP[entity as keyof typeof MODEL_MAP] as string
+    const model = (prisma as any)[modelName]
+    if (!model) {
+      json(res, { error: `No model for entity: ${entity}` }, 500)
+      return
+    }
+
+    const cursor = rawCursor
+      ? config.cursorType === "number"
+        ? Number(rawCursor)
+        : rawCursor
+      : undefined
+
+    const where: any = { tenantId }
+    if (cursor !== undefined) {
+      where.id = config.cursorType === "number" ? { gt: cursor as number } : { gt: cursor as string }
+    }
+
+    const items = await model.findMany({
+      where,
+      orderBy: { id: "asc" },
+      take: limit + 1,
+      ...(config.include ? { include: config.include } : {}),
+    })
+
+    const hasMore = items.length > limit
+    if (hasMore) items.pop()
+    const nextCursor = hasMore ? items[items.length - 1]?.id : null
+
+    json(res, {
+      entity,
+      items,
+      hasMore,
+      nextCursor: nextCursor ?? null,
+    })
+  } catch (err) {
+    console.error(`Sync pull-full error:`, err)
+    json(res, { error: "Failed to pull full data" }, 500)
   }
 })
 
@@ -317,15 +474,17 @@ async function processOperation(
   // Record a stock movement for the audit trail (ledger-based stock)
   const recordMovement = async (productId: number, type: string, quantity: number, reference: string, note = "") => {
     if (!productId || productId <= 0) return
+    const stockMovement = (db as any).stockMovement
+    if (!stockMovement) return
     // Calculate running balance
-    const lastMovement = await db.stockMovement.findFirst({
+    const lastMovement = await stockMovement.findFirst({
       where: { tenantId, productId },
       orderBy: { createdAt: "desc" },
       select: { balance: true },
     })
     const prevBalance = lastMovement?.balance ?? 0
     const balance = prevBalance + quantity
-    await db.stockMovement.create({
+    await stockMovement.create({
       data: { tenantId, productId, type, quantity, balance, reference, note },
     })
   }
@@ -348,6 +507,21 @@ async function processOperation(
           }
         }
       } else if (action === "delete") {
+        const productId = payload?.id as number
+        if (tenantId && productId) {
+          await db.inventoryBatch.deleteMany({ where: { tenantId, productId } })
+          await db.stockAdjustment.deleteMany({ where: { tenantId, productId } })
+          await (db as any).stockMovement.deleteMany({ where: { tenantId, productId } })
+          const countSessions = await db.stockCountSession.findMany({
+            where: { tenantId },
+            select: { id: true },
+          })
+          if (countSessions.length > 0) {
+            await db.stockCountLine.deleteMany({
+              where: { productId, sessionId: { in: countSessions.map(s => s.id) } },
+            })
+          }
+        }
         await db.product.deleteMany({ where: { tenantId, id: payload?.id as number } })
       }
       break
@@ -370,7 +544,7 @@ async function processOperation(
           for (const item of sale?.items ?? []) {
             await db.product.updateMany({
               where: { tenantId, id: item.productId },
-              data: { stock: { increment: item.quantity } },
+              data: { stock: { increment: item.quantity }, updatedAt: new Date() },
             })
             // Record the void as a Refund movement (stock comes back)
             await recordMovement(item.productId, "Refund", item.quantity, `void:${id}`, `Void sale ${saleNumber ?? id}`)
@@ -415,13 +589,22 @@ async function processOperation(
         // Check if sale already exists to avoid double-decrementing stock on retry
         const existingSale = await db.sale.findUnique({
           where: { id: saleData.id },
-          select: { id: true },
+          select: { id: true, status: true },
         })
 
-        await db.sale.upsert({
-          where: { id: saleData.id },
-          update: { ...saleData, tenantId },
-          create: {
+        if (existingSale) {
+          // Guard: never revive a voided sale
+          if (existingSale.status === "Voided") {
+            throw new Error(`Sale ${saleData.id} was voided — cannot re-create`)
+          }
+          // Sale already exists — this is a safe retry. Skip upsert + stock
+          // decrement so a duplicate "create" cannot alter sale items or
+          // corrupt product stock.
+          break
+        }
+
+        await db.sale.create({
+          data: {
             ...saleData,
             tenantId,
             items: { create: prismaItems },
@@ -429,25 +612,37 @@ async function processOperation(
           } as any,
         })
 
-        await db.saleItem.deleteMany({ where: { saleId: saleData.id } })
-        await db.saleItem.createMany({
-          data: prismaItems.map((item: any) => ({ ...item, saleId: saleData.id })),
-        })
-
-        await db.saleTender.deleteMany({ where: { saleId: saleData.id } })
-        if (hasTender) {
-          await db.saleTender.create({
-            data: { ...prismaTender, saleId: saleData.id },
-          } as any)
-        }
-
-        // Only decrement stock for NEW sales (avoid double-decrement on retry)
-        if (!existingSale) {
-          await decrementProductStock(db, tenantId, prismaItems.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
-          // Record stock movements for audit trail
-          for (const item of prismaItems) {
-            await recordMovement(item.productId, "Sale", -item.quantity, saleData.id as string)
+        // Decrement product stock
+        await decrementProductStock(db, tenantId, prismaItems.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+        // Atomic batch decrement — updateMany with quantityRemaining >= quantity is atomic
+        for (const item of data.items ?? []) {
+          for (const allocation of item.batchAllocations ?? []) {
+            if (!allocation.batchId || allocation.batchId === "legacy-stock") continue
+            const quantity = Number(allocation.quantity ?? 0)
+            if (quantity <= 0) continue
+            const result = await db.inventoryBatch.updateMany({
+              where: { id: allocation.batchId, tenantId, quantityRemaining: { gte: quantity } },
+              data: { quantityRemaining: { decrement: quantity } },
+            })
+            if (result.count === 0) {
+              throw new Error(`Insufficient stock in batch ${allocation.batchId}`)
+            }
           }
+        }
+        // Update status for any batches that were exhausted
+        for (const item of data.items ?? []) {
+          for (const allocation of item.batchAllocations ?? []) {
+            if (!allocation.batchId || allocation.batchId === "legacy-stock") continue
+            if (Number(allocation.quantity ?? 0) <= 0) continue
+            await db.inventoryBatch.updateMany({
+              where: { id: allocation.batchId, tenantId, quantityRemaining: { lte: 0 } },
+              data: { status: "Consumed" },
+            })
+          }
+        }
+        // Record stock movements for audit trail
+        for (const item of prismaItems) {
+          await recordMovement(item.productId, "Sale", -item.quantity, saleData.id as string)
         }
       }
       break
@@ -481,6 +676,14 @@ async function processOperation(
             items: { create: prismaItems },
           } as any,
         })
+        // Restore product stock for refunded items
+        for (const item of prismaItems) {
+          await db.product.updateMany({
+            where: { tenantId, id: item.productId },
+            data: { stock: { increment: item.quantity }, updatedAt: new Date() },
+          })
+          await recordMovement(item.productId, "Refund", item.quantity, refundData.id as string)
+        }
       }
       break
     }
@@ -579,6 +782,18 @@ async function processOperation(
           })
           // Record the stock movement (quantity is the net change)
           await recordMovement(productId, "Receive", Number(item.quantityRemaining ?? item.initialQuantity ?? 0), batchId as string, `Batch ${item.batchNumber ?? ""}`)
+        }
+      } else if (action === "update") {
+        const items = Array.isArray(payload) ? payload : [payload]
+        for (const item of items) {
+          if (!item?.id) continue
+          await db.inventoryBatch.updateMany({
+            where: { id: item.id as string, tenantId },
+            data: {
+              quantityRemaining: item.quantityRemaining,
+              status: item.status,
+            } as any,
+          })
         }
       } else if (action === "adjust") {
         await db.stockAdjustment.upsert({
@@ -689,6 +904,10 @@ async function processOperation(
       }
       break
     }
+    case "held-sale": {
+      // Held sales are ephemeral UI state; no server-side processing needed
+      break
+    }
     case "delivery-order": {
       if (action === "create") {
         const data = payload as any
@@ -711,10 +930,9 @@ async function processOperation(
           } as any,
         })
       } else if (action === "update") {
-        // Only update fields that belong to this tenant
         await db.deliveryOrder.updateMany({
           where: { id: payload?.id as string, tenantId },
-          data: payload as any,
+          data: { ...payload, updatedAt: new Date() } as any,
         })
       }
       break
@@ -741,6 +959,7 @@ function validateSyncOperation(op: SyncOperationInput) {
     inventory: ["receive", "adjust", "count"],
     settings: ["create", "update"],
     "delivery-order": ["create", "update"],
+    "held-sale": ["create", "delete"],
   }
 
   if (!allowedActions[op.entity].includes(op.action)) {

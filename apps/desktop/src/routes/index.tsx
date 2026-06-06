@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { createBrowserRouter, RouterProvider, useLocation, Navigate } from "react-router"
 import { AnimatePresence, motion } from "framer-motion"
+import TitanIntro from "../components/TitanIntro"
 
 import { runMigration } from "../features/pos/services/migration.service"
 import AppLayout from "../layouts/AppLayout"
@@ -36,6 +37,20 @@ import DriversPage from "../pages/drivers/DriversPage"
 const AUTO_LOCK_MS = 10 * 60 * 1000
 const MotionDiv = motion.div as any
 
+function SuspendedOverlay() {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div className="bg-slate-900 border border-rose-800/50 rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
+        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2">Store Suspended</h2>
+        <p className="text-sm text-slate-400">This store has been suspended by the platform owner. Please contact support for more information.</p>
+      </div>
+    </div>
+  )
+}
+
 function Shell({ children }: { children: ReactNode }) {
   const location = useLocation()
   const [, setSecurityVersion] = useState(0)
@@ -50,6 +65,15 @@ function Shell({ children }: { children: ReactNode }) {
     () => subscribeSecurity(() => setSecurityVersion((version) => version + 1)),
     []
   )
+
+  // Premium login reveal — plays once when the session flips locked → unlocked
+  const unlocked = isSessionUnlocked()
+  const wasUnlocked = useRef(unlocked)
+  const [showIntro, setShowIntro] = useState(false)
+  useEffect(() => {
+    if (unlocked && !wasUnlocked.current) setShowIntro(true)
+    wasUnlocked.current = unlocked
+  }, [unlocked])
 
   const [suspended, setSuspended] = useState(isSuspended())
   useEffect(() => {
@@ -92,37 +116,31 @@ function Shell({ children }: { children: ReactNode }) {
     <AppLayout>
       <Sidebar />
 
-      <div className={`flex min-w-0 flex-1 flex-col ${isPosRoute ? "pb-20 md:pb-0" : "pb-20 md:pb-0"}`}>
+      <div className={`flex min-w-0 flex-1 flex-col ${isPosRoute ? "pb-16 md:pb-0" : "pb-16 md:pb-0"}`}>
         <Topbar />
-          {suspended && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}>
-              <div className="bg-slate-900 border border-rose-800/50 rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
-                <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
-                </div>
-                <h2 className="text-xl font-bold text-white mb-2">Store Suspended</h2>
-                <p className="text-sm text-slate-400">This store has been suspended by the platform owner. Please contact support for more information.</p>
-              </div>
-            </div>
-          )}
-          <ErrorBoundary>
-            <AnimatePresence mode="wait">
-              <MotionDiv
-                key={location.pathname}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
-                className="flex min-h-0 flex-1 flex-col"
-              >
-                {children}
-              </MotionDiv>
-            </AnimatePresence>
-          </ErrorBoundary>
+        {suspended && <SuspendedOverlay />}
+        <ErrorBoundary>
+          <AnimatePresence mode="wait">
+            <MotionDiv
+              key={location.pathname}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              {children}
+            </MotionDiv>
+          </AnimatePresence>
+        </ErrorBoundary>
       </div>
 
       <BottomNav />
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
+
+      <AnimatePresence>
+        {showIntro && <TitanIntro key="intro" onDone={() => setShowIntro(false)} />}
+      </AnimatePresence>
     </AppLayout>
   )
 }

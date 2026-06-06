@@ -294,11 +294,20 @@ async function stopPostgres(): Promise<void> {
 // ─── API configuration & spawn ───────────────────────────────────────────────
 
 function writeApiEnv(pgPassword: string): void {
-  if (fs.existsSync(ENV_PATH)) return   // preserve existing config (cloud sync credentials)
+  const existing: Record<string, string> = {}
+  if (fs.existsSync(ENV_PATH)) {
+    const envText = fs.readFileSync(ENV_PATH, "utf-8")
+    for (const line of envText.split(/\r?\n/)) {
+      const match = line.match(/^([A-Z0-9_]+)=(.*)$/)
+      if (!match) continue
+      existing[match[1]] = match[2].replace(/^"|"$/g, "")
+    }
+  }
 
-  const jwt       = crypto.randomBytes(32).toString("hex")
-  const adminPass = crypto.randomBytes(12).toString("base64url")
+  const jwt       = existing.JWT_SECRET || crypto.randomBytes(32).toString("hex")
+  const adminPass = existing.ADMIN_PASSWORD || crypto.randomBytes(12).toString("base64url")
   const dbUrl     = `postgresql://${PG_USER}:${encodeURIComponent(pgPassword)}@localhost:${PG_PORT}/${PG_DB}`
+  const firstRun  = !existing.ADMIN_PASSWORD
 
   fs.writeFileSync(ENV_PATH, [
     `DATABASE_URL="${dbUrl}"`,
@@ -317,12 +326,14 @@ function writeApiEnv(pgPassword: string): void {
   ].join("\n"), { mode: 0o600 })
 
   // Show admin password once on first run
+  if (firstRun) {
   dialog.showMessageBox({
     type: "info", title: "Lebanon POS — Setup Complete",
     message: "Your admin portal password:",
     detail:  `${adminPass}\n\nYou can view or reset it anytime from the tray icon.`,
     buttons: ["Got it"],
   })
+  }
 }
 
 /**

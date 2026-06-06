@@ -236,6 +236,20 @@ export function consumeInventoryBatches(items: ConsumeBatchInput[]) {
 
   writeBatches(batches)
 
+  const changedBatches = batches.filter((batch) =>
+    [...allocationsByProduct.values()].some((allocations) =>
+      allocations.some((allocation) => allocation.batchId === batch.id)
+    )
+  )
+  if (changedBatches.length > 0) {
+    enqueueSyncOperation({
+      entity: "inventory",
+      action: "update",
+      summary: `${changedBatches.length} consumed inventory batch${changedBatches.length === 1 ? "" : "es"} queued for sync.`,
+      payload: changedBatches,
+    })
+  }
+
   return allocationsByProduct
 }
 
@@ -392,6 +406,12 @@ export function restoreInventoryBatches(items: ConsumeBatchInput[]) {
   })
 
   writeBatches(batches)
+  enqueueSyncOperation({
+    entity: "inventory",
+    action: "update",
+    summary: "Returned inventory batches queued for sync.",
+    payload: batches,
+  })
 }
 
 export function subscribeInventoryBatches(callback: () => void) {

@@ -22,6 +22,7 @@ import fs   from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import prisma from "../lib/prisma.js"
+import { broadcastToTenant } from "../ws/index.js"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -29,7 +30,6 @@ import prisma from "../lib/prisma.js"
 const CLOUD_API_URL = process.env.CLOUD_API_URL?.replace(/\/+$/, "")
 
 const PUSH_INTERVAL_MS  =  5_000   // 5s
-const PULL_INTERVAL_MS  = 30_000   // 30s
 const BATCH_SIZE        = 100
 const MAX_ATTEMPTS      = 5
 const FETCH_TIMEOUT_MS  = 20_000
@@ -106,8 +106,8 @@ function writeState(state: SyncState): void {
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 let running    = false
-let pushTimer: ReturnType<typeof setTimeout> | null = null
-let pullTimer: ReturnType<typeof setTimeout> | null = null
+let syncTimer: ReturnType<typeof setTimeout> | null = null
+let _syncRunning = false  // guard to prevent overlapping loops
 
 /**
  * Trigger an immediate full pull from Railway.
@@ -117,10 +117,20 @@ export async function triggerFullPull(): Promise<void> {
   if (!CLOUD_API_URL || !CLOUD_API_KEY || !CLOUD_TENANT) {
     throw new Error("Cloud sync not configured (missing env vars)")
   }
+  // Wait for background sync to finish before starting full pull,
+  // preventing overlap with the sequential sync loop.
+  while (_syncRunning) {
+    await new Promise((resolve) => setTimeout(resolve, 200))
+  }
   const state = readState()
   delete state.lastPullAt
   writeState(state)
-  await pullFromCloud()
+  _syncRunning = true
+  try {
+    await pullFromCloud()
+  } finally {
+    _syncRunning = false
+  }
 }
 
 export function startCloudSyncBridge(): void {
@@ -137,48 +147,36 @@ export function startCloudSyncBridge(): void {
   )
 
   // Immediate full sync on startup so data is available right away
-  pushToCloud().catch(() => {})
-  pullFromCloud().catch(() => {})
-
-  schedulePush()
-  schedulePull()
+  syncLoop().catch(() => {})
 }
 
 export function stopCloudSyncBridge(): void {
   running = false
-  if (pushTimer) { clearTimeout(pushTimer); pushTimer = null }
-  if (pullTimer) { clearTimeout(pullTimer); pullTimer = null }
+  if (syncTimer) { clearTimeout(syncTimer); syncTimer = null }
   console.log("[cloud-sync] Bridge stopped.")
 }
 
-// ─── Push scheduler ──────────────────────────────────────────────────────────
+// ─── Sequential sync loop: push → pull → wait → repeat ────────────────────
 
-function schedulePush(): void {
-  pushTimer = setTimeout(async () => {
-    if (!running) return
-    try {
-      await pushToCloud()
-    } catch (err) {
-      console.error("[cloud-sync] Push error:", (err as Error).message)
-    }
-    schedulePush() // schedule next AFTER completion (never overlapping)
-  }, PUSH_INTERVAL_MS)
-  pushTimer.unref()
-}
-
-// ─── Pull scheduler ──────────────────────────────────────────────────────────
-
-function schedulePull(): void {
-  pullTimer = setTimeout(async () => {
-    if (!running) return
-    try {
-      await pullFromCloud()
-    } catch (err) {
-      console.error("[cloud-sync] Pull error:", (err as Error).message)
-    }
-    schedulePull()
-  }, PULL_INTERVAL_MS)
-  pullTimer.unref()
+async function syncLoop(): Promise<void> {
+  if (_syncRunning) return  // already in progress, skip
+  _syncRunning = true
+  try {
+    await pushToCloud()
+  } catch (err) {
+    console.error("[cloud-sync] Push error:", (err as Error).message)
+  }
+  try {
+    await pullFromCloud()
+  } catch (err) {
+    console.error("[cloud-sync] Pull error:", (err as Error).message)
+  } finally {
+    _syncRunning = false
+  }
+  if (running) {
+    syncTimer = setTimeout(syncLoop, PUSH_INTERVAL_MS)
+    syncTimer.unref()
+  }
 }
 
 // ─── Push: local pending ops → Railway ───────────────────────────────────────
@@ -218,7 +216,7 @@ async function pushToCloud(): Promise<void> {
   }
 
   const { results } = (await res.json()) as {
-    results: Array<{ id: string; status: "ok" | "error"; error?: string }>
+    results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string }>
   }
 
   let okCount  = 0
@@ -231,6 +229,17 @@ async function pushToCloud(): Promise<void> {
         await prisma.syncOperation.updateMany({
           where: { id: r.id, tenantId },
           data:  { status: "Synced", syncedAt: new Date(), lastAttemptAt: new Date() },
+        })
+      } else if (r.status === "rejected") {
+        errCount++
+        await prisma.syncOperation.updateMany({
+          where: { id: r.id, tenantId },
+          data:  {
+            status:        "Rejected",
+            attempts:      MAX_ATTEMPTS,
+            lastAttemptAt: new Date(),
+            error:         r.error ?? "Rejected by Railway",
+          },
         })
       } else {
         errCount++
@@ -265,13 +274,11 @@ function fixDecimalObjects(value: unknown): unknown {
   // Catch Prisma Decimal objects { s, e, d } from Railway JSON
   if ("s" in obj && "e" in obj && "d" in obj && Array.isArray(obj.d) && typeof obj.s === "number" && typeof obj.e === "number") {
     const arr = obj.d as number[]
-    let mantissa = ""
-    for (let i = 0; i < arr.length; i++) {
-      let s = arr[i].toString()
-      if (i < arr.length - 1) s = s.padStart(4, "0")
-      mantissa = s + mantissa
-    }
-    return Number((obj.s < 0 ? "-" : "") + mantissa + "e" + obj.e)
+    const mantissa = arr
+      .map((segment, index) => index === 0 ? String(segment) : String(segment).padStart(7, "0"))
+      .join("")
+    const exponent = Number(obj.e) - (mantissa.length - 1)
+    return Number((obj.s < 0 ? "-" : "") + mantissa + "e" + exponent)
   }
   for (const k of Object.keys(obj)) obj[k] = fixDecimalObjects(obj[k])
   return obj
@@ -283,6 +290,7 @@ async function pullFromCloud(): Promise<void> {
   const tenantId = CLOUD_TENANT!
   const state    = readState()
   const since    = state.lastPullAt
+  const pullStartedAt = new Date().toISOString()
 
   const query = since ? `?since=${encodeURIComponent(since)}` : ""
   const res   = await fetchCloud(`/api/sync/pull${query}`)
@@ -295,9 +303,25 @@ async function pullFromCloud(): Promise<void> {
   const data = (await res.json()) as PullResponse
   fixDecimalObjects(data)
 
+  // Strip Railway's updatedAt from all upserted entities so Prisma auto-sets
+  // updatedAt to the hub's local time. This ensures the hub browser's incremental
+  // pull finds records regardless of clock skew between Railway and the hub.
+  for (const key of [
+    "products", "customers", "users", "suppliers", "sales", "refunds",
+    "debtSales", "debtPayments", "expenses", "purchaseOrders",
+    "supplierPayments", "shifts", "batches", "adjustments",
+    "stockCounts", "dailyCloses", "deliveryOrders",
+  ] as const) {
+    (data as any)[key]?.forEach((item: any) => { if (item) delete item.updatedAt })
+  }
+
   await upsertPulledData(tenantId, data)
 
-  writeState({ lastPullAt: new Date().toISOString() })
+  // Prefer JSON serverTime (new API), fall back to HTTP Date header (always
+  // server-accurate), then pullStartedAt (hub's clock — least accurate).
+  const serverTime = (data as any).serverTime ?? res.headers.get("Date") ?? pullStartedAt
+  writeState({ lastPullAt: serverTime })
+  broadcastToTenant(tenantId, "sync:data-changed", {})
   console.log(`[cloud-sync] Pull done${since ? ` (since ${since})` : " (full)"}`)
 }
 
@@ -339,6 +363,91 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<v
     }
   })
 
+  for (const deletion of data.deletions ?? []) {
+    await run(`delete:${String(deletion.entity)}`, async () => {
+      const id = deletion.id
+      const saleNumber = deletion.saleNumber
+      if (id === undefined && saleNumber === undefined) return
+
+      switch (deletion.entity) {
+        case "product": {
+          const productId = Number(id)
+          if (tenantId && productId) {
+            await prisma.inventoryBatch.deleteMany({ where: { tenantId, productId } })
+            await prisma.stockAdjustment.deleteMany({ where: { tenantId, productId } })
+            await (prisma as any).stockMovement.deleteMany({ where: { tenantId, productId } })
+            const countSessions = await prisma.stockCountSession.findMany({
+              where: { tenantId },
+              select: { id: true },
+            })
+            if (countSessions.length > 0) {
+              await prisma.stockCountLine.deleteMany({
+                where: { productId, sessionId: { in: countSessions.map(s => s.id) } },
+              })
+            }
+          }
+          await prisma.product.deleteMany({ where: { tenantId, id: productId } })
+          break
+        }
+        case "customer":
+          await prisma.customer.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+        case "supplier":
+          await prisma.supplier.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+        case "staff":
+          await prisma.staffUser.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+        case "sale":
+          {
+            const sale = await prisma.sale.findFirst({
+              where: id !== undefined ? { tenantId, id: String(id) } : { tenantId, saleNumber: String(saleNumber) },
+              select: { id: true },
+            })
+            if (sale) {
+              await prisma.saleTender.deleteMany({ where: { saleId: sale.id } })
+              await prisma.saleItem.deleteMany({ where: { saleId: sale.id } })
+              await prisma.sale.deleteMany({ where: { tenantId, id: sale.id } })
+            }
+          }
+          break
+        case "refund":
+          await prisma.refundItem.deleteMany({ where: { refundId: String(id) } })
+          await prisma.saleRefund.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+        case "debt":
+          await prisma.debtSale.deleteMany({ where: { tenantId, id: String(id) } })
+          await prisma.debtPayment.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+        case "expense":
+          await prisma.expense.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+        case "purchase-order":
+          await prisma.purchaseOrder.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+        case "supplier-payment":
+          await prisma.supplierPayment.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+        case "shift":
+          await prisma.shift.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+        case "inventory":
+          await prisma.inventoryBatch.deleteMany({ where: { tenantId, id: String(id) } })
+          await prisma.stockAdjustment.deleteMany({ where: { tenantId, id: String(id) } })
+          await prisma.stockCountLine.deleteMany({ where: { sessionId: String(id) } })
+          await prisma.stockCountSession.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+        case "daily-close":
+          await prisma.dailyClose.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+        case "delivery-order":
+          await prisma.deliveryOrderItem.deleteMany({ where: { deliveryOrderId: String(id) } })
+          await prisma.deliveryOrder.deleteMany({ where: { tenantId, id: String(id) } })
+          break
+      }
+    })
+  }
+
   // Settings (single record, no id field)
   for (const s of data.settings ?? []) {
     await run("settings", () =>
@@ -352,13 +461,31 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<v
 
   // Products
   for (const p of data.products ?? []) {
-    await run("product", () =>
-      prisma.product.upsert({
-        where:  { tenantId_barcode: { tenantId, barcode: (p as any).barcode } },
-        create: { ...p, tenantId } as any,
-        update: p as any,
-      })
-    )
+    await run("product", async () => {
+      const productId = Number((p as any).id)
+      if (Number.isFinite(productId) && productId > 0) {
+        const existingById = await prisma.product.findFirst({
+          where: { tenantId, id: productId },
+          select: { id: true },
+        })
+        if (existingById) {
+          await prisma.product.update({ where: { id: productId }, data: p as any })
+          return
+        }
+      }
+
+      const barcode = (p as any).barcode
+      if (barcode) {
+        await prisma.product.upsert({
+          where:  { tenantId_barcode: { tenantId, barcode } },
+          create: { ...p, tenantId } as any,
+          update: p as any,
+        })
+        return
+      }
+
+      await prisma.product.create({ data: { ...p, tenantId } as any })
+    })
   }
 
   // Customers
@@ -614,4 +741,5 @@ interface PullResponse {
   stockCounts?:      AnyRecord[]
   dailyCloses?:      AnyRecord[]
   deliveryOrders?:   AnyRecord[]
+  deletions?:        Array<{ entity?: string; id?: string | number; saleNumber?: string }>
 }

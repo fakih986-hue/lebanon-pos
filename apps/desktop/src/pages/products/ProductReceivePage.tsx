@@ -1,125 +1,62 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { ChangeEvent } from "react"
 import {
-  Banknote,
-  Barcode,
-  Building2,
-  CheckCircle2,
-  ClipboardCheck,
-  Copy,
-  CreditCard,
-  Keyboard,
-  Landmark,
-  PackagePlus,
-  Plus,
-  Printer,
-  RotateCcw,
-  ScanBarcode,
-  Trash2,
-  WalletCards,
+  Banknote, Barcode, Building2, Camera, CheckCircle2, ClipboardCheck,
+  Copy, CreditCard, Landmark, PackagePlus, Plus, Printer,
+  RotateCcw, Trash2, WalletCards,
 } from "lucide-react"
 import { Link } from "react-router"
 import Spinner from "../../components/ui/Spinner"
-
 import { renderCode128Svg } from "../../features/pos/lib/barcode"
 import {
-  createBarcodeDetector,
-  createHtml5Qrcode,
-  detectBarcodeFromImageFile,
-  getCameraErrorMessage,
-  getHtml5QrcodeFormatCodes,
-  getLiveCameraIssue,
+  createBarcodeDetector, createHtml5Qrcode, detectBarcodeFromImageFile,
+  getCameraErrorMessage, getHtml5QrcodeFormatCodes, getLiveCameraIssue,
   getPreferredCameraConstraints,
-  type BrowserBarcodeDetector,
-  type Html5QrcodeInstance,
+  type BrowserBarcodeDetector, type Html5QrcodeInstance,
 } from "../../features/pos/lib/cameraScanner"
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import { createId } from "../../features/pos/lib/storage"
 import {
-  findProductByBarcode,
-  generateProductBarcode,
-  getProducts,
-  receiveProducts,
+  findProductByBarcode, generateProductBarcode,
+  getProducts, receiveProducts,
 } from "../../features/pos/services/product.service"
 import { recordAuditEvent } from "../../features/pos/services/security.service"
 import {
-  getSupplierLedger,
-  recordPurchaseOrder,
-  subscribeSuppliers,
-  type PurchasePaymentMethod,
-  type SupplierLedger,
+  getSupplierLedger, recordPurchaseOrder, subscribeSuppliers,
+  type PurchasePaymentMethod, type SupplierLedger,
 } from "../../features/pos/services/supplier.service"
 import type { Product, ProductAccent } from "../../features/pos/types/product"
 import { showToast } from "../../features/pos/services/toast.service"
 import { useI18n } from "@lebanonpos/shared"
 
 type BatchRow = {
-  id: string
-  name: string
-  category: string
-  quantity: number
-  cost: number
-  price: number
-  reorderPoint: number
-  reorderQuantity: number
-  expiryDate: string
-  barcode: string
-  labels: number
-  accent: ProductAccent
+  id: string; name: string; category: string; quantity: number
+  cost: number; price: number; reorderPoint: number; reorderQuantity: number
+  expiryDate: string; barcode: string; labels: number; accent: ProductAccent
 }
-
 type LabelSize = "40x25" | "50x30" | "58x35"
-type SideTab = "supplier" | "scanner" | "labels"
 
 const purchasePaymentMethods: PurchasePaymentMethod[] = [
   "On Account", "Cash", "Card", "Bank Transfer", "Wallet",
 ]
-
 const labelSizes: Record<LabelSize, { label: string; width: string; height: string }> = {
-  "40x25": { label: "40 × 25 mm", width: "40mm", height: "25mm" },
-  "50x30": { label: "50 × 30 mm", width: "50mm", height: "30mm" },
-  "58x35": { label: "58 × 35 mm", width: "58mm", height: "35mm" },
+  "40x25": { label: "40×25", width: "40mm", height: "25mm" },
+  "50x30": { label: "50×30", width: "50mm", height: "30mm" },
+  "58x35": { label: "58×35", width: "58mm", height: "35mm" },
 }
-
 const pmIcons: Record<string, typeof Banknote> = {
   Cash: Banknote, Card: CreditCard, Wallet: WalletCards,
   "Bank Transfer": Landmark, "On Account": ClipboardCheck,
 }
-
 const accents: ProductAccent[] = ["emerald", "cyan", "amber", "rose", "violet", "indigo"]
-
 const RECEIVE_CAMERA_READER_ID = "lebanonpos-receive-camera-reader"
 
 function createRow(defaults?: Partial<BatchRow>): BatchRow {
-  return {
-    id: createId(),
-    name: "",
-    category: "",
-    quantity: 0,
-    cost: 0,
-    price: 0,
-    reorderPoint: 10,
-    reorderQuantity: 20,
-    expiryDate: "",
-    barcode: "",
-    labels: 1,
-    accent: accents[Math.floor(Math.random() * accents.length)],
-    ...defaults,
-  }
+  return { id: createId(), name: "", category: "", quantity: 0, cost: 0, price: 0, reorderPoint: 10, reorderQuantity: 20, expiryDate: "", barcode: "", labels: 1, accent: accents[Math.floor(Math.random() * accents.length)], ...defaults }
 }
-
-function escapeHtml(value: string) {
-  return value.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")
-}
-
-function normalizeNumber(value: string) {
-  const v = Number(value)
-  return Number.isFinite(v) ? v : 0
-}
-
-function isRowReady(row: BatchRow) {
-  return row.name.trim().length > 0 && row.barcode.trim().length > 0 && row.quantity > 0
-}
+function escapeHtml(v: string) { return v.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;") }
+function normalizeNumber(v: string) { const n = Number(v); return Number.isFinite(n) ? n : 0 }
+function isRowReady(row: BatchRow) { return row.name.trim().length > 0 && row.barcode.trim().length > 0 && row.quantity > 0 }
 
 export default function ProductReceivePage() {
   const { t } = useI18n()
@@ -128,8 +65,7 @@ export default function ProductReceivePage() {
   const [suppliers, setSuppliers] = useState<SupplierLedger[]>(getSupplierLedger())
   const [rows, setRows] = useState<BatchRow[]>([createRow()])
   const [activeRowId, setActiveRowId] = useState(rows[0].id)
-  const [scannerValue, setScannerValue] = useState("")
-  const [cameraStatus, setCameraStatus] = useState(t("pos.receive.camera_idle"))
+  const [cameraStatus, setCameraStatus] = useState("")
   const [cameraEngine, setCameraEngine] = useState<"native" | "html5" | null>(null)
   const [labelSize, setLabelSize] = useState<LabelSize>("50x30")
   const [lastReceivedTotal, setLastReceivedTotal] = useState(0)
@@ -137,7 +73,6 @@ export default function ProductReceivePage() {
   const [purchasePaymentMethod, setPurchasePaymentMethod] = useState<PurchasePaymentMethod>("On Account")
   const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState("")
   const [supplierNote, setSupplierNote] = useState("")
-  const [sideTab, setSideTab] = useState<SideTab>("supplier")
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const scanCaptureInputRef = useRef<HTMLInputElement | null>(null)
@@ -145,7 +80,8 @@ export default function ProductReceivePage() {
   const frameRef = useRef<number | null>(null)
   const detectorRef = useRef<BrowserBarcodeDetector | null>(null)
   const html5ScannerRef = useRef<Html5QrcodeInstance | null>(null)
-  const scanInputRef = useRef<HTMLInputElement | null>(null)
+  // Per-row barcode input refs — USB scanner fires into the active row's barcode field
+  const barcodeRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   useEffect(() => {
     let active = true
@@ -153,6 +89,12 @@ export default function ProductReceivePage() {
     const unsub = subscribeSuppliers(() => setSuppliers(getSupplierLedger()))
     return () => { active = false; unsub(); stopCamera() }
   }, [])
+
+  // Auto-focus the barcode field of the active row so USB scanners fire into it
+  useEffect(() => {
+    const el = barcodeRefs.current[activeRowId]
+    if (el) el.focus()
+  }, [activeRowId])
 
   const categories = useMemo(() => Array.from(new Set(products.map((p) => p.category))), [products])
   const readyRows = rows.filter(isRowReady)
@@ -164,13 +106,11 @@ export default function ProductReceivePage() {
   function updateRow(id: string, patch: Partial<BatchRow>) {
     setRows((rows) => rows.map((r) => r.id === id ? { ...r, ...patch } : r))
   }
-
   function addRow(defaults?: Partial<BatchRow>) {
     const row = createRow(defaults)
     setRows((rows) => [...rows, row])
     setActiveRowId(row.id)
   }
-
   function removeRow(id: string) {
     setRows((rows) => {
       const next = rows.filter((r) => r.id !== id)
@@ -179,22 +119,18 @@ export default function ProductReceivePage() {
       return next
     })
   }
-
   function fillRowFromBarcode(row: BatchRow, barcode: string): BatchRow {
     const product = findProductByBarcode(barcode)
     if (!product) return { ...row, barcode, name: "", category: "Pantry", price: 0, cost: 0, reorderPoint: 10, reorderQuantity: 20, expiryDate: "" }
     return { ...row, name: product.name, category: product.category, price: product.price, cost: product.cost, reorderPoint: product.reorderPoint ?? 10, reorderQuantity: product.reorderQuantity ?? 20, expiryDate: product.expiryDate ?? "", barcode: product.barcode, accent: product.accent }
   }
-
   function applyBarcodeToActiveRow(barcode: string) {
     const clean = barcode.trim().replace(/\s+/g, "")
     if (!clean) return
     setRows((rows) => rows.map((r) => r.id !== activeRowId ? r : fillRowFromBarcode(r, clean)))
-    setScannerValue("")
     const product = findProductByBarcode(clean)
     showToast(product ? `Loaded: ${product.name}` : `New barcode: ${clean}`)
   }
-
   function handleBarcodeInput(rowId: string, value: string) {
     setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, barcode: value }))
     if (activeRowId !== rowId) return
@@ -204,17 +140,14 @@ export default function ProductReceivePage() {
     if (!product) return
     setRows((rows) => rows.map((r) => r.id !== rowId ? r : fillRowFromBarcode(r, clean)))
   }
-
   function generateBarcodeForRow(id: string) {
     updateRow(id, { barcode: generateProductBarcode() })
     setActiveRowId(id)
     showToast(t("pos.receive.barcode_generated"))
   }
-
   function duplicateRow(row: BatchRow) {
     addRow({ name: row.name, category: row.category, cost: row.cost, price: row.price, quantity: row.quantity, reorderPoint: row.reorderPoint, reorderQuantity: row.reorderQuantity, expiryDate: row.expiryDate, labels: row.labels, accent: row.accent, barcode: "" })
   }
-
   function saveBatch() {
     if (readyRows.length === 0) { showToast(t("pos.receive.no_ready_rows"), "error"); return }
     receiveProducts(readyRows.map((r) => ({ name: r.name, category: r.category, cost: r.cost, price: r.price, stock: r.quantity, barcode: r.barcode, accent: r.accent, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, supplierId: selectedSupplier?.id, supplierName: selectedSupplier?.name })))
@@ -231,42 +164,39 @@ export default function ProductReceivePage() {
     recordAuditEvent({ action: "inventory.receive", entity: "inventory", summary: `${totalUnits} units received.`, metadata: { rows: readyRows.length, totalUnits, totalCost } })
     showToast(`${formatNumber(totalUnits)} units received${poNumber ? ` · ${poNumber}` : ""}.`)
   }
-
   function resetBatch() {
     const row = createRow()
-    setRows([row]); setActiveRowId(row.id); setScannerValue(""); setLastReceivedTotal(0)
+    setRows([row]); setActiveRowId(row.id); setLastReceivedTotal(0)
     setSupplierInvoiceNumber(""); setSupplierNote(""); showToast(t("pos.receive.batch_cleared"))
   }
 
   async function startCamera() {
-    if (cameraEngine) { stopCamera(); setCameraStatus(t("pos.receive.camera_stopped")); return }
+    if (cameraEngine) { stopCamera(); setCameraStatus(""); return }
     const issue = getLiveCameraIssue()
     if (issue) { setCameraStatus(issue); scanCaptureInputRef.current?.click(); return }
     try {
       const detector = await createBarcodeDetector()
       if (!detector) {
-        setCameraEngine("html5"); setCameraStatus("Starting camera scanner…")
+        setCameraEngine("html5"); setCameraStatus("Starting…")
         await new Promise<void>((r) => window.requestAnimationFrame(() => r()))
         const scanner = await createHtml5Qrcode(RECEIVE_CAMERA_READER_ID)
         if (!scanner) { stopCamera(); setCameraStatus(t("pos.receive.camera_engine_failed")); return }
         html5ScannerRef.current = scanner
-        await scanner.start({ facingMode: "environment" }, { fps: 12, qrbox: { width: 260, height: 160 }, formatsToSupport: getHtml5QrcodeFormatCodes() }, (text) => { applyBarcodeToActiveRow(text); setCameraStatus(t("pos.receive.scanned", { barcode: text })); stopCamera() })
-        setCameraStatus(t("pos.receive.camera_ready")); return
+        await scanner.start({ facingMode: "environment" }, { fps: 12, qrbox: { width: 260, height: 160 }, formatsToSupport: getHtml5QrcodeFormatCodes() }, (text) => { applyBarcodeToActiveRow(text); setCameraStatus(""); stopCamera() })
+        setCameraStatus("Camera ready — point at barcode"); return
       }
       const stream = await navigator.mediaDevices.getUserMedia(getPreferredCameraConstraints())
       streamRef.current = stream
       if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.muted = true; videoRef.current.setAttribute("playsinline", "true"); await videoRef.current.play() }
-      detectorRef.current = detector; setCameraEngine("native"); setCameraStatus(t("pos.receive.camera_ready")); void scanCameraFrame()
-    } catch (err) { stopCamera(); setCameraStatus(t("pos.receive.camera_error_with_hint", { error: getCameraErrorMessage(err) })) }
+      detectorRef.current = detector; setCameraEngine("native"); setCameraStatus("Camera ready"); void scanCameraFrame()
+    } catch (err) { stopCamera(); setCameraStatus(getCameraErrorMessage(err)) }
   }
-
   async function handleScanCapture(e: ChangeEvent<HTMLInputElement>) {
     const file = e.currentTarget.files?.[0]; e.currentTarget.value = ""
     if (!file) return
-    try { setCameraStatus(t("pos.receive.reading_barcode")); const bc = await detectBarcodeFromImageFile(file); if (!bc) { setCameraStatus(t("pos.receive.no_barcode_found")); return } applyBarcodeToActiveRow(bc); setCameraStatus(t("pos.receive.scanned", { barcode: bc })) }
-    catch { setCameraStatus(t("pos.receive.scan_failed")) }
+    try { const bc = await detectBarcodeFromImageFile(file); if (!bc) { showToast("No barcode found", "error"); return } applyBarcodeToActiveRow(bc) }
+    catch { showToast("Scan failed", "error") }
   }
-
   function stopCamera() {
     if (frameRef.current) { window.cancelAnimationFrame(frameRef.current); frameRef.current = null }
     streamRef.current?.getTracks().forEach((t) => t.stop()); streamRef.current = null; detectorRef.current = null
@@ -275,15 +205,13 @@ export default function ProductReceivePage() {
     if (videoRef.current) videoRef.current.srcObject = null
     setCameraEngine(null)
   }
-
   async function scanCameraFrame() {
     const d = detectorRef.current; const v = videoRef.current
     if (!d || !v) return
-    try { const r = await d.detect(v); const bc = r[0]?.rawValue; if (bc) { applyBarcodeToActiveRow(bc); setCameraStatus(t("pos.receive.scanned", { barcode: bc })); stopCamera(); return } }
-    catch { setCameraStatus("Scanning…") }
+    try { const r = await d.detect(v); const bc = r[0]?.rawValue; if (bc) { applyBarcodeToActiveRow(bc); setCameraStatus(""); stopCamera(); return } }
+    catch { }
     frameRef.current = window.requestAnimationFrame(() => void scanCameraFrame())
   }
-
   function printLabels() {
     const labels = rows.filter((r) => r.barcode.trim() && r.name.trim()).flatMap((r) => Array.from({ length: Math.max(0, r.labels) }, () => ({ name: r.name, price: r.price, barcode: r.barcode })))
     if (labels.length === 0) { showToast(t("pos.receive.print_labels_incomplete"), "error"); return }
@@ -303,352 +231,291 @@ export default function ProductReceivePage() {
   )
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5">
-      {/* ── KPI row ── */}
-      <div className="mb-5 grid grid-cols-3 gap-3 sm:grid-cols-4">
-        {[
-          { label: t("pos.receive.ready_rows"),  value: formatNumber(readyRows.length), color: readyRows.length > 0 ? "var(--brand-text)" : "var(--text-3)" },
-          { label: t("pos.receive.units"),        value: formatNumber(totalUnits) },
-          { label: t("pos.receive.cost_value"),   value: formatCurrency(totalCost) },
-          { label: "Labels",                      value: formatNumber(labelsToPrint), hidden: true },
-        ].map((kpi) => (
-          <div
-            key={kpi.label}
-            className={`rounded-xl border p-4 ${kpi.hidden ? "hidden sm:block" : ""}`}
-            style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-          >
-            <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>{kpi.label}</p>
-            <p className="mt-1.5 text-2xl font-bold" style={{ color: kpi.color ?? "var(--text)" }}>{kpi.value}</p>
-          </div>
-        ))}
-      </div>
+    <main className="min-h-0 flex-1 overflow-y-auto bg-page">
+      <div className="mx-auto max-w-7xl p-4 sm:p-6 space-y-5">
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        {/* ── Product rows ── */}
-        <section className="space-y-3">
-          {/* Section header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>{t("pos.receive.title")}</h2>
-              <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>{t("pos.receive.desc")}</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => addRow()}
-                className="btn btn-default h-9 gap-1.5 text-[13px]"
+        {/* ── Page header ───────────────────────────────── */}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[22px] font-black tracking-tight" style={{ color: "var(--text)" }}>
+              Receive Inventory
+            </h1>
+            <p className="text-[13px] mt-0.5" style={{ color: "var(--text-3)" }}>
+              Scan or enter products to add to stock
+            </p>
+          </div>
+
+          {/* KPI chips */}
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { label: "Ready",  value: readyRows.length,         accent: readyRows.length > 0 },
+              { label: "Units",  value: formatNumber(totalUnits),  accent: false },
+              { label: "Cost",   value: formatCurrency(totalCost), accent: false },
+              { label: "Labels", value: formatNumber(labelsToPrint), accent: false },
+            ].map((k) => (
+              <div
+                key={k.label}
+                className="rounded-xl px-3 py-1.5"
+                style={k.accent
+                  ? { background: "var(--brand-soft)", border: "1px solid var(--brand-border)" }
+                  : { background: "var(--surface)", border: "1px solid var(--border)" }
+                }
               >
-                <Plus size={15} />
-                {t("pos.receive.add_row")}
+                <span className="text-[10px] font-semibold uppercase tracking-wide mr-1.5" style={{ color: "var(--text-3)" }}>{k.label}</span>
+                <span className="text-[14px] font-black tabular-nums" style={{ color: k.accent ? "var(--brand)" : "var(--text)" }}>{k.value}</span>
+              </div>
+            ))}
+
+            <div className="flex gap-2 ml-1">
+              <button type="button" onClick={() => addRow()}
+                className="btn btn-default h-9 gap-1.5 text-[13px]">
+                <Plus size={14} /> Add Row
               </button>
-              <button
-                type="button"
-                onClick={saveBatch}
-                className="btn btn-primary h-9 gap-1.5 text-[13px]"
-              >
-                <CheckCircle2 size={15} />
-                {t("pos.receive.save_batch")}
+              <button type="button" onClick={saveBatch} disabled={readyRows.length === 0}
+                className="btn btn-primary h-9 gap-1.5 text-[13px] disabled:opacity-40">
+                <CheckCircle2 size={14} /> Save Batch
               </button>
             </div>
           </div>
+        </div>
 
-          {/* USB scan bar */}
-          <div
-            className="flex items-center gap-3 rounded-xl border px-4 py-3"
-            style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-          >
-            <Keyboard size={16} style={{ color: "var(--text-3)" }} className="shrink-0" />
-            <input
-              ref={scanInputRef}
-              value={scannerValue}
-              onChange={(e) => setScannerValue(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyBarcodeToActiveRow(scannerValue) } }}
-              placeholder={t("pos.receive.scan_into_row")}
-              className="flex-1 bg-transparent text-[14px] font-medium outline-none"
-              style={{ color: "var(--text)" }}
-            />
-            <span className="text-[11px] font-semibold shrink-0" style={{ color: "var(--text-3)" }}>
-              → Row #{rows.findIndex((r) => r.id === activeRowId) + 1}
-            </span>
-          </div>
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
 
-          {/* Product cards */}
-          <div className="space-y-3">
+          {/* ── Left: Product rows ──────────────────────── */}
+          <section className="space-y-3">
+
             {rows.map((row, idx) => {
               const active = activeRowId === row.id
               const ready = isRowReady(row)
+              const matched = row.barcode ? findProductByBarcode(row.barcode) : null
+
               return (
                 <div
                   key={row.id}
-                  className="rounded-xl border transition-all"
+                  className="rounded-2xl overflow-hidden transition-all duration-150"
                   style={{
                     background: "var(--surface)",
+                    border: "1.5px solid",
                     borderColor: active ? "var(--brand)" : "var(--border)",
                     boxShadow: active ? "0 0 0 3px var(--brand-soft)" : "var(--shadow-xs)",
                   }}
-                  onFocus={() => setActiveRowId(row.id)}
                   onClick={() => setActiveRowId(row.id)}
                 >
-                  {/* Card header row */}
-                  <div className="flex items-center gap-3 border-b px-4 py-2.5" style={{ borderColor: "var(--border)" }}>
+                  {/* Row header */}
+                  <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                    {/* Row number / ready indicator */}
                     <span
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black"
                       style={ready
-                        ? { background: "var(--brand-soft)", color: "var(--brand-text)" }
-                        : { background: "var(--surface-3)", color: "var(--text-3)" }
+                        ? { background: "var(--brand-soft)", color: "var(--brand)" }
+                        : { background: "var(--surface-2)", color: "var(--text-3)" }
                       }
                     >
                       {ready ? "✓" : idx + 1}
                     </span>
 
-                    {/* Barcode input — always first */}
-                    <div className="min-w-0 flex-1 flex items-center gap-2">
-                      <Barcode size={16} style={{ color: "var(--text-3)" }} className="shrink-0" />
+                    {/* Barcode input — USB scanner fires here when row is active */}
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <Barcode size={14} className="shrink-0" style={{ color: "var(--text-3)" }} />
                       <input
+                        ref={(el) => { barcodeRefs.current[row.id] = el }}
                         value={row.barcode}
                         onChange={(e) => handleBarcodeInput(row.id, e.target.value)}
-                        placeholder={t("pos.receive.scan_or_generate")}
-                        className="min-w-0 flex-1 bg-transparent text-[13px] font-mono outline-none"
+                        onFocus={() => setActiveRowId(row.id)}
+                        placeholder="Barcode — scan or type"
+                        className="min-w-0 flex-1 bg-transparent text-[13px] font-mono outline-none placeholder:text-[var(--text-3)]"
                         style={{ color: "var(--text)" }}
                       />
                       <button
                         type="button"
-                        onClick={() => generateBarcodeForRow(row.id)}
-                        className="shrink-0 flex items-center gap-1.5 h-7 rounded-lg border px-2.5 text-[11px] font-semibold transition hover:opacity-80"
-                        style={{ borderColor: "var(--border)", color: "var(--text-2)", background: "var(--surface-2)" }}
+                        onClick={(e) => { e.stopPropagation(); generateBarcodeForRow(row.id) }}
+                        className="shrink-0 flex items-center gap-1 h-7 rounded-lg border px-2.5 text-[11px] font-semibold transition hover:opacity-80"
+                        style={{ borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface-2)" }}
+                        title="Generate barcode"
                       >
-                        <Barcode size={12} />
-                        Generate
+                        <Barcode size={11} /> Gen
+                      </button>
+                      {/* Camera scan button — for this specific row */}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setActiveRowId(row.id); startCamera() }}
+                        className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg border transition"
+                        style={active && cameraEngine
+                          ? { background: "rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.28)", color: "#ef4444" }
+                          : { borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface-2)" }
+                        }
+                        title="Scan via camera"
+                      >
+                        <Camera size={11} />
                       </button>
                     </div>
 
-                    {/* Actions */}
+                    {/* Row actions */}
                     <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setActiveRowId(row.id)}
-                        title="Target this row for scanner"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
-                        style={active
-                          ? { borderColor: "var(--brand)", background: "var(--brand-soft)", color: "var(--brand-text)" }
-                          : { borderColor: "var(--border)", color: "var(--text-3)" }
-                        }
-                      >
-                        <ScanBarcode size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => duplicateRow(row)}
-                        title="Duplicate"
+                      <button type="button" onClick={(e) => { e.stopPropagation(); duplicateRow(row) }}
                         className="flex h-7 w-7 items-center justify-center rounded-lg border transition hover:opacity-80"
-                        style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
-                      >
-                        <Copy size={13} />
+                        style={{ borderColor: "var(--border)", color: "var(--text-3)" }} title="Duplicate">
+                        <Copy size={12} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => removeRow(row.id)}
-                        title="Remove"
+                      <button type="button" onClick={(e) => { e.stopPropagation(); removeRow(row.id) }}
                         className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
                         style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
                         onMouseEnter={(e) => { e.currentTarget.style.color = "var(--rose)"; e.currentTarget.style.borderColor = "var(--rose)" }}
                         onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-3)"; e.currentTarget.style.borderColor = "var(--border)" }}
-                      >
-                        <Trash2 size={13} />
+                        title="Remove">
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
 
-                  {/* Matched product banner */}
-                  {(() => {
-                    const matched = row.barcode ? findProductByBarcode(row.barcode) : null
-                    return matched ? (
-                      <div className="flex items-center gap-2 px-4 py-1.5 text-[12px] font-medium" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
-                        <CheckCircle2 size={13} />
-                        Restocking: <strong className="ml-1">{matched.name}</strong>
-                        <span className="ml-auto opacity-60">Stock: {matched.stock} → {matched.stock + row.quantity}</span>
-                      </div>
-                    ) : row.barcode ? (
-                      <div className="flex items-center gap-2 px-4 py-1.5 text-[12px] font-medium" style={{ background: "var(--amber-soft)", color: "rgb(180,130,20)" }}>
-                        <PackagePlus size={13} />
-                        New product
-                      </div>
-                    ) : null
-                  })()}
+                  {/* Match banner */}
+                  {matched ? (
+                    <div className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+                      <CheckCircle2 size={12} />
+                      Restocking: <strong className="ml-0.5">{matched.name}</strong>
+                      <span className="ml-auto opacity-60">Stock {matched.stock} → {matched.stock + row.quantity}</span>
+                    </div>
+                  ) : row.barcode ? (
+                    <div className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--amber-soft)", color: "var(--amber)" }}>
+                      <PackagePlus size={12} /> New product
+                    </div>
+                  ) : null}
 
-                  {/* Card body — key fields in a clean grid */}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 px-4 py-3 sm:grid-cols-3 lg:grid-cols-6">
-                    {(() => {
-                      const matched = row.barcode ? findProductByBarcode(row.barcode) : null
-                      return [
-                        { label: t("pos.receive.product_name"), value: row.name, key: "name", disabled: !!matched },
-                        { label: "Category", value: row.category, key: "category", disabled: !!matched },
-                      ].map((field) => (
-                        <label key={field.key} className="block">
-                          <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>
-                            {field.label}
-                          </span>
-                          <input
-                            value={field.value}
-                            disabled={field.disabled}
-                            onChange={(e) => updateRow(row.id, { [field.key]: e.target.value } as any)}
-                            list={field.key === "category" ? "product-categories" : undefined}
-                            className="input"
-                            style={{
-                              height: 34, fontSize: 13, fontWeight: 600,
-                              opacity: field.disabled ? 0.6 : 1,
-                            }}
-                          />
-                        </label>
-                      ))
-                    })()}
+                  {/* Camera preview — only on active row */}
+                  {active && cameraEngine && (
+                    <div className="px-4 py-2">
+                      <div className="relative overflow-hidden rounded-xl" style={{ border: "1.5px solid var(--brand)", boxShadow: "0 0 0 3px var(--brand-soft)" }}>
+                        <video ref={videoRef} muted playsInline className={`aspect-video w-full bg-zinc-950 object-cover ${cameraEngine === "native" ? "block" : "hidden"}`} />
+                        <div id={RECEIVE_CAMERA_READER_ID} className={`overflow-hidden bg-zinc-950 ${cameraEngine === "html5" ? "block" : "hidden"}`} />
+                        {cameraStatus && (
+                          <div className="absolute bottom-2 left-2 right-2 rounded-lg bg-black/60 px-2 py-1 text-center text-[11px] font-semibold text-white">
+                            {cameraStatus}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fields grid */}
+                  <div className="grid grid-cols-2 gap-3 px-4 py-3 sm:grid-cols-3 lg:grid-cols-6">
                     {[
-                      { label: t("pos.table.cost"), value: row.cost, key: "cost", step: "0.01", min: "0", plh: "0", suffix: "$" },
-                      { label: t("pos.table.price"), value: row.price, key: "price", step: "0.01", min: "0", plh: "0", suffix: "$" },
-                      { label: t("pos.table.qty"), value: row.quantity, key: "quantity", step: "1", min: "1", plh: "" },
-                    ].map((field) => (
-                      <label key={field.key} className="block">
-                        <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>
-                          {field.suffix}{field.label}
-                        </span>
+                      { label: "Name",     value: row.name,     key: "name",     disabled: !!matched, type: "text",   colSpan: "lg:col-span-2" },
+                      { label: "Category", value: row.category, key: "category", disabled: !!matched, type: "text",   colSpan: "" },
+                    ].map((f) => (
+                      <label key={f.key} className={`block ${f.colSpan}`}>
+                        <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>{f.label}</span>
                         <input
-                          type="number"
-                          min={field.min}
-                          step={field.step}
-                          value={field.value || ""}
-                          placeholder={field.plh}
-                          onChange={(e) => updateRow(row.id, { [field.key]: normalizeNumber(e.target.value) } as any)}
-                          className="input text-right"
-                          style={{
-                            height: 34, fontSize: 13, fontWeight: 600,
-                          }}
+                          value={f.value}
+                          disabled={f.disabled}
+                          onChange={(e) => updateRow(row.id, { [f.key]: e.target.value } as any)}
+                          list={f.key === "category" ? "product-categories" : undefined}
+                          className="input w-full"
+                          style={{ height: 34, fontSize: 13, fontWeight: 600, opacity: f.disabled ? 0.55 : 1 }}
                         />
                       </label>
                     ))}
 
-                    {/* Expiry */}
-                    <label className="block">
-                      <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>
-                        {t("pos.receive.expiry")}
-                      </span>
-                      <input
-                        type="date"
-                        value={row.expiryDate}
-                        onChange={(e) => updateRow(row.id, { expiryDate: e.target.value })}
-                        className="input"
-                        style={{ height: 34, fontSize: 12 }}
-                      />
-                    </label>
+                    {[
+                      { label: "Cost $",  value: row.cost,     key: "cost",     step: "0.01" },
+                      { label: "Price $", value: row.price,    key: "price",    step: "0.01" },
+                      { label: "Qty",     value: row.quantity, key: "quantity", step: "1" },
+                    ].map((f) => (
+                      <label key={f.key} className="block">
+                        <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>{f.label}</span>
+                        <input
+                          type="number" min="0" step={f.step} value={f.value || ""}
+                          onChange={(e) => updateRow(row.id, { [f.key]: normalizeNumber(e.target.value) } as any)}
+                          className="input w-full text-right"
+                          style={{ height: 34, fontSize: 13, fontWeight: 600 }}
+                        />
+                      </label>
+                    ))}
                   </div>
 
-                  {row.barcode && (
-                    <div className="shrink-0 rounded-lg overflow-hidden p-1" style={{ background: "#fff" }}
-                      dangerouslySetInnerHTML={{ __html: renderCode128Svg(row.barcode, 32, 1.2) }}
-                    />
-                  )}
+                  {/* Expiry + barcode preview — compact footer */}
+                  <div className="flex items-center gap-3 border-t px-4 py-2" style={{ borderColor: "var(--border)" }}>
+                    <label className="flex items-center gap-2 min-w-0">
+                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Expiry</span>
+                      <input
+                        type="date" value={row.expiryDate}
+                        onChange={(e) => updateRow(row.id, { expiryDate: e.target.value })}
+                        className="input"
+                        style={{ height: 28, fontSize: 11, width: 130 }}
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 ml-auto">
+                      <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Labels</span>
+                      <input
+                        type="number" min="0" step="1" value={row.labels || ""}
+                        onChange={(e) => updateRow(row.id, { labels: normalizeNumber(e.target.value) })}
+                        className="input text-center"
+                        style={{ height: 28, fontSize: 11, width: 52 }}
+                      />
+                    </label>
+                    {row.barcode && (
+                      <div className="shrink-0 overflow-hidden rounded-lg" style={{ background: "#fff" }}
+                        dangerouslySetInnerHTML={{ __html: renderCode128Svg(row.barcode, 28, 1) }} />
+                    )}
+                  </div>
                 </div>
               )
             })}
-          </div>
 
-          {/* Add row button at bottom */}
-          <button
-            type="button"
-            onClick={() => addRow()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed py-3 text-[13px] font-semibold transition hover:opacity-80"
-            style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
-          >
-            <Plus size={16} />
-            {t("pos.receive.add_row")}
-          </button>
-
-          <datalist id="product-categories">
-            {categories.map((c) => <option key={c} value={c} />)}
-          </datalist>
-        </section>
-
-        {/* ── Right panel ── */}
-        <aside className="space-y-4">
-          {/* Tab switcher */}
-          <div
-            className="flex gap-1 rounded-xl p-1"
-            style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
-          >
-            {([
-              { key: "supplier" as const, icon: <Building2 size={14} />, label: t("pos.table.supplier") },
-              { key: "scanner" as const, icon: <ScanBarcode size={14} />, label: t("pos.receive.barcode_scanner") },
-              { key: "labels" as const, icon: <Printer size={14} />, label: t("pos.receive.barcode_labels") },
-            ]).map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setSideTab(tab.key)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-semibold transition"
-                style={sideTab === tab.key
-                  ? { background: "var(--text)", color: "var(--surface)", boxShadow: "var(--shadow-sm)" }
-                  : { color: "var(--text-3)" }
-                }
-              >
-                {tab.icon}
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Supplier tab */}
-          {sideTab === "supplier" && (
-            <div
-              className="rounded-xl border p-4 space-y-3"
-              style={{ background: "var(--surface)", borderColor: "var(--border)" }}
+            {/* Add row */}
+            <button
+              type="button" onClick={() => addRow()}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-3 text-[13px] font-semibold transition hover:opacity-70"
+              style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
             >
-              <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>
-                {t("pos.receive.supplier_purchase")}
-              </h3>
+              <Plus size={15} /> Add another product
+            </button>
+
+            <datalist id="product-categories">
+              {categories.map((c) => <option key={c} value={c} />)}
+            </datalist>
+          </section>
+
+          {/* ── Right: Supplier + Labels ─────────────────── */}
+          <aside className="space-y-4">
+
+            {/* Supplier */}
+            <div className="rounded-2xl border p-4 space-y-3" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+              <div className="flex items-center gap-2">
+                <Building2 size={14} style={{ color: "var(--brand)" }} />
+                <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>Supplier & Purchase</h3>
+              </div>
 
               {suppliers.length > 0 ? (
-                <select
-                  value={selectedSupplierId}
-                  onChange={(e) => setSelectedSupplierId(e.target.value)}
-                  className="input"
-                >
-                  <option value="">{t("pos.receive.no_supplier")}</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name} — {formatCurrency(s.balance)}</option>
-                  ))}
+                <select value={selectedSupplierId} onChange={(e) => setSelectedSupplierId(e.target.value)} className="input w-full">
+                  <option value="">No supplier</option>
+                  {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name} — {formatCurrency(s.balance)}</option>)}
                 </select>
               ) : (
-                <Link to="/suppliers" className="btn btn-primary w-full justify-center">
-                  {t("pos.receive.add_supplier")}
-                </Link>
+                <Link to="/suppliers" className="btn btn-primary w-full justify-center text-[13px]">Add a supplier first</Link>
               )}
 
               <input
-                value={supplierInvoiceNumber}
-                onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
-                placeholder={t("pos.receive.invoice_number")}
-                className="input"
+                value={supplierInvoiceNumber} onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
+                placeholder="Invoice number"
+                className="input w-full" style={{ fontSize: 13 }}
               />
 
-              {/* Payment method pills */}
+              {/* Payment method */}
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-3)" }}>Payment</p>
+                <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-3)" }}>Payment</p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {purchasePaymentMethods.map((method) => {
                     const Icon = pmIcons[method] ?? ClipboardCheck
                     const active = purchasePaymentMethod === method
                     return (
-                      <button
-                        key={method}
-                        type="button"
-                        onClick={() => setPurchasePaymentMethod(method)}
-                        className="flex items-center justify-center gap-1.5 h-9 rounded-lg border text-[12px] font-semibold transition"
+                      <button key={method} type="button" onClick={() => setPurchasePaymentMethod(method)}
+                        className="flex items-center justify-center gap-1.5 h-8 rounded-xl border text-[11px] font-bold transition"
                         style={active
-                          ? { background: "var(--accent)", borderColor: "var(--accent)", color: "#fff" }
+                          ? { background: "var(--brand)", borderColor: "var(--brand)", color: "#fff" }
                           : { borderColor: "var(--border)", color: "var(--text-2)", background: "var(--surface-2)" }
-                        }
-                      >
-                        <Icon size={13} />
-                        {method === "On Account" ? t("pos.receive.payment.on_account") : method === "Bank Transfer" ? t("pos.receive.payment.bank_transfer") : method}
+                        }>
+                        <Icon size={12} />
+                        {method === "On Account" ? "Account" : method === "Bank Transfer" ? "Bank" : method}
                       </button>
                     )
                   })}
@@ -656,155 +523,89 @@ export default function ProductReceivePage() {
               </div>
 
               <textarea
-                value={supplierNote}
-                onChange={(e) => setSupplierNote(e.target.value)}
-                placeholder={t("pos.receive.purchase_note")}
-                rows={2}
-                className="input w-full resize-none py-2"
+                value={supplierNote} onChange={(e) => setSupplierNote(e.target.value)}
+                placeholder="Note (optional)" rows={2}
+                className="input w-full resize-none py-2 text-[13px]"
                 style={{ height: "auto" }}
               />
 
               {/* Summary */}
-              <div
-                className="rounded-lg px-3 py-2.5 space-y-1.5 text-[13px]"
-                style={{ background: "var(--surface-2)" }}
-              >
-                <div className="flex justify-between" style={{ color: "var(--text-2)" }}>
-                  <span>Total cost</span>
-                  <span className="font-bold" style={{ color: "var(--text)" }}>{formatCurrency(totalCost)}</span>
+              <div className="rounded-xl px-3 py-2.5 space-y-1" style={{ background: "var(--surface-2)" }}>
+                <div className="flex justify-between text-[12px]">
+                  <span style={{ color: "var(--text-3)" }}>Products</span>
+                  <span className="font-bold" style={{ color: "var(--text)" }}>{readyRows.length}</span>
                 </div>
-                {selectedSupplier && (
-                  <div className="flex justify-between" style={{ color: "var(--text-2)" }}>
-                    <span>{t("pos.table.supplier")}</span>
-                    <span className="font-semibold" style={{ color: "var(--text)" }}>{selectedSupplier.name}</span>
-                  </div>
-                )}
+                <div className="flex justify-between text-[12px]">
+                  <span style={{ color: "var(--text-3)" }}>Total units</span>
+                  <span className="font-bold" style={{ color: "var(--text)" }}>{formatNumber(totalUnits)}</span>
+                </div>
+                <div className="flex justify-between text-[13px] border-t pt-1.5 mt-1" style={{ borderColor: "var(--border)" }}>
+                  <span className="font-semibold" style={{ color: "var(--text-3)" }}>Total cost</span>
+                  <span className="text-[16px] font-black" style={{ color: "var(--text)" }}>{formatCurrency(totalCost)}</span>
+                </div>
               </div>
 
-              {/* Save + Reset */}
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={saveBatch} className="btn btn-primary h-10 gap-2 justify-center">
-                  <ClipboardCheck size={15} />
-                  {t("pos.save")}
+                <button type="button" onClick={saveBatch} disabled={readyRows.length === 0}
+                  className="btn btn-primary h-10 gap-2 justify-center text-[13px] disabled:opacity-40">
+                  <CheckCircle2 size={14} /> Save
                 </button>
-                <button type="button" onClick={resetBatch} className="btn btn-default h-10 gap-2 justify-center">
-                  <RotateCcw size={15} />
-                  {t("pos.clear")}
+                <button type="button" onClick={resetBatch}
+                  className="btn btn-default h-10 gap-2 justify-center text-[13px]">
+                  <RotateCcw size={14} /> Clear
                 </button>
               </div>
 
               {lastReceivedTotal > 0 && (
-                <Link to="/products" className="btn btn-ghost w-full justify-center border" style={{ borderColor: "var(--border)" }}>
-                  {t("pos.receive.view_inventory")}
+                <Link to="/products" className="btn btn-ghost w-full justify-center text-[13px] border" style={{ borderColor: "var(--border)" }}>
+                  View inventory →
                 </Link>
               )}
             </div>
-          )}
 
-          {/* Scanner tab */}
-          {sideTab === "scanner" && (
-            <div
-              className="rounded-xl border p-4 space-y-3"
-              style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-            >
-              <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>
-                {t("pos.receive.barcode_scanner")}
-              </h3>
-              <p className="text-[12px]" style={{ color: "var(--text-3)" }}>
-                {cameraStatus}
-              </p>
-
-              {/* Camera preview */}
-              <div className="overflow-hidden rounded-xl" style={{ background: "#000" }}>
-                <video
-                  ref={videoRef}
-                  className={`aspect-video w-full object-cover ${cameraEngine === "html5" ? "hidden" : "block"}`}
-                  muted playsInline
-                />
-                <div id={RECEIVE_CAMERA_READER_ID} className={cameraEngine === "html5" ? "block" : "hidden"} />
+            {/* Labels */}
+            <div className="rounded-2xl border p-4 space-y-3" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+              <div className="flex items-center gap-2">
+                <Printer size={14} style={{ color: "var(--brand)" }} />
+                <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>Print Labels</h3>
+                <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+                  {labelsToPrint} labels
+                </span>
               </div>
 
-              <input ref={scanCaptureInputRef} type="file" accept="image/*" capture="environment" onChange={handleScanCapture} className="hidden" />
-
-              <button
-                type="button"
-                onClick={startCamera}
-                className="btn w-full justify-center gap-2"
-                style={cameraEngine
-                  ? { background: "var(--rose-soft)", color: "var(--rose)", border: "1px solid rgba(244,63,94,0.3)" }
-                  : { background: "var(--text)", color: "var(--surface)" }
-                }
-              >
-                <ScanBarcode size={15} />
-                {cameraEngine ? t("pos.stop") : t("pos.scan")}
-              </button>
-
-              <p className="text-[11px] text-center" style={{ color: "var(--text-3)" }}>
-                {t("pos.receive.usb_scanner_desc")}
-              </p>
-            </div>
-          )}
-
-          {/* Labels tab */}
-          {sideTab === "labels" && (
-            <div
-              className="rounded-xl border p-4 space-y-4"
-              style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-            >
-              <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>
-                {t("pos.receive.barcode_labels")}
-              </h3>
-
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-3)" }}>
-                  {t("pos.receive.label_size")}
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {(Object.keys(labelSizes) as LabelSize[]).map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setLabelSize(size)}
-                      className="rounded-lg border py-2 text-[12px] font-semibold transition"
-                      style={labelSize === size
-                        ? { background: "var(--accent-soft)", borderColor: "var(--accent)", color: "var(--accent-text)" }
-                        : { borderColor: "var(--border)", color: "var(--text-2)" }
-                      }
-                    >
-                      {labelSizes[size].label}
-                    </button>
-                  ))}
-                </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {(Object.keys(labelSizes) as LabelSize[]).map((size) => (
+                  <button key={size} type="button" onClick={() => setLabelSize(size)}
+                    className="rounded-xl border py-2 text-[11px] font-bold transition"
+                    style={labelSize === size
+                      ? { background: "var(--brand)", borderColor: "var(--brand)", color: "#fff" }
+                      : { borderColor: "var(--border)", color: "var(--text-2)", background: "var(--surface-2)" }
+                    }>
+                    {labelSizes[size].label}
+                  </button>
+                ))}
               </div>
 
-              {/* Label preview for active row */}
-              {rows.find((r) => r.id === activeRowId)?.barcode && (
-                <div
-                  className="rounded-lg overflow-hidden p-3 flex flex-col items-center gap-1"
-                  style={{ background: "#fff" }}
-                >
-                  <p className="text-[10px] font-bold text-zinc-800 truncate max-w-full">{rows.find((r) => r.id === activeRowId)?.name}</p>
-                  <div dangerouslySetInnerHTML={{ __html: renderCode128Svg(rows.find((r) => r.id === activeRowId)!.barcode, 60, 1.5) }} />
-                  <p className="text-[9px] text-zinc-500">{rows.find((r) => r.id === activeRowId)?.barcode}</p>
+              {/* Preview */}
+              {(() => { const r = rows.find((r) => r.id === activeRowId); return r?.barcode ? (
+                <div className="flex flex-col items-center gap-1 rounded-xl p-3" style={{ background: "#fff" }}>
+                  <p className="text-[10px] font-bold text-zinc-800 truncate max-w-full">{r.name || "—"}</p>
+                  <div dangerouslySetInnerHTML={{ __html: renderCode128Svg(r.barcode, 60, 1.4) }} />
+                  <p className="text-[9px] text-zinc-500 font-mono">{r.barcode}</p>
                 </div>
-              )}
+              ) : null })()}
 
-              <button
-                type="button"
-                onClick={printLabels}
-                className="btn btn-primary w-full justify-center gap-2 h-10"
-              >
-                <Printer size={15} />
-                {t("pos.receive.print_labels", { n: formatNumber(labelsToPrint) })}
+              <button type="button" onClick={printLabels} disabled={labelsToPrint === 0}
+                className="btn btn-primary w-full justify-center gap-2 h-10 text-[13px] disabled:opacity-40">
+                <Printer size={14} /> Print {labelsToPrint > 0 ? `${labelsToPrint} labels` : ""}
               </button>
-
-              <p className="text-[11px] text-center" style={{ color: "var(--text-3)" }}>
-                {t("pos.receive.barcode_labels_desc")}
-              </p>
             </div>
-          )}
-        </aside>
+
+          </aside>
+        </div>
       </div>
+
+      <input ref={scanCaptureInputRef} type="file" accept="image/*" capture="environment" onChange={handleScanCapture} className="hidden" />
     </main>
   )
 }

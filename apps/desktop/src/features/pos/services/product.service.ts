@@ -257,14 +257,32 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
   })
 
   writeProducts(nextProducts)
-  enqueueSyncOperation({
-    entity: "product",
-    action: "create",
-    summary: `${entries.length} receiving line${
-      entries.length === 1 ? "" : "s"
-    } queued for sync.`,
-    payload: entries,
-  })
+
+  const newlyCreated = nextProducts.filter(
+    (p) => !currentProducts.find((c) => c.id === p.id)
+  )
+  if (newlyCreated.length > 0) {
+    enqueueSyncOperation({
+      entity: "product",
+      action: "create",
+      summary: `${newlyCreated.length} receiving line${
+        newlyCreated.length === 1 ? "" : "s"
+      } queued for sync.`,
+      payload: newlyCreated,
+    })
+  }
+
+  const modifiedExisting = nextProducts.filter(
+    (p) => currentProducts.find((c) => c.id === p.id && JSON.stringify(c) !== JSON.stringify(p))
+  )
+  for (const mod of modifiedExisting) {
+    enqueueSyncOperation({
+      entity: "product",
+      action: "update",
+      summary: `${mod.name} stock updated.`,
+      payload: mod,
+    })
+  }
 
   return nextProducts
 }
@@ -313,8 +331,23 @@ export function createProduct(input: {
   accent?: ProductAccent
   parentId?: number | null
   variantName?: string
-}): Product {
+}): Product | undefined {
   const currentProducts = getProductsSync()
+  const normalizedBarcode = normalizeBarcode(input.barcode)
+  const existing = currentProducts.find((p) => p.barcode === normalizedBarcode)
+  if (existing) {
+    const updated = updateProduct(existing.id, {
+      name: normalizeName(input.name),
+      price: input.price,
+      cost: input.cost,
+      stock: existing.stock + input.stock,
+      category: normalizeName(input.category),
+      accent: input.accent,
+      parentId: input.parentId ?? null,
+      variantName: input.variantName ?? undefined,
+    })
+    return updated
+  }
   const nextId = currentProducts.reduce((max, p) => Math.max(max, p.id), 0) + 1
   const product: Product = {
     id: nextId,
@@ -322,7 +355,7 @@ export function createProduct(input: {
     price: input.price,
     cost: input.cost,
     stock: input.stock,
-    barcode: normalizeBarcode(input.barcode),
+    barcode: normalizedBarcode,
     category: normalizeName(input.category),
     accent: input.accent ?? chooseAccent(input.category, nextId),
     parentId: input.parentId ?? null,

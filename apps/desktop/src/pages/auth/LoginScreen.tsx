@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react"
-import { CloudDownload, KeyRound, LockKeyhole, ShieldCheck, Store, X, Save } from "lucide-react"
+import { CloudDownload, KeyRound, ShieldCheck, Store, X, Save } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
+import TitanLogo, { TitanMark } from "../../components/TitanLogo"
 
 import {
   getUsers,
   hashPin,
+  isSessionUnlocked,
   unlockWithPin,
   type StaffUser,
 } from "../../features/pos/services/security.service"
@@ -43,6 +45,26 @@ export default function LoginScreen() {
   }, [])
   void userTick  // dependency for the recompute above
 
+  // Dev mode — skip login when ?dev is in the URL (design testing without API)
+  useEffect(() => {
+    if (!window.location.search.includes("dev")) return
+    if (isSessionUnlocked()) return
+    const existing = getUsers()
+    if (existing.length > 0) {
+      unlockWithPin("").then((u) => { if (u) window.dispatchEvent(new Event("lebanonpos-security-changed")) })
+      return
+    }
+    hashPin("").then((emptyHash) => {
+      window.localStorage.setItem("lebanonpos.users.v1", JSON.stringify([{
+        id: "dev-user", name: "Dev Admin", mobile: "", pin: emptyHash, pinChanged: true,
+        role: "Admin", code: "DEV", active: true, createdAt: new Date().toISOString(),
+      }]))
+      window.localStorage.setItem("lebanonpos.current-user.v1", "dev-user")
+      window.localStorage.setItem("lebanonpos.session.v1", JSON.stringify({ userId: "dev-user", unlockedAt: new Date().toISOString() }))
+      window.dispatchEvent(new Event("lebanonpos-security-changed"))
+    })
+  }, [])
+
   // ── Connect-to-store (disaster recovery on a new/empty device) ──
   const [connectOpen, setConnectOpen] = useState(false)
   const [cApiUrl, setCApiUrl] = useState(getApiUrl() ?? "https://lebanon-pos-production.up.railway.app")
@@ -57,6 +79,8 @@ export default function LoginScreen() {
   // Hub auto-sync: on the local hub only, fetch a fresh token from the local API
   // and pull cloud data into IndexedDB. Runs once per app session (no reload loop),
   // on activation AND every launch, so staff/products are always present at login.
+  // Retries every 10s (up to 3 min) if no users yet, giving the bridge time to
+  // pull data from Railway into local PG.
   useEffect(() => {
     const isHub = typeof window !== "undefined" &&
       !!(window as { __LBPOS_API_URL__?: string }).__LBPOS_API_URL__
@@ -64,9 +88,14 @@ export default function LoginScreen() {
     if (sessionStorage.getItem("lebanonpos.hub-synced") === "1") return
 
     const apiUrl = (getApiUrl() ?? "http://localhost:3001").replace(/\/+$/, "")
-    ;(async () => {
+    let attempts = 0
+    const maxAttempts = 18  // 18 × 10s = 3 min
+    let mounted = true
+    let retryTimer: ReturnType<typeof setTimeout> | undefined
+
+    async function trySync() {
+      attempts++
       try {
-        // Only proceed if cloud is configured on this hub
         const cfg = await fetch(`${apiUrl}/api/setup/cloud-config`)
           .then((r) => (r.ok ? r.json() : null))
           .catch(() => null)
@@ -79,16 +108,31 @@ export default function LoginScreen() {
 
         setApiUrl(apiUrl)
         setAuthToken(auto.token)
-        sessionStorage.setItem("lebanonpos.hub-synced", "1")
         setStatus("Syncing your store data…")
         await pullFromServer(true)
-        // Refresh the user/data lists in place — no full reload (avoids a loop)
-        window.dispatchEvent(new Event("lebanonpos-security-changed"))
-        setStatus(t("desktop.lock_hint"))
+
+        if (!mounted) return
+        const users = getUsers().filter((u) => u.active)
+        if (users.length > 0) {
+          sessionStorage.setItem("lebanonpos.hub-synced", "1")
+          window.dispatchEvent(new Event("lebanonpos-security-changed"))
+          setStatus(t("desktop.lock_hint"))
+        } else if (attempts < maxAttempts) {
+          setStatus(`Waiting for cloud sync (${attempts}/${maxAttempts})…`)
+          retryTimer = setTimeout(trySync, 10_000)
+        } else {
+          setStatus(t("desktop.lock_hint"))
+        }
       } catch (err) {
         console.error("[hub auto-sync] failed:", err)
+        if (!mounted) return
+        if (attempts < maxAttempts) {
+          retryTimer = setTimeout(trySync, 10_000)
+        }
       }
-    })()
+    }
+    trySync()
+    return () => { mounted = false; clearTimeout(retryTimer) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -165,7 +209,7 @@ export default function LoginScreen() {
         backupSnapshot[key] = localStorage.getItem(key)
       }
 
-      clearStoreData()
+      await clearStoreData()
       setApiUrl(url)
       setAuthToken(data.token)
       rememberStore({
@@ -231,30 +275,30 @@ export default function LoginScreen() {
 
   return (
     <main
-      className="flex min-h-screen items-center justify-center p-4"
+      className="relative flex min-h-screen items-center justify-center overflow-hidden p-4"
       style={{ background: "var(--bg)" }}
     >
-      <section className="grid w-full max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
+      {/* Background watermark — very subtle */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <TitanMark size={680} opacity={0.04} />
+      </div>
+
+      <section className="relative z-10 grid w-full max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_400px]">
 
         {/* Left panel: branding + user cards */}
         <div
           className="rounded-2xl border p-6 sm:p-8"
           style={{ background: "var(--surface)", borderColor: "var(--border)" }}
         >
-          <div
-            className="flex h-14 w-14 items-center justify-center rounded-2xl"
-            style={{ background: "var(--sidebar-bg)" }}
-          >
-            <LockKeyhole size={26} className="text-white" />
-          </div>
+          <TitanLogo size={120} />
 
-          <p className="mt-6 text-xs font-bold uppercase tracking-[0.18em]" style={{ color: "var(--brand)" }}>
-            Lebanon POS
+          <p className="mt-6 text-[11px] font-black uppercase tracking-[0.25em]" style={{ color: "var(--brand)" }}>
+            Powerful Systems
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: "var(--text)" }}>
+          <h1 className="mt-1.5 text-[36px] font-black tracking-tight leading-none" style={{ color: "var(--text)" }}>
             {t("desktop.lock_title")}
           </h1>
-          <p className="mt-3 max-w-xl text-base font-medium" style={{ color: "var(--text-3)" }}>
+          <p className="mt-3 max-w-xl text-[14px] font-medium" style={{ color: "var(--text-3)" }}>
             {t("desktop.lock_description")}
           </p>
 

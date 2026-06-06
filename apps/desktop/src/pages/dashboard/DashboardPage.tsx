@@ -1,83 +1,48 @@
 import { useEffect, useMemo, useState } from "react"
 import {
-  Activity,
-  AlertTriangle,
-  Banknote,
-  Boxes,
-  CircleDollarSign,
-  ClipboardList,
-  HandCoins,
-  PackageSearch,
-  ReceiptText,
-  TrendingUp,
+  Activity, AlertTriangle, ArrowUpRight, Banknote,
+  Boxes, CircleDollarSign, HandCoins, PackageSearch,
+  ReceiptText, TrendingUp,
 } from "lucide-react"
 
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import Spinner from "../../components/ui/Spinner"
-import EmptyState from "../../components/ui/EmptyState"
-import {
-  getCustomerLedger,
-  getLedgerTotals,
-  subscribeLedger,
-} from "../../features/pos/services/customer.service"
-import {
-  getExpenses,
-  subscribeExpenses,
-  type Expense,
-} from "../../features/pos/services/expense.service"
-import {
-  getProducts,
-  subscribeProducts,
-} from "../../features/pos/services/product.service"
-import {
-  getPaymentMix,
-  getSales,
-  getSalesMetrics,
-  getTopProducts,
-  subscribeSales,
-  type Sale,
-} from "../../features/pos/services/sales.service"
-import {
-  getSettings,
-  subscribeSettings,
-  type AppSettings,
-} from "../../features/pos/services/settings.service"
-import {
-  getDeadStockItems,
-  getExpiryAlerts,
-  getPromoSuggestions,
-  getReorderSuggestions,
-} from "../../features/pos/services/stock.service"
+import { getCustomerLedger, getLedgerTotals, subscribeLedger } from "../../features/pos/services/customer.service"
+import { getExpenses, subscribeExpenses, type Expense } from "../../features/pos/services/expense.service"
+import { getProducts, subscribeProducts } from "../../features/pos/services/product.service"
+import { getSales, getSalesMetrics, getTopProducts, subscribeSales, type Sale } from "../../features/pos/services/sales.service"
+import { getSettings, subscribeSettings, type AppSettings } from "../../features/pos/services/settings.service"
+import { getExpiryAlerts, getReorderSuggestions } from "../../features/pos/services/stock.service"
 import type { Product } from "../../features/pos/types/product"
 import { useI18n } from "@lebanonpos/shared"
 
 type DateRange = "today" | "week" | "month"
 
-const PAYMENT_COLORS: Record<string, string> = {
-  Cash: "#10b981",
-  Card: "#6366f1",
-  Wallet: "#8b5cf6",
-  Debt: "#f59e0b",
+const PM_COLORS: Record<string, { solid: string; soft: string; text: string }> = {
+  Cash:   { solid: "#10b981", soft: "rgba(16,185,129,0.15)",  text: "#6ee7b7" },
+  Card:   { solid: "#6366f1", soft: "rgba(99,102,241,0.15)",  text: "#a5b4fc" },
+  Wallet: { solid: "#8b5cf6", soft: "rgba(139,92,246,0.15)", text: "#c4b5fd" },
+  Debt:   { solid: "#f59e0b", soft: "rgba(245,158,11,0.15)",  text: "#fde68a" },
 }
 
 function getDateStart(range: DateRange) {
   const now = new Date()
   if (range === "today") return new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  if (range === "week") {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    d.setDate(d.getDate() - 6)
-    return d
-  }
+  if (range === "week") { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()); d.setDate(d.getDate() - 6); return d }
   return new Date(now.getFullYear(), now.getMonth(), 1)
 }
 
+function formatTime(value: string) {
+  return new Intl.DateTimeFormat("en-LB", { hour: "2-digit", minute: "2-digit" }).format(new Date(value))
+}
+
+/** ── Revenue bar chart ─────────────────────────────────── */
 function TrendChart({ sales, range }: { sales: Sale[]; range: DateRange }) {
   const data = useMemo(() => {
     const days = range === "today" ? 1 : range === "week" ? 7 : 30
     const map = new Map<string, { total: number; count: number }>()
     for (let i = days - 1; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
+      const d = new Date(); d.setDate(d.getDate() - i)
       const key = d.toISOString().slice(0, 10)
       map.set(key, { total: 0, count: 0 })
     }
@@ -86,40 +51,83 @@ function TrendChart({ sales, range }: { sales: Sale[]; range: DateRange }) {
       const entry = map.get(key)
       if (entry) { entry.total += sale.total; entry.count++ }
     }
+    const today = new Date().toISOString().slice(0, 10)
     return Array.from(map.entries()).map(([date, d]) => ({
       label: new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      isToday: date === today,
       ...d,
     }))
   }, [sales, range])
 
   const max = Math.max(...data.map((d) => d.total), 1)
+  const totalRevenue = data.reduce((s, d) => s + d.total, 0)
+
   return (
-    <div className="flex items-end gap-[3px] h-32 mt-3">
-      {data.map((d, i) => {
-        const pct = (d.total / max) * 100
-        return (
-          <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group relative">
-            <div
-              className="w-full rounded-t transition-all duration-300 hover:opacity-80 cursor-default"
-              style={{ height: `${Math.max(pct, 3)}%`, background: "linear-gradient(180deg,#818cf8,#4f46e5)" }}
-            />
-            {d.total > 0 && (
-              <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] font-medium px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-10 shadow-lg">
-                {formatCurrency(d.total)} · {d.count}×
-              </div>
-            )}
-            {(i === 0 || i === Math.floor(data.length / 2) || i === data.length - 1) && (
-              <span className="text-[8px] text-zinc-400 mt-0.5 truncate max-w-full font-medium">{d.label}</span>
-            )}
-          </div>
-        )
-      })}
+    <div>
+      <div className="flex items-end gap-[3px] h-36 mt-4">
+        {data.map((d, i) => {
+          const pct = (d.total / max) * 100
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group relative">
+              {/* Tooltip */}
+              {d.total > 0 && (
+                <div
+                  className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 rounded-xl px-2.5 py-1.5 text-[11px] font-bold opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-20 transition-opacity"
+                  style={{ background: "var(--surface-3)", color: "var(--text)", boxShadow: "var(--shadow-sm)", border: "1px solid var(--border)" }}
+                >
+                  {formatCurrency(d.total)}
+                  <span className="ml-1.5 font-normal" style={{ color: "var(--text-3)" }}>{d.count}×</span>
+                </div>
+              )}
+
+              {/* Bar */}
+              <div
+                className="w-full rounded-t-lg transition-all duration-500"
+                style={{
+                  height: `${Math.max(pct, 2)}%`,
+                  background: d.isToday
+                    ? `linear-gradient(180deg, var(--brand), var(--brand-hover, var(--brand)))`
+                    : `linear-gradient(180deg, var(--brand-soft) 0%, var(--brand-soft) 100%)`,
+                  opacity: d.total === 0 ? 0.3 : 1,
+                  boxShadow: d.isToday && d.total > 0 ? `0 -4px 16px var(--brand-soft)` : "none",
+                }}
+              />
+
+              {/* Label */}
+              {(i === 0 || i === Math.floor(data.length / 2) || i === data.length - 1) && (
+                <span className="text-[8px] mt-0.5 truncate max-w-full font-semibold" style={{ color: "var(--text-3)" }}>
+                  {d.label}
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Chart footer */}
+      <div className="mt-3 flex items-center justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full" style={{ background: "var(--brand)" }} />
+          Today
+          <span className="h-2 w-2 rounded-full ml-2" style={{ background: "var(--brand-soft)" }} />
+          Past
+        </span>
+        <span className="font-bold tabular-nums" style={{ color: "var(--text-2)" }}>{formatCurrency(totalRevenue)} total</span>
+      </div>
     </div>
   )
 }
 
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("en-LB", { hour: "2-digit", minute: "2-digit" }).format(new Date(value))
+/** ── Mini horizontal bar ───────────────────────────────── */
+function MiniBar({ value, max, color }: { value: number; max: number; color: string }) {
+  return (
+    <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: "var(--surface-3)" }}>
+      <div
+        className="h-full rounded-full transition-all duration-500"
+        style={{ width: `${Math.max((value / max) * 100, 2)}%`, background: color }}
+      />
+    </div>
+  )
 }
 
 export default function DashboardPage() {
@@ -135,268 +143,393 @@ export default function DashboardPage() {
   useEffect(() => {
     let active = true
     getProducts().then((data) => { if (active) { setProducts(data); setIsLoading(false) } }).catch(() => { if (active) setIsLoading(false) })
-    const unsubscribeProducts = subscribeProducts((data) => { if (active) setProducts(data) })
-    const unsubscribeSales = subscribeSales((data) => { if (active) setSales(data) })
-    const unsubscribeExpenses = subscribeExpenses((data) => { if (active) setExpenses(data) })
-    const unsubscribeLedger = subscribeLedger(() => { if (active) setLedgerVersion((v) => v + 1) })
-    const unsubscribeSettings = subscribeSettings((data) => { if (active) setSettings(data) })
-    return () => { active = false; unsubscribeProducts(); unsubscribeSales(); unsubscribeExpenses(); unsubscribeLedger(); unsubscribeSettings() }
+    const u1 = subscribeProducts((d) => { if (active) setProducts(d) })
+    const u2 = subscribeSales((d) => { if (active) setSales(d) })
+    const u3 = subscribeExpenses((d) => { if (active) setExpenses(d) })
+    const u4 = subscribeLedger(() => { if (active) setLedgerVersion((v) => v + 1) })
+    const u5 = subscribeSettings((d) => { if (active) setSettings(d) })
+    return () => { active = false; u1(); u2(); u3(); u4(); u5() }
   }, [])
 
   const rangeStart = useMemo(() => getDateStart(dateRange), [dateRange])
+  const rangeSales = useMemo(() => sales.filter((s) => new Date(s.createdAt) >= rangeStart && s.status !== "Voided"), [sales, rangeStart])
+  const rangeExpenses = useMemo(() => expenses.filter((e) => new Date(e.createdAt) >= rangeStart), [expenses, rangeStart])
 
-  const rangeSales = useMemo(
-    // Exclude voided sales from every dashboard metric
-    () => sales.filter((s) => new Date(s.createdAt) >= rangeStart && s.status !== "Voided"),
-    [sales, rangeStart]
-  )
-  const rangeExpenses = useMemo(
-    () => expenses.filter((e) => new Date(e.createdAt) >= rangeStart),
-    [expenses, rangeStart]
-  )
-
-  const metrics = useMemo(() => getSalesMetrics(), [rangeSales, settings])
-  // Net Paid = cash/card/wallet sales only (debt is money owed, not collected)
-  const paidSales = rangeSales.filter((s) => s.paymentMethod !== "Debt")
-  const debtSales = rangeSales.filter((s) => s.paymentMethod === "Debt")
-  const rangeRevenue = paidSales.reduce((s, x) => s + x.total, 0)
-  const rangeDebtIssued = debtSales.reduce((s, x) => s + x.total, 0)
-  const rangeProfit = rangeSales.reduce((s, x) => s + (x.profit ?? 0), 0)
+  const paidSales        = rangeSales.filter((s) => s.paymentMethod !== "Debt")
+  const debtSales        = rangeSales.filter((s) => s.paymentMethod === "Debt")
+  const rangeRevenue     = paidSales.reduce((s, x) => s + x.total, 0)
+  const rangeDebtIssued  = debtSales.reduce((s, x) => s + x.total, 0)
+  const rangeProfit      = rangeSales.reduce((s, x) => s + (x.profit ?? 0), 0)
   const rangeExpenseTotal = rangeExpenses.reduce((s, e) => s + e.amount, 0)
-  const rangeOpProfit = rangeProfit - rangeExpenseTotal
+  const rangeOpProfit    = rangeProfit - rangeExpenseTotal
   const rangeTransactions = rangeSales.length
+  const avgTicket        = rangeTransactions > 0 ? rangeRevenue / rangeTransactions : 0
 
   const paymentMix = useMemo(() => {
     const mix: Record<string, number> = {}
-    for (const sale of rangeSales) {
-      mix[sale.paymentMethod] = (mix[sale.paymentMethod] ?? 0) + sale.total
-    }
+    for (const s of rangeSales) mix[s.paymentMethod] = (mix[s.paymentMethod] ?? 0) + s.total
     return mix
   }, [rangeSales])
+  const paymentTotal = Object.values(paymentMix).reduce((s, v) => s + v, 0)
 
-  const topProducts = useMemo(() => getTopProducts(5), [sales])
-  const ledgerTotals = useMemo(() => getLedgerTotals(), [ledgerVersion])
+  const topProducts   = useMemo(() => getTopProducts(5), [sales])
+  const topMax        = topProducts[0]?.total ?? 1
+  const ledgerTotals  = useMemo(() => getLedgerTotals(), [ledgerVersion])
   const customerLedger = useMemo(() => getCustomerLedger(), [ledgerVersion])
-  const lowStockProducts = products
-    .filter((p) => p.stock <= settings.lowStockThreshold)
-    .sort((a, b) => a.stock - b.stock)
-    .slice(0, 6)
-  const stockValue = products.reduce((sum, p) => sum + p.cost * p.stock, 0)
-  const recentSales = rangeSales.slice(0, 6)
-  const riskyCustomers = customerLedger.filter((c) => c.balance > 0).sort((a, b) => b.balance - a.balance).slice(0, 5)
+  const stockValue    = products.reduce((sum, p) => sum + p.cost * p.stock, 0)
+  const recentSales   = rangeSales.slice(0, 8)
+  const lowStockProducts = products.filter((p) => p.stock <= settings.lowStockThreshold).sort((a, b) => a.stock - b.stock).slice(0, 5)
+  const riskyCustomers   = customerLedger.filter((c) => c.balance > 0).sort((a, b) => b.balance - a.balance).slice(0, 4)
   const reorderSuggestions = useMemo(() => getReorderSuggestions(products), [products])
-  const expiryAlerts = useMemo(() => getExpiryAlerts(products, 30), [products])
-  const deadStockItems = useMemo(() => getDeadStockItems(products, 60), [products])
-  const promoSuggestions = useMemo(() => getPromoSuggestions(products), [products])
+  const expiryAlerts       = useMemo(() => getExpiryAlerts(products, 30), [products])
+  const actionCount = lowStockProducts.length + riskyCustomers.length
 
   const rangeLabel: Record<DateRange, string> = {
     today: t("desktop.dashboard.range_today"),
-    week: t("desktop.dashboard.range_week"),
+    week:  t("desktop.dashboard.range_week"),
     month: t("desktop.dashboard.range_month"),
   }
 
-  if (isLoading) {
-    return (
-      <main className="flex min-h-0 flex-1 items-center justify-center bg-page p-6">
-        <Spinner label={t("desktop.dashboard.loading")} />
-      </main>
-    )
-  }
+  if (isLoading) return (
+    <main className="flex min-h-0 flex-1 items-center justify-center bg-page p-6">
+      <Spinner label={t("desktop.dashboard.loading")} />
+    </main>
+  )
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
-      {/* Header + date range picker */}
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-950 text-white">
-            <ClipboardList size={21} />
-          </div>
+    <main className="min-h-0 flex-1 overflow-y-auto bg-page">
+      <div className="mx-auto max-w-[1400px] p-4 sm:p-6 space-y-5">
+
+        {/* ── Header ──────────────────────────────────────── */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-zinc-950">{t("desktop.dashboard.owner_digest")}</h1>
-            <p className="text-sm text-zinc-500">{t("desktop.dashboard.owner_subtitle")}</p>
+            <h1 className="text-[24px] font-black tracking-tight" style={{ color: "var(--text)" }}>
+              {settings.storeName || t("desktop.dashboard.owner_digest")}
+            </h1>
+            <p className="text-[13px] mt-0.5" style={{ color: "var(--text-3)" }}>
+              {t("desktop.dashboard.owner_subtitle")}
+            </p>
+          </div>
+
+          {/* Date range */}
+          <div className="flex overflow-hidden rounded-xl border p-1 gap-1" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+            {(["today", "week", "month"] as DateRange[]).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setDateRange(r)}
+                className="rounded-lg px-4 h-9 text-[13px] font-bold transition-all"
+                style={dateRange === r
+                  ? { background: "var(--brand)", color: "#fff", boxShadow: "0 2px 8px var(--brand-soft)" }
+                  : { color: "var(--text-3)" }
+                }
+              >
+                {rangeLabel[r]}
+              </button>
+            ))}
           </div>
         </div>
-        <div className="flex rounded-lg border border-zinc-200 bg-white overflow-hidden text-sm font-semibold">
-          {(["today", "week", "month"] as DateRange[]).map((r) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => setDateRange(r)}
-              className={`px-4 h-10 transition ${dateRange === r ? "bg-zinc-950 text-white" : "text-zinc-600 hover:bg-zinc-50"}`}
-            >
-              {rangeLabel[r]}
-            </button>
-          ))}
-        </div>
-      </div>
 
-      {/* KPI stat cards */}
-      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4 mb-5">
-        {[
-          { label: t("desktop.dashboard.net_paid"), value: formatCurrency(rangeRevenue), sub: rangeDebtIssued > 0 ? `${formatNumber(rangeTransactions)} sales · ${formatCurrency(rangeDebtIssued)} on debt` : `${formatNumber(rangeTransactions)} ${t("desktop.dashboard.transactions")}`, icon: CircleDollarSign, color: "text-emerald-700", bg: "bg-emerald-50" },
-          { label: t("desktop.dashboard.operating_profit"), value: formatCurrency(rangeOpProfit), sub: `${formatCurrency(rangeExpenseTotal)} ${t("desktop.dashboard.expenses_today")}`, icon: TrendingUp, color: "text-indigo-700", bg: "bg-indigo-50" },
-          { label: t("desktop.dashboard.outstanding"), value: formatCurrency(ledgerTotals.outstanding), sub: `${formatNumber(ledgerTotals.customers)} ${t("desktop.dashboard.customer_accounts")}`, icon: HandCoins, color: "text-rose-700", bg: "bg-rose-50", valueColor: "text-rose-700" },
-          { label: t("desktop.dashboard.stock_value"), value: formatCurrency(stockValue), sub: `${formatNumber(lowStockProducts.length)} ${t("desktop.dashboard.low_stock_products")}`, icon: Boxes, color: "text-amber-700", bg: "bg-amber-50" },
-        ].map((card) => {
-          const Icon = card.icon
-          return (
-            <div key={card.label} className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">{card.label}</p>
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${card.bg}`}>
-                  <Icon size={18} className={card.color} />
+        {/* ── KPI row ─────────────────────────────────────── */}
+        <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          {[
+            {
+              label: t("desktop.dashboard.net_paid"),
+              value: formatCurrency(rangeRevenue),
+              sub: `${formatNumber(rangeTransactions)} sales · avg ${formatCurrency(avgTicket)}`,
+              icon: CircleDollarSign,
+              gradient: "linear-gradient(135deg,#10b981,#047857)",
+              glow: "rgba(16,185,129,0.4)",
+              badge: rangeDebtIssued > 0 ? `+${formatCurrency(rangeDebtIssued)} debt` : null,
+            },
+            {
+              label: t("desktop.dashboard.operating_profit"),
+              value: formatCurrency(rangeOpProfit),
+              sub: `${formatCurrency(rangeExpenseTotal)} expenses deducted`,
+              icon: TrendingUp,
+              gradient: "linear-gradient(135deg,#818cf8,#4338ca)",
+              glow: "rgba(99,102,241,0.4)",
+              badge: rangeRevenue > 0 ? `${((rangeOpProfit / rangeRevenue) * 100).toFixed(1)}% margin` : null,
+            },
+            {
+              label: t("desktop.dashboard.outstanding"),
+              value: formatCurrency(ledgerTotals.outstanding),
+              sub: `${formatNumber(ledgerTotals.customers)} customer accounts`,
+              icon: HandCoins,
+              gradient: "linear-gradient(135deg,#fb923c,#dc2626)",
+              glow: "rgba(251,146,60,0.4)",
+              alert: ledgerTotals.outstanding > 0,
+            },
+            {
+              label: t("desktop.dashboard.stock_value"),
+              value: formatCurrency(stockValue),
+              sub: `${formatNumber(lowStockProducts.length)} low-stock alerts`,
+              icon: Boxes,
+              gradient: "linear-gradient(135deg,#fbbf24,#b45309)",
+              glow: "rgba(251,191,36,0.4)",
+              badge: reorderSuggestions.filter((r) => r.suggestedQuantity > 0).length > 0
+                ? `${reorderSuggestions.filter((r) => r.suggestedQuantity > 0).length} to reorder`
+                : null,
+            },
+          ].map((card) => {
+            const Icon = card.icon
+            return (
+              <div
+                key={card.label}
+                className="flex flex-col gap-3 rounded-2xl border p-4"
+                style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "var(--shadow-xs)" }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>
+                    {card.label}
+                  </p>
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+                    style={{ background: card.gradient, boxShadow: `0 3px 10px ${card.glow}` }}
+                  >
+                    <Icon size={17} strokeWidth={1.9} color="white" />
+                  </span>
                 </div>
+
+                <div>
+                  <p
+                    className="text-[26px] font-black tabular-nums leading-none"
+                    style={{ color: card.alert ? "var(--rose)" : "var(--text)" }}
+                  >
+                    {card.value}
+                  </p>
+                  <p className="mt-1 text-[11px]" style={{ color: "var(--text-3)" }}>{card.sub}</p>
+                </div>
+
+                {card.badge && (
+                  <span
+                    className="w-fit rounded-lg px-2 py-0.5 text-[10px] font-bold"
+                    style={{ background: "var(--brand-soft)", color: "var(--brand-text)", border: "1px solid var(--brand-border)" }}
+                  >
+                    <ArrowUpRight size={10} className="inline mr-0.5" />
+                    {card.badge}
+                  </span>
+                )}
               </div>
-              <p className={`mt-3 text-2xl font-bold ${card.valueColor ?? "text-zinc-950"}`}>{card.value}</p>
-              <p className="mt-1 text-xs text-zinc-500">{card.sub}</p>
-            </div>
-          )
-        })}
-      </section>
+            )
+          })}
+        </section>
 
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(340px,0.5fr)]">
-        <div className="space-y-5">
-          {/* Revenue trend chart */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-zinc-950">{t("desktop.dashboard.revenue_trend")} — {rangeLabel[dateRange]}</h2>
-              <span className="text-sm font-bold text-zinc-500">{formatCurrency(rangeRevenue)}</span>
+        {/* ── Main grid ───────────────────────────────────── */}
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(300px,1fr)]">
+
+          {/* LEFT column */}
+          <div className="space-y-5">
+
+            {/* Revenue trend */}
+            <div className="rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-[15px] font-black" style={{ color: "var(--text)" }}>
+                    {t("desktop.dashboard.revenue_trend")}
+                  </h2>
+                  <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>{rangeLabel[dateRange]}</p>
+                </div>
+                <span className="text-[22px] font-black tabular-nums" style={{ color: "var(--brand)" }}>
+                  {formatCurrency(rangeRevenue)}
+                </span>
+              </div>
+              <TrendChart sales={rangeSales} range={dateRange} />
             </div>
-            <TrendChart sales={rangeSales} range={dateRange} />
+
+            {/* Payment mix + Top products */}
+            <div className="grid gap-5 lg:grid-cols-2">
+
+              {/* Payment mix */}
+              <div className="rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "linear-gradient(135deg,#10b981,#047857)", boxShadow: "0 2px 8px rgba(16,185,129,0.35)" }}>
+                    <Banknote size={14} strokeWidth={1.9} color="white" />
+                  </span>
+                  <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>{t("desktop.dashboard.payment_mix")}</h3>
+                </div>
+
+                {Object.keys(paymentMix).length === 0 ? (
+                  <p className="text-[13px] py-4 text-center" style={{ color: "var(--text-3)" }}>No sales yet</p>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Stacked bar */}
+                    <div className="flex h-3 overflow-hidden rounded-full gap-0.5">
+                      {Object.entries(paymentMix).map(([method, amount]) => {
+                        const pct = paymentTotal > 0 ? (amount / paymentTotal) * 100 : 0
+                        const col = PM_COLORS[method]?.solid ?? "#6b7280"
+                        return <div key={method} className="rounded-full transition-all" style={{ width: `${pct}%`, background: col }} />
+                      })}
+                    </div>
+
+                    {Object.entries(paymentMix).map(([method, amount]) => {
+                      const pct = paymentTotal > 0 ? (amount / paymentTotal) * 100 : 0
+                      const col = PM_COLORS[method] ?? { solid: "#6b7280", soft: "rgba(107,114,128,0.15)", text: "#9ca3af" }
+                      return (
+                        <div key={method} className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: col.solid }} />
+                            <span className="text-[12px] font-semibold truncate" style={{ color: "var(--text-2)" }}>{method}</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{pct.toFixed(0)}%</span>
+                            <span className="text-[13px] font-black tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(amount)}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Top products */}
+              <div className="rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "linear-gradient(135deg,#818cf8,#4338ca)", boxShadow: "0 2px 8px rgba(99,102,241,0.35)" }}>
+                    <PackageSearch size={14} strokeWidth={1.9} color="white" />
+                  </span>
+                  <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>{t("desktop.dashboard.top_products")}</h3>
+                </div>
+
+                {topProducts.length === 0 ? (
+                  <p className="text-[13px] py-4 text-center" style={{ color: "var(--text-3)" }}>Sales will appear here</p>
+                ) : (
+                  <div className="space-y-3">
+                    {topProducts.map((product, i) => (
+                      <div key={product.name}>
+                        <div className="flex items-center gap-2.5 mb-1">
+                          <span
+                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black"
+                            style={i === 0
+                              ? { background: "var(--brand)", color: "#fff" }
+                              : { background: "var(--surface-2)", color: "var(--text-3)" }
+                            }
+                          >{i + 1}</span>
+                          <span className="min-w-0 flex-1 truncate text-[12px] font-semibold" style={{ color: "var(--text)" }}>{product.name}</span>
+                          <div className="shrink-0 text-right">
+                            <span className="block text-[13px] font-black tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(product.total)}</span>
+                            <span className="block text-[10px] tabular-nums" style={{ color: "var(--text-3)" }}>{formatNumber(product.quantity)} sold</span>
+                          </div>
+                        </div>
+                        <MiniBar value={product.total} max={topMax} color={i === 0 ? "var(--brand)" : "var(--surface-3)"} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Command center: payment mix + top products */}
-          <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
-            <div className="border-b border-zinc-200 p-4">
-              <h2 className="text-base font-bold text-zinc-950">{t("desktop.dashboard.command_center")}</h2>
-              <p className="text-sm text-zinc-500">{t("desktop.dashboard.command_center_subtitle")}</p>
-            </div>
-            <div className="grid gap-4 p-4 lg:grid-cols-2">
-              <div className="rounded-lg border border-zinc-200 p-4">
-                <div className="mb-3 flex items-center gap-2 font-bold text-zinc-950">
-                  <Banknote size={18} className="text-emerald-700" />
-                  {t("desktop.dashboard.payment_mix")}
+          {/* RIGHT column */}
+          <div className="space-y-5">
+
+            {/* Action queue */}
+            <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+              <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "linear-gradient(135deg,#fb923c,#dc2626)", boxShadow: "0 2px 8px rgba(251,146,60,0.35)" }}>
+                    <AlertTriangle size={13} strokeWidth={1.9} color="white" />
+                  </span>
+                  <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>{t("desktop.dashboard.action_queue")}</h3>
                 </div>
-                {Object.entries(paymentMix).length === 0 ? (
-                  <p className="text-sm text-zinc-400">{t("desktop.dashboard.no_sales_yet")}</p>
-                ) : Object.entries(paymentMix).map(([method, amount]) => {
-                  const total = Object.values(paymentMix).reduce((s, v) => s + v, 0)
-                  const pct = total > 0 ? (amount / total) * 100 : 0
+                {actionCount > 0 && (
+                  <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full px-1.5 text-[11px] font-black text-white"
+                    style={{ background: "linear-gradient(135deg,#fb923c,#dc2626)" }}>
+                    {actionCount}
+                  </span>
+                )}
+              </div>
+
+              <div className="max-h-[280px] overflow-y-auto p-3 space-y-2">
+                {actionCount === 0 && (
+                  <p className="py-6 text-center text-[12px]" style={{ color: "var(--text-3)" }}>All clear — no urgent items</p>
+                )}
+
+                {lowStockProducts.map((product) => (
+                  <div key={product.id} className="flex items-center justify-between rounded-xl px-3 py-2.5"
+                    style={{ background: "var(--amber-soft)", border: "1px solid var(--amber-border, rgba(245,158,11,0.2))" }}>
+                    <div>
+                      <p className="text-[12px] font-bold" style={{ color: "var(--amber-text)" }}>{product.name}</p>
+                      <p className="text-[10px]" style={{ color: "var(--amber)" }}>{formatNumber(product.stock)} units left</p>
+                    </div>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-lg" style={{ background: "var(--amber)", color: "#fff" }}>
+                      Low
+                    </span>
+                  </div>
+                ))}
+
+                {riskyCustomers.map((customer) => (
+                  <div key={customer.id} className="flex items-center justify-between rounded-xl px-3 py-2.5"
+                    style={{ background: "var(--rose-soft)", border: "1px solid rgba(244,63,94,0.2)" }}>
+                    <div>
+                      <p className="text-[12px] font-bold" style={{ color: "var(--rose-text)" }}>{customer.name}</p>
+                      <p className="text-[10px]" style={{ color: "var(--rose)" }}>{t("desktop.dashboard.owes")} {formatCurrency(customer.balance)}</p>
+                    </div>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-lg" style={{ background: "var(--rose)", color: "#fff" }}>
+                      Debt
+                    </span>
+                  </div>
+                ))}
+
+                {expiryAlerts.slice(0, 3).map((p) => (
+                  <div key={`${p.product.id}`} className="flex items-center justify-between rounded-xl px-3 py-2.5"
+                    style={{ background: "var(--amber-soft)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                    <div>
+                      <p className="text-[12px] font-bold" style={{ color: "var(--amber-text)" }}>{p.product.name}</p>
+                      <p className="text-[10px]" style={{ color: "var(--amber)" }}>Expires {p.batch?.expiryDate ?? p.product.expiryDate ?? "soon"}</p>
+                    </div>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-lg" style={{ background: "var(--amber)", color: "#fff" }}>
+                      Expiry
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent sales */}
+            <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+              <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "linear-gradient(135deg,#60a5fa,#1d4ed8)", boxShadow: "0 2px 8px rgba(59,130,246,0.35)" }}>
+                  <Activity size={13} strokeWidth={1.9} color="white" />
+                </span>
+                <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>{t("desktop.dashboard.recent_sales")}</h3>
+                <span className="ml-auto text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>
+                  {formatNumber(rangeTransactions)} total
+                </span>
+              </div>
+
+              <div className="divide-y" style={{ borderColor: "var(--border)" }}>
+                {recentSales.length === 0 && (
+                  <p className="px-4 py-8 text-center text-[12px]" style={{ color: "var(--text-3)" }}>No sales yet</p>
+                )}
+                {recentSales.map((sale) => {
+                  const col = PM_COLORS[sale.paymentMethod] ?? { solid: "#6b7280", soft: "rgba(107,114,128,0.15)", text: "#9ca3af" }
                   return (
-                    <div key={method} className="mb-3 last:mb-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-zinc-600">{method}</span>
-                        <span className="text-sm font-bold text-zinc-950">{formatCurrency(amount)}</span>
+                    <div key={sale.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--surface-hover)] transition-colors">
+                      <ReceiptText size={14} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[12px] font-bold tabular-nums" style={{ color: "var(--text)" }}>{sale.saleNumber}</p>
+                        <p className="text-[10px]" style={{ color: "var(--text-3)" }}>{formatTime(sale.createdAt)}</p>
                       </div>
-                      <div className="h-1.5 w-full rounded-full bg-zinc-100">
-                        <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, backgroundColor: PAYMENT_COLORS[method] ?? "#6b7280" }} />
-                      </div>
+                      <span
+                        className="shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-bold"
+                        style={{ background: col.soft, color: col.text }}
+                      >
+                        {sale.paymentMethod}
+                      </span>
+                      <span className="shrink-0 text-[13px] font-black tabular-nums" style={{ color: "var(--text)" }}>
+                        {formatCurrency(sale.total)}
+                      </span>
                     </div>
                   )
                 })}
               </div>
-
-              <div className="rounded-lg border border-zinc-200 p-4">
-                <div className="mb-3 flex items-center gap-2 font-bold text-zinc-950">
-                  <PackageSearch size={18} className="text-indigo-700" />
-                  {t("desktop.dashboard.top_products")}
-                </div>
-                {topProducts.length === 0 ? (
-                  <EmptyState icon={PackageSearch} title={t("desktop.dashboard.sales_will_appear")} className="border-0 bg-transparent py-6" />
-                ) : topProducts.map((product, i) => (
-                  <div key={product.name} className="flex items-center gap-3 border-b border-zinc-100 py-2 last:border-0">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">{i + 1}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-zinc-950">{product.name}</p>
-                      <p className="text-xs text-zinc-500">{formatNumber(product.quantity)} {t("desktop.dashboard.sold")}</p>
-                    </div>
-                    <span className="font-bold text-zinc-950">{formatCurrency(product.total)}</span>
-                  </div>
-                ))}
-              </div>
             </div>
+
           </div>
         </div>
 
-        <div className="space-y-5">
-          {/* Action queue */}
-          <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
-            <div className="border-b border-zinc-200 p-4">
-              <div className="flex items-center gap-2">
-                <AlertTriangle size={18} className="text-amber-700" />
-                <h2 className="text-base font-bold text-zinc-950">{t("desktop.dashboard.action_queue")}</h2>
-                <span className="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">
-                  {lowStockProducts.length + riskyCustomers.length}
-                </span>
-              </div>
-            </div>
-            <div className="space-y-2 p-4 max-h-80 overflow-y-auto">
-              {lowStockProducts.length === 0 && riskyCustomers.length === 0 ? (
-                <EmptyState icon={AlertTriangle} title={t("desktop.dashboard.no_urgent_work")} className="border-0 bg-transparent py-6" />
-              ) : null}
-              {lowStockProducts.map((product) => (
-                <div key={product.id} className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                  <p className="font-bold text-amber-900">{product.name}</p>
-                  <p className="text-xs text-amber-700">{formatNumber(product.stock)} {t("desktop.dashboard.units_left")}</p>
-                </div>
-              ))}
-              {riskyCustomers.map((customer) => (
-                <div key={customer.id} className="rounded-lg border border-rose-200 bg-rose-50 p-3">
-                  <p className="font-bold text-rose-900">{customer.name}</p>
-                  <p className="text-xs text-rose-700">{t("desktop.dashboard.owes")} {formatCurrency(customer.balance)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Inventory alerts */}
-          {(expiryAlerts.length > 0 || reorderSuggestions.filter((r) => r.suggestedQuantity > 0).length > 0) && (
-            <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
-              <div className="border-b border-zinc-200 p-4">
-                <div className="flex items-center gap-2">
-                  <Boxes size={18} className="text-indigo-700" />
-                  <h2 className="text-base font-bold text-zinc-950">{t("desktop.dashboard.inventory_work")}</h2>
-                </div>
-              </div>
-              <div className="space-y-2 p-4 max-h-60 overflow-y-auto">
-                {expiryAlerts.slice(0, 4).map((p) => (
-                  <div key={`${p.product.id}-${p.batch?.id ?? "product"}`} className="flex justify-between rounded-lg border border-orange-200 bg-orange-50 p-3">
-                    <p className="text-sm font-bold text-orange-900">{p.product.name}</p>
-                    <p className="text-xs text-orange-700">{t("desktop.dashboard.expires")} {p.batch?.expiryDate ?? p.product.expiryDate ?? ""}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Recent sales */}
-          <div className="rounded-xl border border-zinc-200 bg-white shadow-sm">
-            <div className="border-b border-zinc-200 p-4">
-              <div className="flex items-center gap-2">
-                <Activity size={18} className="text-zinc-700" />
-                <h2 className="text-base font-bold text-zinc-950">{t("desktop.dashboard.recent_sales")}</h2>
-              </div>
-            </div>
-            <div className="space-y-2 p-4">
-              {recentSales.length === 0 ? (
-                <EmptyState icon={ReceiptText} title={t("desktop.dashboard.no_sales_yet")} className="border-0 bg-transparent py-6" />
-              ) : null}
-              {recentSales.map((sale) => (
-                <div key={sale.id} className="flex items-center justify-between rounded-lg border border-zinc-200 p-3">
-                  <div className="flex items-center gap-2">
-                    <ReceiptText size={17} className="text-zinc-500" />
-                    <div>
-                      <p className="font-bold text-zinc-950">{sale.saleNumber}</p>
-                      <p className="text-xs text-zinc-500">{sale.paymentMethod} — {formatTime(sale.createdAt)}</p>
-                    </div>
-                  </div>
-                  <span className="font-bold text-zinc-950">{formatCurrency(sale.total)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>
     </main>
   )
 }

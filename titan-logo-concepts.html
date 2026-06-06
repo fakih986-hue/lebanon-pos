@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TITAN — Logo System</title>
+<style>
+  :root{color-scheme:dark}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Segoe UI",system-ui,sans-serif;
+    background:radial-gradient(1200px 700px at 50% -8%,#16181f,#090a0d 62%);
+    color:#e9ebf0;padding:46px 24px 100px}
+  h1{font-size:30px;font-weight:900;letter-spacing:-.02em;text-align:center}
+  .sub{color:#8b93a3;font-size:14px;margin:8px 0 42px;text-align:center}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:24px;max-width:1560px;margin:0 auto}
+  .card{background:#111319;border:1px solid #20242e;border-radius:22px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45)}
+  .chead{padding:18px 20px;border-bottom:1px solid #20242e}
+  .name{font-size:15px;font-weight:900;display:flex;align-items:center;gap:9px}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:7px;
+    background:linear-gradient(135deg,#f2d98a,#c99a2e);color:#1a1300;font-size:12px;font-weight:900}
+  .idea{font-size:12px;color:#9aa3b2;margin-top:7px;line-height:1.5}
+  .stage{display:grid;grid-template-columns:1fr 1fr}
+  .panel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:30px 16px;min-height:230px}
+  .panel.dark{background:radial-gradient(120px 120px at 50% 38%,#15130c,#000 75%)}
+  .panel.light{background:#fafafa}
+  /* app-icon plate */
+  .plate{border-radius:22%;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(70% 60% at 50% 30%,#1c1607,#0a0800 80%);
+    border:1px solid rgba(212,175,55,.22);box-shadow:0 10px 30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05)}
+  .plate.lite{background:radial-gradient(70% 60% at 50% 30%,#fff,#eef0ee 90%);border-color:rgba(0,0,0,.08);box-shadow:0 8px 22px rgba(0,0,0,.10)}
+  .glow{animation:glow 3.2s ease-in-out infinite}
+  @keyframes glow{0%,100%{filter:drop-shadow(0 0 2px rgba(212,175,55,.35))}50%{filter:drop-shadow(0 0 9px rgba(212,175,55,.65))}}
+  .word{display:flex;align-items:center;gap:11px}
+  .t1{font-weight:900;letter-spacing:.05em;line-height:1;font-size:20px}
+  .t2{font-weight:600;letter-spacing:.24em;text-transform:uppercase;line-height:1;font-size:8px;margin-top:3px}
+  .dark .t1{color:#fff}.dark .t2{color:#c9a24a}
+  .light .t1{color:#141414}.light .t2{color:#9a7b2e}
+  .mini{display:flex;align-items:center;gap:8px}.mini span{font-size:10px}
+  .dark .mini span{color:#555}.light .mini span{color:#bbb}
+  .pick{text-align:center;font-size:12px;color:#7b828f;padding:14px;border-top:1px solid #20242e}
+  .pick b{color:#e3c45a}
+</style>
+</head>
+<body>
+  <h1>TITAN — Logo System</h1>
+  <p class="sub">All eight, finished to a premium standard. App-icon plate · wordmark · 28px favicon. Each carries one idea. Refresh if cached.</p>
+  <div class="grid" id="grid"></div>
+
+<script>
+/* premium metallic gold + sheen */
+function defs(id){return `
+<defs>
+  <linearGradient id="${id}-g" x1="32" y1="3" x2="32" y2="61" gradientUnits="userSpaceOnUse">
+    <stop offset="0%" stop-color="#FFF6D5"/><stop offset="16%" stop-color="#F2D98A"/>
+    <stop offset="40%" stop-color="#DBB24C"/><stop offset="58%" stop-color="#C99A2E"/>
+    <stop offset="78%" stop-color="#A87A1C"/><stop offset="100%" stop-color="#6E5210"/>
+  </linearGradient>
+  <linearGradient id="${id}-sh" x1="10" y1="6" x2="52" y2="58" gradientUnits="userSpaceOnUse">
+    <stop offset="0%" stop-color="rgba(255,255,255,.6)"/><stop offset="20%" stop-color="rgba(255,255,255,.12)"/>
+    <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+  </linearGradient>
+  <filter id="${id}-gl" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="0" stdDeviation="1.2" flood-color="rgba(212,175,55,.5)"/></filter>
+</defs>`}
+function S(inner){return `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">${inner}</svg>`}
+function box(px,inner){return `<div style="width:${px}px;height:${px}px">${inner}</div>`}
+function arch(cx,cy,R,r){return `M ${cx-R} ${cy} A ${R} ${R} 0 1 1 ${cx+R} ${cy} L ${cx+r} ${cy} A ${r} ${r} 0 1 0 ${cx-r} ${cy} Z`}
+
+/* 1 ATLAS-T */
+function c1(g){const f=g?`url(#${g}-g)`:"#1a1a1a",id=g||"x";return S(`${g?defs(g):""}
+ <g ${g?`filter="url(#${id}-gl)"`:''}>
+  <circle cx="32" cy="12" r="7.2" fill="${f}"/>${g?`<circle cx="32" cy="12" r="7.2" fill="url(#${id}-sh)"/>`:''}
+  <circle cx="32" cy="12" r="4" fill="none" stroke="${g?'#120d00':'#fafafa'}" stroke-width="1.1" opacity=".55"/>
+  <path d="M24 22 H40" stroke="${f}" stroke-width="4.4" stroke-linecap="round"/>
+  <path d="M14 27 Q22 19.5 26 21 M50 27 Q42 19.5 38 21" stroke="${f}" stroke-width="4.2" fill="none" stroke-linecap="round"/>
+  <rect x="29.4" y="22" width="5.2" height="20" rx="2.6" fill="${f}"/>
+  <path d="M31 41 L20.5 55.5 M33 41 L43.5 55.5" stroke="${f}" stroke-width="4.6" fill="none" stroke-linecap="round"/>
+ </g>`)}
+
+/* 2 ASCENDANT */
+function c2(g){const f=g?`url(#${g}-g)`:"#1a1a1a",id=g||"x";return S(`${g?defs(g):""}
+ <g ${g?`filter="url(#${id}-gl)"`:''}>
+  <rect x="11" y="40" width="7" height="12" rx="2.2" fill="${f}" opacity=".5"/>
+  <rect x="21.5" y="32" width="7" height="20" rx="2.2" fill="${f}" opacity=".72"/>
+  <rect x="32" y="14" width="7" height="38" rx="2.4" fill="${f}"/>
+  <rect x="24" y="14" width="23" height="6.6" rx="2.4" fill="${f}"/>
+  ${g?`<rect x="32" y="14" width="7" height="38" rx="2.4" fill="url(#${id}-sh)"/>`:''}
+  <rect x="42.5" y="36" width="7" height="16" rx="2.2" fill="${f}" opacity=".72"/>
+  <path d="M51 8.5 l1.7 3.6 3.6 1.7 -3.6 1.7 -1.7 3.6 -1.7 -3.6 -3.6 -1.7 3.6 -1.7 Z" fill="${f}"/>
+ </g>`)}
+
+/* 3 MEDALLION */
+function c3(g){const f=g?`url(#${g}-g)`:"#1a1a1a",id=g||"x";
+ let ticks="";for(let a=0;a<360;a+=15){const r1=29.5,r2=27.3,rad=a*Math.PI/180;
+  ticks+=`<line x1="${32+r1*Math.cos(rad)}" y1="${32+r1*Math.sin(rad)}" x2="${32+r2*Math.cos(rad)}" y2="${32+r2*Math.sin(rad)}" stroke="${f}" stroke-width="1" opacity=".55"/>`}
+ return S(`${g?defs(g):""}
+ <g ${g?`filter="url(#${id}-gl)"`:''}>
+  <circle cx="32" cy="32" r="26.5" fill="none" stroke="${f}" stroke-width="3"/>${ticks}
+  <circle cx="32" cy="19" r="3.2" fill="${f}"/>
+  <path d="M32 22 L32 34" stroke="${f}" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 24 Q24 23 20 16.5 M32 24 Q40 23 44 16.5" stroke="${f}" stroke-width="2.7" fill="none" stroke-linecap="round"/>
+  <path d="M32 34 L23.5 45.5 M32 34 L40.5 45.5" stroke="${f}" stroke-width="3" stroke-linecap="round"/>
+ </g>`)}
+
+/* 4 APEX */
+function c4(g){const f=g?`url(#${g}-g)`:"#1a1a1a",id=g||"x";return S(`${g?defs(g):""}
+ <g ${g?`filter="url(#${id}-gl)"`:''} stroke="${f}" stroke-width="4.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M11 47 L25 32 L34 41 L51 19"/></g>
+ <circle cx="51" cy="18.5" r="5.6" fill="${f}"/>${g?`<circle cx="51" cy="18.5" r="5.6" fill="url(#${id}-sh)"/>`:''}
+ <g fill="${f}" opacity=".4"><circle cx="11" cy="51" r="1.5"/><circle cx="25" cy="51" r="1.5"/><circle cx="39" cy="51" r="1.5"/><circle cx="51" cy="51" r="1.5"/></g>`)}
+
+/* 5 CROWN */
+function c5(g){const f=g?`url(#${g}-g)`:"#1a1a1a",id=g||"x";return S(`${g?defs(g):""}
+ <g ${g?`filter="url(#${id}-gl)"`:''}>
+  <path d="M11 44 L11 25 L20 33 L26 19 L32 30 L38 19 L44 33 L53 25 L53 44 Z" fill="${f}"/>
+  ${g?`<path d="M11 44 L11 25 L20 33 L26 19 L32 30 L38 19 L44 33 L53 25 L53 44 Z" fill="url(#${id}-sh)"/>`:''}
+  <rect x="10" y="46" width="44" height="6.4" rx="2.2" fill="${f}"/>
+  <g fill="${g?'#120d00':'#fafafa'}" opacity=".45"><circle cx="20" cy="38" r="1.5"/><circle cx="32" cy="37" r="1.7"/><circle cx="44" cy="38" r="1.5"/></g>
+ </g>`)}
+
+/* 6 MONOLITH */
+function c6(g){const f=g?`url(#${g}-g)`:"#1a1a1a",id=g||"x";return S(`${g?defs(g):""}
+ <g ${g?`filter="url(#${id}-gl)"`:''}>
+  <path d="M25.5 14 L38.5 14 L41.5 50 L22.5 50 Z" fill="${f}"/>
+  <path d="M25.5 14 L32 4.5 L38.5 14 Z" fill="${f}"/>${g?`<path d="M25.5 14 L32 4.5 L38.5 14 Z" fill="url(#${id}-sh)"/>`:''}
+  <path d="M32 4.5 L32 50" stroke="${g?'rgba(255,255,255,.5)':'#fafafa'}" stroke-width="1"/>
+  <path d="M25.5 14 L41.5 50" stroke="${g?'rgba(0,0,0,.25)':'rgba(255,255,255,.6)'}" stroke-width=".8" opacity=".5"/>
+  <rect x="19" y="50" width="26" height="6" rx="1.6" fill="${f}"/>
+  <rect x="16" y="56" width="32" height="4" rx="1.6" fill="${f}" opacity=".7"/>
+ </g>`)}
+
+/* 7 ECLIPSE — atlas lifting a ring/eclipse (bonus) */
+function c7(g){const f=g?`url(#${g}-g)`:"#1a1a1a",id=g||"x";return S(`${g?defs(g):""}
+ <g ${g?`filter="url(#${id}-gl)"`:''}>
+  <circle cx="32" cy="15" r="10" fill="none" stroke="${f}" stroke-width="3.2"/>
+  <path d="M27 7 A 10 10 0 0 0 27 23" stroke="${f}" stroke-width="3.2" fill="none" opacity=".55"/>
+  <path d="M32 26 L32 38" stroke="${f}" stroke-width="3" stroke-linecap="round"/>
+  <path d="M32 28 Q24 27 22 22 M32 28 Q40 27 42 22" stroke="${f}" stroke-width="2.7" fill="none" stroke-linecap="round"/>
+  <path d="M32 38 L23 50 M32 38 L41 50" stroke="${f}" stroke-width="3.2" stroke-linecap="round"/>
+  <rect x="19" y="51" width="26" height="2.4" rx="1.2" fill="${f}" opacity=".4"/>
+ </g>`)}
+
+/* 8 SEAL — full emblem with rim text (bonus) */
+function c8(g){const f=g?`url(#${g}-g)`:"#1a1a1a",id=g||"x";return S(`${g?defs(g):""}
+ <defs><path id="${id}-rim" d="M32 32 m-23 0 a23 23 0 1 1 46 0 a23 23 0 1 1 -46 0"/></defs>
+ <g ${g?`filter="url(#${id}-gl)"`:''}>
+  <circle cx="32" cy="32" r="29" fill="none" stroke="${f}" stroke-width="1.4" opacity=".6"/>
+  <circle cx="32" cy="32" r="23.5" fill="none" stroke="${f}" stroke-width="2.6"/>
+  <text font-size="5.2" font-weight="800" letter-spacing="2.2" fill="${f}">
+    <textPath href="#${id}-rim" startOffset="2%">TITAN · POWERFUL SYSTEMS · </textPath></text>
+  <!-- center atlas-T -->
+  <circle cx="32" cy="22" r="3.4" fill="${f}"/>
+  <path d="M26 30 H38" stroke="${f}" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M22 33 Q27 28 30 29 M42 33 Q37 28 34 29" stroke="${f}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <rect x="30.4" y="30" width="3.2" height="9" rx="1.6" fill="${f}"/>
+  <path d="M31 38 L26 45 M33 38 L38 45" stroke="${f}" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+ </g>`)}
+
+const items=[
+ {n:1,name:"Atlas-T",        idea:"The letter T <i>is</i> a titan hoisting a gold coin — arms form the bar, body the stem, legs a planted stance. One mark, two readings.",fn:c1},
+ {n:2,name:"Ascendant",      idea:"A bar chart whose tallest column sprouts the crossbar to become a T. Analytics + Titan fused; a spark crowns the peak.",fn:c2},
+ {n:3,name:"Atlas Medallion",idea:"A struck, reeded gold coin with Atlas pressing the rim upward. Money + strength, minted. Embossed feel.",fn:c3},
+ {n:4,name:"Apex",           idea:"Minimal. A summit that is also a rising revenue line, crowned by a coin. Negative space does the talking.",fn:c4},
+ {n:5,name:"Crown of Titans",idea:"A crown whose five points are simultaneously a bar chart and a mountain range — rule, growth, scale in one silhouette.",fn:c5},
+ {n:6,name:"Monolith",       idea:"A faceted gold obelisk split by light — a titan as architecture: heavy, carved, eternal. Iconic at any size.",fn:c6},
+ {n:7,name:"Eclipse",        idea:"Atlas lifting a celestial ring (a crescent inside a circle). Cosmic scale — holding up a world of data.",fn:c7},
+ {n:8,name:"The Seal",       idea:"A full emblem: minted rim type around the Atlas-T core. The flagship lockup for splash screens & docs.",fn:c8},
+];
+
+const grid=document.getElementById("grid");
+items.forEach((it,i)=>{
+  const d="L"+i+"d";
+  grid.insertAdjacentHTML("beforeend",`
+   <div class="card">
+     <div class="chead"><div class="name"><span class="num">${it.n}</span> ${it.name}</div><div class="idea">${it.idea}</div></div>
+     <div class="stage">
+       <div class="panel dark">
+         <div class="plate glow" style="width:104px;height:104px;padding:17px">${it.fn(d)}</div>
+         <div class="word">${box(36,it.fn(d+"w"))}<div><div class="t1">TITAN</div><div class="t2">Powerful Systems</div></div></div>
+         <div class="mini">${box(28,it.fn(d+"s"))}<span>28px favicon</span></div>
+       </div>
+       <div class="panel light">
+         <div class="plate lite" style="width:104px;height:104px;padding:17px">${it.fn()}</div>
+         <div class="word">${box(36,it.fn())}<div><div class="t1">TITAN</div><div class="t2">Powerful Systems</div></div></div>
+         <div class="mini">${box(28,it.fn())}<span>28px favicon</span></div>
+       </div>
+     </div>
+     <div class="pick">Ship this → tell me <b>"use ${it.n}"</b></div>
+   </div>`);
+});
+</script>
+</body>
+</html>
