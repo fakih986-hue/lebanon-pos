@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import type { ChangeEvent } from "react"
 import {
   Banknote, Barcode, Building2, Camera, CheckCircle2, ClipboardCheck,
-  Copy, CreditCard, Landmark, PackagePlus, Plus, Printer,
-  RotateCcw, Trash2, WalletCards,
+  Copy, CreditCard, Landmark, LoaderCircle, PackagePlus, Plus, Printer,
+  RotateCcw, Search, Trash2, WalletCards,
 } from "lucide-react"
 import { Link } from "react-router"
 import Spinner from "../../components/ui/Spinner"
@@ -21,6 +21,7 @@ import {
   getProducts, receiveProducts,
 } from "../../features/pos/services/product.service"
 import { recordAuditEvent } from "../../features/pos/services/security.service"
+import { getSettings } from "../../features/pos/services/settings.service"
 import {
   getSupplierLedger, recordPurchaseOrder, subscribeSuppliers,
   type PurchasePaymentMethod, type SupplierLedger,
@@ -73,6 +74,7 @@ export default function ProductReceivePage() {
   const [purchasePaymentMethod, setPurchasePaymentMethod] = useState<PurchasePaymentMethod>("On Account")
   const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState("")
   const [supplierNote, setSupplierNote] = useState("")
+  const [barcodeSuggestions, setBarcodeSuggestions] = useState<Record<string, { name: string; category: string } | null>>({})
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const scanCaptureInputRef = useRef<HTMLInputElement | null>(null)
@@ -137,8 +139,76 @@ export default function ProductReceivePage() {
     const clean = value.trim().replace(/\s+/g, "")
     if (!clean) return
     const product = findProductByBarcode(clean)
-    if (!product) return
-    setRows((rows) => rows.map((r) => r.id !== rowId ? r : fillRowFromBarcode(r, clean)))
+    if (product) {
+      setRows((rows) => rows.map((r) => r.id !== rowId ? r : fillRowFromBarcode(r, clean)))
+      return
+    }
+    // Barcode not in local DB — try Open Food Facts
+    lookupBarcode(rowId, clean)
+  }
+
+  async function lookupBarcode(rowId: string, barcode: string) {
+    if (barcode.length < 8) return
+    if (barcodeSuggestions[barcode] !== undefined) {
+      setBarcodeSuggestions((prev) => ({ ...prev, [barcode]: prev[barcode] }))
+      return
+    }
+    setBarcodeSuggestions((prev) => ({ ...prev, [barcode]: null }))
+
+    // 1. UPCitemdb — 707M products, free tier (100/day), no key needed
+    try {
+      const res = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(barcode)}`)
+      if (res.ok) {
+        const data = await res.json()
+        if (data?.items?.[0]) {
+          const item = data.items[0]
+          const suggestion = {
+            name: (item.title || item.description || "").trim(),
+            category: (item.category || "General"),
+          }
+          if (suggestion.name) {
+            setBarcodeSuggestions((prev) => ({ ...prev, [barcode]: suggestion }))
+            return
+          }
+        }
+      }
+    } catch { /* try next */ }
+
+    // 2. Open Food Facts — food, beverages
+    // 3. Open Beauty Facts — cosmetics, personal care
+    // 4. Open Products Facts — general consumer goods
+    const fallbacks = [
+      { url: "https://world.openfoodfacts.org" },
+      { url: "https://world.openbeautyfacts.org" },
+      { url: "https://world.openproductsfacts.org" },
+    ]
+
+    for (const db of fallbacks) {
+      try {
+        const res = await fetch(`${db.url}/api/v2/product/${encodeURIComponent(barcode)}.json`)
+        if (!res.ok) continue
+        const data = await res.json()
+        if (data?.product?.product_name) {
+          const suggestion = {
+            name: data.product.product_name as string,
+            category: (data.product.categories_tags?.[0] || "").replace("en:", "").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "General",
+          }
+          setBarcodeSuggestions((prev) => ({ ...prev, [barcode]: suggestion }))
+          return
+        }
+      } catch { /* try next */ }
+    }
+  }
+
+  function applySuggestion(rowId: string, barcode: string) {
+    const suggestion = barcodeSuggestions[barcode]
+    if (!suggestion) return
+    updateRow(rowId, {
+      name: suggestion.name,
+      category: suggestion.category,
+      barcode,
+    })
+    setBarcodeSuggestions((prev) => { const next = { ...prev }; delete next[barcode]; return next })
   }
   function generateBarcodeForRow(id: string) {
     updateRow(id, { barcode: generateProductBarcode() })
@@ -381,6 +451,29 @@ export default function ProductReceivePage() {
                     </div>
                   ) : null}
 
+                  {/* Open Food Facts suggestion */}
+                  {!matched && barcodeSuggestions[row.barcode] && !row.name && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); applySuggestion(row.id, row.barcode) }}
+                      className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold transition hover:opacity-80 w-full text-left"
+                      style={{ background: "rgba(59,130,246,0.08)", color: "#60a5fa" }}
+                    >
+                      <Search size={12} className="shrink-0" />
+                      <span className="truncate">
+                        <strong className="text-white">{barcodeSuggestions[row.barcode]!.name}</strong>
+                      </span>
+                      <span className="ml-auto shrink-0 text-[10px] opacity-60">Tap to use</span>
+                    </button>
+                  )}
+
+                  {!matched && barcodeSuggestions[row.barcode] === null && row.barcode.length >= 8 && (
+                    <div className="flex items-center gap-2 px-4 py-1 text-[10px] opacity-40" style={{ color: "var(--text-3)" }}>
+                      <LoaderCircle size={10} className="animate-spin shrink-0" />
+                      Looking up barcode...
+                    </div>
+                  )}
+
                   {/* Camera preview — only on active row */}
                   {active && cameraEngine && (
                     <div className="px-4 py-2">
@@ -415,21 +508,67 @@ export default function ProductReceivePage() {
                       </label>
                     ))}
 
-                    {[
-                      { label: "Cost $",  value: row.cost,     key: "cost",     step: "0.01" },
-                      { label: "Price $", value: row.price,    key: "price",    step: "0.01" },
-                      { label: "Qty",     value: row.quantity, key: "quantity", step: "1" },
-                    ].map((f) => (
-                      <label key={f.key} className="block">
-                        <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>{f.label}</span>
-                        <input
-                          type="number" min="0" step={f.step} value={f.value || ""}
-                          onChange={(e) => updateRow(row.id, { [f.key]: normalizeNumber(e.target.value) } as any)}
-                          className="input w-full text-right"
-                          style={{ height: 34, fontSize: 13, fontWeight: 600 }}
-                        />
-                      </label>
-                    ))}
+                    {(() => {
+                      const settings = getSettings()
+                      const applyProfit = (pct: number) => {
+                        const price = Math.round(row.cost * (1 + pct / 100) * 100) / 100
+                        updateRow(row.id, { price })
+                      }
+                      return (
+                        <>
+                          {/* Cost + profit buttons */}
+                          <label className="block">
+                            <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Cost $</span>
+                            <div className="flex items-center gap-0.5">
+                              <input
+                                type="number" min="0" step="0.01" value={row.cost || ""}
+                                onChange={(e) => updateRow(row.id, { cost: normalizeNumber(e.target.value) } as any)}
+                                className="input text-right"
+                                style={{ height: 34, fontSize: 13, fontWeight: 600, width: 60, minWidth: 60, flex: "0 0 auto" }}
+                              />
+                              {row.cost > 0 && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => applyProfit(settings.profitPercent1)}
+                                    className="shrink-0 rounded px-1 py-0 text-[9px] font-bold transition active:opacity-70"
+                                    style={{ background: "var(--brand-soft)", color: "var(--brand-text)", height: 34 }}
+                                  >
+                                    +{settings.profitPercent1}%
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => applyProfit(settings.profitPercent2)}
+                                    className="shrink-0 rounded px-1 py-0 text-[9px] font-bold transition active:opacity-70"
+                                    style={{ background: "var(--brand-soft)", color: "var(--brand-text)", height: 34 }}
+                                  >
+                                    +{settings.profitPercent2}%
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </label>
+                          <label className="block">
+                            <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Price $</span>
+                            <input
+                              type="number" min="0" step="0.01" value={row.price || ""}
+                              onChange={(e) => updateRow(row.id, { price: normalizeNumber(e.target.value) } as any)}
+                              className="input w-full text-right"
+                              style={{ height: 34, fontSize: 13, fontWeight: 600 }}
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Qty</span>
+                            <input
+                              type="number" min="0" step="1" value={row.quantity || ""}
+                              onChange={(e) => updateRow(row.id, { quantity: normalizeNumber(e.target.value) } as any)}
+                              className="input w-full text-right"
+                              style={{ height: 34, fontSize: 13, fontWeight: 600 }}
+                            />
+                          </label>
+                        </>
+                      )
+                    })()}
                   </div>
 
                   {/* Expiry + barcode preview — compact footer */}

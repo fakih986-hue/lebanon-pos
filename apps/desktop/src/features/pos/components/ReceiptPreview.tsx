@@ -102,6 +102,11 @@ const ReceiptPreview = memo(function ReceiptPreview({
           <h2 className="mt-1 text-2xl font-bold text-zinc-950">
             {sale.saleNumber}
           </h2>
+          {sale.soldAtCost && (
+            <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-800">
+              SOLD AT COST
+            </span>
+          )}
           <p className="mt-1 text-sm text-zinc-500">
             {formatReceiptDate(sale.createdAt)}
           </p>

@@ -407,6 +407,7 @@ export const en = {
   "pos.discount": "Discount",
   "pos.dollar_off": "$ off",
   "pos.percent_off": "% off",
+  "pos.sell_at_cost": "Sell at Cost",
   "pos.permission_required": "Manager or admin permission required.",
   "pos.cash_tender": "Cash tender",
   "pos.paid_usd": "Paid USD",

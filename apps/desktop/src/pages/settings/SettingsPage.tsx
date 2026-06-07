@@ -492,6 +492,39 @@ export default function SettingsPage() {
               />
             </label>
 
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block text-sm font-bold text-zinc-700">
+                Profit margin 1 (%)
+                <input
+                  type="number"
+                  min="0"
+                  max="999"
+                  value={settings.profitPercent1}
+                  onChange={(event) =>
+                    updateSettings({
+                      profitPercent1: normalizeNumber(event.target.value),
+                    })
+                  }
+                  className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
+              <label className="block text-sm font-bold text-zinc-700">
+                Profit margin 2 (%)
+                <input
+                  type="number"
+                  min="0"
+                  max="999"
+                  value={settings.profitPercent2}
+                  onChange={(event) =>
+                    updateSettings({
+                      profitPercent2: normalizeNumber(event.target.value),
+                    })
+                  }
+                  className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                />
+              </label>
+            </div>
+
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
               <div className="mb-2 flex items-center gap-2 font-bold">
                 <BadgeDollarSign size={17} />

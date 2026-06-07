@@ -61,6 +61,7 @@ export type Sale = {
   total: number
   cost: number
   profit: number
+  soldAtCost?: boolean
   tender?: SaleTender
   items: SaleItem[]
   cashier: string
@@ -96,6 +97,7 @@ export type RecordSaleInput = {
   discountTotal?: number
   tax: number
   total: number
+  soldAtCost?: boolean
   tender?: SaleTender
   items: SaleItem[]
 }
@@ -247,6 +249,7 @@ export function recordSale(input: RecordSaleInput) {
     total: input.total,
     cost,
     profit: input.subtotal - cost,
+    soldAtCost: input.soldAtCost,
     tender: input.tender,
     items: input.items,
     cashier: currentUser.name,

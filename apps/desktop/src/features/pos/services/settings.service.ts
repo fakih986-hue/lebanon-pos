@@ -15,6 +15,8 @@ export type AppSettings = {
   usdToLbpRate: number
   receiptFooter: string
   lowStockThreshold: number
+  profitPercent1: number
+  profitPercent2: number
   deliveryFee: number
   whatsAppAdmin: string
   whatsAppDriverEnabled: boolean
@@ -32,6 +34,8 @@ export const defaultSettings: AppSettings = {
   usdToLbpRate: 89500,
   receiptFooter: "Thank you for shopping with us.",
   lowStockThreshold: 10,
+  profitPercent1: 25,
+  profitPercent2: 35,
   deliveryFee: 2.0,
   whatsAppAdmin: "",
   whatsAppDriverEnabled: false,

@@ -105,6 +105,7 @@ export default function POSPage() {
   const [variantPickerProduct, setVariantPickerProduct] =
     useState<Product | null>(null)
   const [saleNote, setSaleNote] = useState("")
+  const [sellAtCost, setSellAtCost] = useState(false)
   const [quickMode, setQuickMode] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
@@ -248,7 +249,9 @@ export default function POSPage() {
   // --- Cart operations ---
   function addItem(product: Product) {
     if (product.stock <= 0) return
-    const effectivePrice = selectedCustomer?.isWholesale && product.wholesalePrice != null
+    const effectivePrice = sellAtCost
+      ? product.cost
+      : selectedCustomer?.isWholesale && product.wholesalePrice != null
       ? Number(product.wholesalePrice)
       : product.price
     setItems((currentItems) => {
@@ -262,6 +265,23 @@ export default function POSPage() {
         )
       }
       return [...currentItems, { ...product, quantity: 1, price: effectivePrice }]
+    })
+  }
+
+  function toggleSellAtCost() {
+    setSellAtCost((prev) => {
+      const next = !prev
+      setItems((currentItems) =>
+        currentItems.map((item) => {
+          const product = products.find((p) => p.id === item.id)
+          if (!product) return item
+          const normalPrice = selectedCustomer?.isWholesale && product.wholesalePrice != null
+            ? Number(product.wholesalePrice)
+            : product.price
+          return { ...item, price: next ? product.cost : normalPrice }
+        })
+      )
+      return next
     })
   }
 
@@ -554,7 +574,7 @@ export default function POSPage() {
       const saleResult = recordSale({
         saleNumber, paymentMethod,
         customerId: selectedCustomer?.id, customerName: selectedCustomer?.name,
-        subtotal, discountTotal, tax, total, tender, items: saleItems,
+        subtotal, discountTotal, tax, total, soldAtCost: sellAtCost, tender, items: saleItems,
       })
       recordedSaleId = saleResult.id
 
@@ -860,6 +880,8 @@ export default function POSPage() {
           hasDiscount={hasDiscount}
           heldSalesItemCount={heldSalesItemCount}
           canApplyDiscount={canApplyDiscount}
+          sellAtCost={sellAtCost}
+          onToggleSellAtCost={toggleSellAtCost}
         />
       </div>
 
@@ -919,6 +941,8 @@ export default function POSPage() {
           hasDiscount={hasDiscount}
           heldSalesItemCount={heldSalesItemCount}
           canApplyDiscount={canApplyDiscount}
+          sellAtCost={sellAtCost}
+          onToggleSellAtCost={toggleSellAtCost}
         />
       </div>
 

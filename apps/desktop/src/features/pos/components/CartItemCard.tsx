@@ -9,6 +9,7 @@ type Props = {
   quantity: number
   unitPrice: number
   totalPrice: number
+  atCost?: boolean
   onIncrease: () => void
   onDecrease: () => void
   onRemove: () => void
@@ -17,7 +18,7 @@ type Props = {
 }
 
 const CartItemCard = memo(function CartItemCard({
-  name, quantity, unitPrice, totalPrice,
+  name, quantity, unitPrice, totalPrice, atCost,
   onIncrease, onDecrease, onRemove,
   onSetQuantity, onSetPrice,
 }: Props) {
@@ -87,6 +88,11 @@ const CartItemCard = memo(function CartItemCard({
               style={{ color: "var(--text-3)" }}
             >
               {formatCurrency(unitPrice)} {t("pos.each")}
+              {atCost && (
+                <span className="ml-1.5 rounded px-1 py-0.5 text-[9px] font-black uppercase text-amber-400" style={{ background: "rgba(214,166,58,0.15)" }}>
+                  AT COST
+                </span>
+              )}
             </button>
           )}
         </div>

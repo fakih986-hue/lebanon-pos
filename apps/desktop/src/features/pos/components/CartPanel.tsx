@@ -71,6 +71,8 @@ interface Props {
   heldSalesItemCount: number
   canApplyDiscount: boolean
   onCartOpen?: () => void
+  sellAtCost: boolean
+  onToggleSellAtCost: () => void
 }
 
 export default function CartPanel({
@@ -125,6 +127,8 @@ export default function CartPanel({
   hasDiscount,
   heldSalesItemCount,
   canApplyDiscount,
+  sellAtCost,
+  onToggleSellAtCost,
 }: Props) {
   const { t } = useI18n()
 
@@ -240,6 +244,8 @@ export default function CartPanel({
         hasDiscount={hasDiscount}
         heldSalesItemCount={heldSalesItemCount}
         canApplyDiscount={canApplyDiscount}
+        sellAtCost={sellAtCost}
+        onToggleSellAtCost={onToggleSellAtCost}
       />
     </aside>
   )

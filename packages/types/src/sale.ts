@@ -35,6 +35,7 @@ export type Sale = {
   total: number
   cost: number
   profit: number
+  soldAtCost?: boolean
   tender?: SaleTender | null
   items: SaleItem[]
   cashier: string

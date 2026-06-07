@@ -103,6 +103,8 @@ interface Props {
   hasDiscount: boolean
   heldSalesItemCount: number
   canApplyDiscount: boolean
+  sellAtCost: boolean
+  onToggleSellAtCost: () => void
 }
 
 export default function CartBody({
@@ -118,6 +120,7 @@ export default function CartBody({
   itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, heldSalesItemCount,   canApplyDiscount,
+  sellAtCost, onToggleSellAtCost,
 }: Props) {
   const [discountOpen, setDiscountOpen] = useState(false)
   const [heldOpen, setHeldOpen] = useState(false)
@@ -150,6 +153,7 @@ export default function CartBody({
               quantity={item.quantity}
               unitPrice={item.price}
               totalPrice={item.price * item.quantity}
+              atCost={sellAtCost}
               onIncrease={() => onIncreaseQty(item.id)}
               onDecrease={() => onDecreaseQty(item.id)}
               onRemove={() => onRemoveItem(item.id)}
@@ -517,6 +521,23 @@ export default function CartBody({
             </Link>
           )}
         </div>
+      )}
+
+      {/* Sell at Cost toggle */}
+      {items.length > 0 && (
+        <button
+          type="button"
+          onClick={onToggleSellAtCost}
+          className={`w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-[12px] font-bold transition ${
+            sellAtCost
+              ? "bg-amber-500/15 border border-amber-500/30 text-amber-400"
+              : "border text-[var(--text-3)] hover:text-[var(--text-2)]"
+          }`}
+          style={!sellAtCost ? { borderColor: "var(--border)" } : undefined}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${sellAtCost ? "bg-amber-400" : "bg-[var(--text-3)]"}`} />
+          {sellAtCost ? t("pos.sell_at_cost") + " — ON" : t("pos.sell_at_cost")}
+        </button>
       )}
 
       {/* Totals */}

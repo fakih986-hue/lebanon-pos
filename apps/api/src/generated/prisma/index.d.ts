@@ -9874,6 +9874,7 @@ export namespace Prisma {
     total: Decimal | null
     cost: Decimal | null
     profit: Decimal | null
+    soldAtCost: boolean | null
     cashier: string | null
     cashierId: string | null
     shiftId: string | null
@@ -9895,6 +9896,7 @@ export namespace Prisma {
     total: Decimal | null
     cost: Decimal | null
     profit: Decimal | null
+    soldAtCost: boolean | null
     cashier: string | null
     cashierId: string | null
     shiftId: string | null
@@ -9916,6 +9918,7 @@ export namespace Prisma {
     total: number
     cost: number
     profit: number
+    soldAtCost: number
     cashier: number
     cashierId: number
     shiftId: number
@@ -9957,6 +9960,7 @@ export namespace Prisma {
     total?: true
     cost?: true
     profit?: true
+    soldAtCost?: true
     cashier?: true
     cashierId?: true
     shiftId?: true
@@ -9978,6 +9982,7 @@ export namespace Prisma {
     total?: true
     cost?: true
     profit?: true
+    soldAtCost?: true
     cashier?: true
     cashierId?: true
     shiftId?: true
@@ -9999,6 +10004,7 @@ export namespace Prisma {
     total?: true
     cost?: true
     profit?: true
+    soldAtCost?: true
     cashier?: true
     cashierId?: true
     shiftId?: true
@@ -10107,6 +10113,7 @@ export namespace Prisma {
     total: Decimal
     cost: Decimal
     profit: Decimal
+    soldAtCost: boolean
     cashier: string
     cashierId: string | null
     shiftId: string | null
@@ -10147,6 +10154,7 @@ export namespace Prisma {
     total?: boolean
     cost?: boolean
     profit?: boolean
+    soldAtCost?: boolean
     cashier?: boolean
     cashierId?: boolean
     shiftId?: boolean
@@ -10173,6 +10181,7 @@ export namespace Prisma {
     total?: boolean
     cost?: boolean
     profit?: boolean
+    soldAtCost?: boolean
     cashier?: boolean
     cashierId?: boolean
     shiftId?: boolean
@@ -10195,6 +10204,7 @@ export namespace Prisma {
     total?: boolean
     cost?: boolean
     profit?: boolean
+    soldAtCost?: boolean
     cashier?: boolean
     cashierId?: boolean
     shiftId?: boolean
@@ -10217,6 +10227,7 @@ export namespace Prisma {
     total?: boolean
     cost?: boolean
     profit?: boolean
+    soldAtCost?: boolean
     cashier?: boolean
     cashierId?: boolean
     shiftId?: boolean
@@ -10225,7 +10236,7 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
-  export type SaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "saleNumber" | "paymentMethod" | "customerId" | "customerName" | "subtotal" | "discountTotal" | "tax" | "total" | "cost" | "profit" | "cashier" | "cashierId" | "shiftId" | "shiftNumber" | "status" | "createdAt", ExtArgs["result"]["sale"]>
+  export type SaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "saleNumber" | "paymentMethod" | "customerId" | "customerName" | "subtotal" | "discountTotal" | "tax" | "total" | "cost" | "profit" | "soldAtCost" | "cashier" | "cashierId" | "shiftId" | "shiftNumber" | "status" | "createdAt", ExtArgs["result"]["sale"]>
   export type SaleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     items?: boolean | Sale$itemsArgs<ExtArgs>
@@ -10261,6 +10272,7 @@ export namespace Prisma {
       total: Prisma.Decimal
       cost: Prisma.Decimal
       profit: Prisma.Decimal
+      soldAtCost: boolean
       cashier: string
       cashierId: string | null
       shiftId: string | null
@@ -10706,6 +10718,7 @@ export namespace Prisma {
     readonly total: FieldRef<"Sale", 'Decimal'>
     readonly cost: FieldRef<"Sale", 'Decimal'>
     readonly profit: FieldRef<"Sale", 'Decimal'>
+    readonly soldAtCost: FieldRef<"Sale", 'Boolean'>
     readonly cashier: FieldRef<"Sale", 'String'>
     readonly cashierId: FieldRef<"Sale", 'String'>
     readonly shiftId: FieldRef<"Sale", 'String'>
@@ -40290,6 +40303,7 @@ export namespace Prisma {
     total: 'total',
     cost: 'cost',
     profit: 'profit',
+    soldAtCost: 'soldAtCost',
     cashier: 'cashier',
     cashierId: 'cashierId',
     shiftId: 'shiftId',
@@ -41526,6 +41540,7 @@ export namespace Prisma {
     total?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     profit?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFilter<"Sale"> | boolean
     cashier?: StringFilter<"Sale"> | string
     cashierId?: StringNullableFilter<"Sale"> | string | null
     shiftId?: StringNullableFilter<"Sale"> | string | null
@@ -41551,6 +41566,7 @@ export namespace Prisma {
     total?: SortOrder
     cost?: SortOrder
     profit?: SortOrder
+    soldAtCost?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
@@ -41580,6 +41596,7 @@ export namespace Prisma {
     total?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     profit?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFilter<"Sale"> | boolean
     cashier?: StringFilter<"Sale"> | string
     cashierId?: StringNullableFilter<"Sale"> | string | null
     shiftId?: StringNullableFilter<"Sale"> | string | null
@@ -41605,6 +41622,7 @@ export namespace Prisma {
     total?: SortOrder
     cost?: SortOrder
     profit?: SortOrder
+    soldAtCost?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
@@ -41634,6 +41652,7 @@ export namespace Prisma {
     total?: DecimalWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     profit?: DecimalWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolWithAggregatesFilter<"Sale"> | boolean
     cashier?: StringWithAggregatesFilter<"Sale"> | string
     cashierId?: StringNullableWithAggregatesFilter<"Sale"> | string | null
     shiftId?: StringNullableWithAggregatesFilter<"Sale"> | string | null
@@ -44527,6 +44546,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -44552,6 +44572,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -44575,6 +44596,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44600,6 +44622,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44624,6 +44647,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -44644,6 +44668,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -44665,6 +44690,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -47981,6 +48007,7 @@ export namespace Prisma {
     total?: SortOrder
     cost?: SortOrder
     profit?: SortOrder
+    soldAtCost?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrder
     shiftId?: SortOrder
@@ -48011,6 +48038,7 @@ export namespace Prisma {
     total?: SortOrder
     cost?: SortOrder
     profit?: SortOrder
+    soldAtCost?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrder
     shiftId?: SortOrder
@@ -48032,6 +48060,7 @@ export namespace Prisma {
     total?: SortOrder
     cost?: SortOrder
     profit?: SortOrder
+    soldAtCost?: SortOrder
     cashier?: SortOrder
     cashierId?: SortOrder
     shiftId?: SortOrder
@@ -52970,6 +52999,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -52993,6 +53023,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -53904,6 +53935,7 @@ export namespace Prisma {
     total?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
     profit?: DecimalFilter<"Sale"> | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFilter<"Sale"> | boolean
     cashier?: StringFilter<"Sale"> | string
     cashierId?: StringNullableFilter<"Sale"> | string | null
     shiftId?: StringNullableFilter<"Sale"> | string | null
@@ -56087,6 +56119,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -56111,6 +56144,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -56149,6 +56183,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56173,6 +56208,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56195,6 +56231,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -56219,6 +56256,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -56257,6 +56295,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56281,6 +56320,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56370,6 +56410,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -56394,6 +56435,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -56537,6 +56579,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -56561,6 +56604,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -61225,6 +61269,7 @@ export namespace Prisma {
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
     profit?: Decimal | DecimalJsLike | number | string
+    soldAtCost?: boolean
     cashier: string
     cashierId?: string | null
     shiftId?: string | null
@@ -61643,6 +61688,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -61666,6 +61712,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -61689,6 +61736,7 @@ export namespace Prisma {
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     profit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    soldAtCost?: BoolFieldUpdateOperationsInput | boolean
     cashier?: StringFieldUpdateOperationsInput | string
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null

@@ -407,6 +407,7 @@ export const ar = {
   "pos.discount": "الخصم",
   "pos.dollar_off": "دولار",
   "pos.percent_off": "نسبة مئوية",
+  "pos.sell_at_cost": "بيع بسعر التكلفة",
   "pos.permission_required": "صلاحية المدير أو المشرف مطلوبة.",
   "pos.cash_tender": "الدفع النقدي",
   "pos.paid_usd": "المدفوع دولار",

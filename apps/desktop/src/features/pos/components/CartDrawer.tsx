@@ -78,6 +78,8 @@ interface Props {
   hasDiscount: boolean
   heldSalesItemCount: number
   canApplyDiscount: boolean
+  sellAtCost: boolean
+  onToggleSellAtCost: () => void
 }
 
 export default function CartDrawer({
@@ -93,6 +95,7 @@ export default function CartDrawer({
   itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, heldSalesItemCount, canApplyDiscount,
+  sellAtCost, onToggleSellAtCost,
 }: Props) {
   const { t, dir } = useI18n()
   const drawerX = dir === "rtl" ? "-100%" : "100%"
@@ -234,6 +237,8 @@ export default function CartDrawer({
               hasDiscount={hasDiscount}
               heldSalesItemCount={heldSalesItemCount}
               canApplyDiscount={canApplyDiscount}
+              sellAtCost={sellAtCost}
+              onToggleSellAtCost={onToggleSellAtCost}
             />
           </MotionAside>
         </div>

@@ -191,6 +191,7 @@ model Sale {
   total         Decimal           @db.Decimal(18, 4)
   cost          Decimal           @default(0) @db.Decimal(18, 4)
   profit        Decimal           @default(0) @db.Decimal(18, 4)
+  soldAtCost    Boolean           @default(false)
   cashier       String
   cashierId     String?
   shiftId       String?
