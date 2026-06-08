@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react"
-import { Barcode, ChevronDown, ChevronRight, Hash, Plus, Search, SlidersHorizontal, Star, X } from "lucide-react"
+import { Barcode, ChevronDown, ChevronRight, Hash, Pencil, Plus, Search, SlidersHorizontal, Star, X } from "lucide-react"
 import { Link } from "react-router"
 
 import { useI18n } from "@lebanonpos/shared"
@@ -39,6 +39,7 @@ type Props = {
   categories: string[]
   onToggleFavorite: (product: Product) => void
   onDeleteClick: (productId: number) => void
+  onEditClick: (product: Product) => void
 }
 
 export default function ProductTable({
@@ -51,6 +52,7 @@ export default function ProductTable({
   categories,
   onToggleFavorite,
   onDeleteClick,
+  onEditClick,
 }: Props) {
   const { t } = useI18n()
   const [expandedParents, setExpandedParents] = useState<Set<number>>(
@@ -269,9 +271,25 @@ export default function ProductTable({
                       </button>
                     </td>
                     <td className="border-b border-zinc-100 px-4 py-4">
-                      <button
-                        type="button"
-                        onClick={() => onDeleteClick(product.id)}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onEditClick(product) }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:text-zinc-800"
+                          title="Edit product"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); onEditClick(product) }}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:text-zinc-800"
+                          title="Edit product"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteClick(product.id)}
                         className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
                         aria-label={t("pos.delete_product", { name: product.name })}
                       >
@@ -355,11 +373,19 @@ export default function ProductTable({
                               </button>
                             </td>
                             <td className="border-b border-zinc-100 px-4 py-4">
-                              <button
-                                type="button"
-                                onClick={() => onDeleteClick(variant.id)}
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                                aria-label={t("pos.delete_product", { name: variant.name })}
+                               <button
+                                 type="button"
+                                 onClick={(e) => { e.stopPropagation(); onEditClick(variant) }}
+                                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:text-zinc-800"
+                                 title="Edit product"
+                               >
+                                 <Pencil size={13} />
+                               </button>
+                               <button
+                                 type="button"
+                                 onClick={() => onDeleteClick(variant.id)}
+                                 className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                                 aria-label={t("pos.delete_product", { name: variant.name })}
                               >
                                 <X size={15} />
                               </button>

@@ -41,8 +41,6 @@ interface Props {
   selectedCustomer: CustomerLedger | undefined
   paymentMethod: PaymentMethod
   onSelectPayment: (method: PaymentMethod) => void
-  tenderMode: TenderMode
-  onSelectTenderMode: (mode: TenderMode) => void
   paidUsd: string
   paidLbp: string
   onPaidUsdChange: (value: string) => void
@@ -88,7 +86,7 @@ export default function CartDrawer({
   heldSales, onResumeHeld, onDiscardHeld,
   vatRate, customers, selectedCustomerId, onSelectCustomer, selectedCustomer,
   paymentMethod, onSelectPayment,
-  tenderMode, onSelectTenderMode, paidUsd, paidLbp, onPaidUsdChange, onPaidLbpChange, onFillExactTender,
+  paidUsd, paidLbp, onPaidUsdChange, onPaidLbpChange, onFillExactTender,
   discountMode, discountValue, onDiscountModeChange, onDiscountValueChange,
   onSetQuantity, onSetPrice, saleNote, onSaleNoteChange,
   onHold, onClean, onCompleteSale,
@@ -204,8 +202,6 @@ export default function CartDrawer({
               selectedCustomer={selectedCustomer}
               paymentMethod={paymentMethod}
               onSelectPayment={onSelectPayment}
-              tenderMode={tenderMode}
-              onSelectTenderMode={onSelectTenderMode}
               paidUsd={paidUsd}
               paidLbp={paidLbp}
               onPaidUsdChange={onPaidUsdChange}

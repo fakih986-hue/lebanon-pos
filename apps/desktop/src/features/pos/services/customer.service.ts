@@ -14,6 +14,7 @@ export type Customer = {
   mobile: string
   creditLimit: number
   isWholesale?: boolean
+  sellAtCost?: boolean
   notes: string
   createdAt: string
 }
@@ -100,6 +101,8 @@ export type CreateCustomerInput = {
   name: string
   mobile: string
   creditLimit: number
+  isWholesale?: boolean
+  sellAtCost?: boolean
   notes: string
 }
 
@@ -204,6 +207,8 @@ export function addCustomer(input: CreateCustomerInput) {
     name: cleanText(input.name),
     mobile: cleanMobile(input.mobile),
     creditLimit: Math.max(0, input.creditLimit),
+    isWholesale: input.isWholesale ?? false,
+    sellAtCost: input.sellAtCost ?? false,
     notes: cleanText(input.notes),
     createdAt: new Date().toISOString(),
   }
@@ -221,6 +226,26 @@ export function addCustomer(input: CreateCustomerInput) {
   })
 
   return customer
+}
+
+export function updateCustomer(customerId: string, patch: Partial<Customer>) {
+  const customers = getCustomers()
+  let updated: Customer | undefined
+  const next = customers.map((c) => {
+    if (c.id !== customerId) return c
+    updated = { ...c, ...patch, id: c.id }
+    return updated
+  })
+  if (!updated) return undefined
+  writeCollection(CUSTOMERS_KEY, next)
+  window.dispatchEvent(new Event(CUSTOMERS_EVENT))
+  enqueueSyncOperation({
+    entity: "customer",
+    action: "update",
+    summary: `${updated.name} customer updated.`,
+    payload: updated,
+  })
+  return updated
 }
 
 export function recordDebtSale(input: RecordDebtSaleInput) {

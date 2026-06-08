@@ -88,7 +88,6 @@ export default function POSPage() {
   const debouncedSearch = useDebounce(search, 200)
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("Cash")
-  const [tenderMode, setTenderMode] = useState<TenderMode>("USD")
   const [paidUsd, setPaidUsd] = useState("")
   const [paidLbp, setPaidLbp] = useState("")
   const [discountMode, setDiscountMode] = useState<DiscountMode>("USD")
@@ -155,6 +154,13 @@ export default function POSPage() {
     window.addEventListener("sync:operation-rejected", onRejected)
     return () => window.removeEventListener("sync:operation-rejected", onRejected)
   }, [])
+
+  // Auto-activate sellAtCost when selecting a cost-customer
+  useEffect(() => {
+    if (selectedCustomer?.sellAtCost) {
+      setSellAtCost(true)
+    }
+  }, [selectedCustomerId])
 
   // --- Computed values ---
   const departmentSummaries = useMemo(() => {
@@ -226,8 +232,9 @@ export default function POSPage() {
     for (const item of items) map[item.id] = item.quantity
     return map
   }, [items])
-  const paidUsdAmount = tenderMode === "LBP" ? 0 : parseMoney(paidUsd)
-  const paidLbpAmount = tenderMode === "USD" ? 0 : parseMoney(paidLbp)
+  const paidUsdAmount = parseMoney(paidUsd)
+  const paidLbpAmount = parseMoney(paidLbp)
+  const tenderMode: TenderMode = paidLbpAmount > 0 ? (paidUsdAmount > 0 ? "Mixed" : "LBP") : "USD"
   const paidTotalUsd = roundMoney(paidUsdAmount + lbpToUsd(paidLbpAmount, exchangeRate))
   const paidTotalLbp = usdToLbp(paidTotalUsd, exchangeRate)
   const cashStillDueUsd = roundMoney(Math.max(0, total - paidTotalUsd))
@@ -396,7 +403,6 @@ export default function POSPage() {
   function resetTender() {
     setPaidUsd("")
     setPaidLbp("")
-    setTenderMode("USD")
   }
 
   function resetDiscount() {
@@ -408,21 +414,11 @@ export default function POSPage() {
     setItems([])
   }
 
-  const selectTenderMode = useCallback(function selectTenderMode(mode: TenderMode) {
-    setTenderMode(mode)
-    if (mode === "USD") setPaidLbp("")
-    if (mode === "LBP") setPaidUsd("")
-  }, [])
-
   const fillExactTender = useCallback(function fillExactTender(currency: "USD" | "LBP") {
     if (currency === "USD") {
-      setTenderMode("USD")
       setPaidUsd(total.toFixed(2))
-      setPaidLbp("")
       return
     }
-    setTenderMode("LBP")
-    setPaidUsd("")
     setPaidLbp(String(Math.round(totalLbp)))
   }, [total, totalLbp])
 
@@ -688,8 +684,6 @@ export default function POSPage() {
                 exchangeRate={exchangeRate}
                 paymentMethod={paymentMethod}
                 onSelectPayment={setPaymentMethod}
-                tenderMode={tenderMode}
-                onSelectTenderMode={selectTenderMode}
                 paidUsd={paidUsd}
                 paidLbp={paidLbp}
                 onPaidUsdChange={setPaidUsd}
@@ -706,6 +700,19 @@ export default function POSPage() {
                 cashTenderValid={cashTenderValid}
                 checkoutBlocked={checkoutBlocked}
                 onCompleteSale={completeSale}
+                lastSale={lastSale && { number: lastSale.number, total: lastSale.total, totalLbp: lastSale.totalLbp, items: lastSale.items }}
+                onPrintReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}
+                onWhatsAppReceipt={() => {
+                  if (!lastSale) return
+                  openWhatsAppShare(receiptMessage({
+                    storeName: settings.storeName,
+                    saleNumber: lastSale.number,
+                    total: lastSale.total,
+                    totalLbp: lastSale.totalLbp,
+                    items: lastSale.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                    footer: settings.receiptFooter,
+                  }))
+                }}
               />
             ) : (
               <>
@@ -847,8 +854,6 @@ export default function POSPage() {
           selectedCustomer={selectedCustomer}
           paymentMethod={paymentMethod}
           onSelectPayment={setPaymentMethod}
-          tenderMode={tenderMode}
-          onSelectTenderMode={selectTenderMode}
           paidUsd={paidUsd}
           paidLbp={paidLbp}
           onPaidUsdChange={setPaidUsd}
@@ -908,8 +913,6 @@ export default function POSPage() {
           selectedCustomer={selectedCustomer}
           paymentMethod={paymentMethod}
           onSelectPayment={setPaymentMethod}
-          tenderMode={tenderMode}
-          onSelectTenderMode={selectTenderMode}
           paidUsd={paidUsd}
           paidLbp={paidLbp}
           onPaidUsdChange={setPaidUsd}
@@ -973,7 +976,9 @@ export default function POSPage() {
 
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
-      <SaleCompleteOverlay sale={lastSale} />
+      <SaleCompleteOverlay sale={lastSale}
+        onViewReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}
+      />
 
     </main>
   )

@@ -16008,6 +16008,7 @@ export namespace Prisma {
     pin: string | null
     creditLimit: Decimal | null
     isWholesale: boolean | null
+    sellAtCost: boolean | null
     notes: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -16021,6 +16022,7 @@ export namespace Prisma {
     pin: string | null
     creditLimit: Decimal | null
     isWholesale: boolean | null
+    sellAtCost: boolean | null
     notes: string | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -16034,6 +16036,7 @@ export namespace Prisma {
     pin: number
     creditLimit: number
     isWholesale: number
+    sellAtCost: number
     notes: number
     createdAt: number
     updatedAt: number
@@ -16057,6 +16060,7 @@ export namespace Prisma {
     pin?: true
     creditLimit?: true
     isWholesale?: true
+    sellAtCost?: true
     notes?: true
     createdAt?: true
     updatedAt?: true
@@ -16070,6 +16074,7 @@ export namespace Prisma {
     pin?: true
     creditLimit?: true
     isWholesale?: true
+    sellAtCost?: true
     notes?: true
     createdAt?: true
     updatedAt?: true
@@ -16083,6 +16088,7 @@ export namespace Prisma {
     pin?: true
     creditLimit?: true
     isWholesale?: true
+    sellAtCost?: true
     notes?: true
     createdAt?: true
     updatedAt?: true
@@ -16183,6 +16189,7 @@ export namespace Prisma {
     pin: string
     creditLimit: Decimal
     isWholesale: boolean
+    sellAtCost: boolean
     notes: string
     createdAt: Date
     updatedAt: Date
@@ -16215,6 +16222,7 @@ export namespace Prisma {
     pin?: boolean
     creditLimit?: boolean
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -16233,6 +16241,7 @@ export namespace Prisma {
     pin?: boolean
     creditLimit?: boolean
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -16247,6 +16256,7 @@ export namespace Prisma {
     pin?: boolean
     creditLimit?: boolean
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
@@ -16261,12 +16271,13 @@ export namespace Prisma {
     pin?: boolean
     creditLimit?: boolean
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type CustomerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "pin" | "creditLimit" | "isWholesale" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
+  export type CustomerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "pin" | "creditLimit" | "isWholesale" | "sellAtCost" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
   export type CustomerInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     debtSales?: boolean | Customer$debtSalesArgs<ExtArgs>
@@ -16297,6 +16308,7 @@ export namespace Prisma {
       pin: string
       creditLimit: Prisma.Decimal
       isWholesale: boolean
+      sellAtCost: boolean
       notes: string
       createdAt: Date
       updatedAt: Date
@@ -16734,6 +16746,7 @@ export namespace Prisma {
     readonly pin: FieldRef<"Customer", 'String'>
     readonly creditLimit: FieldRef<"Customer", 'Decimal'>
     readonly isWholesale: FieldRef<"Customer", 'Boolean'>
+    readonly sellAtCost: FieldRef<"Customer", 'Boolean'>
     readonly notes: FieldRef<"Customer", 'String'>
     readonly createdAt: FieldRef<"Customer", 'DateTime'>
     readonly updatedAt: FieldRef<"Customer", 'DateTime'>
@@ -40391,6 +40404,7 @@ export namespace Prisma {
     pin: 'pin',
     creditLimit: 'creditLimit',
     isWholesale: 'isWholesale',
+    sellAtCost: 'sellAtCost',
     notes: 'notes',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -42027,6 +42041,7 @@ export namespace Prisma {
     pin?: StringFilter<"Customer"> | string
     creditLimit?: DecimalFilter<"Customer"> | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFilter<"Customer"> | boolean
+    sellAtCost?: BoolFilter<"Customer"> | boolean
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
@@ -42044,6 +42059,7 @@ export namespace Prisma {
     pin?: SortOrder
     creditLimit?: SortOrder
     isWholesale?: SortOrder
+    sellAtCost?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -42065,6 +42081,7 @@ export namespace Prisma {
     pin?: StringFilter<"Customer"> | string
     creditLimit?: DecimalFilter<"Customer"> | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFilter<"Customer"> | boolean
+    sellAtCost?: BoolFilter<"Customer"> | boolean
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
@@ -42082,6 +42099,7 @@ export namespace Prisma {
     pin?: SortOrder
     creditLimit?: SortOrder
     isWholesale?: SortOrder
+    sellAtCost?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -42103,6 +42121,7 @@ export namespace Prisma {
     pin?: StringWithAggregatesFilter<"Customer"> | string
     creditLimit?: DecimalWithAggregatesFilter<"Customer"> | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolWithAggregatesFilter<"Customer"> | boolean
+    sellAtCost?: BoolWithAggregatesFilter<"Customer"> | boolean
     notes?: StringWithAggregatesFilter<"Customer"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Customer"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Customer"> | Date | string
@@ -45097,6 +45116,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -45114,6 +45134,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -45129,6 +45150,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -45146,6 +45168,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -45162,6 +45185,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -45174,6 +45198,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -45187,6 +45212,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -48381,6 +48407,7 @@ export namespace Prisma {
     pin?: SortOrder
     creditLimit?: SortOrder
     isWholesale?: SortOrder
+    sellAtCost?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -48398,6 +48425,7 @@ export namespace Prisma {
     pin?: SortOrder
     creditLimit?: SortOrder
     isWholesale?: SortOrder
+    sellAtCost?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -48411,6 +48439,7 @@ export namespace Prisma {
     pin?: SortOrder
     creditLimit?: SortOrder
     isWholesale?: SortOrder
+    sellAtCost?: SortOrder
     notes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -53098,6 +53127,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -53113,6 +53143,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -54008,6 +54039,7 @@ export namespace Prisma {
     pin?: StringFilter<"Customer"> | string
     creditLimit?: DecimalFilter<"Customer"> | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFilter<"Customer"> | boolean
+    sellAtCost?: BoolFilter<"Customer"> | boolean
     notes?: StringFilter<"Customer"> | string
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
@@ -57126,6 +57158,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -57142,6 +57175,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -57245,6 +57279,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -57261,6 +57296,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -57342,6 +57378,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -57358,6 +57395,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -57461,6 +57499,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -57477,6 +57516,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -60248,6 +60288,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -60264,6 +60305,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -60434,6 +60476,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -60450,6 +60493,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61302,6 +61346,7 @@ export namespace Prisma {
     pin?: string
     creditLimit?: Decimal | DecimalJsLike | number | string
     isWholesale?: boolean
+    sellAtCost?: boolean
     notes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -61805,6 +61850,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61820,6 +61866,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61835,6 +61882,7 @@ export namespace Prisma {
     pin?: StringFieldUpdateOperationsInput | string
     creditLimit?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
+    sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string

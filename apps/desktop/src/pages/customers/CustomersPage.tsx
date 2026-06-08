@@ -7,6 +7,7 @@ import {
   Download,
   HandCoins,
   MessageCircle,
+  Pencil,
   Phone,
   Plus,
   ReceiptText,
@@ -26,6 +27,7 @@ import {
   getLedgerTotals,
   recordDebtPayment,
   subscribeLedger,
+  updateCustomer,
   type CustomerLedger,
   type DebtPayment,
 } from "../../features/pos/services/customer.service"
@@ -41,6 +43,8 @@ type NewCustomerForm = {
   name: string
   mobile: string
   creditLimit: number
+  isWholesale: boolean
+  sellAtCost: boolean
   notes: string
 }
 
@@ -51,12 +55,24 @@ type PaymentForm = {
   reference: string
 }
 
+type EditCustomerForm = {
+  id: string
+  name: string
+  mobile: string
+  creditLimit: number
+  isWholesale: boolean
+  sellAtCost: boolean
+  notes: string
+}
+
 type CustomerPanel = "Ledger" | "Pay debt" | "Add customer"
 
 const emptyCustomerForm: NewCustomerForm = {
   name: "",
   mobile: "",
   creditLimit: 0,
+  isWholesale: false,
+  sellAtCost: false,
   notes: "",
 }
 
@@ -117,6 +133,7 @@ export default function CustomersPage() {
   const [activePanel, setActivePanel] = useState<CustomerPanel>("Ledger")
   const [formErrors, setFormErrors] = useState<Partial<Record<"name" | "mobile", string>>>({})
   const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null)
+  const [editCustomer, setEditCustomer] = useState<EditCustomerForm | null>(null)
   const { t } = useI18n()
 
   function refreshLedger(preferredCustomerId?: string) {
@@ -203,6 +220,37 @@ export default function CustomersPage() {
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Customer not added.", "error")
     }
+  }
+
+  function openEdit(customer: CustomerLedger) {
+    setEditCustomer({
+      id: customer.id,
+      name: customer.name,
+      mobile: customer.mobile,
+      creditLimit: customer.creditLimit,
+      isWholesale: customer.isWholesale ?? false,
+      sellAtCost: customer.sellAtCost ?? false,
+      notes: customer.notes,
+    })
+  }
+
+  function saveEdit() {
+    if (!editCustomer) return
+    updateCustomer(editCustomer.id, {
+      name: editCustomer.name,
+      mobile: editCustomer.mobile,
+      creditLimit: editCustomer.creditLimit,
+      isWholesale: editCustomer.isWholesale,
+      sellAtCost: editCustomer.sellAtCost,
+      notes: editCustomer.notes,
+    })
+    showToast(`${editCustomer.name} updated.`)
+    setEditCustomer(null)
+  }
+
+  function quickToggleSellAtCost(customer: CustomerLedger) {
+    updateCustomer(customer.id, { sellAtCost: !customer.sellAtCost })
+    showToast(`${customer.name}: sell at cost ${!customer.sellAtCost ? "ON" : "OFF"}`)
   }
 
   function handleRecordPayment() {
@@ -437,6 +485,12 @@ export default function CustomersPage() {
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-4">
                           <div className="flex items-center justify-end gap-1.5">
+                            {customer.sellAtCost && (
+                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-600" style={{ background: "rgba(214,166,58,0.12)" }}>COST</span>
+                            )}
+                            {customer.isWholesale && (
+                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase text-emerald-700" style={{ background: "var(--brand-soft)" }}>WS</span>
+                            )}
                             {customer.balance > 0 && customer.mobile && (
                               <button
                                 type="button"
@@ -456,6 +510,17 @@ export default function CustomersPage() {
                                 <MessageCircle size={15} />
                               </button>
                             )}
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                openEdit(customer)
+                              }}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                              title="Edit customer"
+                            >
+                              <Pencil size={14} />
+                            </button>
                             <button
                               type="button"
                               onClick={(event) => {
@@ -581,6 +646,24 @@ export default function CustomersPage() {
                 rows={3}
                 className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               />
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={newCustomer.isWholesale}
+                  onChange={(e) => setNewCustomer((c) => ({ ...c, isWholesale: e.target.checked }))}
+                  className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span className="text-sm font-medium text-zinc-700">Wholesale prices by default</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={newCustomer.sellAtCost}
+                  onChange={(e) => setNewCustomer((c) => ({ ...c, sellAtCost: e.target.checked }))}
+                  className="h-4 w-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500"
+                />
+                <span className="text-sm font-medium text-zinc-700">Sell at cost by default</span>
+              </label>
               <button
                 type="button"
                 onClick={handleAddCustomer}
@@ -802,6 +885,48 @@ export default function CustomersPage() {
       >
         <p>Delete this customer and their ledger? This cannot be undone.</p>
       </ConfirmDialog>
+
+      {/* Edit Customer Modal */}
+      {editCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => setEditCustomer(null)}>
+          <div className="w-full max-w-md rounded-xl border bg-white p-6 shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-zinc-950">Edit Customer</h3>
+              <button onClick={() => setEditCustomer(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"><X size={16} /></button>
+            </div>
+            <div className="space-y-3">
+              <label className="block text-sm font-bold text-zinc-700">
+                Name
+                <input value={editCustomer.name} onChange={(e) => setEditCustomer((c) => c ? { ...c, name: e.target.value } : null)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
+              </label>
+              <label className="block text-sm font-bold text-zinc-700">
+                Mobile
+                <input value={editCustomer.mobile} onChange={(e) => setEditCustomer((c) => c ? { ...c, mobile: e.target.value } : null)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
+              </label>
+              <label className="block text-sm font-bold text-zinc-700">
+                Credit limit
+                <input type="number" min="0" value={editCustomer.creditLimit} onChange={(e) => setEditCustomer((c) => c ? { ...c, creditLimit: normalizeNumber(e.target.value) } : null)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
+              </label>
+              <label className="block text-sm font-bold text-zinc-700">
+                Notes
+                <input value={editCustomer.notes} onChange={(e) => setEditCustomer((c) => c ? { ...c, notes: e.target.value } : null)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={editCustomer.isWholesale} onChange={(e) => setEditCustomer((c) => c ? { ...c, isWholesale: e.target.checked } : null)} className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500" />
+                <span className="text-sm font-medium text-zinc-700">Wholesale prices</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={editCustomer.sellAtCost} onChange={(e) => setEditCustomer((c) => c ? { ...c, sellAtCost: e.target.checked } : null)} className="h-4 w-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500" />
+                <span className="text-sm font-medium text-zinc-700">Sell at cost by default</span>
+              </label>
+              <button onClick={saveEdit} className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800">
+                <Plus size={17} /> Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </>
       )}
     </main>

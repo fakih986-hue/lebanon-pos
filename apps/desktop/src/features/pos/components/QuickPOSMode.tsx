@@ -1,4 +1,4 @@
-import { useRef, type ChangeEvent, type RefObject } from "react"
+import { useEffect, useRef, useState, type ChangeEvent, type RefObject } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 const MotionDiv = motion.div as any
 const MotionSpan = motion.span as any
@@ -18,6 +18,7 @@ import {
   WalletCards,
   Zap,
 } from "lucide-react"
+import LastSaleBanner from "./LastSaleBanner"
 import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatLbpCurrency, formatNumber, usdToLbp } from "../lib/currency"
 import type { Product } from "../types/product"
@@ -29,7 +30,6 @@ type TenderMode    = "USD" | "LBP" | "Mixed"
 type CustomerLedger = { id: string; name: string; mobile: string; balance: number }
 
 type Props = {
-  // scan
   scanInputRef: RefObject<HTMLInputElement | null>
   scanCode: string
   onScanCodeChange: (value: string) => void
@@ -41,7 +41,6 @@ type Props = {
   videoRef: RefObject<HTMLVideoElement | null>
   scanCaptureInputRef: RefObject<HTMLInputElement | null>
   onScanCapture: (event: ChangeEvent<HTMLInputElement>) => void
-  // cart
   items: CartItem[]
   onIncreaseQty: (id: number) => void
   onDecreaseQty: (id: number) => void
@@ -54,11 +53,8 @@ type Props = {
   total: number
   totalLbp: number
   exchangeRate: number
-  // payment
   paymentMethod: PaymentMethod
   onSelectPayment: (method: PaymentMethod) => void
-  tenderMode: TenderMode
-  onSelectTenderMode: (mode: TenderMode) => void
   paidUsd: string
   paidLbp: string
   onPaidUsdChange: (v: string) => void
@@ -75,11 +71,13 @@ type Props = {
   cashTenderValid: boolean
   checkoutBlocked: boolean
   onCompleteSale: () => void
+  lastSale: { number: string; total: number; totalLbp: number; items: CartItem[] } | null
+  onPrintReceipt: () => void
+  onWhatsAppReceipt: () => void
 }
 
 const PAY_OPTIONS: { label: PaymentMethod; icon: typeof Landmark; color: string; activeClass: string }[] = [
   { label: "Cash",   icon: Landmark,    color: "emerald", activeClass: "bg-emerald-600 border-emerald-600 text-white" },
-  { label: "Card",   icon: WalletCards, color: "indigo",  activeClass: "bg-indigo-600  border-indigo-600  text-white" },
   { label: "Wallet", icon: WalletCards, color: "violet",  activeClass: "bg-violet-600  border-violet-600  text-white" },
   { label: "Debt",   icon: HandCoins,   color: "amber",   activeClass: "bg-amber-500   border-amber-500   text-white" },
 ]
@@ -92,19 +90,170 @@ export default function QuickPOSMode({
   onCleanSale, onExit,
   itemCount, total, totalLbp, exchangeRate,
   paymentMethod, onSelectPayment,
-  tenderMode, onSelectTenderMode,
   paidUsd, paidLbp, onPaidUsdChange, onPaidLbpChange, onFillExactTender,
   customers, selectedCustomerId, onSelectCustomer,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, checkoutBlocked, onCompleteSale,
+  lastSale, onPrintReceipt, onWhatsAppReceipt,
 }: Props) {
   const { t, dir } = useI18n()
   const usdRef = useRef<HTMLInputElement>(null)
+  const lbpRef = useRef<HTMLInputElement>(null)
+  const reviewRef = useRef<HTMLElement>(null)
+  const [showReview, setShowReview] = useState(false)
   const hasInput = scanCode.trim().length > 0
 
-  return (
-    <section className="bg-page fixed inset-0 z-[200] flex flex-col overflow-hidden">
+  function handleBarcodeKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter") return
+    e.preventDefault()
+    if (scanCode.trim()) {
+      onQuickAdd(scanCode)
+    } else if (items.length > 0) {
+      usdRef.current?.focus()
+    }
+  }
 
+  function handleCompleteSale() {
+    setShowReview(false)
+    onCompleteSale()
+  }
+
+  // Auto-focus review screen so Enter works
+  useEffect(() => {
+    if (showReview) setTimeout(() => reviewRef.current?.focus(), 50)
+  }, [showReview])
+
+  if (showReview) {
+    const hasItems = items.length > 0
+    return (
+      <section ref={reviewRef} className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden p-4"
+        style={{ background: "rgba(5,7,13,0.92)", backdropFilter: "blur(16px)" }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") { e.preventDefault(); setShowReview(false) }
+          if (e.key === "Enter") { e.preventDefault(); handleCompleteSale() }
+        }}
+        tabIndex={0}>
+
+        <div className="w-full max-w-md rounded-3xl overflow-hidden"
+          style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+
+          {/* Header */}
+          <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-black" style={{ color: "var(--text)" }}>Confirm Sale</h2>
+              <span className="rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: "var(--surface-2)", color: "var(--text-3)" }}>
+                {hasItems ? `${itemCount} item${itemCount > 1 ? "s" : ""}` : "Empty"}
+              </span>
+            </div>
+          </div>
+
+          {/* Items */}
+          {hasItems && (
+            <div className="max-h-[35vh] overflow-y-auto divide-y" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+              {items.map((item, i) => (
+                <div key={item.id} className="flex items-center gap-3 px-5 py-2.5"
+                  style={{ background: i % 2 === 0 ? "var(--surface)" : "var(--surface-2)" }}>
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-black"
+                    style={{ background: "var(--surface-3)", color: "var(--text-3)" }}>
+                    {item.quantity}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: "var(--text)" }}>
+                    {item.name}
+                  </span>
+                  <span className="shrink-0 text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
+                    @{formatCurrency(item.price)}
+                  </span>
+                  <span className="shrink-0 w-16 text-right text-[14px] font-black tabular-nums" style={{ color: "var(--text)" }}>
+                    {formatCurrency(item.price * item.quantity)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Totals */}
+          <div className="px-5 py-4 space-y-2 border-t" style={{ borderColor: "var(--border)" }}>
+            {/* THE number */}
+            <div className="flex items-end justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Total</span>
+              <div className="text-right leading-none">
+                <div className="text-[32px] font-black tabular-nums" style={{ color: "var(--text)" }}>
+                  {formatCurrency(total)}
+                </div>
+                <div className="text-[12px] font-semibold tabular-nums mt-0.5" style={{ color: "var(--text-3)" }}>
+                  {formatLbpCurrency(totalLbp)}
+                </div>
+              </div>
+            </div>
+
+            {/* Payment info */}
+            <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
+                  {t("pos.payment." + paymentMethod.toLowerCase())}
+                </span>
+              </div>
+              {paymentMethod === "Cash" && (
+                <span className="text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
+                  USD {paidUsd || "0"} / LBP {paidLbp || "0"}
+                </span>
+              )}
+            </div>
+
+            {/* Change */}
+            {cashTenderValid && cashChangeUsd > 0 && (
+              <div className="rounded-2xl p-4 mt-2 text-center"
+                style={{ background: "rgba(34,197,94,0.10)", border: "1.5px solid rgba(34,197,94,0.25)" }}>
+                <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#22C55E" }}>{t("pos.change")}</span>
+                <div className="text-[36px] font-black tabular-nums leading-none mt-1" style={{ color: "#22C55E" }}>
+                  {formatCurrency(cashChangeUsd)}
+                </div>
+                <div className="text-[14px] font-bold tabular-nums mt-0.5" style={{ color: "rgba(34,197,94,0.7)" }}>
+                  {formatLbpCurrency(cashChangeLbp)}
+                </div>
+              </div>
+            )}
+
+            {/* Still due */}
+            {!cashTenderValid && paymentMethod === "Cash" && (paidUsd || paidLbp) && (
+              <div className="rounded-2xl p-4 mt-2 text-center"
+                style={{ background: "rgba(239,68,68,0.10)", border: "1.5px solid rgba(239,68,68,0.25)" }}>
+                <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#EF4444" }}>{t("pos.remaining")}</span>
+                <div className="text-[36px] font-black tabular-nums leading-none mt-1" style={{ color: "#EF4444" }}>
+                  {formatCurrency(cashStillDueUsd)}
+                </div>
+                <div className="text-[14px] font-bold tabular-nums mt-0.5" style={{ color: "rgba(239,68,68,0.7)" }}>
+                  {formatLbpCurrency(usdToLbp(cashStillDueUsd, exchangeRate))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="px-5 py-4 flex gap-3 border-t" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+            <button type="button" onClick={() => setShowReview(false)}
+              className="flex-1 h-12 rounded-xl text-[13px] font-bold transition active:scale-[0.98]"
+              style={{ border: "1px solid var(--border)", color: "var(--text-2)", background: "var(--surface)" }}>
+              Esc
+            </button>
+            <button type="button" onClick={handleCompleteSale}
+              className="flex-[2.5] h-12 rounded-xl text-[15px] font-black text-white transition active:scale-[0.98]"
+              style={{ background: "var(--brand)" }}>
+              Enter — Pay {formatCurrency(total)}
+            </button>
+          </div>
+        </div>
+
+        <p className="mt-3 text-[10px] font-medium opacity-40" style={{ color: "var(--text-3)" }}>
+          Esc to edit · Enter to confirm
+        </p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="bg-page fixed inset-0 z-[200] flex flex-col overflow-hidden"
+      onKeyDown={(e) => { if (e.key === "Escape" && showReview) setShowReview(false) }}>
       {/* ── Header ─────────────────────────────────────── */}
       <div className="flex shrink-0 items-center gap-3 border-b px-4 py-2.5"
         style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
@@ -117,7 +266,10 @@ export default function QuickPOSMode({
           <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "var(--brand)", color: "#fff" }}>
             <Zap size={14} />
           </span>
-          <span className="text-[14px] font-black" style={{ color: "var(--text)" }}>Quick POS</span>
+          <span className="text-[14px] font-black" style={{ color: "var(--text)" }}>
+            Quick POS
+            <span className="ml-2 text-[10px] font-semibold opacity-50" style={{ color: "var(--text-3)" }}>Enter = pay</span>
+          </span>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <MotionButton type="button" onClick={onStartCamera}
@@ -137,6 +289,14 @@ export default function QuickPOSMode({
         </div>
       </div>
 
+      {/* Last sale banner */}
+      <LastSaleBanner
+        sale={lastSale}
+        onNewSale={onCleanSale}
+        onPrintReceipt={onPrintReceipt}
+        onWhatsApp={onWhatsAppReceipt}
+      />
+
       {/* ── Scan bar ───────────────────────────────────── */}
       <div className="shrink-0 border-b px-4 py-3" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
         <div className="flex items-center overflow-hidden rounded-2xl transition-all duration-200"
@@ -151,8 +311,8 @@ export default function QuickPOSMode({
           </div>
           <input ref={scanInputRef} autoFocus value={scanCode}
             onChange={(e) => onScanCodeChange(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onQuickAdd(scanCode) } }}
-            placeholder="Scan barcode…"
+            onKeyDown={handleBarcodeKey}
+            placeholder="Scan barcode… Enter to pay"
             className="min-w-0 flex-1 bg-transparent py-3.5 text-[17px] font-black outline-none placeholder:font-medium placeholder:text-[15px]"
             style={{ color: "var(--text)", caretColor: "var(--brand)" }} dir={dir} />
           <AnimatePresence>
@@ -265,16 +425,16 @@ export default function QuickPOSMode({
             <p className="mt-1 text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>{formatLbpCurrency(totalLbp)}</p>
           </div>
 
-          {/* Payment method — big tap targets */}
+          {/* Payment method */}
           <div className="border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-1.5">
               {PAY_OPTIONS.map(({ label, icon: Icon, activeClass }) => (
                 <MotionButton key={label} type="button" onClick={() => onSelectPayment(label)}
-                  className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border py-3.5 text-[13px] font-black transition ${
+                  className={`flex items-center justify-center gap-1 rounded-lg border py-2 text-[11px] font-bold transition ${
                     paymentMethod === label ? activeClass : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)]"
                   }`}
                   whileTap={{ scale: 0.94 }}>
-                  <Icon size={20} />
+                  <Icon size={14} />
                   {t("pos.payment." + label.toLowerCase())}
                 </MotionButton>
               ))}
@@ -285,27 +445,15 @@ export default function QuickPOSMode({
           {paymentMethod === "Cash" && (
             <div className="border-b px-4 py-4 space-y-3" style={{ borderColor: "var(--border)" }}>
 
-              {/* Tender mode */}
-              <div className="flex gap-1.5">
-                {(["USD","LBP","Mixed"] as TenderMode[]).map((m) => (
-                  <MotionButton key={m} type="button" onClick={() => onSelectTenderMode(m)}
-                    className="flex-1 rounded-xl border py-2.5 text-[12px] font-black transition"
-                    style={tenderMode === m
-                      ? { background: "var(--brand)", borderColor: "var(--brand)", color: "#fff" }
-                      : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }}
-                    whileTap={{ scale: 0.93 }}>
-                    {m}
-                  </MotionButton>
-                ))}
-              </div>
-
               {/* USD input */}
-              {(tenderMode === "USD" || tenderMode === "Mixed") && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>USD Paid</p>
-                  <div className="flex gap-2">
-                    <input ref={usdRef} type="number" inputMode="decimal" value={paidUsd}
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>USD Paid</p>
+                <div className="flex gap-2">
+                  <input ref={usdRef} type="number" inputMode="decimal" value={paidUsd}
                       onChange={(e) => onPaidUsdChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") { e.preventDefault(); lbpRef.current?.focus() }
+                      }}
                       placeholder="0.00" min="0" step="0.01"
                       className="input min-w-0 flex-1 text-[22px] font-black tabular-nums"
                       style={{ height: 56 }} />
@@ -315,17 +463,18 @@ export default function QuickPOSMode({
                       whileTap={{ scale: 0.92 }}>
                       Exact
                     </MotionButton>
-                  </div>
                 </div>
-              )}
+              </div>
 
               {/* LBP input */}
-              {(tenderMode === "LBP" || tenderMode === "Mixed") && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>LBP Paid</p>
-                  <div className="flex gap-2">
-                    <input type="number" inputMode="decimal" value={paidLbp}
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>LBP Paid</p>
+                <div className="flex gap-2">
+                  <input ref={lbpRef} type="number" inputMode="decimal" value={paidLbp}
                       onChange={(e) => onPaidLbpChange(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") { e.preventDefault(); setShowReview(true) }
+                      }}
                       placeholder="0" min="0" step="1000"
                       className="input min-w-0 flex-1 text-[22px] font-black tabular-nums"
                       style={{ height: 56 }} />
@@ -335,11 +484,10 @@ export default function QuickPOSMode({
                       whileTap={{ scale: 0.92 }}>
                       Exact
                     </MotionButton>
-                  </div>
                 </div>
-              )}
+              </div>
 
-              {/* Change / remaining — the big number */}
+              {/* Change / remaining */}
               {cashTenderValid && paidTotalUsd > 0 && (
                 <MotionDiv
                   className="rounded-2xl p-4"
@@ -357,10 +505,7 @@ export default function QuickPOSMode({
                   <MotionP
                     key={cashChangeUsd > 0 ? cashChangeUsd : cashStillDueUsd}
                     className="mt-1 font-black tabular-nums leading-none"
-                    style={{
-                      fontSize: 44,
-                      color: "#fff",
-                    }}
+                    style={{ fontSize: 44, color: "#fff" }}
                     initial={{ scale: 1.1 }} animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 500, damping: 24 }}
                   >
@@ -392,7 +537,7 @@ export default function QuickPOSMode({
 
           {/* Complete sale */}
           <div className="mt-auto p-4">
-            <MotionButton type="button" onClick={onCompleteSale}
+            <MotionButton type="button" onClick={() => setShowReview(true)}
               disabled={items.length === 0 || checkoutBlocked}
               className="h-16 w-full rounded-2xl text-[16px] font-black text-white transition disabled:opacity-30"
               style={{ background: "var(--brand)", boxShadow: "0 4px 16px var(--brand-soft)" }}

@@ -4,6 +4,7 @@ export type Customer = {
   mobile: string
   creditLimit: number
   isWholesale?: boolean
+  sellAtCost?: boolean
   notes: string
   createdAt: string
 }

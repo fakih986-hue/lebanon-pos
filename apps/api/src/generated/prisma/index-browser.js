@@ -275,6 +275,7 @@ exports.Prisma.CustomerScalarFieldEnum = {
   pin: 'pin',
   creditLimit: 'creditLimit',
   isWholesale: 'isWholesale',
+  sellAtCost: 'sellAtCost',
   notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

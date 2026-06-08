@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useDebounce } from "../../hooks/useDebounce"
 import type { Product } from "../../features/pos/types/product"
-import { ImagePlus, Plus, X } from "lucide-react"
+import { ImagePlus, Plus, SlidersHorizontal, X } from "lucide-react"
 import KpiCards from "../../features/pos/components/KpiCards"
 import AlertsPanel from "../../features/pos/components/AlertsPanel"
 import StockControlPanel from "../../features/pos/components/StockControlPanel"
@@ -128,6 +128,15 @@ export default function ProductsPage() {
   const [batchVersion, setBatchVersion] = useState(0)
   const [controlVersion, setControlVersion] = useState(0)
   const [deleteProductId, setDeleteProductId] = useState<number | null>(null)
+  const [editProduct, setEditProduct] = useState<Product | null>(null)
+  const [editName, setEditName] = useState("")
+  const [editCategory, setEditCategory] = useState("")
+  const [editPrice, setEditPrice] = useState("")
+  const [editCost, setEditCost] = useState("")
+  const [editBarcode, setEditBarcode] = useState("")
+  const [editStock, setEditStock] = useState("")
+  const [editReorderPoint, setEditReorderPoint] = useState("")
+  const [editReorderQty, setEditReorderQty] = useState("")
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [bulkEditCategory, setBulkEditCategory] = useState("All")
   const [bulkEditField, setBulkEditField] = useState<"price" | "cost">("price")
@@ -396,6 +405,34 @@ export default function ProductsPage() {
       image: productImage || undefined,
     })
     showToast(`${selectedProduct.name} setup saved.`)
+  }
+
+  function openProductEdit(product: Product) {
+    setEditProduct(product)
+    setEditName(product.name)
+    setEditCategory(product.category)
+    setEditPrice(String(product.price))
+    setEditCost(String(product.cost))
+    setEditBarcode(product.barcode ?? "")
+    setEditStock(String(product.stock))
+    setEditReorderPoint(String(product.reorderPoint ?? 10))
+    setEditReorderQty(String(product.reorderQuantity ?? 20))
+  }
+
+  function saveProductEdit() {
+    if (!editProduct) return
+    updateProduct(editProduct.id, {
+      name: editName,
+      category: editCategory,
+      price: normalizeNumber(editPrice),
+      cost: normalizeNumber(editCost),
+      barcode: editBarcode || null,
+      stock: normalizeNumber(editStock),
+      reorderPoint: normalizeNumber(editReorderPoint),
+      reorderQuantity: normalizeNumber(editReorderQty),
+    })
+    showToast(`${editName} updated.`)
+    setEditProduct(null)
   }
 
   function applyBulkPriceEdit() {
@@ -921,6 +958,19 @@ export default function ProductsPage() {
           </button>
         </div>
       )}
+      {/* Category Management */}
+      <details className="mb-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <summary className="flex cursor-pointer items-center gap-2 text-sm font-bold text-zinc-700 select-none">
+          <SlidersHorizontal size={15} /> Manage Categories
+        </summary>
+        <div className="mt-3 space-y-2">
+          {categories.filter((c) => c !== "All").map((cat) => (
+            <div key={cat} className="flex items-center gap-2">
+              <input defaultValue={cat} onBlur={(e) => { const n = e.target.value.trim(); if (n && n !== cat) { renameCategory(cat, n); showToast(`Renamed "${cat}" to "${n}"`) } }} className="input h-9 flex-1 text-[13px] font-medium rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
+            </div>
+          ))}
+        </div>
+      </details>
       <ProductTable
         filteredProducts={filteredProducts}
         lowStockCount={lowStockCount}
@@ -931,6 +981,7 @@ export default function ProductsPage() {
         categories={categories}
         onToggleFavorite={toggleFavorite}
         onDeleteClick={setDeleteProductId}
+        onEditClick={openProductEdit}
       />
       </>
       ) : null}
@@ -966,6 +1017,34 @@ export default function ProductsPage() {
       >
         <p>Remove this variant? This cannot be undone.</p>
       </ConfirmDialog>
+
+      {/* Edit Product Modal */}
+      {editProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => setEditProduct(null)}>
+          <div className="w-full max-w-md rounded-xl border bg-white p-6 shadow-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-zinc-950">Edit Product</h3>
+              <button onClick={() => setEditProduct(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"><X size={16} /></button>
+            </div>
+            <div className="space-y-3">
+              <label className="block text-sm font-bold text-zinc-700">Name<input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
+              <label className="block text-sm font-bold text-zinc-700">Category<input value={editCategory} onChange={(e) => setEditCategory(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block text-sm font-bold text-zinc-700">Price $<input type="number" min="0" step="0.01" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
+                <label className="block text-sm font-bold text-zinc-700">Cost $<input type="number" min="0" step="0.01" value={editCost} onChange={(e) => setEditCost(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
+              </div>
+              <label className="block text-sm font-bold text-zinc-700">Barcode<input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100 font-mono" /></label>
+              <div className="grid grid-cols-3 gap-3">
+                <label className="block text-sm font-bold text-zinc-700">Stock<input type="number" min="0" value={editStock} onChange={(e) => setEditStock(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
+                <label className="block text-sm font-bold text-zinc-700">Reord Pt<input type="number" min="0" value={editReorderPoint} onChange={(e) => setEditReorderPoint(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
+                <label className="block text-sm font-bold text-zinc-700">Reord Qty<input type="number" min="0" value={editReorderQty} onChange={(e) => setEditReorderQty(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
+              </div>
+              <button onClick={saveProductEdit} className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </>
       )}
     </main>

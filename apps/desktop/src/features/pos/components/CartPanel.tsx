@@ -33,8 +33,6 @@ interface Props {
   selectedCustomer: CustomerLedger | undefined
   paymentMethod: PaymentMethod
   onSelectPayment: (method: PaymentMethod) => void
-  tenderMode: TenderMode
-  onSelectTenderMode: (mode: TenderMode) => void
   paidUsd: string
   paidLbp: string
   onPaidUsdChange: (value: string) => void
@@ -90,8 +88,6 @@ export default function CartPanel({
   selectedCustomer,
   paymentMethod,
   onSelectPayment,
-  tenderMode,
-  onSelectTenderMode,
   paidUsd,
   paidLbp,
   onPaidUsdChange,
@@ -211,8 +207,6 @@ export default function CartPanel({
         selectedCustomer={selectedCustomer}
         paymentMethod={paymentMethod}
         onSelectPayment={onSelectPayment}
-        tenderMode={tenderMode}
-        onSelectTenderMode={onSelectTenderMode}
         paidUsd={paidUsd}
         paidLbp={paidLbp}
         onPaidUsdChange={onPaidUsdChange}

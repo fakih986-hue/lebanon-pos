@@ -186,6 +186,18 @@ export default function SearchToolbar({
           <Eraser size={13} />
         </MotionButton>
 
+        {/* Quick POS — always visible */}
+        <MotionButton
+          type="button"
+          onClick={() => onToggleQuickMode()}
+          className="flex h-7 items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-bold transition"
+          style={{ background: "rgba(214,166,58,0.10)", borderColor: "rgba(214,166,58,0.25)", color: "#D6A63A" }}
+          whileTap={{ scale: 0.92 }}
+          title="Quick POS — full screen"
+        >
+          <Zap size={12} /> Quick POS
+        </MotionButton>
+
         {/* More */}
         <div className="relative" ref={menuRef}>
           <MotionButton

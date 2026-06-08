@@ -70,8 +70,6 @@ interface Props {
   selectedCustomer: CustomerLedger | undefined
   paymentMethod: PaymentMethod
   onSelectPayment: (method: PaymentMethod) => void
-  tenderMode: TenderMode
-  onSelectTenderMode: (mode: TenderMode) => void
   paidUsd: string
   paidLbp: string
   onPaidUsdChange: (value: string) => void
@@ -114,7 +112,7 @@ export default function CartBody({
   heldSales, onResumeHeld, onDiscardHeld,
   vatRate, customers, selectedCustomerId, onSelectCustomer, selectedCustomer,
   paymentMethod, onSelectPayment,
-  tenderMode, onSelectTenderMode, paidUsd, paidLbp, onPaidUsdChange, onPaidLbpChange, onFillExactTender,
+  paidUsd, paidLbp, onPaidUsdChange, onPaidLbpChange, onFillExactTender,
   discountMode, discountValue, onDiscountModeChange, onDiscountValueChange,
   onHold, onClean, onCompleteSale,
   itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
@@ -359,50 +357,30 @@ export default function CartBody({
             <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--brand-text)" }}>
               {t("pos.cash_tender")}
             </p>
-            <div className="flex gap-1">
-              {(["USD", "LBP", "Mixed"] as TenderMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => onSelectTenderMode(mode)}
-                  className={`h-[30px] rounded-lg border px-2.5 text-[11px] font-bold transition ${
-                    tenderMode === mode
-                      ? "border-[var(--brand)] bg-[var(--brand)] text-white"
-                      : "border-[var(--brand-border)] bg-white/60 text-[var(--brand-text)]"
-                  }`}
-                >
-                  {mode === "Mixed" ? t("pos.tender.both") : t("pos.tender." + mode.toLowerCase())}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2">
-            {tenderMode !== "LBP" && (
-              <label className="block text-[11px] font-bold" style={{ color: "var(--brand-text)" }}>
-                {t("pos.paid_usd")}
-                <input
-                  ref={usdInputRef}
-                  type="number" min="0" step="0.01"
-                  value={paidUsd}
-                  onChange={(e) => onPaidUsdChange(e.target.value)}
-                  className="input mt-1 w-full"
-                  style={{ height: 38, fontSize: 14, fontWeight: 700 }}
-                />
-              </label>
-            )}
-            {tenderMode !== "USD" && (
-              <label className="block text-[11px] font-bold" style={{ color: "var(--brand-text)" }}>
-                {t("pos.paid_lbp")}
-                <input
-                  type="number" min="0" step="1000"
-                  value={paidLbp}
-                  onChange={(e) => onPaidLbpChange(e.target.value)}
-                  className="input mt-1 w-full"
-                  style={{ height: 38, fontSize: 14, fontWeight: 700 }}
-                />
-              </label>
-            )}
+            <label className="block text-[11px] font-bold" style={{ color: "var(--brand-text)" }}>
+              {t("pos.paid_usd")}
+              <input
+                ref={usdInputRef}
+                type="number" min="0" step="0.01"
+                value={paidUsd}
+                onChange={(e) => onPaidUsdChange(e.target.value)}
+                className="input mt-1 w-full"
+                style={{ height: 38, fontSize: 14, fontWeight: 700 }}
+              />
+            </label>
+            <label className="block text-[11px] font-bold" style={{ color: "var(--brand-text)" }}>
+              {t("pos.paid_lbp")}
+              <input
+                type="number" min="0" step="1000"
+                value={paidLbp}
+                onChange={(e) => onPaidLbpChange(e.target.value)}
+                className="input mt-1 w-full"
+                style={{ height: 38, fontSize: 14, fontWeight: 700 }}
+              />
+            </label>
           </div>
 
           <div className="flex gap-2">
