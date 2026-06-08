@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { AlertTriangle, Cloud, CloudOff, RotateCw, X } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
@@ -20,7 +21,10 @@ export default function SyncStatus() {
   const [open, setOpen] = useState(false)
   const [toast, setToast] = useState<RejectedToast | null>(null)
   const toastTimer = useRef<number>(undefined)
-  const ref = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [ddPos, setDdPos] = useState({ top: 0, right: 0 })
 
   useEffect(() => subscribeSync(() => setStatus(getSyncStatus())), [])
 
@@ -37,11 +41,23 @@ export default function SyncStatus() {
   }, [])
 
   useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    if (!open) return
+    if (buttonRef.current) {
+      const r = buttonRef.current.getBoundingClientRect()
+      setDdPos({ top: r.bottom + 8, right: window.innerWidth - r.right })
     }
-    if (open) document.addEventListener("mousedown", onClick)
-    return () => document.removeEventListener("mousedown", onClick)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent) {
+      const t = e.target as Node
+      if (containerRef.current?.contains(t)) return
+      if (dropdownRef.current?.contains(t)) return
+      setOpen(false)
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
   }, [open])
 
   async function handleSyncNow() {
@@ -54,30 +70,32 @@ export default function SyncStatus() {
   const pendingWork = status.pending + status.failed
   const hasDead = status.dead > 0
 
-  let pillStyle: React.CSSProperties
+  let pillBg: string
+  let pillBorder: string
+  let pillColor: string
   let label: string
   let Icon = Cloud
 
   if (!status.online) {
-    pillStyle = { background: "var(--rose-soft)", borderColor: "rgba(244,63,94,0.3)", color: "var(--rose-text)" }
+    pillBg = "var(--rose-soft)"; pillBorder = "rgba(244,63,94,0.3)"; pillColor = "var(--rose-text)"
     label = t("sync.offline", { n: pendingWork + status.dead })
     Icon = CloudOff
   } else if (hasDead) {
-    pillStyle = { background: "var(--rose-soft)", borderColor: "rgba(244,63,94,0.3)", color: "var(--rose-text)" }
+    pillBg = "var(--rose-soft)"; pillBorder = "rgba(244,63,94,0.3)"; pillColor = "var(--rose-text)"
     label = `${status.dead} stuck`
     Icon = AlertTriangle
   } else if (pendingWork > 0) {
-    pillStyle = { background: "var(--amber-soft)", borderColor: "rgba(245,158,11,0.3)", color: "var(--amber-text)" }
+    pillBg = "var(--amber-soft)"; pillBorder = "rgba(245,158,11,0.3)"; pillColor = "var(--amber-text)"
     label = t("sync.pending", { n: pendingWork })
     Icon = RotateCw
   } else {
-    pillStyle = { background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }
+    pillBg = "var(--brand-soft)"; pillBorder = "var(--brand-border)"; pillColor = "var(--brand-text)"
     label = t("sync.synced")
     Icon = Cloud
   }
 
   return (
-    <div className="relative hidden lg:block" ref={ref}>
+    <div className="relative z-10" ref={containerRef}>
       {toast && (
         <div
           className="fixed left-1/2 top-4 z-[999] -translate-x-1/2 animate-slide-down rounded-xl border px-4 py-3 shadow-xl"
@@ -97,19 +115,21 @@ export default function SyncStatus() {
       )}
 
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex h-9 items-center gap-2 rounded-lg border px-3 text-[13px] font-semibold transition hover:opacity-80"
-        style={pillStyle}
+        style={{ background: pillBg, borderColor: pillBorder, color: pillColor }}
       >
         <Icon size={15} />
         <span>{label}</span>
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
-          className="absolute right-0 top-11 z-50 w-72 rounded-xl border p-4 animate-fade-in"
-          style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "var(--shadow-xl)" }}
+          ref={dropdownRef}
+          className="fixed z-[999] w-72 rounded-xl border p-4"
+          style={{ top: ddPos.top, right: ddPos.right, background: "var(--surface)", borderColor: "var(--border)", boxShadow: "0 8px 30px rgba(0,0,0,0.2)" }}
         >
           <div className="flex items-center justify-between mb-3">
             <p className="text-[14px] font-bold" style={{ color: "var(--text)" }}>Sync status</p>
@@ -173,7 +193,8 @@ export default function SyncStatus() {
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
