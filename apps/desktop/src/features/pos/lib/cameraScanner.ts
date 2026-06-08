@@ -270,41 +270,38 @@ function loadImageFromFile(file: File) {
   })
 }
 
-export async function detectBarcodeFromImageFile(file: File) {
-  const detector = await createBarcodeDetector()
+export async function detectBarcodeFromImageFile(file: File): Promise<string> {
+  // Try both engines in parallel — return first successful result
+  const results = await Promise.allSettled([
+    detectWithNativeBarcodeDetector(file),
+    detectBarcodeFromImageFileWithHtml5(file),
+  ])
 
-  if (!detector) {
-    return detectBarcodeFromImageFileWithHtml5(file)
+  for (const r of results) {
+    if (r.status === "fulfilled" && r.value) return r.value
   }
+  return ""
+}
+
+async function detectWithNativeBarcodeDetector(file: File): Promise<string> {
+  const detector = await createBarcodeDetector()
+  if (!detector) return ""
 
   try {
     if ("createImageBitmap" in window) {
       const bitmap = await createImageBitmap(file)
-
       try {
         const results = await detector.detect(bitmap)
-        const barcode = results[0]?.rawValue ?? ""
-
-        if (barcode) {
-          return barcode
-        }
+        if (results[0]?.rawValue) return results[0].rawValue
       } finally {
         bitmap.close()
       }
     }
-
     const image = await loadImageFromFile(file)
     const results = await detector.detect(image)
-    const barcode = results[0]?.rawValue ?? ""
-
-    if (barcode) {
-      return barcode
-    }
-  } catch {
-    return detectBarcodeFromImageFileWithHtml5(file)
-  }
-
-  return detectBarcodeFromImageFileWithHtml5(file)
+    if (results[0]?.rawValue) return results[0].rawValue
+  } catch { /* fall through */ }
+  return ""
 }
 
 async function detectBarcodeFromImageFileWithHtml5(file: File) {

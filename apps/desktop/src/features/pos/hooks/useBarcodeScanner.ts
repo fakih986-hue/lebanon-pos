@@ -9,179 +9,158 @@ import {
   getHtml5QrcodeFormatCodes,
   getLiveCameraIssue,
   getPreferredCameraConstraints,
+  loadHtml5Qrcode,
   type Html5QrcodeInstance,
 } from "../lib/cameraScanner"
 import { findProductByBarcode } from "../services/product.service"
 import type { Product } from "../types/product"
 
+// Preload html5-qrcode library early for faster camera startup
+if (typeof window !== "undefined") setTimeout(() => loadHtml5Qrcode().catch(() => {}), 200)
+
 const POS_CAMERA_READER_ID = "lebanonpos-pos-camera-reader"
 
-export function useBarcodeScanner(
+export { useBarcodeScanner }
+
+function useBarcodeScanner(
   onScannedProduct: (product: Product, source: string) => void
 ) {
-  const scanInputRef = useRef<HTMLInputElement>(null)
   const [scanCode, setScanCode] = useState("")
   const [scannerStatus, setScannerStatus] = useState("Scanner ready.")
   const [cameraActive, setCameraActive] = useState(false)
   const [cameraEngine, setCameraEngine] = useState<"native" | "html5" | null>(null)
-
-  const videoRef = useRef<HTMLVideoElement | null>(null)
-  const scanCaptureInputRef = useRef<HTMLInputElement | null>(null)
+  const scanInputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const scanCaptureInputRef = useRef<HTMLInputElement>(null)
   const scannerStreamRef = useRef<MediaStream | null>(null)
-  const html5ScannerRef = useRef<Html5QrcodeInstance | null>(null)
   const cameraFrameRef = useRef<number | null>(null)
-  const lastDetectedRef = useRef({ code: "", at: 0 })
+  const html5ScannerRef = useRef<Html5QrcodeInstance | null>(null)
+  const lastDetectedRef = useRef<{ code: string; at: number }>({ code: "", at: 0 })
   const isMountedRef = useRef(true)
 
   useEffect(() => {
+    isMountedRef.current = true
     return () => {
       isMountedRef.current = false
-      if (cameraFrameRef.current) {
-        window.cancelAnimationFrame(cameraFrameRef.current)
-      }
-      scannerStreamRef.current?.getTracks().forEach((track) => track.stop())
-      const scanner = html5ScannerRef.current
+      if (cameraFrameRef.current) window.cancelAnimationFrame(cameraFrameRef.current)
+      scannerStreamRef.current?.getTracks().forEach((t) => t.stop())
+      const s = html5ScannerRef.current
       html5ScannerRef.current = null
-      if (scanner) {
-        void scanner.stop().catch(() => undefined).finally(() => scanner.clear())
-      }
+      if (s) { void s.stop().catch(() => {}).finally(() => s.clear()) }
     }
   }, [])
 
   function handleScannedBarcode(value: string) {
     const barcode = normalizeBarcode(value)
-    if (!barcode) {
-      setScannerStatus("Scan a barcode first.")
-      return
-    }
+    if (!barcode) { setScannerStatus("Scan a barcode first."); return }
     const product = findProductByBarcode(barcode)
-    if (!product) {
-      setScannerStatus(`Barcode ${barcode} was not found.`)
-      return
-    }
+    if (!product) { setScannerStatus(`Barcode ${barcode} not found.`); return }
     onScannedProduct(product, "barcode")
+    setScannerStatus(`${product.name} added.`)
+    setScanCode("")
+    scanInputRef.current?.focus()
   }
 
   async function startCameraScanner() {
-    if (cameraActive) {
-      stopCameraScanner()
-      return
-    }
+    if (cameraActive) { stopCameraScanner(); return }
 
-    const liveCameraIssue = getLiveCameraIssue()
-    if (liveCameraIssue) {
-      setScannerStatus("📷 Point camera at barcode, then take a photo.")
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setScannerStatus("📷 Camera not available. Tap to capture barcode photo.")
       scanCaptureInputRef.current?.click()
       return
     }
 
+    // Preload library
+    loadHtml5Qrcode().catch(() => {})
+
+    // Try Native BarcodeDetector first (fastest, works on Chrome/Android)
+    setScannerStatus("Starting camera…")
     try {
       const detector = await createBarcodeDetector()
       if (!isMountedRef.current) return
-      if (!detector) {
+
+      if (detector) {
+        // Native detector available — use getUserMedia + frame scanning
+        const stream = await navigator.mediaDevices.getUserMedia(getPreferredCameraConstraints())
+        if (!isMountedRef.current) { stream.getTracks().forEach((t) => t.stop()); return }
+        const video = videoRef.current
+        if (!video) { stream.getTracks().forEach((t) => t.stop()); return }
+        scannerStreamRef.current = stream
+        video.srcObject = stream
+        video.setAttribute("playsinline", "true")
+        video.muted = true
+        await video.play()
+        if (!isMountedRef.current) { stream.getTracks().forEach((t) => t.stop()); return }
+        setCameraEngine("native")
         setCameraActive(true)
-        setCameraEngine("html5")
-        setScannerStatus("Starting bundled camera scanner...")
-        await new Promise<void>((resolve) =>
-          window.requestAnimationFrame(() => resolve())
-        )
-        if (!isMountedRef.current) return
-        const scanner = await createHtml5Qrcode(POS_CAMERA_READER_ID)
-        if (!isMountedRef.current) return
-        if (!scanner) {
-          stopCameraScanner()
-          setScannerStatus(
-            "Camera scanner engine could not load. Use USB scan or manual entry."
-          )
-          return
-        }
-        html5ScannerRef.current = scanner
-        if (!isMountedRef.current) return
-        await scanner.start(
-          { facingMode: "environment" },
-          {
-            fps: 12,
-            qrbox: { width: 260, height: 160 },
-            formatsToSupport: getHtml5QrcodeFormatCodes(),
-          },
-          (decodedText) => {
+        setScannerStatus("📱 Live scanner active — point at barcode")
+
+        const scanFrame = async () => {
+          if (!videoRef.current || !scannerStreamRef.current) return
+          try {
+            const codes = await detector.detect(videoRef.current)
+            const code = codes[0]?.rawValue
             const now = Date.now()
-            if (
-              decodedText &&
-              (lastDetectedRef.current.code !== decodedText ||
-                now - lastDetectedRef.current.at > 1500)
-            ) {
-              lastDetectedRef.current = { code: decodedText, at: now }
-              handleScannedBarcode(decodedText)
+            if (code && (lastDetectedRef.current.code !== code || now - lastDetectedRef.current.at > 1500)) {
+              lastDetectedRef.current = { code, at: now }
+              handleScannedBarcode(code)
             }
-          }
-        )
-        setScannerStatus("Camera scanner active. Point at a barcode.")
-        return
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia(
-        getPreferredCameraConstraints()
-      )
-      if (!isMountedRef.current) {
-        stream.getTracks().forEach((track) => track.stop())
-        return
-      }
-      const video = videoRef.current
-      if (!video) {
-        stream.getTracks().forEach((track) => track.stop())
-        setScannerStatus("Camera preview is not ready.")
-        return
-      }
-      scannerStreamRef.current = stream
-      video.srcObject = stream
-      video.setAttribute("playsinline", "true")
-      video.muted = true
-      await video.play()
-      if (!isMountedRef.current) {
-        stream.getTracks().forEach((track) => track.stop())
-        return
-      }
-      setCameraEngine("native")
-      setCameraActive(true)
-      setScannerStatus("Camera scanner active. Point at a barcode.")
-
-      const scanFrame = async () => {
-        const currentVideo = videoRef.current
-        if (!currentVideo || !scannerStreamRef.current) return
-        try {
-          const codes = await detector.detect(currentVideo)
-          const code = codes[0]?.rawValue
-          const now = Date.now()
-          if (
-            code &&
-            (lastDetectedRef.current.code !== code ||
-              now - lastDetectedRef.current.at > 1500)
-          ) {
-            lastDetectedRef.current = { code, at: now }
-            handleScannedBarcode(code)
-          }
-        } catch {
-          // Some browsers throw while the video frame is still warming up.
+          } catch { /* warming up */ }
+          cameraFrameRef.current = window.requestAnimationFrame(scanFrame)
         }
         cameraFrameRef.current = window.requestAnimationFrame(scanFrame)
+        return
       }
-      cameraFrameRef.current = window.requestAnimationFrame(scanFrame)
-    } catch (error) {
+    } catch (e) {
       stopCameraScanner()
-      const isSecurityError =
-        error instanceof DOMException &&
-        (error.name === "SecurityError" || error.name === "NotAllowedError")
-      if (isSecurityError) {
-        setScannerStatus(
-          "📷 Live camera needs HTTPS. Point camera at barcode and take a photo."
-        )
-        scanCaptureInputRef.current?.click()
-      } else {
-        setScannerStatus(
-          `${getCameraErrorMessage(error)} Try USB scan or photo capture.`
-        )
+      if (e instanceof DOMException && (e.name === "SecurityError" || e.name === "NotAllowedError")) {
+        setScannerStatus("❌ Camera permission denied. Allow camera access in browser settings.")
+        return
       }
+      // Fall through to html5-qrcode
+    }
+
+    // No native detector — use html5-qrcode live scanner
+    if (!isMountedRef.current) return
+    setCameraActive(true)
+    setCameraEngine("html5")
+    setScannerStatus("Starting camera scanner…")
+    await new Promise<void>((r) => window.requestAnimationFrame(() => r()))
+    if (!isMountedRef.current) return
+
+    const scanner = await createHtml5Qrcode(POS_CAMERA_READER_ID)
+    if (!isMountedRef.current) return
+    if (!scanner) {
+      stopCameraScanner()
+      setScannerStatus("❌ Camera scanner could not load. Try photo capture instead.")
+      scanCaptureInputRef.current?.click()
+      return
+    }
+    html5ScannerRef.current = scanner
+    if (!isMountedRef.current) return
+
+    try {
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 12, qrbox: { width: 260, height: 160 }, formatsToSupport: getHtml5QrcodeFormatCodes() },
+        (decodedText) => {
+          const now = Date.now()
+          if (decodedText && (lastDetectedRef.current.code !== decodedText || now - lastDetectedRef.current.at > 1500)) {
+            lastDetectedRef.current = { code: decodedText, at: now }
+            handleScannedBarcode(decodedText)
+          }
+        }
+      )
+      setScannerStatus("📱 Live scanner active — point at barcode")
+    } catch (e) {
+      stopCameraScanner()
+      if (e instanceof DOMException && (e.name === "SecurityError" || e.name === "NotAllowedError")) {
+        setScannerStatus("❌ Live camera blocked. Tap to capture barcode photo instead.")
+        scanCaptureInputRef.current?.click()
+        return
+      }
+      setScannerStatus(`⚠️ ${getCameraErrorMessage(e)} — try photo capture`)
+      scanCaptureInputRef.current?.click()
     }
   }
 
@@ -190,52 +169,35 @@ export function useBarcodeScanner(
     event.currentTarget.value = ""
     if (!file) return
     try {
-      setScannerStatus("🔍 Reading barcode from photo…")
+      setScannerStatus("🔍 Scanning barcode from photo…")
       const barcode = await detectBarcodeFromImageFile(file)
       if (!barcode) {
-        setScannerStatus(
-          "❌ No barcode found. Hold phone steady, get closer, ensure good lighting, then tap Scan again."
-        )
+        setScannerStatus("❌ No barcode detected. Center the barcode and try again.")
         return
       }
       handleScannedBarcode(barcode)
     } catch {
-      setScannerStatus("❌ Could not read image. Try again with better lighting.")
+      setScannerStatus("❌ Could not scan photo. Try better lighting or move closer.")
     }
   }
 
   function stopCameraScanner() {
-    if (cameraFrameRef.current) {
-      window.cancelAnimationFrame(cameraFrameRef.current)
-      cameraFrameRef.current = null
-    }
-    scannerStreamRef.current?.getTracks().forEach((track) => track.stop())
+    if (cameraFrameRef.current) { window.cancelAnimationFrame(cameraFrameRef.current); cameraFrameRef.current = null }
+    scannerStreamRef.current?.getTracks().forEach((t) => t.stop())
     scannerStreamRef.current = null
-    const scanner = html5ScannerRef.current
+    const s = html5ScannerRef.current
     html5ScannerRef.current = null
-    if (scanner) {
-      void scanner.stop().catch(() => undefined).finally(() => scanner.clear())
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null
-    }
+    if (s) { void s.stop().catch(() => {}).finally(() => s.clear()) }
+    if (videoRef.current) videoRef.current.srcObject = null
     setCameraEngine(null)
     setCameraActive(false)
-    setScannerStatus("Camera scanner stopped.")
   }
 
   return {
-    scanInputRef,
-    scanCode,
-    setScanCode,
-    scannerStatus,
-    setScannerStatus,
-    cameraActive,
-    cameraEngine,
-    startCameraScanner,
-    handleScanCapture,
-    handleScannedBarcode,
-    videoRef,
-    scanCaptureInputRef,
+    scanInputRef, scanCode, setScanCode,
+    scannerStatus, setScannerStatus,
+    cameraActive, cameraEngine,
+    startCameraScanner, handleScanCapture, handleScannedBarcode,
+    videoRef, scanCaptureInputRef,
   }
 }
