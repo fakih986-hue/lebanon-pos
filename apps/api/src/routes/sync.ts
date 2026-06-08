@@ -956,7 +956,7 @@ function validateSyncOperation(op: SyncOperationInput) {
     "supplier-payment": ["create", "payment"],
     staff: ["create", "update"],
     shift: ["open", "close"],
-    inventory: ["receive", "adjust", "count"],
+    inventory: ["receive", "adjust", "count", "update"],
     settings: ["create", "update"],
     "delivery-order": ["create", "update"],
     "held-sale": ["create", "delete"],
