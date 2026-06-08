@@ -1,6 +1,6 @@
 {
   "name": "lebanon-pos",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Lebanon POS — Local Server Desktop App",
   "main": "dist/main.js",
   "scripts": {
