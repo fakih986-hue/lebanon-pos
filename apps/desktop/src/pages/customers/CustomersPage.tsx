@@ -10,6 +10,7 @@ import {
   Pencil,
   Phone,
   Plus,
+  Printer,
   ReceiptText,
   Search,
   UserPlus,
@@ -17,7 +18,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react"
-import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
+import { formatCurrency, formatLbpCurrency, formatNumber, usdToLbp } from "../../features/pos/lib/currency"
 import {
   addCustomer,
   buildCustomerStatement,
@@ -379,6 +380,19 @@ export default function CustomersPage() {
             className="h-10 w-full rounded-lg border border-zinc-200 bg-white ps-9 pe-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
           />
         </label>
+        <button type="button" onClick={() => {
+          const csv = ["Name,Phone,Credit Limit,Debt Total,Paid Total,Balance,Oldest Unpaid Days,Overdue"].concat(
+            customers.map((c) => `"${c.name}","${c.mobile}",${c.creditLimit},${c.debtTotal},${c.paidTotal},${c.balance},${c.oldestUnpaidDays},${c.overdue}`)
+          ).join("\n")
+          const b = new Blob([csv], { type: "text/csv" })
+          const u = URL.createObjectURL(b)
+          const a = document.createElement("a"); a.href = u; a.download = `customers-${new Date().toISOString().slice(0,10)}.csv`; a.click()
+          URL.revokeObjectURL(u)
+        }}
+          className="flex h-10 items-center gap-1.5 rounded-lg border px-3 text-[12px] font-bold transition hover:opacity-80 shrink-0"
+          style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
+          <Download size={14} /> Export CSV
+        </button>
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
@@ -479,6 +493,7 @@ export default function CustomersPage() {
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-4 text-end font-bold text-rose-700">
                           {formatCurrency(customer.balance)}
+                          {customer.balance > 0 && <div className="text-[10px] text-rose-400">{formatLbpCurrency(usdToLbp(customer.balance, getSettings().usdToLbpRate))}</div>}
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-4 text-zinc-500">
                           {formatDate(customer.lastActivityAt)}
@@ -538,6 +553,19 @@ export default function CustomersPage() {
                               title="Download statement"
                             >
                               <Download size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                const text = buildCustomerStatement(customer.id, getSettings().storeName)
+                                const w = window.open("", "_blank", "width=420,height=600")
+                                if (w) { w.document.write(`<html><head><title>${customer.name}</title><style>body{font-family:monospace;white-space:pre;padding:20px;font-size:12px}</style></head><body>${text.replace(/\n/g,"<br>")}</body></html>`); w.document.close(); w.focus(); setTimeout(() => w.print(), 250) }
+                              }}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700"
+                              title="Print statement"
+                            >
+                              <Printer size={15} />
                             </button>
                             <button
                               type="button"

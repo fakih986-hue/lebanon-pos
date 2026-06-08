@@ -6,7 +6,7 @@ const MotionDiv = motion.div as any
 const MotionP = motion.p as any
 
 type Props = {
-  sale: { number: string; total: number; totalLbp: number } | null
+  sale: { number: string; total: number; totalLbp: number; profit?: number } | null
   onViewReceipt?: () => void
 }
 
@@ -107,6 +107,11 @@ export default function SaleCompleteOverlay({ sale, onViewReceipt }: Props) {
               <p className="mt-1 text-[13px] font-semibold tabular-nums" style={{ color: "rgba(255,255,255,0.45)" }}>
                 {formatLbpCurrency(snapshot.totalLbp)}
               </p>
+              {snapshot.profit !== undefined && (
+                <p className="mt-2 text-[12px] font-semibold tabular-nums" style={{ color: snapshot.profit >= 0 ? "rgba(16,185,129,0.8)" : "rgba(239,68,68,0.8)" }}>
+                  Margin: {formatCurrency(snapshot.profit)}
+                </p>
+              )}
             </MotionDiv>
 
             {/* View Receipt button */}

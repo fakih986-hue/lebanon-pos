@@ -71,9 +71,9 @@ type Props = {
   cashTenderValid: boolean
   checkoutBlocked: boolean
   onCompleteSale: () => void
-  lastSale: { number: string; total: number; totalLbp: number; items: CartItem[] } | null
-  onPrintReceipt: () => void
-  onWhatsAppReceipt: () => void
+  recentSales: { number: string; total: number; totalLbp: number; items: CartItem[] }[]
+  onPrintReceipt: (sale: any) => void
+  onWhatsAppReceipt: (sale: any) => void
 }
 
 const PAY_OPTIONS: { label: PaymentMethod; icon: typeof Landmark; color: string; activeClass: string }[] = [
@@ -94,7 +94,7 @@ export default function QuickPOSMode({
   customers, selectedCustomerId, onSelectCustomer,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, checkoutBlocked, onCompleteSale,
-  lastSale, onPrintReceipt, onWhatsAppReceipt,
+  recentSales, onPrintReceipt, onWhatsAppReceipt,
 }: Props) {
   const { t, dir } = useI18n()
   const usdRef = useRef<HTMLInputElement>(null)
@@ -291,7 +291,7 @@ export default function QuickPOSMode({
 
       {/* Last sale banner */}
       <LastSaleBanner
-        sale={lastSale}
+        sales={recentSales}
         onNewSale={onCleanSale}
         onPrintReceipt={onPrintReceipt}
         onWhatsApp={onWhatsAppReceipt}

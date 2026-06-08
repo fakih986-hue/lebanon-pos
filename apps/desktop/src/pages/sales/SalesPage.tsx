@@ -70,7 +70,9 @@ function getItemName(item: any): string {
 }
 
 function exportSalesCsv(sales: Sale[]) {
-  const header = ["Sale #", "Date", "Payment", "Customer", "Cashier", "Items", "Subtotal", "Discount", "Tax", "Total", "Profit", "Status"]
+  const s = getSettings()
+  const rate = s.usdToLbpRate
+  const header = ["Sale #", "Date", "Payment", "Customer", "Cashier", "Items", "Subtotal", "Discount", "Tax", "Total", "Total (LBP)", "Profit", "Profit (LBP)", "Status"]
   const rows = sales.map((s) => [
     s.saleNumber,
     new Date(s.createdAt).toLocaleString(),
@@ -82,7 +84,9 @@ function exportSalesCsv(sales: Sale[]) {
     (s.discountTotal ?? 0).toFixed(2),
     s.tax.toFixed(2),
     s.total.toFixed(2),
+    Math.round(s.total * rate).toString(),
     (s.profit ?? 0).toFixed(2),
+    Math.round((s.profit ?? 0) * rate).toString(),
     s.status,
   ])
   const csv = [header, ...rows]

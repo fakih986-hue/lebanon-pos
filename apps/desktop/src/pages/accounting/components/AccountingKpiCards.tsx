@@ -1,5 +1,6 @@
 import { Calculator, ReceiptText, TrendingDown, TrendingUp } from "lucide-react"
-import { formatCurrency } from "../../../features/pos/lib/currency"
+import { formatCurrency, formatLbpCurrency, usdToLbp } from "../../../features/pos/lib/currency"
+import { getSettings } from "../../../features/pos/services/settings.service"
 import type { AccountingSummary } from "../accounting.helpers"
 
 type Props = {
@@ -13,6 +14,7 @@ export default function AccountingKpiCards({
   todayExpensesCount,
   todayClose,
 }: Props) {
+  const rate = getSettings().usdToLbpRate
   return (
     <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
       <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
@@ -22,6 +24,9 @@ export default function AccountingKpiCards({
         </div>
         <p className="mt-3 text-3xl font-bold text-zinc-950">
           {formatCurrency(summary.netSales)}
+        </p>
+        <p className="mt-0.5 text-xs text-zinc-400">
+          {formatLbpCurrency(usdToLbp(summary.netSales, rate))}
         </p>
         <p className="mt-1 text-sm text-zinc-500">
           Gross {formatCurrency(summary.grossSales)} / Returns {formatCurrency(summary.refunds)}
@@ -36,6 +41,9 @@ export default function AccountingKpiCards({
         <p className="mt-3 text-3xl font-bold text-zinc-950">
           {formatCurrency(summary.grossMargin)}
         </p>
+        <p className="mt-0.5 text-xs text-zinc-400">
+          {formatLbpCurrency(usdToLbp(summary.grossMargin, rate))}
+        </p>
         <p className="mt-1 text-sm text-zinc-500">
           After returned item cost
         </p>
@@ -48,6 +56,9 @@ export default function AccountingKpiCards({
         </div>
         <p className="mt-3 text-3xl font-bold text-rose-700">
           {formatCurrency(summary.expenses)}
+        </p>
+        <p className="mt-0.5 text-xs text-zinc-400">
+          {formatLbpCurrency(usdToLbp(summary.expenses, rate))}
         </p>
         <p className="mt-1 text-sm text-zinc-500">
           {todayExpensesCount} entries today
@@ -65,6 +76,9 @@ export default function AccountingKpiCards({
           }`}
         >
           {formatCurrency(summary.netProfit)}
+        </p>
+        <p className="mt-0.5 text-xs text-zinc-400">
+          {formatLbpCurrency(usdToLbp(summary.netProfit, rate))}
         </p>
         <p className="mt-1 text-sm text-zinc-500">
           {todayClose ? "Day already closed" : "Ready to close today"}

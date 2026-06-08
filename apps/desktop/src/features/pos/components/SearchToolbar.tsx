@@ -221,17 +221,6 @@ export default function SearchToolbar({
                 transition={{ duration: 0.15 }}
               >
                 <div className="p-1">
-                  <button
-                    type="button"
-                    onClick={() => { onToggleQuickMode(); setMenuOpen(false) }}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold transition hover:opacity-80"
-                    style={{ color: "var(--text)" }}
-                  >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "var(--brand-soft)" }}>
-                      <Zap size={14} style={{ color: "var(--brand)" }} />
-                    </span>
-                    Full Screen POS
-                  </button>
                   {onShowShortcuts && (
                     <button
                       type="button"

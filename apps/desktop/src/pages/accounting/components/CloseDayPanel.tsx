@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { CheckCircle2, ClipboardList, MessageCircle } from "lucide-react"
-import { formatCurrency } from "../../../features/pos/lib/currency"
+import { CheckCircle2, ClipboardList, MessageCircle, Printer } from "lucide-react"
+import { formatCurrency, formatLbpCurrency, usdToLbp } from "../../../features/pos/lib/currency"
 import { getSettings } from "../../../features/pos/services/settings.service"
 import { getLedgerTotals } from "../../../features/pos/services/customer.service"
 import { openWhatsApp, openWhatsAppShare, dailySummaryMessage } from "../../../features/pos/lib/whatsapp"
@@ -21,6 +21,8 @@ export default function CloseDayPanel({
 }: Props) {
   const [closeNote, setCloseNote] = useState("")
   const [countedCash, setCountedCash] = useState("")
+  const rate = getSettings().usdToLbpRate
+  const lbp = (v: number) => formatLbpCurrency(usdToLbp(v, rate))
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -44,15 +46,15 @@ export default function CloseDayPanel({
         <div className="space-y-2 rounded-lg border border-zinc-200 p-4 text-sm">
           <div className="flex justify-between gap-3">
             <span className="text-zinc-500">Gross sales</span>
-            <strong>{formatCurrency(summary.grossSales)}</strong>
+            <div className="text-right"><strong>{formatCurrency(summary.grossSales)}</strong><div className="text-[10px] text-zinc-400">{lbp(summary.grossSales)}</div></div>
           </div>
           <div className="flex justify-between gap-3 text-rose-700">
             <span>Refunds</span>
-            <strong>-{formatCurrency(summary.refunds)}</strong>
-          </div>
-          <div className="flex justify-between gap-3 border-t border-zinc-200 pt-2">
-            <span className="text-zinc-500">Net sales</span>
-            <strong>{formatCurrency(summary.netSales)}</strong>
+            <div className="text-right"><strong>-{formatCurrency(summary.refunds)}</strong><div className="text-[10px] text-rose-400">{lbp(summary.refunds)}</div></div>
+           </div>
+           <div className="flex justify-between gap-3 border-t border-zinc-200 pt-2">
+             <span className="text-zinc-500">Net sales</span>
+             <div className="text-right"><strong>{formatCurrency(summary.netSales)}</strong><div className="text-[10px] text-zinc-400">{lbp(summary.netSales)}</div></div>
           </div>
           <div className="flex justify-between gap-3 text-zinc-500">
             <span>Cost of goods</span>
@@ -62,45 +64,57 @@ export default function CloseDayPanel({
           </div>
           <div className="flex justify-between gap-3 border-t border-zinc-200 pt-2 font-bold text-zinc-950">
             <span>Gross margin</span>
-            <span>{formatCurrency(summary.grossMargin)}</span>
+            <div className="text-right"><span>{formatCurrency(summary.grossMargin)}</span><div className="text-[10px] text-zinc-400">{lbp(summary.grossMargin)}</div></div>
           </div>
         </div>
 
         <div className="space-y-2 rounded-lg border border-zinc-200 p-4 text-sm">
           <div className="flex justify-between gap-3">
             <span className="text-zinc-500">Operating expenses</span>
-            <strong className="text-rose-700">
-              -{formatCurrency(summary.expenses)}
-            </strong>
+            <div className="text-right">
+              <strong className="text-rose-700">-{formatCurrency(summary.expenses)}</strong>
+              <div className="text-[10px] text-rose-400">{lbp(summary.expenses)}</div>
+            </div>
           </div>
           <div className="flex justify-between gap-3 border-t border-zinc-200 pt-2 text-lg font-bold">
             <span>Net profit</span>
-            <span
+            <div className="text-right"><span
               className={
                 summary.netProfit >= 0 ? "text-emerald-700" : "text-rose-700"
               }
             >
               {formatCurrency(summary.netProfit)}
             </span>
+            <div className="text-[10px] text-zinc-400">{lbp(summary.netProfit)}</div></div>
           </div>
           <div className="mt-3 rounded-lg bg-zinc-50 p-3">
             <div className="flex justify-between gap-3">
               <span className="text-zinc-500">Cash in</span>
-              <strong>{formatCurrency(summary.cashIn)}</strong>
+              <div className="text-right">
+                <strong>{formatCurrency(summary.cashIn)}</strong>
+                <div className="text-[10px] text-zinc-400">{lbp(summary.cashIn)}</div>
+              </div>
             </div>
             <div className="mt-2 flex justify-between gap-3 text-rose-700">
               <span>Cash out</span>
-              <strong>-{formatCurrency(summary.cashOut)}</strong>
+              <div className="text-right">
+                <strong>-{formatCurrency(summary.cashOut)}</strong>
+                <div className="text-[10px] text-rose-400">{lbp(summary.cashOut)}</div>
+              </div>
             </div>
             <div className="mt-2 flex justify-between gap-3 text-zinc-500">
               <span>Supplier payments</span>
-              <strong className="text-zinc-900">
-                {formatCurrency(summary.supplierPayments)}
-              </strong>
+              <div className="text-right">
+                <strong className="text-zinc-900">{formatCurrency(summary.supplierPayments)}</strong>
+                <div className="text-[10px] text-zinc-400">{lbp(summary.supplierPayments)}</div>
+              </div>
             </div>
             <div className="mt-2 flex justify-between gap-3 border-t border-zinc-200 pt-2 font-bold">
               <span>Cash movement</span>
-              <span>{formatCurrency(summary.cashNet)}</span>
+              <div className="text-right">
+                <span>{formatCurrency(summary.cashNet)}</span>
+                <div className="text-[10px] text-zinc-400 font-normal">{lbp(summary.cashNet)}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -118,7 +132,10 @@ export default function CloseDayPanel({
               <p className="text-[13px] font-bold mb-3" style={{ color: "var(--text)" }}>Cash reconciliation</p>
               <div className="flex items-center justify-between mb-2 text-sm">
                 <span style={{ color: "var(--text-2)" }}>Expected in drawer</span>
-                <strong style={{ color: "var(--text)" }}>{formatCurrency(expected)}</strong>
+                <div className="text-right">
+                  <strong style={{ color: "var(--text)" }}>{formatCurrency(expected)}</strong>
+                  <div className="text-[10px] text-zinc-400">{lbp(expected)}</div>
+                </div>
               </div>
               <label className="block">
                 <span className="block text-[12px] font-semibold mb-1.5" style={{ color: "var(--text-2)" }}>
@@ -149,6 +166,7 @@ export default function CloseDayPanel({
                   <strong className="text-[15px]">
                     {variance > 0 ? "+" : ""}{formatCurrency(variance)}
                   </strong>
+                  <span className="text-[10px] ml-1.5">{lbp(variance)}</span>
                 </div>
               )}
             </div>
@@ -187,6 +205,31 @@ export default function CloseDayPanel({
             >
               <MessageCircle size={16} />
               WhatsApp summary
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const w = window.open("", "_blank", "width=600,height=800")
+                if (!w) return
+                const s = getSettings()
+                const lines = [
+                  `<h1>${s.storeName}</h1><p>${s.branchName} · ${formatDateKey(summary.dateKey)}</p><hr>`,
+                  `<table><tr><td>Gross sales</td><td>${formatCurrency(summary.grossSales)}</td></tr>`,
+                  `<tr><td>Refunds</td><td>-${formatCurrency(summary.refunds)}</td></tr>`,
+                  `<tr><td>Net sales</td><td>${formatCurrency(summary.netSales)}</td></tr>`,
+                  `<tr><td>Gross margin</td><td>${formatCurrency(summary.grossMargin)}</td></tr>`,
+                  `<tr><td>Expenses</td><td>-${formatCurrency(summary.expenses)}</td></tr>`,
+                  `<tr><td>Net profit</td><td>${formatCurrency(summary.netProfit)}</td></tr>`,
+                  `<tr><td>Cash movement</td><td>${formatCurrency(summary.cashNet)}</td></tr>`,
+                  `</table><hr><p>Thank you — شكراً</p>`,
+                ].join("")
+                w.document.write(`<html><head><title>Daily Close</title><style>body{font-family:Arial;padding:20px;max-width:600px;margin:auto}h1{margin:0}table{width:100%;border-collapse:collapse}td{padding:6px 4px;border-bottom:1px solid #ddd}td:last-child{text-align:right;font-weight:700}hr{border:none;border-top:1px solid #ddd;margin:12px 0}</style></head><body>${lines}</body></html>`)
+                w.document.close(); w.focus(); setTimeout(() => w.print(), 250)
+              }}
+              className="flex h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-bold transition hover:opacity-80"
+              style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>
+              <Printer size={16} />
+              Print Report
             </button>
             <button
               type="button"

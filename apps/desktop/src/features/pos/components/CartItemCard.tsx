@@ -25,6 +25,7 @@ const CartItemCard = memo(function CartItemCard({
   const { t } = useI18n()
   const [editingQty, setEditingQty] = useState(false)
   const [editingPrice, setEditingPrice] = useState(false)
+  const [showPresets, setShowPresets] = useState(false)
   const [qtyInput, setQtyInput] = useState(String(quantity))
   const [priceInput, setPriceInput] = useState(String(unitPrice))
   const qtyRef = useRef<HTMLInputElement>(null)
@@ -103,7 +104,7 @@ const CartItemCard = memo(function CartItemCard({
             type="button"
             onClick={onDecrease}
             className="flex h-7 w-7 items-center justify-center rounded-lg border transition hover:opacity-80"
-            style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
+            style={{ background: "var(--surface-2)", borderColor: "var(--surface-3)", color: "var(--text-2)" }}
           >
             <Minus size={13} />
           </button>
@@ -122,7 +123,7 @@ const CartItemCard = memo(function CartItemCard({
           ) : (
             <button
               type="button"
-              onClick={openQtyEdit}
+              onClick={() => { openQtyEdit(); setShowPresets((v) => !v) }}
               title={t("pos.cart.set_quantity")}
               className="h-7 w-10 rounded-lg text-[13px] font-bold transition hover:opacity-80"
               style={{ background: "var(--surface-3)", color: "var(--text)" }}
@@ -135,7 +136,7 @@ const CartItemCard = memo(function CartItemCard({
             type="button"
             onClick={onIncrease}
             className="flex h-7 w-7 items-center justify-center rounded-lg border transition hover:opacity-80"
-            style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
+            style={{ background: "var(--surface-2)", borderColor: "var(--surface-3)", color: "var(--text-2)" }}
           >
             <Plus size={13} />
           </button>
@@ -151,15 +152,15 @@ const CartItemCard = memo(function CartItemCard({
           type="button"
           onClick={onRemove}
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition hover:opacity-80"
-          style={{ color: "var(--text-3)", background: "var(--surface-2)" }}
+          style={{ color: "var(--text-2)", background: "var(--surface-2)" }}
           aria-label={t("pos.remove_item", { name })}
         >
           <Trash2 size={14} />
         </button>
       </div>
 
-      {/* Preset quantity buttons */}
-      <div className="mt-2 flex gap-1.5">
+      {/* Preset quantity buttons — toggle on qty tap */}
+      {showPresets && <div className="mt-2 flex gap-1.5">
         {[1, 2, 5, 10].map((preset) => (
           <button
             key={preset}
@@ -170,13 +171,13 @@ const CartItemCard = memo(function CartItemCard({
             }`}
             style={quantity === preset
               ? { background: "var(--brand)", color: "white", border: "1px solid var(--brand)" }
-              : { background: "var(--surface-2)", color: "var(--text-2)", border: "1px solid var(--border)" }
+              : { background: "var(--surface-2)", color: "var(--text-2)", border: "1px solid var(--surface-3)" }
             }
           >
             {preset}
           </button>
         ))}
-      </div>
+      </div>}
     </div>
   )
 })

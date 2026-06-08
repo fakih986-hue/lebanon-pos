@@ -194,6 +194,17 @@ const router = createBrowserRouter([
   },
 
   {
+    path: "/products/count",
+    element: (
+      <Shell>
+        <RequirePermission permission="inventory.manage">
+          <ProductsPage initialTab="Control" />
+        </RequirePermission>
+      </Shell>
+    ),
+  },
+
+  {
     path: "/sales",
     element: (
       <Shell>

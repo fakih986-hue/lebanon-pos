@@ -220,7 +220,7 @@ export default function CartBody({
                       type="button"
                       onClick={() => onDiscardHeld(sale)}
                       className="flex h-8 items-center justify-center gap-1.5 rounded-lg border text-[12px] font-semibold transition hover:opacity-80"
-                      style={{ borderColor: "var(--border)", color: "var(--text-2)" }}
+                      style={{ borderColor: "var(--surface-3)", color: "var(--text-2)" }}
                     >
                       <Eraser size={12} />
                       {t("pos.discard")}
@@ -333,7 +333,7 @@ export default function CartBody({
                       type="button"
                       onClick={() => onDiscountValueChange(String(v))}
                       className="h-9 rounded-lg border px-2.5 text-[11px] font-bold transition hover:opacity-80"
-                      style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-2)" }}
+                      style={{ borderColor: "var(--surface-3)", background: "var(--surface-2)", color: "var(--text-2)" }}
                     >
                       {discountMode === "Percent" ? `${v}%` : `$${v}`}
                     </button>
@@ -351,7 +351,7 @@ export default function CartBody({
       {paymentMethod === "Cash" && (
         <div
           className="rounded-xl border p-3 space-y-3"
-          style={{ borderColor: "var(--brand-border)", background: "var(--brand-soft)" }}
+          style={{ borderColor: "var(--brand-border)", background: "var(--surface)" }}
         >
           <div className="flex items-center justify-between">
             <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--brand-text)" }}>
@@ -360,7 +360,7 @@ export default function CartBody({
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2">
-            <label className="block text-[11px] font-bold" style={{ color: "var(--brand-text)" }}>
+            <label className="block text-[11px] font-bold" style={{ color: "var(--text)" }}>
               {t("pos.paid_usd")}
               <input
                 ref={usdInputRef}
@@ -368,30 +368,30 @@ export default function CartBody({
                 value={paidUsd}
                 onChange={(e) => onPaidUsdChange(e.target.value)}
                 className="input mt-1 w-full"
-                style={{ height: 38, fontSize: 14, fontWeight: 700 }}
+                style={{ height: 38, fontSize: 14, fontWeight: 700, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}
               />
             </label>
-            <label className="block text-[11px] font-bold" style={{ color: "var(--brand-text)" }}>
+            <label className="block text-[11px] font-bold" style={{ color: "var(--text)" }}>
               {t("pos.paid_lbp")}
               <input
                 type="number" min="0" step="1000"
                 value={paidLbp}
                 onChange={(e) => onPaidLbpChange(e.target.value)}
                 className="input mt-1 w-full"
-                style={{ height: 38, fontSize: 14, fontWeight: 700 }}
+                style={{ height: 38, fontSize: 14, fontWeight: 700, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}
               />
             </label>
           </div>
 
           <div className="flex gap-2">
             <button type="button" onClick={() => onFillExactTender("USD")} disabled={items.length === 0}
-              className="h-8 flex-1 rounded-lg border text-[11px] font-bold transition hover:opacity-80 disabled:opacity-30"
-              style={{ borderColor: "var(--brand-border)", color: "var(--brand-text)", background: "white/40" }}>
+              className="flex-1 rounded-lg py-1.5 text-[11px] font-bold transition active:scale-[0.97] disabled:opacity-30"
+              style={{ background: "var(--brand)", color: "#ffffff" }}>
               {t("pos.exact_usd")}
             </button>
             <button type="button" onClick={() => onFillExactTender("LBP")} disabled={items.length === 0}
-              className="h-8 flex-1 rounded-lg border text-[11px] font-bold transition hover:opacity-80 disabled:opacity-30"
-              style={{ borderColor: "var(--brand-border)", color: "var(--brand-text)", background: "white/40" }}>
+              className="flex-1 rounded-lg py-1.5 text-[11px] font-bold transition active:scale-[0.97] disabled:opacity-30"
+              style={{ background: "var(--brand)", color: "#ffffff" }}>
               {t("pos.exact_lbp")}
             </button>
           </div>
@@ -406,7 +406,7 @@ export default function CartBody({
               style={{ background: "var(--brand-soft)", border: "1px solid var(--brand-border)" }}
             >
               {/* Paid total row */}
-              <div className="flex items-center justify-between text-[12px] text-white">
+              <div className="flex items-center justify-between text-[12px]" style={{ color: "var(--text)" }}>
                 <span className="font-semibold">{t("pos.paid_total")}</span>
                 <span className="font-bold tabular-nums">
                   {formatCurrency(paidTotalUsd)}
@@ -419,25 +419,21 @@ export default function CartBody({
               <div
                 className="flex items-center justify-between rounded-lg px-3 py-2"
                 style={{
-                  background: cashChangeUsd > 0 ? "rgba(16,185,129,0.12)" : "rgba(244,63,94,0.10)",
-                  border: `1px solid ${cashChangeUsd > 0 ? "rgba(16,185,129,0.25)" : "rgba(244,63,94,0.20)"}`,
+                  background: "var(--surface)",
+                  border: "1px solid var(--brand-border)",
                 }}
               >
-                <span
-                  className="text-[13px] font-bold text-white"
-                >
+                <span className="text-[13px] font-bold" style={{ color: cashChangeUsd > 0 ? "#16a34a" : "var(--rose)" }}>
                   {cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}
                 </span>
                 <div className="text-right">
                   <span
-                    className="block tabular-nums leading-none font-black text-white"
-                    style={{
-                      fontSize: cashChangeUsd > 0 ? 22 : 28,
-                    }}
+                    className="block tabular-nums leading-none font-black"
+                    style={{ fontSize: cashChangeUsd > 0 ? 22 : 28, color: "var(--text)" }}
                   >
                     {cashChangeUsd > 0 ? formatCurrency(cashChangeUsd) : formatCurrency(cashStillDueUsd)}
                   </span>
-                  <span className="block text-[11px] font-semibold tabular-nums mt-0.5" style={{ color: "var(--text-3)" }}>
+                  <span className="block text-[11px] font-semibold tabular-nums mt-0.5" style={{ color: "var(--text-2)" }}>
                     {cashChangeUsd > 0
                       ? formatLbpCurrency(cashChangeLbp)
                       : formatLbpCurrency(usdToLbp(cashStillDueUsd, exchangeRate))
@@ -509,11 +505,11 @@ export default function CartBody({
           className={`w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-[12px] font-bold transition ${
             sellAtCost
               ? "bg-amber-500/15 border border-amber-500/30 text-amber-400"
-              : "border text-[var(--text-3)] hover:text-[var(--text-2)]"
+              : "border text-[var(--text-2)] hover:text-[var(--text)]"
           }`}
-          style={!sellAtCost ? { borderColor: "var(--border)" } : undefined}
+          style={!sellAtCost ? { borderColor: "var(--surface-3)" } : undefined}
         >
-          <span className={`h-1.5 w-1.5 rounded-full ${sellAtCost ? "bg-amber-400" : "bg-[var(--text-3)]"}`} />
+          <span className={`h-1.5 w-1.5 rounded-full ${sellAtCost ? "bg-amber-400" : "bg-[var(--text-2)]"}`} />
           {sellAtCost ? t("pos.sell_at_cost") + " — ON" : t("pos.sell_at_cost")}
         </button>
       )}
@@ -527,7 +523,7 @@ export default function CartBody({
             <>
               <div className="flex justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
                 <span>{t("pos.items_subtotal")}</span>
-                <span className="tabular-nums">{formatCurrency(grossSubtotal)}</span>
+                <span className="tabular-nums font-bold" style={{ color: "var(--text)" }}>{formatCurrency(grossSubtotal)}</span>
               </div>
               <div className="flex justify-between text-[11px]" style={{ color: "var(--brand-text)" }}>
                 <span>{t("pos.discount")}</span>
@@ -537,11 +533,11 @@ export default function CartBody({
           )}
           <div className="flex justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
             <span>{t("pos.subtotal")}</span>
-            <span className="tabular-nums">{formatCurrency(subtotal)}</span>
+            <span className="tabular-nums font-bold" style={{ color: "var(--text)" }}>{formatCurrency(subtotal)}</span>
           </div>
           <div className="flex justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
             <span>{t("pos.vat")} {formatVatRate(vatRate)}</span>
-            <span className="tabular-nums">{formatCurrency(tax)}</span>
+            <span className="tabular-nums font-bold" style={{ color: "var(--text)" }}>{formatCurrency(tax)}</span>
           </div>
         </div>
 
@@ -551,7 +547,7 @@ export default function CartBody({
             <span className="block text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
               {t("pos.total_usd")}
             </span>
-            <span className="block text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>
+            <span className="block text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
               {formatLbpCurrency(totalLbp)}
             </span>
           </div>

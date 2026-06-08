@@ -19,20 +19,20 @@
   --text-3: #888888;
   --text-inverse: #ffffff;
 
-  --brand: #047857;
-  --brand-hover: #066447;
-  --brand-soft: #e8f5f0;
-  --brand-border: #a8ddc5;
-  --brand-text: #047857;
+  --brand: #B8860B;
+  --brand-hover: #9A6A16;
+  --brand-soft: rgba(184,134,11,0.12);
+  --brand-border: rgba(184,134,11,0.35);
+  --brand-text: #6b4c0a;
 
   --ink: #0a0a0a;
   --ink-hover: #1a1a1a;
   --blue: #2563eb;
   --blue-soft: #eaf1ff;
   --blue-text: #1d4ed8;
-  --amber: #d97706;
-  --amber-soft: #fff6df;
-  --amber-text: #92400e;
+  --amber: #B8860B;
+  --amber-soft: rgba(184,134,11,0.12);
+  --amber-text: #6b4c0a;
   --rose: #dc2626;
   --rose-soft: #fff0f0;
   --rose-text: #b91c1c;

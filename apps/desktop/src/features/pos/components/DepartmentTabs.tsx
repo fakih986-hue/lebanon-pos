@@ -20,7 +20,8 @@ const DepartmentTabs = memo(function DepartmentTabs({ departments, selected, onS
   return (
     <div
       role="tablist"
-      className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="flex gap-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      style={{ borderBottom: "1px solid var(--border)" }}
     >
       {departments.map((dept) => {
         const active = selected === dept.name
@@ -33,27 +34,23 @@ const DepartmentTabs = memo(function DepartmentTabs({ departments, selected, onS
             role="tab"
             aria-selected={active}
             onClick={() => onSelect(dept.name)}
-            className={`flex h-9 shrink-0 touch-manipulation items-center gap-1.5 rounded-full border px-3 text-[12px] font-bold transition-all ${
-              active ? "shadow-sm" : "hover:opacity-80"
+            className={`relative flex h-10 shrink-0 touch-manipulation items-center gap-2 px-4 text-[12px] font-semibold transition-all ${
+              active ? "" : "hover:opacity-80"
             }`}
-            style={active ? {
-              background: "var(--brand)",
-              borderColor: "var(--brand)",
-              color: "#ffffff",
-            } : {
-              background: "var(--surface)",
-              borderColor: "var(--border)",
-              color: "var(--text-2)",
+            style={{
+              background: active ? "var(--surface-2)" : "transparent",
+              borderBottom: active ? "2px solid var(--brand)" : "2px solid transparent",
+              color: active ? "var(--text)" : "var(--text-3)",
             }}
           >
             <Icon size={14} />
             <span className="whitespace-nowrap">{dept.label}</span>
             <span
               className="rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none"
-              style={active
-                ? { background: "rgba(255,255,255,0.25)", color: "#fff" }
-                : { background: "var(--surface-3)", color: "var(--text-3)" }
-              }
+              style={{
+                background: active ? "var(--brand-soft)" : "var(--surface-3)",
+                color: active ? "var(--brand-text)" : "var(--text-3)",
+              }}
             >
               {formatNumber(dept.productCount)}
             </span>

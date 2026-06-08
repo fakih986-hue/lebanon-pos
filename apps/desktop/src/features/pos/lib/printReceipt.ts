@@ -39,6 +39,7 @@ export type LastSaleSummary = {
   totalLbp: number
   exchangeRate: number
   tender?: SaleTender
+  profit?: number
   customerBalanceBefore?: number
   customerBalanceAfter?: number
   items: CartItem[]
@@ -47,7 +48,8 @@ export type LastSaleSummary = {
 export function printSaleReceipt(
   sale: Sale,
   fallbackExchangeRate: number,
-  refunds: SaleRefund[]
+  refunds: SaleRefund[],
+  settings?: AppSettings
 ) {
   const exchangeRate = getSaleExchangeRate(sale, fallbackExchangeRate)
   const totalLbp = usdToLbp(sale.total, exchangeRate)
@@ -84,10 +86,10 @@ export function printSaleReceipt(
           * { box-sizing: border-box; }
           body { margin: 0; font-family: Arial, sans-serif; color: #111; }
           .receipt { width: 300px; margin: 0 auto; padding: 18px 12px; }
-          h1 { margin: 0; text-align: center; font-size: 20px; }
-          .muted { color: #666; font-size: 12px; }
+          h1 { margin: 0; text-align: center; font-size: 20px; font-weight: 900; }
+          .muted { color: #666; font-size: 11px; }
           .center { text-align: center; }
-          .rule { border-top: 1px dashed #999; margin: 12px 0; }
+          .rule { border-top: 1px solid #ddd; margin: 12px 0; }
           .row { display: flex; justify-content: space-between; gap: 12px; margin: 6px 0; }
           table { width: 100%; border-collapse: collapse; font-size: 12px; }
           th, td { padding: 6px 0; text-align: left; vertical-align: top; }
@@ -99,10 +101,14 @@ export function printSaleReceipt(
       </head>
       <body>
         <div class="receipt">
-          <h1>Lebanon POS</h1>
+          ${settings ? `
+            <h1>${escapeHtml(settings.storeName)}</h1>
+            <p class="center muted">${escapeHtml(settings.branchName)}</p>
+            <p class="center muted">${escapeHtml(settings.phone)}</p>
+            <div class="rule"></div>
+          ` : `<h1>Lebanon POS</h1><div class="rule"></div>`}
           <p class="center muted">${sale.saleNumber}</p>
           <p class="center muted">${formatReceiptDate(sale.createdAt)}</p>
-          <div class="rule"></div>
           <div class="row"><span>Cashier</span><strong>${escapeHtml(
             sale.cashier
           )}</strong></div>
@@ -175,7 +181,8 @@ export function printSaleReceipt(
               : ""
           }
           <div class="rule"></div>
-          <p class="center muted">Thank you</p>
+          <p class="center muted">Thank you — شكراً</p>
+          ${settings ? `<p class="center muted">${escapeHtml(settings.receiptFooter)}</p>` : ""}
         </div>
       </body>
     </html>
@@ -260,7 +267,7 @@ export function printLastSaleReceipt(lastSale: LastSaleSummary, settings: AppSet
           h1 { font-size: 18px; margin: 0 0 4px; text-align: center; }
           p { margin: 2px 0; font-size: 12px; text-align: center; }
           table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-          td, th { border-bottom: 1px dashed #999; padding: 5px 0; vertical-align: top; }
+          td, th { border-bottom: 1px solid #ddd; padding: 5px 0; vertical-align: top; }
           th { text-align: left; }
           td:nth-child(2), td:nth-child(3), td:nth-child(4),
           th:nth-child(2), th:nth-child(3), th:nth-child(4) { text-align: right; }
@@ -300,6 +307,7 @@ export function printLastSaleReceipt(lastSale: LastSaleSummary, settings: AppSet
           ${tenderRows}
           ${customerRows}
         </table>
+        <p class="muted" style="text-align:center;margin-top:10px">Thank you — شكراً</p>
         <p class="muted">${escapeHtml(settings.receiptFooter)}</p>
       </body>
     </html>

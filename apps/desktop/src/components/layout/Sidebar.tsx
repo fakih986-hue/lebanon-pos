@@ -42,7 +42,7 @@ export const menuItems: MenuItem[] = [
   { label: "Settings",   labelKey: "nav.settings",            path: "/settings",         icon: SlidersHorizontal, permission: "settings.manage",  group: "System"    },
 ]
 
-const menuGroups: MenuItem["group"][] = ["Register", "Inventory", "Finance", "Team", "System"]
+const menuGroups: MenuItem["group"][] = ["Register", "Finance", "Inventory", "Team", "System"]
 
 function isActivePath(pathname: string, path: string) {
   if (path === "/") return pathname === "/"

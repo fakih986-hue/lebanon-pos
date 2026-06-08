@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useDebounce } from "../../hooks/useDebounce"
 import type { Product } from "../../features/pos/types/product"
-import { ImagePlus, Plus, SlidersHorizontal, X } from "lucide-react"
+import { ImagePlus, Plus, Download, SlidersHorizontal, X } from "lucide-react"
 import KpiCards from "../../features/pos/components/KpiCards"
 import AlertsPanel from "../../features/pos/components/AlertsPanel"
 import StockControlPanel from "../../features/pos/components/StockControlPanel"
@@ -86,7 +86,7 @@ function formatDate(value: string) {
   }).format(new Date(value))
 }
 
-export default function ProductsPage() {
+export default function ProductsPage({ initialTab }: { initialTab?: ProductWorkspaceView } = {}) {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [suppliers, setSuppliers] =
@@ -124,7 +124,7 @@ export default function ProductsPage() {
   const [countProductId, setCountProductId] = useState<number | null>(null)
   const [countedQuantity, setCountedQuantity] = useState("")
   const [activeProductView, setActiveProductView] =
-    useState<ProductWorkspaceView>("Catalog")
+    useState<ProductWorkspaceView>(initialTab ?? "Catalog")
   const [batchVersion, setBatchVersion] = useState(0)
   const [controlVersion, setControlVersion] = useState(0)
   const [deleteProductId, setDeleteProductId] = useState<number | null>(null)
@@ -954,7 +954,19 @@ export default function ProductsPage() {
           </button>
           <button type="button" onClick={() => setBulkEditOpen(true)}
             className="btn btn-default h-9 gap-1.5 text-[12px]">
-            ± Bulk Edit Prices
+             ± Bulk Edit Prices
+          </button>
+          <button type="button" onClick={() => {
+            const csv = ["Name,Category,Price,Cost,Stock,Barcode,Reorder Pt,Reorder Qty"].concat(
+              products.map((p) => `"${p.name}","${p.category}",${p.price},${p.cost},${p.stock},"${p.barcode || ""}",${p.reorderPoint ?? ""},${p.reorderQuantity ?? ""}`)
+            ).join("\n")
+            const b = new Blob([csv], { type: "text/csv" })
+            const u = URL.createObjectURL(b)
+            const a = document.createElement("a"); a.href = u; a.download = `products-${new Date().toISOString().slice(0,10)}.csv`; a.click()
+            URL.revokeObjectURL(u)
+          }}
+            className="btn btn-default h-9 gap-1.5 text-[12px]">
+            <Download size={13} /> Export CSV
           </button>
         </div>
       )}

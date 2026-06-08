@@ -5,6 +5,8 @@ import {
   getPromoSuggestions,
   getReorderSuggestions,
 } from "./stock.service"
+import { getCustomerLedger } from "./customer.service"
+import { getActiveShift } from "./security.service"
 
 export type AppNotification = {
   id: string
@@ -113,6 +115,35 @@ export function getInventoryNotifications(products: Product[]) {
         actionPath: "/products",
       })
     })
+
+  // Debt overdue
+  try {
+    const overdue = getCustomerLedger().filter((c: any) => c.overdue)
+    overdue.slice(0, 5).forEach((c: any) => {
+      notifications.push({
+        id: `debt-${c.id}`,
+        title: `Overdue — ${c.name}`,
+        detail: `$${c.balance.toFixed(2)} · ${c.oldestUnpaidDays}d`,
+        severity: "Warning",
+        actionLabel: "View customers",
+        actionPath: "/customers",
+      })
+    })
+  } catch { /* customer data unavailable */ }
+
+  // No open shift after 8am
+  try {
+    if (!getActiveShift() && new Date().getHours() >= 8) {
+      notifications.push({
+        id: "no-shift",
+        title: "No shift open",
+        detail: "Start a shift to track cash",
+        severity: "Warning",
+        actionLabel: "Open POS",
+        actionPath: "/",
+      })
+    }
+  } catch { /* security service unavailable */ }
 
   return notifications.sort((a, b) => {
     const weight = { Critical: 0, Warning: 1, Info: 2 }

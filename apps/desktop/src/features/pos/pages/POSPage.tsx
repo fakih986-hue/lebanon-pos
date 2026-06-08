@@ -11,10 +11,12 @@ import ProductSkeletonGrid from "../components/ProductSkeletonGrid"
 import ErrorBoundary from "../components/ErrorBoundary"
 import SearchToolbar from "../components/SearchToolbar"
 import DepartmentTabs from "../components/DepartmentTabs"
+import FavoritesBar from "../components/FavoritesBar"
 import LastSaleBanner from "../components/LastSaleBanner"
 import SaleCompleteOverlay from "../components/SaleCompleteOverlay"
 import CartDrawer from "../components/CartDrawer"
 import CartPanel from "../components/CartPanel"
+import CartRailWidgets from "../components/CartRailWidgets"
 import VariantPicker from "../components/VariantPicker"
 import QuickPOSMode from "../components/QuickPOSMode"
 import KeyboardShortcutsModal from "../components/KeyboardShortcutsModal"
@@ -93,6 +95,12 @@ export default function POSPage() {
   const [discountMode, setDiscountMode] = useState<DiscountMode>("USD")
   const [discountValue, setDiscountValue] = useState("")
   const [lastSale, setLastSale] = useState<LastSaleSummary | null>(null)
+  const [recentSales, setRecentSales] = useState<LastSaleSummary[]>(() => {
+    try {
+      const stored = localStorage.getItem("lebanonpos.recent-sales.v1")
+      return stored ? JSON.parse(stored) : []
+    } catch { return [] }
+  })
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [confirmAction, setConfirmAction] = useState<{
     title: string
@@ -161,6 +169,13 @@ export default function POSPage() {
       setSellAtCost(true)
     }
   }, [selectedCustomerId])
+
+  // Persist recent sales across navigation
+  useEffect(() => {
+    if (recentSales.length > 0) {
+      localStorage.setItem("lebanonpos.recent-sales.v1", JSON.stringify(recentSales))
+    }
+  }, [recentSales])
 
   // --- Computed values ---
   const departmentSummaries = useMemo(() => {
@@ -312,7 +327,6 @@ export default function POSPage() {
     addItem(product)
     setScanCode("")
     setSearch("")
-    setLastSale(null)
     setScannerStatus(`${product.name} added by ${source}.`)
   }, [products, items])
 
@@ -417,9 +431,11 @@ export default function POSPage() {
   const fillExactTender = useCallback(function fillExactTender(currency: "USD" | "LBP") {
     if (currency === "USD") {
       setPaidUsd(total.toFixed(2))
+      setPaidLbp("")
       return
     }
     setPaidLbp(String(Math.round(totalLbp)))
+    setPaidUsd("")
   }, [total, totalLbp])
 
   // --- Sale lifecycle ---
@@ -430,7 +446,6 @@ export default function POSPage() {
       resetDiscount()
       setSearch("")
       setScanCode("")
-      setLastSale(null)
       setIsCartOpen(false)
       setScannerStatus("Scanner ready for the next sale.")
       return
@@ -451,7 +466,7 @@ export default function POSPage() {
         resetDiscount()
         setSearch("")
         setScanCode("")
-        setLastSale(null)
+        setRecentSales([])
         setIsCartOpen(false)
         setScannerStatus("Scanner ready for the next sale.")
       },
@@ -594,13 +609,15 @@ export default function POSPage() {
       )
       stockDecreased = true
 
-      setLastSale({
+      const saleRecord = {
         number: saleNumber, paymentMethod, customerName: selectedCustomer?.name,
         grossSubtotal, subtotal, discountTotal, tax, total, totalLbp, exchangeRate,
-        tender,
+        tender, profit: saleResult.profit,
         customerBalanceBefore: paymentMethod === "Debt" ? customerBalanceBefore : undefined,
         customerBalanceAfter, items,
-      })
+      }
+      setLastSale(saleRecord)
+      setRecentSales((prev) => [saleRecord, ...prev].slice(0, 3))
       clearCart()
       resetTender()
       resetDiscount()
@@ -641,17 +658,16 @@ export default function POSPage() {
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <section className="flex h-full min-w-0 flex-col gap-3 overflow-hidden p-3 pb-24 sm:p-4 md:pb-4 xl:p-5">
             <LastSaleBanner
-              sale={lastSale}
+              sales={recentSales}
               onNewSale={cleanSale}
-              onPrintReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}
-              onWhatsApp={() => {
-                if (!lastSale) return
+              onPrintReceipt={(s) => printLastSaleReceipt(s, settings)}
+              onWhatsApp={(s) => {
                 openWhatsAppShare(receiptMessage({
                   storeName: settings.storeName,
-                  saleNumber: lastSale.number,
-                  total: lastSale.total,
-                  totalLbp: lastSale.totalLbp,
-                  items: lastSale.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                  saleNumber: s.number,
+                  total: s.total,
+                  totalLbp: s.totalLbp,
+                  items: s.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
                   footer: settings.receiptFooter,
                 }))
               }}
@@ -700,16 +716,15 @@ export default function POSPage() {
                 cashTenderValid={cashTenderValid}
                 checkoutBlocked={checkoutBlocked}
                 onCompleteSale={completeSale}
-                lastSale={lastSale && { number: lastSale.number, total: lastSale.total, totalLbp: lastSale.totalLbp, items: lastSale.items }}
-                onPrintReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}
-                onWhatsAppReceipt={() => {
-                  if (!lastSale) return
+                recentSales={recentSales}
+                onPrintReceipt={(s) => printLastSaleReceipt(s, settings)}
+                onWhatsAppReceipt={(s) => {
                   openWhatsAppShare(receiptMessage({
                     storeName: settings.storeName,
-                    saleNumber: lastSale.number,
-                    total: lastSale.total,
-                    totalLbp: lastSale.totalLbp,
-                    items: lastSale.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                    saleNumber: s.number,
+                    total: s.total,
+                    totalLbp: s.totalLbp,
+                    items: s.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
                     footer: settings.receiptFooter,
                   }))
                 }}
@@ -742,6 +757,12 @@ export default function POSPage() {
                   departments={departmentSummaries}
                   selected={selectedCategory}
                   onSelect={selectDepartment}
+                />
+
+                <FavoritesBar
+                  products={products}
+                  selectedCategory={selectedCategory}
+                  onAddToCart={addProductToSale}
                 />
 
                 <div
@@ -835,6 +856,7 @@ export default function POSPage() {
         </div>
 
         {/* ── Right: Persistent cart rail (desktop only) ── */}
+        <CartRailWidgets />
         <CartPanel
           items={items}
           onIncreaseQty={increaseQuantity}
