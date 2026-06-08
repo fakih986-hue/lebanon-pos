@@ -137,6 +137,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   const [editStock, setEditStock] = useState("")
   const [editReorderPoint, setEditReorderPoint] = useState("")
   const [editReorderQty, setEditReorderQty] = useState("")
+  const [editBarcodeAliases, setEditBarcodeAliases] = useState("")
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [bulkEditCategory, setBulkEditCategory] = useState("All")
   const [bulkEditField, setBulkEditField] = useState<"price" | "cost">("price")
@@ -414,6 +415,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     setEditPrice(String(product.price))
     setEditCost(String(product.cost))
     setEditBarcode(product.barcode ?? "")
+    setEditBarcodeAliases((product.barcodeAliases ?? []).join(", "))
     setEditStock(String(product.stock))
     setEditReorderPoint(String(product.reorderPoint ?? 10))
     setEditReorderQty(String(product.reorderQuantity ?? 20))
@@ -427,6 +429,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       price: normalizeNumber(editPrice),
       cost: normalizeNumber(editCost),
       barcode: editBarcode || undefined,
+      barcodeAliases: editBarcodeAliases.split(",").map((a: string) => a.trim()).filter((a: string) => a.length > 0),
       stock: normalizeNumber(editStock),
       reorderPoint: normalizeNumber(editReorderPoint),
       reorderQuantity: normalizeNumber(editReorderQty),
@@ -1046,6 +1049,9 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
                 <label className="block text-sm font-bold text-zinc-700">Cost $<input type="number" min="0" step="0.01" value={editCost} onChange={(e) => setEditCost(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
               </div>
               <label className="block text-sm font-bold text-zinc-700">Barcode<input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100 font-mono" /></label>
+              <label className="block text-sm font-bold text-zinc-700">Barcode Aliases <span className="font-normal text-zinc-400">(comma-separated)</span>
+                <input value={editBarcodeAliases} onChange={(e) => setEditBarcodeAliases(e.target.value)} placeholder="5281000123457, 5281000123458" className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100 font-mono text-[13px]" />
+              </label>
               <div className="grid grid-cols-3 gap-3">
                 <label className="block text-sm font-bold text-zinc-700">Stock<input type="number" min="0" value={editStock} onChange={(e) => setEditStock(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
                 <label className="block text-sm font-bold text-zinc-700">Reord Pt<input type="number" min="0" value={editReorderPoint} onChange={(e) => setEditReorderPoint(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>

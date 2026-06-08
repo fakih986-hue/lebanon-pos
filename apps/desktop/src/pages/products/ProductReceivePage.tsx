@@ -18,7 +18,7 @@ import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import { createId } from "../../features/pos/lib/storage"
 import {
   findProductByBarcode, generateProductBarcode,
-  getProducts, receiveProducts,
+  getProducts, receiveProducts, updateProduct,
 } from "../../features/pos/services/product.service"
 import { recordAuditEvent } from "../../features/pos/services/security.service"
 import { getSettings } from "../../features/pos/services/settings.service"
@@ -450,6 +450,33 @@ export default function ProductReceivePage() {
                       <PackagePlus size={12} /> New product
                     </div>
                   ) : null}
+
+                  {/* Add as alias — when barcode doesn't match any existing product */}
+                  {!matched && row.barcode && row.barcode.length >= 3 && !row.name && (
+                    <div className="flex items-center gap-2 px-4 py-1.5 text-[11px]" style={{ background: "var(--surface-2)", borderTop: "1px solid var(--border)" }}>
+                      <span className="text-[10px] font-bold shrink-0" style={{ color: "var(--amber)" }}>↳</span>
+                      <select
+                        className="input flex-1 text-[11px] font-semibold"
+                        style={{ height: 28, minWidth: 0 }}
+                        value=""
+                        onChange={(e) => {
+                          if (!e.target.value) return
+                          const targetId = Number(e.target.value)
+                          const target = products.find((p) => p.id === targetId)
+                          if (!target) return
+                          const aliases = [...(target.barcodeAliases ?? []), row.barcode]
+                          updateProduct(targetId, { barcodeAliases: aliases })
+                          updateRow(row.id, { name: target.name, category: target.category, price: target.price, cost: target.cost, barcode: target.barcode })
+                          showToast(`Added ${row.barcode} as alias of ${target.name}`)
+                        }}
+                      >
+                        <option value="">+ Add as alias of...</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>{p.name} ({p.barcode})</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Open Food Facts suggestion */}
                   {!matched && barcodeSuggestions[row.barcode] && !row.name && (
