@@ -87,6 +87,8 @@ export default function Topbar() {
         <SyncStatus />
         <NotificationCenter />
 
+        <span className="text-[9px] font-bold opacity-30 select-none hidden sm:inline" style={{ color: "var(--text-3)" }}>v1.0.6</span>
+
         <div
           className="hidden h-8 items-center gap-2 rounded-lg border px-3 text-[12px] font-bold sm:flex"
           style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
