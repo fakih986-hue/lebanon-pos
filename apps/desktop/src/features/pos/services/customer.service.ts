@@ -238,7 +238,7 @@ export function updateCustomer(customerId: string, patch: Partial<Customer>) {
   })
   if (!updated) return undefined
   writeCollection(CUSTOMERS_KEY, next)
-  window.dispatchEvent(new Event(CUSTOMERS_EVENT))
+  window.dispatchEvent(new Event(LEDGER_EVENT))
   enqueueSyncOperation({
     entity: "customer",
     action: "update",

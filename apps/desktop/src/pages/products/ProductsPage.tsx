@@ -426,7 +426,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       category: editCategory,
       price: normalizeNumber(editPrice),
       cost: normalizeNumber(editCost),
-      barcode: editBarcode || null,
+      barcode: editBarcode || undefined,
       stock: normalizeNumber(editStock),
       reorderPoint: normalizeNumber(editReorderPoint),
       reorderQuantity: normalizeNumber(editReorderQty),

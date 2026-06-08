@@ -660,14 +660,15 @@ export default function POSPage() {
             <LastSaleBanner
               sales={recentSales}
               onNewSale={cleanSale}
-              onPrintReceipt={(s) => printLastSaleReceipt(s, settings)}
+              onPrintReceipt={(s) => printLastSaleReceipt(s as any, settings)}
               onWhatsApp={(s) => {
+                const items = s.items ?? []
                 openWhatsAppShare(receiptMessage({
                   storeName: settings.storeName,
                   saleNumber: s.number,
                   total: s.total,
                   totalLbp: s.totalLbp,
-                  items: s.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                  items: items.map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
                   footer: settings.receiptFooter,
                 }))
               }}
@@ -716,15 +717,16 @@ export default function POSPage() {
                 cashTenderValid={cashTenderValid}
                 checkoutBlocked={checkoutBlocked}
                 onCompleteSale={completeSale}
-                recentSales={recentSales}
-                onPrintReceipt={(s) => printLastSaleReceipt(s, settings)}
+                recentSales={recentSales as any}
+                onPrintReceipt={(s) => printLastSaleReceipt(s as any, settings)}
                 onWhatsAppReceipt={(s) => {
+                  const its = s.items ?? []
                   openWhatsAppShare(receiptMessage({
                     storeName: settings.storeName,
                     saleNumber: s.number,
                     total: s.total,
                     totalLbp: s.totalLbp,
-                    items: s.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                    items: its.map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
                     footer: settings.receiptFooter,
                   }))
                 }}
@@ -762,7 +764,7 @@ export default function POSPage() {
                 <FavoritesBar
                   products={products}
                   selectedCategory={selectedCategory}
-                  onAddToCart={addProductToSale}
+                  onAddToCart={(p) => addProductToSale(p, "favorites")}
                 />
 
                 <div

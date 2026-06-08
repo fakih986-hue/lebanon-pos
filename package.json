@@ -29,7 +29,7 @@
     "electron:build":   "tsc -p apps/electron",
     "electron:start":   "electron apps/electron/dist/main.js",
     "electron:dev":     "pnpm electron:build && electron apps/electron/dist/main.js",
-    "electron:package": "pnpm build:api && pnpm --dir apps/api bundle && pnpm build:desktop && pnpm --dir apps/electron run package",
+    "electron:package": "pnpm build:api && pnpm build:admin && pnpm build:desktop && node scripts/copy-spas.mjs && pnpm --dir apps/api bundle && pnpm --dir apps/electron exec electron-builder --win",
     "electron:icon":    "node apps/electron/scripts/generate-icon.mjs"
   },
   "devDependencies": {
