@@ -345,53 +345,76 @@ export async function unlockWithPin(pin: string) {
   const cleanPin = pin.trim()
   const pinHash = await hashPin(cleanPin)
   const users = getUsers()
-
-  // Collect every active user whose PIN matches, then prefer the highest-privilege role.
   const rolePriority: Record<string, number> = { Admin: 4, Manager: 3, Cashier: 2, Driver: 1 }
+
+  // ── Always prefer API verification when online ──────────────────────
+  // This ensures server-side PIN resets (owner portal) are honoured on
+  // the desktop and stale local SHA-256 hashes don't silently keep the
+  // old PIN working.
+  const apiUrl = getApiUrl()
+  let apiUser: StaffUser | null = null
+  let apiVerified = false
+  let apiReachable = true
+
+  if (apiUrl) {
+    try {
+      const res = await fetch(`${apiUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: cleanPin }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data?.user?.id) {
+          apiUser = users.find((u) => u.id === data.user.id) ?? null
+          if (apiUser) {
+            apiUser.pin = pinHash
+            apiUser.pinChanged = true
+            writeCollection(USERS_KEY, users)
+            console.log("[unlockWithPin] API verified, SHA-256 cached for", apiUser.name)
+            apiVerified = true
+          }
+        }
+      } else if (res.status === 401) {
+        // Server explicitly rejected this PIN — don't fall back to local
+        console.log("[unlockWithPin] API rejected PIN")
+        apiReachable = true
+      }
+    } catch (e) {
+      // Network error — API unreachable, fall back to local matching
+      console.warn("[unlockWithPin] API unreachable, falling back to local:", e)
+      apiReachable = false
+    }
+  }
+
+  if (apiVerified && apiUser) {
+    return finalizeUnlock(apiUser)
+  }
+
+  // ── API rejected the PIN — no local fallback ─────────────────────────
+  if (apiReachable && apiUrl) {
+    console.log("[unlockWithPin] API reachable and rejected — denying login")
+    recordAuditEvent({
+      action: "security.login.failed",
+      entity: "security",
+      summary: "Failed PIN unlock attempt (rejected by server).",
+    })
+    return null
+  }
+
+  // ── Offline fallback: match against local SHA-256 hashes ─────────────
   const matches = users.filter(
     (staffUser) =>
       staffUser.active && (staffUser.pin === pinHash || staffUser.pin === cleanPin)
   )
-  console.log("[unlockWithPin] matches:", matches.length, matches.map((u) => u.name))
-
-  // If no local match, try the API (handles cloud-synced users with bcrypt PINs on the hub)
-  if (matches.length === 0) {
-    const apiUrl = getApiUrl()
-    if (apiUrl) {
-      try {
-        const res = await fetch(`${apiUrl}/api/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pin: cleanPin }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (data?.user?.id) {
-            // Update this user's PIN from bcrypt to SHA-256 for future offline unlocks
-            for (const u of users) {
-              if (u.id === data.user.id) {
-                u.pin = pinHash
-                u.pinChanged = true
-                writeCollection(USERS_KEY, users)
-                console.log("[unlockWithPin] converted bcrypt PIN to SHA-256 for", u.name)
-                matches.push(u)
-                break
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("[unlockWithPin] API fallback failed:", e)
-      }
-    }
-  }
+  console.log("[unlockWithPin] local matches:", matches.length, matches.map((u) => u.name))
 
   const user = matches.sort(
     (a, b) => (rolePriority[b.role] ?? 0) - (rolePriority[a.role] ?? 0)
   )[0]
 
   if (!user) {
-    console.log("[unlockWithPin] NO USER MATCHED")
+    console.log("[unlockWithPin] NO USER MATCHED (offline)")
     recordAuditEvent({
       action: "security.login.failed",
       entity: "security",
@@ -400,17 +423,22 @@ export async function unlockWithPin(pin: string) {
     return null
   }
 
-  console.log("[unlockWithPin] matched user:", user.name, user.role, "pinChanged:", user.pinChanged)
+  console.log("[unlockWithPin] matched user (offline):", user.name, user.role, "pinChanged:", user.pinChanged)
 
   if (user.pin === cleanPin) {
     user.pin = pinHash
     user.pinChanged = true
     writeCollection(USERS_KEY, users)
   } else if (user.pin === pinHash && !user.pinChanged) {
-    // PIN matched via hash (already set by server or prior change) — no change needed
     user.pinChanged = true
     writeCollection(USERS_KEY, users)
   }
+
+  return finalizeUnlock(user)
+}
+
+function finalizeUnlock(user: StaffUser) {
+
 
   const session: SecuritySession = {
     userId: user.id,
