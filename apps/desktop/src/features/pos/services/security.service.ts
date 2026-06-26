@@ -562,7 +562,8 @@ export async function updateUser(userId: string, patch: Partial<StaffUser>) {
 }
 
 export function userCan(permission: Permission, user = getCurrentUser()) {
-  return rolePermissions[user.role].includes(permission)
+  if (!user?.role) return false
+  return rolePermissions[user.role]?.includes(permission) ?? false
 }
 
 export function getAuditEvents() {
