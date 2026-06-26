@@ -500,7 +500,7 @@ export function productMatchesSearch(product: Product, query: string) {
   }
 
   return (
-    product.name?.toLowerCase().includes(cleanQuery) ||
+    product.name?.toLowerCase()?.includes(cleanQuery) ||
     product.barcode?.includes(barcodeQuery) ||
     normalizeBarcodeList(product.barcodeAliases).some((barcode) =>
       barcode.includes(barcodeQuery)
