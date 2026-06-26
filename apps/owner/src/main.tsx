@@ -438,7 +438,7 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                       <p className="text-sm font-semibold text-white truncate">{u.name}</p>
                       <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
                         <span className={`rounded px-1.5 py-0.5 font-semibold border ${u.role === "Admin" ? "border-indigo-500/25 text-indigo-300" : u.role === "Manager" ? "border-violet-500/25 text-violet-300" : u.role === "Driver" ? "border-amber-500/25 text-amber-300" : "border-emerald-500/25 text-emerald-300"}`}>{u.role}</span>
-                        {u.mobile && <span>{u.mobile}</span>}
+                        {u.mobile && <span>Mobile: {u.mobile}</span>}
                         {!u.active && <span className="text-rose-400 font-semibold">Disabled</span>}
                       </div>
                     </div>
