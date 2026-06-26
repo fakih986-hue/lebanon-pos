@@ -419,8 +419,28 @@ export async function unlockWithPin(pin: string) {
     return finalizeUnlock(apiUser)
   }
 
-  // ── API explicitly rejected the PIN — no local fallback ──────────────
+  // ── API explicitly rejected the PIN ──────────────────────────────────
+  // If the PIN was reset on the server (owner portal), the user doesn't
+  // know the new PIN yet. Allow a grace period: if the old SHA-256 hash
+  // still matches locally, let them in with a warning so the hub isn't
+  // locked out until the next successful online login with the new PIN.
   if (apiRejectedPin) {
+    const localMatch = users.find(
+      (u) => u.active && (u.pin === pinHash || u.pin === cleanPin)
+    )
+    if (localMatch) {
+      console.warn(
+        "[unlockWithPin] PIN rejected by server but local hash matches — " +
+          "allowing grace period for", localMatch.name
+      )
+      recordAuditEvent({
+        action: "security.login",
+        entity: "security",
+        summary: `${localMatch.name} unlocked with old PIN (server rejected — grace period).`,
+        metadata: { role: localMatch.role, gracePeriod: true },
+      })
+      return finalizeUnlock(localMatch)
+    }
     console.log("[unlockWithPin] server rejected PIN — denying login")
     recordAuditEvent({
       action: "security.login.failed",
@@ -540,19 +560,31 @@ export async function createUser(input: {
   pin: string
   role: UserRole
 }) {
+  const cleanPin = input.pin.trim()
+
+  // ── Enforce PIN uniqueness per tenant ────────────────────────────────
+  const existingUsers = getUsers()
+  const pinHash = await hashPin(cleanPin)
+  const duplicate = existingUsers.find(
+    (u) => u.pin === pinHash || u.pin === cleanPin
+  )
+  if (duplicate) {
+    throw new Error(`PIN is already in use by ${duplicate.name}`)
+  }
+
   const now = new Date().toISOString()
   const user: StaffUser = {
     id: createId("user"),
     name: input.name.trim(),
     mobile: input.mobile.trim(),
-    pin: await hashPin(input.pin.trim()),
+    pin: pinHash,
     pinChanged: false,
     role: input.role,
     active: true,
     createdAt: now,
   }
 
-  writeCollection(USERS_KEY, [user, ...getUsers()])
+  writeCollection(USERS_KEY, [user, ...existingUsers])
   recordAuditEvent({
     action: "staff.create",
     entity: "staff",
@@ -580,7 +612,18 @@ export async function updateUser(userId: string, patch: Partial<StaffUser>) {
   const users = getUsers()
   const resolvedPatch = { ...patch }
   if (resolvedPatch.pin) {
-    resolvedPatch.pin = await hashPin(resolvedPatch.pin)
+    const cleanPin = String(resolvedPatch.pin).trim()
+
+    // ── Enforce PIN uniqueness per tenant ──────────────────────────────
+    const pinHash = await hashPin(cleanPin)
+    const duplicate = users.find(
+      (u) => u.id !== userId && (u.pin === pinHash || u.pin === cleanPin)
+    )
+    if (duplicate) {
+      throw new Error(`PIN is already in use by ${duplicate.name}`)
+    }
+
+    resolvedPatch.pin = pinHash
     resolvedPatch.pinChanged = true
   }
   const nextUsers = users.map((user) =>

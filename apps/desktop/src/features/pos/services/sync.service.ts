@@ -690,11 +690,53 @@ async function _pullFromServer(full = false) {
     const now = new Date().toISOString()
 
     if (full) {
-      // Per-entity full pull — paginate across every entity independently
+      // Snapshot local user pins before full pull — the server stores
+      // bcrypt hashes which are useless for offline SHA-256 matching
+      const usersTarget = PULL_TARGETS.users
+      const priorPins: Record<string, string> = {}
+      if (usersTarget) {
+        const raw = localStorage.getItem(usersTarget.key)
+        if (raw) {
+          try {
+            const local = JSON.parse(raw)
+            if (Array.isArray(local)) {
+              for (const u of local) {
+                if (u?.id && u?.pin && !String(u.pin).startsWith("$2")) {
+                  priorPins[u.id] = u.pin
+                }
+              }
+            }
+          } catch { /* ignore corrupt data */ }
+        }
+      }
+
       for (const [key, target] of Object.entries(PULL_TARGETS)) {
         const entityPath = FULL_PULL_ENTITY_MAP[key]
         if (entityPath) {
           await pullFullEntity(apiUrl, token, entityPath, target)
+        }
+      }
+
+      // Restore local SHA-256 pins overwritten by server bcrypt hashes
+      if (usersTarget && Object.keys(priorPins).length > 0) {
+        const raw = localStorage.getItem(usersTarget.key)
+        if (raw) {
+          try {
+            const users = JSON.parse(raw)
+            if (Array.isArray(users)) {
+              let changed = false
+              for (const u of users) {
+                if (u?.id && priorPins[u.id] && String(u.pin ?? "").startsWith("$2")) {
+                  u.pin = priorPins[u.id]
+                  changed = true
+                }
+              }
+              if (changed) {
+                localStorage.setItem(usersTarget.key, JSON.stringify(users))
+                window.dispatchEvent(new Event(usersTarget.event))
+              }
+            }
+          } catch { /* ignore */ }
         }
       }
       // Fetch settings as a single-page entity
@@ -781,8 +823,18 @@ async function _incrementalPull(apiUrl: string, token: string): Promise<void> {
           for (const item of arr) {
             if (item && typeof item.id !== "undefined") {
               const idx = merged.findIndex((e) => e.id === item.id)
-              if (idx >= 0) merged[idx] = item
-              else merged.push(item)
+              if (idx >= 0) {
+                // ── Preserve local SHA-256 pins during merge ─────────
+                // The server stores bcrypt hashes which are useless for
+                // offline SHA-256 matching. If the local user has a
+                // SHA-256 pin (doesn't start with "$2"), keep it.
+                const localPin =
+                  key === "users" && !String(merged[idx].pin ?? "").startsWith("$2")
+                    ? merged[idx].pin
+                    : undefined
+                merged[idx] = item
+                if (localPin !== undefined) merged[idx].pin = localPin
+              } else merged.push(item)
             }
           }
           if (key === "products" && arr.length > 0) {

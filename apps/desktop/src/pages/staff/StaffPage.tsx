@@ -351,18 +351,22 @@ export default function StaffPage() {
       return
     }
 
-    const user = await createUser({
-      name,
-      mobile,
-      pin,
-      role,
-    })
+    try {
+      const user = await createUser({
+        name,
+        mobile,
+        pin,
+        role,
+      })
 
-    setName("")
-    setMobile("")
-    setPin("")
-    setRole("Cashier")
-    showToast(t("pos.staff.user_added", { name: user.name }))
+      setName("")
+      setMobile("")
+      setPin("")
+      setRole("Cashier")
+      showToast(t("pos.staff.user_added", { name: user.name }))
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Failed to create user", "error")
+    }
   }
 
   function handleOpenShift() {
@@ -408,11 +412,15 @@ export default function StaffPage() {
       return
     }
     if (!pinChangeUserId) return
-    await updateUser(pinChangeUserId, { pin: newPin })
-    setPinChangeUserId(null)
-    setNewPin("")
-    setPinChangeError("")
-    showToast(t("pos.staff.pin_updated"))
+    try {
+      await updateUser(pinChangeUserId, { pin: newPin })
+      setPinChangeUserId(null)
+      setNewPin("")
+      setPinChangeError("")
+      showToast(t("pos.staff.pin_updated"))
+    } catch (e) {
+      setPinChangeError(e instanceof Error ? e.message : "Failed to update PIN")
+    }
   }
 
   function updateCashCount(denomination: number, value: string) {

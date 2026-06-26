@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { timingSafeEqual, randomInt, randomBytes } from "crypto"
+import { timingSafeEqual, randomInt, randomBytes, createHash } from "crypto"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
 import type { ServerResponse } from "node:http"
@@ -290,6 +290,23 @@ router.post("/tenants/:id/users/:userId/reset-pin", requireAuth, requireAdmin, a
       return
     }
     const newPin = parsed.data.pin ?? generateRandomPin(6)
+
+    // ── Enforce PIN uniqueness per tenant ────────────────────────────
+    const existingUsers = await prisma.staffUser.findMany({
+      where: { tenantId: req.params?.id, id: { not: user.id } },
+      select: { id: true, name: true, pin: true },
+    })
+    const sha256Hash = createHash("sha256").update(newPin).digest("base64")
+    for (const u of existingUsers) {
+      const matches = u.pin.startsWith("$2")
+        ? await bcrypt.compare(newPin, u.pin)
+        : u.pin === sha256Hash
+      if (matches) {
+        json(res, { error: `PIN is already in use by ${u.name}` }, 409)
+        return
+      }
+    }
+
     await prisma.staffUser.update({
       where: { id: user.id },
       data: { pin: await bcrypt.hash(newPin, 12) },

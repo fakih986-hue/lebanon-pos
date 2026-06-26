@@ -135,7 +135,8 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
       const isRejected =
         errorMessage.includes("Insufficient stock") ||
         errorMessage.includes("was voided") ||
-        errorMessage.includes("Insufficient stock in batch")
+        errorMessage.includes("Insufficient stock in batch") ||
+        errorMessage.includes("PIN is already in use by")
       const opStatus = isRejected ? "Rejected" : "Failed"
 
       await prisma.syncOperation
@@ -714,6 +715,22 @@ async function processOperation(
     case "staff": {
       if (action === "create" || action === "update") {
         const securePayload = await hashStaffPayload(payload)
+
+        // ── Enforce PIN uniqueness per tenant ────────────────────────
+        const rawPin = payload?.pin as string | undefined
+        if (rawPin && !rawPin.startsWith("$2")) {
+          const existing = await db.staffUser.findMany({
+            where: { tenantId, id: { not: securePayload.id as string | undefined } },
+            select: { id: true, name: true, pin: true },
+          })
+          for (const u of existing) {
+            // Both SHA-256 → direct comparison is reliable
+            if (!u.pin.startsWith("$2") && u.pin === rawPin) {
+              throw new Error(`PIN is already in use by ${u.name}`)
+            }
+          }
+        }
+
         await db.staffUser.upsert({
           where: { id: payload?.id as string },
           create: { ...securePayload, tenantId } as any,

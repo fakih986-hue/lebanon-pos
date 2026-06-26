@@ -160,10 +160,14 @@ export default function LoginScreen() {
 
   async function handleChangePin(newPin: string) {
     if (!changePinUser) return
-    await updateUser(changePinUser.id, { pin: newPin })
-    setChangePinUser(null)
-    showToast("PIN changed successfully", "success")
-    setPin("")
+    try {
+      await updateUser(changePinUser.id, { pin: newPin })
+      setChangePinUser(null)
+      showToast("PIN changed successfully", "success")
+      setPin("")
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Failed to change PIN", "error")
+    }
   }
 
   async function handleConnect() {
