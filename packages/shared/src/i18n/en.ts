@@ -782,6 +782,8 @@ export const en = {
   "pos.staff.role_full_control": "Full control",
   "pos.staff.role_daily_control": "Daily control",
   "pos.staff.role_checkout_only": "Checkout only",
+  "pos.staff.role_driver": "Delivery driver",
+  "pos.staff.role_driver_name": "Driver",
   "pos.staff.permission_checkout": "Checkout",
   "pos.staff.permission_discounts": "Discounts",
   "pos.staff.permission_refunds": "Refunds",

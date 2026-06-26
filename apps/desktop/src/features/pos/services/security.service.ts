@@ -9,7 +9,7 @@ const SHIFTS_KEY = "lebanonpos.shifts.v1"
 const AUDIT_KEY = "lebanonpos.audit.v1"
 const SECURITY_EVENT = "lebanonpos-security-changed"
 
-export type UserRole = "Admin" | "Manager" | "Cashier"
+export type UserRole = "Admin" | "Manager" | "Cashier" | "Driver"
 
 export type Permission =
   | "sales.checkout"
@@ -111,6 +111,7 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     "delivery.manage",
   ],
   Cashier: ["sales.checkout", "customers.manage"],
+  Driver: ["sales.checkout", "delivery.manage", "customers.manage"],
 }
 
 const initialUsers: StaffUser[] = []
@@ -314,11 +315,17 @@ export function getCurrentUser() {
     ? window.localStorage.getItem(CURRENT_USER_KEY)
     : undefined
 
-  return (
-    users.find((user) => user.id === currentUserId && user.active) ??
-    users.find((user) => user.active) ??
+  let user =
+    users.find((u) => u.id === currentUserId && u.active) ??
+    users.find((u) => u.active) ??
     users[0] ?? null
-  )
+
+  if (user && !user.role) {
+    console.warn("[security] current user has no role, defaulting to Cashier", user.id)
+    user = { ...user, role: "Cashier" }
+  }
+
+  return user
 }
 
 export function getSecuritySession() {

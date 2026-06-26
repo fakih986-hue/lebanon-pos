@@ -291,11 +291,13 @@ export default function StaffPage() {
     Admin: t("pos.staff.role_full_control"),
     Manager: t("pos.staff.role_daily_control"),
     Cashier: t("pos.staff.role_checkout_only"),
+    Driver: t("pos.staff.role_driver"),
   }
   const roleNameLabels: Record<UserRole, string> = {
     Admin: t("pos.staff.role_admin"),
     Manager: t("pos.staff.role_manager"),
     Cashier: t("pos.staff.role_cashier"),
+    Driver: t("pos.staff.role_driver_name"),
   }
   const permissionLabels: Record<string, string> = {
     "sales.checkout": t("pos.staff.permission_checkout"),

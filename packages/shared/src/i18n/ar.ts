@@ -782,6 +782,8 @@ export const ar = {
   "pos.staff.role_full_control": "تحكم كامل",
   "pos.staff.role_daily_control": "تحكم يومي",
   "pos.staff.role_checkout_only": "كاشير فقط",
+  "pos.staff.role_driver": "سائق توصيل",
+  "pos.staff.role_driver_name": "سائق",
   "pos.staff.permission_checkout": "الدفع",
   "pos.staff.permission_discounts": "الخصومات",
   "pos.staff.permission_refunds": "المرتجعات",
