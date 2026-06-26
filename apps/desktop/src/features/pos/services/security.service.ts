@@ -354,7 +354,8 @@ export async function unlockWithPin(pin: string) {
   const apiUrl = getApiUrl()
   let apiUser: StaffUser | null = null
   let apiVerified = false
-  let apiReachable = true
+  let apiRejectedPin = false
+  let apiNetworkError = false
 
   if (apiUrl) {
     try {
@@ -373,17 +374,37 @@ export async function unlockWithPin(pin: string) {
             writeCollection(USERS_KEY, users)
             console.log("[unlockWithPin] API verified, SHA-256 cached for", apiUser.name)
             apiVerified = true
+          } else {
+            // User exists on server but not cached locally yet —
+            // create a minimal local entry so login can proceed
+            const newUser: StaffUser = {
+              id: data.user.id,
+              name: data.user.name ?? "Staff",
+              mobile: data.user.mobile ?? "",
+              pin: pinHash,
+              pinChanged: true,
+              role: (data.user.role as UserRole) ?? "Cashier",
+              active: true,
+              createdAt: new Date().toISOString(),
+            }
+            users.push(newUser)
+            writeCollection(USERS_KEY, users)
+            apiUser = newUser
+            apiVerified = true
+            console.log("[unlockWithPin] API verified, created local cache for", newUser.name)
           }
         }
+        // If we got 200 but no user.id, still consider the server
+        // reachable — don't deny local fallback for server data issues
       } else if (res.status === 401) {
         // Server explicitly rejected this PIN — don't fall back to local
         console.log("[unlockWithPin] API rejected PIN")
-        apiReachable = true
+        apiRejectedPin = true
       }
     } catch (e) {
       // Network error — API unreachable, fall back to local matching
       console.warn("[unlockWithPin] API unreachable, falling back to local:", e)
-      apiReachable = false
+      apiNetworkError = true
     }
   }
 
@@ -391,9 +412,9 @@ export async function unlockWithPin(pin: string) {
     return finalizeUnlock(apiUser)
   }
 
-  // ── API rejected the PIN — no local fallback ─────────────────────────
-  if (apiReachable && apiUrl) {
-    console.log("[unlockWithPin] API reachable and rejected — denying login")
+  // ── API explicitly rejected the PIN — no local fallback ──────────────
+  if (apiRejectedPin) {
+    console.log("[unlockWithPin] server rejected PIN — denying login")
     recordAuditEvent({
       action: "security.login.failed",
       entity: "security",
