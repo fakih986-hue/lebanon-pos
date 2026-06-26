@@ -134,7 +134,8 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>([])
   const [staffLoading, setStaffLoading] = useState(false)
   const [staffError, setStaffError] = useState("")
-  const [resettingPin, setResettingPin] = useState<string | null>(null)
+  const [settingPin, setSettingPin] = useState<string | null>(null)
+  const [pinInput, setPinInput] = useState("")
   const [newPinResult, setNewPinResult] = useState<{ userId: string; name: string; pin: string } | null>(null)
 
   useEffect(() => { loadTenants() }, [])
@@ -156,13 +157,21 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
     setStaffLoading(false)
   }
 
-  async function handleResetPin(user: StaffUser) {
-    setResettingPin(user.id)
+  async function handleSetPin(user: StaffUser) {
+    if (!pinInput.trim() || pinInput.trim().length < 4) {
+      setStaffError("PIN must be at least 4 characters")
+      return
+    }
+    setSettingPin(user.id)
     try {
-      const res = await api<{ userId: string; name: string; pin: string }>(`/api/admin/tenants/${staffTenant!.id}/users/${user.id}/reset-pin`, { method: "POST", body: JSON.stringify({}) })
+      const res = await api<{ userId: string; name: string; pin: string }>(
+        `/api/admin/tenants/${staffTenant!.id}/users/${user.id}/reset-pin`,
+        { method: "POST", body: JSON.stringify({ pin: pinInput.trim() }) }
+      )
       setNewPinResult(res)
-    } catch (err) { setStaffError((err as Error).message) }
-    setResettingPin(null)
+      setPinInput("")
+      setSettingPin(null)
+    } catch (err) { setStaffError((err as Error).message); setSettingPin(null) }
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -442,13 +451,38 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                         {!u.active && <span className="text-rose-400 font-semibold">Disabled</span>}
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleResetPin(u)}
-                      disabled={resettingPin === u.id}
-                      className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600/10 text-amber-400 text-xs border border-amber-600/30 hover:bg-amber-600/20 transition-colors disabled:opacity-50"
-                    >
-                      {resettingPin === u.id ? "Resetting…" : "Reset PIN"}
-                    </button>
+                    {settingPin === u.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="password"
+                          value={pinInput}
+                          onChange={(e) => setPinInput(e.target.value)}
+                          placeholder="New PIN"
+                          autoFocus
+                          className="w-24 px-2 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                          onKeyDown={(e) => { if (e.key === "Enter") handleSetPin(u) }}
+                        />
+                        <button
+                          onClick={() => handleSetPin(u)}
+                          className="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600/10 text-emerald-400 text-xs border border-emerald-600/30 hover:bg-emerald-600/20 transition-colors"
+                        >
+                          Set
+                        </button>
+                        <button
+                          onClick={() => { setSettingPin(null); setPinInput("") }}
+                          className="shrink-0 px-2 py-1.5 rounded-lg text-slate-500 text-xs hover:text-white transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => { setSettingPin(u.id); setPinInput(""); setStaffError("") }}
+                        className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600/10 text-amber-400 text-xs border border-amber-600/30 hover:bg-amber-600/20 transition-colors"
+                      >
+                        Set PIN
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
