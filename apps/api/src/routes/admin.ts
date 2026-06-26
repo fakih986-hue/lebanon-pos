@@ -253,4 +253,52 @@ router.post("/tenants", requireAuth, requireAdmin, async (req: AuthRequest, res:
   }
 })
 
+// ── Staff user management ─────────────────────────────────────────────
+
+const resetPinSchema = z.object({
+  pin: z.string().trim().min(4, "PIN must be at least 4 characters").optional(),
+})
+
+router.get("/tenants/:id/users", requireAuth, requireAdmin, async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const tenant = await prisma.tenant.findUnique({ where: { id: req.params?.id }, select: { id: true } })
+    if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
+    const users = await prisma.staffUser.findMany({
+      where: { tenantId: req.params?.id },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, mobile: true, code: true, role: true, active: true, createdAt: true },
+    })
+    json(res, users)
+  } catch (err) {
+    console.error("List tenant users error:", err)
+    json(res, { error: "Failed to list tenant users" }, 500)
+  }
+})
+
+router.post("/tenants/:id/users/:userId/reset-pin", requireAuth, requireAdmin, async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const tenant = await prisma.tenant.findUnique({ where: { id: req.params?.id }, select: { id: true } })
+    if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
+    const user = await prisma.staffUser.findFirst({
+      where: { id: req.params?.userId, tenantId: req.params?.id },
+      select: { id: true, name: true },
+    })
+    if (!user) { json(res, { error: "User not found in this tenant" }, 404); return }
+    const parsed = resetPinSchema.safeParse(req.body)
+    if (!parsed.success) {
+      json(res, { error: parsed.error.errors[0].message }, 400)
+      return
+    }
+    const newPin = parsed.data.pin ?? generateRandomPin(6)
+    await prisma.staffUser.update({
+      where: { id: user.id },
+      data: { pin: await bcrypt.hash(newPin, 12) },
+    })
+    json(res, { userId: user.id, name: user.name, pin: newPin })
+  } catch (err) {
+    console.error("Reset PIN error:", err)
+    json(res, { error: "Failed to reset PIN" }, 500)
+  }
+})
+
 export default router

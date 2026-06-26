@@ -61,6 +61,11 @@ export function StaffPage() {
   const [newRole, setNewRole] = useState("Cashier")
   const [addError, setAddError] = useState("")
   const [addLoading, setAddLoading] = useState(false)
+  // Change PIN
+  const [changePinFor, setChangePinFor] = useState<StaffUser | null>(null)
+  const [changePinValue, setChangePinValue] = useState("")
+  const [changePinLoading, setChangePinLoading] = useState(false)
+  const [changePinError, setChangePinError] = useState("")
 
   async function loadData() {
     setLoading(true)
@@ -123,6 +128,34 @@ export function StaffPage() {
       setAddError((err as Error).message)
     } finally {
       setAddLoading(false)
+    }
+  }
+
+  async function handleChangePin() {
+    if (!changePinFor || !changePinValue.trim() || changePinValue.trim().length < 4) {
+      setChangePinError("PIN must be at least 4 characters"); return
+    }
+    setChangePinLoading(true)
+    setChangePinError("")
+    try {
+      const hashedPin = await hashPin(changePinValue.trim())
+      await api("/api/sync/push", {
+        method: "POST",
+        body: JSON.stringify({
+          operations: [{
+            id: crypto.randomUUID(),
+            entity: "staff",
+            action: "update",
+            payload: { ...changePinFor, pin: hashedPin },
+          }],
+        }),
+      })
+      setChangePinFor(null)
+      setChangePinValue("")
+    } catch (err) {
+      setChangePinError((err as Error).message)
+    } finally {
+      setChangePinLoading(false)
     }
   }
 
@@ -207,10 +240,16 @@ export function StaffPage() {
                 <span className={`text-xs font-semibold ${user.active ? "text-emerald-400" : "text-zinc-500"}`}>
                   {user.active ? "● Active" : "○ Disabled"}
                 </span>
-                <button onClick={() => handleToggleActive(user)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${user.active ? "bg-rose-500/10 text-rose-300 hover:bg-rose-500/20" : "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"}`}>
-                  {user.active ? t("pos.staff.disable") : t("pos.staff.enable")}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { setChangePinFor(user); setChangePinValue(""); setChangePinError("") }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20">
+                    {t("pos.staff.change_pin") ?? "Change PIN"}
+                  </button>
+                  <button onClick={() => handleToggleActive(user)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${user.active ? "bg-rose-500/10 text-rose-300 hover:bg-rose-500/20" : "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"}`}>
+                    {user.active ? t("pos.staff.disable") : t("pos.staff.enable")}
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -240,6 +279,27 @@ export function StaffPage() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {changePinFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setChangePinFor(null)}>
+          <div className="rounded-2xl border p-6 w-full max-w-sm mx-4 shadow-2xl" onClick={e => e.stopPropagation()} style={{ background: "var(--surface-card)", borderColor: "var(--border-subtle)" }}>
+            <h3 className="text-sm font-bold mb-1" style={{ color: "var(--text-primary)" }}>Change PIN</h3>
+            <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>{changePinFor.name}</p>
+            {changePinError && <div className="mb-3 p-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs rounded-xl">{changePinError}</div>}
+            <input type="password" value={changePinValue} onChange={e => setChangePinValue(e.target.value)} placeholder="New PIN" maxLength={8} autoFocus
+              className="w-full h-10 rounded-xl border px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/40 mb-4"
+              style={{ background: "var(--surface-input)", borderColor: "var(--border-input)", color: "var(--text-primary)" }} />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setChangePinFor(null)} className="px-4 py-2 rounded-xl border text-sm font-semibold transition-all hover:opacity-80"
+                style={{ borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}>{t("pos.cancel")}</button>
+              <button onClick={handleChangePin} disabled={changePinLoading}
+                className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-all disabled:opacity-50">
+                {changePinLoading ? "Saving..." : "Save PIN"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

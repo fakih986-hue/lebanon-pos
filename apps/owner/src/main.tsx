@@ -112,6 +112,7 @@ function LoginPage({ onLogin }: { onLogin: () => void }) {
 }
 
 type Tenant = { id: string; name: string; subdomain: string; suspended: boolean; createdAt: string; _count: { users: number; products: number; sales: number } }
+type StaffUser = { id: string; name: string; mobile: string; code: string; role: string; active: boolean; createdAt: string }
 
 function TenantsPage({ onLogout }: { onLogout: () => void }) {
   const [tenants, setTenants] = useState<Tenant[]>([])
@@ -128,6 +129,13 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
   const [editForm, setEditForm] = useState({ name: "", subdomain: "", suspended: false })
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState("")
+  // Staff management
+  const [staffTenant, setStaffTenant] = useState<Tenant | null>(null)
+  const [staffUsers, setStaffUsers] = useState<StaffUser[]>([])
+  const [staffLoading, setStaffLoading] = useState(false)
+  const [staffError, setStaffError] = useState("")
+  const [resettingPin, setResettingPin] = useState<string | null>(null)
+  const [newPinResult, setNewPinResult] = useState<{ userId: string; name: string; pin: string } | null>(null)
 
   useEffect(() => { loadTenants() }, [])
 
@@ -135,6 +143,26 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
     setLoading(true)
     try { setTenants(await api<Tenant[]>("/api/admin/tenants")) } catch (err) { setError((err as Error).message) }
     setLoading(false)
+  }
+
+  async function openStaff(tenant: Tenant) {
+    setStaffTenant(tenant)
+    setStaffLoading(true)
+    setStaffError("")
+    setNewPinResult(null)
+    try {
+      setStaffUsers(await api<StaffUser[]>(`/api/admin/tenants/${tenant.id}/users`))
+    } catch (err) { setStaffError((err as Error).message) }
+    setStaffLoading(false)
+  }
+
+  async function handleResetPin(user: StaffUser) {
+    setResettingPin(user.id)
+    try {
+      const res = await api<{ userId: string; name: string; pin: string }>(`/api/admin/tenants/${staffTenant!.id}/users/${user.id}/reset-pin`, { method: "POST", body: JSON.stringify({}) })
+      setNewPinResult(res)
+    } catch (err) { setStaffError((err as Error).message) }
+    setResettingPin(null)
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -313,6 +341,7 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                   <span>{t._count.sales} sales</span>
                 </div>
                 {t.suspended && <span className="text-[10px] uppercase tracking-wider font-bold text-rose-400 bg-rose-500/10 px-2 py-1 rounded-lg">Suspended</span>}
+                <button onClick={() => openStaff(t)} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700">Staff</button>
                 <button onClick={() => handleRevealApiKey(t.id)} disabled={revealLoading} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700" title="Show Cloud API Key">🔑</button>
                 <button onClick={() => openEdit(t)} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700">Edit</button>
               </div>
@@ -371,6 +400,59 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
               <p className="text-xs font-bold font-mono text-white break-all select-all">{revealedApiKey}</p>
             </div>
             <button onClick={() => setRevealedApiKey(null)} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm">Got it</button>
+          </div>
+        </div>
+      )}
+
+      {staffTenant !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => { setStaffTenant(null); setNewPinResult(null) }}>
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-semibold text-white">Staff — {staffTenant.name}</h2>
+                <p className="text-xs text-slate-400 mt-0.5">/{staffTenant.subdomain}</p>
+              </div>
+              <button onClick={() => { setStaffTenant(null); setNewPinResult(null) }} className="text-slate-500 hover:text-white transition-colors text-xl leading-none">&times;</button>
+            </div>
+
+            {staffError && <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl">{staffError}</div>}
+
+            {newPinResult && (
+              <div className="mb-4 bg-emerald-950/30 border border-emerald-700/30 rounded-xl p-4 text-center">
+                <p className="text-sm font-semibold text-emerald-300 mb-1">PIN Reset for {newPinResult.name}</p>
+                <p className="text-xs text-emerald-400/70 mb-2">Shown once — copy it now.</p>
+                <p className="text-2xl font-bold font-mono tracking-widest text-white select-all">{newPinResult.pin}</p>
+                <button onClick={() => setNewPinResult(null)} className="mt-3 px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs border border-slate-700 hover:bg-slate-700 transition-colors">Dismiss</button>
+              </div>
+            )}
+
+            {staffLoading ? (
+              <div className="space-y-2 flex-1">{[1, 2, 3].map(i => <div key={i} className="h-14 rounded-xl bg-slate-800 animate-pulse" />)}</div>
+            ) : staffUsers.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center"><p className="text-slate-500 text-sm">No staff users</p></div>
+            ) : (
+              <div className="space-y-2 flex-1 overflow-y-auto">
+                {staffUsers.map((u) => (
+                  <div key={u.id} className="flex items-center justify-between rounded-xl bg-slate-800/50 border border-slate-700/50 p-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-white truncate">{u.name}</p>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                        <span className={`rounded px-1.5 py-0.5 font-semibold border ${u.role === "Admin" ? "border-indigo-500/25 text-indigo-300" : u.role === "Manager" ? "border-violet-500/25 text-violet-300" : u.role === "Driver" ? "border-amber-500/25 text-amber-300" : "border-emerald-500/25 text-emerald-300"}`}>{u.role}</span>
+                        {u.mobile && <span>{u.mobile}</span>}
+                        {!u.active && <span className="text-rose-400 font-semibold">Disabled</span>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleResetPin(u)}
+                      disabled={resettingPin === u.id}
+                      className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600/10 text-amber-400 text-xs border border-amber-600/30 hover:bg-amber-600/20 transition-colors disabled:opacity-50"
+                    >
+                      {resettingPin === u.id ? "Resetting…" : "Reset PIN"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

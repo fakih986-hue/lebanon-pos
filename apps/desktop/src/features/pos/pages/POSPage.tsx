@@ -182,7 +182,7 @@ export default function POSPage() {
     const categoryNames = [
       "All",
       "Favorites",
-      ...Array.from(new Set(products.map((product) => product.category))),
+      ...Array.from(new Set(products.map((product) => product.category).filter(Boolean))),
     ]
     return categoryNames.map((category) => {
       const departmentProducts =
@@ -190,7 +190,7 @@ export default function POSPage() {
           ? products
           : category === "Favorites"
             ? products.filter((product) => product.favorite)
-          : products.filter((product) => product.category === category)
+          : products.filter((product) => product.category && product.category === category)
       const Icon = departmentIcons[category] ?? PackageSearch
 
       return {
@@ -209,7 +209,7 @@ export default function POSPage() {
       const matchesCategory =
         selectedCategory === "All" ||
         (selectedCategory === "Favorites" && product.favorite) ||
-        product.category === selectedCategory
+        (product.category && product.category === selectedCategory)
       const matchesSearch =
         query.length === 0 || productMatchesSearch(product, query)
       return matchesCategory && matchesSearch
@@ -344,7 +344,7 @@ export default function POSPage() {
     )
     const matchingProducts = products.filter((product) => {
       const matchesCategory =
-        selectedCategory === "All" || product.category === selectedCategory
+        selectedCategory === "All" || (product.category && product.category === selectedCategory)
       return matchesCategory && productMatchesSearch(product, query || barcode)
     })
     const product = exactProduct ?? matchingProducts[0]

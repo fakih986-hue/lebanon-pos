@@ -89,7 +89,7 @@ function writeProducts(nextProducts: Product[]) {
 function chooseAccent(category: string, index: number) {
   const knownCategory = products.find(
     (product) =>
-      product.category.toLowerCase() === category.trim().toLowerCase()
+      product.category?.toLowerCase() === category.trim().toLowerCase()
   )
 
   if (knownCategory) {
@@ -500,8 +500,8 @@ export function productMatchesSearch(product: Product, query: string) {
   }
 
   return (
-    product.name.toLowerCase().includes(cleanQuery) ||
-    product.barcode.includes(barcodeQuery) ||
+    product.name?.toLowerCase().includes(cleanQuery) ||
+    product.barcode?.includes(barcodeQuery) ||
     normalizeBarcodeList(product.barcodeAliases).some((barcode) =>
       barcode.includes(barcodeQuery)
     )
