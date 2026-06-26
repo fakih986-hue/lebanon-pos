@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useI18n } from "@lebanonpos/shared"
 import { RatePanel } from "../../features/pos/components/RateManager"
 import {
@@ -6,6 +6,7 @@ import {
   Cloud,
   CloudOff,
   Download,
+  Lock,
   RotateCw,
   Save,
   Settings,
@@ -96,6 +97,13 @@ export default function SettingsPage() {
   const [cloudAdminPw, setCloudAdminPw] = useState("")
   const [cloudSaving, setCloudSaving] = useState(false)
   const [cloudStatus, setCloudStatus] = useState<{ configured: boolean; running: boolean; tenantId?: string; lastPullAt?: string; hubOnly?: boolean } | null>(null)
+
+  // ── Super admin lock ──
+  const [superAdminUnlocked, setSuperAdminUnlocked] = useState(false)
+  const [superAdminModalOpen, setSuperAdminModalOpen] = useState(false)
+  const [superAdminCode, setSuperAdminCode] = useState("")
+  const [superAdminVerifying, setSuperAdminVerifying] = useState(false)
+  const superAdminTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [activeWorkspace, setActiveWorkspace] =
     useState<SettingsWorkspace>("Business")
   const [drivers, setDrivers] = useState<Array<{ id: string; name: string }>>([])
@@ -160,6 +168,50 @@ export default function SettingsPage() {
     }
     setCloudSaving(false)
   }
+
+  function startSuperAdminSession() {
+    setSuperAdminUnlocked(true)
+    setSuperAdminModalOpen(false)
+    setSuperAdminCode("")
+    if (superAdminTimerRef.current) clearTimeout(superAdminTimerRef.current)
+    superAdminTimerRef.current = setTimeout(() => {
+      setSuperAdminUnlocked(false)
+      setSuperAdminCode("")
+    }, 5 * 60 * 1000)
+  }
+
+  async function handleVerifySuperAdminCode() {
+    if (!superAdminCode.trim()) {
+      showToast("Enter the super admin code.", "error")
+      return
+    }
+    const apiUrl = getApiUrl()
+    if (!apiUrl) {
+      showToast("Server URL is not configured.", "error")
+      return
+    }
+    setSuperAdminVerifying(true)
+    try {
+      const res = await fetch(`${apiUrl}/api/auth/verify-super-admin-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: superAdminCode.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error ?? `Failed (HTTP ${res.status})`)
+      startSuperAdminSession()
+      showToast("Cloud settings unlocked for 5 minutes.", "success")
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Verification failed", "error")
+    }
+    setSuperAdminVerifying(false)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (superAdminTimerRef.current) clearTimeout(superAdminTimerRef.current)
+    }
+  }, [])
 
   function updateSettings(patch: Partial<AppSettings>) {
     setSettings((currentSettings) => ({
@@ -866,13 +918,41 @@ export default function SettingsPage() {
                   />
                 </label>
 
+                {/* Super admin lock banner */}
+                {!superAdminUnlocked ? (
+                  <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <p className="text-sm font-bold text-amber-800">Cloud settings are locked</p>
+                    <p className="mt-1 text-xs text-amber-700">
+                      Enter the super admin code to edit these settings. Changes are only visible to
+                      the owner after sync.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setSuperAdminModalOpen(true)}
+                      className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-amber-600 px-3 text-sm font-bold text-white transition hover:bg-amber-500"
+                    >
+                      <Lock size={16} />
+                      Unlock with super admin code
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">
+                    Cloud settings are unlocked for 5 minutes.
+                  </div>
+                )}
+
                 <label className="mt-3 block text-sm font-bold text-zinc-700">
                   Tenant ID
                   <input
                     value={cloudTenantId}
                     onChange={(e) => setCloudTenantId(e.target.value)}
                     placeholder="From the owner portal (Settings → Cloud)"
-                    className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-mono text-xs outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                    readOnly={!superAdminUnlocked}
+                    className={`mt-2 h-11 w-full rounded-lg border px-3 font-mono text-xs outline-none ${
+                      superAdminUnlocked
+                        ? "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                        : "border-zinc-200 bg-zinc-100 text-zinc-500"
+                    }`}
                   />
                 </label>
 
@@ -883,7 +963,12 @@ export default function SettingsPage() {
                     value={cloudApiKey}
                     onChange={(e) => setCloudApiKey(e.target.value)}
                     placeholder="Per-store key from the owner portal"
-                    className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-mono text-xs outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                    readOnly={!superAdminUnlocked}
+                    className={`mt-2 h-11 w-full rounded-lg border px-3 font-mono text-xs outline-none ${
+                      superAdminUnlocked
+                        ? "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                        : "border-zinc-200 bg-zinc-100 text-zinc-500"
+                    }`}
                   />
                 </label>
 
@@ -894,14 +979,19 @@ export default function SettingsPage() {
                     value={cloudAdminPw}
                     onChange={(e) => setCloudAdminPw(e.target.value)}
                     placeholder="This hub's admin password (from the tray menu)"
-                    className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                    readOnly={!superAdminUnlocked}
+                    className={`mt-2 h-11 w-full rounded-lg border px-3 font-medium outline-none ${
+                      superAdminUnlocked
+                        ? "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                        : "border-zinc-200 bg-zinc-100 text-zinc-500"
+                    }`}
                   />
                 </label>
 
                 <button
                   type="button"
                   onClick={handleSaveCloudConfig}
-                  disabled={cloudSaving}
+                  disabled={cloudSaving || !superAdminUnlocked}
                   className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-sky-600 px-3 text-sm font-bold text-white transition hover:bg-sky-500 disabled:opacity-50"
                 >
                   <Save size={16} />
@@ -971,6 +1061,44 @@ export default function SettingsPage() {
               can already export clean JSON data for migration.
             </div>
           </section>
+          ) : null}
+
+          {/* Super admin code modal */}
+          {superAdminModalOpen ? (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div className="mx-4 w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+                <h3 className="text-lg font-bold text-zinc-950">Super admin code</h3>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Enter the master super admin code to unlock cloud settings.
+                </p>
+                <input
+                  type="password"
+                  value={superAdminCode}
+                  onChange={(e) => setSuperAdminCode(e.target.value)}
+                  placeholder="Super admin code"
+                  autoFocus
+                  className="mt-4 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-mono text-sm outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleVerifySuperAdminCode() }}
+                />
+                <div className="mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setSuperAdminModalOpen(false); setSuperAdminCode("") }}
+                    className="flex h-11 flex-1 items-center justify-center rounded-lg border border-zinc-200 px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleVerifySuperAdminCode}
+                    disabled={superAdminVerifying}
+                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    {superAdminVerifying ? "Verifying…" : "Unlock"}
+                  </button>
+                </div>
+              </div>
+            </div>
           ) : null}
         </aside>
       </div>

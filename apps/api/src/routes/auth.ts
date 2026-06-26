@@ -1,7 +1,7 @@
 import { Router } from "express"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import bcrypt from "bcryptjs"
-import { createHash } from "crypto"
+import { createHash, timingSafeEqual } from "crypto"
 import { z } from "zod"
 import prisma from "../lib/prisma.js"
 
@@ -130,6 +130,10 @@ router.post("/login", async (req: any, res: any) => {
         res.status(401).json({ error: "Invalid credentials" })
         return
       }
+      if (driver.tenant?.suspended) {
+        res.status(403).json({ error: "Tenant suspended", code: "TENANT_SUSPENDED" })
+        return
+      }
       const pinMatches = driver.pin.startsWith("$2")
         ? await bcrypt.compare(pin, driver.pin)
         : driver.pin === hashSha256Pin(pin)
@@ -170,6 +174,18 @@ router.post("/login", async (req: any, res: any) => {
     }
 
     const tenantFilter = effectiveSubdomain ? { tenant: { subdomain: effectiveSubdomain } } : {}
+
+    // ── Check tenant suspension before proceeding ──────────────────────
+    if (effectiveSubdomain) {
+      const tenant = await prisma.tenant.findUnique({
+        where: { subdomain: effectiveSubdomain },
+        select: { suspended: true },
+      })
+      if (tenant?.suspended) {
+        res.status(403).json({ error: "Tenant suspended", code: "TENANT_SUSPENDED" })
+        return
+      }
+    }
 
     // Fast path: code-based lookup using the indexed code column
     if (code) {
@@ -254,6 +270,51 @@ router.get("/me", requireAuth, async (req: AuthRequest, res: any) => {
     return
   }
   res.json(user)
+})
+
+// ── Super admin code verification ──────────────────────────────────
+// Rate limiter: max 5 attempts per IP per minute
+const verifyRateLimit = new Map<string, { count: number; resetAt: number }>()
+setInterval(() => {
+  const now = Date.now()
+  for (const [ip, entry] of verifyRateLimit) {
+    if (entry.resetAt < now) verifyRateLimit.delete(ip)
+  }
+}, 60_000)
+
+router.post("/verify-super-admin-code", async (req: any, res: any) => {
+  try {
+    const ip = req.socket?.remoteAddress ?? "unknown"
+    const now = Date.now()
+    const entry = verifyRateLimit.get(ip)
+    if (entry && entry.resetAt > now) {
+      if (entry.count >= 5) {
+        res.status(429).json({ error: "Too many attempts. Try again later." })
+        return
+      }
+      entry.count++
+    } else {
+      verifyRateLimit.set(ip, { count: 1, resetAt: now + 60_000 })
+    }
+
+    const { code } = (req.body ?? {}) as { code?: string }
+    if (!code || typeof code !== "string" || code.length < 4) {
+      res.status(400).json({ error: "Code must be at least 4 characters" })
+      return
+    }
+
+    const storedBcrypt = process.env.SUPER_ADMIN_BCRYPT
+    if (!storedBcrypt) {
+      res.status(503).json({ error: "Super admin code not configured" })
+      return
+    }
+
+    const valid = await bcrypt.compare(code, storedBcrypt)
+    res.json({ valid })
+  } catch (err) {
+    console.error("Verify super admin code error:", err)
+    res.status(500).json({ error: "Verification failed" })
+  }
 })
 
 export default router

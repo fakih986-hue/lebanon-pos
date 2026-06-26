@@ -1,4 +1,4 @@
-import { enqueueSyncOperation, getApiUrl } from "./sync.service"
+import { enqueueSyncOperation, getApiUrl, isSuspensionGracePeriodExpired } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 
@@ -404,9 +404,23 @@ export async function unlockWithPin(pin: string) {
         // If we got 200 but no user.id, still consider the server
         // reachable — don't deny local fallback for server data issues
       } else if (res.status === 401) {
-        // Server explicitly rejected this PIN — don't fall back to local
+        // Server explicitly rejected this PIN
         console.log("[unlockWithPin] API rejected PIN")
         apiRejectedPin = true
+      } else if (res.status === 403) {
+        // Tenant is suspended by owner — check grace period
+        console.log("[unlockWithPin] tenant suspended")
+        apiRejectedPin = true
+        if (isSuspensionGracePeriodExpired()) {
+          // Grace period expired — no local fallback
+          console.log("[unlockWithPin] suspension grace period expired — denying")
+          recordAuditEvent({
+            action: "security.login.failed",
+            entity: "security",
+            summary: "Login denied — tenant suspended and grace period expired.",
+          })
+          return null
+        }
       }
     } catch (e) {
       // Network error — API unreachable, fall back to local matching

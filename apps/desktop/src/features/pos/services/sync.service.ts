@@ -8,6 +8,7 @@ const SYNC_EVENT     = "lebanonpos-sync-changed"
 const API_URL_KEY    = "lebanonpos.api-url"
 const AUTH_TOKEN_KEY = "lebanonpos.auth-token"
 const SUSPENDED_KEY  = "lebanonpos.suspended.v1"
+const SUSPENDED_AT_KEY = "lebanonpos.suspended-at.v1"
 const SUSPEND_EVENT  = "lebanonpos-suspended-changed"
 
 /** Operations that exceed this many attempts are considered permanently dead
@@ -187,11 +188,38 @@ export function isSuspended(): boolean {
   return localStorage.getItem(SUSPENDED_KEY) === "true"
 }
 
+export function getSuspendedAt(): string | null {
+  return localStorage.getItem(SUSPENDED_AT_KEY)
+}
+
+const SUSPENSION_GRACE_DAYS = 15
+
+export function isSuspensionGracePeriodExpired(): boolean {
+  const suspendedAt = getSuspendedAt()
+  if (!suspendedAt) return false
+  const elapsed = Date.now() - new Date(suspendedAt).getTime()
+  return elapsed > SUSPENSION_GRACE_DAYS * 24 * 60 * 60 * 1000
+}
+
+export function getSuspensionRemainingDays(): number {
+  const suspendedAt = getSuspendedAt()
+  if (!suspendedAt) return SUSPENSION_GRACE_DAYS
+  const elapsed = Date.now() - new Date(suspendedAt).getTime()
+  const remaining = SUSPENSION_GRACE_DAYS - Math.floor(elapsed / (24 * 60 * 60 * 1000))
+  return Math.max(0, remaining)
+}
+
 function setSuspended(value: boolean) {
   const prev = localStorage.getItem(SUSPENDED_KEY)
   const next = value ? "true" : "false"
   if (prev !== next) {
     localStorage.setItem(SUSPENDED_KEY, next)
+    // Track when suspension started for the grace period countdown
+    if (value && !localStorage.getItem(SUSPENDED_AT_KEY)) {
+      localStorage.setItem(SUSPENDED_AT_KEY, new Date().toISOString())
+    } else if (!value) {
+      localStorage.removeItem(SUSPENDED_AT_KEY)
+    }
     if (typeof window !== "undefined") window.dispatchEvent(new Event(SUSPEND_EVENT))
   }
 }

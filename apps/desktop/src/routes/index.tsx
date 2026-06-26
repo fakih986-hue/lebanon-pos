@@ -20,7 +20,7 @@ import {
   userCan,
   type Permission,
 } from "../features/pos/services/security.service"
-import { setupBackgroundSync, stopBackgroundSync, isSuspended, subscribeSuspended } from "../features/pos/services/sync.service"
+import { setupBackgroundSync, stopBackgroundSync, isSuspended, subscribeSuspended, isSuspensionGracePeriodExpired, getSuspensionRemainingDays } from "../features/pos/services/sync.service"
 import LoginScreen from "../pages/auth/LoginScreen"
 import AccountingPage from "../pages/accounting/AccountingPage"
 import CustomersPage from "../pages/customers/CustomersPage"
@@ -38,6 +38,8 @@ const AUTO_LOCK_MS = 10 * 60 * 1000
 const MotionDiv = motion.div as any
 
 function SuspendedOverlay() {
+  const expired = isSuspensionGracePeriodExpired()
+  const remaining = getSuspensionRemainingDays()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="bg-slate-900 border border-rose-800/50 rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl">
@@ -45,7 +47,11 @@ function SuspendedOverlay() {
           <svg className="w-8 h-8 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
         </div>
         <h2 className="text-xl font-bold text-white mb-2">Store Suspended</h2>
-        <p className="text-sm text-slate-400">This store has been suspended by the platform owner. Please contact support for more information.</p>
+        {expired ? (
+          <p className="text-sm text-slate-400">This store has been suspended by the platform owner. The grace period has ended. Please contact support for more information.</p>
+        ) : (
+          <p className="text-sm text-slate-400">Your store has been suspended. You have <span className="text-rose-400 font-bold">{remaining} day{remaining !== 1 ? "s" : ""}</span> of grace period remaining. After that, the system will lock.</p>
+        )}
       </div>
     </div>
   )
