@@ -23,7 +23,7 @@ if (!ADMIN_PASSWORD) {
   process.exit(1)
 }
 
-const PORT = parseInt(process.env.PORT || "3001", 10)
+const PORT = parseInt(process.env.PORT || "3015", 10)
 
 async function main() {
   try {

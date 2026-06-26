@@ -48,7 +48,7 @@ const PG_BIN_DIR = IS_PACKAGED
 
 const ICON_PNG   = path.join(__dirname, "../assets/icon.png")
 const ICON_ICO   = path.join(__dirname, "../assets/icon.ico")
-const API_URL    = "http://localhost:3001"
+const API_URL    = "http://localhost:3015"
 
 // Pre-baked Railway URL written into the hub's .env so the cloud bridge knows
 // where to sync. Tenant ID + per-tenant key are entered later in Settings → Cloud.
@@ -312,7 +312,7 @@ function writeApiEnv(pgPassword: string): void {
   fs.writeFileSync(ENV_PATH, [
     `DATABASE_URL="${dbUrl}"`,
     `JWT_SECRET="${jwt}"`,
-    `PORT=3001`,
+    `PORT=3015`,
     `ADMIN_PASSWORD="${adminPass}"`,
     // LAN clients connect to the hub by IP, so allow any origin on the local network
     `CORS_ORIGINS=`,

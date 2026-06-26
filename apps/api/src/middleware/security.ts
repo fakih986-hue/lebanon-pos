@@ -60,7 +60,7 @@ export function getCorsOptions(): CorsOptions {
   )
 
   // Local/LAN origins: localhost dev servers AND private-network IPs (LAN hub clients).
-  // The hub serves the SPA to other devices at http://192.168.x.x:3001 — those clients
+  // The hub serves the SPA to other devices at http://192.168.x.x:3015 — those clients
   // send an Origin header on POSTs, so they must be allowed without manual config.
   const localOrInternal =
     /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/
