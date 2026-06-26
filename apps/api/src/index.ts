@@ -37,6 +37,15 @@ async function main() {
   const server = createServer(app)
   setupWebSocket(server)
 
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`FATAL: port ${PORT} is already in use`)
+    } else {
+      console.error("FATAL: server error:", err)
+    }
+    process.exit(1)
+  })
+
   server.listen(PORT, () => {
     console.log(`Lebanon POS API running on port ${PORT}`)
     scheduleSyncOperationPrune()

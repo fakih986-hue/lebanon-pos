@@ -425,12 +425,21 @@ async function runMigrations(pgPassword: string): Promise<void> {
 }
 
 function spawnApi(): void {
+  // Preserve critical Windows env vars that native modules (Prisma, pg) need,
+  // while still injecting our own config. Passing the full process.env would
+  // leak Electron internals into the child.
+  const essential = [
+    "PATH", "HOME", "TEMP", "TMP", "USERPROFILE",
+    "APPDATA", "LOCALAPPDATA", "COMSPEC", "SystemRoot", "WINDIR",
+  ]
   const apiEnv: Record<string, string> = {
     ELECTRON_RUN_AS_NODE: "1",
-    PATH:               process.env.PATH ?? "",
-    HOME:               process.env.HOME ?? os.homedir(),
     DOTENV_CONFIG_PATH: ENV_PATH,
     PRISMA_QUERY_ENGINE_LIBRARY: path.join(API_DIR, "generated/prisma/query_engine-windows.dll.node"),
+  }
+  for (const key of essential) {
+    const val = process.env[key]
+    if (val) apiEnv[key] = val
   }
 
   apiProcess = spawn(process.execPath, [API_ENTRY], {
