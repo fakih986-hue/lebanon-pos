@@ -73,7 +73,7 @@ const ProductCard = memo(function ProductCard({
     : `${product.stock} in stock`
 
   const stockColor = outOfStock
-    ? "#EF4444"
+    ? "var(--rose)"
     : lowStock
     ? "#F59E0B"
     : "var(--text-3)"
@@ -108,7 +108,7 @@ const ProductCard = memo(function ProductCard({
           type="button"
           onClick={handleClick}
           disabled={outOfStock}
-          className="flex w-full flex-col gap-1.5 p-2.5 text-left"
+          className="flex w-full flex-col gap-1.5 p-2.5 text-start"
         >
           {/* Row 1: Image + Name + Stock */}
           <div className="flex items-start gap-2">
@@ -121,18 +121,20 @@ const ProductCard = memo(function ProductCard({
                   className="h-8 w-8 rounded-md object-cover"
                   style={{ border: `1px solid var(--border)` }}
                 />
-                <button
-                  type="button"
+                <span
+                  role="button"
+                  tabIndex={0}
                   onClick={(e) => { e.stopPropagation(); setImageZoom(true) }}
-                  className="absolute inset-0 flex items-center justify-center rounded-md opacity-0 transition group-hover:opacity-100"
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setImageZoom(true) } }}
+                  className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-md opacity-0 transition group-hover:opacity-100"
                   style={{ background: "rgba(0,0,0,0.45)" }}
                 >
                   <ZoomIn size={10} className="text-white" />
-                </button>
+                </span>
               </div>
             ) : (
               <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[12px] font-black text-white"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[12px] font-bold text-white"
                 style={{ background: accent.solid }}
               >
                 {product.name.charAt(0).toUpperCase()}
@@ -147,7 +149,7 @@ const ProductCard = memo(function ProductCard({
               <p className="text-[10px] font-medium leading-tight mt-0.5" style={{ color: stockColor }}>
                 {stockLabel}
                 {wholesale && product.wholesalePrice != null && (
-                  <span className="ml-1.5 rounded px-1 py-px text-[8px] font-black text-white" style={{ background: accent.solid }}>WS</span>
+                  <span className="ms-1.5 rounded px-1 py-px text-[8px] font-bold text-white" style={{ background: accent.solid }}>WS</span>
                 )}
               </p>
             </div>
@@ -156,7 +158,7 @@ const ProductCard = memo(function ProductCard({
             {cartQuantity > 0 && (
               <MotionSpan
                 key={cartQuantity}
-                className="flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full text-[10px] font-black"
+                className="flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
                 style={{ background: accent.solid, color: "#fff" }}
                 initial={{ scale: 1.4, opacity: 0.6 }}
                 animate={{ scale: 1,   opacity: 1   }}
@@ -170,10 +172,10 @@ const ProductCard = memo(function ProductCard({
           {/* Row 2: Price + Cart button */}
           <div className="flex items-end justify-between gap-2">
             <div className="min-w-0 leading-none">
-              <span className="text-[15px] font-black tabular-nums" style={{ color: "var(--text)" }}>
+              <span className="text-[15px] font-bold tabular-nums" style={{ color: "var(--text)" }}>
                 {formatCurrency(effectivePrice)}
               </span>
-              <span className="ml-1 text-[10px] font-medium tabular-nums" style={{ color: "var(--text-3)" }}>
+              <span className="ms-1 text-[10px] font-medium tabular-nums" style={{ color: "var(--text-3)" }}>
                 {formatLbpCurrency(usdToLbp(effectivePrice, exchangeRate))}
               </span>
             </div>

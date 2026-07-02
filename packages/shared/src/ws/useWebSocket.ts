@@ -11,9 +11,13 @@ type UseWebSocketOptions = {
   onDisconnect?: () => void
 }
 
+let reconnectAttempt = 0
+
 function scheduleReconnect(reconnectRef: React.MutableRefObject<number | null>, connect: () => void) {
   if (reconnectRef.current) clearTimeout(reconnectRef.current)
-  reconnectRef.current = window.setTimeout(connect, 3000)
+  reconnectAttempt++
+  const delay = Math.min(1000 * Math.pow(2, reconnectAttempt), 30000)
+  reconnectRef.current = window.setTimeout(connect, delay)
 }
 
 export function useWebSocket({
@@ -43,6 +47,7 @@ export function useWebSocket({
       wsRef.current = ws
 
       ws.onopen = () => {
+        reconnectAttempt = 0
         setIsConnected(true)
         if (token) {
           ws.send(JSON.stringify({ type: "auth", token }))

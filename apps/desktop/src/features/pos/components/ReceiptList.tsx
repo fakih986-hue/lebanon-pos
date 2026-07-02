@@ -74,7 +74,7 @@ export default function ReceiptList({
               <button
                 type="button"
                 onClick={() => onSelectSale(sale.id)}
-                className="block w-full text-left"
+                className="block w-full text-start"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

@@ -224,7 +224,7 @@ export default function Sidebar() {
               </p>
               {activeShift && (
                 <p className="text-[9px] font-medium" style={{ color: "rgba(34,197,94,0.55)" }}>
-                  <CircleDollarSign size={7} className="inline mr-0.5" />
+                  <CircleDollarSign size={7} className="inline me-0.5" />
                   {formatCurrency(activeShift.openingFloatUsd)}
                 </p>
               )}

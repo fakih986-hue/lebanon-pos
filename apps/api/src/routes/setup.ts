@@ -38,7 +38,7 @@ function requireCloudKey(req: Req, res: Response): boolean {
   const expectedKey = process.env.CLOUD_API_KEY
   const incomingKey = req.headers["x-cloud-key"]
 
-  if (!expectedKey || incomingKey !== expectedKey) {
+  if (!expectedKey || typeof incomingKey !== "string" || !safeEqual(incomingKey, expectedKey)) {
     res.status(401).json({ error: "Missing or invalid X-Cloud-Key header" })
     return false
   }
@@ -74,7 +74,7 @@ async function requireCloudKeyOrJwt(req: Req, res: Response): Promise<boolean> {
     }
   }
 
-  if (expectedKey && incomingKey === expectedKey) return true
+  if (expectedKey && typeof incomingKey === "string" && safeEqual(incomingKey, expectedKey)) return true
 
   const header = req.headers.authorization
   if (!header?.startsWith("Bearer ")) {

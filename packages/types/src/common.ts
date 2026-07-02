@@ -1,7 +1,7 @@
 export type UserRole = "Admin" | "Manager" | "Cashier" | "Driver"
 export type SalePaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
 export type SaleStatus = "Completed" | "Debt" | "Voided"
-export type RefundMethod = "Cash" | "Card" | "Wallet" | "Debt Credit"
+export type RefundMethod = "Cash" | "Card" | "Wallet" | "Debt_Credit"
 export type TenderCurrency = "USD" | "LBP" | "Mixed"
 export type DeliveryOrderStatus =
   | "Pending" | "Confirmed" | "Preparing"

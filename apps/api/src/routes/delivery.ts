@@ -4,12 +4,95 @@ import bcrypt from "bcryptjs"
 import { createHash } from "crypto"
 import crypto from "crypto"
 import jwt from "jsonwebtoken"
+import { z } from "zod"
 import prisma from "../lib/prisma.js"
+import { Prisma } from "../generated/prisma/index.js"
 import { decrementProductStock } from "../lib/inventory.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 import { broadcastToTenant, broadcastToUser, getConnectedDrivers } from "../ws/index.js"
 
 const router = Router()
+
+class ValidationError extends Error {
+  statusCode = 400
+  constructor(message: string) { super(message) }
+}
+
+function validate<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer<T> {
+  const result = schema.safeParse(data)
+  if (!result.success) {
+    const first = result.error.errors[0]
+    throw new ValidationError(first?.message ?? "Validation failed")
+  }
+  return result.data
+}
+
+const createDriverSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  mobile: z.string().max(50).optional().default(""),
+  code: z.string().min(1, "Code is required").max(50),
+  pin: z.string().min(4, "PIN must be at least 4 characters").max(100),
+})
+
+const updateDriverSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  mobile: z.string().max(50).optional(),
+  code: z.string().min(1).max(50).optional(),
+  pin: z.string().min(4).max(100).optional(),
+  active: z.boolean().optional(),
+})
+
+const createOrderSchema = z.object({
+  tenantId: z.string().min(1, "tenantId is required"),
+  customerName: z.string().min(1, "customerName is required").max(200),
+  customerPhone: z.string().min(1, "customerPhone is required").max(50),
+  address: z.string().min(1, "address is required").max(500),
+  locationLat: z.number().optional(),
+  locationLng: z.number().optional(),
+  deliveryNote: z.string().max(500).optional(),
+  customerId: z.string().optional(),
+  items: z.array(z.object({
+    productId: z.number().int().positive(),
+    quantity: z.number().positive(),
+  })).min(1, "At least one item is required"),
+})
+
+const updateOrderSchema = z.object({
+  status: z.string().optional(),
+  assignedTo: z.string().optional(),
+  assignedName: z.string().optional(),
+  driverId: z.string().nullable().optional(),
+  notes: z.string().optional(),
+  paidAmount: z.number().min(0).optional(),
+  cancelledReason: z.string().optional(),
+})
+
+const driverStatusSchema = z.object({
+  status: z.enum(["OutForDelivery", "Delivered"]),
+  paidAmount: z.number().min(0).optional(),
+})
+
+const updateSettingsSchema = z.object({
+  deliveryFee: z.number().min(0).optional(),
+  whatsAppAdmin: z.string().max(100).optional(),
+  whatsAppDriverEnabled: z.boolean().optional(),
+  assignMode: z.enum(["manual", "broadcast"]).optional(),
+  assignTimeout: z.number().int().min(1).max(60).optional(),
+  defaultDriverId: z.string().optional(),
+})
+
+const signupSchema = z.object({
+  tenantId: z.string().min(1, "tenantId is required"),
+  name: z.string().min(1, "Name is required").max(200),
+  mobile: z.string().min(1, "Mobile is required").max(50),
+  pin: z.string().min(4, "PIN must be at least 4 characters").max(100),
+})
+
+const loginSchema = z.object({
+  tenantId: z.string().min(1, "tenantId is required"),
+  mobile: z.string().min(1, "Mobile is required").max(50),
+  pin: z.string().min(1, "PIN is required").max(100),
+})
 
 // ── Driver Management (admin auth) ──
 
@@ -31,15 +114,7 @@ router.get("/drivers", requireAuth, async (req: AuthRequest, res: ServerResponse
 // Create driver
 router.post("/drivers", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const { name, mobile, code, pin } = req.body as { name?: string; mobile?: string; code?: string; pin?: string }
-    if (!name || !code || !pin) {
-      json(res, { error: "Name, code, and PIN are required" }, 400)
-      return
-    }
-    if (pin.length < 4) {
-      json(res, { error: "PIN must be at least 4 characters" }, 400)
-      return
-    }
+    const { name, mobile, code, pin } = validate(createDriverSchema, req.body)
     const existing = await prisma.staffUser.findFirst({
       where: { code, role: "Driver", tenantId: req.auth!.tenantId },
     })
@@ -61,6 +136,7 @@ router.post("/drivers", requireAuth, async (req: AuthRequest, res: ServerRespons
     })
     json(res, driver, 201)
   } catch (err) {
+    if (err instanceof ValidationError) { json(res, { error: err.message }, 400); return }
     console.error("Create driver error:", err)
     json(res, { error: "Failed to create driver" }, 500)
   }
@@ -77,19 +153,19 @@ router.patch("/drivers/:id", requireAuth, async (req: AuthRequest, res: ServerRe
       json(res, { error: "Driver not found" }, 404)
       return
     }
-    const { name, mobile, code, pin, active } = req.body as { name?: string; mobile?: string; code?: string; pin?: string; active?: boolean }
+    const body = validate(updateDriverSchema, req.body)
     const updateData: Record<string, unknown> = {}
-    if (name !== undefined) updateData.name = name
-    if (mobile !== undefined) updateData.mobile = mobile
-    if (code !== undefined) {
-      if (code !== existing.code) {
-        const dup = await prisma.staffUser.findFirst({ where: { code, role: "Driver", id: { not: driverId }, tenantId: req.auth!.tenantId } })
+    if (body.name !== undefined) updateData.name = body.name
+    if (body.mobile !== undefined) updateData.mobile = body.mobile
+    if (body.code !== undefined) {
+      if (body.code !== existing.code) {
+        const dup = await prisma.staffUser.findFirst({ where: { code: body.code, role: "Driver", id: { not: driverId }, tenantId: req.auth!.tenantId } })
         if (dup) { json(res, { error: "Code already in use" }, 409); return }
       }
-      updateData.code = code
+      updateData.code = body.code
     }
-    if (active !== undefined) updateData.active = active
-    if (pin !== undefined) updateData.pin = await bcrypt.hash(pin, 10)
+    if (body.active !== undefined) updateData.active = body.active
+    if (body.pin !== undefined) updateData.pin = await bcrypt.hash(body.pin, 10)
 
     const driver = await prisma.staffUser.update({
       where: { id: driverId },
@@ -98,6 +174,7 @@ router.patch("/drivers/:id", requireAuth, async (req: AuthRequest, res: ServerRe
     })
     json(res, driver)
   } catch (err) {
+    if (err instanceof ValidationError) { json(res, { error: err.message }, 400); return }
     console.error("Update driver error:", err)
     json(res, { error: "Failed to update driver" }, 500)
   }
@@ -106,22 +183,7 @@ router.patch("/drivers/:id", requireAuth, async (req: AuthRequest, res: ServerRe
 // Customer-facing: create delivery order (no auth)
 router.post("/order", async (req: any, res: ServerResponse) => {
   try {
-    const body = req.body as {
-      tenantId?: string
-      customerName?: string
-      customerPhone?: string
-      address?: string
-      locationLat?: number
-      locationLng?: number
-      deliveryNote?: string
-      customerId?: string
-      items?: Array<{ productId: number; quantity: number }>
-    }
-
-    if (!body.tenantId || !body.customerName || !body.customerPhone || !body.address || !body.items?.length) {
-      json(res, { error: "tenantId, customerName, customerPhone, address, and items are required" }, 400)
-      return
-    }
+    const body = validate(createOrderSchema, req.body)
 
     const tenant = await prisma.tenant.findUnique({ where: { id: body.tenantId } })
     if (!tenant) {
@@ -164,22 +226,25 @@ router.post("/order", async (req: any, res: ServerResponse) => {
       select: { deliveryFee: true, assignMode: true, defaultDriverId: true },
     })
 
-    const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
     const resolvedItems = products.map((product) => {
       const quantity = normalizedItems.get(product.id) ?? 0
-      const unitPrice = Number(product.price)
+      const unitPrice = product.price  // Prisma Decimal — exact precision
+      const total = unitPrice.mul(quantity).toDecimalPlaces(2)
       return {
         productId: product.id,
         productName: product.name,
         barcode: product.barcode ?? "",
         quantity,
         unitPrice,
-        total: round2(quantity * unitPrice),
+        total,
       }
     })
-    const itemsTotal = round2(resolvedItems.reduce((sum, i) => sum + i.total, 0))
-    const deliveryFee = round2(Number(settings?.deliveryFee ?? 0))
-    const total = round2(itemsTotal + deliveryFee)
+    const itemsTotal = resolvedItems.reduce(
+      (sum, i) => sum.add(i.total),
+      new Prisma.Decimal(0)
+    )
+    const deliveryFee = settings?.deliveryFee ?? new Prisma.Decimal(0)
+    const total = itemsTotal.add(deliveryFee).toDecimalPlaces(2)
 
     const orderCount = await prisma.deliveryOrder.count({ where: { tenantId: body.tenantId } })
     const suffix = crypto.randomInt(1000, 9999)
@@ -242,6 +307,7 @@ router.post("/order", async (req: any, res: ServerResponse) => {
 
     json(res, { order }, 201)
   } catch (err) {
+    if (err instanceof ValidationError) { json(res, { error: err.message }, 400); return }
     console.error("Delivery order creation error:", err)
     json(res, { error: "Failed to create delivery order" }, 500)
   }
@@ -406,10 +472,7 @@ router.get("/orders", requireAuth, async (req: AuthRequest, res: ServerResponse)
 router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
-    const body = req.body as {
-      status?: string; assignedTo?: string; assignedName?: string; driverId?: string;
-      notes?: string; paidAmount?: number; cancelledReason?: string
-    }
+    const body = validate(updateOrderSchema, req.body)
     const updateData: Record<string, unknown> = {}
 
     if (body.status) updateData.status = body.status
@@ -475,6 +538,7 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerRes
 
     json(res, order)
   } catch (err) {
+    if (err instanceof ValidationError) { json(res, { error: err.message }, 400); return }
     console.error("Delivery order update error:", err)
     json(res, { error: "Failed to update order" }, 500)
   }
@@ -569,20 +633,18 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
       return
     }
 
-    const allowedStatuses = ["OutForDelivery", "Delivered"]
-    const { status: newStatus, paidAmount } = req.body as { status?: string; paidAmount?: number }
-    if (!newStatus || !allowedStatuses.includes(newStatus)) {
-      json(res, { error: "You can only set OutForDelivery or Delivered" }, 400)
-      return
-    }
+    const { status: newStatus, paidAmount } = validate(driverStatusSchema, req.body)
 
     const updateData: Record<string, unknown> = { status: newStatus }
     if (newStatus === "Delivered") {
       updateData.deliveredAt = new Date()
       if (typeof paidAmount === "number") {
-        const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100
+        const totalDecimal = order.total as Prisma.Decimal
+        const changeDecimal = totalDecimal.gt(paidAmount)
+          ? new Prisma.Decimal(0)
+          : new Prisma.Decimal(paidAmount).sub(totalDecimal)
         updateData.paidAmount = paidAmount
-        updateData.changeRequired = round2(Math.max(0, paidAmount - Number(order.total ?? 0)))
+        updateData.changeRequired = changeDecimal.toDecimalPlaces(2)
       }
     }
 
@@ -611,6 +673,7 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
 
     json(res, updated)
   } catch (err) {
+    if (err instanceof ValidationError) { json(res, { error: err.message }, 400); return }
     console.error("Driver order update error:", err)
     json(res, { error: "Failed to update order" }, 500)
   }
@@ -648,14 +711,7 @@ router.get("/settings", async (req: any, res: ServerResponse) => {
 router.patch("/settings", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
-    const body = req.body as {
-      deliveryFee?: number
-      whatsAppAdmin?: string
-      whatsAppDriverEnabled?: boolean
-      assignMode?: string
-      assignTimeout?: number
-      defaultDriverId?: string
-    }
+    const body = validate(updateSettingsSchema, req.body)
     const updateData: Record<string, unknown> = {}
     if (body.deliveryFee !== undefined) updateData.deliveryFee = body.deliveryFee
     if (body.whatsAppAdmin !== undefined) updateData.whatsAppAdmin = body.whatsAppAdmin
@@ -664,13 +720,18 @@ router.patch("/settings", requireAuth, async (req: AuthRequest, res: ServerRespo
     if (body.assignTimeout !== undefined) updateData.assignTimeout = body.assignTimeout
     if (body.defaultDriverId !== undefined) updateData.defaultDriverId = body.defaultDriverId
 
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true },
+    })
     const settings = await prisma.appSettings.upsert({
       where: { tenantId },
       update: updateData as any,
-      create: { tenantId, ...updateData } as any,
+      create: { tenantId, storeName: tenant?.name ?? "", ...updateData } as any,
     })
     json(res, settings)
   } catch (err) {
+    if (err instanceof ValidationError) { json(res, { error: err.message }, 400); return }
     console.error("Delivery settings update error:", err)
     json(res, { error: "Failed to update delivery settings" }, 500)
   }
@@ -759,15 +820,7 @@ router.post("/driver/orders/:id/accept", requireAuth, requireDriver, async (req:
 // Customer signup (creates account or adds PIN to existing customer)
 router.post("/customer/signup", async (req: any, res: ServerResponse) => {
   try {
-    const { tenantId, name, mobile, pin } = req.body as { tenantId?: string; name?: string; mobile?: string; pin?: string }
-    if (!tenantId || !name || !mobile || !pin) {
-      json(res, { error: "tenantId, name, mobile, and pin are required" }, 400)
-      return
-    }
-    if (pin.length < 4) {
-      json(res, { error: "PIN must be at least 4 characters" }, 400)
-      return
-    }
+    const { tenantId, name, mobile, pin } = validate(signupSchema, req.body)
     const existing = await prisma.customer.findFirst({ where: { tenantId, mobile } })
     if (existing) {
       if (existing.pin) {
@@ -788,6 +841,7 @@ router.post("/customer/signup", async (req: any, res: ServerResponse) => {
     })
     json(res, { customer }, 201)
   } catch (err) {
+    if (err instanceof ValidationError) { json(res, { error: err.message }, 400); return }
     console.error("Customer signup error:", err)
     json(res, { error: "Failed to create account" }, 500)
   }
@@ -796,11 +850,7 @@ router.post("/customer/signup", async (req: any, res: ServerResponse) => {
 // Customer login
 router.post("/customer/login", async (req: any, res: ServerResponse) => {
   try {
-    const { tenantId, mobile, pin } = req.body as { tenantId?: string; mobile?: string; pin?: string }
-    if (!tenantId || !mobile || !pin) {
-      json(res, { error: "tenantId, mobile, and pin are required" }, 400)
-      return
-    }
+    const { tenantId, mobile, pin } = validate(loginSchema, req.body)
     const customer = await prisma.customer.findFirst({
       where: { tenantId, mobile },
       select: { id: true, name: true, mobile: true, pin: true },
@@ -824,6 +874,7 @@ router.post("/customer/login", async (req: any, res: ServerResponse) => {
       customer: { id: customer.id, name: customer.name, mobile: customer.mobile },
     })
   } catch (err) {
+    if (err instanceof ValidationError) { json(res, { error: err.message }, 400); return }
     console.error("Customer login error:", err)
     json(res, { error: "Failed to login" }, 500)
   }

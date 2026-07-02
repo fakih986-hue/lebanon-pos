@@ -16,6 +16,7 @@ const pageCopy: Record<string, { titleKey: string; subtitleKey: string }> = {
   "/": { titleKey: "desktop.page.pos.title", subtitleKey: "desktop.page.pos.subtitle" },
   "/dashboard": { titleKey: "desktop.page.dashboard.title", subtitleKey: "desktop.page.dashboard.subtitle" },
   "/products": { titleKey: "desktop.page.products.title", subtitleKey: "desktop.page.products.subtitle" },
+  "/products/count": { titleKey: "desktop.page.products.title", subtitleKey: "desktop.page.products.subtitle" },
   "/sales": { titleKey: "desktop.page.sales.title", subtitleKey: "desktop.page.sales.subtitle" },
   "/products/new": { titleKey: "desktop.page.receive.title", subtitleKey: "desktop.page.receive.subtitle" },
   "/customers": { titleKey: "desktop.page.customers.title", subtitleKey: "desktop.page.customers.subtitle" },
@@ -49,7 +50,7 @@ export default function Topbar() {
     <header className={`topbar-shell flex shrink-0 items-center justify-between gap-3 border-b px-4 sm:px-6 ${isPosRoute ? "min-h-[44px]" : "min-h-[64px]"}`}>
       {!isPosRoute && (
         <div className="min-w-0">
-          <h2 className="truncate text-lg font-black leading-tight tracking-tight sm:text-xl" style={{ color: "var(--text)" }}>
+          <h2 className="truncate text-lg font-bold leading-tight tracking-tight sm:text-xl" style={{ color: "var(--text)" }}>
             {t(page.titleKey)}
           </h2>
           <p className="hidden text-[12px] font-semibold sm:block" style={{ color: "var(--text-3)" }}>
@@ -60,7 +61,7 @@ export default function Topbar() {
 
       {isPosRoute && (
         <div className="flex items-center gap-2">
-          <span className={`h-2 w-2 rounded-full ${activeShift ? "bg-emerald-500" : "bg-zinc-400"}`} />
+          <span className={`h-2 w-2 rounded-full ${activeShift ? "" : "bg-zinc-400"}`} style={activeShift ? { background: "var(--success)" } : undefined} />
           <span className="text-[12px] font-bold" style={{ color: activeShift ? "var(--brand-text)" : "var(--text-3)" }}>
             {activeShift?.shiftNumber ?? t("desktop.no_shift")}
           </span>
@@ -79,7 +80,7 @@ export default function Topbar() {
                 : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }
             }
           >
-            <span className={`h-1.5 w-1.5 rounded-full ${activeShift ? "bg-emerald-500" : "bg-zinc-400"}`} />
+            <span className={`h-1.5 w-1.5 rounded-full ${activeShift ? "" : "bg-zinc-400"}`} style={activeShift ? { background: "var(--success)" } : undefined} />
             {activeShift?.shiftNumber ?? t("desktop.no_shift")}
           </div>
         )}
@@ -102,7 +103,7 @@ export default function Topbar() {
         <button
           type="button"
           onClick={() => setLocale(locale === "en" ? "ar" : "en")}
-          className="btn btn-ghost btn-icon h-8 w-8 rounded-lg text-[12px] font-black"
+          className="btn btn-ghost btn-icon h-8 w-8 rounded-lg text-[12px] font-bold"
           title={locale === "en" ? "Arabic" : "English"}
         >
           {locale === "en" ? "AR" : "EN"}

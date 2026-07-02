@@ -105,13 +105,13 @@ export default function SearchToolbar({
         />
 
         {/* Right side: clear (when text) or subtle count */}
-        <div className="flex shrink-0 items-center gap-1 pr-2">
+        <div className="flex shrink-0 items-center gap-1 pe-2">
           <AnimatePresence>
             {hasInput && (
               <MotionButton
                 type="button"
                 onClick={() => onScanCodeChange("")}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black transition hover:opacity-80"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold transition hover:opacity-80"
                 style={{ background: "var(--surface-2)", color: "var(--text-3)" }}
                 initial={{ opacity: 0, scale: 0.7 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -133,7 +133,7 @@ export default function SearchToolbar({
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <MotionSpan
             className="h-[6px] w-[6px] shrink-0 rounded-full"
-            style={{ background: cameraActive ? "#ef4444" : "var(--brand)" }}
+            style={{ background: cameraActive ? "var(--rose)" : "var(--brand)" }}
             animate={cameraActive ? { scale: [1, 1.6, 1], opacity: [1, 0.3, 1] } : {}}
             transition={cameraActive ? { duration: 1, repeat: Infinity } : {}}
           />
@@ -165,7 +165,7 @@ export default function SearchToolbar({
           onClick={onStartCamera}
           className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
           style={cameraActive
-            ? { background: "rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.30)", color: "#ef4444" }
+            ? { background: "rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.30)", color: "var(--rose)" }
             : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }
           }
           whileTap={{ scale: 0.88 }}
@@ -225,7 +225,7 @@ export default function SearchToolbar({
                     <button
                       type="button"
                       onClick={() => { onShowShortcuts(); setMenuOpen(false) }}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold transition hover:opacity-80"
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-start text-[13px] font-semibold transition hover:opacity-80"
                       style={{ color: "var(--text)" }}
                     >
                       <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "var(--surface-2)" }}>

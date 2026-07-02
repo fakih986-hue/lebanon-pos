@@ -41,18 +41,18 @@ export default function DailyReportPanel({ expanded, onToggle }: { expanded: boo
       {expanded && data && (
         <div className="px-4 pb-3 space-y-1 text-[11px]">
           <div className="flex justify-between" style={{ color: "var(--text-2)" }}><span>Sales</span><span className="font-bold tabular-nums">{formatCurrency(data.m.todayNetRevenue)}</span></div>
-          <div className="flex justify-between ml-4" style={{ color: "var(--text-3)" }}><span>Cash</span><span className="tabular-nums">{formatCurrency(data.mix.Cash)}</span></div>
-          <div className="flex justify-between ml-4" style={{ color: "var(--text-3)" }}><span>Card</span><span className="tabular-nums">{formatCurrency(data.mix.Card)}</span></div>
-          <div className="flex justify-between ml-4" style={{ color: "var(--text-3)" }}><span>Wallet</span><span className="tabular-nums">{formatCurrency(data.mix.Wallet)}</span></div>
-          <div className="flex justify-between ml-4" style={{ color: "var(--text-3)" }}><span>Debt</span><span className="tabular-nums">{formatCurrency(data.mix.Debt)}</span></div>
+          <div className="flex justify-between ms-4" style={{ color: "var(--text-3)" }}><span>Cash</span><span className="tabular-nums">{formatCurrency(data.mix.Cash)}</span></div>
+          <div className="flex justify-between ms-4" style={{ color: "var(--text-3)" }}><span>Card</span><span className="tabular-nums">{formatCurrency(data.mix.Card)}</span></div>
+          <div className="flex justify-between ms-4" style={{ color: "var(--text-3)" }}><span>Wallet</span><span className="tabular-nums">{formatCurrency(data.mix.Wallet)}</span></div>
+          <div className="flex justify-between ms-4" style={{ color: "var(--text-3)" }}><span>Debt</span><span className="tabular-nums">{formatCurrency(data.mix.Debt)}</span></div>
           <div className="flex justify-between" style={{ color: "var(--rose)" }}><span>Expenses</span><span className="font-bold tabular-nums">{formatCurrency(data.e.today)}</span></div>
           <div className="border-t pt-1 flex justify-between text-[12px]" style={{ borderColor: "var(--border)" }}>
             <span style={{ color: "var(--text)" }}>Profit</span>
-            <span className={`font-black tabular-nums ${data.m.todayProfit >= 0 ? "" : "text-[var(--rose)]"}`} style={{ color: data.m.todayProfit >= 0 ? "#22C55E" : "var(--rose)" }}>
+            <span className={`font-bold tabular-nums ${data.m.todayProfit >= 0 ? "" : "text-[var(--rose)]"}`} style={{ color: data.m.todayProfit >= 0 ? "var(--success)" : "var(--rose)" }}>
               {formatCurrency(data.m.todayProfit)}
             </span>
           </div>
-          <div className="text-right text-[10px]" style={{ color: "var(--text-3)" }}>
+          <div className="text-end text-[10px]" style={{ color: "var(--text-3)" }}>
             {formatLbpCurrency(usdToLbp(data.m.todayProfit, rate))}
           </div>
           <button onClick={handleShare} className="flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[11px] font-bold transition hover:opacity-80"

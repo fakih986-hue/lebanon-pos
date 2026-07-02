@@ -12,20 +12,20 @@ function getStockStatus(product: Product, t: (key: string, params?: any) => stri
   if (product.stock <= 0) {
     return {
       label: t("pos.stock.out"),
-      className: "border-rose-200 bg-rose-50 text-rose-700",
+      className: "chip chip-danger",
     }
   }
 
   if (product.stock <= reorderPoint) {
     return {
       label: t("pos.stock.low"),
-      className: "border-amber-200 bg-amber-50 text-amber-700",
+      className: "chip chip-warning",
     }
   }
 
   return {
     label: t("pos.stock.active"),
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    className: "chip chip-success",
   }
 }
 
@@ -136,7 +136,7 @@ export default function ProductTable({
       <div className="overflow-x-auto">
         <table className="min-w-full border-separate border-spacing-0 text-sm">
           <thead>
-            <tr className="text-left text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
+            <tr className="text-start text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
               <th className="border-b border-zinc-200 px-4 py-3">
                 {t("pos.table.product")}
               </th>
@@ -149,13 +149,13 @@ export default function ProductTable({
               <th className="border-b border-zinc-200 px-4 py-3">
                 {t("pos.table.barcodes")}
               </th>
-              <th className="border-b border-zinc-200 px-4 py-3 text-right">
+              <th className="border-b border-zinc-200 px-4 py-3 text-end">
                 {t("pos.table.price")}
               </th>
-              <th className="border-b border-zinc-200 px-4 py-3 text-right">
+              <th className="border-b border-zinc-200 px-4 py-3 text-end">
                 {t("pos.table.cost")}
               </th>
-              <th className="border-b border-zinc-200 px-4 py-3 text-right">
+              <th className="border-b border-zinc-200 px-4 py-3 text-end">
                 {t("pos.table.stock")}
               </th>
               <th className="border-b border-zinc-200 px-4 py-3">
@@ -190,7 +190,7 @@ export default function ProductTable({
               return (
                 <Fragment key={product.id}>
                   <tr className="hover:bg-zinc-50">
-                    <td className="border-b border-zinc-100 px-4 py-4">
+                    <td className="border-b border-zinc-100 px-4 py-2.5">
                       <div className="flex items-center gap-2">
                         {childVariants.length > 0 ? (
                           <button
@@ -212,13 +212,13 @@ export default function ProductTable({
                         </span>
                       </div>
                     </td>
-                    <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                    <td className="border-b border-zinc-100 px-4 py-2.5 text-zinc-600">
                       {product.category}
                     </td>
-                    <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                    <td className="border-b border-zinc-100 px-4 py-2.5 text-zinc-600">
                       {product.supplierName ?? "-"}
                     </td>
-                    <td className="border-b border-zinc-100 px-4 py-4">
+                    <td className="border-b border-zinc-100 px-4 py-2.5">
                       <div className="space-y-1 text-zinc-500">
                         <span className="inline-flex items-center gap-2">
                           <Barcode size={15} />
@@ -233,23 +233,23 @@ export default function ProductTable({
                         ) : null}
                       </div>
                     </td>
-                    <td className="border-b border-zinc-100 px-4 py-4 text-right font-bold text-zinc-950">
+                    <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-bold text-zinc-950">
                       {formatCurrency(product.price)}
                     </td>
-                    <td className="border-b border-zinc-100 px-4 py-4 text-right text-zinc-600">
+                    <td className="border-b border-zinc-100 px-4 py-2.5 text-end text-zinc-600">
                       {formatCurrency(product.cost)}
                     </td>
-                    <td className="border-b border-zinc-100 px-4 py-4 text-right font-semibold text-zinc-800">
+                    <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-semibold text-zinc-800">
                       {formatNumber(product.stock)}
                     </td>
-                    <td className="border-b border-zinc-100 px-4 py-4">
+                    <td className="border-b border-zinc-100 px-4 py-2.5">
                       <span
-                        className={`inline-flex rounded-lg border px-2.5 py-1 text-xs font-bold ${status.className}`}
+                        className={status.className}
                       >
                         {status.label}
                       </span>
                     </td>
-                    <td className="border-b border-zinc-100 px-4 py-4">
+                    <td className="border-b border-zinc-100 px-4 py-2.5">
                       <button
                         type="button"
                         onClick={() => onToggleFavorite(product)}
@@ -270,7 +270,7 @@ export default function ProductTable({
                         />
                       </button>
                     </td>
-                    <td className="border-b border-zinc-100 px-4 py-4">
+                    <td className="border-b border-zinc-100 px-4 py-2.5">
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); onEditClick(product) }}
@@ -307,7 +307,7 @@ export default function ProductTable({
                             key={variant.id}
                             className="bg-zinc-50/50 hover:bg-zinc-100/50"
                           >
-                            <td className="border-b border-zinc-100 px-4 py-4 pl-12">
+                            <td className="border-b border-zinc-100 px-4 py-2.5 ps-12">
                               <div className="flex items-center gap-2">
                                 <span className="inline-flex items-center gap-1 rounded bg-zinc-200 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-zinc-600">
                                   {t("pos.variant")}
@@ -317,13 +317,13 @@ export default function ProductTable({
                                 </span>
                               </div>
                             </td>
-                            <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                            <td className="border-b border-zinc-100 px-4 py-2.5 text-zinc-600">
                               {variant.category}
                             </td>
-                            <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                            <td className="border-b border-zinc-100 px-4 py-2.5 text-zinc-600">
                               {variant.supplierName ?? "-"}
                             </td>
-                            <td className="border-b border-zinc-100 px-4 py-4">
+                            <td className="border-b border-zinc-100 px-4 py-2.5">
                               <div className="space-y-1 text-zinc-500">
                                 <span className="inline-flex items-center gap-2">
                                   <Barcode size={15} />
@@ -331,23 +331,23 @@ export default function ProductTable({
                                 </span>
                               </div>
                             </td>
-                            <td className="border-b border-zinc-100 px-4 py-4 text-right font-bold text-zinc-950">
+                            <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-bold text-zinc-950">
                               {formatCurrency(variant.price)}
                             </td>
-                            <td className="border-b border-zinc-100 px-4 py-4 text-right text-zinc-600">
+                            <td className="border-b border-zinc-100 px-4 py-2.5 text-end text-zinc-600">
                               {formatCurrency(variant.cost)}
                             </td>
-                            <td className="border-b border-zinc-100 px-4 py-4 text-right font-semibold text-zinc-800">
+                            <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-semibold text-zinc-800">
                               {formatNumber(variant.stock)}
                             </td>
-                            <td className="border-b border-zinc-100 px-4 py-4">
+                            <td className="border-b border-zinc-100 px-4 py-2.5">
                               <span
-                                className={`inline-flex rounded-lg border px-2.5 py-1 text-xs font-bold ${vStatus.className}`}
+                                className={vStatus.className}
                               >
                                 {vStatus.label}
                               </span>
                             </td>
-                            <td className="border-b border-zinc-100 px-4 py-4">
+                            <td className="border-b border-zinc-100 px-4 py-2.5">
                               <button
                                 type="button"
                                 onClick={() => onToggleFavorite(variant)}
@@ -372,7 +372,7 @@ export default function ProductTable({
                                 />
                               </button>
                             </td>
-                            <td className="border-b border-zinc-100 px-4 py-4">
+                            <td className="border-b border-zinc-100 px-4 py-2.5">
                                <button
                                  type="button"
                                  onClick={(e) => { e.stopPropagation(); onEditClick(variant) }}
@@ -403,7 +403,7 @@ export default function ProductTable({
                   const vStatus = getStockStatus(variant, t)
                   return (
                     <tr key={variant.id} className="hover:bg-zinc-50">
-                      <td className="border-b border-zinc-100 px-4 py-4">
+                      <td className="border-b border-zinc-100 px-4 py-2.5">
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center gap-1 rounded bg-zinc-200 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-zinc-600">
                             {t("pos.variant")}
@@ -413,13 +413,13 @@ export default function ProductTable({
                           </span>
                         </div>
                       </td>
-                      <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                      <td className="border-b border-zinc-100 px-4 py-2.5 text-zinc-600">
                         {variant.category}
                       </td>
-                      <td className="border-b border-zinc-100 px-4 py-4 text-zinc-600">
+                      <td className="border-b border-zinc-100 px-4 py-2.5 text-zinc-600">
                         {variant.supplierName ?? "-"}
                       </td>
-                      <td className="border-b border-zinc-100 px-4 py-4">
+                      <td className="border-b border-zinc-100 px-4 py-2.5">
                         <div className="space-y-1 text-zinc-500">
                           <span className="inline-flex items-center gap-2">
                             <Barcode size={15} />
@@ -427,23 +427,23 @@ export default function ProductTable({
                           </span>
                         </div>
                       </td>
-                      <td className="border-b border-zinc-100 px-4 py-4 text-right font-bold text-zinc-950">
+                      <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-bold text-zinc-950">
                         {formatCurrency(variant.price)}
                       </td>
-                      <td className="border-b border-zinc-100 px-4 py-4 text-right text-zinc-600">
+                      <td className="border-b border-zinc-100 px-4 py-2.5 text-end text-zinc-600">
                         {formatCurrency(variant.cost)}
                       </td>
-                      <td className="border-b border-zinc-100 px-4 py-4 text-right font-semibold text-zinc-800">
+                      <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-semibold text-zinc-800">
                         {formatNumber(variant.stock)}
                       </td>
-                      <td className="border-b border-zinc-100 px-4 py-4">
+                      <td className="border-b border-zinc-100 px-4 py-2.5">
                         <span
-                          className={`inline-flex rounded-lg border px-2.5 py-1 text-xs font-bold ${vStatus.className}`}
+                          className={vStatus.className}
                         >
                           {vStatus.label}
                         </span>
                       </td>
-                      <td className="border-b border-zinc-100 px-4 py-4">
+                      <td className="border-b border-zinc-100 px-4 py-2.5">
                         <button
                           type="button"
                           onClick={() => onToggleFavorite(variant)}
@@ -466,7 +466,7 @@ export default function ProductTable({
                         />
                       </button>
                     </td>
-                    <td className="border-b border-zinc-100 px-4 py-4">
+                    <td className="border-b border-zinc-100 px-4 py-2.5">
                       <button
                         type="button"
                         onClick={() => onDeleteClick(variant.id)}

@@ -333,7 +333,7 @@ export default function AlertsPanel({
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-bold">{promo.product.name}</p>
-                  <p className="rounded-lg bg-white px-2 py-1 text-xs font-black text-violet-800">
+                  <p className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-violet-800">
                     {promo.suggestedDiscountPercent}% off
                   </p>
                 </div>

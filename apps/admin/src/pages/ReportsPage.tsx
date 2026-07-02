@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { api } from "../app/api"
 import { getToken } from "../main"
+import { useI18n } from "@lebanonpos/shared"
 
 function formatCurrency(n: number) { return n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 2 }) }
 function formatPct(n: number) { return n.toFixed(1) + "%" }
@@ -67,6 +68,7 @@ function StatCard({ label, value, sub, color }: { label: string; value: string; 
 }
 
 export function ReportsPage() {
+  const { t } = useI18n()
   const [activeTab, setActiveTab] = useState<"low-stock" | "x-report" | "margin" | "debt">("low-stock")
 
   // Low stock
@@ -103,7 +105,7 @@ export function ReportsPage() {
     try {
       const data = await api<{ items: LowStockItem[] }>("/api/reports/low-stock")
       setLowStock(data.items)
-    } catch { /* ignore */ }
+    } catch (e) { console.error("[ReportsPage] Failed to load low stock:", e) }
     setLowStockLoading(false)
   }
 
@@ -125,7 +127,7 @@ export function ReportsPage() {
       if (zNotes) body.notes = zNotes
       const data = await api<ZReportData>("/api/reports/z-report", { method: "POST", body: JSON.stringify(body) })
       setZReport(data)
-    } catch { /* ignore */ }
+    } catch (e) { console.error("[ReportsPage] Failed to close Z report:", e) }
     setZLoading(false)
   }
 
@@ -134,7 +136,7 @@ export function ReportsPage() {
     try {
       const data = await api<MarginData>(`/api/reports/margin?days=${marginDays}`)
       setMargin(data)
-    } catch { /* ignore */ }
+    } catch (e) { console.error("[ReportsPage] Failed to load margin:", e) }
     setMarginLoading(false)
   }
 
@@ -143,23 +145,23 @@ export function ReportsPage() {
     try {
       const data = await api<DebtAgingData>("/api/reports/debt-aging")
       setDebt(data)
-    } catch { /* ignore */ }
+    } catch (e) { console.error("[ReportsPage] Failed to load debt aging:", e) }
     setDebtLoading(false)
   }
 
   const tabs = [
-    { key: "low-stock" as const, label: "Low Stock" },
-    { key: "x-report" as const, label: "X Report" },
-    { key: "margin" as const, label: "Margin" },
-    { key: "debt" as const, label: "Debt Aging" },
+    { key: "low-stock" as const, label: t("admin.low_stock") },
+    { key: "x-report" as const, label: t("admin.x_report") },
+    { key: "margin" as const, label: t("admin.margin") },
+    { key: "debt" as const, label: t("admin.debt_aging") },
   ]
 
   return (
     <div className="animate-slide-up">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Reports</h1>
-          <p className="text-sm opacity-60">Low stock alerts, shift summaries, margin analysis, and debt tracking</p>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{t("admin.reports")}</h1>
+          <p className="text-sm opacity-60">{t("admin.reports_subtitle")}</p>
         </div>
       </div>
 
@@ -179,15 +181,15 @@ export function ReportsPage() {
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <button onClick={loadLowStock} disabled={lowStockLoading}
               className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all duration-200 disabled:opacity-50">
-              {lowStockLoading ? "Loading..." : "Refresh"}
+              {lowStockLoading ? t("admin.loading") : t("admin.refresh")}
             </button>
             <button onClick={() => downloadCsv("/api/reports/export/low-stock", `low-stock-${new Date().toISOString().slice(0, 10)}.csv`)}
               className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-sm font-medium transition-all duration-200">
-              Export CSV
+              {t("admin.export_csv")}
             </button>
           </div>
           {lowStock.length === 0 && !lowStockLoading ? (
-            <p className="text-sm opacity-50 py-8 text-center">No products below reorder point</p>
+            <p className="text-sm opacity-50 py-8 text-center">{t("admin.no_low_stock")}</p>
           ) : (
             <div className="grid gap-3">
               {lowStock.map(item => (
@@ -197,9 +199,9 @@ export function ReportsPage() {
                     <p className="text-xs opacity-50">{item.barcode} &middot; {item.category} {item.supplierName ? `· ${item.supplierName}` : ""}</p>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
-                    <span className="text-rose-400 font-bold">{item.stock} left</span>
-                    <span className="opacity-50">reorder at {item.reorderPoint}</span>
-                    <span className="bg-amber-500/20 text-amber-300 px-2 py-1 rounded-lg font-medium">Need {item.suggestedReorder}</span>
+                    <span className="text-rose-400 font-bold">{t("admin.stock_left", { stock: item.stock })}</span>
+                    <span className="opacity-50">{t("admin.reorder_at", { point: item.reorderPoint })}</span>
+                    <span className="bg-amber-500/20 text-amber-300 px-2 py-1 rounded-lg font-medium">{t("admin.need", { qty: item.suggestedReorder })}</span>
                     <span className="opacity-40">{formatCurrency(item.price)}</span>
                   </div>
                 </div>
@@ -215,69 +217,69 @@ export function ReportsPage() {
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <button onClick={loadXReport} disabled={xLoading}
               className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all duration-200 disabled:opacity-50">
-              {xLoading ? "Loading..." : "Generate X Report"}
+              {xLoading ? t("admin.loading") : t("admin.generate_x_report")}
             </button>
             <button onClick={() => downloadCsv("/api/reports/export/x-report", `x-report.csv`)}
               className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-sm font-medium transition-all duration-200">
-              Export CSV
+              {t("admin.export_csv")}
             </button>
           </div>
           {xError && <p className="text-rose-400 text-sm mb-4">{xError}</p>}
           {xReport && (
             <div className="space-y-4">
               <div className="data-card p-5 rounded-xl">
-                <p className="font-bold mb-2">Shift #{xReport.shift.number}</p>
-                <p className="text-sm opacity-60">Opened {new Date(xReport.shift.openedAt).toLocaleString()} by {xReport.shift.openedBy}</p>
+                <p className="font-bold mb-2">{t("admin.shift_num", { num: xReport.shift.number })}</p>
+                <p className="text-sm opacity-60">{t("admin.opened_by", { date: new Date(xReport.shift.openedAt).toLocaleString(), name: xReport.shift.openedBy })}</p>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StatCard label="Sales" value={xReport.sales.count.toString()} sub={formatCurrency(xReport.sales.total)} color="emerald" />
-                <StatCard label="Refunds" value={xReport.refunds.count.toString()} sub={formatCurrency(xReport.refunds.total)} color="rose" />
-                <StatCard label="Expenses" value={xReport.expenses.count.toString()} sub={formatCurrency(xReport.expenses.total)} color="amber" />
-                <StatCard label="Net Cash" value={formatCurrency(xReport.netCash)} color="indigo" />
+                <StatCard label={t("admin.sales_label")} value={xReport.sales.count.toString()} sub={formatCurrency(xReport.sales.total)} color="emerald" />
+                <StatCard label={t("admin.refunds_label")} value={xReport.refunds.count.toString()} sub={formatCurrency(xReport.refunds.total)} color="rose" />
+                <StatCard label={t("admin.expenses_label")} value={xReport.expenses.count.toString()} sub={formatCurrency(xReport.expenses.total)} color="amber" />
+                <StatCard label={t("admin.net_cash")} value={formatCurrency(xReport.netCash)} color="indigo" />
               </div>
               <div className="data-card p-5 rounded-xl">
-                <p className="font-semibold mb-2">Payment Breakdown</p>
+                <p className="font-semibold mb-2">{t("admin.payment_breakdown")}</p>
                 <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div><span className="opacity-50">Cash:</span> {xReport.paymentBreakdown.cash.count} · {formatCurrency(xReport.paymentBreakdown.cash.total)}</div>
-                  <div><span className="opacity-50">Card:</span> {xReport.paymentBreakdown.card.count} · {formatCurrency(xReport.paymentBreakdown.card.total)}</div>
-                  <div><span className="opacity-50">Wallet:</span> {formatCurrency(xReport.paymentBreakdown.wallet.total)}</div>
+                  <div><span className="opacity-50">{t("admin.cash_label")}</span> {xReport.paymentBreakdown.cash.count} · {formatCurrency(xReport.paymentBreakdown.cash.total)}</div>
+                  <div><span className="opacity-50">{t("admin.card_label")}</span> {xReport.paymentBreakdown.card.count} · {formatCurrency(xReport.paymentBreakdown.card.total)}</div>
+                  <div><span className="opacity-50">{t("admin.wallet_label")}</span> {formatCurrency(xReport.paymentBreakdown.wallet.total)}</div>
                 </div>
               </div>
 
               {/* Z Report (close shift) */}
               <div className="data-card p-5 rounded-xl border border-rose-500/20">
-                <p className="font-bold mb-3 text-rose-400">Close Shift (Z Report)</p>
+                <p className="font-bold mb-3 text-rose-400">{t("admin.close_shift")}</p>
                 <div className="flex flex-wrap items-end gap-3">
                   <div>
-                    <label className="block text-xs opacity-50 mb-1">Closing Cash ($)</label>
+                    <label className="block text-xs opacity-50 mb-1">{t("admin.closing_cash")}</label>
                     <input value={closingCash} onChange={e => setClosingCash(e.target.value)} type="number" min="0" step="0.01"
                       className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm w-32" placeholder="0.00" />
                   </div>
                   <div>
-                    <label className="block text-xs opacity-50 mb-1">Notes</label>
+                    <label className="block text-xs opacity-50 mb-1">{t("admin.notes")}</label>
                     <input value={zNotes} onChange={e => setZNotes(e.target.value)}
-                      className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm w-48" placeholder="Optional" />
+                      className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm w-48" placeholder={t("admin.optional")} />
                   </div>
                   <button onClick={loadZReport} disabled={zLoading || !closingCash}
                     className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold transition-all duration-200 disabled:opacity-50">
-                    {zLoading ? "Closing..." : "Close Shift & Print Z"}
+                    {zLoading ? t("admin.closing") : t("admin.close_shift_print")}
                   </button>
                 </div>
                 {zReport && (
                   <div className="mt-4 pt-4 border-t border-white/10">
-                    <p className="font-bold text-emerald-400 mb-2">Shift Closed</p>
+                    <p className="font-bold text-emerald-400 mb-2">{t("admin.shift_closed")}</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                      <div><span className="opacity-50">Expected Cash:</span><br/>{formatCurrency(zReport.cashReconciliation.expectedCash)}</div>
-                      <div><span className="opacity-50">Closing Cash:</span><br/>{formatCurrency(zReport.cashReconciliation.closingCash)}</div>
-                      <div><span className="opacity-50">Difference:</span><br/><span className={zReport.cashReconciliation.difference !== 0 ? "text-rose-400" : "text-emerald-400"}>{formatCurrency(zReport.cashReconciliation.difference)}</span></div>
-                      <div><span className="opacity-50">Profit:</span><br/>{formatCurrency(zReport.sales.profit)}</div>
+                      <div><span className="opacity-50">{t("admin.expected_cash")}</span><br/>{formatCurrency(zReport.cashReconciliation.expectedCash)}</div>
+                      <div><span className="opacity-50">{t("admin.closing_cash")}</span><br/>{formatCurrency(zReport.cashReconciliation.closingCash)}</div>
+                      <div><span className="opacity-50">{t("admin.difference")}</span><br/><span className={zReport.cashReconciliation.difference !== 0 ? "text-rose-400" : "text-emerald-400"}>{formatCurrency(zReport.cashReconciliation.difference)}</span></div>
+                      <div><span className="opacity-50">{t("admin.profit_label")}</span><br/>{formatCurrency(zReport.sales.profit)}</div>
                     </div>
                   </div>
                 )}
               </div>
             </div>
           )}
-          {!xReport && !xError && !xLoading && <p className="text-sm opacity-50 py-8 text-center">Click "Generate X Report" to view current shift summary</p>}
+          {!xReport && !xError && !xLoading && <p className="text-sm opacity-50 py-8 text-center">{t("admin.generate_hint")}</p>}
         </div>
       )}
 
@@ -287,30 +289,30 @@ export function ReportsPage() {
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <select value={marginDays} onChange={e => setMarginDays(Number(e.target.value))}
               className="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">
-              <option value={7}>7 days</option>
-              <option value={30}>30 days</option>
-              <option value={60}>60 days</option>
-              <option value={90}>90 days</option>
+              <option value={7}>{t("admin.period_7d")}</option>
+              <option value={30}>{t("admin.period_30d")}</option>
+              <option value={60}>{t("admin.period_60d")}</option>
+              <option value={90}>{t("admin.period_90d")}</option>
             </select>
             <button onClick={loadMargin} disabled={marginLoading}
               className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all duration-200 disabled:opacity-50">
-              {marginLoading ? "Loading..." : "Generate"}
+              {marginLoading ? t("admin.loading") : t("admin.generate")}
             </button>
             <button onClick={() => downloadCsv("/api/reports/export/margin", `margin-report.csv`)}
               className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-sm font-medium transition-all duration-200">
-              Export CSV
+              {t("admin.export_csv")}
             </button>
           </div>
           {margin && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StatCard label="Revenue" value={formatCurrency(margin.summary.totalRevenue)} color="emerald" />
-                <StatCard label="Cost" value={formatCurrency(margin.summary.totalCost)} color="rose" />
-                <StatCard label="Margin" value={formatCurrency(margin.summary.totalMargin)} color="indigo" />
-                <StatCard label="Margin %" value={formatPct(margin.summary.marginPct)} color="violet" />
+                <StatCard label={t("admin.revenue")} value={formatCurrency(margin.summary.totalRevenue)} color="emerald" />
+                <StatCard label={t("admin.cost")} value={formatCurrency(margin.summary.totalCost)} color="rose" />
+                <StatCard label={t("admin.margin")} value={formatCurrency(margin.summary.totalMargin)} color="indigo" />
+                <StatCard label={t("admin.margin_pct")} value={formatPct(margin.summary.marginPct)} color="violet" />
               </div>
               <div className="data-card p-5 rounded-xl">
-                <p className="font-semibold mb-3">By Category</p>
+                <p className="font-semibold mb-3">{t("admin.by_category")}</p>
                 <div className="space-y-2">
                   {margin.byCategory.map(c => (
                     <div key={c.category} className="flex items-center justify-between text-sm">
@@ -324,11 +326,11 @@ export function ReportsPage() {
                 </div>
               </div>
               <div className="data-card p-5 rounded-xl overflow-auto">
-                <p className="font-semibold mb-3">By Product (top 50)</p>
+                <p className="font-semibold mb-3">{t("admin.by_product")}</p>
                 <table className="w-full text-sm">
                   <thead><tr className="text-left opacity-50">
-                    <th className="pb-2 pr-4">Product</th><th className="pb-2 pr-4">Category</th><th className="pb-2 pr-4">Qty</th>
-                    <th className="pb-2 pr-4">Revenue</th><th className="pb-2 pr-4">Cost</th><th className="pb-2 pr-4">Margin</th><th className="pb-2">%</th>
+                    <th className="pb-2 pr-4">{t("admin.product_col")}</th><th className="pb-2 pr-4">{t("admin.category_col")}</th><th className="pb-2 pr-4">{t("admin.qty_col")}</th>
+                    <th className="pb-2 pr-4">{t("admin.revenue_col")}</th><th className="pb-2 pr-4">{t("admin.cost_col")}</th><th className="pb-2 pr-4">{t("admin.margin_col")}</th><th className="pb-2">{t("admin.pct_col")}</th>
                   </tr></thead>
                   <tbody>
                     {margin.byProduct.slice(0, 50).map(p => (
@@ -347,7 +349,7 @@ export function ReportsPage() {
               </div>
             </div>
           )}
-          {!margin && !marginLoading && <p className="text-sm opacity-50 py-8 text-center">Select period and click Generate</p>}
+          {!margin && !marginLoading && <p className="text-sm opacity-50 py-8 text-center">{t("admin.select_period")}</p>}
         </div>
       )}
 
@@ -357,25 +359,25 @@ export function ReportsPage() {
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <button onClick={loadDebtAging} disabled={debtLoading}
               className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all duration-200 disabled:opacity-50">
-              {debtLoading ? "Loading..." : "Refresh"}
+              {debtLoading ? t("admin.loading") : t("admin.refresh")}
             </button>
             <button onClick={() => downloadCsv("/api/reports/export/debt-aging", `debt-aging-${new Date().toISOString().slice(0, 10)}.csv`)}
               className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-sm font-medium transition-all duration-200">
-              Export CSV
+              {t("admin.export_csv")}
             </button>
           </div>
           {debt && (
             <div className="space-y-4">
-              <StatCard label="Total Outstanding" value={formatCurrency(debt.totalOutstanding)} color={debt.totalOutstanding > 0 ? "rose" : "emerald"} />
+              <StatCard label={t("admin.total_outstanding")} value={formatCurrency(debt.totalOutstanding)} color={debt.totalOutstanding > 0 ? "rose" : "emerald"} />
               {debt.customers.length === 0 ? (
-                <p className="text-sm opacity-50 py-4 text-center">No outstanding debt</p>
+                <p className="text-sm opacity-50 py-4 text-center">{t("admin.no_outstanding")}</p>
               ) : (
                 <div className="data-card p-5 rounded-xl overflow-auto">
                   <table className="w-full text-sm">
                     <thead><tr className="text-left opacity-50">
-                      <th className="pb-2 pr-4">Customer</th><th className="pb-2 pr-4">Mobile</th><th className="pb-2 pr-4">Outstanding</th>
-                      <th className="pb-2 pr-4">Credit Limit</th><th className="pb-2 pr-4">Current</th><th className="pb-2 pr-4">31-60d</th>
-                      <th className="pb-2 pr-4">61-90d</th><th className="pb-2">90d+</th>
+                      <th className="pb-2 pr-4">{t("admin.customer_col")}</th><th className="pb-2 pr-4">{t("admin.mobile_col")}</th><th className="pb-2 pr-4">{t("admin.outstanding_col")}</th>
+                      <th className="pb-2 pr-4">{t("admin.credit_limit_col")}</th><th className="pb-2 pr-4">{t("admin.current_col")}</th><th className="pb-2 pr-4">{t("admin.days_31_60")}</th>
+                      <th className="pb-2 pr-4">{t("admin.days_61_90")}</th><th className="pb-2">{t("admin.days_90_plus")}</th>
                     </tr></thead>
                     <tbody>
                       {debt.customers.map(c => (
@@ -396,7 +398,7 @@ export function ReportsPage() {
               )}
             </div>
           )}
-          {!debt && !debtLoading && <p className="text-sm opacity-50 py-8 text-center">Click Refresh to load debt aging</p>}
+          {!debt && !debtLoading && <p className="text-sm opacity-50 py-8 text-center">{t("admin.select_refresh")}</p>}
         </div>
       )}
     </div>

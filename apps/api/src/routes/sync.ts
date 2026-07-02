@@ -724,8 +724,10 @@ async function processOperation(
             select: { id: true, name: true, pin: true },
           })
           for (const u of existing) {
-            // Both SHA-256 → direct comparison is reliable
-            if (!u.pin.startsWith("$2") && u.pin === rawPin) {
+            const pinMatches = u.pin.startsWith("$2")
+              ? bcrypt.compareSync(rawPin, u.pin)
+              : u.pin === rawPin
+            if (pinMatches) {
               throw new Error(`PIN is already in use by ${u.name}`)
             }
           }

@@ -95,7 +95,7 @@ export default function NotificationCenter() {
       >
         <Bell size={18} />
         {criticalCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white">
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
             {criticalCount}
           </span>
         )}
@@ -140,7 +140,7 @@ export default function NotificationCenter() {
                   key={n.id}
                   type="button"
                   onClick={() => handleNavigate(n.actionPath)}
-                  className="flex w-full items-start gap-3 rounded-xl p-3 text-left transition hover:opacity-90 active:opacity-70 cursor-pointer"
+                  className="flex w-full items-start gap-3 rounded-xl p-3 text-start transition hover:opacity-90 active:opacity-70 cursor-pointer"
                   style={{ background: styles.bg, border: `1px solid ${styles.border}` }}
                 >
                   <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: styles.border }}>

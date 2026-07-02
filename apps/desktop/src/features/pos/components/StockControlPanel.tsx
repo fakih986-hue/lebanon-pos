@@ -218,10 +218,8 @@ export default function StockControlPanel({
                     {adjustment.productName}
                   </p>
                   <span
-                    className={`rounded-lg px-2 py-1 text-xs font-black ${
-                      adjustment.quantityChange >= 0
-                        ? "bg-emerald-50 text-emerald-700"
-                        : "bg-rose-50 text-rose-700"
+                    className={`chip tabular-nums ${
+                      adjustment.quantityChange >= 0 ? "chip-success" : "chip-danger"
                     }`}
                   >
                     {adjustment.quantityChange > 0 ? "+" : ""}
@@ -343,7 +341,7 @@ export default function StockControlPanel({
                   key={line.productId}
                   type="button"
                   onClick={() => onCountProductIdChange(line.productId)}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-200 p-3 text-left transition hover:bg-zinc-50"
+                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-200 p-3 text-start transition hover:bg-zinc-50"
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-bold text-zinc-950">
@@ -357,12 +355,12 @@ export default function StockControlPanel({
                     </span>
                   </span>
                   <span
-                    className={`shrink-0 rounded-lg px-2 py-1 text-xs font-black ${
+                    className={`chip shrink-0 tabular-nums ${
                       line.variance === 0
-                        ? "bg-zinc-100 text-zinc-600"
+                        ? "chip-neutral"
                         : line.variance > 0
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-rose-50 text-rose-700"
+                          ? "chip-success"
+                          : "chip-danger"
                     }`}
                   >
                     {line.variance > 0 ? "+" : ""}

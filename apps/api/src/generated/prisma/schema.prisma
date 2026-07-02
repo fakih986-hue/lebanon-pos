@@ -229,7 +229,7 @@ model SaleTender {
   saleId         String  @unique
   sale           Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
   currency       String
-  exchangeRate   Float // reference rate — stays Float
+  exchangeRate   Decimal @db.Decimal(18, 4)
   paidUsd        Decimal @default(0) @db.Decimal(18, 4)
   paidLbp        Decimal @default(0) @db.Decimal(18, 4)
   paidTotalUsd   Decimal @db.Decimal(18, 4)
@@ -245,7 +245,7 @@ model SaleRefund {
   tenant       Tenant       @relation(fields: [tenantId], references: [id])
   refundNumber String
   saleId       String
-  sale         Sale         @relation(fields: [saleId], references: [id])
+  sale         Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
   saleNumber   String
   customerId   String?
   customerName String?

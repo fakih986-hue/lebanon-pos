@@ -45,11 +45,15 @@ const ROLE_COLORS: Record<string, string> = {
   Driver: "bg-amber-500/15 text-amber-300 border-amber-500/25",
 }
 
+const AUDIT_PAGE_SIZE = 25
+
 export function StaffPage() {
   const { t } = useI18n()
   const [tab, setTab] = useState<"team" | "audit">("team")
   const [users, setUsers] = useState<StaffUser[]>([])
   const [audit, setAudit] = useState<AuditEvent[]>([])
+  const [auditPage, setAuditPage] = useState(1)
+  const [confirmToggleId, setConfirmToggleId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -70,10 +74,10 @@ export function StaffPage() {
   async function loadData() {
     setLoading(true)
     try {
-      const [usersData, auditData] = await Promise.all([
-        api<StaffUser[]>("/api/sync/pull").then((d: any) => d.users ?? []),
-        api<any>("/api/sync/pull").then((d: any) => (d.auditEvents ?? []).slice(0, 100)),
-      ])
+      const [usersData, auditData] = await (async () => {
+        const d = await api<any>("/api/sync/pull")
+        return [d.users ?? [], (d.auditEvents ?? []).slice(0, 100)]
+      })()
       setUsers(usersData)
       setAudit(auditData)
     } catch (err) {
@@ -200,7 +204,7 @@ export function StaffPage() {
           <div className="flex gap-2 mt-3">
             <button onClick={handleAddUser} disabled={addLoading}
               className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-all disabled:opacity-50">
-              {addLoading ? "Saving..." : t("pos.staff.save")}
+              {addLoading ? t("admin.saving") : t("pos.staff.save")}
             </button>
             <button onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-xl border text-sm font-semibold transition-all hover:opacity-80"
               style={{ borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}>
@@ -238,14 +242,14 @@ export function StaffPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className={`text-xs font-semibold ${user.active ? "text-emerald-400" : "text-zinc-500"}`}>
-                  {user.active ? "● Active" : "○ Disabled"}
+                  {user.active ? "● " + t("admin.active") : "○ " + t("admin.disabled")}
                 </span>
                 <div className="flex items-center gap-2">
                   <button onClick={() => { setChangePinFor(user); setChangePinValue(""); setChangePinError("") }}
                     className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20">
-                    {t("pos.staff.change_pin") ?? "Change PIN"}
+                    {t("pos.staff.change_pin")}
                   </button>
-                  <button onClick={() => handleToggleActive(user)}
+                  <button onClick={() => setConfirmToggleId(user.id)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${user.active ? "bg-rose-500/10 text-rose-300 hover:bg-rose-500/20" : "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"}`}>
                     {user.active ? t("pos.staff.disable") : t("pos.staff.enable")}
                   </button>
@@ -259,13 +263,13 @@ export function StaffPage() {
           <table className="min-w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                {["Action", "Summary", "User", "Role", "Time"].map((h) => (
+                {[t("admin.action"), t("admin.summary"), t("admin.user"), t("admin.role"), t("admin.time")].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {audit.map((event) => (
+              {audit.slice((auditPage - 1) * AUDIT_PAGE_SIZE, auditPage * AUDIT_PAGE_SIZE).map((event) => (
                 <tr key={event.id} style={{ borderBottom: "1px solid var(--border-subtle)" }} className="hover:opacity-80 transition-opacity">
                   <td className="px-4 py-3 font-mono text-xs text-indigo-300">{event.action}</td>
                   <td className="px-4 py-3 max-w-xs truncate" style={{ color: "var(--text-primary)" }}>{event.summary}</td>
@@ -275,10 +279,50 @@ export function StaffPage() {
                 </tr>
               ))}
               {audit.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-12 text-center text-sm" style={{ color: "var(--text-secondary)" }}>No audit events</td></tr>
+                <tr><td colSpan={5} className="px-4 py-12 text-center text-sm" style={{ color: "var(--text-secondary)" }}>{t("admin.no_audit_events")}</td></tr>
               )}
             </tbody>
           </table>
+          {audit.length > AUDIT_PAGE_SIZE && (
+            <div className="flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: "var(--border-subtle)" }}>
+              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                {Math.min((auditPage - 1) * AUDIT_PAGE_SIZE + 1, audit.length)}–{Math.min(auditPage * AUDIT_PAGE_SIZE, audit.length)} {t("admin.of")} {audit.length}
+              </span>
+              <div className="flex gap-2">
+                <button onClick={() => setAuditPage(p => Math.max(1, p - 1))} disabled={auditPage === 1}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30 transition-all hover:opacity-80"
+                  style={{ background: "var(--surface-input)", color: "var(--text-primary)" }}>
+                  {t("admin.prev")}
+                </button>
+                <button onClick={() => setAuditPage(p => Math.min(Math.ceil(audit.length / AUDIT_PAGE_SIZE), p + 1))} disabled={auditPage >= Math.ceil(audit.length / AUDIT_PAGE_SIZE)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30 transition-all hover:opacity-80"
+                  style={{ background: "var(--surface-input)", color: "var(--text-primary)" }}>
+                  {t("admin.next")}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {confirmToggleId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setConfirmToggleId(null)}>
+          <div className="rounded-2xl border p-6 w-full max-w-sm mx-4 shadow-2xl" onClick={e => e.stopPropagation()}
+            style={{ background: "var(--surface-card)", borderColor: "var(--border-subtle)" }}>
+            <h3 className="text-sm font-bold mb-2" style={{ color: "var(--text-primary)" }}>{t("pos.confirm")}</h3>
+            <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>
+              {t("admin.toggle_confirm", { action: users.find(u => u.id === confirmToggleId)?.active ? t("admin.disabled").toLowerCase() : t("admin.active").toLowerCase() })}
+            </p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setConfirmToggleId(null)}
+                className="px-4 py-2 rounded-xl border text-sm font-semibold transition-all hover:opacity-80"
+                style={{ borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}>{t("pos.cancel")}</button>
+              <button onClick={() => { handleToggleActive(users.find(u => u.id === confirmToggleId)!); setConfirmToggleId(null) }}
+                className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-all">
+                {t("pos.confirm")}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -288,7 +332,7 @@ export function StaffPage() {
             <h3 className="text-sm font-bold mb-1" style={{ color: "var(--text-primary)" }}>Change PIN</h3>
             <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>{changePinFor.name}</p>
             {changePinError && <div className="mb-3 p-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs rounded-xl">{changePinError}</div>}
-            <input type="password" value={changePinValue} onChange={e => setChangePinValue(e.target.value)} placeholder="New PIN" maxLength={8} autoFocus
+            <input type="password" value={changePinValue} onChange={e => setChangePinValue(e.target.value)} placeholder={t("admin.new_pin")} maxLength={8} autoFocus
               className="w-full h-10 rounded-xl border px-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/40 mb-4"
               style={{ background: "var(--surface-input)", borderColor: "var(--border-input)", color: "var(--text-primary)" }} />
             <div className="flex gap-2 justify-end">
@@ -296,7 +340,7 @@ export function StaffPage() {
                 style={{ borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}>{t("pos.cancel")}</button>
               <button onClick={handleChangePin} disabled={changePinLoading}
                 className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-500 transition-all disabled:opacity-50">
-                {changePinLoading ? "Saving..." : "Save PIN"}
+                {changePinLoading ? t("admin.saving") : t("pos.staff.save_pin")}
               </button>
             </div>
           </div>

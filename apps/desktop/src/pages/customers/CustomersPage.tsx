@@ -329,7 +329,7 @@ export default function CustomersPage() {
 
             <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
               <p className="text-sm font-medium text-zinc-500">Collected</p>
-              <p className="mt-2 text-2xl font-bold text-emerald-700">
+              <p className="mt-2 text-2xl font-bold" style={{ color: "var(--success)" }}>
                 {formatCurrency(totals.paidTotal)}
               </p>
             </div>
@@ -456,7 +456,7 @@ export default function CustomersPage() {
                           active ? "bg-emerald-50/70" : ""
                         }`}
                       >
-                        <td className="border-b border-zinc-100 px-4 py-4">
+                        <td className="border-b border-zinc-100 px-4 py-2.5">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-zinc-950">{customer.name}</span>
                             {customer.overdue && (
@@ -476,7 +476,7 @@ export default function CustomersPage() {
                             </div>
                           ) : null}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4">
+                        <td className="border-b border-zinc-100 px-4 py-2.5">
                           <a
                             href={`tel:${customer.mobile}`}
                             className="inline-flex items-center gap-2 font-semibold text-zinc-700 hover:text-emerald-700"
@@ -485,26 +485,26 @@ export default function CustomersPage() {
                             {customer.mobile}
                           </a>
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-semibold text-zinc-800">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-semibold text-zinc-800">
                           {formatCurrency(customer.debtTotal)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-semibold text-emerald-700">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-semibold" style={{ color: "var(--success)" }}>
                           {formatCurrency(customer.paidTotal)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-bold text-rose-700">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-bold text-rose-700">
                           {formatCurrency(customer.balance)}
                           {customer.balance > 0 && <div className="text-[10px] text-rose-400">{formatLbpCurrency(usdToLbp(customer.balance, getSettings().usdToLbpRate))}</div>}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-zinc-500">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-zinc-500">
                           {formatDate(customer.lastActivityAt)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4">
+                        <td className="border-b border-zinc-100 px-4 py-2.5">
                           <div className="flex items-center justify-end gap-1.5">
                             {customer.sellAtCost && (
-                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-600" style={{ background: "rgba(214,166,58,0.12)" }}>COST</span>
+                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-600" style={{ background: "rgba(214,166,58,0.12)" }}>COST</span>
                             )}
                             {customer.isWholesale && (
-                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase text-emerald-700" style={{ background: "var(--brand-soft)" }}>WS</span>
+                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-700" style={{ background: "var(--brand-soft)" }}>WS</span>
                             )}
                             {customer.balance > 0 && customer.mobile && (
                               <button
@@ -877,11 +877,8 @@ export default function CustomersPage() {
                       </div>
                     </div>
                     <p
-                      className={`font-bold ${
-                        activity.type === "Sale"
-                          ? "text-rose-700"
-                          : "text-emerald-700"
-                      }`}
+                      className="font-bold"
+                      style={{ color: activity.type === "Sale" ? "var(--rose)" : "var(--success)" }}
                     >
                       {activity.type === "Sale" ? "+" : "-"}
                       {formatCurrency(activity.amount)}

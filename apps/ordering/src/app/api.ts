@@ -1,4 +1,5 @@
 const TOKEN_KEY = "customer_token"
+const BASE = import.meta.env.VITE_API_URL || ""
 
 export function clearCustomerToken() {
   localStorage.removeItem(TOKEN_KEY)
@@ -6,7 +7,7 @@ export function clearCustomerToken() {
 
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem(TOKEN_KEY)
-  const res = await fetch(path, {
+  const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",

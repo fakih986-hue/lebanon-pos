@@ -60,7 +60,7 @@ export function RatePanel() {
 
       <div className="rounded-lg p-3 mb-3 flex items-baseline justify-between" style={{ background: "var(--surface-2)" }}>
         <span className="text-[12px] font-semibold" style={{ color: "var(--text-3)" }}>Current rate</span>
-        <span className="text-[20px] font-black tabular-nums" style={{ color: "var(--text)" }}>{formatNumber(current)} <span className="text-[12px] font-semibold" style={{ color: "var(--text-3)" }}>LBP</span></span>
+        <span className="text-[20px] font-bold tabular-nums" style={{ color: "var(--text)" }}>{formatNumber(current)} <span className="text-[12px] font-semibold" style={{ color: "var(--text-3)" }}>LBP</span></span>
       </div>
 
       <label className="block mb-1">
@@ -71,7 +71,7 @@ export function RatePanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") apply() }}
-            className="input flex-1 text-right font-bold"
+            className="input flex-1 text-end font-bold"
             style={{ height: 44, fontSize: 16 }}
           />
           <button type="button" onClick={apply} disabled={!changed}
@@ -146,12 +146,12 @@ export function StaleRateBanner() {
       <span className="text-[12px] font-semibold truncate" style={{ color: "var(--amber-text)" }}>
         Rate {rateAgeLabel()} — {formatNumber(getCurrentRate())} LBP/USD
       </span>
-      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+      <div className="ms-auto flex shrink-0 items-center gap-1.5">
         {editing ? (
           <>
             <input type="number" value={input} onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") apply() }}
-              className="input w-24 text-right font-bold" style={{ height: 28, fontSize: 12 }} autoFocus />
+              className="input w-24 text-end font-bold" style={{ height: 28, fontSize: 12 }} autoFocus />
             <button type="button" onClick={apply} className="btn btn-primary h-7 px-2.5 text-[11px]">Save</button>
           </>
         ) : (

@@ -2,6 +2,7 @@ import { useI18n } from "@lebanonpos/shared"
 import { BadgePercent, Eraser, PauseCircle, ShoppingCart } from "lucide-react"
 
 import CartBody from "./CartBody"
+import CartRailWidgets from "./CartRailWidgets"
 import { formatCurrency, formatNumber } from "../lib/currency"
 import type { HeldSale } from "../services/heldSale.service"
 import type { CustomerLedger } from "../services/customer.service"
@@ -137,7 +138,7 @@ export default function CartPanel({
               <ShoppingCart size={21} />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[18px] font-black leading-tight" style={{ color: "var(--text)" }}>
+              <p className="truncate text-[18px] font-bold leading-tight" style={{ color: "var(--text)" }}>
                 {t("pos.current_sale")}
               </p>
               <p className="text-[12px] font-bold" style={{ color: "var(--text-3)" }}>
@@ -146,47 +147,50 @@ export default function CartPanel({
             </div>
           </div>
 
-          <div className="shrink-0 text-right">
-            <p className="text-[10px] font-black uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
-              Due now
-            </p>
-            <p className="text-[24px] font-black leading-none tabular-nums" style={{ color: "var(--text)" }}>
-              {formatCurrency(total)}
-            </p>
-          </div>
+          {items.length > 0 && (
+            <div className="shrink-0 text-end">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
+                Due now
+              </p>
+              <p className="text-[24px] font-bold leading-none tabular-nums" style={{ color: "var(--text)" }}>
+                {formatCurrency(total)}
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <button
-            type="button"
-            onClick={onHold}
-            disabled={items.length === 0}
-            className="btn btn-ghost h-9 text-[12px]"
-          >
-            <PauseCircle size={14} />
-            {t("pos.hold")}
-          </button>
-          <button
-            type="button"
-            onClick={onClean}
-            disabled={items.length === 0}
-            className="btn btn-ghost h-9 text-[12px]"
-          >
-            <Eraser size={14} />
-            {t("pos.clean")}
-          </button>
-          <button
-            type="button"
-            disabled={items.length === 0}
-            className="btn btn-ghost h-9 text-[12px]"
-            style={items.length > 0 ? { color: "var(--brand-text)", borderColor: "var(--brand-border)" } : undefined}
-            title={items.length > 0 ? "Scroll down to apply discount" : undefined}
-          >
-            <BadgePercent size={14} />
-            Discount
-          </button>
-        </div>
+        {items.length > 0 && (
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={onHold}
+              className="btn btn-ghost h-9 text-[12px]"
+            >
+              <PauseCircle size={14} />
+              {t("pos.hold")}
+            </button>
+            <button
+              type="button"
+              onClick={onClean}
+              className="btn btn-ghost h-9 text-[12px]"
+            >
+              <Eraser size={14} />
+              {t("pos.clean")}
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost h-9 text-[12px]"
+              style={{ color: "var(--brand-text)", borderColor: "var(--brand-border)" }}
+              title="Scroll down to apply discount"
+            >
+              <BadgePercent size={14} />
+              Discount
+            </button>
+          </div>
+        )}
       </div>
+
+      <CartRailWidgets />
 
       <CartBody
         items={items}

@@ -103,7 +103,7 @@ const ReceiptPreview = memo(function ReceiptPreview({
             {sale.saleNumber}
           </h2>
           {sale.soldAtCost && (
-            <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-800">
+            <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
               SOLD AT COST
             </span>
           )}
@@ -157,8 +157,8 @@ const ReceiptPreview = memo(function ReceiptPreview({
         <div className="mt-4 overflow-hidden rounded-lg border border-zinc-200">
           <div className="grid grid-cols-[minmax(0,1fr)_64px_90px] bg-zinc-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">
             <span>{t("pos.item_header")}</span>
-            <span className="text-right">{t("pos.qty_header")}</span>
-            <span className="text-right">{t("pos.total_header")}</span>
+            <span className="text-end">{t("pos.qty_header")}</span>
+            <span className="text-end">{t("pos.total_header")}</span>
           </div>
 
           {sale.items.map((item) => (
@@ -172,10 +172,10 @@ const ReceiptPreview = memo(function ReceiptPreview({
                   {item.barcode} - {formatCurrency(item.unitPrice)}
                 </p>
               </div>
-              <span className="text-right font-semibold text-zinc-700">
+              <span className="text-end font-semibold text-zinc-700">
                 {formatNumber(item.quantity)}
               </span>
-              <span className="text-right font-bold text-zinc-950">
+              <span className="text-end font-bold text-zinc-950">
                 {formatCurrency(item.total)}
               </span>
             </div>
@@ -324,7 +324,7 @@ const ReceiptPreview = memo(function ReceiptPreview({
                           onChange={(event) =>
                             onRefundQuantityChange(item.id, event.target.value)
                           }
-                          className="mt-1 h-10 w-full rounded-lg border border-rose-200 bg-white px-2 text-right text-zinc-900 outline-none focus:border-rose-400 focus:ring-4 focus:ring-rose-100 disabled:bg-zinc-100 disabled:text-zinc-400"
+                          className="mt-1 h-10 w-full rounded-lg border border-rose-200 bg-white px-2 text-end text-zinc-900 outline-none focus:border-rose-400 focus:ring-4 focus:ring-rose-100 disabled:bg-zinc-100 disabled:text-zinc-400"
                         />
                       </label>
                     </div>

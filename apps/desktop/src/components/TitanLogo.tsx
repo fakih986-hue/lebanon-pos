@@ -68,7 +68,7 @@ export function TitanWordmark({ size = 40, className }: { size?: number; classNa
       <TitanLogo size={size} crop="icon" />
       <div style={{ lineHeight: 1 }}>
         <span
-          className="block font-black tracking-[0.18em]"
+          className="block font-bold tracking-[0.18em]"
           style={{ fontSize: size * 0.42, color: "var(--text)" }}
         >
           TITAN

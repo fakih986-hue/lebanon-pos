@@ -78,8 +78,8 @@ export function getRefundableQuantity(
   )
 }
 
-export function getRefundMethod(sale: Sale): "Cash" | "Card" | "Wallet" | "Debt Credit" {
-  return sale.paymentMethod === "Debt" ? "Debt Credit" : sale.paymentMethod
+export function getRefundMethod(sale: Sale): "Cash" | "Card" | "Wallet" | "Debt_Credit" {
+  return sale.paymentMethod === "Debt" ? "Debt_Credit" : sale.paymentMethod
 }
 
 export function getRefundTotal(sale: Sale, refundItems: SaleItem[]) {

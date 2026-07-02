@@ -49,11 +49,7 @@ export default function HistoryPanel({ dailyCloses, maxItems = 20 }: Props) {
                 </p>
               </div>
               <strong
-                className={
-                  dailyClose.netProfit >= 0
-                    ? "text-emerald-700"
-                    : "text-rose-700"
-                }
+                style={{ color: dailyClose.netProfit >= 0 ? "var(--success)" : "var(--rose)" }}
               >
                 {formatCurrency(dailyClose.netProfit)}
               </strong>

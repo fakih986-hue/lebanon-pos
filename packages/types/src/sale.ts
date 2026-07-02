@@ -1,3 +1,5 @@
+import type { RefundMethod } from "./common"
+
 export type SaleItem = {
   id: string
   saleId: string
@@ -50,7 +52,7 @@ export type SaleRefund = {
   saleNumber: string
   customerId?: string
   customerName?: string
-  method: "Cash" | "Card" | "Wallet" | "Debt Credit"
+  method: RefundMethod
   reason: string
   total: number
   items: RefundItem[]
@@ -59,8 +61,9 @@ export type SaleRefund = {
 }
 
 export type RefundItem = {
-  id: number
-  name: string
+  id: string
+  productId: number
+  productName: string
   barcode: string
   quantity: number
   unitPrice: number

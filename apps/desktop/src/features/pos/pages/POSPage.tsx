@@ -16,7 +16,6 @@ import LastSaleBanner from "../components/LastSaleBanner"
 import SaleCompleteOverlay from "../components/SaleCompleteOverlay"
 import CartDrawer from "../components/CartDrawer"
 import CartPanel from "../components/CartPanel"
-import CartRailWidgets from "../components/CartRailWidgets"
 import VariantPicker from "../components/VariantPicker"
 import QuickPOSMode from "../components/QuickPOSMode"
 import KeyboardShortcutsModal from "../components/KeyboardShortcutsModal"
@@ -858,7 +857,6 @@ export default function POSPage() {
         </div>
 
         {/* ── Right: Persistent cart rail (desktop only) ── */}
-        <CartRailWidgets />
         <CartPanel
           items={items}
           onIncreaseQty={increaseQuantity}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { api } from "../app/api"
+import { useI18n } from "@lebanonpos/shared"
 import type { Sale } from "@lebanonpos/types"
 
 type DateRange = "today" | "week" | "month" | "all"
@@ -35,6 +36,7 @@ const PM_COLORS: Record<string, string> = {
 }
 
 export function SalesPage() {
+  const { t } = useI18n()
   const [sales, setSales] = useState<Sale[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -64,27 +66,31 @@ export function SalesPage() {
   const totalRevenue = filtered.reduce((s, x) => s + x.total, 0)
   const totalProfit = filtered.reduce((s, x) => s + (x.profit ?? 0), 0)
 
-  const rangeLabels: Record<DateRange, string> = { today: "Today", week: "7 Days", month: "This Month", all: "All Time" }
+  const rangeLabels: Record<DateRange, string> = {
+    today: t("admin.range_today"),
+    week: t("admin.range_week"),
+    month: t("admin.range_month"),
+    all: t("admin.range_all"),
+  }
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="flex items-start justify-between mb-8 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Sales History</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{t("admin.sales_history")}</h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-            {filtered.length} transactions · ${totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 })} revenue · ${totalProfit.toLocaleString("en-US", { minimumFractionDigits: 2 })} profit
+            {t("admin.transactions_revenue_profit", { count: filtered.length, revenue: totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 }), profit: totalProfit.toLocaleString("en-US", { minimumFractionDigits: 2 }) })}
           </p>
         </div>
         <button onClick={() => exportCsv(filtered)} disabled={filtered.length === 0}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all hover:opacity-80 disabled:opacity-40"
           style={{ borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}>
-          ↓ Export CSV
+          {t("admin.export_csv")}
         </button>
       </div>
 
       {error && <div className="mb-4 rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-sm text-rose-300">{error}</div>}
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
         <div className="flex rounded-xl border overflow-hidden text-sm" style={{ borderColor: "var(--border-subtle)" }}>
           {(["today", "week", "month", "all"] as DateRange[]).map((r) => (
@@ -96,12 +102,12 @@ export function SalesPage() {
         </div>
         <select value={payFilter} onChange={(e) => setPayFilter(e.target.value)}
           className="h-10 rounded-xl border px-3 text-sm font-semibold outline-none" style={{ background: "var(--surface-input)", borderColor: "var(--border-subtle)", color: "var(--text-secondary)" }}>
-          <option value="All">All Payments</option>
-          <option value="Cash">Cash</option>
-          <option value="Wallet">Wallet</option>
-          <option value="Debt">Debt</option>
+          <option value="All">{t("admin.all_payments")}</option>
+          <option value="Cash">{t("pos.payment.cash")}</option>
+          <option value="Wallet">{t("pos.payment.wallet")}</option>
+          <option value="Debt">{t("pos.payment.debt")}</option>
         </select>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search sales, customer, cashier..."
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("admin.search_sales")}
           className="h-10 rounded-xl border px-4 text-sm outline-none focus:ring-2 focus:ring-indigo-500/40 min-w-48"
           style={{ background: "var(--surface-input)", borderColor: "var(--border-subtle)", color: "var(--text-primary)" }} />
       </div>
@@ -113,14 +119,14 @@ export function SalesPage() {
           <table className="min-w-full text-sm">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                {["Sale #", "Payment", "Customer", "Cashier", "Items", "Total", "Profit", "Date", ""].map((h) => (
+                {[t("admin.col_sale"), t("admin.col_payment"), t("admin.col_customer"), t("admin.col_cashier"), t("admin.col_items"), t("admin.col_total"), t("admin.col_profit"), t("admin.col_date"), ""].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-sm" style={{ color: "var(--text-secondary)" }}>No sales in this period</td></tr>
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-sm" style={{ color: "var(--text-secondary)" }}>{t("admin.no_sales_period")}</td></tr>
               ) : filtered.map((sale) => (
                 <>
                   <tr key={sale.id} style={{ borderBottom: expanded === sale.id ? "none" : "1px solid var(--border-subtle)" }} className="hover:opacity-90 transition-opacity">
@@ -145,13 +151,13 @@ export function SalesPage() {
                     </td>
                   </tr>
                   {expanded === sale.id && (
-                    <tr key={`${sale.id}-detail`} style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                    <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
                       <td colSpan={9} className="px-6 pb-4">
                         <div className="rounded-xl overflow-hidden mt-2" style={{ background: "var(--surface-input)" }}>
                           <table className="min-w-full text-xs">
                             <thead>
                               <tr>
-                                {["Product", "Qty", "Unit Price", "Total"].map((h) => (
+                                {[t("admin.col_product"), t("admin.col_qty"), t("admin.col_unit_price"), t("admin.col_total")].map((h) => (
                                   <th key={h} className="px-3 py-2 text-left font-semibold" style={{ color: "var(--text-secondary)" }}>{h}</th>
                                 ))}
                               </tr>

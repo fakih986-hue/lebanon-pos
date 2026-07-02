@@ -90,7 +90,7 @@ const CartItemCard = memo(function CartItemCard({
             >
               {formatCurrency(unitPrice)} {t("pos.each")}
               {atCost && (
-                <span className="ml-1.5 rounded px-1 py-0.5 text-[9px] font-black uppercase text-amber-400" style={{ background: "rgba(214,166,58,0.15)" }}>
+                <span className="ms-1.5 rounded px-1 py-0.5 text-[9px] font-bold uppercase text-amber-400" style={{ background: "rgba(214,166,58,0.15)" }}>
                   AT COST
                 </span>
               )}
@@ -143,7 +143,7 @@ const CartItemCard = memo(function CartItemCard({
         </div>
 
         {/* Total */}
-        <span className="w-[62px] shrink-0 text-right text-[13px] font-bold tabular-nums" style={{ color: "var(--text)" }}>
+        <span className="w-[62px] shrink-0 text-end text-[13px] font-bold tabular-nums" style={{ color: "var(--text)" }}>
           {formatCurrency(totalPrice)}
         </span>
 

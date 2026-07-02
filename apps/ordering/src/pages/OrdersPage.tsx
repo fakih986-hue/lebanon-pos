@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router"
 import { useI18n } from "@lebanonpos/shared"
+import { api } from "../app/api"
 
 type OrderItem = { productName: string; quantity: number; unitPrice: number; total: number }
 type Order = { id: string; orderNumber: string; status: string; total: number; customerName: string; address: string; createdAt: string; items: OrderItem[] }
@@ -15,9 +16,7 @@ export function OrdersPage() {
 
   useEffect(() => {
     if (!token) { navigate(`/order/${tenantSubdomain}`); return }
-    fetch("/api/delivery/customer/orders", {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(r => r.json()).then(data => {
+    api<unknown[]>("/api/delivery/customer/orders").then(data => {
       setOrders(Array.isArray(data) ? data : [])
     }).catch(() => {}).finally(() => setLoading(false))
   }, [token])

@@ -102,7 +102,7 @@ export function OrderDetailPage() {
   function confirmDelivery() {
     const paid = parseFloat(cashReceived)
     if (isNaN(paid) || paid < (order?.total ?? 0)) {
-      setError("Amount received must be at least the order total")
+      setError(t("driver.amount_invalid"))
       return
     }
     setShowCashDialog(false)
@@ -135,7 +135,8 @@ export function OrderDetailPage() {
     else if (n.length >= 7 && n.length <= 8) n = "961" + n
     return n
   }
-  const whatsappUrl = `https://wa.me/${normalizeLBPhone(order.customerPhone)}?text=${encodeURIComponent(`Hi ${order.customerName}, I'm your delivery driver for order ${order.orderNumber}. I'm on my way!`)}`
+  const message = t("driver.whatsapp_message", { customerName: order.customerName, orderNumber: order.orderNumber })
+  const whatsappUrl = `https://wa.me/${normalizeLBPhone(order.customerPhone)}?text=${encodeURIComponent(message)}`
 
   return (
     <div className="min-h-dvh bg-gradient-page">
@@ -143,10 +144,10 @@ export function OrderDetailPage() {
       {showCashDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-sm bg-glass border border-glass rounded-2xl p-6 shadow-2xl animate-scale-in">
-            <h3 className="text-lg font-bold text-primary mb-1">💵 {t("driver.collect_payment") || "Collect Payment"}</h3>
-            <p className="text-sm text-secondary mb-4">{t("driver.order_total") || "Order total"}: <span className="font-bold text-primary">${order.total.toFixed(2)}</span></p>
+            <h3 className="text-lg font-bold text-primary mb-1">💵 {t("driver.collect_payment")}</h3>
+            <p className="text-sm text-secondary mb-4">{t("driver.order_total")}: <span className="font-bold text-primary">${order.total.toFixed(2)}</span></p>
             <label className="block text-sm font-semibold text-secondary mb-2">
-              {t("driver.amount_received") || "Amount received from customer"}
+              {t("driver.amount_received")}
             </label>
             <input
               type="number"
@@ -159,18 +160,18 @@ export function OrderDetailPage() {
             />
             {parseFloat(cashReceived) >= order.total && (
               <p className="text-center text-sm font-semibold text-emerald-400 mb-4">
-                Change: ${(parseFloat(cashReceived) - order.total).toFixed(2)}
+                {t("driver.change", { amount: (parseFloat(cashReceived) - order.total).toFixed(2) })}
               </p>
             )}
             {error && <p className="text-xs text-rose-400 mb-3">{error}</p>}
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => { setShowCashDialog(false); setError("") }}
                 className="py-3 rounded-xl border border-glass text-secondary font-semibold transition hover:bg-white/5">
-                {t("pos.cancel") || "Cancel"}
+                {t("pos.cancel")}
               </button>
               <button onClick={confirmDelivery} disabled={actionLoading}
                 className="py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-600/20 disabled:opacity-50">
-                {t("driver.confirm_delivery") || "Confirm Delivery"}
+                {t("driver.confirm_delivery")}
               </button>
             </div>
           </div>
@@ -212,7 +213,7 @@ export function OrderDetailPage() {
               className="flex items-center gap-3 text-emerald-400 hover:text-emerald-300 transition-colors">
               <span className="text-lg">📞</span>
               <span className="font-medium">{order.customerPhone}</span>
-              <span className="ml-auto text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">CALL</span>
+              <span className="ml-auto text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">{t("driver.call")}</span>
             </a>
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-3 text-[#25D366] hover:opacity-80 transition-opacity">
@@ -268,7 +269,7 @@ export function OrderDetailPage() {
               <div className="flex items-center gap-2 pt-1">
                 <span className="text-base">💵</span>
                 <span className="text-sm font-bold text-amber-300">
-                  {t("driver.cash_on_delivery") || "Cash on delivery"} — collect ${order.total.toFixed(2)}
+                  {t("driver.cash_on_delivery")} — collect ${order.total.toFixed(2)}
                 </span>
               </div>
             )}
@@ -280,18 +281,18 @@ export function OrderDetailPage() {
           {!isTerminal && (order.status === "Confirmed" || order.status === "Preparing") && (
             <button onClick={() => handleStatusUpdate("OutForDelivery")} disabled={actionLoading}
               className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-lg font-semibold shadow-lg shadow-indigo-600/20 transition-all hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50">
-              {actionLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><span>🛵</span> {t("driver.start_delivery") || "Start Delivery"}</>}
+              {actionLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><span>🛵</span> {t("driver.start_delivery")}</>}
             </button>
           )}
           {!isTerminal && order.status === "OutForDelivery" && (
             <button onClick={handleDeliverClick} disabled={actionLoading}
               className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-lg font-semibold shadow-lg shadow-emerald-600/20 transition-all hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50">
-              {actionLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><span>✅</span> {isCash ? (t("driver.delivered_collect_cash") || "Delivered — Collect Cash") : t("driver.delivered")}</>}
+              {actionLoading ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><span>✅</span> {isCash ? t("driver.delivered_collect_cash") : t("driver.delivered")}</>}
             </button>
           )}
           {isTerminal && (
             <div className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-glass border border-glass text-lg font-semibold text-secondary">
-              {order.status === "Delivered" ? <><span>✔</span> {t("driver.completed")}</> : <><span>✕</span> {t("driver.cancelled") || "Cancelled"}</>}
+              {order.status === "Delivered" ? <><span>✔</span> {t("driver.completed")}</> : <><span>✕</span> {t("driver.cancelled")}</>}
             </div>
           )}
         </div>

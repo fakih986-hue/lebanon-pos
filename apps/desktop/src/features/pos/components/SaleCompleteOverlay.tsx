@@ -101,7 +101,7 @@ export default function SaleCompleteOverlay({ sale, onViewReceipt }: Props) {
               <p className="mb-1 text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>
                 Sale #{snapshot.number} complete
               </p>
-              <p className="text-[42px] font-black tabular-nums leading-none text-white">
+              <p className="text-[42px] font-bold tabular-nums leading-none text-white">
                 {formatCurrency(snapshot.total)}
               </p>
               <p className="mt-1 text-[13px] font-semibold tabular-nums" style={{ color: "rgba(255,255,255,0.45)" }}>

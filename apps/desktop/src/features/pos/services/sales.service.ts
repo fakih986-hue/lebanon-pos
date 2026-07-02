@@ -39,7 +39,7 @@ export type SaleItem = Pick<Product, "id" | "name" | "barcode" | "cost"> & {
   batchAllocations?: BatchAllocation[]
 }
 
-export type RefundMethod = "Cash" | "Card" | "Wallet" | "Debt Credit"
+export type RefundMethod = "Cash" | "Card" | "Wallet" | "Debt_Credit"
 
 export type RefundItem = Pick<Product, "id" | "name" | "barcode"> & {
   quantity: number
@@ -412,7 +412,7 @@ export function getSalesMetrics() {
     todayNetRevenue:
       paidTodaySales.reduce((sum, sale) => sum + sale.total, 0) -
       todayRefunds
-        .filter((refund) => refund.method !== "Debt Credit")
+        .filter((refund) => refund.method !== "Debt_Credit")
         .reduce((sum, refund) => sum + refund.total, 0),
     todayTax: todaySales.reduce((sum, sale) => sum + sale.tax, 0),
     todayProfit:
@@ -443,7 +443,7 @@ export function getPaymentMix() {
   )
 
   getRefunds().forEach((refund) => {
-    const method = refund.method === "Debt Credit" ? "Debt" : refund.method
+    const method = refund.method === "Debt_Credit" ? "Debt" : refund.method
 
     totals[method] -= refund.total
   })

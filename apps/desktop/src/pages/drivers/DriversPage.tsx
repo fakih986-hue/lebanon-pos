@@ -152,7 +152,7 @@ export default function DriversPage() {
                   </td>
                   <td className="px-4 py-3 text-end">
                     <button onClick={() => startEdit(d)} className="text-xs px-2.5 py-1.5 bg-zinc-100 rounded-lg hover:bg-zinc-200">
-                      <Pencil className="w-3.5 h-3.5 inline mr-1" /> {t("drivers.edit_btn")}
+                      <Pencil className="w-3.5 h-3.5 inline me-1" /> {t("drivers.edit_btn")}
                     </button>
                   </td>
                 </tr>

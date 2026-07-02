@@ -296,10 +296,10 @@ export default function LoginScreen() {
         >
           <TitanLogo size={120} />
 
-          <p className="mt-6 text-[11px] font-black uppercase tracking-[0.25em]" style={{ color: "var(--brand)" }}>
+          <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.25em]" style={{ color: "var(--brand)" }}>
             Powerful Systems
           </p>
-          <h1 className="mt-1.5 text-[36px] font-black tracking-tight leading-none" style={{ color: "var(--text)" }}>
+          <h1 className="mt-1.5 text-[36px] font-bold tracking-tight leading-none" style={{ color: "var(--text)" }}>
             {t("desktop.lock_title")}
           </h1>
           <p className="mt-3 max-w-xl text-[14px] font-medium" style={{ color: "var(--text-3)" }}>
@@ -364,7 +364,7 @@ export default function LoginScreen() {
             disabled={!pin.trim()}
             className="btn-checkout w-full h-12 text-[15px] font-bold mt-4"
           >
-            <KeyRound size={17} className="inline mr-2" />
+            <KeyRound size={17} className="inline me-2" />
             {t("desktop.lock_unlock_register")}
           </button>
 
@@ -382,7 +382,7 @@ export default function LoginScreen() {
                       key={`${store.apiUrl}|${store.subdomain}`}
                       type="button"
                       onClick={() => openStore(store)}
-                      className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition hover:opacity-80"
+                      className="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-start transition hover:opacity-80"
                       style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}
                     >
                       <span className="flex items-center gap-2 min-w-0">
@@ -523,7 +523,7 @@ function ChangePinModal({ user, onConfirm, onCancel }: { user: StaffUser; onConf
 
         <button type="button" onClick={handleSubmit} disabled={loading || !newPin || !confirmPin}
           className="btn-checkout w-full h-12 text-[15px] font-bold">
-          <Save size={17} className="inline mr-2" />
+          <Save size={17} className="inline me-2" />
           {loading ? "Saving…" : "Save New PIN"}
         </button>
       </div>

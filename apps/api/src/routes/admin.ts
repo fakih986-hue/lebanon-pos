@@ -45,14 +45,13 @@ router.post("/login", async (req: AuthRequest, res: ServerResponse) => {
   try {
     const { password } = (req.body as { password?: string }) || {}
     const masterPassword = process.env.ADMIN_PASSWORD ?? ""
-    // Always run timingSafeEqual to prevent timing attacks (even when password missing)
-    const inputBuf = Buffer.from(password ?? "")
-    const masterBuf = Buffer.from(masterPassword)
+    // Hash both sides so comparison is always on fixed-length buffers
+    const inputHash = createHash("sha256").update(password ?? "").digest()
+    const masterHash = createHash("sha256").update(masterPassword).digest()
     const passwordsMatch =
-      inputBuf.length > 0 &&
-      masterBuf.length > 0 &&
-      inputBuf.length === masterBuf.length &&
-      timingSafeEqual(inputBuf, masterBuf)
+      Buffer.from(password ?? "").length > 0 &&
+      masterPassword.length > 0 &&
+      timingSafeEqual(inputHash, masterHash)
     if (!masterPassword || !passwordsMatch) {
       json(res, { error: "Invalid admin credentials" }, 401)
       return

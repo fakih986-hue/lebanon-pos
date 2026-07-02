@@ -112,15 +112,10 @@ function groupSalesByDay(sales: Sale[]) {
 }
 
 const PM_COLORS: Record<string, string> = {
-  Cash:   "bg-emerald-100 text-emerald-700",
-  Card:   "bg-indigo-100 text-indigo-700",
-  Wallet: "bg-violet-100 text-violet-700",
-  Debt:   "bg-amber-100 text-amber-700",
-}
-const STATUS_COLORS: Record<string, string> = {
-  Completed: "bg-emerald-100 text-emerald-700",
-  Voided:    "bg-zinc-100 text-zinc-500 line-through",
-  Debt:      "bg-amber-100 text-amber-700",
+  Cash:   "chip-success",
+  Card:   "chip-info",
+  Wallet: "chip-neutral",
+  Debt:   "chip-warning",
 }
 
 export default function SalesPage() {
@@ -371,7 +366,7 @@ export default function SalesPage() {
             {/* Date range */}
             <div>
               <p className="mb-2 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
-                <Calendar size={11} className="inline mr-1" />
+                <Calendar size={11} className="inline me-1" />
                 Date Range
               </p>
               <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
@@ -646,7 +641,7 @@ function SaleRow({ sale, selected, refunds, onSelect, onView, onPrint }: {
       type="button"
       onClick={onSelect}
       onDoubleClick={onView}
-      className="w-full rounded-xl border px-4 py-3 text-left transition"
+      className="w-full rounded-xl border px-4 py-3 text-start transition"
       style={selected
         ? { borderColor: "var(--brand)", background: "var(--brand-soft)" }
         : { borderColor: "var(--border)", background: "var(--surface)" }
@@ -654,15 +649,15 @@ function SaleRow({ sale, selected, refunds, onSelect, onView, onPrint }: {
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${PM_COLORS[sale.paymentMethod] ?? "bg-zinc-100 text-zinc-600"}`}>
+          <span className={`chip ${PM_COLORS[sale.paymentMethod] ?? "chip-neutral"}`}>
             {sale.paymentMethod}
           </span>
           <span className="text-[13px] font-bold truncate" style={{ color: "var(--text)" }}>{sale.saleNumber}</span>
           {saleRefunds.length > 0 && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">↩ {saleRefunds.length}</span>
+            <span className="chip chip-warning">↩ {saleRefunds.length}</span>
           )}
         </div>
-        <span className="text-[14px] font-black tabular-nums shrink-0" style={{ color: "var(--text)" }}>
+        <span className="text-[14px] font-bold tabular-nums shrink-0" style={{ color: "var(--text)" }}>
           {formatCurrency(sale.total)}
         </span>
       </div>
@@ -670,7 +665,7 @@ function SaleRow({ sale, selected, refunds, onSelect, onView, onPrint }: {
         <div className="mt-1 flex gap-3 text-[11px]" style={{ color: "var(--text-3)" }}>
           {sale.customerName && <span>{sale.customerName}</span>}
           {sale.cashier && <span>{sale.cashier}</span>}
-          <span className="ml-auto">{new Date(sale.createdAt).toLocaleTimeString("en-LB", { hour: "2-digit", minute: "2-digit" })}</span>
+          <span className="ms-auto">{new Date(sale.createdAt).toLocaleTimeString("en-LB", { hour: "2-digit", minute: "2-digit" })}</span>
         </div>
       )}
     </button>

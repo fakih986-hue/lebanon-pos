@@ -10,30 +10,10 @@ type Props = {
 }
 
 const cards = [
-  {
-    key: "products",
-    icon: PackageCheck,
-    gradient: "linear-gradient(135deg,#10b981,#047857)",
-    glow: "rgba(16,185,129,0.35)",
-  },
-  {
-    key: "stock",
-    icon: Boxes,
-    gradient: "linear-gradient(135deg,#818cf8,#4338ca)",
-    glow: "rgba(99,102,241,0.35)",
-  },
-  {
-    key: "value",
-    icon: Layers3,
-    gradient: "linear-gradient(135deg,#fbbf24,#d97706)",
-    glow: "rgba(251,191,36,0.35)",
-  },
-  {
-    key: "reorder",
-    icon: AlertTriangle,
-    gradient: "linear-gradient(135deg,#fb923c,#dc2626)",
-    glow: "rgba(249,115,22,0.35)",
-  },
+  { key: "products", icon: PackageCheck, bg: "var(--success-soft)", fg: "var(--success)" },
+  { key: "stock",    icon: Boxes,        bg: "var(--info-soft)",    fg: "var(--info)"    },
+  { key: "value",    icon: Layers3,      bg: "var(--brand-soft)",   fg: "var(--brand)"   },
+  { key: "reorder",  icon: AlertTriangle,bg: "var(--danger-soft)",  fg: "var(--danger)"  },
 ]
 
 export default function KpiCards({ totalProducts, totalStock, totalValue, urgentReorderCount }: Props) {
@@ -66,20 +46,17 @@ export default function KpiCards({ totalProducts, totalStock, totalValue, urgent
             }}
           >
             <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-              style={{
-                background: card.gradient,
-                boxShadow: `0 4px 12px ${card.glow}`,
-              }}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+              style={{ background: card.bg }}
             >
-              <Icon size={20} strokeWidth={1.9} color="white" />
+              <Icon size={19} strokeWidth={2} style={{ color: card.fg }} />
             </span>
             <div className="min-w-0">
               <p className="truncate text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
                 {item.label}
               </p>
               <p
-                className="text-[22px] font-black tabular-nums leading-tight"
+                className="text-[22px] font-bold tabular-nums leading-tight"
                 style={{ color: item.alert ? "var(--rose)" : "var(--text)" }}
               >
                 {item.value}

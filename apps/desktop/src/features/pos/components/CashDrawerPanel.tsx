@@ -54,8 +54,8 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
       <button type="button" onClick={onToggle} className="flex w-full items-center justify-between px-4 py-2.5 text-[12px] font-bold hover:opacity-80"
         style={{ color: "var(--text-2)", background: expanded ? "var(--surface-2)" : "transparent" }}>
         <span className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full shrink-0" style={{ background: shift ? "#22C55E" : "var(--rose)" }} />
-          <Landmark size={14} style={{ color: shift ? "#22C55E" : "var(--text-3)" }} />
+          <span className="h-2 w-2 rounded-full shrink-0" style={{ background: shift ? "var(--success)" : "var(--rose)" }} />
+          <Landmark size={14} style={{ color: shift ? "var(--success)" : "var(--text-3)" }} />
           Cash Drawer
           {shift && <span className="text-[10px] opacity-50">{shift.shiftNumber}</span>}
         </span>
@@ -93,8 +93,15 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
                   onChange={(e) => setCountedCash(e.target.value)}
                   placeholder={`${expectedCash.toFixed(2)}`}
                   className="input flex-1" style={{ height: 34, fontSize: 13, fontWeight: 600 }} />
-                <span className={`px-2 text-[11px] font-bold rounded tabular-nums ${countedCash ? (diff >= 0 ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50") : ""}`}
-                  style={{ lineHeight: "34px" }}>
+                <span className="px-2 text-[11px] font-bold rounded tabular-nums"
+                  style={{
+                    lineHeight: "34px",
+                    ...(countedCash
+                      ? diff >= 0
+                        ? { color: "var(--success-text)", background: "var(--success-soft)" }
+                        : { color: "var(--danger-text)", background: "var(--danger-soft)" }
+                      : {}),
+                  }}>
                   {countedCash ? (diff > 0 ? `+${formatCurrency(diff)}` : formatCurrency(diff)) : ""}
                 </span>
               </div>
@@ -131,16 +138,16 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
                         style={{ background: "var(--surface-3)" }}>
                         <div>
                           <span className="font-bold" style={{ color: "var(--text-2)" }}>{s.shiftNumber}</span>
-                          <span className="ml-1.5 opacity-50" style={{ color: "var(--text-3)" }}>
+                          <span className="ms-1.5 opacity-50" style={{ color: "var(--text-3)" }}>
                             {new Date(s.closedAt ?? s.openedAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="text-right">
+                        <div className="text-end">
                           <span className="tabular-nums" style={{ color: "var(--text-2)" }}>
                             {formatCurrency(s.closingCashUsd ?? 0)}
                           </span>
                           {variance !== 0 && (
-                            <span className={`ml-1.5 font-bold tabular-nums ${variance > 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                            <span className="ms-1.5 font-bold tabular-nums" style={{ color: variance > 0 ? "var(--success)" : "var(--danger)" }}>
                               {variance > 0 ? "+" : ""}{formatCurrency(variance)}
                             </span>
                           )}

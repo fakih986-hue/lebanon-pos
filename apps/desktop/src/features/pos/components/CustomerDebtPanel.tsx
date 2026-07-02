@@ -31,7 +31,7 @@ export default function CustomerDebtPanel({ expanded, onToggle }: { expanded: bo
         style={{ color: "var(--text-2)", background: expanded ? "var(--surface-2)" : "transparent" }}>
         <span className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full shrink-0" style={{ background: "var(--rose)" }} />
-          <Users size={14} style={{ color: "#EF4444" }} />
+          <Users size={14} style={{ color: "var(--rose)" }} />
           Overdue
           <span className="text-[10px] text-rose-400">{overdue.length}</span>
         </span>

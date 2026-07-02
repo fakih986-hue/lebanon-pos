@@ -48,7 +48,7 @@ export default function VariantPicker({ product, products, onSelectVariant, onCl
                     type="button"
                     disabled={outOfStock}
                     onClick={() => handleSelect(variant)}
-                    className={`w-full rounded-lg border p-3 text-left transition ${
+                    className={`w-full rounded-lg border p-3 text-start transition ${
                       outOfStock
                         ? "cursor-not-allowed border-zinc-100 bg-zinc-50 opacity-50"
                         : "border-zinc-200 bg-white hover:border-emerald-300 hover:bg-emerald-50"

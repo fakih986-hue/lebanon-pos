@@ -71,9 +71,8 @@ export default function AccountingKpiCards({
           <Calculator size={20} className="text-amber-700" />
         </div>
         <p
-          className={`mt-3 text-3xl font-bold ${
-            summary.netProfit >= 0 ? "text-emerald-700" : "text-rose-700"
-          }`}
+          className="mt-3 text-3xl font-bold"
+          style={{ color: summary.netProfit >= 0 ? "var(--success)" : "var(--rose)" }}
         >
           {formatCurrency(summary.netProfit)}
         </p>

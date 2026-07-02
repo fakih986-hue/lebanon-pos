@@ -18,7 +18,7 @@ export function LoginPage() {
     e.preventDefault()
     setError("")
     if (!code.trim() || !pin.trim()) { setError(t("login.error_required")); return }
-    if (!store) { setError("Store not specified"); return }
+    if (!store) { setError(t("login.store_not_specified")); return }
     setLoading(true)
     try {
       const res = await api<{ token: string }>("/api/auth/login", {
@@ -45,8 +45,8 @@ export function LoginPage() {
         </div>
         <form onSubmit={handleSubmit} className="bg-glass border border-glass rounded-2xl p-6 shadow-2xl space-y-4">
           <div>
-            <label className="text-xs font-semibold text-secondary uppercase tracking-wider">Driver Code</label>
-            <input value={code} onChange={e => setCode(e.target.value)} placeholder="e.g. 1122" inputMode="numeric" autoFocus
+            <label className="text-xs font-semibold text-secondary uppercase tracking-wider">{t("login.driver_code")}</label>
+            <input value={code} onChange={e => setCode(e.target.value)} placeholder={t("login.driver_code_placeholder")} inputMode="numeric" autoFocus
               className="mt-1.5 w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all duration-200" />
           </div>
           <div>

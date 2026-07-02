@@ -27,7 +27,7 @@ function MiniBarChart({ data }: { data: Array<{ label: string; value: number }> 
           <div key={d.label} className="flex-1 flex flex-col items-center gap-0.5 group relative">
             <div
               className="w-full rounded-t transition-all duration-300 hover:opacity-80 cursor-default"
-              style={{ height: `${Math.max(pct, 3)}%`, background: "linear-gradient(180deg,#818cf8,#4f46e5)" }}
+              style={{ height: `${Math.max(pct, 3)}%`, background: "var(--brand)" }}
             />
             <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[10px] font-medium px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-10 shadow-lg">
               {formatCurrency(d.value)}
@@ -174,14 +174,14 @@ export default function InsightsPanel({
           <div className="overflow-x-auto">
             <table className="min-w-full border-separate border-spacing-0 text-sm">
               <thead>
-                <tr className="text-left text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
+                <tr className="text-start text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
                   <th className="border-b border-zinc-200 px-4 py-3">{t("pos.insights.receipt")}</th>
                   <th className="border-b border-zinc-200 px-4 py-3">{t("pos.insights.payment")}</th>
                   <th className="border-b border-zinc-200 px-4 py-3 hidden sm:table-cell">{t("pos.insights.customer")}</th>
-                  <th className="border-b border-zinc-200 px-4 py-3 text-right">{t("pos.insights.items")}</th>
-                  <th className="border-b border-zinc-200 px-4 py-3 text-right">{t("pos.insights.total")}</th>
+                  <th className="border-b border-zinc-200 px-4 py-3 text-end">{t("pos.insights.items")}</th>
+                  <th className="border-b border-zinc-200 px-4 py-3 text-end">{t("pos.insights.total")}</th>
                   <th className="border-b border-zinc-200 px-4 py-3 hidden sm:table-cell">{t("pos.insights.time")}</th>
-                  <th className="border-b border-zinc-200 px-4 py-3 text-right">{t("pos.insights.action")}</th>
+                  <th className="border-b border-zinc-200 px-4 py-3 text-end">{t("pos.insights.action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -211,16 +211,16 @@ export default function InsightsPanel({
                       <td className="border-b border-zinc-100 px-4 py-3 text-zinc-600 hidden sm:table-cell">
                         {sale.customerName ?? "-"}
                       </td>
-                      <td className="border-b border-zinc-100 px-4 py-3 text-right font-semibold text-zinc-800">
+                      <td className="border-b border-zinc-100 px-4 py-3 text-end font-semibold text-zinc-800">
                         {formatNumber(getSaleQuantity(sale))}
                       </td>
-                      <td className="border-b border-zinc-100 px-4 py-3 text-right font-bold text-zinc-950">
+                      <td className="border-b border-zinc-100 px-4 py-3 text-end font-bold text-zinc-950">
                         {formatCurrency(sale.total)}
                       </td>
                       <td className="border-b border-zinc-100 px-4 py-3 text-zinc-500 hidden sm:table-cell">
                         {formatDate(sale.createdAt)}
                       </td>
-                      <td className="border-b border-zinc-100 px-4 py-3 text-right">
+                      <td className="border-b border-zinc-100 px-4 py-3 text-end">
                         <button
                           type="button"
                           onClick={() => onViewSale(sale)}

@@ -261,15 +261,20 @@ router.post("/login", async (req: any, res: any) => {
 })
 
 router.get("/me", requireAuth, async (req: AuthRequest, res: any) => {
-  const user = await prisma.staffUser.findUnique({
-    where: { id: req.auth!.userId },
-    select: { id: true, name: true, mobile: true, role: true, active: true, tenantId: true },
-  })
-  if (!user) {
-    res.status(404).json({ error: "User not found" })
-    return
+  try {
+    const user = await prisma.staffUser.findUnique({
+      where: { id: req.auth!.userId },
+      select: { id: true, name: true, mobile: true, role: true, active: true, tenantId: true },
+    })
+    if (!user) {
+      res.status(404).json({ error: "User not found" })
+      return
+    }
+    res.json(user)
+  } catch (err) {
+    console.error("[auth] /me error:", err)
+    res.status(500).json({ error: "Internal server error" })
   }
-  res.json(user)
 })
 
 // ── Super admin code verification ──────────────────────────────────

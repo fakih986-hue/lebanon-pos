@@ -76,7 +76,7 @@ function TrendChart({ sales, range }: { sales: Sale[]; range: DateRange }) {
                   style={{ background: "var(--surface-3)", color: "var(--text)", boxShadow: "var(--shadow-sm)", border: "1px solid var(--border)" }}
                 >
                   {formatCurrency(d.total)}
-                  <span className="ml-1.5 font-normal" style={{ color: "var(--text-3)" }}>{d.count}×</span>
+                  <span className="ms-1.5 font-normal" style={{ color: "var(--text-3)" }}>{d.count}×</span>
                 </div>
               )}
 
@@ -109,7 +109,7 @@ function TrendChart({ sales, range }: { sales: Sale[]; range: DateRange }) {
         <span className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full" style={{ background: "var(--brand)" }} />
           Today
-          <span className="h-2 w-2 rounded-full ml-2" style={{ background: "var(--brand-soft)" }} />
+          <span className="h-2 w-2 rounded-full ms-2" style={{ background: "var(--brand-soft)" }} />
           Past
         </span>
         <span className="font-bold tabular-nums" style={{ color: "var(--text-2)" }}>{formatCurrency(totalRevenue)} total</span>
@@ -203,7 +203,7 @@ export default function DashboardPage() {
         {/* ── Header ──────────────────────────────────────── */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-[24px] font-black tracking-tight" style={{ color: "var(--text)" }}>
+            <h1 className="text-[24px] font-bold tracking-tight" style={{ color: "var(--text)" }}>
               {settings.storeName || t("desktop.dashboard.owner_digest")}
             </h1>
             <p className="text-[13px] mt-0.5" style={{ color: "var(--text-3)" }}>
@@ -238,8 +238,8 @@ export default function DashboardPage() {
               value: formatCurrency(rangeRevenue),
               sub: `${formatNumber(rangeTransactions)} sales · avg ${formatCurrency(avgTicket)}`,
               icon: CircleDollarSign,
-              gradient: "linear-gradient(135deg,#10b981,#047857)",
-              glow: "rgba(16,185,129,0.4)",
+              bg: "var(--success-soft)",
+              fg: "var(--success)",
               badge: rangeDebtIssued > 0 ? `+${formatCurrency(rangeDebtIssued)} debt` : null,
             },
             {
@@ -247,8 +247,8 @@ export default function DashboardPage() {
               value: formatCurrency(rangeOpProfit),
               sub: `${formatCurrency(rangeExpenseTotal)} expenses deducted`,
               icon: TrendingUp,
-              gradient: "linear-gradient(135deg,#818cf8,#4338ca)",
-              glow: "rgba(99,102,241,0.4)",
+              bg: "var(--info-soft)",
+              fg: "var(--info)",
               badge: rangeRevenue > 0 ? `${((rangeOpProfit / rangeRevenue) * 100).toFixed(1)}% margin` : null,
             },
             {
@@ -256,8 +256,8 @@ export default function DashboardPage() {
               value: formatCurrency(ledgerTotals.outstanding),
               sub: `${formatNumber(ledgerTotals.customers)} customer accounts`,
               icon: HandCoins,
-              gradient: "linear-gradient(135deg,#fb923c,#dc2626)",
-              glow: "rgba(251,146,60,0.4)",
+              bg: "var(--warning-soft)",
+              fg: "var(--warning)",
               alert: ledgerTotals.outstanding > 0,
             },
             {
@@ -265,8 +265,8 @@ export default function DashboardPage() {
               value: formatCurrency(stockValue),
               sub: `${formatNumber(lowStockProducts.length)} low-stock alerts`,
               icon: Boxes,
-              gradient: "linear-gradient(135deg,#fbbf24,#b45309)",
-              glow: "rgba(251,191,36,0.4)",
+              bg: "var(--brand-soft)",
+              fg: "var(--brand)",
               badge: reorderSuggestions.filter((r) => r.suggestedQuantity > 0).length > 0
                 ? `${reorderSuggestions.filter((r) => r.suggestedQuantity > 0).length} to reorder`
                 : null,
@@ -284,16 +284,16 @@ export default function DashboardPage() {
                     {card.label}
                   </p>
                   <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                    style={{ background: card.gradient, boxShadow: `0 3px 10px ${card.glow}` }}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                    style={{ background: card.bg }}
                   >
-                    <Icon size={17} strokeWidth={1.9} color="white" />
+                    <Icon size={17} strokeWidth={2} style={{ color: card.fg }} />
                   </span>
                 </div>
 
                 <div>
                   <p
-                    className="text-[26px] font-black tabular-nums leading-none"
+                    className="text-[26px] font-bold tabular-nums leading-none"
                     style={{ color: card.alert ? "var(--rose)" : "var(--text)" }}
                   >
                     {card.value}
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                     className="w-fit rounded-lg px-2 py-0.5 text-[10px] font-bold"
                     style={{ background: "var(--brand-soft)", color: "var(--brand-text)", border: "1px solid var(--brand-border)" }}
                   >
-                    <ArrowUpRight size={10} className="inline mr-0.5" />
+                    <ArrowUpRight size={10} className="inline me-0.5" />
                     {card.badge}
                   </span>
                 )}
@@ -325,12 +325,12 @@ export default function DashboardPage() {
             <div className="rounded-2xl border p-5" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-[15px] font-black" style={{ color: "var(--text)" }}>
+                  <h2 className="text-[15px] font-bold" style={{ color: "var(--text)" }}>
                     {t("desktop.dashboard.revenue_trend")}
                   </h2>
                   <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>{rangeLabel[dateRange]}</p>
                 </div>
-                <span className="text-[22px] font-black tabular-nums" style={{ color: "var(--brand)" }}>
+                <span className="text-[22px] font-bold tabular-nums" style={{ color: "var(--brand)" }}>
                   {formatCurrency(rangeRevenue)}
                 </span>
               </div>
@@ -343,10 +343,10 @@ export default function DashboardPage() {
               {/* Payment mix */}
               <div className="rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "linear-gradient(135deg,#10b981,#047857)", boxShadow: "0 2px 8px rgba(16,185,129,0.35)" }}>
-                    <Banknote size={14} strokeWidth={1.9} color="white" />
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "var(--success-soft)" }}>
+                    <Banknote size={14} strokeWidth={2} style={{ color: "var(--success)" }} />
                   </span>
-                  <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>{t("desktop.dashboard.payment_mix")}</h3>
+                  <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>{t("desktop.dashboard.payment_mix")}</h3>
                 </div>
 
                 {Object.keys(paymentMix).length === 0 ? (
@@ -373,7 +373,7 @@ export default function DashboardPage() {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{pct.toFixed(0)}%</span>
-                            <span className="text-[13px] font-black tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(amount)}</span>
+                            <span className="text-[13px] font-bold tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(amount)}</span>
                           </div>
                         </div>
                       )
@@ -385,10 +385,10 @@ export default function DashboardPage() {
               {/* Top products */}
               <div className="rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "linear-gradient(135deg,#818cf8,#4338ca)", boxShadow: "0 2px 8px rgba(99,102,241,0.35)" }}>
-                    <PackageSearch size={14} strokeWidth={1.9} color="white" />
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "var(--info-soft)" }}>
+                    <PackageSearch size={14} strokeWidth={2} style={{ color: "var(--info)" }} />
                   </span>
-                  <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>{t("desktop.dashboard.top_products")}</h3>
+                  <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>{t("desktop.dashboard.top_products")}</h3>
                 </div>
 
                 {topProducts.length === 0 ? (
@@ -399,15 +399,15 @@ export default function DashboardPage() {
                       <div key={product.name}>
                         <div className="flex items-center gap-2.5 mb-1">
                           <span
-                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black"
+                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
                             style={i === 0
                               ? { background: "var(--brand)", color: "#fff" }
                               : { background: "var(--surface-2)", color: "var(--text-3)" }
                             }
                           >{i + 1}</span>
                           <span className="min-w-0 flex-1 truncate text-[12px] font-semibold" style={{ color: "var(--text)" }}>{product.name}</span>
-                          <div className="shrink-0 text-right">
-                            <span className="block text-[13px] font-black tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(product.total)}</span>
+                          <div className="shrink-0 text-end">
+                            <span className="block text-[13px] font-bold tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(product.total)}</span>
                             <span className="block text-[10px] tabular-nums" style={{ color: "var(--text-3)" }}>{formatNumber(product.quantity)} sold</span>
                           </div>
                         </div>
@@ -427,14 +427,14 @@ export default function DashboardPage() {
             <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
               <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
                 <div className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "linear-gradient(135deg,#fb923c,#dc2626)", boxShadow: "0 2px 8px rgba(251,146,60,0.35)" }}>
-                    <AlertTriangle size={13} strokeWidth={1.9} color="white" />
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "var(--danger-soft)" }}>
+                    <AlertTriangle size={13} strokeWidth={2} style={{ color: "var(--danger)" }} />
                   </span>
-                  <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>{t("desktop.dashboard.action_queue")}</h3>
+                  <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>{t("desktop.dashboard.action_queue")}</h3>
                 </div>
                 {actionCount > 0 && (
-                  <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full px-1.5 text-[11px] font-black text-white"
-                    style={{ background: "linear-gradient(135deg,#fb923c,#dc2626)" }}>
+                  <span className="flex h-6 min-w-[24px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white"
+                    style={{ background: "var(--danger)" }}>
                     {actionCount}
                   </span>
                 )}
@@ -452,7 +452,7 @@ export default function DashboardPage() {
                       <p className="text-[12px] font-bold" style={{ color: "var(--amber-text)" }}>{product.name}</p>
                       <p className="text-[10px]" style={{ color: "var(--amber)" }}>{formatNumber(product.stock)} units left</p>
                     </div>
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-lg" style={{ background: "var(--amber)", color: "#fff" }}>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "var(--amber)", color: "#fff" }}>
                       Low
                     </span>
                   </div>
@@ -465,20 +465,20 @@ export default function DashboardPage() {
                       <p className="text-[12px] font-bold" style={{ color: "var(--rose-text)" }}>{customer.name}</p>
                       <p className="text-[10px]" style={{ color: "var(--rose)" }}>{t("desktop.dashboard.owes")} {formatCurrency(customer.balance)}</p>
                     </div>
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-lg" style={{ background: "var(--rose)", color: "#fff" }}>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "var(--rose)", color: "#fff" }}>
                       Debt
                     </span>
                   </div>
                 ))}
 
-                {expiryAlerts.slice(0, 3).map((p) => (
-                  <div key={`${p.product.id}`} className="flex items-center justify-between rounded-xl px-3 py-2.5"
+                {expiryAlerts.slice(0, 3).map((p, i) => (
+                  <div key={`${p.product.id}-${i}`} className="flex items-center justify-between rounded-xl px-3 py-2.5"
                     style={{ background: "var(--amber-soft)", border: "1px solid rgba(245,158,11,0.2)" }}>
                     <div>
                       <p className="text-[12px] font-bold" style={{ color: "var(--amber-text)" }}>{p.product.name}</p>
                       <p className="text-[10px]" style={{ color: "var(--amber)" }}>Expires {p.batch?.expiryDate ?? p.product.expiryDate ?? "soon"}</p>
                     </div>
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-lg" style={{ background: "var(--amber)", color: "#fff" }}>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "var(--amber)", color: "#fff" }}>
                       Expiry
                     </span>
                   </div>
@@ -489,11 +489,11 @@ export default function DashboardPage() {
             {/* Recent sales */}
             <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
               <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "linear-gradient(135deg,#60a5fa,#1d4ed8)", boxShadow: "0 2px 8px rgba(59,130,246,0.35)" }}>
-                  <Activity size={13} strokeWidth={1.9} color="white" />
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "var(--info-soft)" }}>
+                  <Activity size={13} strokeWidth={2} style={{ color: "var(--info)" }} />
                 </span>
-                <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>{t("desktop.dashboard.recent_sales")}</h3>
-                <span className="ml-auto text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>
+                <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>{t("desktop.dashboard.recent_sales")}</h3>
+                <span className="ms-auto text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>
                   {formatNumber(rangeTransactions)} total
                 </span>
               </div>
@@ -517,7 +517,7 @@ export default function DashboardPage() {
                       >
                         {sale.paymentMethod}
                       </span>
-                      <span className="shrink-0 text-[13px] font-black tabular-nums" style={{ color: "var(--text)" }}>
+                      <span className="shrink-0 text-[13px] font-bold tabular-nums" style={{ color: "var(--text)" }}>
                         {formatCurrency(sale.total)}
                       </span>
                     </div>

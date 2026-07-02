@@ -797,7 +797,7 @@ export default function SettingsPage() {
                 <p className="text-xs font-bold uppercase text-zinc-500">
                   Pending
                 </p>
-                <p className="text-2xl font-black text-zinc-950">
+                <p className="text-2xl font-bold text-zinc-950">
                   {syncStatus.pending}
                 </p>
               </div>
@@ -805,7 +805,7 @@ export default function SettingsPage() {
                 <p className="text-xs font-bold uppercase text-zinc-500">
                   Synced
                 </p>
-                <p className="text-2xl font-black text-zinc-950">
+                <p className="text-2xl font-bold text-zinc-950">
                   {syncStatus.synced}
                 </p>
               </div>
@@ -813,7 +813,7 @@ export default function SettingsPage() {
                 <p className="text-xs font-bold uppercase text-zinc-500">
                   Failed
                 </p>
-                <p className="text-2xl font-black text-zinc-950">
+                <p className="text-2xl font-bold text-zinc-950">
                   {syncStatus.failed}
                 </p>
               </div>
@@ -1029,7 +1029,7 @@ export default function SettingsPage() {
                 onClick={downloadRecoveryCard}
                 className="btn-checkout w-full h-11 text-[14px] font-bold"
               >
-                <Download size={16} className="inline mr-2" />
+                <Download size={16} className="inline me-2" />
                 Download Recovery Card
               </button>
             </div>

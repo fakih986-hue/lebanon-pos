@@ -12379,7 +12379,7 @@ export namespace Prisma {
   }
 
   export type SaleTenderAvgAggregateOutputType = {
-    exchangeRate: number | null
+    exchangeRate: Decimal | null
     paidUsd: Decimal | null
     paidLbp: Decimal | null
     paidTotalUsd: Decimal | null
@@ -12389,7 +12389,7 @@ export namespace Prisma {
   }
 
   export type SaleTenderSumAggregateOutputType = {
-    exchangeRate: number | null
+    exchangeRate: Decimal | null
     paidUsd: Decimal | null
     paidLbp: Decimal | null
     paidTotalUsd: Decimal | null
@@ -12402,7 +12402,7 @@ export namespace Prisma {
     id: string | null
     saleId: string | null
     currency: string | null
-    exchangeRate: number | null
+    exchangeRate: Decimal | null
     paidUsd: Decimal | null
     paidLbp: Decimal | null
     paidTotalUsd: Decimal | null
@@ -12416,7 +12416,7 @@ export namespace Prisma {
     id: string | null
     saleId: string | null
     currency: string | null
-    exchangeRate: number | null
+    exchangeRate: Decimal | null
     paidUsd: Decimal | null
     paidLbp: Decimal | null
     paidTotalUsd: Decimal | null
@@ -12595,7 +12595,7 @@ export namespace Prisma {
     id: string
     saleId: string
     currency: string
-    exchangeRate: number
+    exchangeRate: Decimal
     paidUsd: Decimal
     paidLbp: Decimal
     paidTotalUsd: Decimal
@@ -12703,7 +12703,7 @@ export namespace Prisma {
       id: string
       saleId: string
       currency: string
-      exchangeRate: number
+      exchangeRate: Prisma.Decimal
       paidUsd: Prisma.Decimal
       paidLbp: Prisma.Decimal
       paidTotalUsd: Prisma.Decimal
@@ -13138,7 +13138,7 @@ export namespace Prisma {
     readonly id: FieldRef<"SaleTender", 'String'>
     readonly saleId: FieldRef<"SaleTender", 'String'>
     readonly currency: FieldRef<"SaleTender", 'String'>
-    readonly exchangeRate: FieldRef<"SaleTender", 'Float'>
+    readonly exchangeRate: FieldRef<"SaleTender", 'Decimal'>
     readonly paidUsd: FieldRef<"SaleTender", 'Decimal'>
     readonly paidLbp: FieldRef<"SaleTender", 'Decimal'>
     readonly paidTotalUsd: FieldRef<"SaleTender", 'Decimal'>
@@ -41759,7 +41759,7 @@ export namespace Prisma {
     id?: StringFilter<"SaleTender"> | string
     saleId?: StringFilter<"SaleTender"> | string
     currency?: StringFilter<"SaleTender"> | string
-    exchangeRate?: FloatFilter<"SaleTender"> | number
+    exchangeRate?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     paidUsd?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     paidLbp?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     paidTotalUsd?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
@@ -41792,7 +41792,7 @@ export namespace Prisma {
     OR?: SaleTenderWhereInput[]
     NOT?: SaleTenderWhereInput | SaleTenderWhereInput[]
     currency?: StringFilter<"SaleTender"> | string
-    exchangeRate?: FloatFilter<"SaleTender"> | number
+    exchangeRate?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     paidUsd?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     paidLbp?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     paidTotalUsd?: DecimalFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
@@ -41829,7 +41829,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"SaleTender"> | string
     saleId?: StringWithAggregatesFilter<"SaleTender"> | string
     currency?: StringWithAggregatesFilter<"SaleTender"> | string
-    exchangeRate?: FloatWithAggregatesFilter<"SaleTender"> | number
+    exchangeRate?: DecimalWithAggregatesFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     paidUsd?: DecimalWithAggregatesFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     paidLbp?: DecimalWithAggregatesFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
     paidTotalUsd?: DecimalWithAggregatesFilter<"SaleTender"> | Decimal | DecimalJsLike | number | string
@@ -44804,7 +44804,7 @@ export namespace Prisma {
   export type SaleTenderCreateInput = {
     id?: string
     currency: string
-    exchangeRate: number
+    exchangeRate: Decimal | DecimalJsLike | number | string
     paidUsd?: Decimal | DecimalJsLike | number | string
     paidLbp?: Decimal | DecimalJsLike | number | string
     paidTotalUsd: Decimal | DecimalJsLike | number | string
@@ -44819,7 +44819,7 @@ export namespace Prisma {
     id?: string
     saleId: string
     currency: string
-    exchangeRate: number
+    exchangeRate: Decimal | DecimalJsLike | number | string
     paidUsd?: Decimal | DecimalJsLike | number | string
     paidLbp?: Decimal | DecimalJsLike | number | string
     paidTotalUsd: Decimal | DecimalJsLike | number | string
@@ -44832,7 +44832,7 @@ export namespace Prisma {
   export type SaleTenderUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
-    exchangeRate?: FloatFieldUpdateOperationsInput | number
+    exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -44847,7 +44847,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     saleId?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
-    exchangeRate?: FloatFieldUpdateOperationsInput | number
+    exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -44861,7 +44861,7 @@ export namespace Prisma {
     id?: string
     saleId: string
     currency: string
-    exchangeRate: number
+    exchangeRate: Decimal | DecimalJsLike | number | string
     paidUsd?: Decimal | DecimalJsLike | number | string
     paidLbp?: Decimal | DecimalJsLike | number | string
     paidTotalUsd: Decimal | DecimalJsLike | number | string
@@ -44874,7 +44874,7 @@ export namespace Prisma {
   export type SaleTenderUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
-    exchangeRate?: FloatFieldUpdateOperationsInput | number
+    exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -44888,7 +44888,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     saleId?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
-    exchangeRate?: FloatFieldUpdateOperationsInput | number
+    exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -55954,7 +55954,7 @@ export namespace Prisma {
   export type SaleTenderCreateWithoutSaleInput = {
     id?: string
     currency: string
-    exchangeRate: number
+    exchangeRate: Decimal | DecimalJsLike | number | string
     paidUsd?: Decimal | DecimalJsLike | number | string
     paidLbp?: Decimal | DecimalJsLike | number | string
     paidTotalUsd: Decimal | DecimalJsLike | number | string
@@ -55967,7 +55967,7 @@ export namespace Prisma {
   export type SaleTenderUncheckedCreateWithoutSaleInput = {
     id?: string
     currency: string
-    exchangeRate: number
+    exchangeRate: Decimal | DecimalJsLike | number | string
     paidUsd?: Decimal | DecimalJsLike | number | string
     paidLbp?: Decimal | DecimalJsLike | number | string
     paidTotalUsd: Decimal | DecimalJsLike | number | string
@@ -56116,7 +56116,7 @@ export namespace Prisma {
   export type SaleTenderUpdateWithoutSaleInput = {
     id?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
-    exchangeRate?: FloatFieldUpdateOperationsInput | number
+    exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -56129,7 +56129,7 @@ export namespace Prisma {
   export type SaleTenderUncheckedUpdateWithoutSaleInput = {
     id?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
-    exchangeRate?: FloatFieldUpdateOperationsInput | number
+    exchangeRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidLbp?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     paidTotalUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string

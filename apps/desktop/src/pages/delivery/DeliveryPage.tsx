@@ -38,12 +38,12 @@ type DeliveryOrder = {
 
 const STATUS_ORDER = ["Pending", "Confirmed", "Preparing", "OutForDelivery", "Delivered", "Cancelled"]
 const STATUS_COLORS: Record<string, string> = {
-  Pending: "bg-yellow-100 text-yellow-800",
-  Confirmed: "bg-blue-100 text-blue-800",
-  Preparing: "bg-indigo-100 text-indigo-800",
-  OutForDelivery: "bg-purple-100 text-purple-800",
-  Delivered: "bg-green-100 text-green-800",
-  Cancelled: "bg-red-100 text-red-800",
+  Pending: "chip-warning",
+  Confirmed: "chip-info",
+  Preparing: "chip-info",
+  OutForDelivery: "chip-brand",
+  Delivered: "chip-success",
+  Cancelled: "chip-danger",
 }
 
 export default function DeliveryPage() {
@@ -154,7 +154,7 @@ export default function DeliveryPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-sm">{order.orderNumber}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[order.status] || ""}`}>{order.status}</span>
+                    <span className={`chip ${STATUS_COLORS[order.status] || "chip-neutral"}`}>{order.status}</span>
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
                     <span className="flex items-center gap-1"><User className="w-3 h-3" />{order.customerName}</span>

@@ -233,6 +233,9 @@ export default function CartBody({
         </div>
       )}
 
+      {/* Tender machinery — only when there is something to sell */}
+      {items.length > 0 && (<>
+
       {/* Sale note */}
       <div>
         <label className="flex items-center gap-1.5 mb-1.5 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
@@ -423,12 +426,12 @@ export default function CartBody({
                   border: "1px solid var(--brand-border)",
                 }}
               >
-                <span className="text-[13px] font-bold" style={{ color: cashChangeUsd > 0 ? "#16a34a" : "var(--rose)" }}>
+                <span className="text-[13px] font-bold" style={{ color: cashChangeUsd > 0 ? "var(--success)" : "var(--rose)" }}>
                   {cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}
                 </span>
-                <div className="text-right">
+                <div className="text-end">
                   <span
-                    className="block tabular-nums leading-none font-black"
+                    className="block tabular-nums leading-none font-bold"
                     style={{ fontSize: cashChangeUsd > 0 ? 22 : 28, color: "var(--text)" }}
                   >
                     {cashChangeUsd > 0 ? formatCurrency(cashChangeUsd) : formatCurrency(cashStillDueUsd)}
@@ -551,7 +554,7 @@ export default function CartBody({
               {formatLbpCurrency(totalLbp)}
             </span>
           </div>
-          <span className="text-[32px] font-black tabular-nums leading-none" style={{ color: "var(--text)" }}>
+          <span className="text-[32px] font-bold tabular-nums leading-none" style={{ color: "var(--text)" }}>
             {formatCurrency(total)}
           </span>
         </div>
@@ -568,10 +571,12 @@ export default function CartBody({
         type="button"
         onClick={onCompleteSale}
         disabled={checkoutBlocked}
-        className="btn-checkout sticky bottom-0 z-10 w-full h-14 text-[16px] font-black tracking-tight"
+        className="btn-checkout sticky bottom-0 z-10 w-full h-14 text-[16px] font-bold tracking-tight"
       >
         {checkoutLabel}
       </button>
+
+      </>)}
     </div>
   )
 }

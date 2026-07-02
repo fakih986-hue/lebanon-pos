@@ -27,7 +27,7 @@ export default function SalesKpiCards({
       </div>
       <div className="rounded-lg border border-zinc-200 bg-white p-3 shadow-sm sm:p-4">
         <p className="text-sm font-medium text-zinc-500">{t("pos.sales_kpi.net_paid")}</p>
-        <p className="mt-2 text-xl font-bold text-emerald-700 sm:text-2xl">
+        <p className="mt-2 text-xl font-bold sm:text-2xl" style={{ color: "var(--success)" }}>
           {formatCurrency(metrics.todayNetRevenue)}
         </p>
         <p className="mt-0.5 text-xs" style={{ color: "var(--text-3)" }}>

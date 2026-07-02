@@ -681,7 +681,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       <section className="mt-5 overflow-hidden rounded-2xl border" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: "var(--border)" }}>
           <div>
-            <h2 className="text-[16px] font-black" style={{ color: "var(--text)" }}>Batch / Lot Inventory</h2>
+            <h2 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Batch / Lot Inventory</h2>
             <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>
               Stock tracked by received lot, cost, expiry and remaining quantity.
             </p>
@@ -696,7 +696,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
             <thead>
               <tr>
                 {["Lot", "Product", "Supplier", "Qty", "Cost", "Expiry"].map((h, i) => (
-                  <th key={h} className="border-b px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.14em]"
+                  <th key={h} className="border-b px-4 py-3 text-start text-[10px] font-bold uppercase tracking-[0.14em]"
                     style={{ borderColor: "var(--border)", color: "var(--text-3)", textAlign: i >= 3 && i <= 4 ? "right" : "left" }}>
                     {h}
                   </th>
@@ -709,8 +709,8 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
                   <td className="border-b px-4 py-3 font-bold tabular-nums" style={{ borderColor: "var(--border)", color: "var(--brand)" }}>{batch.batchNumber}</td>
                   <td className="border-b px-4 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{batch.productName}</td>
                   <td className="border-b px-4 py-3" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{batch.supplierName ?? "—"}</td>
-                  <td className="border-b px-4 py-3 text-right font-black tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{formatNumber(batch.quantityRemaining)}</td>
-                  <td className="border-b px-4 py-3 text-right tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{formatCurrency(batch.unitCost)}</td>
+                  <td className="border-b px-4 py-3 text-end font-bold tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{formatNumber(batch.quantityRemaining)}</td>
+                  <td className="border-b px-4 py-3 text-end tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{formatCurrency(batch.unitCost)}</td>
                   <td className="border-b px-4 py-3" style={{ borderColor: "var(--border)", color: batch.expiryDate ? "var(--text-2)" : "var(--text-3)" }}>
                     {batch.expiryDate ? formatDate(batch.expiryDate) : "—"}
                   </td>
@@ -826,7 +826,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
 
       {selectedProduct?.parentId ? (
       <section className="mt-5 rounded-2xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
-        <h3 className="mb-3 text-[14px] font-black" style={{ color: "var(--text)" }}>Variant settings</h3>
+        <h3 className="mb-3 text-[14px] font-bold" style={{ color: "var(--text)" }}>Variant settings</h3>
         <label className="block">
           <span className="block text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--text-3)" }}>Variant name</span>
           <input
@@ -845,7 +845,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       {(isParent || selectedProduct?.isParent) && selectedProduct ? (
       <section className="mt-5 overflow-hidden rounded-2xl border" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
         <div className="border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
-          <h3 className="text-[14px] font-black" style={{ color: "var(--text)" }}>Variants</h3>
+          <h3 className="text-[14px] font-bold" style={{ color: "var(--text)" }}>Variants</h3>
         </div>
 
         {parentVariants.length > 0 ? (
@@ -854,7 +854,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
             <thead>
               <tr>
                 {["Name","Price","Stock","Barcode",""].map((h) => (
-                  <th key={h} className="border-b px-4 py-2.5 text-left text-[10px] font-black uppercase tracking-wide"
+                  <th key={h} className="border-b px-4 py-2.5 text-start text-[10px] font-bold uppercase tracking-wide"
                     style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{h}</th>
                 ))}
               </tr>
@@ -920,7 +920,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       <>
       {bulkEditOpen && (
         <div className="mb-4 rounded-2xl border p-4" style={{ background: "var(--blue-soft)", border: "1px solid var(--brand-border)" }}>
-          <h3 className="mb-3 text-[13px] font-black" style={{ color: "var(--text)" }}>Bulk Price Edit</h3>
+          <h3 className="mb-3 text-[13px] font-bold" style={{ color: "var(--text)" }}>Bulk Price Edit</h3>
           <div className="flex flex-wrap gap-2">
             <select value={bulkEditCategory} onChange={(e) => setBulkEditCategory(e.target.value)} className="input h-9 text-[13px]">
               <option value="All">All Categories</option>
@@ -948,7 +948,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       {!bulkEditOpen && (
         <div className="mb-3 flex items-center justify-end gap-2">
           {genImageStatus && (
-            <span className="mr-auto text-[11px]" style={{ color: "var(--text-3)" }}>{genImageStatus}</span>
+            <span className="me-auto text-[11px]" style={{ color: "var(--text-3)" }}>{genImageStatus}</span>
           )}
           <button type="button" onClick={generateProductImages} disabled={generatingImages}
             className="btn btn-default h-9 gap-1.5 text-[12px] disabled:opacity-50">

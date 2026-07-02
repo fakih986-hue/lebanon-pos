@@ -46,7 +46,7 @@ const DepartmentTabs = memo(function DepartmentTabs({ departments, selected, onS
             <Icon size={14} />
             <span className="whitespace-nowrap">{dept.label}</span>
             <span
-              className="rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums leading-none"
+              className="rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums leading-none"
               style={{
                 background: active ? "var(--brand-soft)" : "var(--surface-3)",
                 color: active ? "var(--brand-text)" : "var(--text-3)",

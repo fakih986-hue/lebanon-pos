@@ -24,7 +24,7 @@ export function ProductsPage() {
   useEffect(() => {
     api<PullResponse>("/api/sync/pull?since=")
       .then(data => setProducts(data.products ?? []))
-      .catch(() => {})
+      .catch((err) => console.error("[ProductsPage] Failed to load products:", err))
       .finally(() => setLoading(false))
   }, [])
 

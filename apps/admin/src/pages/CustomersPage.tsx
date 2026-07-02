@@ -14,7 +14,7 @@ export function CustomersPage() {
   useEffect(() => {
     api<PullResponse>("/api/sync/pull?since=")
       .then(data => setCustomers(data.customers ?? []))
-      .catch(() => {})
+      .catch((err) => console.error("[CustomersPage] Failed to load customers:", err))
       .finally(() => setLoading(false))
   }, [])
 

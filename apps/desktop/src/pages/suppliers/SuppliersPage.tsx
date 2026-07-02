@@ -394,7 +394,7 @@ export default function SuppliersPage() {
                           active ? "bg-emerald-50/70" : ""
                         }`}
                       >
-                        <td className="border-b border-zinc-100 px-4 py-4">
+                        <td className="border-b border-zinc-100 px-4 py-2.5">
                           <div className="font-bold text-zinc-950">
                             {supplier.name}
                           </div>
@@ -404,7 +404,7 @@ export default function SuppliersPage() {
                             </div>
                           ) : null}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4">
+                        <td className="border-b border-zinc-100 px-4 py-2.5">
                           <p className="font-semibold text-zinc-700">
                             {supplier.contact || "-"}
                           </p>
@@ -418,19 +418,19 @@ export default function SuppliersPage() {
                             </a>
                           ) : null}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-semibold text-zinc-800">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-semibold text-zinc-800">
                           {formatCurrency(supplier.purchaseTotal)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-semibold text-emerald-700">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-semibold text-emerald-700">
                           {formatCurrency(supplier.paidTotal)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-bold text-rose-700">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-bold text-rose-700">
                           {formatCurrency(supplier.balance)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-zinc-500">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-zinc-500">
                           {formatDate(supplier.lastActivityAt)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4">
+                        <td className="border-b border-zinc-100 px-4 py-2.5">
                           <button
                             type="button"
                             onClick={(event) => {

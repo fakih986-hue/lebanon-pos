@@ -29,7 +29,7 @@ export default function ExpensePanel({ expanded, onToggle }: { expanded: boolean
       <button type="button" onClick={onToggle} className="flex w-full items-center justify-between px-4 py-2.5 text-[12px] font-bold hover:opacity-80"
         style={{ color: "var(--text-2)", background: expanded ? "var(--surface-2)" : "transparent" }}>
         <span className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full shrink-0" style={{ background: "var(--rose)" }} />
+          <span className="h-2 w-2 rounded-full shrink-0" style={{ background: "var(--info)" }} />
           <Receipt size={14} style={{ color: "var(--text-3)" }} />
           Record Expense
         </span>

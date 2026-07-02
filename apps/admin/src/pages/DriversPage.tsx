@@ -134,7 +134,7 @@ export function DriversPage() {
                   <th className="text-start px-5 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{t("drivers.name")}</th>
                   <th className="text-start px-5 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{t("drivers.phone")}</th>
                   <th className="text-center px-5 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{t("drivers.status")}</th>
-                  <th className="text-center px-5 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Online</th>
+                  <th className="text-center px-5 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{t("admin.online")}</th>
                   <th className="text-end px-5 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{t("drivers.created")}</th>
                   <th className="text-end px-5 py-4 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{t("drivers.actions")}</th>
                 </tr>
@@ -162,7 +162,7 @@ export function DriversPage() {
                       <td className="px-5 py-4 text-center">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${isOnline ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400'}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                          {isOnline ? "Online" : "Offline"}
+                          {isOnline ? t("admin.online") : t("admin.offline")}
                         </span>
                       </td>
                       <td className="px-5 py-4 text-end text-xs" style={{ color: "var(--text-muted)" }}>{new Date(d.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>

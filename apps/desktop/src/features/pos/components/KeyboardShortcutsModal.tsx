@@ -30,7 +30,7 @@ export default function KeyboardShortcutsModal({ open, onClose }: Props) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Keyboard size={20} style={{ color: "var(--brand)" }} />
-            <h2 className="text-[17px] font-black" style={{ color: "var(--text)" }}>Keyboard Shortcuts</h2>
+            <h2 className="text-[17px] font-bold" style={{ color: "var(--text)" }}>Keyboard Shortcuts</h2>
           </div>
           <button onClick={onClose} style={{ color: "var(--text-3)" }}><X size={18} /></button>
         </div>
@@ -40,7 +40,7 @@ export default function KeyboardShortcutsModal({ open, onClose }: Props) {
             <div key={keys} className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5" style={{ background: "var(--surface-2)" }}>
               <span className="text-[13px] font-semibold" style={{ color: "var(--text-2)" }}>{action}</span>
               <kbd
-                className="rounded-md border px-2.5 py-1 text-[12px] font-black tabular-nums"
+                className="rounded-md border px-2.5 py-1 text-[12px] font-bold tabular-nums"
                 style={{ borderColor: "var(--border-strong)", background: "var(--surface)", color: "var(--text)" }}
               >
                 {keys}

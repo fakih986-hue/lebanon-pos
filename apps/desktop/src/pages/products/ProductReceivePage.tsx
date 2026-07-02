@@ -307,7 +307,7 @@ export default function ProductReceivePage() {
         {/* ── Page header ───────────────────────────────── */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-[22px] font-black tracking-tight" style={{ color: "var(--text)" }}>
+            <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--text)" }}>
               Receive Inventory
             </h1>
             <p className="text-[13px] mt-0.5" style={{ color: "var(--text-3)" }}>
@@ -331,12 +331,12 @@ export default function ProductReceivePage() {
                   : { background: "var(--surface)", border: "1px solid var(--border)" }
                 }
               >
-                <span className="text-[10px] font-semibold uppercase tracking-wide mr-1.5" style={{ color: "var(--text-3)" }}>{k.label}</span>
-                <span className="text-[14px] font-black tabular-nums" style={{ color: k.accent ? "var(--brand)" : "var(--text)" }}>{k.value}</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide me-1.5" style={{ color: "var(--text-3)" }}>{k.label}</span>
+                <span className="text-[14px] font-bold tabular-nums" style={{ color: k.accent ? "var(--brand)" : "var(--text)" }}>{k.value}</span>
               </div>
             ))}
 
-            <div className="flex gap-2 ml-1">
+            <div className="flex gap-2 ms-1">
               <button type="button" onClick={() => addRow()}
                 className="btn btn-default h-9 gap-1.5 text-[13px]">
                 <Plus size={14} /> Add Row
@@ -375,7 +375,7 @@ export default function ProductReceivePage() {
                   <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
                     {/* Row number / ready indicator */}
                     <span
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
                       style={ready
                         ? { background: "var(--brand-soft)", color: "var(--brand)" }
                         : { background: "var(--surface-2)", color: "var(--text-3)" }
@@ -442,8 +442,8 @@ export default function ProductReceivePage() {
                   {matched ? (
                     <div className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
                       <CheckCircle2 size={12} />
-                      Restocking: <strong className="ml-0.5">{matched.name}</strong>
-                      <span className="ml-auto opacity-60">Stock {matched.stock} → {matched.stock + row.quantity}</span>
+                      Restocking: <strong className="ms-0.5">{matched.name}</strong>
+                      <span className="ms-auto opacity-60">Stock {matched.stock} → {matched.stock + row.quantity}</span>
                     </div>
                   ) : row.barcode ? (
                     <div className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--amber-soft)", color: "var(--amber)" }}>
@@ -483,14 +483,14 @@ export default function ProductReceivePage() {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); applySuggestion(row.id, row.barcode) }}
-                      className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold transition hover:opacity-80 w-full text-left"
+                      className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold transition hover:opacity-80 w-full text-start"
                       style={{ background: "rgba(59,130,246,0.08)", color: "#60a5fa" }}
                     >
                       <Search size={12} className="shrink-0" />
                       <span className="truncate">
                         <strong className="text-white">{barcodeSuggestions[row.barcode]!.name}</strong>
                       </span>
-                      <span className="ml-auto shrink-0 text-[10px] opacity-60">Tap to use</span>
+                      <span className="ms-auto shrink-0 text-[10px] opacity-60">Tap to use</span>
                     </button>
                   )}
 
@@ -550,7 +550,7 @@ export default function ProductReceivePage() {
                               <input
                                 type="number" min="0" step="0.01" value={row.cost || ""}
                                 onChange={(e) => updateRow(row.id, { cost: normalizeNumber(e.target.value) } as any)}
-                                className="input text-right"
+                                className="input text-end"
                                 style={{ height: 34, fontSize: 13, fontWeight: 600, width: 60, minWidth: 60, flex: "0 0 auto" }}
                               />
                               {row.cost > 0 && (
@@ -580,7 +580,7 @@ export default function ProductReceivePage() {
                             <input
                               type="number" min="0" step="0.01" value={row.price || ""}
                               onChange={(e) => updateRow(row.id, { price: normalizeNumber(e.target.value) } as any)}
-                              className="input w-full text-right"
+                              className="input w-full text-end"
                               style={{ height: 34, fontSize: 13, fontWeight: 600 }}
                             />
                           </label>
@@ -589,7 +589,7 @@ export default function ProductReceivePage() {
                             <input
                               type="number" min="0" step="1" value={row.quantity || ""}
                               onChange={(e) => updateRow(row.id, { quantity: normalizeNumber(e.target.value) } as any)}
-                              className="input w-full text-right"
+                              className="input w-full text-end"
                               style={{ height: 34, fontSize: 13, fontWeight: 600 }}
                             />
                           </label>
@@ -609,7 +609,7 @@ export default function ProductReceivePage() {
                         style={{ height: 28, fontSize: 11, width: 130 }}
                       />
                     </label>
-                    <label className="flex items-center gap-2 ml-auto">
+                    <label className="flex items-center gap-2 ms-auto">
                       <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Labels</span>
                       <input
                         type="number" min="0" step="1" value={row.labels || ""}
@@ -648,7 +648,7 @@ export default function ProductReceivePage() {
             <div className="rounded-2xl border p-4 space-y-3" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
               <div className="flex items-center gap-2">
                 <Building2 size={14} style={{ color: "var(--brand)" }} />
-                <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>Supplier & Purchase</h3>
+                <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>Supplier & Purchase</h3>
               </div>
 
               {suppliers.length > 0 ? (
@@ -707,7 +707,7 @@ export default function ProductReceivePage() {
                 </div>
                 <div className="flex justify-between text-[13px] border-t pt-1.5 mt-1" style={{ borderColor: "var(--border)" }}>
                   <span className="font-semibold" style={{ color: "var(--text-3)" }}>Total cost</span>
-                  <span className="text-[16px] font-black" style={{ color: "var(--text)" }}>{formatCurrency(totalCost)}</span>
+                  <span className="text-[16px] font-bold" style={{ color: "var(--text)" }}>{formatCurrency(totalCost)}</span>
                 </div>
               </div>
 
@@ -733,8 +733,8 @@ export default function ProductReceivePage() {
             <div className="rounded-2xl border p-4 space-y-3" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
               <div className="flex items-center gap-2">
                 <Printer size={14} style={{ color: "var(--brand)" }} />
-                <h3 className="text-[13px] font-black" style={{ color: "var(--text)" }}>Print Labels</h3>
-                <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+                <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>Print Labels</h3>
+                <span className="ms-auto rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
                   {labelsToPrint} labels
                 </span>
               </div>
