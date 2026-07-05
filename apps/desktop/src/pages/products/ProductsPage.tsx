@@ -55,7 +55,7 @@ import {
 } from "../../features/pos/services/stockCount.service"
 import { showToast } from "../../features/pos/services/toast.service"
 import { useI18n } from "@lebanonpos/shared"
-type ProductWorkspaceView = "Catalog" | "Alerts" | "Control" | "Lots" | "Setup"
+type ProductWorkspaceView = "Catalog" | "Categories" | "Alerts" | "Control" | "Lots" | "Setup"
 
 function normalizeNumber(value: string) {
   const parsedValue = Number(value)
@@ -300,6 +300,10 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     {
       label: "Catalog",
       count: filteredProducts.length,
+    },
+    {
+      label: "Categories",
+      count: categories.length - 1,
     },
     {
       label: "Alerts",
@@ -971,27 +975,68 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
           </p>
         </div>
       )}
-      {/* Category Management */}
-      <div className="card mb-4 overflow-hidden">
-        <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
-          <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--text)" }}>
-            <SlidersHorizontal size={15} /> Categories
-          </div>
-          <span className="chip chip-neutral text-[10px]">{categories.length - 1} categories</span>
-        </div>
-        <div className="p-3 space-y-1.5 max-h-[200px] overflow-y-auto">
-          {categories.filter((c) => c !== "All").map((cat) => (
-            <div key={cat} className="flex items-center gap-2">
-              <span className="text-xs font-medium shrink-0 w-1 h-1 rounded-full" style={{ background: "var(--brand)" }}></span>
-              <input defaultValue={cat} onBlur={(e) => { const n = e.target.value.trim(); if (n && n !== cat) { renameCategory(cat, n); showToast(`Renamed "${cat}" to "${n}"`) } }} className="h-9 flex-1 rounded-lg border px-3 text-[13px] font-medium outline-none transition" style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }} onFocus={(e) => { e.target.style.borderColor = "var(--brand)"; e.target.style.boxShadow = "0 0 0 3px var(--focus-ring)" }} onBlur={(e) => { e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none" }} />
-            </div>
-          ))}
-          {categories.length <= 1 && (
-            <p className="text-xs py-4 text-center" style={{ color: "var(--text-3)" }}>No categories yet. Create one by editing a product.</p>
-          )}
-        </div>
-      </div>
       <ProductTable
+        filteredProducts={filteredProducts}
+        lowStockCount={lowStockCount}
+        search={search}
+        onSearchChange={setSearch}
+        selectedCategory={selectedCategory}
+        onCategoryChange={setSelectedCategory}
+        categories={categories}
+        onToggleFavorite={toggleFavorite}
+        onDeleteClick={setDeleteProductId}
+        onEditClick={openProductEdit}
+      />
+      </>
+      ) : null}
+
+      {/* ── Categories tab ── */}
+      {activeProductView === "Categories" ? (
+      <section className="card mt-5 overflow-hidden">
+        <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "var(--border)" }}>
+          <div>
+            <h2 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Categories</h2>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>Manage and rename product categories</p>
+          </div>
+          <span className="chip chip-brand" style={{ fontSize: "12px", height: "28px" }}>{categories.length - 1} total</span>
+        </div>
+        {categories.filter((c) => c !== "All").length === 0 ? (
+          <div className="px-5 py-12 text-center text-[13px]" style={{ color: "var(--text-3)" }}>
+            No categories yet. Create one by editing a product.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-[13px]">
+              <thead>
+                <tr>
+                  <th className="border-b px-5 py-3 text-start text-[10px] font-bold uppercase tracking-[0.14em]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>Category</th>
+                  <th className="border-b px-5 py-3 text-end text-[10px] font-bold uppercase tracking-[0.14em]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>Products</th>
+                  <th className="border-b px-5 py-3 text-end text-[10px] font-bold uppercase tracking-[0.14em]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.filter((c) => c !== "All").map((cat) => {
+                  const count = products.filter((p) => p.category === cat).length
+                  return (
+                    <tr key={cat} className="t-row">
+                      <td className="border-b px-5 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{cat}</td>
+                      <td className="border-b px-5 py-3 text-end tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{count}</td>
+                      <td className="border-b px-5 py-3 text-end" style={{ borderColor: "var(--border)" }}>
+                        <input defaultValue={cat} onBlur={(e) => { const n = e.target.value.trim(); if (n && n !== cat) { renameCategory(cat, n); showToast(`Renamed "${cat}" to "${n}"`) } }}
+                          className="h-8 w-40 rounded-lg border px-3 text-[12px] font-medium outline-none transition text-end"
+                          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }}
+                          onFocus={(e) => { e.target.style.borderColor = "var(--brand)"; e.target.style.boxShadow = "0 0 0 3px var(--focus-ring)" }}
+                          onBlur={(e) => { e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none" }} />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+      ) : null}
         filteredProducts={filteredProducts}
         lowStockCount={lowStockCount}
         search={search}
