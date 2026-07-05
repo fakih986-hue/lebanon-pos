@@ -1022,11 +1022,10 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
                       <td className="border-b px-5 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{cat}</td>
                       <td className="border-b px-5 py-3 text-end tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{count}</td>
                       <td className="border-b px-5 py-3 text-end" style={{ borderColor: "var(--border)" }}>
-                        <input defaultValue={cat} onBlur={(e) => { const n = e.target.value.trim(); if (n && n !== cat) { renameCategory(cat, n); showToast(`Renamed "${cat}" to "${n}"`) } }}
+                        <input defaultValue={cat} onBlur={(e) => { const n = e.target.value.trim(); if (n && n !== cat) { renameCategory(cat, n); showToast(`Renamed "${cat}" to "${n}"`) }; e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none" }}
                           className="h-8 w-40 rounded-lg border px-3 text-[12px] font-medium outline-none transition text-end"
                           style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }}
-                          onFocus={(e) => { e.target.style.borderColor = "var(--brand)"; e.target.style.boxShadow = "0 0 0 3px var(--focus-ring)" }}
-                          onBlur={(e) => { e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none" }} />
+                          onFocus={(e) => { e.target.style.borderColor = "var(--brand)"; e.target.style.boxShadow = "0 0 0 3px var(--focus-ring)" }} />
                       </td>
                     </tr>
                   )
@@ -1036,19 +1035,6 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
           </div>
         )}
       </section>
-      ) : null}
-        filteredProducts={filteredProducts}
-        lowStockCount={lowStockCount}
-        search={search}
-        onSearchChange={setSearch}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        categories={categories}
-        onToggleFavorite={toggleFavorite}
-        onDeleteClick={setDeleteProductId}
-        onEditClick={openProductEdit}
-      />
-      </>
       ) : null}
 
       <ConfirmDialog
