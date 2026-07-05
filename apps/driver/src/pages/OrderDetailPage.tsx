@@ -4,6 +4,8 @@ import { useI18n, useWebSocket } from "@lebanonpos/shared"
 import { getToken } from "../main"
 import { api } from "../app/api"
 
+const fmt = (n: number) => "$" + n.toFixed(2)
+
 type OrderItem = { id: string; productName: string; quantity: number; unitPrice: number; total: number }
 type Order = {
   id: string; orderNumber: string; status: string
@@ -146,7 +148,7 @@ export function OrderDetailPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-sm bg-glass border border-glass rounded-2xl p-6 shadow-2xl animate-scale-in">
             <h3 className="text-lg font-bold text-primary mb-1">💵 {t("driver.collect_payment")}</h3>
-            <p className="text-sm text-secondary mb-4">{t("driver.order_total")}: <span className="font-bold text-primary">${order.total.toFixed(2)}</span></p>
+            <p className="text-sm text-secondary mb-4">{t("driver.order_total")}: <span className="font-bold text-primary">{fmt(order.total)}</span></p>
             <label className="block text-sm font-semibold text-secondary mb-2">
               {t("driver.amount_received")}
             </label>
@@ -188,7 +190,7 @@ export function OrderDetailPage() {
             </svg>
           </button>
           <span className="text-primary font-semibold">{order.orderNumber}</span>
-          <span className={`ml-auto inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-medium border ${STATUS_STYLES[order.status] || "bg-slate-500/20 text-slate-400 border-slate-500/30"}`}>
+          <span className={`ms-auto inline-flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-medium border ${STATUS_STYLES[order.status] || "bg-slate-500/20 text-slate-400 border-slate-500/30"}`}>
             {STATUS_ICONS[order.status] || "•"} {t(`status.${order.status}`)}
           </span>
         </div>
@@ -213,7 +215,7 @@ export function OrderDetailPage() {
               className="flex items-center gap-3 text-emerald-400 hover:text-emerald-300 transition-colors">
               <span className="text-lg">📞</span>
               <span className="font-medium">{order.customerPhone}</span>
-              <span className="ml-auto text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">{t("driver.call")}</span>
+              <span className="ms-auto text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">{t("driver.call")}</span>
             </a>
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-3 text-[#25D366] hover:opacity-80 transition-opacity">
@@ -245,29 +247,29 @@ export function OrderDetailPage() {
               <div key={item.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                 <div>
                   <p className="text-sm font-medium text-primary">{item.productName}</p>
-                  <p className="text-xs text-secondary mt-0.5">{item.quantity} × ${item.unitPrice.toFixed(2)}</p>
+                  <p className="text-xs text-secondary mt-0.5">{item.quantity} × {fmt(item.unitPrice)}</p>
                 </div>
-                <p className="text-sm font-semibold text-secondary">${item.total.toFixed(2)}</p>
+                <p className="text-sm font-semibold text-secondary">{fmt(item.total)}</p>
               </div>
             ))}
           </div>
           <div className="mt-4 pt-4 border-t border-glass space-y-1.5">
             <div className="flex justify-between text-sm text-secondary">
-              <span>{t("driver.items_total")}</span><span>${order.itemsTotal.toFixed(2)}</span>
+              <span>{t("driver.items_total")}</span><span>{fmt(order.itemsTotal)}</span>
             </div>
             {order.deliveryFee > 0 && (
               <div className="flex justify-between text-sm text-secondary">
-                <span>{t("driver.delivery_fee")}</span><span>${order.deliveryFee.toFixed(2)}</span>
+                <span>{t("driver.delivery_fee")}</span><span>{fmt(order.deliveryFee)}</span>
               </div>
             )}
             <div className="flex justify-between text-lg font-bold text-primary pt-1">
-              <span>{t("driver.total")}</span><span>${order.total.toFixed(2)}</span>
+              <span>{t("driver.total")}</span><span>{fmt(order.total)}</span>
             </div>
             {isCash && (
               <div className="flex items-center gap-2 pt-1">
                 <span className="text-base">💵</span>
                 <span className="text-sm font-bold text-amber-300">
-                  {t("driver.cash_on_delivery")} — collect ${order.total.toFixed(2)}
+                  {t("driver.cash_on_delivery")} — collect {fmt(order.total)}
                 </span>
               </div>
             )}

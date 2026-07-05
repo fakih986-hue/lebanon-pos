@@ -189,11 +189,11 @@ const OrderCard = memo(function OrderCard({
                     {showDropdown[order.id] && (
                       <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl max-h-40 overflow-y-auto">
                         <button onMouseDown={() => { onAssignDriver(order.id, ""); onDriverSearchChange(order.id, "") }}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-700 border-b border-zinc-100 dark:border-zinc-700"
+                          className="w-full text-start px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-700 border-b border-zinc-100 dark:border-zinc-700"
                           style={{ color: "var(--text-muted)" }}>{t("delivery.unassigned")}</button>
                         {filteredDrivers.map(d => (
                           <button key={d.id} onMouseDown={() => { onAssignDriver(order.id, d.id); onDriverSearchChange(order.id, d.name) }}
-                            className="w-full text-left px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                            className="w-full text-start px-3 py-2 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-700 flex items-center gap-2"
                             style={{ color: "var(--text-primary)" }}>
                             <span className={`w-1.5 h-1.5 rounded-full ${onlineDrivers.includes(d.id) ? "bg-emerald-500" : "bg-zinc-400"}`} />
                             {d.name}

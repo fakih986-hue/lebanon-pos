@@ -5,6 +5,7 @@ import { api } from "../app/api"
 import type { Product } from "@lebanonpos/types"
 
 const CART_THROTTLE_MS = 1000
+const fmt = (n: number) => "$" + n.toFixed(2)
 
 function ProductImagePlaceholder({ name }: { name: string }) {
   const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0)
@@ -217,7 +218,7 @@ export function MenuPage() {
                 <div key={item.product.id} className="flex items-center justify-between bg-glass border border-glass rounded-xl p-3">
                   <div className="flex-1">
                     <p className="font-medium text-primary text-sm">{item.product.name}</p>
-                    <p className="text-sm text-secondary">${item.product.price.toFixed(2)}</p>
+                    <p className="text-sm text-secondary">{fmt(item.product.price)}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <button onClick={() => updateQuantity(item.product.id, -1)}
@@ -229,9 +230,9 @@ export function MenuPage() {
                 </div>
               ))}
               <div className="bg-glass border border-glass rounded-xl p-4">
-                <div className="flex justify-between text-sm text-secondary"><span>{t("ordering.subtotal")}</span><span>${cartStats.total.toFixed(2)}</span></div>
-                <div className="flex justify-between text-sm text-secondary"><span>{t("ordering.delivery_fee")}</span><span>${deliveryFee.toFixed(2)}</span></div>
-                <div className="mt-2 pt-2 border-t border-glass flex justify-between text-lg font-bold text-primary"><span>{t("ordering.total")}</span><span>${(cartStats.total + deliveryFee).toFixed(2)}</span></div>
+                <div className="flex justify-between text-sm text-secondary"><span>{t("ordering.subtotal")}</span><span>{fmt(cartStats.total)}</span></div>
+                <div className="flex justify-between text-sm text-secondary"><span>{t("ordering.delivery_fee")}</span><span>{fmt(deliveryFee)}</span></div>
+                <div className="mt-2 pt-2 border-t border-glass flex justify-between text-lg font-bold text-primary"><span>{t("ordering.total")}</span><span>{fmt(cartStats.total + deliveryFee)}</span></div>
               </div>
             </div>
           )}
@@ -267,7 +268,7 @@ export function MenuPage() {
               </div>
               <button onClick={placeOrder} disabled={submitting || !customerName || !customerPhone || !address}
                 className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:from-emerald-500 hover:to-emerald-400 active:from-emerald-700 active:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                {submitting ? t("ordering.placing_order") : `${t("ordering.place_order")} — $${(cartStats.total + deliveryFee).toFixed(2)}`}
+                {submitting ? t("ordering.placing_order") : `${t("ordering.place_order")} — ${fmt(cartStats.total + deliveryFee)}`}
               </button>
             </div>
           </div>
@@ -354,7 +355,7 @@ export function MenuPage() {
               <div className="p-3">
                 <div className="flex items-center justify-between">
                   <span className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-300 font-medium uppercase tracking-wider">{product.category}</span>
-                  <span className="text-sm font-bold text-emerald-400">${product.price.toFixed(2)}</span>
+                  <span className="text-sm font-bold text-emerald-400">{fmt(product.price)}</span>
                 </div>
                 <p className="mt-2 text-sm font-medium text-primary leading-tight">{product.name}</p>
                 {product.variantName && <p className="text-xs text-secondary mt-0.5">{product.variantName}</p>}
@@ -375,7 +376,7 @@ export function MenuPage() {
               <div className="p-3">
                 <div className="flex items-center justify-between">
                   <span className="rounded-lg bg-white/[0.06] px-2 py-0.5 text-[10px] text-muted font-medium uppercase tracking-wider">{product.category}</span>
-                  <span className="text-sm font-bold text-muted">${product.price.toFixed(2)}</span>
+                  <span className="text-sm font-bold text-muted">{fmt(product.price)}</span>
                 </div>
                 <p className="mt-2 text-sm font-medium text-primary leading-tight">{product.name}</p>
                 {product.variantName && <p className="text-xs text-muted mt-0.5">{product.variantName}</p>}
@@ -391,7 +392,7 @@ export function MenuPage() {
           <button onClick={() => setShowCart(true)}
             className="flex w-full items-center justify-between rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-3.5 text-white shadow-xl shadow-emerald-600/20 max-w-md mx-auto">
             <span className="font-semibold">🛒 {cartStats.count} {cartStats.count === 1 ? t("ordering.item") : t("ordering.items")}</span>
-            <span className="font-semibold">${(cartStats.total + deliveryFee).toFixed(2)}</span>
+            <span className="font-semibold">{fmt(cartStats.total + deliveryFee)}</span>
           </button>
         </div>
       )}

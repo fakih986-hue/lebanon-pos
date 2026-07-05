@@ -351,6 +351,37 @@ export async function unlockWithPin(pin: string) {
     return null
   }
 
+  // ── Brute-force protection ──────────────────────────────────────
+  const ATTEMPT_KEY = "lebanonpos.pin-attempts.v1"
+  const MAX_ATTEMPTS = 5
+  const LOCKOUT_MS = 60_000
+
+  const attemptData = (() => {
+    try {
+      const raw = localStorage.getItem(ATTEMPT_KEY)
+      return raw ? JSON.parse(raw) : { count: 0, lockedUntil: 0 }
+    } catch { return { count: 0, lockedUntil: 0 } }
+  })()
+
+  if (attemptData.lockedUntil > Date.now()) {
+    const remaining = Math.ceil((attemptData.lockedUntil - Date.now()) / 1000)
+    console.warn(`[security] PIN locked — ${remaining}s remaining`)
+    return null
+  }
+
+  function recordFailedAttempt() {
+    const next = { count: attemptData.count + 1, lockedUntil: 0 }
+    if (next.count >= MAX_ATTEMPTS) {
+      next.lockedUntil = Date.now() + LOCKOUT_MS
+      next.count = 0
+    }
+    localStorage.setItem(ATTEMPT_KEY, JSON.stringify(next))
+  }
+
+  function resetAttempts() {
+    localStorage.removeItem(ATTEMPT_KEY)
+  }
+
   const cleanPin = pin.trim()
   const pinHash = await hashPin(cleanPin)
   const users = getUsers()
@@ -426,6 +457,7 @@ export async function unlockWithPin(pin: string) {
             entity: "security",
             summary: "Login denied — tenant suspended and grace period expired.",
           })
+          recordFailedAttempt()
           return null
         }
       }
@@ -437,6 +469,7 @@ export async function unlockWithPin(pin: string) {
   }
 
   if (apiVerified && apiUser) {
+    resetAttempts()
     return finalizeUnlock(apiUser)
   }
 
@@ -449,6 +482,7 @@ export async function unlockWithPin(pin: string) {
       entity: "security",
       summary: "Failed PIN unlock attempt (rejected by server).",
     })
+    recordFailedAttempt()
     return null
   }
 
@@ -491,6 +525,7 @@ export async function unlockWithPin(pin: string) {
         summary: "Failed PIN unlock attempt.",
       })
     }
+    recordFailedAttempt()
     return null
   }
 
@@ -500,6 +535,7 @@ export async function unlockWithPin(pin: string) {
     writeCollection(USERS_KEY, users)
   }
 
+  resetAttempts()
   return finalizeUnlock(user)
 }
 

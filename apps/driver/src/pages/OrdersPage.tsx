@@ -4,6 +4,8 @@ import { useI18n, useTheme, useWebSocket } from "@lebanonpos/shared"
 import { clearToken, getToken } from "../main"
 import { api } from "../app/api"
 
+const fmt = (n: number) => "$" + n.toFixed(2)
+
 type Order = { id: string; orderNumber: string; status: string; customerName: string; customerPhone: string; address: string; total: number; createdAt: string; driverId: string | null }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -161,7 +163,7 @@ export function OrdersPage() {
             </div>
             <div>
               <span className="text-primary font-semibold text-sm">{t("driver.my_deliveries")}</span>
-              {!loading && <span className="text-[10px] text-secondary ml-2">{assigned.length} {t("driver.orders_count")}</span>}
+              {!loading && <span className="text-[10px] text-secondary ms-2">{assigned.length} {t("driver.orders_count")}</span>}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -221,7 +223,7 @@ export function OrdersPage() {
                       </div>
                     </div>
                     <div className="text-end shrink-0">
-                      <div className="text-lg font-bold" style={{ color: "var(--accent-from)" }}>${order.total.toFixed(2)}</div>
+                      <div className="text-lg font-bold" style={{ color: "var(--accent-from)" }}>{fmt(order.total)}</div>
                       <div className="text-[10px] text-muted mt-0.5">{new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
                     </div>
                   </div>
@@ -282,7 +284,7 @@ export function OrdersPage() {
                     </div>
                   </div>
                   <div className="text-end shrink-0">
-                    <div className="text-lg font-bold" style={{ color: "var(--accent-from)" }}>${order.total.toFixed(2)}</div>
+                    <div className="text-lg font-bold" style={{ color: "var(--accent-from)" }}>{fmt(order.total)}</div>
                     <div className="text-[10px] text-muted mt-0.5">{new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
                   </div>
                 </div>

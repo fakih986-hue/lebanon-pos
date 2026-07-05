@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router"
 import { useI18n } from "@lebanonpos/shared"
 import { api } from "../app/api"
 
+const fmt = (n: number) => "$" + n.toFixed(2)
 const PER_PAGE = 10
 
 type OrderItem = { productName: string; quantity: number; unitPrice: number; total: number }
@@ -57,7 +58,7 @@ export function OrdersPage() {
                       "bg-amber-500/20 text-amber-300"
                     }`}>{t(`status.${order.status}`)}</span>
                   </div>
-                  <p className="text-sm text-secondary">{order.items?.length || 0} {t("ordering.items")} &middot; ${order.total?.toFixed(2)}</p>
+                  <p className="text-sm text-secondary">{order.items?.length || 0} {t("ordering.items")} &middot; {fmt(order.total ?? 0)}</p>
                   <div className="flex gap-2 mt-2">
                     <button onClick={() => navigate(`/order/${tenantSubdomain}/track/${order.orderNumber}`)}
                       className="text-xs px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30">

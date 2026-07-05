@@ -151,7 +151,7 @@ export function TenantsPage() {
               <p className="text-sm font-bold font-mono" style={{ color: "var(--text-primary)" }}>https://lebanon-pos-production.up.railway.app</p>
             </div>
             <div className="bg-slate-50 dark:bg-white/[0.04] rounded-xl p-4 border border-slate-200 dark:border-white/[0.06] flex items-center justify-between gap-2">
-              <div className="text-left">
+              <div className="text-start">
                 <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "var(--text-muted)" }}>{t("admin.subdomain")}</p>
                 <p className="text-lg font-bold font-mono tracking-wider" style={{ color: "var(--text-primary)" }}>{createdResult.subdomain}</p>
               </div>
@@ -160,7 +160,7 @@ export function TenantsPage() {
               </button>
             </div>
             <div className="bg-slate-50 dark:bg-white/[0.04] rounded-xl p-4 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-between gap-2">
-              <div className="text-left">
+              <div className="text-start">
                 <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-emerald-600 dark:text-emerald-400">{t("admin.admin_pin")}</p>
                 <p className="text-2xl font-bold font-mono tracking-widest" style={{ color: "var(--text-primary)" }}>{createdResult.pin}</p>
               </div>
@@ -258,7 +258,7 @@ export function TenantsPage() {
                     {tenant.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{tenant.name} {tenant.suspended && <span className="text-[10px] text-rose-400 font-bold ml-1">SUSPENDED</span>}</p>
+                    <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{tenant.name} {tenant.suspended && <span className="text-[10px] text-rose-400 font-bold ms-1">SUSPENDED</span>}</p>
                     <p className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>/{tenant.subdomain}</p>
                   </div>
                 </div>

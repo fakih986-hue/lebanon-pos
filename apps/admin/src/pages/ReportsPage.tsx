@@ -223,7 +223,7 @@ export function ReportsPage() {
             </button>
           </div>
           {lowStockError && (
-            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm rounded-xl">{lowStockError} <button onClick={loadLowStock} className="underline ml-2">{t("admin.retry")}</button></div>
+            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm rounded-xl">{lowStockError} <button onClick={loadLowStock} className="underline ms-2">{t("admin.retry")}</button></div>
           )}
           {lowStock.length === 0 && !lowStockLoading && !lowStockError ? (
             <p className="text-sm opacity-50 py-8 text-center">{t("admin.no_low_stock")}</p>
@@ -343,7 +343,7 @@ export function ReportsPage() {
             </button>
           </div>
           {marginError && (
-            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm rounded-xl">{marginError} <button onClick={loadMargin} className="underline ml-2">{t("admin.retry")}</button></div>
+            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm rounded-xl">{marginError} <button onClick={loadMargin} className="underline ms-2">{t("admin.retry")}</button></div>
           )}
           {margin && (
             <div className="space-y-4">
@@ -370,7 +370,7 @@ export function ReportsPage() {
               <div className="data-card p-5 rounded-xl overflow-auto">
                 <p className="font-semibold mb-3">{t("admin.by_product")}</p>
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left opacity-50">
+                  <thead><tr className="text-start opacity-50">
                     <th className="pb-2 pr-4">{t("admin.product_col")}</th><th className="pb-2 pr-4">{t("admin.category_col")}</th><th className="pb-2 pr-4">{t("admin.qty_col")}</th>
                     <th className="pb-2 pr-4">{t("admin.revenue_col")}</th><th className="pb-2 pr-4">{t("admin.cost_col")}</th><th className="pb-2 pr-4">{t("admin.margin_col")}</th><th className="pb-2">{t("admin.pct_col")}</th>
                   </tr></thead>
@@ -409,7 +409,7 @@ export function ReportsPage() {
             </button>
           </div>
           {debtError && (
-            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm rounded-xl">{debtError} <button onClick={loadDebtAging} className="underline ml-2">{t("admin.retry")}</button></div>
+            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm rounded-xl">{debtError} <button onClick={loadDebtAging} className="underline ms-2">{t("admin.retry")}</button></div>
           )}
           {debt && (
             <div className="space-y-4">
@@ -419,7 +419,7 @@ export function ReportsPage() {
               ) : (
                 <div className="data-card p-5 rounded-xl overflow-auto">
                   <table className="w-full text-sm">
-                    <thead><tr className="text-left opacity-50">
+                    <thead><tr className="text-start opacity-50">
                       <th className="pb-2 pr-4">{t("admin.customer_col")}</th><th className="pb-2 pr-4">{t("admin.mobile_col")}</th><th className="pb-2 pr-4">{t("admin.outstanding_col")}</th>
                       <th className="pb-2 pr-4">{t("admin.credit_limit_col")}</th><th className="pb-2 pr-4">{t("admin.current_col")}</th><th className="pb-2 pr-4">{t("admin.days_31_60")}</th>
                       <th className="pb-2 pr-4">{t("admin.days_61_90")}</th><th className="pb-2">{t("admin.days_90_plus")}</th>

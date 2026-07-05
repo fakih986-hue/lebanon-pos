@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router"
 import { useI18n, useWebSocket } from "@lebanonpos/shared"
 import { api } from "../app/api"
 
+const fmt = (n: number) => "$" + n.toFixed(2)
+
 type Status = "Pending" | "Confirmed" | "Preparing" | "OutForDelivery" | "Delivered" | "Cancelled"
 
 type OrderDetail = {
@@ -256,24 +258,24 @@ function TrackingContentInner({
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/[0.06] text-[11px] font-bold text-secondary">{item.quantity}</span>
                   <span className="text-sm text-primary">{item.productName}</span>
                 </div>
-                <span className="text-sm font-semibold text-secondary">${item.total.toFixed(2)}</span>
+                <span className="text-sm font-semibold text-secondary">{fmt(item.total)}</span>
               </div>
             ))}
           </div>
           <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-1">
             <div className="flex justify-between text-sm text-secondary">
               <span>{t("ordering.subtotal") || "Subtotal"}</span>
-              <span>${order.itemsTotal.toFixed(2)}</span>
+              <span>{fmt(order.itemsTotal)}</span>
             </div>
             {order.deliveryFee > 0 && (
               <div className="flex justify-between text-sm text-secondary">
                 <span>{t("ordering.delivery_fee")}</span>
-                <span>${order.deliveryFee.toFixed(2)}</span>
+                <span>{fmt(order.deliveryFee)}</span>
               </div>
             )}
             <div className="flex justify-between text-base font-bold text-primary pt-1">
               <span>{t("ordering.total")}</span>
-              <span>${order.total.toFixed(2)}</span>
+              <span>{fmt(order.total)}</span>
             </div>
           </div>
         </div>
@@ -290,11 +292,11 @@ function TrackingContentInner({
                 <span className="text-lg">💵</span>
                 <span className="text-sm font-semibold text-amber-300">{t("ordering.cash_on_delivery") || "Cash on Delivery"}</span>
               </div>
-              <p className="text-2xl font-black text-primary mt-2">${order.total.toFixed(2)}</p>
+              <p className="text-2xl font-black text-primary mt-2">{fmt(order.total)}</p>
               <p className="text-xs text-secondary">{t("ordering.prepare_cash") || "Please prepare this amount for the driver"}</p>
               {isDelivered && order.paidAmount > 0 && order.changeRequired > 0 && (
                 <div className="mt-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-sm font-semibold text-emerald-400">
-                  Change: ${order.changeRequired.toFixed(2)}
+                  Change: {fmt(order.changeRequired)}
                 </div>
               )}
             </div>
@@ -302,7 +304,7 @@ function TrackingContentInner({
             <div className="flex items-center gap-2">
               <span className="text-lg">💳</span>
               <span className="text-sm font-semibold text-primary">{order.paymentMethod}</span>
-              {isDelivered && <span className="ml-auto text-xs px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold">✓ Paid</span>}
+              {isDelivered && <span className="ms-auto text-xs px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-400 font-semibold">✓ Paid</span>}
             </div>
           )}
         </div>
