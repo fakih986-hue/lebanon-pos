@@ -1109,4 +1109,10 @@ export const ar = {
   "admin.master_password": "كلمة المرور الرئيسية",
   "admin.signing_in": "جاري تسجيل الدخول…",
   "admin.sign_in": "تسجيل الدخول",
+
+  /* Owner Portal */
+  "owner.reload": "إعادة تحميل",
+  "owner.created_hint": "أعطِ هاتين القيمتين لصاحب المتجر. يقوم بإدخالهما في تطبيق سطح المكتب للاتصال.",
+  "owner.pin_hint": "يُستخدم لتسجيل الدخول على تطبيق سطح المكتب",
+  "owner.pin_too_short": "يجب أن يكون رمز PIN 4 أحرف على الأقل",
 }

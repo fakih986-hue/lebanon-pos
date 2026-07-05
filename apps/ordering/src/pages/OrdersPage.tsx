@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { useNavigate, useParams } from "react-router"
 import { useI18n } from "@lebanonpos/shared"
 import { api } from "../app/api"
+
+const PER_PAGE = 10
 
 type OrderItem = { productName: string; quantity: number; unitPrice: number; total: number }
 type Order = { id: string; orderNumber: string; status: string; total: number; customerName: string; address: string; createdAt: string; items: OrderItem[] }
@@ -12,6 +14,7 @@ export function OrdersPage() {
   const { t } = useI18n()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
   const token = localStorage.getItem("customer_token")
 
   useEffect(() => {
@@ -20,6 +23,11 @@ export function OrdersPage() {
       setOrders(Array.isArray(data) ? data : [])
     }).catch(() => {}).finally(() => setLoading(false))
   }, [token])
+
+  const paginatedOrders = useMemo(() => orders.slice(0, page * PER_PAGE), [orders, page])
+  const hasMore = paginatedOrders.length < orders.length
+
+  const handleLoadMore = useCallback(() => setPage(prev => prev + 1), [])
 
   return (
     <div className="min-h-dvh bg-gradient-page p-4">
@@ -37,46 +45,54 @@ export function OrdersPage() {
             <p className="text-sm mt-1">{t("ordering.no_orders_yet_sub")}</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {orders.map(order => (
-              <div key={order.id} className="bg-glass border border-glass rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold">{order.orderNumber}</span>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                    order.status === "Delivered" ? "bg-emerald-500/20 text-emerald-300" :
-                    order.status === "Cancelled" ? "bg-rose-500/20 text-rose-300" :
-                    "bg-amber-500/20 text-amber-300"
-                  }`}>{t(`status.${order.status}`)}</span>
-                </div>
-                <p className="text-sm text-secondary">{order.items?.length || 0} {t("ordering.items")} &middot; ${order.total?.toFixed(2)}</p>
-                <div className="flex gap-2 mt-2">
-                  <button onClick={() => navigate(`/order/${tenantSubdomain}/track/${order.orderNumber}`)}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30">
-                      {t("ordering.track")}
-                  </button>
-                  {order.items && order.items.length > 0 && (
-                    <button
-                      onClick={() => {
-                        try {
-                          const existing = JSON.parse(localStorage.getItem(`cart_${tenantSubdomain}`) ?? "[]")
-                          const merged = [...existing]
-                          for (const item of order.items) {
-                            const idx = merged.findIndex((c: any) => c.product?.productName === item.productName)
-                            if (idx >= 0) merged[idx].quantity += item.quantity
-                            else merged.push({ product: { id: Date.now(), name: item.productName, price: item.unitPrice, barcode: "", category: "", stock: 99, variantName: null }, quantity: item.quantity })
-                          }
-                          localStorage.setItem(`cart_${tenantSubdomain}`, JSON.stringify(merged))
-                          navigate(`/order/${tenantSubdomain}`)
-                        } catch (e) { console.warn("Failed to reorder:", e) }
-                      }}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30">
-                      {t("ordering.reorder")}
+          <>
+            <div className="space-y-3">
+              {paginatedOrders.map(order => (
+                <div key={order.id} className="bg-glass border border-glass rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold">{order.orderNumber}</span>
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
+                      order.status === "Delivered" ? "bg-emerald-500/20 text-emerald-300" :
+                      order.status === "Cancelled" ? "bg-rose-500/20 text-rose-300" :
+                      "bg-amber-500/20 text-amber-300"
+                    }`}>{t(`status.${order.status}`)}</span>
+                  </div>
+                  <p className="text-sm text-secondary">{order.items?.length || 0} {t("ordering.items")} &middot; ${order.total?.toFixed(2)}</p>
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={() => navigate(`/order/${tenantSubdomain}/track/${order.orderNumber}`)}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30">
+                        {t("ordering.track")}
                     </button>
-                  )}
+                    {order.items && order.items.length > 0 && (
+                      <button
+                        onClick={() => {
+                          try {
+                            const existing = JSON.parse(localStorage.getItem(`cart_${tenantSubdomain}`) ?? "[]")
+                            const merged = [...existing]
+                            for (const item of order.items) {
+                              const idx = merged.findIndex((c: any) => c.product?.productName === item.productName)
+                              if (idx >= 0) merged[idx].quantity += item.quantity
+                              else merged.push({ product: { id: Date.now(), name: item.productName, price: item.unitPrice, barcode: "", category: "", stock: 99, variantName: null }, quantity: item.quantity })
+                            }
+                            localStorage.setItem(`cart_${tenantSubdomain}`, JSON.stringify(merged))
+                            navigate(`/order/${tenantSubdomain}`)
+                          } catch (e) { console.warn("Failed to reorder:", e) }
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30">
+                        {t("ordering.reorder")}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            {hasMore && (
+              <button onClick={handleLoadMore}
+                className="mt-4 w-full py-3 rounded-xl bg-glass border border-glass text-secondary font-semibold transition hover:bg-glass-hover">
+                {t("ordering.load_more") || "Load more"}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

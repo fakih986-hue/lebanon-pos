@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback, memo } from "react"
 import { api } from "../app/api"
 import { getToken } from "../main"
 import { useI18n } from "@lebanonpos/shared"
@@ -57,7 +57,7 @@ function downloadCsv(url: string, filename: string) {
     })
 }
 
-function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: "indigo" | "emerald" | "amber" | "rose" | "violet" }) {
+const StatCard = memo(function StatCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: "indigo" | "emerald" | "amber" | "rose" | "violet" }) {
   const gradients: Record<string, string> = {
     indigo: "from-indigo-500/20 to-indigo-600/10 border-indigo-500/30",
     emerald: "from-emerald-500/20 to-emerald-600/10 border-emerald-500/30",
@@ -72,36 +72,38 @@ function StatCard({ label, value, sub, color }: { label: string; value: string; 
       {sub && <p className="text-xs mt-1 opacity-50">{sub}</p>}
     </div>
   )
-}
+})
+
+const TABS = [
+  { key: "low-stock" as const },
+  { key: "x-report" as const },
+  { key: "margin" as const },
+  { key: "debt" as const },
+]
 
 export function ReportsPage() {
   const { t } = useI18n()
   const [activeTab, setActiveTab] = useState<"low-stock" | "x-report" | "margin" | "debt">("low-stock")
 
-  // Low stock
   const [lowStock, setLowStock] = useState<LowStockItem[]>([])
   const [lowStockLoading, setLowStockLoading] = useState(false)
   const [lowStockError, setLowStockError] = useState<string | null>(null)
 
-  // X report
   const [xReport, setXReport] = useState<XReportData | null>(null)
   const [xLoading, setXLoading] = useState(false)
   const [xError, setXError] = useState<string | null>(null)
 
-  // Z report
   const [zReport, setZReport] = useState<ZReportData | null>(null)
   const [zLoading, setZLoading] = useState(false)
   const [zError, setZError] = useState<string | null>(null)
   const [closingCash, setClosingCash] = useState("")
   const [zNotes, setZNotes] = useState("")
 
-  // Margin
   const [margin, setMargin] = useState<MarginData | null>(null)
   const [marginDays, setMarginDays] = useState(30)
   const [marginLoading, setMarginLoading] = useState(false)
   const [marginError, setMarginError] = useState<string | null>(null)
 
-  // Debt aging
   const [debt, setDebt] = useState<DebtAgingData | null>(null)
   const [debtLoading, setDebtLoading] = useState(false)
   const [debtError, setDebtError] = useState<string | null>(null)
@@ -111,25 +113,25 @@ export function ReportsPage() {
     if (activeTab === "debt" && !debt) loadDebtAging()
   }, [activeTab])
 
-  async function loadLowStock() {
+  const loadLowStock = useCallback(async () => {
     setLowStockLoading(true); setLowStockError(null)
     try {
       const data = await api<{ items: LowStockItem[] }>("/api/reports/low-stock")
       setLowStock(data.items)
     } catch (e) { setLowStockError(e instanceof Error ? e.message : "Failed to load") }
     setLowStockLoading(false)
-  }
+  }, [])
 
-  async function loadXReport() {
+  const loadXReport = useCallback(async () => {
     setXLoading(true); setXError(null)
     try {
       const data = await api<XReportData>("/api/reports/x-report")
       setXReport(data)
     } catch (e: any) { setXError(e.message ?? "Failed to load X report") }
     setXLoading(false)
-  }
+  }, [])
 
-  async function loadZReport() {
+  const loadZReport = useCallback(async () => {
     const cash = parseFloat(closingCash)
     if (isNaN(cash) || cash < 0) return
     setZLoading(true); setZError(null)
@@ -140,32 +142,54 @@ export function ReportsPage() {
       setZReport(data)
     } catch (e) { setZError(e instanceof Error ? e.message : "Failed to close shift") }
     setZLoading(false)
-  }
+  }, [closingCash, zNotes])
 
-  async function loadMargin() {
+  const loadMargin = useCallback(async () => {
     setMarginLoading(true); setMarginError(null)
     try {
       const data = await api<MarginData>(`/api/reports/margin?days=${marginDays}`)
       setMargin(data)
     } catch (e) { setMarginError(e instanceof Error ? e.message : "Failed to load") }
     setMarginLoading(false)
-  }
+  }, [marginDays])
 
-  async function loadDebtAging() {
+  const loadDebtAging = useCallback(async () => {
     setDebtLoading(true); setDebtError(null)
     try {
       const data = await api<DebtAgingData>("/api/reports/debt-aging")
       setDebt(data)
     } catch (e) { setDebtError(e instanceof Error ? e.message : "Failed to load") }
     setDebtLoading(false)
-  }
+  }, [])
 
-  const tabs = [
-    { key: "low-stock" as const, label: t("admin.low_stock") },
-    { key: "x-report" as const, label: t("admin.x_report") },
-    { key: "margin" as const, label: t("admin.margin") },
-    { key: "debt" as const, label: t("admin.debt_aging") },
-  ]
+  const tabLabels = useMemo(() => ({
+    "low-stock": t("admin.low_stock"),
+    "x-report": t("admin.x_report"),
+    "margin": t("admin.margin"),
+    "debt": t("admin.debt_aging"),
+  }), [t])
+
+  const xReportStats = useMemo(() => xReport ? {
+    salesCount: xReport.sales.count.toString(),
+    salesSub: formatCurrency(xReport.sales.total),
+    refundsCount: xReport.refunds.count.toString(),
+    refundsSub: formatCurrency(xReport.refunds.total),
+    expensesCount: xReport.expenses.count.toString(),
+    expensesSub: formatCurrency(xReport.expenses.total),
+    netCash: formatCurrency(xReport.netCash),
+  } : null, [xReport])
+
+  const marginStats = useMemo(() => margin ? {
+    revenue: formatCurrency(margin.summary.totalRevenue),
+    cost: formatCurrency(margin.summary.totalCost),
+    marginVal: formatCurrency(margin.summary.totalMargin),
+    marginPct: formatPct(margin.summary.marginPct),
+  } : null, [margin])
+
+  const debtStats = useMemo(() => debt ? {
+    totalOutstanding: formatCurrency(debt.totalOutstanding),
+    color: debt.totalOutstanding > 0 ? "rose" as const : "emerald" as const,
+  } : null, [debt])
 
   return (
     <div className="animate-slide-up">
@@ -176,12 +200,11 @@ export function ReportsPage() {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-white/5 rounded-xl p-1 w-fit">
-        {tabs.map(tab => (
+        {TABS.map(tab => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeTab === tab.key ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"}`}>
-            {tab.label}
+            {tabLabels[tab.key]}
           </button>
         ))}
       </div>
@@ -246,10 +269,10 @@ export function ReportsPage() {
                 <p className="text-sm opacity-60">{t("admin.opened_by", { date: new Date(xReport.shift.openedAt).toLocaleString(), name: xReport.shift.openedBy })}</p>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StatCard label={t("admin.sales_label")} value={xReport.sales.count.toString()} sub={formatCurrency(xReport.sales.total)} color="emerald" />
-                <StatCard label={t("admin.refunds_label")} value={xReport.refunds.count.toString()} sub={formatCurrency(xReport.refunds.total)} color="rose" />
-                <StatCard label={t("admin.expenses_label")} value={xReport.expenses.count.toString()} sub={formatCurrency(xReport.expenses.total)} color="amber" />
-                <StatCard label={t("admin.net_cash")} value={formatCurrency(xReport.netCash)} color="indigo" />
+                <StatCard label={t("admin.sales_label")} value={xReportStats?.salesCount ?? ""} sub={xReportStats?.salesSub} color="emerald" />
+                <StatCard label={t("admin.refunds_label")} value={xReportStats?.refundsCount ?? ""} sub={xReportStats?.refundsSub} color="rose" />
+                <StatCard label={t("admin.expenses_label")} value={xReportStats?.expensesCount ?? ""} sub={xReportStats?.expensesSub} color="amber" />
+                <StatCard label={t("admin.net_cash")} value={xReportStats?.netCash ?? ""} color="indigo" />
               </div>
               <div className="data-card p-5 rounded-xl">
                 <p className="font-semibold mb-2">{t("admin.payment_breakdown")}</p>
@@ -260,7 +283,6 @@ export function ReportsPage() {
                 </div>
               </div>
 
-              {/* Z Report (close shift) */}
               <div className="data-card p-5 rounded-xl border border-rose-500/20">
                 <p className="font-bold mb-3 text-rose-400">{t("admin.close_shift")}</p>
                 <div className="flex flex-wrap items-end gap-3">
@@ -326,10 +348,10 @@ export function ReportsPage() {
           {margin && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <StatCard label={t("admin.revenue")} value={formatCurrency(margin.summary.totalRevenue)} color="emerald" />
-                <StatCard label={t("admin.cost")} value={formatCurrency(margin.summary.totalCost)} color="rose" />
-                <StatCard label={t("admin.margin")} value={formatCurrency(margin.summary.totalMargin)} color="indigo" />
-                <StatCard label={t("admin.margin_pct")} value={formatPct(margin.summary.marginPct)} color="violet" />
+                <StatCard label={t("admin.revenue")} value={marginStats?.revenue ?? ""} color="emerald" />
+                <StatCard label={t("admin.cost")} value={marginStats?.cost ?? ""} color="rose" />
+                <StatCard label={t("admin.margin")} value={marginStats?.marginVal ?? ""} color="indigo" />
+                <StatCard label={t("admin.margin_pct")} value={marginStats?.marginPct ?? ""} color="violet" />
               </div>
               <div className="data-card p-5 rounded-xl">
                 <p className="font-semibold mb-3">{t("admin.by_category")}</p>
@@ -391,7 +413,7 @@ export function ReportsPage() {
           )}
           {debt && (
             <div className="space-y-4">
-              <StatCard label={t("admin.total_outstanding")} value={formatCurrency(debt.totalOutstanding)} color={debt.totalOutstanding > 0 ? "rose" : "emerald"} />
+              <StatCard label={t("admin.total_outstanding")} value={debtStats?.totalOutstanding ?? ""} color={debtStats?.color} />
               {debt.customers.length === 0 ? (
                 <p className="text-sm opacity-50 py-4 text-center">{t("admin.no_outstanding")}</p>
               ) : (

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback, lazy, Suspense } from "react"
 import { api } from "../app/api"
 import { useI18n } from "@lebanonpos/shared"
 import type { Sale } from "@lebanonpos/types"
 
+const PAGE_SIZE = 50
 type DateRange = "today" | "week" | "month" | "all"
 
 function getDateStart(range: DateRange): Date | null {
@@ -35,6 +36,32 @@ const PM_COLORS: Record<string, string> = {
   Debt: "bg-amber-500/15 text-amber-300 border-amber-500/25",
 }
 
+const SaleItemsTable = lazy(() => Promise.resolve({
+  default: ({ items, t }: { items: Sale["items"]; t: (k: string) => string }) => (
+    <div className="rounded-xl overflow-hidden mt-2" style={{ background: "var(--surface-input)" }}>
+      <table className="min-w-full text-xs">
+        <thead>
+          <tr>
+            {[t("admin.col_product"), t("admin.col_qty"), t("admin.col_unit_price"), t("admin.col_total")].map((h) => (
+              <th key={h} className="px-3 py-2 text-left font-semibold" style={{ color: "var(--text-secondary)" }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id}>
+              <td className="px-3 py-2" style={{ color: "var(--text-primary)" }}>{item.productName}</td>
+              <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>{item.quantity}</td>
+              <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>${item.unitPrice.toFixed(2)}</td>
+              <td className="px-3 py-2 font-semibold" style={{ color: "var(--text-primary)" }}>${item.total.toFixed(2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}))
+
 export function SalesPage() {
   const { t } = useI18n()
   const [sales, setSales] = useState<Sale[]>([])
@@ -44,13 +71,27 @@ export function SalesPage() {
   const [dateRange, setDateRange] = useState<DateRange>("today")
   const [payFilter, setPayFilter] = useState("All")
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
 
   useEffect(() => {
-    api<any>("/api/sync/pull")
-      .then((d) => { setSales(d.sales ?? []) })
+    const params = new URLSearchParams()
+    params.set("skip", String((page - 1) * PAGE_SIZE))
+    params.set("limit", String(PAGE_SIZE + 1))
+    setLoading(true)
+    api<Sale[]>(`/api/sales?${params}`)
+      .then((data) => {
+        if (data.length > PAGE_SIZE) {
+          setSales(data.slice(0, PAGE_SIZE))
+          setHasMore(true)
+        } else {
+          setSales(data)
+          setHasMore(false)
+        }
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [page])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -63,15 +104,21 @@ export function SalesPage() {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   }, [sales, search, dateRange, payFilter])
 
-  const totalRevenue = filtered.reduce((s, x) => s + x.total, 0)
-  const totalProfit = filtered.reduce((s, x) => s + (x.profit ?? 0), 0)
+  const totals = useMemo(() => ({
+    revenue: filtered.reduce((s, x) => s + x.total, 0),
+    profit: filtered.reduce((s, x) => s + (x.profit ?? 0), 0),
+  }), [filtered])
 
-  const rangeLabels: Record<DateRange, string> = {
+  const rangeLabels = useMemo<Record<DateRange, string>>(() => ({
     today: t("admin.range_today"),
     week: t("admin.range_week"),
     month: t("admin.range_month"),
     all: t("admin.range_all"),
-  }
+  }), [t])
+
+  const handleToggleExpand = useCallback((id: string) => {
+    setExpanded((prev) => prev === id ? null : id)
+  }, [])
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -79,7 +126,7 @@ export function SalesPage() {
         <div>
           <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{t("admin.sales_history")}</h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-            {t("admin.transactions_revenue_profit", { count: filtered.length, revenue: totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2 }), profit: totalProfit.toLocaleString("en-US", { minimumFractionDigits: 2 }) })}
+            {t("admin.transactions_revenue_profit", { count: filtered.length, revenue: totals.revenue.toLocaleString("en-US", { minimumFractionDigits: 2 }), profit: totals.profit.toLocaleString("en-US", { minimumFractionDigits: 2 }) })}
           </p>
         </div>
         <button onClick={() => exportCsv(filtered)} disabled={filtered.length === 0}
@@ -115,73 +162,74 @@ export function SalesPage() {
       {loading ? (
         <div className="space-y-3">{[1,2,3,4,5].map((i) => <div key={i} className="h-14 rounded-2xl animate-pulse" style={{ background: "var(--surface-card)" }} />)}</div>
       ) : (
-        <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--surface-card)", borderColor: "var(--border-subtle)" }}>
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                {[t("admin.col_sale"), t("admin.col_payment"), t("admin.col_customer"), t("admin.col_cashier"), t("admin.col_items"), t("admin.col_total"), t("admin.col_profit"), t("admin.col_date"), ""].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-sm" style={{ color: "var(--text-secondary)" }}>{t("admin.no_sales_period")}</td></tr>
-              ) : filtered.map((sale) => (
-                <>
-                  <tr key={sale.id} style={{ borderBottom: expanded === sale.id ? "none" : "1px solid var(--border-subtle)" }} className="hover:opacity-90 transition-opacity">
-                    <td className="px-4 py-3 font-bold text-indigo-300 font-mono text-xs">{sale.saleNumber}</td>
-                    <td className="px-4 py-3">
-                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold border ${PM_COLORS[sale.paymentMethod] ?? "bg-white/5 text-secondary border-white/10"}`}>
-                        {sale.paymentMethod}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>{sale.customerName ?? "—"}</td>
-                    <td className="px-4 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>{sale.cashier}</td>
-                    <td className="px-4 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>{sale.items.reduce((s, i) => s + i.quantity, 0)}</td>
-                    <td className="px-4 py-3 font-bold" style={{ color: "var(--text-primary)" }}>${sale.total.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-xs font-semibold text-emerald-400">${(sale.profit ?? 0).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>{new Date(sale.createdAt).toLocaleString()}</td>
-                    <td className="px-4 py-3">
-                      <button onClick={() => setExpanded(expanded === sale.id ? null : sale.id)}
-                        className="text-xs px-2.5 py-1.5 rounded-lg transition-all hover:opacity-80"
-                        style={{ background: "var(--surface-input)", color: "var(--text-secondary)" }}>
-                        {expanded === sale.id ? "▲" : "▼"}
-                      </button>
-                    </td>
-                  </tr>
-                  {expanded === sale.id && (
-                    <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
-                      <td colSpan={9} className="px-6 pb-4">
-                        <div className="rounded-xl overflow-hidden mt-2" style={{ background: "var(--surface-input)" }}>
-                          <table className="min-w-full text-xs">
-                            <thead>
-                              <tr>
-                                {[t("admin.col_product"), t("admin.col_qty"), t("admin.col_unit_price"), t("admin.col_total")].map((h) => (
-                                  <th key={h} className="px-3 py-2 text-left font-semibold" style={{ color: "var(--text-secondary)" }}>{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {sale.items.map((item) => (
-                                <tr key={item.id}>
-                                  <td className="px-3 py-2" style={{ color: "var(--text-primary)" }}>{item.productName}</td>
-                                  <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>{item.quantity}</td>
-                                  <td className="px-3 py-2" style={{ color: "var(--text-secondary)" }}>${item.unitPrice.toFixed(2)}</td>
-                                  <td className="px-3 py-2 font-semibold" style={{ color: "var(--text-primary)" }}>${item.total.toFixed(2)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+        <>
+          <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--surface-card)", borderColor: "var(--border-subtle)" }}>
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                  {[t("admin.col_sale"), t("admin.col_payment"), t("admin.col_customer"), t("admin.col_cashier"), t("admin.col_items"), t("admin.col_total"), t("admin.col_profit"), t("admin.col_date"), ""].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-secondary)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={9} className="px-4 py-12 text-center text-sm" style={{ color: "var(--text-secondary)" }}>{t("admin.no_sales_period")}</td></tr>
+                ) : filtered.map((sale) => (
+                  <>
+                    <tr key={sale.id} style={{ borderBottom: expanded === sale.id ? "none" : "1px solid var(--border-subtle)" }} className="hover:opacity-90 transition-opacity">
+                      <td className="px-4 py-3 font-bold text-indigo-300 font-mono text-xs">{sale.saleNumber}</td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold border ${PM_COLORS[sale.paymentMethod] ?? "bg-white/5 text-secondary border-white/10"}`}>
+                          {sale.paymentMethod}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>{sale.customerName ?? "—"}</td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>{sale.cashier}</td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>{sale.items.reduce((s, i) => s + i.quantity, 0)}</td>
+                      <td className="px-4 py-3 font-bold" style={{ color: "var(--text-primary)" }}>${sale.total.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-xs font-semibold text-emerald-400">${(sale.profit ?? 0).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--text-secondary)" }}>{new Date(sale.createdAt).toLocaleString()}</td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => handleToggleExpand(sale.id)}
+                          className="text-xs px-2.5 py-1.5 rounded-lg transition-all hover:opacity-80"
+                          style={{ background: "var(--surface-input)", color: "var(--text-secondary)" }}>
+                          {expanded === sale.id ? "▲" : "▼"}
+                        </button>
                       </td>
                     </tr>
-                  )}
-                </>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    {expanded === sale.id && (
+                      <tr style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                        <td colSpan={9} className="px-6 pb-4">
+                          <Suspense fallback={<div className="h-20 rounded-xl animate-pulse" style={{ background: "var(--surface-input)" }} />}>
+                            <SaleItemsTable items={sale.items} t={t} />
+                          </Suspense>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex items-center justify-between pt-3">
+            <span className="text-xs" style={{ color: "var(--text-secondary)" }}>
+              {t("admin.page")} {page}
+            </span>
+            <div className="flex gap-2">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30 transition-all hover:opacity-80"
+                style={{ background: "var(--surface-input)", color: "var(--text-primary)" }}>
+                {t("admin.prev")}
+              </button>
+              <button onClick={() => setPage((p) => p + 1)} disabled={!hasMore}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30 transition-all hover:opacity-80"
+                style={{ background: "var(--surface-input)", color: "var(--text-primary)" }}>
+                {t("admin.next")}
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

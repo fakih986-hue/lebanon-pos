@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useParams, useNavigate } from "react-router"
 import { useI18n } from "@lebanonpos/shared"
 import { api } from "../app/api"
 import type { Product } from "@lebanonpos/types"
+
+const CART_THROTTLE_MS = 1000
 
 function ProductImagePlaceholder({ name }: { name: string }) {
   const hash = name.split("").reduce((a, c) => a + c.charCodeAt(0), 0)
@@ -23,8 +25,28 @@ function ProductImage({ src, name }: { src: string; name: string }) {
   if (failed) return <ProductImagePlaceholder name={name} />
   return <img src={src} alt={name} className="w-full aspect-[4/3] object-cover" loading="lazy" onError={() => setFailed(true)} />
 }
+
+function LazyProductImage({ src, name }: { src: string; name: string }) {
+  const [isVisible, setIsVisible] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setIsVisible(true); observer.disconnect() } },
+      { rootMargin: "300px" },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  if (!isVisible) return <div ref={ref} className="w-full aspect-[4/3] rounded-t-xl bg-white/5" />
+  return <ProductImage src={src} name={name} />
+}
+
 type CartItem = { product: Product; quantity: number }
-type OrderPayload = { tenantId: string; customerName: string; customerPhone: string; address: string; deliveryNote?: string; deliveryFee: number; customerId?: string; items: Array<{ productId: number; productName: string; barcode: string; quantity: number; unitPrice: number }> }
+type OrderPayload = { tenantId: string; customerName: string; customerPhone: string; address: string; deliveryNote?: string; deliveryFee: number; customerId?: string; paymentMethod: string; items: Array<{ productId: number; productName: string; barcode: string; quantity: number; unitPrice: number }> }
 
 export function MenuPage() {
   const { tenantSubdomain } = useParams<{ tenantSubdomain: string }>()
@@ -48,10 +70,13 @@ export function MenuPage() {
   const [deliveryFee, setDeliveryFee] = useState(2.0)
   const [paymentMethod, setPaymentMethod] = useState("CashOnDelivery")
   const [orderError, setOrderError] = useState<string | null>(null)
+  const [searchInput, setSearchInput] = useState("")
   const [search, setSearch] = useState("")
   const cartRef = useRef<HTMLDivElement>(null)
   const customerId = localStorage.getItem("customer_id") || undefined
   const CART_KEY = `cart_${tenantSubdomain}`
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const lastCartSaveRef = useRef(0)
 
   useEffect(() => {
     if (!tenantSubdomain) return
@@ -69,34 +94,59 @@ export function MenuPage() {
       .catch((err) => { setError(err.message); setLoading(false) })
   }, [tenantSubdomain])
 
-  // Persist cart to localStorage whenever it changes
   useEffect(() => {
-    if (tenantSubdomain) localStorage.setItem(`cart_${tenantSubdomain}`, JSON.stringify(cart))
-  }, [cart, tenantSubdomain])
+    const now = Date.now()
+    if (now - lastCartSaveRef.current >= CART_THROTTLE_MS) {
+      localStorage.setItem(CART_KEY, JSON.stringify(cart))
+      lastCartSaveRef.current = now
+    } else {
+      const timer = setTimeout(() => {
+        localStorage.setItem(CART_KEY, JSON.stringify(cart))
+        lastCartSaveRef.current = Date.now()
+      }, CART_THROTTLE_MS)
+      return () => clearTimeout(timer)
+    }
+  }, [cart, CART_KEY])
 
-  const categories = ["All", ...new Set(products.map((p) => p.category))]
-  const searchQuery = search.trim().toLowerCase()
-  const filteredProducts = products.filter((p) => {
-    const matchCat = activeCategory === "All" || p.category === activeCategory
-    const matchSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery) || p.category.toLowerCase().includes(searchQuery)
-    return matchCat && matchSearch
-  })
-  const inStock = filteredProducts.filter((p) => p.stock > 0)
-  const outOfStock = filteredProducts.filter((p) => p.stock === 0)
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
-  const cartTotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+  const categories = useMemo(() => ["All", ...new Set(products.map((p) => p.category))], [products])
 
-  function addToCart(product: Product) {
+  const filteredProducts = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return products.filter((p) => {
+      const matchCat = activeCategory === "All" || p.category === activeCategory
+      const matchSearch = !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+      return matchCat && matchSearch
+    })
+  }, [products, activeCategory, search])
+
+  const { inStock, outOfStock } = useMemo(() => ({
+    inStock: filteredProducts.filter((p) => p.stock > 0),
+    outOfStock: filteredProducts.filter((p) => p.stock === 0),
+  }), [filteredProducts])
+
+  const cartStats = useMemo(() => ({
+    count: cart.reduce((sum, item) => sum + item.quantity, 0),
+    total: cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+  }), [cart])
+
+  const addToCart = useCallback((product: Product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id)
       if (existing) return prev.map((item) => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)
       return [...prev, { product, quantity: 1 }]
     })
-  }
+  }, [])
 
-  function updateQuantity(productId: number, delta: number) {
+  const updateQuantity = useCallback((productId: number, delta: number) => {
     setCart((prev) => prev.map((item) => item.product.id === productId ? { ...item, quantity: item.quantity + delta } : item).filter((item) => item.quantity > 0))
-  }
+  }, [])
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchInput(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setSearch(value), 250)
+  }, [])
 
   const placeOrder = useCallback(async () => {
     if (!tenantId) return
@@ -111,11 +161,11 @@ export function MenuPage() {
       }
       const result = await api<{ order: { orderNumber: string } }>("/api/delivery/order", { method: "POST", body: JSON.stringify(payload) })
       setCart([])
-      localStorage.removeItem(`cart_${tenantSubdomain}`)
+      localStorage.removeItem(CART_KEY)
       navigate(`/order/${tenantSubdomain}/track/${result.order.orderNumber}`)
     } catch (err: any) { setOrderError(err.message) }
     finally { setSubmitting(false) }
-  }, [tenantId, customerName, customerPhone, address, deliveryNote, deliveryFee, cart, tenantSubdomain, navigate, customerId])
+  }, [tenantId, customerName, customerPhone, address, deliveryNote, deliveryFee, cart, tenantSubdomain, navigate, customerId, paymentMethod, CART_KEY])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -152,7 +202,7 @@ export function MenuPage() {
       <div ref={cartRef} className="fixed inset-0 z-50 flex flex-col bg-gradient-page">
         <div className="flex items-center justify-between px-4 py-4 border-b border-glass">
           <button onClick={() => setShowCart(false)} className="text-secondary hover:text-primary transition-colors font-medium">← {t("ordering.back_to_menu")}</button>
-          <h2 className="text-lg font-semibold text-primary">{t("ordering.your_cart")} ({cartCount})</h2>
+          <h2 className="text-lg font-semibold text-primary">{t("ordering.your_cart")} ({cartStats.count})</h2>
           <div className="w-20" />
         </div>
         <div className="flex-1 overflow-y-auto p-4">
@@ -179,9 +229,9 @@ export function MenuPage() {
                 </div>
               ))}
               <div className="bg-glass border border-glass rounded-xl p-4">
-                <div className="flex justify-between text-sm text-secondary"><span>{t("ordering.subtotal")}</span><span>${cartTotal.toFixed(2)}</span></div>
+                <div className="flex justify-between text-sm text-secondary"><span>{t("ordering.subtotal")}</span><span>${cartStats.total.toFixed(2)}</span></div>
                 <div className="flex justify-between text-sm text-secondary"><span>{t("ordering.delivery_fee")}</span><span>${deliveryFee.toFixed(2)}</span></div>
-                <div className="mt-2 pt-2 border-t border-glass flex justify-between text-lg font-bold text-primary"><span>{t("ordering.total")}</span><span>${(cartTotal + deliveryFee).toFixed(2)}</span></div>
+                <div className="mt-2 pt-2 border-t border-glass flex justify-between text-lg font-bold text-primary"><span>{t("ordering.total")}</span><span>${(cartStats.total + deliveryFee).toFixed(2)}</span></div>
               </div>
             </div>
           )}
@@ -217,7 +267,7 @@ export function MenuPage() {
               </div>
               <button onClick={placeOrder} disabled={submitting || !customerName || !customerPhone || !address}
                 className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:from-emerald-500 hover:to-emerald-400 active:from-emerald-700 active:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                {submitting ? t("ordering.placing_order") : `${t("ordering.place_order")} — $${(cartTotal + deliveryFee).toFixed(2)}`}
+                {submitting ? t("ordering.placing_order") : `${t("ordering.place_order")} — $${(cartStats.total + deliveryFee).toFixed(2)}`}
               </button>
             </div>
           </div>
@@ -253,9 +303,9 @@ export function MenuPage() {
             <button onClick={() => { setOrderError(null); setShowCart(true) }}
               className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-glass border border-glass">
               <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
-              {cartCount > 0 && (
+              {cartStats.count > 0 && (
                 <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[11px] font-bold text-white shadow-lg shadow-emerald-600/30">
-                  {cartCount}
+                  {cartStats.count}
                 </span>
               )}
             </button>
@@ -267,8 +317,8 @@ export function MenuPage() {
         <div className="max-w-md mx-auto">
           <input
             type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={handleSearchChange}
             placeholder={t("ordering.search_menu")}
             className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-glass text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
           />
@@ -297,7 +347,7 @@ export function MenuPage() {
           {inStock.map((product) => (
             <div key={product.id} className="bg-glass border border-glass rounded-xl shadow-lg hover:bg-glass-hover transition-all duration-200 overflow-hidden">
               {product.image ? (
-                <ProductImage src={`/api/delivery/public/image/${product.id}`} name={product.name} />
+                <LazyProductImage src={`/api/delivery/public/image/${product.id}`} name={product.name} />
               ) : (
                 <ProductImagePlaceholder name={product.name} />
               )}
@@ -336,12 +386,12 @@ export function MenuPage() {
         </div>
       </div>
 
-      {cartCount > 0 && (
+      {cartStats.count > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-20 bg-glass border-t border-glass px-4 py-3 shadow-2xl" style={{ backdropFilter: 'blur(16px)' }}>
           <button onClick={() => setShowCart(true)}
             className="flex w-full items-center justify-between rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-3.5 text-white shadow-xl shadow-emerald-600/20 max-w-md mx-auto">
-            <span className="font-semibold">🛒 {cartCount} {cartCount === 1 ? t("ordering.item") : t("ordering.items")}</span>
-            <span className="font-semibold">${(cartTotal + deliveryFee).toFixed(2)}</span>
+            <span className="font-semibold">🛒 {cartStats.count} {cartStats.count === 1 ? t("ordering.item") : t("ordering.items")}</span>
+            <span className="font-semibold">${(cartStats.total + deliveryFee).toFixed(2)}</span>
           </button>
         </div>
       )}

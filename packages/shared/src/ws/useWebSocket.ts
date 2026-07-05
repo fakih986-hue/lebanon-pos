@@ -11,12 +11,10 @@ type UseWebSocketOptions = {
   onDisconnect?: () => void
 }
 
-let reconnectAttempt = 0
-
-function scheduleReconnect(reconnectRef: React.MutableRefObject<number | null>, connect: () => void) {
+function scheduleReconnect(reconnectRef: React.MutableRefObject<number | null>, connect: () => void, attemptRef: React.MutableRefObject<number>) {
   if (reconnectRef.current) clearTimeout(reconnectRef.current)
-  reconnectAttempt++
-  const delay = Math.min(1000 * Math.pow(2, reconnectAttempt), 30000)
+  attemptRef.current++
+  const delay = Math.min(1000 * Math.pow(2, attemptRef.current), 30000)
   reconnectRef.current = window.setTimeout(connect, delay)
 }
 
@@ -32,6 +30,7 @@ export function useWebSocket({
   const [lastMessage, setLastMessage] = useState<any>(null)
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectRef = useRef<number | null>(null)
+  const reconnectAttemptRef = useRef(0)
   const handlersRef = useRef(onMessage)
   handlersRef.current = onMessage
   const onConnectRef = useRef(onConnect)
@@ -47,7 +46,7 @@ export function useWebSocket({
       wsRef.current = ws
 
       ws.onopen = () => {
-        reconnectAttempt = 0
+        reconnectAttemptRef.current = 0
         setIsConnected(true)
         if (token) {
           ws.send(JSON.stringify({ type: "auth", token }))
@@ -72,16 +71,16 @@ export function useWebSocket({
         setIsConnected(false)
         onDisconnectRef.current?.()
         wsRef.current = null
-        scheduleReconnect(reconnectRef, connect)
+        scheduleReconnect(reconnectRef, connect, reconnectAttemptRef)
       }
 
       ws.onerror = () => {
         ws.close()
       }
     } catch {
-      scheduleReconnect(reconnectRef, connect)
+      scheduleReconnect(reconnectRef, connect, reconnectAttemptRef)
     }
-  }, [url, token, tenantId]) // onConnect/onDisconnect via ref — stable identity
+  }, [url, token, tenantId])
 
   useEffect(() => {
     connect()

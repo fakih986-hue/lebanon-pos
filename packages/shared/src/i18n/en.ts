@@ -606,6 +606,8 @@ export const en = {
   "pos.sales_kpi.transactions": "Transactions",
 
   /* POS - Last Sale Banner */
+  "pos.tap_to_dismiss": "Tap anywhere to dismiss",
+  "pos.receipt_view_print": "View / Print Receipt",
   "pos.last_sale.completed": "Sale {number} completed",
   "pos.new_sale": "New Sale",
   "pos.history": "History",
@@ -1112,4 +1114,10 @@ export const en = {
   "admin.master_password": "Master Password",
   "admin.signing_in": "Signing in…",
   "admin.sign_in": "Sign in",
+
+  /* Owner Portal */
+  "owner.reload": "Reload",
+  "owner.created_hint": "Give these two values to the store owner. They enter them in the desktop app to connect.",
+  "owner.pin_hint": "Used to log in on the desktop app",
+  "owner.pin_too_short": "PIN must be at least 4 characters",
 }

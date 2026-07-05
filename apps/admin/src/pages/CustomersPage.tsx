@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { api } from "../app/api"
 import { useI18n } from "@lebanonpos/shared"
 
+const PAGE_SIZE = 50
+
 type Customer = { id: string; name: string; mobile: string; totalSpent: number; debtBalance: number; createdAt: string }
-type PullResponse = { customers: Customer[] }
 
 export function CustomersPage() {
   const { t } = useI18n()
@@ -11,22 +12,44 @@ export function CustomersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
 
-  function loadCustomers() {
+  const loadCustomers = useCallback(async () => {
     setLoading(true); setError(null)
-    api<PullResponse>("/api/sync/pull?since=")
-      .then(data => setCustomers(data.customers ?? []))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load customers"))
-      .finally(() => setLoading(false))
-  }
+    try {
+      const params = new URLSearchParams()
+      if (search.trim()) params.set("search", search.trim())
+      params.set("skip", String((page - 1) * PAGE_SIZE))
+      params.set("limit", String(PAGE_SIZE + 1))
+      const data = await api<Customer[]>(`/api/customers?${params}`)
+      if (data.length > PAGE_SIZE) {
+        setCustomers(data.slice(0, PAGE_SIZE))
+        setHasMore(true)
+      } else {
+        setCustomers(data)
+        setHasMore(false)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load customers")
+    }
+    setLoading(false)
+  }, [search, page])
 
-  useEffect(() => { loadCustomers() }, [])
+  useEffect(() => { loadCustomers() }, [loadCustomers])
 
-  const filtered = customers.filter(c => {
-    if (!search) return true
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value)
+    setPage(1)
+  }, [])
+
+  const filtered = useMemo(() => {
+    if (!search) return customers
     const q = search.toLowerCase()
-    return c.name.toLowerCase().includes(q) || c.mobile.toLowerCase().includes(q)
-  })
+    return customers.filter(c =>
+      c.name.toLowerCase().includes(q) || c.mobile.toLowerCase().includes(q)
+    )
+  }, [customers, search])
 
   return (
     <div className="space-y-6 pb-12">
@@ -37,7 +60,7 @@ export function CustomersPage() {
         </div>
         <div className="relative">
           <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t("customers.search")} className="input-field text-sm pl-10 w-56" />
+          <input value={search} onChange={handleSearchChange} placeholder={t("customers.search")} className="input-field text-sm pl-10 w-56" />
         </div>
       </div>
 
@@ -94,6 +117,23 @@ export function CustomersPage() {
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="flex items-center justify-between px-5 py-3 border-t" style={{ borderColor: "var(--border-card)" }}>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {t("admin.page")} {page}
+            </span>
+            <div className="flex gap-2">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30 transition-all hover:opacity-80"
+                style={{ background: "var(--surface-input)", color: "var(--text-primary)" }}>
+                {t("admin.prev")}
+              </button>
+              <button onClick={() => setPage(p => p + 1)} disabled={!hasMore}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30 transition-all hover:opacity-80"
+                style={{ background: "var(--surface-input)", color: "var(--text-primary)" }}>
+                {t("admin.next")}
+              </button>
+            </div>
           </div>
         </div>
       )}

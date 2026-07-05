@@ -1,9 +1,10 @@
 import { StrictMode, useState, useEffect, Component, type ReactNode, type ErrorInfo } from "react"
 import { createRoot } from "react-dom/client"
+import { I18nProvider, useI18n } from "@lebanonpos/shared"
 import "./index.css"
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
-  constructor(props: { children: ReactNode }) {
+class ErrorCatch extends Component<{ children: ReactNode; fallback: (error: Error, reset: () => void) => ReactNode }, { error: Error | null }> {
+  constructor(props: { children: ReactNode; fallback: (error: Error, reset: () => void) => ReactNode }) {
     super(props)
     this.state = { error: null }
   }
@@ -13,7 +14,17 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   }
   render() {
     if (this.state.error) {
-      return (
+      return this.props.fallback(this.state.error, () => this.setState({ error: null }))
+    }
+    return this.props.children
+  }
+}
+
+function ErrorBoundary({ children }: { children: ReactNode }) {
+  const { t } = useI18n()
+  return (
+    <ErrorCatch
+      fallback={(error, reset) => (
         <div className="min-h-dvh flex items-center justify-center bg-slate-950 p-8">
           <div className="max-w-md w-full text-center">
             <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center mx-auto mb-4">
@@ -21,20 +32,21 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 className="text-lg font-bold text-white mb-2">Something went wrong</h2>
-            <p className="text-sm text-slate-400 mb-6 font-mono">{this.state.error.message}</p>
+            <h2 className="text-lg font-bold text-white mb-2">{t("error_boundary.title")}</h2>
+            <p className="text-sm text-slate-400 mb-6 font-mono">{error.message}</p>
             <button
-              onClick={() => { this.setState({ error: null }); window.location.reload() }}
+              onClick={() => { reset(); window.location.reload() }}
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm"
             >
-              Reload
+              {t("owner.reload")}
             </button>
           </div>
         </div>
-      )
-    }
-    return this.props.children
-  }
+      )}
+    >
+      {children}
+    </ErrorCatch>
+  )
 }
 
 const BASE = ""
@@ -63,6 +75,7 @@ async function api<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 function LoginPage({ onLogin }: { onLogin: () => void }) {
+  const { t } = useI18n()
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -87,8 +100,8 @@ function LoginPage({ onLogin }: { onLogin: () => void }) {
       <div className="relative z-10 w-full max-w-md mx-4">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-400 to-violet-600 text-white text-2xl font-bold shadow-xl shadow-indigo-600/20 mb-5">L</div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Owner Portal</h1>
-          <p className="text-sm text-indigo-300/70 mt-1">Lebanon POS — manage all stores</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">{t("admin.owner_portal")}</h1>
+          <p className="text-sm text-indigo-300/70 mt-1">{t("admin.owner_subtitle")}</p>
         </div>
         <form onSubmit={handleSubmit} className="backdrop-blur-xl bg-white/[0.04] border border-white/[0.06] rounded-2xl p-8 shadow-2xl">
           {error && (
@@ -96,13 +109,13 @@ function LoginPage({ onLogin }: { onLogin: () => void }) {
           )}
           <div className="space-y-5">
             <div>
-              <label className="text-xs font-semibold text-indigo-200/80 uppercase tracking-wider">Master Password</label>
+              <label className="text-xs font-semibold text-indigo-200/80 uppercase tracking-wider">{t("admin.master_password")}</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} required autoFocus
                 className="w-full mt-1.5 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-indigo-300/30 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all duration-200" />
             </div>
             <button type="submit" disabled={loading}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm hover:from-indigo-500 hover:to-violet-500 transition-all duration-200 shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed">
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? t("admin.signing_in") : t("admin.sign_in")}
             </button>
           </div>
         </form>
@@ -115,6 +128,7 @@ type Tenant = { id: string; name: string; subdomain: string; suspended: boolean;
 type StaffUser = { id: string; name: string; mobile: string; code: string; role: string; active: boolean; createdAt: string }
 
 function TenantsPage({ onLogout }: { onLogout: () => void }) {
+  const { t } = useI18n()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -157,7 +171,7 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
 
   async function handleSetPin(user: StaffUser) {
     if (!pinInput.trim() || pinInput.trim().length < 4) {
-      setStaffError("PIN must be at least 4 characters")
+      setStaffError(t("owner.pin_too_short"))
       return
     }
     setSettingPin(user.id)
@@ -212,10 +226,10 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
   async function handleDelete() {
     if (!editingTenant) return
     const typed = window.prompt(
-      `This permanently deletes "${editingTenant.name}" and ALL its data (sales, products, staff, customers). This cannot be undone.\n\nType the subdomain "${editingTenant.subdomain}" to confirm:`
+      t("admin.delete_confirm", { name: editingTenant.name, subdomain: editingTenant.subdomain })
     )
     if (typed !== editingTenant.subdomain) {
-      if (typed !== null) setSaveError("Confirmation text did not match — not deleted.")
+      if (typed !== null) setSaveError(t("admin.delete_mismatch"))
       return
     }
     setSaveError("")
@@ -235,20 +249,20 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           </div>
-          <h2 className="text-xl font-bold mb-2 text-white">Store Created!</h2>
-          <p className="text-sm text-slate-400 mb-6">Give these <span className="text-amber-400 font-semibold">two values</span> to the store owner. They enter them in the desktop app to connect.</p>
+          <h2 className="text-xl font-bold mb-2 text-white">{t("admin.store_created")}</h2>
+          <p className="text-sm text-slate-400 mb-6">{t("owner.created_hint")}</p>
           <div className="max-w-xs mx-auto space-y-3 mb-6 text-left">
             <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Store Subdomain</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">{t("admin.subdomain")}</p>
               <p className="text-lg font-bold font-mono tracking-wider text-white break-all select-all">{createdResult.subdomain}</p>
             </div>
             <div className="bg-slate-800 rounded-xl p-4 border border-emerald-700/50">
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-emerald-400">Admin PIN</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-emerald-400">{t("admin.admin_pin")}</p>
               <p className="text-2xl font-bold font-mono tracking-widest text-white select-all">{createdResult.pin}</p>
-              <p className="text-[10px] text-slate-500 mt-2">Used to log in on the desktop app</p>
+              <p className="text-[10px] text-slate-500 mt-2">{t("owner.pin_hint")}</p>
             </div>
           </div>
-          <button onClick={() => setCreatedResult(null)} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm">Create Another Store</button>
+          <button onClick={() => setCreatedResult(null)} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm">{t("admin.create_another")}</button>
         </div>
       </div>
     )
@@ -258,42 +272,42 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
     <div className="max-w-4xl mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Stores</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage all tenant stores</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">{t("admin.stores")}</h1>
+          <p className="text-sm text-slate-400 mt-1">{t("admin.manage_stores")}</p>
         </div>
         <button onClick={() => setShowCreate(!showCreate)} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm">
-          {showCreate ? "Cancel" : "+ New Store"}
+          {showCreate ? t("admin.cancel") : t("admin.new_store")}
         </button>
       </div>
 
       {showCreate && (
         <form onSubmit={handleCreate} className="bg-slate-900 border border-slate-700 rounded-2xl p-6 mb-8">
-          <h2 className="font-semibold text-white mb-4">Create New Store</h2>
+          <h2 className="font-semibold text-white mb-4">{t("admin.create_store")}</h2>
           {formError && <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl">{formError}</div>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold mb-1.5 block text-slate-400">Store Name</label>
-              <input value={form.storeName} onChange={e => setForm({ ...form, storeName: e.target.value })} required placeholder="e.g. Mini Market" className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+              <label className="text-xs font-semibold mb-1.5 block text-slate-400">{t("admin.store_name")}</label>
+              <input value={form.storeName} onChange={e => setForm({ ...form, storeName: e.target.value })} required placeholder={t("admin.store_name_placeholder")} className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
             </div>
             <div>
-              <label className="text-xs font-semibold mb-1.5 block text-slate-400">Subdomain</label>
-              <input value={form.subdomain} onChange={e => setForm({ ...form, subdomain: e.target.value.replace(/[^a-z0-9-]/g, "") })} required placeholder="e.g. fakih" className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" pattern="[a-z0-9-]{3,}" />
+              <label className="text-xs font-semibold mb-1.5 block text-slate-400">{t("admin.subdomain")}</label>
+              <input value={form.subdomain} onChange={e => setForm({ ...form, subdomain: e.target.value.replace(/[^a-z0-9-]/g, "") })} required placeholder={t("admin.subdomain_placeholder")} className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" pattern="[a-z0-9-]{3,}" />
             </div>
             <div>
-              <label className="text-xs font-semibold mb-1.5 block text-slate-400">Admin Name</label>
+              <label className="text-xs font-semibold mb-1.5 block text-slate-400">{t("admin.admin_name")}</label>
               <input value={form.adminName} onChange={e => setForm({ ...form, adminName: e.target.value })} required className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
             </div>
             <div>
-              <label className="text-xs font-semibold mb-1.5 block text-slate-400">Admin Mobile</label>
-              <input value={form.adminMobile} onChange={e => setForm({ ...form, adminMobile: e.target.value })} required placeholder="e.g. 03xxxxxx" className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+              <label className="text-xs font-semibold mb-1.5 block text-slate-400">{t("admin.admin_mobile")}</label>
+              <input value={form.adminMobile} onChange={e => setForm({ ...form, adminMobile: e.target.value })} required placeholder={t("admin.mobile_placeholder")} className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
             </div>
             <div>
-              <label className="text-xs font-semibold mb-1.5 block text-slate-400">Admin PIN</label>
+              <label className="text-xs font-semibold mb-1.5 block text-slate-400">{t("admin.admin_pin")}</label>
               <input value={form.adminPin} onChange={e => setForm({ ...form, adminPin: e.target.value })} required className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
             </div>
           </div>
           <div className="flex justify-end mt-6">
-            <button type="submit" disabled={creating} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm disabled:opacity-50">{creating ? "Creating…" : "Create Store"}</button>
+            <button type="submit" disabled={creating} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm disabled:opacity-50">{creating ? t("admin.creating") : t("admin.create_store_btn")}</button>
           </div>
         </form>
       )}
@@ -306,28 +320,28 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
         </div>
       ) : tenants.length === 0 ? (
         <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 text-center">
-          <p className="text-slate-400 font-semibold">No stores yet</p>
+          <p className="text-slate-400 font-semibold">{t("admin.no_stores")}</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {tenants.map(t => (
-            <div key={t.id} className={"rounded-2xl p-5 flex items-center justify-between border " + (t.suspended ? "bg-rose-950/30 border-rose-800/30" : "bg-slate-900 border-slate-700")}>
+          {tenants.map(tenantData => (
+            <div key={tenantData.id} className={"rounded-2xl p-5 flex items-center justify-between border " + (tenantData.suspended ? "bg-rose-950/30 border-rose-800/30" : "bg-slate-900 border-slate-700")}>
               <div className="flex items-center gap-3">
-                <div className={"w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold " + (t.suspended ? "bg-rose-600" : "bg-gradient-to-br from-indigo-400 to-violet-600")}>{t.name.charAt(0).toUpperCase()}</div>
+                <div className={"w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold " + (tenantData.suspended ? "bg-rose-600" : "bg-gradient-to-br from-indigo-400 to-violet-600")}>{tenantData.name.charAt(0).toUpperCase()}</div>
                 <div>
-                  <p className="font-semibold text-sm text-white">{t.name}</p>
-                  <p className="text-xs font-mono text-slate-500">/{t.subdomain}</p>
+                  <p className="font-semibold text-sm text-white">{tenantData.name}</p>
+                  <p className="text-xs font-mono text-slate-500">/{tenantData.subdomain}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-3 text-xs text-slate-500">
-                  <span>{t._count.users} staff</span>
-                  <span>{t._count.products} products</span>
-                  <span>{t._count.sales} sales</span>
+                  <span>{tenantData._count.users} {t("admin.staff_count")}</span>
+                  <span>{tenantData._count.products} {t("admin.products_count")}</span>
+                  <span>{tenantData._count.sales} {t("admin.sales_count")}</span>
                 </div>
-                {t.suspended && <span className="text-[10px] uppercase tracking-wider font-bold text-rose-400 bg-rose-500/10 px-2 py-1 rounded-lg">Suspended</span>}
-                <button onClick={() => openStaff(t)} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700">Staff</button>
-                <button onClick={() => openEdit(t)} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700">Edit</button>
+                {tenantData.suspended && <span className="text-[10px] uppercase tracking-wider font-bold text-rose-400 bg-rose-500/10 px-2 py-1 rounded-lg">{t("admin.suspended")}</span>}
+                <button onClick={() => openStaff(tenantData)} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700">{t("admin.staff_label")}</button>
+                <button onClick={() => openEdit(tenantData)} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700">{t("admin.edit")}</button>
               </div>
             </div>
           ))}
@@ -335,21 +349,21 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
       )}
 
       <div className="flex justify-center mt-8">
-        <button onClick={handleLogout} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Sign out</button>
+        <button onClick={handleLogout} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">{t("admin.sign_out")}</button>
       </div>
 
       {editingTenant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEditingTenant(null)}>
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h2 className="font-semibold text-white mb-4">Edit Store</h2>
+            <h2 className="font-semibold text-white mb-4">{t("admin.edit_store")}</h2>
             {saveError && <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl">{saveError}</div>}
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div>
-                <label className="text-xs font-semibold mb-1.5 block text-slate-400">Store Name</label>
+                <label className="text-xs font-semibold mb-1.5 block text-slate-400">{t("admin.store_name")}</label>
                 <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} required className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
               </div>
               <div>
-                <label className="text-xs font-semibold mb-1.5 block text-slate-400">Subdomain</label>
+                <label className="text-xs font-semibold mb-1.5 block text-slate-400">{t("admin.subdomain")}</label>
                 <input value={editForm.subdomain} onChange={e => setEditForm({ ...editForm, subdomain: e.target.value.replace(/[^a-z0-9-]/g, "") })} required pattern="[a-z0-9-]{3,}" className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
               </div>
               <div className="flex items-center gap-3 pt-2">
@@ -359,15 +373,15 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-white">Suspended</p>
-                  <p className="text-xs text-slate-500">Block this store from syncing to the platform</p>
+                  <p className="text-sm font-medium text-white">{t("admin.suspended")}</p>
+                  <p className="text-xs text-slate-500">{t("admin.suspended_desc")}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between gap-3 pt-2">
-                <button type="button" onClick={handleDelete} disabled={saving} className="px-4 py-2 rounded-xl bg-rose-600/10 text-rose-400 text-sm border border-rose-600/30 hover:bg-rose-600/20 transition-colors disabled:opacity-50">Delete Store</button>
+                <button type="button" onClick={handleDelete} disabled={saving} className="px-4 py-2 rounded-xl bg-rose-600/10 text-rose-400 text-sm border border-rose-600/30 hover:bg-rose-600/20 transition-colors disabled:opacity-50">{t("admin.delete_store")}</button>
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setEditingTenant(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-sm border border-slate-700 hover:bg-slate-700 transition-colors">Cancel</button>
-                  <button type="submit" disabled={saving} className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm disabled:opacity-50">{saving ? "Saving…" : "Save Changes"}</button>
+                  <button type="button" onClick={() => setEditingTenant(null)} className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-sm border border-slate-700 hover:bg-slate-700 transition-colors">{t("admin.cancel")}</button>
+                  <button type="submit" disabled={saving} className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm disabled:opacity-50">{saving ? t("admin.saving") : t("admin.save_changes")}</button>
                 </div>
               </div>
             </form>
@@ -380,8 +394,8 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
           <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="font-semibold text-white">Staff — {staffTenant.name}</h2>
-                <p className="text-xs text-slate-400 mt-0.5">/{staffTenant.subdomain}</p>
+                <h2 className="font-semibold text-white">{t("admin.staff_title", { name: staffTenant.name })}</h2>
+                <p className="text-xs text-slate-400 mt-0.5">{t("admin.staff_subdomain", { subdomain: staffTenant.subdomain })}</p>
               </div>
               <button onClick={() => { setStaffTenant(null); setNewPinResult(null) }} className="text-slate-500 hover:text-white transition-colors text-xl leading-none">&times;</button>
             </div>
@@ -390,17 +404,17 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
 
             {newPinResult && (
               <div className="mb-4 bg-emerald-950/30 border border-emerald-700/30 rounded-xl p-4 text-center">
-                <p className="text-sm font-semibold text-emerald-300 mb-1">PIN Reset for {newPinResult.name}</p>
-                <p className="text-xs text-emerald-400/70 mb-2">Shown once — copy it now.</p>
+                <p className="text-sm font-semibold text-emerald-300 mb-1">{t("admin.pin_reset_title", { name: newPinResult.name })}</p>
+                <p className="text-xs text-emerald-400/70 mb-2">{t("admin.pin_reset_desc")}</p>
                 <p className="text-2xl font-bold font-mono tracking-widest text-white select-all">{newPinResult.pin}</p>
-                <button onClick={() => setNewPinResult(null)} className="mt-3 px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs border border-slate-700 hover:bg-slate-700 transition-colors">Dismiss</button>
+                <button onClick={() => setNewPinResult(null)} className="mt-3 px-4 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs border border-slate-700 hover:bg-slate-700 transition-colors">{t("admin.dismiss")}</button>
               </div>
             )}
 
             {staffLoading ? (
               <div className="space-y-2 flex-1">{[1, 2, 3].map(i => <div key={i} className="h-14 rounded-xl bg-slate-800 animate-pulse" />)}</div>
             ) : staffUsers.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center"><p className="text-slate-500 text-sm">No staff users</p></div>
+              <div className="flex-1 flex items-center justify-center"><p className="text-slate-500 text-sm">{t("admin.no_staff")}</p></div>
             ) : (
               <div className="space-y-2 flex-1 overflow-y-auto">
                 {staffUsers.map((u) => (
@@ -409,8 +423,8 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                       <p className="text-sm font-semibold text-white truncate">{u.name}</p>
                       <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
                         <span className={`rounded px-1.5 py-0.5 font-semibold border ${u.role === "Admin" ? "border-indigo-500/25 text-indigo-300" : u.role === "Manager" ? "border-violet-500/25 text-violet-300" : u.role === "Driver" ? "border-amber-500/25 text-amber-300" : "border-emerald-500/25 text-emerald-300"}`}>{u.role}</span>
-                        {u.mobile && <span>Mobile: {u.mobile}</span>}
-                        {!u.active && <span className="text-rose-400 font-semibold">Disabled</span>}
+                        {u.mobile && <span>{t("admin.mobile_label", { mobile: u.mobile })}</span>}
+                        {!u.active && <span className="text-rose-400 font-semibold">{t("admin.disabled")}</span>}
                       </div>
                     </div>
                     {settingPin === u.id ? (
@@ -419,7 +433,7 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                           type="password"
                           value={pinInput}
                           onChange={(e) => setPinInput(e.target.value)}
-                          placeholder="New PIN"
+                          placeholder={t("admin.new_pin")}
                           autoFocus
                           className="w-24 px-2 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
                           onKeyDown={(e) => { if (e.key === "Enter") handleSetPin(u) }}
@@ -428,13 +442,13 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                           onClick={() => handleSetPin(u)}
                           className="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600/10 text-emerald-400 text-xs border border-emerald-600/30 hover:bg-emerald-600/20 transition-colors"
                         >
-                          Set
+                          {t("admin.set")}
                         </button>
                         <button
                           onClick={() => { setSettingPin(null); setPinInput("") }}
                           className="shrink-0 px-2 py-1.5 rounded-lg text-slate-500 text-xs hover:text-white transition-colors"
                         >
-                          Cancel
+                          {t("admin.cancel")}
                         </button>
                       </div>
                     ) : (
@@ -442,7 +456,7 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                         onClick={() => { setSettingPin(u.id); setPinInput(""); setStaffError("") }}
                         className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600/10 text-amber-400 text-xs border border-amber-600/30 hover:bg-amber-600/20 transition-colors"
                       >
-                        Set PIN
+                        {t("admin.set_pin")}
                       </button>
                     )}
                   </div>
@@ -464,8 +478,10 @@ function App() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
+    <I18nProvider>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </I18nProvider>
   </StrictMode>
 )

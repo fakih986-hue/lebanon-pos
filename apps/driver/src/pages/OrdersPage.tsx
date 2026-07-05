@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router"
 import { useI18n, useTheme, useWebSocket } from "@lebanonpos/shared"
 import { clearToken, getToken } from "../main"
@@ -39,9 +39,13 @@ export function OrdersPage() {
   const payload = token ? decodeTokenPayload(token) : null
   const wsUrl = token ? `${(import.meta.env.VITE_API_URL || window.location.origin).replace(/^http/, "ws")}/ws` : ""
 
-  function playAlert() {
+  const audioContextRef = useRef<AudioContext | null>(null)
+
+  const playAlert = useCallback(() => {
     try {
-      const ctx = new AudioContext()
+      if (!audioContextRef.current) audioContextRef.current = new AudioContext()
+      const ctx = audioContextRef.current
+      if (ctx.state === "suspended") ctx.resume()
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.connect(gain); gain.connect(ctx.destination)
@@ -52,7 +56,35 @@ export function OrdersPage() {
       osc.start(ctx.currentTime)
       osc.stop(ctx.currentTime + 0.5)
     } catch { /* audio not available */ }
-  }
+  }, [])
+
+  const fetchAssigned = useCallback(async () => {
+    try {
+      const data = await api<Order[]>("/api/delivery/driver/orders")
+      setAssigned(data)
+    } catch (err) {
+      if (!getToken()) { navigate(`/${store}/login`); return }
+      setError(err instanceof Error ? err.message : t("driver.failed_load"))
+    }
+  }, [navigate, store, t])
+
+  const fetchAvailable = useCallback(async () => {
+    try {
+      const data = await api<Order[]>("/api/delivery/driver/orders/available")
+      setAvailable(prev => {
+        const existing = new Map(prev.map(o => [o.id, o]))
+        for (const o of data) { if (!existing.has(o.id)) existing.set(o.id, o) }
+        return Array.from(existing.values())
+      })
+    } catch (e) { console.warn("Failed to fetch available orders:", e) }
+  }, [])
+
+  const fetchAssignedRef = useRef(fetchAssigned)
+  fetchAssignedRef.current = fetchAssigned
+  const fetchAvailableRef = useRef(fetchAvailable)
+  fetchAvailableRef.current = fetchAvailable
+  const playAlertRef = useRef(playAlert)
+  playAlertRef.current = playAlert
 
   const { isConnected } = useWebSocket({
     url: wsUrl,
@@ -62,7 +94,7 @@ export function OrdersPage() {
       "order:available": (data: { order: Order }) => {
         setAvailable(prev => {
           if (prev.some(o => o.id === data.order.id)) return prev
-          playAlert()
+          playAlertRef.current()
           return [data.order, ...prev]
         })
       },
@@ -79,7 +111,7 @@ export function OrdersPage() {
             return next
           }
           if (data.order.driverId === payload?.userId) {
-            playAlert()
+            playAlertRef.current()
             return [data.order, ...prev]
           }
           return prev
@@ -87,37 +119,16 @@ export function OrdersPage() {
         setAvailable(prev => prev.filter(o => o.id !== data.order.id))
       },
     },
-    onConnect: () => fetchAvailable(),
+    onConnect: () => fetchAvailableRef.current(),
   })
 
-  async function fetchAssigned() {
-    try {
-      const data = await api<Order[]>("/api/delivery/driver/orders")
-      setAssigned(data)
-    } catch (err) {
-      if (!getToken()) { navigate(`/${store}/login`); return }
-      setError(err instanceof Error ? err.message : t("driver.failed_load"))
-    }
-  }
-
-  async function fetchAvailable() {
-    try {
-      const data = await api<Order[]>("/api/delivery/driver/orders/available")
-      setAvailable(prev => {
-        const existing = new Map(prev.map(o => [o.id, o]))
-        for (const o of data) { if (!existing.has(o.id)) existing.set(o.id, o) }
-        return Array.from(existing.values())
-      })
-    } catch (e) { console.warn("Failed to fetch available orders:", e) }
-  }
-
   useEffect(() => {
-    Promise.all([fetchAssigned(), fetchAvailable()]).finally(() => setLoading(false))
-    const interval = setInterval(() => { fetchAssigned(); fetchAvailable() }, 30000)
+    Promise.all([fetchAssignedRef.current(), fetchAvailableRef.current()]).finally(() => setLoading(false))
+    const interval = setInterval(() => { fetchAssignedRef.current(); fetchAvailableRef.current() }, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  async function handleAccept(orderId: string) {
+  const handleAccept = useCallback(async (orderId: string) => {
     setAcceptingId(orderId)
     setError("")
     try {
@@ -132,9 +143,13 @@ export function OrdersPage() {
         setError(msg)
       }
     } finally { setAcceptingId(null) }
-  }
+  }, [t])
 
-  function handleLogout() { clearToken(); navigate(`/${store}/login`) }
+  const handleLogout = useCallback(() => { clearToken(); navigate(`/${store}/login`) }, [navigate, store])
+
+  useEffect(() => {
+    return () => { if (audioContextRef.current) audioContextRef.current.close() }
+  }, [])
 
   return (
     <div className="min-h-dvh bg-gradient-page">

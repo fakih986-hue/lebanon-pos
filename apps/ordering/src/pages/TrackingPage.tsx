@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense, lazy } from "react"
 import { useParams, useNavigate } from "react-router"
 import { useI18n, useWebSocket } from "@lebanonpos/shared"
 import { api } from "../app/api"
@@ -41,16 +41,37 @@ function getStepIndex(status: Status): number {
   return Math.max(STATUS_ORDER.indexOf(status), 0)
 }
 
-export function TrackingPage() {
-  const { tenantSubdomain, orderNumber } = useParams<{ tenantSubdomain: string; orderNumber: string }>()
-  const navigate = useNavigate()
-  const { t } = useI18n()
+function LoadingFallback() {
+  return (
+    <div className="min-h-dvh bg-gradient-page flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-4xl shadow-xl shadow-emerald-600/20 mb-5 animate-pulse">🛵</div>
+        <p className="text-secondary text-sm">Loading...</p>
+      </div>
+    </div>
+  )
+}
+
+const TrackingContent = lazy(() => Promise.resolve({ default: TrackingContentInner }))
+
+function TrackingContentInner({
+  tenantSubdomain,
+  orderNumber,
+  t,
+  navigate,
+}: {
+  tenantSubdomain: string
+  orderNumber: string
+  t: (key: string, params?: Record<string, any>) => string
+  navigate: ReturnType<typeof useNavigate>
+}) {
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [tenantId, setTenantId] = useState("")
   const [storeWhatsApp, setStoreWhatsApp] = useState("")
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+  const fetchOrderRef = useRef<() => Promise<void>>()
 
   const wsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`
 
@@ -94,11 +115,23 @@ export function TrackingPage() {
     }
   }, [orderNumber, tenantSubdomain])
 
+  fetchOrderRef.current = fetchOrder
+
   useEffect(() => {
-    fetchOrder()
-    const interval = setInterval(fetchOrder, 30_000)
+    fetchOrderRef.current()
+    const interval = setInterval(() => fetchOrderRef.current?.(), 30_000)
     return () => clearInterval(interval)
-  }, [fetchOrder])
+  }, [])
+
+  const stepInfo = useMemo(() => {
+    if (!order) return { currentIdx: 0, isCancelled: false, isDelivered: false, isCashOnDelivery: false }
+    return {
+      currentIdx: getStepIndex(order.status),
+      isCancelled: order.status === "Cancelled",
+      isDelivered: order.status === "Delivered",
+      isCashOnDelivery: order.paymentMethod === "CashOnDelivery",
+    }
+  }, [order])
 
   if (loading) return (
     <div className="min-h-dvh bg-gradient-page flex items-center justify-center">
@@ -124,16 +157,11 @@ export function TrackingPage() {
 
   if (!order) return null
 
-  const currentIdx = getStepIndex(order.status)
-  const isCancelled = order.status === "Cancelled"
-  const isDelivered = order.status === "Delivered"
-  const isCashOnDelivery = order.paymentMethod === "CashOnDelivery"
+  const { currentIdx, isCancelled, isDelivered, isCashOnDelivery } = stepInfo
 
   return (
     <div className="min-h-dvh bg-gradient-page">
       <div className="max-w-lg mx-auto px-4 py-8 space-y-4 animate-fade-in">
-
-        {/* Header */}
         <div className="text-center mb-2">
           {isDelivered ? (
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-4xl shadow-xl shadow-emerald-600/20 mb-4">🎉</div>
@@ -149,7 +177,6 @@ export function TrackingPage() {
           </p>
         </div>
 
-        {/* Progress tracker */}
         <div className="bg-glass border border-glass rounded-2xl p-5 shadow-lg">
           {isCancelled ? (
             <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-5 text-center">
@@ -199,7 +226,6 @@ export function TrackingPage() {
           )}
         </div>
 
-        {/* Driver info (when assigned) */}
         {order.driverName && !isDelivered && !isCancelled && (
           <div className="bg-glass border border-indigo-500/20 rounded-2xl p-4">
             <p className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-3">{t("ordering.your_driver") || "Your Driver"}</p>
@@ -221,7 +247,6 @@ export function TrackingPage() {
           </div>
         )}
 
-        {/* Order items */}
         <div className="bg-glass border border-glass rounded-2xl p-4">
           <p className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-3">{t("ordering.order_summary") || "Order Summary"}</p>
           <div className="space-y-2">
@@ -253,7 +278,6 @@ export function TrackingPage() {
           </div>
         </div>
 
-        {/* Payment info */}
         <div className={`rounded-2xl border p-4 ${
           isCashOnDelivery
             ? "bg-amber-500/8 border-amber-500/20"
@@ -283,7 +307,6 @@ export function TrackingPage() {
           )}
         </div>
 
-        {/* Delivery address */}
         <div className="bg-glass border border-glass rounded-2xl p-4">
           <p className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">{t("ordering.delivering_to") || "Delivering to"}</p>
           <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.address)}`}
@@ -297,7 +320,6 @@ export function TrackingPage() {
           )}
         </div>
 
-        {/* Contact store */}
         {!isCancelled && storeWhatsApp && (
           <a href={`https://wa.me/${storeWhatsApp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(t("ordering.whatsapp_store_message", { orderNumber }))}`}
             target="_blank" rel="noopener noreferrer"
@@ -315,5 +337,19 @@ export function TrackingPage() {
         </button>
       </div>
     </div>
+  )
+}
+
+export function TrackingPage() {
+  const { tenantSubdomain, orderNumber } = useParams<{ tenantSubdomain: string; orderNumber: string }>()
+  const navigate = useNavigate()
+  const { t } = useI18n()
+
+  if (!tenantSubdomain || !orderNumber) return null
+
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <TrackingContent tenantSubdomain={tenantSubdomain} orderNumber={orderNumber} t={t} navigate={navigate} />
+    </Suspense>
   )
 }

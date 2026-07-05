@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useNavigate, useParams } from "react-router"
 import { useI18n } from "@lebanonpos/shared"
 import { api } from "../app/api"
@@ -24,7 +24,7 @@ export function LoginPage() {
 
   const isLoggedIn = !!localStorage.getItem("customer_token")
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     if (mode === "register" && !name.trim()) { setError(t("ordering.name_required")); return }
@@ -50,7 +50,7 @@ export function LoginPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : t("ordering.something_went_wrong"))
     } finally { setLoading(false) }
-  }
+  }, [mode, name, mobile, pin, tenantId, t, navigate, tenantSubdomain])
 
   return (
     <div className="min-h-dvh flex items-center justify-center bg-gradient-page p-4">

@@ -1,10 +1,7 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { api } from "../app/api"
 import { useI18n } from "@lebanonpos/shared"
 
-/** SHA-256 hash a string, return base64 (matches server-side hashSha256Pin).
- *  Falls back to plain text if crypto.subtle unavailable (HTTP) — the API
- *  hashStaffPayload will bcrypt-hash it server-side. */
 async function hashPin(pin: string): Promise<string> {
   try {
     if (typeof crypto !== "undefined" && typeof crypto.subtle?.digest === "function") {
@@ -57,7 +54,6 @@ export function StaffPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
-  // Add user form
   const [showAdd, setShowAdd] = useState(false)
   const [newName, setNewName] = useState("")
   const [newMobile, setNewMobile] = useState("")
@@ -65,13 +61,12 @@ export function StaffPage() {
   const [newRole, setNewRole] = useState("Cashier")
   const [addError, setAddError] = useState("")
   const [addLoading, setAddLoading] = useState(false)
-  // Change PIN
   const [changePinFor, setChangePinFor] = useState<StaffUser | null>(null)
   const [changePinValue, setChangePinValue] = useState("")
   const [changePinLoading, setChangePinLoading] = useState(false)
   const [changePinError, setChangePinError] = useState("")
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true)
     try {
       const [usersData, auditData] = await (async () => {
@@ -85,11 +80,11 @@ export function StaffPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => { loadData() }, [loadData])
 
-  async function handleToggleActive(user: StaffUser) {
+  const handleToggleActive = useCallback(async (user: StaffUser) => {
     try {
       await api("/api/sync/push", {
         method: "POST",
@@ -106,9 +101,9 @@ export function StaffPage() {
     } catch (err) {
       setError((err as Error).message)
     }
-  }
+  }, [])
 
-  async function handleAddUser() {
+  const handleAddUser = useCallback(async () => {
     if (!newName.trim() || !newPin.trim()) { setAddError("Name and PIN are required"); return }
     if (newPin.length < 4) { setAddError("PIN must be at least 4 characters"); return }
     setAddLoading(true)
@@ -133,9 +128,9 @@ export function StaffPage() {
     } finally {
       setAddLoading(false)
     }
-  }
+  }, [newName, newMobile, newPin, newRole, loadData])
 
-  async function handleChangePin() {
+  const handleChangePin = useCallback(async () => {
     if (!changePinFor || !changePinValue.trim() || changePinValue.trim().length < 4) {
       setChangePinError("PIN must be at least 4 characters"); return
     }
@@ -161,12 +156,20 @@ export function StaffPage() {
     } finally {
       setChangePinLoading(false)
     }
-  }
+  }, [changePinFor, changePinValue])
 
-  const tabs = [
+  const tabs = useMemo(() => [
     { key: "team" as const, label: t("nav.staff_team") },
     { key: "audit" as const, label: t("nav.staff_audit") },
-  ]
+  ], [t])
+
+  const paginatedAudit = useMemo(() =>
+    audit.slice((auditPage - 1) * AUDIT_PAGE_SIZE, auditPage * AUDIT_PAGE_SIZE),
+  [audit, auditPage])
+
+  const totalAuditPages = useMemo(() =>
+    Math.ceil(audit.length / AUDIT_PAGE_SIZE),
+  [audit])
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -269,7 +272,7 @@ export function StaffPage() {
               </tr>
             </thead>
             <tbody>
-              {audit.slice((auditPage - 1) * AUDIT_PAGE_SIZE, auditPage * AUDIT_PAGE_SIZE).map((event) => (
+              {paginatedAudit.map((event) => (
                 <tr key={event.id} style={{ borderBottom: "1px solid var(--border-subtle)" }} className="hover:opacity-80 transition-opacity">
                   <td className="px-4 py-3 font-mono text-xs text-indigo-300">{event.action}</td>
                   <td className="px-4 py-3 max-w-xs truncate" style={{ color: "var(--text-primary)" }}>{event.summary}</td>
@@ -294,7 +297,7 @@ export function StaffPage() {
                   style={{ background: "var(--surface-input)", color: "var(--text-primary)" }}>
                   {t("admin.prev")}
                 </button>
-                <button onClick={() => setAuditPage(p => Math.min(Math.ceil(audit.length / AUDIT_PAGE_SIZE), p + 1))} disabled={auditPage >= Math.ceil(audit.length / AUDIT_PAGE_SIZE)}
+                <button onClick={() => setAuditPage(p => Math.min(totalAuditPages, p + 1))} disabled={auditPage >= totalAuditPages}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30 transition-all hover:opacity-80"
                   style={{ background: "var(--surface-input)", color: "var(--text-primary)" }}>
                   {t("admin.next")}

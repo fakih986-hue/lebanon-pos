@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import { api } from "../app/api"
 import { useI18n } from "@lebanonpos/shared"
 import type { Product } from "@lebanonpos/types"
 
-type PullResponse = { products: Product[] }
+const PAGE_SIZE = 50
 
 const CATEGORY_COLORS: Record<string, string> = {
   Food: "bg-orange-100 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300",
@@ -21,18 +21,33 @@ export function ProductsPage() {
   const [search, setSearch] = useState("")
   const [generating, setGenerating] = useState(false)
   const [genStatus, setGenStatus] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(false)
 
-  function loadProducts() {
+  const loadProducts = useCallback(async () => {
     setLoading(true); setError(null)
-    api<PullResponse>("/api/sync/pull?since=")
-      .then(data => setProducts(data.products ?? []))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load products"))
-      .finally(() => setLoading(false))
-  }
+    try {
+      const params = new URLSearchParams()
+      if (search.trim()) params.set("search", search.trim())
+      params.set("skip", String((page - 1) * PAGE_SIZE))
+      params.set("limit", String(PAGE_SIZE + 1))
+      const data = await api<Product[]>(`/api/products?${params}`)
+      if (data.length > PAGE_SIZE) {
+        setProducts(data.slice(0, PAGE_SIZE))
+        setHasMore(true)
+      } else {
+        setProducts(data)
+        setHasMore(false)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load products")
+    }
+    setLoading(false)
+  }, [search, page])
 
-  useEffect(() => { loadProducts() }, [])
+  useEffect(() => { loadProducts() }, [loadProducts])
 
-  const handleGenerateImages = async (force = false) => {
+  const handleGenerateImages = useCallback(async (force = false) => {
     setGenerating(true)
     setGenStatus(null)
     try {
@@ -50,13 +65,15 @@ export function ProductsPage() {
     } finally {
       setGenerating(false)
     }
-  }
+  }, [t])
 
-  const filtered = products.filter(p => {
-    if (!search) return true
+  const filtered = useMemo(() => {
+    if (!search) return products
     const q = search.toLowerCase()
-    return p.name.toLowerCase().includes(q) || (p.barcode ?? "").toLowerCase().includes(q)
-  })
+    return products.filter(p =>
+      p.name.toLowerCase().includes(q) || (p.barcode ?? "").toLowerCase().includes(q)
+    )
+  }, [products, search])
 
   return (
     <div className="space-y-6 pb-12">
@@ -92,7 +109,7 @@ export function ProductsPage() {
           )}
           <div className="relative">
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t("products.search")} className="input-field text-sm pl-10 w-56" />
+            <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} placeholder={t("products.search")} className="input-field text-sm pl-10 w-56" />
           </div>
         </div>
       </div>
@@ -164,6 +181,23 @@ export function ProductsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="flex items-center justify-between px-5 py-3 border-t" style={{ borderColor: "var(--border-card)" }}>
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {t("admin.page")} {page}
+            </span>
+            <div className="flex gap-2">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30 transition-all hover:opacity-80"
+                style={{ background: "var(--surface-input)", color: "var(--text-primary)" }}>
+                {t("admin.prev")}
+              </button>
+              <button onClick={() => setPage(p => p + 1)} disabled={!hasMore}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30 transition-all hover:opacity-80"
+                style={{ background: "var(--surface-input)", color: "var(--text-primary)" }}>
+                {t("admin.next")}
+              </button>
+            </div>
           </div>
         </div>
       )}

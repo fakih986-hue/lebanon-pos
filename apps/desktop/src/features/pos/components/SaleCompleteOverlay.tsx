@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Check, Printer, ShoppingCart } from "lucide-react"
 import { formatCurrency, formatLbpCurrency } from "../lib/currency"
+import { useI18n } from "@lebanonpos/shared"
 const MotionDiv = motion.div as any
 const MotionP = motion.p as any
 
@@ -11,6 +12,7 @@ type Props = {
 }
 
 export default function SaleCompleteOverlay({ sale, onViewReceipt }: Props) {
+  const { t } = useI18n()
   const [visible,   setVisible]   = useState(false)
   const [showCheck, setShowCheck] = useState(false)
   const [snapshot,  setSnapshot]  = useState<Props["sale"]>(null)
@@ -99,7 +101,7 @@ export default function SaleCompleteOverlay({ sale, onViewReceipt }: Props) {
               transition={{ delay: 0.3, duration: 0.25 }}
             >
               <p className="mb-1 text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>
-                Sale #{snapshot.number} complete
+                {t("pos.last_sale.completed", { number: snapshot.number })}
               </p>
               <p className="text-[42px] font-bold tabular-nums leading-none text-white">
                 {formatCurrency(snapshot.total)}
@@ -127,7 +129,7 @@ export default function SaleCompleteOverlay({ sale, onViewReceipt }: Props) {
                   className="flex items-center gap-2 rounded-xl bg-white/10 px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-white/20 active:scale-95"
                 >
                   <Printer size={15} />
-                  View / Print Receipt
+                  {t("pos.receipt_view_print")}
                 </button>
               </MotionDiv>
             )}
@@ -139,7 +141,7 @@ export default function SaleCompleteOverlay({ sale, onViewReceipt }: Props) {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9 }}
             >
-              Tap anywhere to dismiss
+              {t("pos.tap_to_dismiss")}
             </MotionP>
           </MotionDiv>
         </MotionDiv>

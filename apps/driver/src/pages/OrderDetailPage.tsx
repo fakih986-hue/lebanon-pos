@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { useParams, useNavigate } from "react-router"
 import { useI18n, useWebSocket } from "@lebanonpos/shared"
 import { getToken } from "../main"
@@ -38,7 +38,6 @@ export function OrderDetailPage() {
   const [error, setError] = useState("")
   const [actionLoading, setActionLoading] = useState(false)
   const [successMsg, setSuccessMsg] = useState("")
-  // Cash collection
   const [showCashDialog, setShowCashDialog] = useState(false)
   const [cashReceived, setCashReceived] = useState("")
 
@@ -55,7 +54,7 @@ export function OrderDetailPage() {
     },
   })
 
-  async function fetchOrder() {
+  const fetchOrder = useCallback(async () => {
     try {
       setError("")
       const data = await api<Order[]>("/api/delivery/driver/orders")
@@ -65,11 +64,11 @@ export function OrderDetailPage() {
       if (!getToken()) { navigate(`/${store}/login`); return }
       setError(err instanceof Error ? err.message : t("driver.failed_load_order"))
     } finally { setLoading(false) }
-  }
+  }, [id, navigate, store, t])
 
-  useEffect(() => { if (id) fetchOrder() }, [id])
+  useEffect(() => { if (id) fetchOrder() }, [id, fetchOrder])
 
-  async function handleStatusUpdate(status: string, extra?: Record<string, unknown>) {
+  const handleStatusUpdate = useCallback(async (status: string, extra?: Record<string, unknown>) => {
     setActionLoading(true); setError(""); setSuccessMsg("")
     try {
       await api(`/api/delivery/driver/orders/${id}/status`, {
@@ -87,19 +86,18 @@ export function OrderDetailPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : t("driver.failed_update"))
     } finally { setActionLoading(false) }
-  }
+  }, [id, t, fetchOrder])
 
-  function handleDeliverClick() {
-    // If cash on delivery, ask for amount received
+  const handleDeliverClick = useCallback(() => {
     if (order?.paymentMethod === "CashOnDelivery") {
       setCashReceived(order.total.toFixed(2))
       setShowCashDialog(true)
     } else {
       handleStatusUpdate("Delivered")
     }
-  }
+  }, [order, handleStatusUpdate])
 
-  function confirmDelivery() {
+  const confirmDelivery = useCallback(() => {
     const paid = parseFloat(cashReceived)
     if (isNaN(paid) || paid < (order?.total ?? 0)) {
       setError(t("driver.amount_invalid"))
@@ -107,7 +105,23 @@ export function OrderDetailPage() {
     }
     setShowCashDialog(false)
     handleStatusUpdate("Delivered", { paidAmount: paid })
-  }
+  }, [cashReceived, order, t, handleStatusUpdate])
+
+  const isTerminal = order?.status === "Delivered" || order?.status === "Cancelled"
+  const isCash = order?.paymentMethod === "CashOnDelivery"
+
+  const whatsappUrl = useMemo(() => {
+    if (!order) return ""
+    function normalizeLBPhone(raw: string): string {
+      let n = (raw || "").replace(/[^\d+]/g, "")
+      if (n.startsWith("+")) n = n.slice(1)
+      if (n.startsWith("0")) n = "961" + n.slice(1)
+      else if (n.length >= 7 && n.length <= 8) n = "961" + n
+      return n
+    }
+    const message = t("driver.whatsapp_message", { customerName: order.customerName, orderNumber: order.orderNumber })
+    return `https://wa.me/${normalizeLBPhone(order.customerPhone)}?text=${encodeURIComponent(message)}`
+  }, [order, t])
 
   if (loading) return (
     <div className="flex min-h-dvh items-center justify-center bg-gradient-page">
@@ -126,21 +140,8 @@ export function OrderDetailPage() {
   )
   if (!order) return null
 
-  const isTerminal = order.status === "Delivered" || order.status === "Cancelled"
-  const isCash = order.paymentMethod === "CashOnDelivery"
-  function normalizeLBPhone(raw: string): string {
-    let n = (raw || "").replace(/[^\d+]/g, "")
-    if (n.startsWith("+")) n = n.slice(1)
-    if (n.startsWith("0")) n = "961" + n.slice(1)
-    else if (n.length >= 7 && n.length <= 8) n = "961" + n
-    return n
-  }
-  const message = t("driver.whatsapp_message", { customerName: order.customerName, orderNumber: order.orderNumber })
-  const whatsappUrl = `https://wa.me/${normalizeLBPhone(order.customerPhone)}?text=${encodeURIComponent(message)}`
-
   return (
     <div className="min-h-dvh bg-gradient-page">
-      {/* Cash collection dialog */}
       {showCashDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-sm bg-glass border border-glass rounded-2xl p-6 shadow-2xl animate-scale-in">
@@ -201,7 +202,6 @@ export function OrderDetailPage() {
           <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-3 text-sm text-rose-300">{error}</div>
         )}
 
-        {/* Customer info */}
         <div className="rounded-2xl bg-glass border border-glass p-5">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-4">{t("driver.customer")}</h3>
           <div className="space-y-3">
@@ -231,7 +231,6 @@ export function OrderDetailPage() {
           </div>
         </div>
 
-        {/* Delivery note */}
         {order.deliveryNote && (
           <div className="rounded-2xl bg-amber-500/5 border border-amber-500/15 p-4">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-amber-400/70 mb-2">{t("driver.delivery_note")}</h3>
@@ -239,7 +238,6 @@ export function OrderDetailPage() {
           </div>
         )}
 
-        {/* Items */}
         <div className="rounded-2xl bg-glass border border-glass p-5">
           <h3 className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-4">{t("driver.items")}</h3>
           <div className="divide-y divide-white/[0.04]">
@@ -276,7 +274,6 @@ export function OrderDetailPage() {
           </div>
         </div>
 
-        {/* Action buttons */}
         <div className="space-y-3 pt-2">
           {!isTerminal && (order.status === "Confirmed" || order.status === "Preparing") && (
             <button onClick={() => handleStatusUpdate("OutForDelivery")} disabled={actionLoading}
