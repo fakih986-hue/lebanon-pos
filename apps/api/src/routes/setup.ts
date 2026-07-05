@@ -13,11 +13,12 @@
 import fs   from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { timingSafeEqual } from "node:crypto"
+import { timingSafeEqual, createHash } from "node:crypto"
 import { Router } from "express"
 import type { Response } from "express"
 import type { IncomingMessage } from "node:http"
 import jwt from "jsonwebtoken"
+import bcrypt from "bcryptjs"
 import prisma from "../lib/prisma.js"
 import { triggerFullPull, saveCloudConfig, getCloudStatus } from "../services/cloudSync.js"
 
@@ -168,6 +169,103 @@ router.get("/tenant-info", async (req: Req, res: Response) => {
   }
 })
 
+// ─── POST /api/setup/discover ────────────────────────────────────────────────
+// Auto-discovery: given a subdomain + admin PIN, returns the tenant ID + cloud
+// API key. Used by the desktop activation wizard so the user only needs to type
+// two things instead of three technical values.
+// No auth required — this is the first step in the setup flow.
+// Rate limited: 5 attempts per minute per IP (PIN brute-force protection).
+
+const discoverAttempts = new Map<string, { count: number; resetAt: number }>()
+const DISCOVER_MAX_ATTEMPTS = 5
+const DISCOVER_WINDOW_MS = 60_000
+
+function getDiscoverRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now()
+  const entry = discoverAttempts.get(ip)
+  if (!entry || now > entry.resetAt) {
+    discoverAttempts.set(ip, { count: 1, resetAt: now + DISCOVER_WINDOW_MS })
+    return { allowed: true }
+  }
+  if (entry.count >= DISCOVER_MAX_ATTEMPTS) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) }
+  }
+  entry.count++
+  return { allowed: true }
+}
+
+// Clean up expired entries every 5 minutes
+setInterval(() => {
+  const now = Date.now()
+  for (const [ip, entry] of discoverAttempts.entries()) {
+    if (now > entry.resetAt) discoverAttempts.delete(ip)
+  }
+}, 5 * 60_000)
+
+router.post("/discover", async (req: Req, res: Response) => {
+  // Rate limit check
+  const ip = req.socket?.remoteAddress ?? "unknown"
+  const limit = getDiscoverRateLimit(ip)
+  if (!limit.allowed) {
+    res.status(429).json({ error: `Too many attempts. Try again in ${limit.retryAfter} seconds.` })
+    return
+  }
+
+  const { subdomain, pin } =
+    (req.body as { subdomain?: string; pin?: string }) || {}
+
+  if (!subdomain || !pin) {
+    res.status(400).json({ error: "subdomain and pin are required" })
+    return
+  }
+
+  try {
+    const tenant = await prisma.tenant.findUnique({
+      where: { subdomain: subdomain.trim().toLowerCase() },
+      select: { id: true, name: true, subdomain: true, cloudApiKey: true, suspended: true },
+    })
+
+    if (!tenant) {
+      res.status(404).json({ error: "Store not found. Check the subdomain." })
+      return
+    }
+
+    if (tenant.suspended) {
+      res.status(403).json({ error: "This store has been suspended." })
+      return
+    }
+
+    // Find an admin user in this tenant and verify the PIN
+    const adminUser = await prisma.staffUser.findFirst({
+      where: { tenantId: tenant.id, role: "Admin", active: true },
+      select: { id: true, name: true, pin: true },
+    })
+
+    if (!adminUser) {
+      res.status(404).json({ error: "No admin user found for this store." })
+      return
+    }
+
+    const pinMatches = adminUser.pin.startsWith("$2")
+      ? await bcrypt.compare(pin, adminUser.pin)
+      : adminUser.pin === createHash("sha256").update(pin).digest("base64")
+
+    if (!pinMatches) {
+      res.status(401).json({ error: "Incorrect PIN. Check with the store owner." })
+      return
+    }
+
+    res.json({
+      tenantId: tenant.id,
+      tenantName: tenant.name,
+      subdomain: tenant.subdomain,
+      cloudApiKey: tenant.cloudApiKey,
+    })
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message })
+  }
+})
+
 // ─── GET /api/setup/cloud-config ─────────────────────────────────────────────
 // Localhost-only. Returns current cloud connection status (no secrets).
 
@@ -194,7 +292,15 @@ router.post("/cloud-config", async (req: Req, res: Response) => {
     (req.body as { tenantId?: string; apiKey?: string; adminPassword?: string }) || {}
 
   const master = process.env.ADMIN_PASSWORD ?? ""
-  if (!master || !adminPassword || !safeEqual(adminPassword, master)) {
+  const masterHash = process.env.ADMIN_PASSWORD_HASH ?? ""
+
+  let passwordValid = false
+  if (masterHash) {
+    passwordValid = master.length > 0 && adminPassword === master ? await bcrypt.compare(adminPassword, masterHash) : false
+  } else {
+    passwordValid = master.length > 0 && adminPassword === master
+  }
+  if (!passwordValid) {
     res.status(401).json({ error: "Invalid admin password" })
     return
   }

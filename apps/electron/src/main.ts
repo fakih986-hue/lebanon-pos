@@ -68,6 +68,8 @@ let tray:       Tray          | null = null
 let apiProcess: ChildProcess  | null = null
 let pgProcess:  ChildProcess  | null = null
 let isQuitting  = false
+const API_MAX_RESTARTS = 3
+let apiRestartCount = 0
 let loadMsg     = "Initializing…"
 
 // ─── Single instance ─────────────────────────────────────────────────────────
@@ -101,6 +103,7 @@ app.whenReady().then(async () => {
 
     setStatus("Waiting for server…")
     if (!await waitForApi()) throw new Error("Server did not respond within 45 seconds.")
+    apiRestartCount = 0 // Reset on successful start
 
   } catch (err: unknown) {
     closeLoadingWindow()
@@ -212,11 +215,11 @@ async function startPostgres(password: string): Promise<void> {
   // Start postgres directly (pg_ctl PID detection is unreliable with bundled PG on Windows)
   const pgLog = path.join(USER_DATA, "pg.log")
   const pgLogFd = fs.openSync(pgLog, "a")
-  spawn(pgExe("postgres"), ["-D", PG_DATA, "-p", String(PG_PORT)], {
+  pgProcess = spawn(pgExe("postgres"), ["-D", PG_DATA, "-p", String(PG_PORT)], {
     stdio: ["ignore", pgLogFd, pgLogFd],
     windowsHide: true,
     env: process.env,
-  }).unref()
+  })
   fs.closeSync(pgLogFd)
 
   // Poll for readiness (up to 30 seconds)
@@ -282,12 +285,36 @@ async function ensureDatabase(password: string): Promise<void> {
 
 async function stopPostgres(): Promise<void> {
   if (!fs.existsSync(path.join(PG_DATA, "PG_VERSION"))) return
+
+  // Try graceful shutdown via pg_ctl first
+  try {
+    const pgCtlExe = (name: string) => path.join(USER_DATA, "assets", "pg", "bin", `${name}.exe`)
+    execSync(`"${pgCtlExe("pg_ctl")}" -D "${PG_DATA}" stop -m fast -w -t 10`, { stdio: "pipe", timeout: 15000 })
+    console.log("[pg] stopped gracefully via pg_ctl")
+    return
+  } catch {
+    // pg_ctl failed — fall back to killing the tracked process
+    if (pgProcess && !pgProcess.killed) {
+      try {
+        pgProcess.kill("SIGTERM")
+        await new Promise<void>((resolve) => {
+          pgProcess!.once("exit", () => resolve())
+          setTimeout(() => resolve(), 5000) // timeout after 5s
+        })
+        console.log("[pg] stopped via SIGTERM on tracked process")
+        return
+      } catch { /* fall through to taskkill */ }
+    }
+  }
+
+  // Last resort: kill by port
   try {
     const result = execSync(`netstat -ano | findstr ":${PG_PORT}"`, { encoding: "utf-8" }) as string
     const pids = [...result.matchAll(/LISTENING\s+(\d+)/g)].map(m => m[1]).filter((v,i,a) => a.indexOf(v)===i)
     for (const pid of pids) {
       try { execSync(`taskkill /f /pid ${pid}`, { stdio: "pipe" }) } catch { /* already dead */ }
     }
+    console.log("[pg] stopped via taskkill (last resort)")
   } catch { /* no process on our port */ }
 }
 
@@ -449,10 +476,23 @@ function spawnApi(): void {
   apiProcess.stdout?.on("data", (d: Buffer) => process.stdout.write(`[api] ${d}`))
   apiProcess.stderr?.on("data", (d: Buffer) => process.stderr.write(`[api] ${d}`))
   apiProcess.on("exit", (code) => {
-    if (!isQuitting && code !== 0) {
-      dialog.showErrorBox("Lebanon POS", `Server stopped (code ${code}). The app will close.`)
+    if (isQuitting || code === 0) return
+    if (apiRestartCount >= API_MAX_RESTARTS) {
+      dialog.showErrorBox("Lebanon POS", `Server crashed ${API_MAX_RESTARTS} times (code ${code}). Please restart the app.`)
       app.quit()
+      return
     }
+    apiRestartCount++
+    const delay = Math.min(apiRestartCount * 2000, 10000)
+    console.log(`[api] crashed (code ${code}), restarting in ${delay}ms (attempt ${apiRestartCount}/${API_MAX_RESTARTS})`)
+    setTimeout(() => {
+      if (!isQuitting) {
+        spawnApi()
+        waitForApi().then(ok => {
+          if (!ok) console.error("[api] restart failed — health check timed out")
+        })
+      }
+    }, delay)
   })
 }
 
@@ -519,21 +559,17 @@ function showActivationWindow() {
   closeLoadingWindow()
   closeActivationWindow()
 
-  let adminPassword = ""
-  try {
-    const envContent = fs.readFileSync(ENV_PATH, "utf-8")
-    const m = envContent.match(/ADMIN_PASSWORD="([^"]+)"/)
-    if (m) adminPassword = m[1]
-  } catch { /* use empty fallback */ }
-
   activationWindow = new BrowserWindow({
     width: 500, height: 680, resizable: false,
     center: true, title: "Lebanon POS — Connect to Cloud",
     backgroundColor: "#f8fafc",
-    webPreferences: { nodeIntegration: true, contextIsolation: false },
+    webPreferences: {
+      preload: path.join(__dirname, "preload-activation.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
   })
 
-  const cloudUrl = CLOUD_API_URL
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -569,83 +605,74 @@ text-align:center;padding:40px 24px}
 .success-icon{font-size:48px;margin-bottom:12px}
 .success-title{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:8px}
 .success-text{font-size:14px;color:#64748b;margin-bottom:24px}
-.pin-card{background:#f1f5f9;border:2px dashed #cbd5e1;border-radius:12px;padding:16px;
-margin-bottom:20px;width:100%;max-width:320px}
-.pin-label{font-size:12px;color:#64748b;margin-bottom:4px}
-.pin-value{font-size:28px;font-weight:800;color:#0f172a;letter-spacing:6px;font-family:monospace;user-select:all}
-.pin-hint{font-size:11px;color:#94a3b8;margin-top:6px}
+.store-name{font-size:16px;font-weight:700;color:#059669;margin-bottom:4px}
 </style></head>
 <body>
 <div class="header">
 <div class="header-icon">🏪</div>
 <div class="header-text">Lebanon POS</div>
 </div>
-<p class="sub">Connect this store to the cloud to download your products, staff, and sales.</p>
+<p class="sub">Enter your store subdomain and admin PIN to connect to the cloud.</p>
 
 <div class="banner">
 <div class="banner-title">🔑 Admin password — save this</div>
-<div class="banner-pw">${adminPassword}</div>
+<div class="banner-pw" id="pw">Loading…</div>
 <div class="banner-hint">Also available from the tray icon: Show Admin Password</div>
 </div>
 
 <form id="f" class="form" onsubmit="return connect()">
 <div class="field">
 <div class="field-label">Server URL</div>
-<input class="input input-readonly" id="url" value="${cloudUrl}" readonly>
+<input class="input input-readonly" id="url" readonly>
 </div>
 <div class="field">
-<div class="field-label">Tenant ID</div>
-<input class="input" id="tid" placeholder="From the owner portal" autocomplete="off">
+<div class="field-label">Store Subdomain</div>
+<input class="input" id="sub" placeholder="e.g. fakih" autocomplete="off" pattern="[a-z0-9-]{3,}">
+<p class="hint">The subdomain from the owner portal</p>
 </div>
 <div class="field">
-<div class="field-label">Cloud API Key</div>
-<input class="input" id="key" type="password" placeholder="64-character hex key from owner portal">
-<p class="hint">Looks like: a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4</p>
-</div>
-<div class="field">
-<div class="field-label">Admin Password</div>
-<input class="input" id="pw" type="password" value="${adminPassword}">
-<p class="hint">The yellow password above — pre-filled for you</p>
+<div class="field-label">Admin PIN</div>
+<input class="input" id="pin" type="password" placeholder="Your admin PIN" autocomplete="off">
+<p class="hint">The PIN the owner gave you</p>
 </div>
 <button type="submit" class="btn" id="btn">Connect &amp; Download My Data</button>
 <div class="err" id="err"></div>
 </form>
 
 <script>
+(async function init(){
+  const pw=await window.activationAPI.getAdminPassword();
+  const url=await window.activationAPI.getCloudUrl();
+  document.getElementById('pw').textContent=pw;
+  document.getElementById('url').value=url;
+})();
 async function connect(){
   const btn=document.getElementById('btn'),err=document.getElementById('err'),
-    tid=document.getElementById('tid').value.trim(),
-    key=document.getElementById('key').value.trim(),
-    pw=document.getElementById('pw').value.trim()
-  if(tid.length<10){err.textContent='Tenant ID looks too short';err.style.display='block';return false}
-  if(key.length<32){err.textContent='Cloud API Key looks too short — it should be 64 hex characters from the owner portal (not the admin password above)';err.style.display='block';return false}
-  btn.disabled=true;btn.textContent='Connecting…';err.style.display='none'
+    sub=document.getElementById('sub').value.trim(),
+    pin=document.getElementById('pin').value.trim();
+  if(!sub){err.textContent='Enter your store subdomain';err.style.display='block';return false}
+  if(!pin){err.textContent='Enter your admin PIN';err.style.display='block';return false}
+  btn.disabled=true;btn.textContent='Connecting…';err.style.display='none';
   try{
-    const r=await fetch('${API_URL}/api/setup/cloud-config',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        tenantId:tid,
-        apiKey:key,
-        adminPassword:pw,
-      })
-    })
-    const d=await r.json()
-    if(!r.ok) throw new Error(d.error||'Connection failed')
-    if(d.pullError) throw new Error('Cloud sync failed: '+d.pullError)
+    const disc=await window.activationAPI.discover(sub,pin);
+    if(!disc.ok) throw new Error(disc.error);
+    const pw=await window.activationAPI.getAdminPassword();
+    const saved=await window.activationAPI.saveCloudConfig(disc.data.tenantId,disc.data.cloudApiKey,pw);
+    if(!saved.ok) throw new Error(saved.error);
     document.body.innerHTML='<div class="success">'+
       '<div class="success-icon">✅</div>'+
+      '<div class="store-name">'+disc.data.tenantName+'</div>'+
       '<div class="success-title">Store Connected!</div>'+
       '<div class="success-text">Your data has been downloaded. Staff will appear on the login screen.</div>'+
-      '</div>'
-    setTimeout(()=>{require('electron').ipcRenderer.send('activation-done')},2000)
+      '</div>';
+    setTimeout(()=>{window.activationAPI.done()},2000);
   }catch(e){
-    err.textContent=e.message;err.style.display='block'
-    btn.disabled=false;btn.textContent='Connect & Download My Data'
+    err.textContent=e.message;err.style.display='block';
+    btn.disabled=false;btn.textContent='Connect & Download My Data';
   }
-  return false
+  return false;
 }
-<\/script>
+</script>
 </body></html>`
   activationWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
 }
@@ -737,6 +764,50 @@ function setupAutoUpdater() {
 }
 
 // ─── IPC ─────────────────────────────────────────────────────────────────────
+
+// Activation window IPC handlers (contextIsolation-safe)
+ipcMain.handle("activation-get-password", () => {
+  try {
+    const envContent = fs.readFileSync(ENV_PATH, "utf-8")
+    const m = envContent.match(/ADMIN_PASSWORD="([^"]+)"/)
+    return m ? m[1] : ""
+  } catch { return "" }
+})
+
+ipcMain.handle("activation-get-cloud-url", () => CLOUD_API_URL)
+
+ipcMain.handle("activation-get-api-url", () => API_URL)
+
+ipcMain.handle("activation-discover", async (_event, { subdomain, pin }: { subdomain: string; pin: string }) => {
+  try {
+    const res = await fetch(`${API_URL}/api/setup/discover`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subdomain, pin }),
+    })
+    const data = await res.json() as Record<string, unknown>
+    if (!res.ok) return { ok: false, error: (data.error as string) || "Connection failed" }
+    return { ok: true, data }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Connection failed" }
+  }
+})
+
+ipcMain.handle("activation-save-cloud-config", async (_event, { tenantId, apiKey, adminPassword }: { tenantId: string; apiKey: string; adminPassword: string }) => {
+  try {
+    const res = await fetch(`${API_URL}/api/setup/cloud-config`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tenantId, apiKey, adminPassword }),
+    })
+    const data = await res.json() as Record<string, unknown>
+    if (!res.ok) return { ok: false, error: (data.error as string) || "Failed to save config" }
+    if (data.pullError) return { ok: false, error: `Cloud sync failed: ${data.pullError}` }
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Connection failed" }
+  }
+})
 
 ipcMain.handle("get-local-ip", () => {
   for (const ifaces of Object.values(os.networkInterfaces()))

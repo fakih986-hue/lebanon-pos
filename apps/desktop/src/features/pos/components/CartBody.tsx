@@ -103,6 +103,7 @@ interface Props {
   canApplyDiscount: boolean
   sellAtCost: boolean
   onToggleSellAtCost: () => void
+  isCompleting?: boolean
 }
 
 export default function CartBody({
@@ -118,7 +119,7 @@ export default function CartBody({
   itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, heldSalesItemCount,   canApplyDiscount,
-  sellAtCost, onToggleSellAtCost,
+  sellAtCost, onToggleSellAtCost, isCompleting,
 }: Props) {
   const [discountOpen, setDiscountOpen] = useState(false)
   const [heldOpen, setHeldOpen] = useState(false)
@@ -570,10 +571,10 @@ export default function CartBody({
       <button
         type="button"
         onClick={onCompleteSale}
-        disabled={checkoutBlocked}
+        disabled={checkoutBlocked || isCompleting}
         className="btn-checkout sticky bottom-0 z-10 w-full h-14 text-[16px] font-bold tracking-tight"
       >
-        {checkoutLabel}
+        {isCompleting ? "Processing..." : checkoutLabel}
       </button>
 
       </>)}

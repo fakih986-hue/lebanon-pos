@@ -45,14 +45,22 @@ router.post("/login", async (req: AuthRequest, res: ServerResponse) => {
   try {
     const { password } = (req.body as { password?: string }) || {}
     const masterPassword = process.env.ADMIN_PASSWORD ?? ""
-    // Hash both sides so comparison is always on fixed-length buffers
-    const inputHash = createHash("sha256").update(password ?? "").digest()
-    const masterHash = createHash("sha256").update(masterPassword).digest()
-    const passwordsMatch =
-      Buffer.from(password ?? "").length > 0 &&
-      masterPassword.length > 0 &&
-      timingSafeEqual(inputHash, masterHash)
-    if (!masterPassword || !passwordsMatch) {
+    const masterHash = process.env.ADMIN_PASSWORD_HASH ?? ""
+
+    let passwordsMatch = false
+
+    if (masterHash) {
+      // Bcrypt comparison (production mode)
+      passwordsMatch = masterPassword.length > 0 && Buffer.from(password ?? "").length > 0 && await bcrypt.compare(password ?? "", masterHash)
+    } else if (masterPassword) {
+      // Fallback: plaintext comparison (first-run, before hash is generated)
+      passwordsMatch = password === masterPassword
+      // Generate bcrypt hash for future use
+      const newHash = await bcrypt.hash(masterPassword, 12)
+      console.log("[admin] Generated ADMIN_PASSWORD_HASH — add to .env:", newHash)
+    }
+
+    if (!passwordsMatch) {
       json(res, { error: "Invalid admin credentials" }, 401)
       return
     }
@@ -308,7 +316,7 @@ router.post("/tenants/:id/users/:userId/reset-pin", requireAuth, requireAdmin, a
 
     await prisma.staffUser.update({
       where: { id: user.id },
-      data: { pin: await bcrypt.hash(newPin, 12) },
+      data: { pin: await bcrypt.hash(newPin, 12), pinVersion: { increment: 1 } },
     })
     json(res, { userId: user.id, name: user.name, pin: newPin })
   } catch (err) {

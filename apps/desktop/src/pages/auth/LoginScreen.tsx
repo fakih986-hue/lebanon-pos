@@ -21,7 +21,7 @@ import {
   setAuthToken,
   type KnownStore,
 } from "../../features/pos/services/sync.service"
-import { mustChangePin, updateUser } from "../../features/pos/services/security.service"
+import { updateUser } from "../../features/pos/services/security.service"
 import { showToast } from "../../features/pos/services/toast.service"
 
 function roleBadge(role: StaffUser["role"]) {
@@ -147,10 +147,6 @@ export default function LoginScreen() {
         return
       }
       setStatus(`${user.name} unlocked.`)
-      console.log("[LoginScreen] mustChangePin:", mustChangePin(user))
-      if (mustChangePin(user)) {
-        setChangePinUser(user)
-      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error"
       console.error("[LoginScreen] handleUnlock error:", err)

@@ -25,6 +25,7 @@ import {
   formatNumber,
   lbpToUsd,
   roundMoney,
+  roundLbp,
   usdToLbp,
 } from "../lib/currency"
 import {
@@ -94,6 +95,7 @@ export default function POSPage() {
   const [discountMode, setDiscountMode] = useState<DiscountMode>("USD")
   const [discountValue, setDiscountValue] = useState("")
   const [lastSale, setLastSale] = useState<LastSaleSummary | null>(null)
+  const [isCompleting, setIsCompleting] = useState(false)
   const [recentSales, setRecentSales] = useState<LastSaleSummary[]>(() => {
     try {
       const stored = localStorage.getItem("lebanonpos.recent-sales.v1")
@@ -433,7 +435,7 @@ export default function POSPage() {
       setPaidLbp("")
       return
     }
-    setPaidLbp(String(Math.round(totalLbp)))
+    setPaidLbp(String(roundLbp(totalLbp)))
     setPaidUsd("")
   }, [total, totalLbp])
 
@@ -539,7 +541,8 @@ export default function POSPage() {
   }, [])
 
   const completeSale = useCallback(function completeSale() {
-    if (checkoutBlocked) return
+    if (checkoutBlocked || isCompleting) return
+    setIsCompleting(true)
 
     const saleNumber = `S-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`
 
@@ -646,8 +649,10 @@ export default function POSPage() {
         }
       }
       setScannerStatus(`Checkout failed. Cart preserved, try again.`)
+    } finally {
+      setIsCompleting(false)
     }
-  }, [checkoutBlocked, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal])
+  }, [checkoutBlocked, isCompleting, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal])
 
   return (
     <main className="pos-workspace relative min-h-0 flex-1 overflow-hidden">
@@ -714,7 +719,8 @@ export default function POSPage() {
                 cashChangeLbp={cashChangeLbp}
                 cashStillDueUsd={cashStillDueUsd}
                 cashTenderValid={cashTenderValid}
-                checkoutBlocked={checkoutBlocked}
+                checkoutBlocked={checkoutBlocked || isCompleting}
+                isCompleting={isCompleting}
                 onCompleteSale={completeSale}
                 recentSales={recentSales as any}
                 onPrintReceipt={(s) => printLastSaleReceipt(s as any, settings)}
@@ -909,6 +915,7 @@ export default function POSPage() {
           canApplyDiscount={canApplyDiscount}
           sellAtCost={sellAtCost}
           onToggleSellAtCost={toggleSellAtCost}
+          isCompleting={isCompleting}
         />
       </div>
 
@@ -968,6 +975,7 @@ export default function POSPage() {
           canApplyDiscount={canApplyDiscount}
           sellAtCost={sellAtCost}
           onToggleSellAtCost={toggleSellAtCost}
+          isCompleting={isCompleting}
         />
       </div>
 

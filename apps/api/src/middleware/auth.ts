@@ -38,6 +38,7 @@ export interface AuthPayload {
   userId: string
   tenantId: string
   role: string
+  tokenVersion?: number
 }
 
 export interface AuthRequest extends IncomingMessage {
@@ -66,7 +67,7 @@ export function json(res: ServerResponse, data: unknown, statusCode = 200) {
   }))
 }
 
-export const requireAuth: Handler = (req, res, next) => {
+export const requireAuth: Handler = async (req, res, next) => {
   const header = req.headers.authorization
   if (!header?.startsWith("Bearer ")) {
     json(res, { error: "Missing or invalid authorization header" }, 401)
@@ -76,6 +77,22 @@ export const requireAuth: Handler = (req, res, next) => {
   try {
     const token = header.slice(7)
     const payload = jwt.verify(token, getJwtSecret()) as AuthPayload
+    // Check tokenVersion for revocation support
+    if (payload.tokenVersion) {
+      const prisma = (await import("../lib/prisma.js")).default
+      const user = await prisma.staffUser.findUnique({
+        where: { id: payload.userId },
+        select: { tokenVersion: true, active: true },
+      })
+      if (!user || !user.active) {
+        json(res, { error: "Invalid or expired token" }, 401)
+        return
+      }
+      if (user.tokenVersion !== payload.tokenVersion) {
+        json(res, { error: "Session revoked — please sign in again" }, 401)
+        return
+      }
+    }
     req.auth = payload
     next()
   } catch {

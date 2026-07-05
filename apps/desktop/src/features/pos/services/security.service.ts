@@ -30,6 +30,8 @@ export type StaffUser = {
   name: string
   mobile: string
   pin: string // SHA-256 hash
+  pinVersion?: number       // from server — increments on PIN reset
+  lastVerifiedPinVersion?: number // from last successful online login
   role: UserRole
   active: boolean
   createdAt: string
@@ -375,8 +377,11 @@ export async function unlockWithPin(pin: string) {
         const data = await res.json()
         if (data?.user?.id) {
           apiUser = users.find((u) => u.id === data.user.id) ?? null
+          const serverPinVersion = data.user.pinVersion ?? 1
           if (apiUser) {
             apiUser.pin = pinHash
+            apiUser.pinVersion = serverPinVersion
+            apiUser.lastVerifiedPinVersion = serverPinVersion
             apiUser.pinChanged = true
             writeCollection(USERS_KEY, users)
             console.log("[unlockWithPin] API verified, SHA-256 cached for", apiUser.name)
@@ -389,6 +394,8 @@ export async function unlockWithPin(pin: string) {
               name: data.user.name ?? "Staff",
               mobile: data.user.mobile ?? "",
               pin: pinHash,
+              pinVersion: serverPinVersion,
+              lastVerifiedPinVersion: serverPinVersion,
               pinChanged: true,
               role: (data.user.role as UserRole) ?? "Cashier",
               active: true,
@@ -434,27 +441,8 @@ export async function unlockWithPin(pin: string) {
   }
 
   // ── API explicitly rejected the PIN ──────────────────────────────────
-  // If the PIN was reset on the server (owner portal), the user doesn't
-  // know the new PIN yet. Allow a grace period: if the old SHA-256 hash
-  // still matches locally, let them in with a warning so the hub isn't
-  // locked out until the next successful online login with the new PIN.
+  // Server says this PIN is wrong — deny immediately.
   if (apiRejectedPin) {
-    const localMatch = users.find(
-      (u) => u.active && (u.pin === pinHash || u.pin === cleanPin)
-    )
-    if (localMatch) {
-      console.warn(
-        "[unlockWithPin] PIN rejected by server but local hash matches — " +
-          "allowing grace period for", localMatch.name
-      )
-      recordAuditEvent({
-        action: "security.login",
-        entity: "security",
-        summary: `${localMatch.name} unlocked with old PIN (server rejected — grace period).`,
-        metadata: { role: localMatch.role, gracePeriod: true },
-      })
-      return finalizeUnlock(localMatch)
-    }
     console.log("[unlockWithPin] server rejected PIN — denying login")
     recordAuditEvent({
       action: "security.login.failed",
@@ -471,28 +459,44 @@ export async function unlockWithPin(pin: string) {
   )
   console.log("[unlockWithPin] local matches:", matches.length, matches.map((u) => u.name))
 
-  const user = matches.sort(
+  // ── Check pinVersion: if PIN was reset on server since last online
+  //     login, the old PIN is no longer valid even offline.
+  const pinVersionSafe = matches.filter((u) => {
+    const pv = u.pinVersion ?? 1
+    const lv = u.lastVerifiedPinVersion ?? 1
+    const ok = pv === lv
+    if (!ok) {
+      console.log("[unlockWithPin] pinVersion mismatch for", u.name, "server:", pv, "lastVerified:", lv, "— denying offline login")
+    }
+    return ok
+  })
+
+  const user = pinVersionSafe.sort(
     (a, b) => (rolePriority[b.role] ?? 0) - (rolePriority[a.role] ?? 0)
   )[0]
 
   if (!user) {
-    console.log("[unlockWithPin] NO USER MATCHED (offline)")
-    recordAuditEvent({
-      action: "security.login.failed",
-      entity: "security",
-      summary: "Failed PIN unlock attempt.",
-    })
+    if (matches.length > 0) {
+      // Hash matched but pinVersion changed — PIN was reset
+      recordAuditEvent({
+        action: "security.login.failed",
+        entity: "security",
+        summary: "PIN unlock denied — PIN was reset on server. Connect to internet and use new PIN.",
+      })
+    } else {
+      console.log("[unlockWithPin] NO USER MATCHED (offline)")
+      recordAuditEvent({
+        action: "security.login.failed",
+        entity: "security",
+        summary: "Failed PIN unlock attempt.",
+      })
+    }
     return null
   }
 
-  console.log("[unlockWithPin] matched user (offline):", user.name, user.role, "pinChanged:", user.pinChanged)
-
+  // Upgrade plaintext PIN to SHA-256 if needed
   if (user.pin === cleanPin) {
     user.pin = pinHash
-    user.pinChanged = true
-    writeCollection(USERS_KEY, users)
-  } else if (user.pin === pinHash && !user.pinChanged) {
-    user.pinChanged = true
     writeCollection(USERS_KEY, users)
   }
 

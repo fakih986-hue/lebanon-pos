@@ -138,6 +138,8 @@ exports.Prisma.StaffUserScalarFieldEnum = {
   mobile: 'mobile',
   code: 'code',
   pin: 'pin',
+  pinVersion: 'pinVersion',
+  tokenVersion: 'tokenVersion',
   role: 'role',
   active: 'active',
   createdAt: 'createdAt',

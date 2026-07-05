@@ -97,17 +97,19 @@ model Tenant {
 }
 
 model StaffUser {
-  id        String   @id @default(uuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
-  name      String
-  mobile    String
-  code      String   @default("")
-  pin       String
-  role      UserRole
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  name         String
+  mobile       String
+  code         String   @default("")
+  pin          String
+  pinVersion   Int      @default(1)
+  tokenVersion Int      @default(1)
+  role         UserRole
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   openedShifts   Shift[]         @relation("ShiftOpener")
   closedShifts   Shift[]         @relation("ShiftCloser")

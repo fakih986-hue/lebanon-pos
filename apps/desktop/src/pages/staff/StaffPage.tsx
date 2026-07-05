@@ -85,7 +85,10 @@ function getShiftCashSales(shift: Shift | undefined, sales: Sale[]) {
 
   return sales
     .filter(
-      (sale) => sale.paymentMethod === "Cash" && saleBelongsToShift(sale, shift)
+      (sale) =>
+        sale.paymentMethod === "Cash" &&
+        sale.status !== "Voided" &&
+        saleBelongsToShift(sale, shift)
     )
     .reduce((sum, sale) => sum + sale.total, 0)
 }
@@ -527,9 +530,9 @@ export default function StaffPage() {
 
       {activeWorkspace !== "Audit" ? (
       <section
-        className={`mt-5 grid grid-cols-1 gap-5 ${
+        className={`mt-5 grid grid-cols-1 gap-4 ${
           activeWorkspace === "Team"
-            ? "xl:grid-cols-[minmax(0,1.2fr)_minmax(360px,0.8fr)]"
+            ? "items-start xl:grid-cols-[minmax(320px,430px)_minmax(0,1fr)]"
             : "xl:max-w-2xl"
         }`}
       >
@@ -566,7 +569,7 @@ export default function StaffPage() {
               </select>
             </div>
 
-            <div className="grid gap-4 p-4 lg:grid-cols-2">
+            <div className="grid gap-3 p-3">
               {filteredUsers.length === 0 ? (
                 <div className="col-span-full py-8 text-center text-sm text-zinc-500">
                   {search ? t("pos.staff.no_users_search") : t("pos.staff.no_users")}
@@ -751,7 +754,7 @@ export default function StaffPage() {
         </div>
         ) : null}
 
-        <aside className="space-y-5">
+        <aside className="min-w-0 space-y-5 xl:sticky xl:top-4">
           {activeWorkspace === "Shifts" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">

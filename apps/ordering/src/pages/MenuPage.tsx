@@ -46,6 +46,7 @@ export function MenuPage() {
   const [address, setAddress] = useState("")
   const [deliveryNote, setDeliveryNote] = useState("")
   const [deliveryFee, setDeliveryFee] = useState(2.0)
+  const [paymentMethod, setPaymentMethod] = useState("CashOnDelivery")
   const [orderError, setOrderError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const cartRef = useRef<HTMLDivElement>(null)
@@ -105,14 +106,15 @@ export function MenuPage() {
       const payload: OrderPayload = {
         tenantId, customerName, customerPhone, address,
         deliveryNote: deliveryNote || undefined, deliveryFee: deliveryFee,
-        customerId,
+        customerId, paymentMethod,
         items: cart.map((item) => ({ productId: item.product.id, productName: item.product.name, barcode: item.product.barcode ?? "", quantity: item.quantity, unitPrice: item.product.price })),
       }
       const result = await api<{ order: { orderNumber: string } }>("/api/delivery/order", { method: "POST", body: JSON.stringify(payload) })
       setCart([])
       localStorage.removeItem(`cart_${tenantSubdomain}`)
       navigate(`/order/${tenantSubdomain}/track/${result.order.orderNumber}`)
-    } catch (err: any) { setOrderError(err.message); setSubmitting(false) }
+    } catch (err: any) { setOrderError(err.message) }
+    finally { setSubmitting(false) }
   }, [tenantId, customerName, customerPhone, address, deliveryNote, deliveryFee, cart, tenantSubdomain, navigate, customerId])
 
   useEffect(() => {
@@ -198,6 +200,21 @@ export function MenuPage() {
                 className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-glass text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all" />
               <input value={deliveryNote} onChange={e => setDeliveryNote(e.target.value)} placeholder={t("ordering.delivery_note")}
                 className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-glass text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all" />
+              <div>
+                <label className="block text-xs text-secondary mb-2 font-semibold">{t("ordering.payment_method") || "Payment Method"}</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "CashOnDelivery", label: t("ordering.cash_on_delivery") || "Cash" },
+                    { value: "Card", label: t("ordering.card") || "Card" },
+                    { value: "Wallet", label: t("ordering.wallet") || "Wallet" },
+                  ].map(pm => (
+                    <button key={pm.value} type="button" onClick={() => setPaymentMethod(pm.value)}
+                      className={`py-2.5 rounded-xl text-sm font-medium transition-all ${paymentMethod === pm.value ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" : "bg-white/5 border border-glass text-secondary hover:bg-white/10"}`}>
+                      {pm.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button onClick={placeOrder} disabled={submitting || !customerName || !customerPhone || !address}
                 className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:from-emerald-500 hover:to-emerald-400 active:from-emerald-700 active:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed">
                 {submitting ? t("ordering.placing_order") : `${t("ordering.place_order")} — $${(cartTotal + deliveryFee).toFixed(2)}`}

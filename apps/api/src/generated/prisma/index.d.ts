@@ -5830,8 +5830,20 @@ export namespace Prisma {
 
   export type AggregateStaffUser = {
     _count: StaffUserCountAggregateOutputType | null
+    _avg: StaffUserAvgAggregateOutputType | null
+    _sum: StaffUserSumAggregateOutputType | null
     _min: StaffUserMinAggregateOutputType | null
     _max: StaffUserMaxAggregateOutputType | null
+  }
+
+  export type StaffUserAvgAggregateOutputType = {
+    pinVersion: number | null
+    tokenVersion: number | null
+  }
+
+  export type StaffUserSumAggregateOutputType = {
+    pinVersion: number | null
+    tokenVersion: number | null
   }
 
   export type StaffUserMinAggregateOutputType = {
@@ -5841,6 +5853,8 @@ export namespace Prisma {
     mobile: string | null
     code: string | null
     pin: string | null
+    pinVersion: number | null
+    tokenVersion: number | null
     role: $Enums.UserRole | null
     active: boolean | null
     createdAt: Date | null
@@ -5854,6 +5868,8 @@ export namespace Prisma {
     mobile: string | null
     code: string | null
     pin: string | null
+    pinVersion: number | null
+    tokenVersion: number | null
     role: $Enums.UserRole | null
     active: boolean | null
     createdAt: Date | null
@@ -5867,6 +5883,8 @@ export namespace Prisma {
     mobile: number
     code: number
     pin: number
+    pinVersion: number
+    tokenVersion: number
     role: number
     active: number
     createdAt: number
@@ -5875,6 +5893,16 @@ export namespace Prisma {
   }
 
 
+  export type StaffUserAvgAggregateInputType = {
+    pinVersion?: true
+    tokenVersion?: true
+  }
+
+  export type StaffUserSumAggregateInputType = {
+    pinVersion?: true
+    tokenVersion?: true
+  }
+
   export type StaffUserMinAggregateInputType = {
     id?: true
     tenantId?: true
@@ -5882,6 +5910,8 @@ export namespace Prisma {
     mobile?: true
     code?: true
     pin?: true
+    pinVersion?: true
+    tokenVersion?: true
     role?: true
     active?: true
     createdAt?: true
@@ -5895,6 +5925,8 @@ export namespace Prisma {
     mobile?: true
     code?: true
     pin?: true
+    pinVersion?: true
+    tokenVersion?: true
     role?: true
     active?: true
     createdAt?: true
@@ -5908,6 +5940,8 @@ export namespace Prisma {
     mobile?: true
     code?: true
     pin?: true
+    pinVersion?: true
+    tokenVersion?: true
     role?: true
     active?: true
     createdAt?: true
@@ -5953,6 +5987,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: StaffUserAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: StaffUserSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: StaffUserMinAggregateInputType
@@ -5983,6 +6029,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: StaffUserCountAggregateInputType | true
+    _avg?: StaffUserAvgAggregateInputType
+    _sum?: StaffUserSumAggregateInputType
     _min?: StaffUserMinAggregateInputType
     _max?: StaffUserMaxAggregateInputType
   }
@@ -5994,11 +6042,15 @@ export namespace Prisma {
     mobile: string
     code: string
     pin: string
+    pinVersion: number
+    tokenVersion: number
     role: $Enums.UserRole
     active: boolean
     createdAt: Date
     updatedAt: Date
     _count: StaffUserCountAggregateOutputType | null
+    _avg: StaffUserAvgAggregateOutputType | null
+    _sum: StaffUserSumAggregateOutputType | null
     _min: StaffUserMinAggregateOutputType | null
     _max: StaffUserMaxAggregateOutputType | null
   }
@@ -6024,6 +6076,8 @@ export namespace Prisma {
     mobile?: boolean
     code?: boolean
     pin?: boolean
+    pinVersion?: boolean
+    tokenVersion?: boolean
     role?: boolean
     active?: boolean
     createdAt?: boolean
@@ -6043,6 +6097,8 @@ export namespace Prisma {
     mobile?: boolean
     code?: boolean
     pin?: boolean
+    pinVersion?: boolean
+    tokenVersion?: boolean
     role?: boolean
     active?: boolean
     createdAt?: boolean
@@ -6057,6 +6113,8 @@ export namespace Prisma {
     mobile?: boolean
     code?: boolean
     pin?: boolean
+    pinVersion?: boolean
+    tokenVersion?: boolean
     role?: boolean
     active?: boolean
     createdAt?: boolean
@@ -6071,13 +6129,15 @@ export namespace Prisma {
     mobile?: boolean
     code?: boolean
     pin?: boolean
+    pinVersion?: boolean
+    tokenVersion?: boolean
     role?: boolean
     active?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type StaffUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "code" | "pin" | "role" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["staffUser"]>
+  export type StaffUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "code" | "pin" | "pinVersion" | "tokenVersion" | "role" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["staffUser"]>
   export type StaffUserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedShifts?: boolean | StaffUser$openedShiftsArgs<ExtArgs>
@@ -6109,6 +6169,8 @@ export namespace Prisma {
       mobile: string
       code: string
       pin: string
+      pinVersion: number
+      tokenVersion: number
       role: $Enums.UserRole
       active: boolean
       createdAt: Date
@@ -6547,6 +6609,8 @@ export namespace Prisma {
     readonly mobile: FieldRef<"StaffUser", 'String'>
     readonly code: FieldRef<"StaffUser", 'String'>
     readonly pin: FieldRef<"StaffUser", 'String'>
+    readonly pinVersion: FieldRef<"StaffUser", 'Int'>
+    readonly tokenVersion: FieldRef<"StaffUser", 'Int'>
     readonly role: FieldRef<"StaffUser", 'UserRole'>
     readonly active: FieldRef<"StaffUser", 'Boolean'>
     readonly createdAt: FieldRef<"StaffUser", 'DateTime'>
@@ -40243,6 +40307,8 @@ export namespace Prisma {
     mobile: 'mobile',
     code: 'code',
     pin: 'pin',
+    pinVersion: 'pinVersion',
+    tokenVersion: 'tokenVersion',
     role: 'role',
     active: 'active',
     createdAt: 'createdAt',
@@ -40841,6 +40907,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Int'
+   */
+  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+    
+
+
+  /**
+   * Reference to a field of type 'Int[]'
+   */
+  export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+  /**
    * Reference to a field of type 'UserRole'
    */
   export type EnumUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserRole'>
@@ -40865,20 +40945,6 @@ export namespace Prisma {
    * Reference to a field of type 'Decimal[]'
    */
   export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Int'
-   */
-  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
-    
-
-
-  /**
-   * Reference to a field of type 'Int[]'
-   */
-  export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
 
@@ -41177,6 +41243,8 @@ export namespace Prisma {
     mobile?: StringFilter<"StaffUser"> | string
     code?: StringFilter<"StaffUser"> | string
     pin?: StringFilter<"StaffUser"> | string
+    pinVersion?: IntFilter<"StaffUser"> | number
+    tokenVersion?: IntFilter<"StaffUser"> | number
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
@@ -41195,6 +41263,8 @@ export namespace Prisma {
     mobile?: SortOrder
     code?: SortOrder
     pin?: SortOrder
+    pinVersion?: SortOrder
+    tokenVersion?: SortOrder
     role?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
@@ -41217,6 +41287,8 @@ export namespace Prisma {
     mobile?: StringFilter<"StaffUser"> | string
     code?: StringFilter<"StaffUser"> | string
     pin?: StringFilter<"StaffUser"> | string
+    pinVersion?: IntFilter<"StaffUser"> | number
+    tokenVersion?: IntFilter<"StaffUser"> | number
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
@@ -41235,13 +41307,17 @@ export namespace Prisma {
     mobile?: SortOrder
     code?: SortOrder
     pin?: SortOrder
+    pinVersion?: SortOrder
+    tokenVersion?: SortOrder
     role?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: StaffUserCountOrderByAggregateInput
+    _avg?: StaffUserAvgOrderByAggregateInput
     _max?: StaffUserMaxOrderByAggregateInput
     _min?: StaffUserMinOrderByAggregateInput
+    _sum?: StaffUserSumOrderByAggregateInput
   }
 
   export type StaffUserScalarWhereWithAggregatesInput = {
@@ -41254,6 +41330,8 @@ export namespace Prisma {
     mobile?: StringWithAggregatesFilter<"StaffUser"> | string
     code?: StringWithAggregatesFilter<"StaffUser"> | string
     pin?: StringWithAggregatesFilter<"StaffUser"> | string
+    pinVersion?: IntWithAggregatesFilter<"StaffUser"> | number
+    tokenVersion?: IntWithAggregatesFilter<"StaffUser"> | number
     role?: EnumUserRoleWithAggregatesFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolWithAggregatesFilter<"StaffUser"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"StaffUser"> | Date | string
@@ -44124,6 +44202,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -44142,6 +44222,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -44158,6 +44240,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -44176,6 +44260,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -44193,6 +44279,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -44205,6 +44293,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -44218,6 +44308,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -47548,6 +47640,17 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
   export type EnumUserRoleFilter<$PrismaModel = never> = {
     equals?: $Enums.UserRole | EnumUserRoleFieldRefInput<$PrismaModel>
     in?: $Enums.UserRole[] | ListEnumUserRoleFieldRefInput<$PrismaModel>
@@ -47572,10 +47675,17 @@ export namespace Prisma {
     mobile?: SortOrder
     code?: SortOrder
     pin?: SortOrder
+    pinVersion?: SortOrder
+    tokenVersion?: SortOrder
     role?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type StaffUserAvgOrderByAggregateInput = {
+    pinVersion?: SortOrder
+    tokenVersion?: SortOrder
   }
 
   export type StaffUserMaxOrderByAggregateInput = {
@@ -47585,6 +47695,8 @@ export namespace Prisma {
     mobile?: SortOrder
     code?: SortOrder
     pin?: SortOrder
+    pinVersion?: SortOrder
+    tokenVersion?: SortOrder
     role?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
@@ -47598,10 +47710,33 @@ export namespace Prisma {
     mobile?: SortOrder
     code?: SortOrder
     pin?: SortOrder
+    pinVersion?: SortOrder
+    tokenVersion?: SortOrder
     role?: SortOrder
     active?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type StaffUserSumOrderByAggregateInput = {
+    pinVersion?: SortOrder
+    tokenVersion?: SortOrder
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type EnumUserRoleWithAggregatesFilter<$PrismaModel = never> = {
@@ -47623,17 +47758,6 @@ export namespace Prisma {
     gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     not?: NestedDecimalFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string
-  }
-
-  export type IntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
   }
 
   export type AppSettingsCountOrderByAggregateInput = {
@@ -47723,22 +47847,6 @@ export namespace Prisma {
     _sum?: NestedDecimalFilter<$PrismaModel>
     _min?: NestedDecimalFilter<$PrismaModel>
     _max?: NestedDecimalFilter<$PrismaModel>
-  }
-
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type IntNullableFilter<$PrismaModel = never> = {
@@ -50840,6 +50948,14 @@ export namespace Prisma {
     connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
   }
 
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type EnumUserRoleFieldUpdateOperationsInput = {
     set?: $Enums.UserRole
   }
@@ -50976,14 +51092,6 @@ export namespace Prisma {
     decrement?: Decimal | DecimalJsLike | number | string
     multiply?: Decimal | DecimalJsLike | number | string
     divide?: Decimal | DecimalJsLike | number | string
-  }
-
-  export type IntFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type TenantUpdateOneRequiredWithoutSettingsNestedInput = {
@@ -52512,6 +52620,33 @@ export namespace Prisma {
     not?: NestedEnumUserRoleFilter<$PrismaModel> | $Enums.UserRole
   }
 
+  export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
+  export type NestedFloatFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel>
+    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
   export type NestedEnumUserRoleWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.UserRole | EnumUserRoleFieldRefInput<$PrismaModel>
     in?: $Enums.UserRole[] | ListEnumUserRoleFieldRefInput<$PrismaModel>
@@ -52547,33 +52682,6 @@ export namespace Prisma {
     _sum?: NestedDecimalFilter<$PrismaModel>
     _min?: NestedDecimalFilter<$PrismaModel>
     _max?: NestedDecimalFilter<$PrismaModel>
-  }
-
-  export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
-  }
-
-  export type NestedFloatFilter<$PrismaModel = never> = {
-    equals?: number | FloatFieldRefInput<$PrismaModel>
-    in?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListFloatFieldRefInput<$PrismaModel>
-    lt?: number | FloatFieldRefInput<$PrismaModel>
-    lte?: number | FloatFieldRefInput<$PrismaModel>
-    gt?: number | FloatFieldRefInput<$PrismaModel>
-    gte?: number | FloatFieldRefInput<$PrismaModel>
-    not?: NestedFloatFilter<$PrismaModel> | number
   }
 
   export type NestedIntNullableFilter<$PrismaModel = never> = {
@@ -52911,6 +53019,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -52927,6 +53037,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -53883,6 +53995,8 @@ export namespace Prisma {
     mobile?: StringFilter<"StaffUser"> | string
     code?: StringFilter<"StaffUser"> | string
     pin?: StringFilter<"StaffUser"> | string
+    pinVersion?: IntFilter<"StaffUser"> | number
+    tokenVersion?: IntFilter<"StaffUser"> | number
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
@@ -58623,6 +58737,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -58640,6 +58756,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -58660,6 +58778,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -58677,6 +58797,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -58781,6 +58903,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -58798,6 +58922,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -58824,6 +58950,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -58841,6 +58969,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59063,6 +59193,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -59080,6 +59212,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -59184,6 +59318,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -59201,6 +59337,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -60324,6 +60462,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -60341,6 +60481,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -60518,6 +60660,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -60535,6 +60679,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61270,6 +61416,8 @@ export namespace Prisma {
     mobile: string
     code?: string
     pin: string
+    pinVersion?: number
+    tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
     createdAt?: Date | string
@@ -61599,6 +61747,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61615,6 +61765,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -61631,6 +61783,8 @@ export namespace Prisma {
     mobile?: StringFieldUpdateOperationsInput | string
     code?: StringFieldUpdateOperationsInput | string
     pin?: StringFieldUpdateOperationsInput | string
+    pinVersion?: IntFieldUpdateOperationsInput | number
+    tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string

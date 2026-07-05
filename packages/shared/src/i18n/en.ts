@@ -232,6 +232,8 @@ export const en = {
   "driver.whatsapp_message": "Hi {customerName}, I'm your delivery driver for order {orderNumber}. I'm on my way!",
   "driver.change": "Change: ${amount}",
   "driver.call": "CALL",
+  "driver.reject": "Reject",
+  "driver.rejected": "Order rejected",
 
   /* Ordering Customer */
   "ordering.find_store": "Find Store",
@@ -297,6 +299,9 @@ export const en = {
   "ordering.order_summary": "Order Summary",
   "ordering.payment": "Payment",
   "ordering.cash_on_delivery": "Cash on Delivery",
+  "ordering.card": "Card",
+  "ordering.wallet": "Wallet",
+  "ordering.payment_method": "Payment Method",
   "ordering.prepare_cash": "Please prepare this amount for the driver",
   "ordering.delivering_to": "Delivering to",
   "ordering.contact_store": "Contact Store via WhatsApp",
@@ -912,6 +917,11 @@ export const en = {
   "pos.staff.pin_too_short": "PIN must be at least 4 digits",
   "pos.staff.pin_updated": "PIN updated successfully",
   "pos.staff.save_pin": "Save PIN",
+  "pos.staff.save": "Save",
+  "nav.staff_team": "Team",
+  "nav.staff_audit": "Audit",
+  "nav.tenants": "Tenants",
+  "delivery.search_driver": "Search driver...",
 
   /* POS - Accounting Page */
   "pos.accounting.category_supplier": "Supplier",

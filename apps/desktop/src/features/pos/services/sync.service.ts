@@ -722,6 +722,7 @@ async function _pullFromServer(full = false) {
       // bcrypt hashes which are useless for offline SHA-256 matching
       const usersTarget = PULL_TARGETS.users
       const priorPins: Record<string, string> = {}
+      const priorVerifiedVersions: Record<string, number> = {}
       if (usersTarget) {
         const raw = localStorage.getItem(usersTarget.key)
         if (raw) {
@@ -731,6 +732,9 @@ async function _pullFromServer(full = false) {
               for (const u of local) {
                 if (u?.id && u?.pin && !String(u.pin).startsWith("$2")) {
                   priorPins[u.id] = u.pin
+                }
+                if (u?.id && u?.lastVerifiedPinVersion) {
+                  priorVerifiedVersions[u.id] = u.lastVerifiedPinVersion
                 }
               }
             }
@@ -745,8 +749,8 @@ async function _pullFromServer(full = false) {
         }
       }
 
-      // Restore local SHA-256 pins overwritten by server bcrypt hashes
-      if (usersTarget && Object.keys(priorPins).length > 0) {
+      // Restore local SHA-256 pins + update pinVersion from server
+      if (usersTarget) {
         const raw = localStorage.getItem(usersTarget.key)
         if (raw) {
           try {
@@ -754,8 +758,18 @@ async function _pullFromServer(full = false) {
             if (Array.isArray(users)) {
               let changed = false
               for (const u of users) {
+                // Restore SHA-256 pin if server returned bcrypt
                 if (u?.id && priorPins[u.id] && String(u.pin ?? "").startsWith("$2")) {
                   u.pin = priorPins[u.id]
+                  changed = true
+                }
+                // Update pinVersion from server (authoritative source)
+                if (u?.id && typeof u.pinVersion === "number") {
+                  // pinVersion is already set from server pull
+                }
+                // Restore lastVerifiedPinVersion from before pull
+                if (u?.id && priorVerifiedVersions[u.id]) {
+                  u.lastVerifiedPinVersion = priorVerifiedVersions[u.id]
                   changed = true
                 }
               }
@@ -860,8 +874,11 @@ async function _incrementalPull(apiUrl: string, token: string): Promise<void> {
                   key === "users" && !String(merged[idx].pin ?? "").startsWith("$2")
                     ? merged[idx].pin
                     : undefined
+                const localVerifiedVersion =
+                  key === "users" ? merged[idx].lastVerifiedPinVersion : undefined
                 merged[idx] = item
                 if (localPin !== undefined) merged[idx].pin = localPin
+                if (localVerifiedVersion !== undefined) merged[idx].lastVerifiedPinVersion = localVerifiedVersion
               } else merged.push(item)
             }
           }

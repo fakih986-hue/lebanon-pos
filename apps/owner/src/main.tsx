@@ -123,8 +123,6 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
   const [creating, setCreating] = useState(false)
   const [createdResult, setCreatedResult] = useState<{ tenantId: string; subdomain: string; pin: string; cloudApiKey: string } | null>(null)
   const [formError, setFormError] = useState("")
-  const [revealedApiKey, setRevealedApiKey] = useState<string | null>(null)
-  const [revealLoading, setRevealLoading] = useState(false)
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
   const [editForm, setEditForm] = useState({ name: "", subdomain: "", suspended: false })
   const [saving, setSaving] = useState(false)
@@ -230,45 +228,24 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
     setSaving(false)
   }
 
-  async function handleRevealApiKey(tenantId: string) {
-    setRevealLoading(true)
-    try {
-      const tenant = await api<{ id: string; cloudApiKey: string }>(`/api/admin/tenants/${tenantId}`)
-      setRevealedApiKey(tenant.cloudApiKey || "(none)")
-    } catch { setRevealedApiKey("(failed to load)") }
-    setRevealLoading(false)
-  }
-
   if (createdResult) {
     return (
-      <div className="max-w-2xl mx-auto py-12 px-4">
+      <div className="max-w-md mx-auto py-12 px-4">
         <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 text-center">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           </div>
           <h2 className="text-xl font-bold mb-2 text-white">Store Created!</h2>
-          <p className="text-sm text-slate-400 mb-2">Give these to the store owner. <span className="text-amber-400 font-semibold">Shown once — copy them now.</span></p>
-          <p className="text-xs text-slate-500 mb-6">PIN = login on the device. Tenant ID + Cloud Key = enter in Settings → Cloud to sync.</p>
-          <div className="max-w-md mx-auto space-y-3 mb-6 text-left">
+          <p className="text-sm text-slate-400 mb-6">Give these <span className="text-amber-400 font-semibold">two values</span> to the store owner. They enter them in the desktop app to connect.</p>
+          <div className="max-w-xs mx-auto space-y-3 mb-6 text-left">
             <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Server URL (pre-set in app)</p>
-              <p className="text-sm font-bold font-mono text-white break-all">https://lebanon-pos-production.up.railway.app</p>
-            </div>
-            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Subdomain</p>
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Store Subdomain</p>
               <p className="text-lg font-bold font-mono tracking-wider text-white break-all select-all">{createdResult.subdomain}</p>
             </div>
-            <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-slate-500">Admin PIN</p>
-              <p className="text-lg font-bold font-mono tracking-widest text-white select-all">{createdResult.pin}</p>
-            </div>
-            <div className="bg-slate-800 rounded-xl p-4 border border-indigo-700/50">
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-indigo-400">Tenant ID (Settings → Cloud)</p>
-              <p className="text-xs font-bold font-mono text-white break-all select-all">{createdResult.tenantId}</p>
-            </div>
-            <div className="bg-slate-800 rounded-xl p-4 border border-indigo-700/50">
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-indigo-400">Cloud API Key (Settings → Cloud)</p>
-              <p className="text-xs font-bold font-mono text-white break-all select-all">{createdResult.cloudApiKey}</p>
+            <div className="bg-slate-800 rounded-xl p-4 border border-emerald-700/50">
+              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-emerald-400">Admin PIN</p>
+              <p className="text-2xl font-bold font-mono tracking-widest text-white select-all">{createdResult.pin}</p>
+              <p className="text-[10px] text-slate-500 mt-2">Used to log in on the desktop app</p>
             </div>
           </div>
           <button onClick={() => setCreatedResult(null)} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm">Create Another Store</button>
@@ -340,7 +317,6 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                 <div>
                   <p className="font-semibold text-sm text-white">{t.name}</p>
                   <p className="text-xs font-mono text-slate-500">/{t.subdomain}</p>
-                  <p className="text-[10px] font-mono text-slate-600 cursor-default select-all" title="Triple-click to copy Tenant ID">{t.id}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -351,7 +327,6 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                 </div>
                 {t.suspended && <span className="text-[10px] uppercase tracking-wider font-bold text-rose-400 bg-rose-500/10 px-2 py-1 rounded-lg">Suspended</span>}
                 <button onClick={() => openStaff(t)} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700">Staff</button>
-                <button onClick={() => handleRevealApiKey(t.id)} disabled={revealLoading} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700" title="Show Cloud API Key">🔑</button>
                 <button onClick={() => openEdit(t)} className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors border border-slate-700">Edit</button>
               </div>
             </div>
@@ -396,19 +371,6 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                 </div>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {revealedApiKey !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setRevealedApiKey(null)}>
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
-            <h2 className="font-semibold text-white mb-2">Cloud API Key</h2>
-            <p className="text-xs text-slate-400 mb-4">Used in Settings → Cloud on the hub device.</p>
-            <div className="bg-slate-800 rounded-xl p-4 border border-indigo-700/50 mb-4">
-              <p className="text-xs font-bold font-mono text-white break-all select-all">{revealedApiKey}</p>
-            </div>
-            <button onClick={() => setRevealedApiKey(null)} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm">Got it</button>
           </div>
         </div>
       )}

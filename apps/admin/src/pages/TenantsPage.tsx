@@ -6,6 +6,7 @@ type Tenant = {
   id: string
   name: string
   subdomain: string
+  suspended: boolean
   createdAt: string
   _count: { users: number; products: number; sales: number }
 }
@@ -28,6 +29,19 @@ export function TenantsPage() {
   const [creating, setCreating] = useState(false)
   const [createdResult, setCreatedResult] = useState<{ subdomain: string; pin: string } | null>(null)
   const [formError, setFormError] = useState("")
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
+  const [editForm, setEditForm] = useState({ name: "", subdomain: "", suspended: false })
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState("")
+  const [toggling, setToggling] = useState<string | null>(null)
+
+  function copyToClipboard(text: string, field: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(field)
+      setTimeout(() => setCopiedField(null), 2000)
+    }).catch(() => { /* clipboard not available */ })
+  }
 
   useEffect(() => { loadTenants() }, [])
 
@@ -60,6 +74,65 @@ export function TenantsPage() {
     setCreating(false)
   }
 
+  async function toggleSuspended(tenant: Tenant) {
+    setToggling(tenant.id)
+    try {
+      await api(`/api/admin/tenants/${tenant.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ suspended: !tenant.suspended }),
+      })
+      loadTenants()
+    } catch (err) {
+      setError((err as Error).message)
+    }
+    setToggling(null)
+  }
+
+  function openEdit(tenant: Tenant) {
+    setEditingTenant(tenant)
+    setEditForm({ name: tenant.name, subdomain: tenant.subdomain, suspended: tenant.suspended })
+    setSaveError("")
+  }
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!editingTenant) return
+    setSaveError("")
+    setSaving(true)
+    try {
+      await api(`/api/admin/tenants/${editingTenant.id}`, {
+        method: "PUT",
+        body: JSON.stringify(editForm),
+      })
+      loadTenants()
+      setEditingTenant(null)
+    } catch (err) {
+      setSaveError((err as Error).message)
+    }
+    setSaving(false)
+  }
+
+  async function handleDelete() {
+    if (!editingTenant) return
+    const typed = window.prompt(
+      `This permanently deletes "${editingTenant.name}" and ALL its data (sales, products, staff, customers). This cannot be undone.\n\nType the subdomain "${editingTenant.subdomain}" to confirm:`
+    )
+    if (typed !== editingTenant.subdomain) {
+      if (typed !== null) setSaveError("Confirmation text did not match — not deleted.")
+      return
+    }
+    setSaveError("")
+    setSaving(true)
+    try {
+      await api(`/api/admin/tenants/${editingTenant.id}`, { method: "DELETE" })
+      loadTenants()
+      setEditingTenant(null)
+    } catch (err) {
+      setSaveError((err as Error).message)
+    }
+    setSaving(false)
+  }
+
   if (createdResult) {
     return (
       <div className="max-w-2xl mx-auto py-12">
@@ -77,13 +150,23 @@ export function TenantsPage() {
               <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "var(--text-muted)" }}>{t("admin.server_url")}</p>
               <p className="text-sm font-bold font-mono" style={{ color: "var(--text-primary)" }}>https://lebanon-pos-production.up.railway.app</p>
             </div>
-            <div className="bg-slate-50 dark:bg-white/[0.04] rounded-xl p-4 border border-slate-200 dark:border-white/[0.06]">
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "var(--text-muted)" }}>{t("admin.subdomain")}</p>
-              <p className="text-lg font-bold font-mono tracking-wider" style={{ color: "var(--text-primary)" }}>{createdResult.subdomain}</p>
+            <div className="bg-slate-50 dark:bg-white/[0.04] rounded-xl p-4 border border-slate-200 dark:border-white/[0.06] flex items-center justify-between gap-2">
+              <div className="text-left">
+                <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "var(--text-muted)" }}>{t("admin.subdomain")}</p>
+                <p className="text-lg font-bold font-mono tracking-wider" style={{ color: "var(--text-primary)" }}>{createdResult.subdomain}</p>
+              </div>
+              <button onClick={() => copyToClipboard(createdResult.subdomain, "subdomain")} className="px-3 py-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 text-xs font-medium hover:bg-indigo-200 dark:hover:bg-indigo-500/30 transition-colors shrink-0">
+                {copiedField === "subdomain" ? "✓ Copied" : "Copy"}
+              </button>
             </div>
-            <div className="bg-slate-50 dark:bg-white/[0.04] rounded-xl p-4 border border-slate-200 dark:border-white/[0.06]">
-              <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "var(--text-muted)" }}>{t("admin.admin_pin")}</p>
-              <p className="text-lg font-bold font-mono tracking-widest" style={{ color: "var(--text-primary)" }}>{createdResult.pin}</p>
+            <div className="bg-slate-50 dark:bg-white/[0.04] rounded-xl p-4 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-between gap-2">
+              <div className="text-left">
+                <p className="text-[10px] uppercase tracking-wider font-semibold mb-1 text-emerald-600 dark:text-emerald-400">{t("admin.admin_pin")}</p>
+                <p className="text-2xl font-bold font-mono tracking-widest" style={{ color: "var(--text-primary)" }}>{createdResult.pin}</p>
+              </div>
+              <button onClick={() => copyToClipboard(createdResult.pin, "pin")} className="px-3 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 text-xs font-medium hover:bg-emerald-200 dark:hover:bg-emerald-500/30 transition-colors shrink-0">
+                {copiedField === "pin" ? "✓ Copied" : "Copy"}
+              </button>
             </div>
           </div>
 
@@ -168,30 +251,69 @@ export function TenantsPage() {
       ) : (
         <div className="space-y-3">
           {tenants.map(tenant => (
-            <div key={tenant.id} className="data-card flex items-center justify-between hover:shadow-md transition-shadow">
+            <div key={tenant.id} className={`data-card flex items-center justify-between hover:shadow-md transition-shadow ${tenant.suspended ? "border border-rose-500/30 bg-rose-500/5" : ""}`}>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0 ${tenant.suspended ? "bg-rose-600" : "bg-gradient-to-br from-indigo-400 to-violet-600"}`}>
                     {tenant.name.charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{tenant.name}</p>
+                    <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{tenant.name} {tenant.suspended && <span className="text-[10px] text-rose-400 font-bold ml-1">SUSPENDED</span>}</p>
                     <p className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>/{tenant.subdomain}</p>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4">
                 <div className="flex gap-4 text-xs" style={{ color: "var(--text-muted)" }}>
                   <span>{tenant._count.users} {t("admin.staff_count")}</span>
                   <span>{tenant._count.products} {t("admin.products_count")}</span>
                   <span>{tenant._count.sales} {t("admin.sales_count")}</span>
                 </div>
-                <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-                  {new Date(tenant.createdAt).toLocaleDateString()}
-                </span>
+                <button onClick={() => toggleSuspended(tenant)} disabled={toggling === tenant.id} className="text-xs px-2 py-1 rounded-lg border border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors disabled:opacity-50">
+                  {tenant.suspended ? "Unsuspend" : "Suspend"}
+                </button>
+                <button onClick={() => openEdit(tenant)} className="text-xs px-2 py-1 rounded-lg border border-slate-300 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">
+                  {t("admin.edit")}
+                </button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingTenant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setEditingTenant(null)}>
+          <div className="data-card w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-bold mb-4" style={{ color: "var(--text-primary)" }}>{t("admin.edit_store")}</h2>
+            {saveError && <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm rounded-xl">{saveError}</div>}
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "var(--text-secondary)" }}>{t("admin.store_name")}</label>
+                <input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} required className="input-field" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "var(--text-secondary)" }}>{t("admin.subdomain")}</label>
+                <input value={editForm.subdomain} onChange={e => setEditForm({ ...editForm, subdomain: e.target.value.replace(/[^a-z0-9-]/g, "") })} required pattern="[a-z0-9-]{3,}" className="input-field" />
+              </div>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => setEditForm({ ...editForm, suspended: !editForm.suspended })} className={`w-11 h-6 rounded-full transition-colors ${editForm.suspended ? "bg-rose-600" : "bg-slate-300 dark:bg-slate-600"} relative`}>
+                  <div className={`w-4 h-4 rounded-full bg-white transition-transform mt-1 ${editForm.suspended ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{t("admin.suspended")}</p>
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>{t("admin.suspended_desc")}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <button type="button" onClick={handleDelete} disabled={saving} className="px-4 py-2 rounded-xl bg-rose-600/10 text-rose-600 dark:text-rose-400 text-sm border border-rose-600/30 hover:bg-rose-600/20 transition-colors disabled:opacity-50">{t("admin.delete_store")}</button>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setEditingTenant(null)} className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/5 text-sm border border-slate-300 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors">{t("admin.cancel")}</button>
+                  <button type="submit" disabled={saving} className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors disabled:opacity-50">{saving ? t("admin.saving") : t("admin.save_changes")}</button>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

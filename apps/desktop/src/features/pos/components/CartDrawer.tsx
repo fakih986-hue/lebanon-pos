@@ -78,6 +78,7 @@ interface Props {
   canApplyDiscount: boolean
   sellAtCost: boolean
   onToggleSellAtCost: () => void
+  isCompleting?: boolean
 }
 
 export default function CartDrawer({
@@ -93,7 +94,7 @@ export default function CartDrawer({
   itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, heldSalesItemCount, canApplyDiscount,
-  sellAtCost, onToggleSellAtCost,
+  sellAtCost, onToggleSellAtCost, isCompleting,
 }: Props) {
   const { t, dir } = useI18n()
   const drawerX = dir === "rtl" ? "-100%" : "100%"
@@ -229,12 +230,13 @@ export default function CartDrawer({
               cashStillDueUsd={cashStillDueUsd}
               cashTenderValid={cashTenderValid}
               creditLimitExceeded={creditLimitExceeded}
-              checkoutBlocked={checkoutBlocked}
+              checkoutBlocked={checkoutBlocked || isCompleting}
               hasDiscount={hasDiscount}
               heldSalesItemCount={heldSalesItemCount}
               canApplyDiscount={canApplyDiscount}
               sellAtCost={sellAtCost}
               onToggleSellAtCost={onToggleSellAtCost}
+              isCompleting={isCompleting}
             />
           </MotionAside>
         </div>

@@ -14,7 +14,8 @@ export async function api<T>(path: string, options?: RequestInit): Promise<T> {
   })
   if (res.status === 401) {
     clearToken()
-    window.location.href = "/driver/login"
+    const store = localStorage.getItem("lebanonpos.driver.store")
+    window.location.href = store ? `/${store}/login` : "/"
     throw new Error("Session expired")
   }
   if (!res.ok) {

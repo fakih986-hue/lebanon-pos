@@ -72,6 +72,7 @@ interface Props {
   onCartOpen?: () => void
   sellAtCost: boolean
   onToggleSellAtCost: () => void
+  isCompleting?: boolean
 }
 
 export default function CartPanel({
@@ -126,6 +127,7 @@ export default function CartPanel({
   canApplyDiscount,
   sellAtCost,
   onToggleSellAtCost,
+  isCompleting,
 }: Props) {
   const { t } = useI18n()
 
@@ -244,6 +246,7 @@ export default function CartPanel({
         canApplyDiscount={canApplyDiscount}
         sellAtCost={sellAtCost}
         onToggleSellAtCost={onToggleSellAtCost}
+        isCompleting={isCompleting}
       />
     </aside>
   )

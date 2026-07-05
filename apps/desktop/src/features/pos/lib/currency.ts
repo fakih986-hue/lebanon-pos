@@ -30,7 +30,7 @@ export function formatNumber(value: number) {
  * e.g. roundMoney(10.50 * 0.11) → 1.16  (not 1.1550000000000001)
  */
 export function roundMoney(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100
+  return Math.round((value + (value >= 0 ? Number.EPSILON : -Number.EPSILON)) * 100) / 100
 }
 
 export function usdToLbp(value: number, exchangeRate: number) {

@@ -104,6 +104,8 @@ model StaffUser {
   mobile    String
   code      String   @default("")
   pin       String
+  pinVersion Int     @default(1)
+  tokenVersion Int   @default(1)
   role      UserRole
   active    Boolean  @default(true)
   createdAt DateTime @default(now())

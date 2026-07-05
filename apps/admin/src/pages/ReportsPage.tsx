@@ -40,13 +40,20 @@ type DebtAgingData = {
 function downloadCsv(url: string, filename: string) {
   const token = getToken()
   fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
-    .then(r => r.blob())
+    .then(r => {
+      if (!r.ok) throw new Error(`Download failed: ${r.status}`)
+      return r.blob()
+    })
     .then(blob => {
       const a = document.createElement("a")
       a.href = URL.createObjectURL(blob)
       a.download = filename
       a.click()
       URL.revokeObjectURL(a.href)
+    })
+    .catch(err => {
+      console.error("[downloadCsv] Error:", err)
+      alert(`Failed to download: ${err.message}`)
     })
 }
 
@@ -74,6 +81,7 @@ export function ReportsPage() {
   // Low stock
   const [lowStock, setLowStock] = useState<LowStockItem[]>([])
   const [lowStockLoading, setLowStockLoading] = useState(false)
+  const [lowStockError, setLowStockError] = useState<string | null>(null)
 
   // X report
   const [xReport, setXReport] = useState<XReportData | null>(null)
@@ -83,6 +91,7 @@ export function ReportsPage() {
   // Z report
   const [zReport, setZReport] = useState<ZReportData | null>(null)
   const [zLoading, setZLoading] = useState(false)
+  const [zError, setZError] = useState<string | null>(null)
   const [closingCash, setClosingCash] = useState("")
   const [zNotes, setZNotes] = useState("")
 
@@ -90,10 +99,12 @@ export function ReportsPage() {
   const [margin, setMargin] = useState<MarginData | null>(null)
   const [marginDays, setMarginDays] = useState(30)
   const [marginLoading, setMarginLoading] = useState(false)
+  const [marginError, setMarginError] = useState<string | null>(null)
 
   // Debt aging
   const [debt, setDebt] = useState<DebtAgingData | null>(null)
   const [debtLoading, setDebtLoading] = useState(false)
+  const [debtError, setDebtError] = useState<string | null>(null)
 
   useEffect(() => {
     if (activeTab === "low-stock" && lowStock.length === 0) loadLowStock()
@@ -101,11 +112,11 @@ export function ReportsPage() {
   }, [activeTab])
 
   async function loadLowStock() {
-    setLowStockLoading(true)
+    setLowStockLoading(true); setLowStockError(null)
     try {
       const data = await api<{ items: LowStockItem[] }>("/api/reports/low-stock")
       setLowStock(data.items)
-    } catch (e) { console.error("[ReportsPage] Failed to load low stock:", e) }
+    } catch (e) { setLowStockError(e instanceof Error ? e.message : "Failed to load") }
     setLowStockLoading(false)
   }
 
@@ -121,31 +132,31 @@ export function ReportsPage() {
   async function loadZReport() {
     const cash = parseFloat(closingCash)
     if (isNaN(cash) || cash < 0) return
-    setZLoading(true)
+    setZLoading(true); setZError(null)
     try {
       const body: Record<string, unknown> = { closingCash: cash }
       if (zNotes) body.notes = zNotes
       const data = await api<ZReportData>("/api/reports/z-report", { method: "POST", body: JSON.stringify(body) })
       setZReport(data)
-    } catch (e) { console.error("[ReportsPage] Failed to close Z report:", e) }
+    } catch (e) { setZError(e instanceof Error ? e.message : "Failed to close shift") }
     setZLoading(false)
   }
 
   async function loadMargin() {
-    setMarginLoading(true)
+    setMarginLoading(true); setMarginError(null)
     try {
       const data = await api<MarginData>(`/api/reports/margin?days=${marginDays}`)
       setMargin(data)
-    } catch (e) { console.error("[ReportsPage] Failed to load margin:", e) }
+    } catch (e) { setMarginError(e instanceof Error ? e.message : "Failed to load") }
     setMarginLoading(false)
   }
 
   async function loadDebtAging() {
-    setDebtLoading(true)
+    setDebtLoading(true); setDebtError(null)
     try {
       const data = await api<DebtAgingData>("/api/reports/debt-aging")
       setDebt(data)
-    } catch (e) { console.error("[ReportsPage] Failed to load debt aging:", e) }
+    } catch (e) { setDebtError(e instanceof Error ? e.message : "Failed to load") }
     setDebtLoading(false)
   }
 
@@ -188,7 +199,10 @@ export function ReportsPage() {
               {t("admin.export_csv")}
             </button>
           </div>
-          {lowStock.length === 0 && !lowStockLoading ? (
+          {lowStockError && (
+            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm rounded-xl">{lowStockError} <button onClick={loadLowStock} className="underline ml-2">{t("admin.retry")}</button></div>
+          )}
+          {lowStock.length === 0 && !lowStockLoading && !lowStockError ? (
             <p className="text-sm opacity-50 py-8 text-center">{t("admin.no_low_stock")}</p>
           ) : (
             <div className="grid gap-3">
@@ -265,6 +279,9 @@ export function ReportsPage() {
                     {zLoading ? t("admin.closing") : t("admin.close_shift_print")}
                   </button>
                 </div>
+                {zError && (
+                  <div className="mt-3 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm rounded-xl">{zError}</div>
+                )}
                 {zReport && (
                   <div className="mt-4 pt-4 border-t border-white/10">
                     <p className="font-bold text-emerald-400 mb-2">{t("admin.shift_closed")}</p>
@@ -303,6 +320,9 @@ export function ReportsPage() {
               {t("admin.export_csv")}
             </button>
           </div>
+          {marginError && (
+            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm rounded-xl">{marginError} <button onClick={loadMargin} className="underline ml-2">{t("admin.retry")}</button></div>
+          )}
           {margin && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -366,6 +386,9 @@ export function ReportsPage() {
               {t("admin.export_csv")}
             </button>
           </div>
+          {debtError && (
+            <div className="mb-4 p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-700 dark:text-rose-300 text-sm rounded-xl">{debtError} <button onClick={loadDebtAging} className="underline ml-2">{t("admin.retry")}</button></div>
+          )}
           {debt && (
             <div className="space-y-4">
               <StatCard label={t("admin.total_outstanding")} value={formatCurrency(debt.totalOutstanding)} color={debt.totalOutstanding > 0 ? "rose" : "emerald"} />

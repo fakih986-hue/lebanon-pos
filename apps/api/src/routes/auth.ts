@@ -85,6 +85,7 @@ router.post("/tenant/setup", async (req: any, res: any) => {
       userId: result.user.id,
       tenantId: result.tenant.id,
       role: result.user.role,
+      tokenVersion: result.user.tokenVersion ?? 1,
     })
 
     res.status(201).json({
@@ -141,9 +142,9 @@ router.post("/login", async (req: any, res: any) => {
         res.status(401).json({ error: "Invalid credentials" })
         return
       }
-      const token = signToken({ userId: driver.id, tenantId: driver.tenantId, role: "Driver" })
+      const token = signToken({ userId: driver.id, tenantId: driver.tenantId, role: "Driver", tokenVersion: driver.tokenVersion ?? 1 })
       res.json({
-        token, user: { id: driver.id, name: driver.name, role: "Driver", tenantId: driver.tenantId, tenantName: driver.tenant.name },
+        token, user: { id: driver.id, name: driver.name, role: "Driver", tenantId: driver.tenantId, tenantName: driver.tenant.name, pinVersion: driver.pinVersion },
       })
       return
     }
@@ -198,9 +199,9 @@ router.post("/login", async (req: any, res: any) => {
           ? await bcrypt.compare(pin, candidate.pin)
           : candidate.pin === hashSha256Pin(pin)
         if (pinMatches) {
-          const token = signToken({ userId: candidate.id, tenantId: candidate.tenantId, role: candidate.role })
+          const token = signToken({ userId: candidate.id, tenantId: candidate.tenantId, role: candidate.role, tokenVersion: candidate.tokenVersion ?? 1 })
           res.json({
-            token, user: { id: candidate.id, name: candidate.name, role: candidate.role, tenantId: candidate.tenantId, tenantName: candidate.tenant.name },
+            token, user: { id: candidate.id, name: candidate.name, role: candidate.role, tenantId: candidate.tenantId, tenantName: candidate.tenant.name, pinVersion: candidate.pinVersion },
           })
           // Migrate legacy SHA-256 PIN to bcrypt
           if (!candidate.pin.startsWith("$2")) {
@@ -242,6 +243,7 @@ router.post("/login", async (req: any, res: any) => {
       userId: user.id,
       tenantId: user.tenantId,
       role: user.role,
+      tokenVersion: user.pinVersion ?? 1,
     })
 
     res.json({
@@ -252,6 +254,7 @@ router.post("/login", async (req: any, res: any) => {
         role: user.role,
         tenantId: user.tenantId,
         tenantName: user.tenant.name,
+        pinVersion: user.pinVersion,
       },
     })
   } catch (err) {
@@ -274,6 +277,19 @@ router.get("/me", requireAuth, async (req: AuthRequest, res: any) => {
   } catch (err) {
     console.error("[auth] /me error:", err)
     res.status(500).json({ error: "Internal server error" })
+  }
+})
+
+router.post("/logout", requireAuth, async (req: AuthRequest, res: any) => {
+  try {
+    await prisma.staffUser.update({
+      where: { id: req.auth!.userId },
+      data: { tokenVersion: { increment: 1 } },
+    })
+    res.json({ ok: true })
+  } catch (err) {
+    console.error("[auth] /logout error:", err)
+    res.status(500).json({ error: "Logout failed" })
   }
 })
 

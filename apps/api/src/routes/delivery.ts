@@ -51,6 +51,7 @@ const createOrderSchema = z.object({
   locationLng: z.number().optional(),
   deliveryNote: z.string().max(500).optional(),
   customerId: z.string().optional(),
+  paymentMethod: z.string().optional(),
   items: z.array(z.object({
     productId: z.number().int().positive(),
     quantity: z.number().positive(),
@@ -260,6 +261,7 @@ router.post("/order", async (req: any, res: ServerResponse) => {
         locationLat: body.locationLat ?? null,
         locationLng: body.locationLng ?? null,
         deliveryNote: body.deliveryNote ?? "",
+        paymentMethod: body.paymentMethod ?? "CashOnDelivery",
         itemsTotal,
         deliveryFee,
         total,
@@ -825,6 +827,11 @@ router.post("/customer/signup", async (req: any, res: ServerResponse) => {
     if (existing) {
       if (existing.pin) {
         json(res, { error: "Account already exists with this phone number. Please login." }, 409)
+        return
+      }
+      // Verify the name matches the existing customer — prevents account takeover
+      if (existing.name && existing.name.trim().toLowerCase() !== name.trim().toLowerCase()) {
+        json(res, { error: "Name does not match existing account. Contact support." }, 403)
         return
       }
       const updated = await prisma.customer.update({
