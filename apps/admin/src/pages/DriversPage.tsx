@@ -16,6 +16,7 @@ export function DriversPage() {
   const [code, setCode] = useState("")
   const [pin, setPin] = useState("")
   const [errorMsg, setErrorMsg] = useState("")
+  const [confirmDriver, setConfirmDriver] = useState<Driver | null>(null)
 
   useEffect(() => { load(); fetchOnline() }, [])
   useEffect(() => {
@@ -57,6 +58,7 @@ export function DriversPage() {
       await api(`/api/delivery/drivers/${driver.id}`, { method: "PATCH", body: JSON.stringify({ active: !driver.active }) })
       load()
     } catch (e) { setErrorMsg(e instanceof Error ? e.message : "Failed to toggle status") }
+    setConfirmDriver(null)
   }
 
   function startEdit(d: Driver) {
@@ -153,7 +155,7 @@ export function DriversPage() {
                       </td>
                       <td className="px-5 py-4" style={{ color: "var(--text-secondary)" }}>{d.mobile || <span style={{ color: "var(--text-muted)" }}>—</span>}</td>
                       <td className="px-5 py-4 text-center">
-                        <button onClick={() => toggleActive(d)}
+                        <button onClick={() => setConfirmDriver(d)}
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${d.active ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20' : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/[0.1]'}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${d.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                           {d.active ? t("drivers.active") : t("drivers.inactive")}
@@ -177,6 +179,27 @@ export function DriversPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {confirmDriver && (
+        <div className="modal-overlay" onClick={() => setConfirmDriver(null)}>
+          <div className="modal-card" style={{ maxWidth: "420px" }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{confirmDriver.active ? t("admin.disabled") : t("admin.active")} {confirmDriver.name}?</h2>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: "var(--text-2)" }}>
+                {confirmDriver.active ? `Disable ${confirmDriver.name}? They won't be able to accept deliveries.` : `Enable ${confirmDriver.name}? They'll be able to accept deliveries again.`}
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setConfirmDriver(null)} className="btn btn-default">{t("admin.cancel")}</button>
+              <button onClick={() => toggleActive(confirmDriver)} className={`btn ${confirmDriver.active ? "btn-danger" : "btn-success"}`}>
+                {confirmDriver.active ? t("admin.disabled") : t("admin.active")}
+              </button>
+            </div>
           </div>
         </div>
       )}

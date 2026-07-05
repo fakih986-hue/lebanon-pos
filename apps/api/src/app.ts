@@ -58,6 +58,7 @@ app.use("/api/admin/login", rateLimit({ windowMs: 60_000, max: 5, bucket: "admin
 app.use("/api/admin", rateLimit({ windowMs: 60_000, max: 60, bucket: "admin" }))
 app.use("/api/reports", rateLimit({ windowMs: 60_000, max: 60, bucket: "reports" }))
 app.use("/api/delivery", rateLimit({ windowMs: 60_000, max: 120, bucket: "delivery" }))
+app.use("/api/health", rateLimit({ windowMs: 60_000, max: 30, bucket: "health" }))
 
 app.use("/api/auth", authRoutes)
 app.use("/api/sync", syncRoutes)

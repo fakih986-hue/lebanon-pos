@@ -17,16 +17,20 @@ export function ProductsPage() {
   const { t } = useI18n()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [generating, setGenerating] = useState(false)
   const [genStatus, setGenStatus] = useState<string | null>(null)
 
-  useEffect(() => {
+  function loadProducts() {
+    setLoading(true); setError(null)
     api<PullResponse>("/api/sync/pull?since=")
       .then(data => setProducts(data.products ?? []))
-      .catch((err) => console.error("[ProductsPage] Failed to load products:", err))
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load products"))
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { loadProducts() }, [])
 
   const handleGenerateImages = async (force = false) => {
     setGenerating(true)
@@ -95,6 +99,11 @@ export function ProductsPage() {
 
       {loading ? (
         <div className="space-y-3">{[1,2,3,4].map(i => <div key={i} className="loading-skeleton h-16 rounded-2xl" />)}</div>
+      ) : error ? (
+        <div className="data-card text-center py-16">
+          <p className="text-rose-500 font-semibold" style={{ color: "var(--danger)" }}>{error}</p>
+          <button onClick={loadProducts} className="btn btn-default mt-4">{t("admin.retry")}</button>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20" style={{ color: "var(--text-muted)" }}>
           <div className="w-20 h-20 rounded-3xl bg-slate-100 dark:bg-white/[0.04] flex items-center justify-center mb-5">

@@ -125,13 +125,18 @@ router.post("/save-all", requireAuth, async (req: AuthRequest, res: ServerRespon
 })
 
 router.post("/generate", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
-  const { name } = (req as any).body ?? {}
-  if (!name || typeof name !== "string") {
-    json(res, { error: "Product name is required" }, 400)
-    return
+  try {
+    const { name } = (req as any).body ?? {}
+    if (!name || typeof name !== "string") {
+      json(res, { error: "Product name is required" }, 400)
+      return
+    }
+    const result = await generateImage(name)
+    json(res, result)
+  } catch (err) {
+    console.error("Generate image error:", err)
+    json(res, { error: "Image generation failed" }, 500)
   }
-  const result = await generateImage(name)
-  json(res, result)
 })
 
 router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
@@ -209,8 +214,8 @@ router.get("/serve/:id", requireAuth, async (req: AuthRequest, res: ServerRespon
       return
     }
 
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
+    const product = await prisma.product.findFirst({
+      where: { id: productId, tenantId: req.auth!.tenantId },
       select: { image: true },
     })
 
@@ -244,21 +249,25 @@ router.get("/serve/:id", requireAuth, async (req: AuthRequest, res: ServerRespon
 
 // Debug: show product image status
 router.get("/debug", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
-  const tenantId = req.auth!.tenantId
-  const products = await prisma.product.findMany({
-    where: { tenantId, isParent: false },
-    select: { id: true, name: true, image: true },
-    take: 5,
-    orderBy: { name: "asc" },
-  })
-  const info = products.map(p => ({
-    id: p.id,
-    name: p.name,
-    hasImage: p.image !== null,
-    imageLength: p.image?.length ?? 0,
-    imageStartsWith: p.image ? p.image.substring(0, 50) : null,
-  }))
-  json(res, info)
+  try {
+    const tenantId = req.auth!.tenantId
+    const products = await prisma.product.findMany({
+      where: { tenantId, isParent: false },
+      select: { id: true, name: true, image: true },
+      take: 5,
+      orderBy: { name: "asc" },
+    })
+    const info = products.map(p => ({
+      id: p.id,
+      name: p.name,
+      hasImage: p.image !== null,
+      imageLength: p.image?.length ?? 0,
+    }))
+    json(res, info)
+  } catch (err) {
+    console.error("Image debug error:", err)
+    json(res, { error: "Failed to load debug info" }, 500)
+  }
 })
 
 // /token endpoint removed — HuggingFace token must never be exposed to clients

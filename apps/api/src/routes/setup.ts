@@ -113,11 +113,11 @@ router.get("/check", async (_req: Req, res: Response) => {
       tenantCount,
     })
   } catch (err) {
+    console.error("[setup] /check error:", err)
     res.status(503).json({
       dbConnected:  false,
       tenantExists: false,
       adminExists:  false,
-      error:        (err as Error).message,
     })
   }
 })
@@ -134,7 +134,8 @@ router.post("/pull-from-cloud", async (req: Req, res: Response) => {
     await triggerFullPull()
     res.json({ ok: true, message: "Full pull from Railway completed" })
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message })
+    console.error("[setup] pull-from-cloud error:", err)
+    res.status(500).json({ error: "Pull from cloud failed" })
   }
 })
 
@@ -165,7 +166,8 @@ router.get("/tenant-info", async (req: Req, res: Response) => {
 
     res.json(tenant)
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message })
+    console.error("[setup] tenant-info error:", err)
+    res.status(500).json({ error: "Failed to load tenant info" })
   }
 })
 
@@ -262,7 +264,8 @@ router.post("/discover", async (req: Req, res: Response) => {
       cloudApiKey: tenant.cloudApiKey,
     })
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message })
+    console.error("[setup] discover error:", err)
+    res.status(500).json({ error: "Discovery failed" })
   }
 })
 
@@ -321,7 +324,8 @@ router.post("/cloud-config", async (req: Req, res: Response) => {
     }
     res.json({ ok: true, pullError, ...getCloudStatus() })
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message })
+    console.error("[setup] cloud-config error:", err)
+    res.status(500).json({ error: "Failed to save cloud config" })
   }
 })
 

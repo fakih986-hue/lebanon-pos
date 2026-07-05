@@ -9,14 +9,18 @@ export function CustomersPage() {
   const { t } = useI18n()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
 
-  useEffect(() => {
+  function loadCustomers() {
+    setLoading(true); setError(null)
     api<PullResponse>("/api/sync/pull?since=")
       .then(data => setCustomers(data.customers ?? []))
-      .catch((err) => console.error("[CustomersPage] Failed to load customers:", err))
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load customers"))
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { loadCustomers() }, [])
 
   const filtered = customers.filter(c => {
     if (!search) return true
@@ -39,6 +43,11 @@ export function CustomersPage() {
 
       {loading ? (
         <div className="space-y-3">{[1,2,3,4].map(i => <div key={i} className="loading-skeleton h-16 rounded-2xl" />)}</div>
+      ) : error ? (
+        <div className="data-card text-center py-16">
+          <p className="text-rose-500 font-semibold" style={{ color: "var(--danger)" }}>{error}</p>
+          <button onClick={loadCustomers} className="btn btn-default mt-4">{t("customers.retry") || "Retry"}</button>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20" style={{ color: "var(--text-muted)" }}>
           <div className="w-20 h-20 rounded-3xl bg-slate-100 dark:bg-white/[0.04] flex items-center justify-center mb-5">

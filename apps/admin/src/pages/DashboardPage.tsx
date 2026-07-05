@@ -85,12 +85,15 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
-  useEffect(() => {
+  function loadData() {
+    setLoading(true); setError("")
     api<KpiData>("/api/dashboard/kpi")
       .then(setData)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { loadData() }, [])
 
   if (loading) return <LoadingDashboard />
   if (error) return (
@@ -99,6 +102,7 @@ export function DashboardPage() {
         <div className="text-4xl mb-3">⚠️</div>
         <p className="text-rose-700 font-medium mb-1">{t("dashboard.failed_to_load")}</p>
         <p className="text-rose-500 text-sm">{error}</p>
+        <button onClick={loadData} className="btn btn-default mt-4">{t("admin.retry")}</button>
       </div>
     </div>
   )

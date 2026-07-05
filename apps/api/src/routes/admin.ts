@@ -41,9 +41,18 @@ const updateTenantSchema = z.object({
   suspended: z.boolean().optional(),
 })
 
+const loginSchema = z.object({
+  password: z.string().min(1, "Password is required"),
+})
+
 router.post("/login", async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const { password } = (req.body as { password?: string }) || {}
+    const parsed = loginSchema.safeParse(req.body)
+    if (!parsed.success) {
+      json(res, { error: "Password is required" }, 400)
+      return
+    }
+    const { password } = parsed.data
     const masterPassword = process.env.ADMIN_PASSWORD ?? ""
     const masterHash = process.env.ADMIN_PASSWORD_HASH ?? ""
 
