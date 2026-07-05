@@ -18,8 +18,8 @@ type WorkspaceTabsProps<T extends string> = {
 export default function WorkspaceTabs<T extends string>({ tabs, active, onChange, className }: WorkspaceTabsProps<T>) {
   return (
     <div
-      className={cn("flex gap-1 overflow-x-auto rounded-lg p-1 [scrollbar-width:none]", className)}
-      style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-xs)" }}
+      className={cn("flex overflow-x-auto [scrollbar-width:none]", className)}
+      style={{ borderBottom: "1px solid var(--border)" }}
     >
       {tabs.map((tab) => {
         const value = tab.value ?? (tab.label as T)
@@ -30,12 +30,14 @@ export default function WorkspaceTabs<T extends string>({ tabs, active, onChange
             type="button"
             onClick={() => onChange(value)}
             className={cn(
-              "flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 text-[13px] font-bold transition",
+              "flex h-10 items-center gap-2 whitespace-nowrap px-4 text-[13px] font-bold transition relative",
               selected
-                ? "text-white"
-                : "text-[var(--text-2)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)]"
+                ? "text-[var(--brand)]"
+                : "text-[var(--text-2)] hover:text-[var(--text)]"
             )}
-            style={selected ? { background: "var(--brand)", boxShadow: "var(--shadow-xs)" } : undefined}
+            style={selected ? {
+              boxShadow: "inset 0 -2px 0 var(--brand)",
+            } : undefined}
           >
             {tab.icon}
             {tab.label}
@@ -43,7 +45,7 @@ export default function WorkspaceTabs<T extends string>({ tabs, active, onChange
               <span
                 className="rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none"
                 style={selected
-                  ? { background: "rgba(255,255,255,0.15)", color: "white" }
+                  ? { background: "var(--brand-soft)", color: "var(--brand-text)" }
                   : { background: "var(--surface-3)", color: "var(--text-3)" }
                 }
               >

@@ -656,13 +656,39 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
+    <main className="min-h-0 flex-1 overflow-y-auto app-page">
       {isLoading ? (
         <div className="flex min-h-[400px] items-center justify-center p-6">
           <Spinner label="Loading inventory..." />
         </div>
       ) : (
       <>
+      {/* Page Header */}
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--text)" }}>Products</h1>
+          <p className="text-[13px] mt-1" style={{ color: "var(--text-3)" }}>Manage your product catalog, stock levels, and inventory</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={generateProductImages} disabled={generatingImages}
+            className="btn btn-default btn-sm disabled:opacity-50">
+            {generatingImages ? "Generating…" : <><ImagePlus size={14} /> Generate Images</>}
+          </button>
+          <button type="button" onClick={() => setBulkEditOpen(true)}
+            className="btn btn-default btn-sm">± Bulk Edit</button>
+          <button type="button" onClick={() => {
+            const csv = ["Name,Category,Price,Cost,Stock,Barcode,Reorder Pt,Reorder Qty"].concat(
+              products.map((p) => `"${p.name}","${p.category}",${p.price},${p.cost},${p.stock},"${p.barcode || ""}",${p.reorderPoint ?? ""},${p.reorderQuantity ?? ""}`)
+            ).join("\n")
+            const b = new Blob([csv], { type: "text/csv" })
+            const u = URL.createObjectURL(b)
+            const a = document.createElement("a"); a.href = u; a.download = `products-${new Date().toISOString().slice(0,10)}.csv`; a.click()
+            URL.revokeObjectURL(u)
+          }}
+            className="btn btn-default btn-sm"><Download size={14} /> Export CSV</button>
+        </div>
+      </div>
+
       <KpiCards
         totalProducts={products.length}
         totalStock={totalStock}
@@ -671,22 +697,22 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       />
 
       <WorkspaceTabs<ProductWorkspaceView>
-        className="mt-5"
+        className="mt-6"
         active={activeProductView}
         onChange={setActiveProductView}
         tabs={productViews}
       />
 
       {activeProductView === "Lots" ? (
-      <section className="mt-5 overflow-hidden rounded-2xl border" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
-        <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: "var(--border)" }}>
+      <section className="card mt-5 overflow-hidden">
+        <div className="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: "var(--border)" }}>
           <div>
             <h2 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Batch / Lot Inventory</h2>
             <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>
               Stock tracked by received lot, cost, expiry and remaining quantity.
             </p>
           </div>
-          <span className="rounded-xl px-3 py-1.5 text-[12px] font-bold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)", border: "1px solid var(--brand-border)" }}>
+          <span className="chip chip-brand" style={{ fontSize: "12px", height: "28px" }}>
             {formatNumber(openBatches.length)} open lots
           </span>
         </div>
@@ -705,7 +731,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
             </thead>
             <tbody>
               {openBatches.slice(0, 12).map((batch) => (
-                <tr key={batch.id} className="transition-colors hover:bg-[var(--surface-hover)]">
+                <tr key={batch.id} className="t-row">
                   <td className="border-b px-4 py-3 font-bold tabular-nums" style={{ borderColor: "var(--border)", color: "var(--brand)" }}>{batch.batchNumber}</td>
                   <td className="border-b px-4 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{batch.productName}</td>
                   <td className="border-b px-4 py-3" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{batch.supplierName ?? "—"}</td>
@@ -919,7 +945,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       {activeProductView === "Catalog" ? (
       <>
       {bulkEditOpen && (
-        <div className="mb-4 rounded-2xl border p-4" style={{ background: "var(--blue-soft)", border: "1px solid var(--brand-border)" }}>
+        <div className="card mb-4 p-4" style={{ borderLeft: "3px solid var(--blue)" }}>
           <h3 className="mb-3 text-[13px] font-bold" style={{ color: "var(--text)" }}>Bulk Price Edit</h3>
           <div className="flex flex-wrap gap-2">
             <select value={bulkEditCategory} onChange={(e) => setBulkEditCategory(e.target.value)} className="input h-9 text-[13px]">
@@ -937,55 +963,34 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
             <input type="number" value={bulkEditValue} onChange={(e) => setBulkEditValue(e.target.value)}
               placeholder={bulkEditMode === "percent" ? "e.g. 10 = +10%" : "e.g. 0.50"}
               className="input h-9 w-32 text-[13px]" />
-            <button type="button" onClick={applyBulkPriceEdit} className="btn btn-primary h-9 px-4 text-[13px]">Apply</button>
-            <button type="button" onClick={() => setBulkEditOpen(false)} className="btn btn-default h-9 px-4 text-[13px]">Cancel</button>
+            <button type="button" onClick={applyBulkPriceEdit} className="btn btn-primary btn-sm">Apply</button>
+            <button type="button" onClick={() => setBulkEditOpen(false)} className="btn btn-default btn-sm">Cancel</button>
           </div>
           <p className="mt-2 text-[11px]" style={{ color: "var(--text-3)" }}>
             Affects {products.filter((p) => !p.isParent && (bulkEditCategory === "All" || p.category === bulkEditCategory)).length} products. Applied immediately.
           </p>
         </div>
       )}
-      {!bulkEditOpen && (
-        <div className="mb-3 flex items-center justify-end gap-2">
-          {genImageStatus && (
-            <span className="me-auto text-[11px]" style={{ color: "var(--text-3)" }}>{genImageStatus}</span>
-          )}
-          <button type="button" onClick={generateProductImages} disabled={generatingImages}
-            className="btn btn-default h-9 gap-1.5 text-[12px] disabled:opacity-50">
-            <ImagePlus size={13} />
-            {generatingImages ? "Generating…" : "Generate Images"}
-          </button>
-          <button type="button" onClick={() => setBulkEditOpen(true)}
-            className="btn btn-default h-9 gap-1.5 text-[12px]">
-             ± Bulk Edit Prices
-          </button>
-          <button type="button" onClick={() => {
-            const csv = ["Name,Category,Price,Cost,Stock,Barcode,Reorder Pt,Reorder Qty"].concat(
-              products.map((p) => `"${p.name}","${p.category}",${p.price},${p.cost},${p.stock},"${p.barcode || ""}",${p.reorderPoint ?? ""},${p.reorderQuantity ?? ""}`)
-            ).join("\n")
-            const b = new Blob([csv], { type: "text/csv" })
-            const u = URL.createObjectURL(b)
-            const a = document.createElement("a"); a.href = u; a.download = `products-${new Date().toISOString().slice(0,10)}.csv`; a.click()
-            URL.revokeObjectURL(u)
-          }}
-            className="btn btn-default h-9 gap-1.5 text-[12px]">
-            <Download size={13} /> Export CSV
-          </button>
-        </div>
-      )}
       {/* Category Management */}
-      <details className="mb-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <summary className="flex cursor-pointer items-center gap-2 text-sm font-bold text-zinc-700 select-none">
-          <SlidersHorizontal size={15} /> Manage Categories
-        </summary>
-        <div className="mt-3 space-y-2">
+      <div className="card mb-4 overflow-hidden">
+        <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
+          <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--text)" }}>
+            <SlidersHorizontal size={15} /> Categories
+          </div>
+          <span className="chip chip-neutral text-[10px]">{categories.length - 1} categories</span>
+        </div>
+        <div className="p-3 space-y-1.5 max-h-[200px] overflow-y-auto">
           {categories.filter((c) => c !== "All").map((cat) => (
             <div key={cat} className="flex items-center gap-2">
-              <input defaultValue={cat} onBlur={(e) => { const n = e.target.value.trim(); if (n && n !== cat) { renameCategory(cat, n); showToast(`Renamed "${cat}" to "${n}"`) } }} className="input h-9 flex-1 text-[13px] font-medium rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
+              <span className="text-xs font-medium shrink-0 w-1 h-1 rounded-full" style={{ background: "var(--brand)" }}></span>
+              <input defaultValue={cat} onBlur={(e) => { const n = e.target.value.trim(); if (n && n !== cat) { renameCategory(cat, n); showToast(`Renamed "${cat}" to "${n}"`) } }} className="h-9 flex-1 rounded-lg border px-3 text-[13px] font-medium outline-none transition" style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }} onFocus={(e) => { e.target.style.borderColor = "var(--brand)"; e.target.style.boxShadow = "0 0 0 3px var(--focus-ring)" }} onBlur={(e) => { e.target.style.borderColor = "var(--border)"; e.target.style.boxShadow = "none" }} />
             </div>
           ))}
+          {categories.length <= 1 && (
+            <p className="text-xs py-4 text-center" style={{ color: "var(--text-3)" }}>No categories yet. Create one by editing a product.</p>
+          )}
         </div>
-      </details>
+      </div>
       <ProductTable
         filteredProducts={filteredProducts}
         lowStockCount={lowStockCount}
@@ -1035,29 +1040,57 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
 
       {/* Edit Product Modal */}
       {editProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => setEditProduct(null)}>
-          <div className="w-full max-w-md rounded-xl border bg-white p-6 shadow-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-zinc-950">Edit Product</h3>
-              <button onClick={() => setEditProduct(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"><X size={16} /></button>
+        <div className="modal-overlay" onClick={() => setEditProduct(null)}>
+          <div className="modal-card" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Product</h2>
+              <button onClick={() => setEditProduct(null)} className="btn-icon" style={{ color: "var(--text-3)" }}>✕</button>
             </div>
-            <div className="space-y-3">
-              <label className="block text-sm font-bold text-zinc-700">Name<input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
-              <label className="block text-sm font-bold text-zinc-700">Category<input value={editCategory} onChange={(e) => setEditCategory(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
+            <div className="modal-body space-y-3">
+              <label className="block">
+                <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Name</span>
+                <input value={editName} onChange={(e) => setEditName(e.target.value)} className="input w-full" />
+              </label>
+              <label className="block">
+                <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Category</span>
+                <input value={editCategory} onChange={(e) => setEditCategory(e.target.value)} className="input w-full" />
+              </label>
               <div className="grid grid-cols-2 gap-3">
-                <label className="block text-sm font-bold text-zinc-700">Price $<input type="number" min="0" step="0.01" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
-                <label className="block text-sm font-bold text-zinc-700">Cost $<input type="number" min="0" step="0.01" value={editCost} onChange={(e) => setEditCost(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
+                <label className="block">
+                  <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Price $</span>
+                  <input type="number" min="0" step="0.01" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="input w-full" />
+                </label>
+                <label className="block">
+                  <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Cost $</span>
+                  <input type="number" min="0" step="0.01" value={editCost} onChange={(e) => setEditCost(e.target.value)} className="input w-full" />
+                </label>
               </div>
-              <label className="block text-sm font-bold text-zinc-700">Barcode<input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100 font-mono" /></label>
-              <label className="block text-sm font-bold text-zinc-700">Barcode Aliases <span className="font-normal text-zinc-400">(comma-separated)</span>
-                <input value={editBarcodeAliases} onChange={(e) => setEditBarcodeAliases(e.target.value)} placeholder="5281000123457, 5281000123458" className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100 font-mono text-[13px]" />
+              <label className="block">
+                <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Barcode</span>
+                <input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} className="input w-full font-mono" />
+              </label>
+              <label className="block">
+                <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Barcode Aliases <span className="font-normal" style={{ color: "var(--text-3)" }}>(comma-separated)</span></span>
+                <input value={editBarcodeAliases} onChange={(e) => setEditBarcodeAliases(e.target.value)} placeholder="5281000123457, 5281000123458" className="input w-full font-mono" />
               </label>
               <div className="grid grid-cols-3 gap-3">
-                <label className="block text-sm font-bold text-zinc-700">Stock<input type="number" min="0" value={editStock} onChange={(e) => setEditStock(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
-                <label className="block text-sm font-bold text-zinc-700">Reord Pt<input type="number" min="0" value={editReorderPoint} onChange={(e) => setEditReorderPoint(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
-                <label className="block text-sm font-bold text-zinc-700">Reord Qty<input type="number" min="0" value={editReorderQty} onChange={(e) => setEditReorderQty(e.target.value)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" /></label>
+                <label className="block">
+                  <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Stock</span>
+                  <input type="number" min="0" value={editStock} onChange={(e) => setEditStock(e.target.value)} className="input w-full" />
+                </label>
+                <label className="block">
+                  <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Reorder Pt</span>
+                  <input type="number" min="0" value={editReorderPoint} onChange={(e) => setEditReorderPoint(e.target.value)} className="input w-full" />
+                </label>
+                <label className="block">
+                  <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Reorder Qty</span>
+                  <input type="number" min="0" value={editReorderQty} onChange={(e) => setEditReorderQty(e.target.value)} className="input w-full" />
+                </label>
               </div>
-              <button onClick={saveProductEdit} className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800">Save Changes</button>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setEditProduct(null)} className="btn btn-default">Cancel</button>
+              <button onClick={saveProductEdit} className="btn btn-primary">Save Changes</button>
             </div>
           </div>
         </div>
