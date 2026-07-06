@@ -16,7 +16,7 @@ type KpiData = {
 }
 
 const PAYMENT_COLORS: Record<string, string> = {
-  Cash: "#10b981", Card: "#6366f1", "Mobile Wallet": "#8b5cf6", Credit: "#f59e0b", Transfer: "#06b6d4",
+  Cash: "var(--st-ok)", Card: "var(--accent)", "Mobile Wallet": "var(--purple)", Credit: "var(--amber)", Transfer: "var(--st-info)",
 }
 
 function formatCurrency(n: number) {
@@ -116,10 +116,10 @@ export function DashboardPage() {
   const peakHour = data.hourlyDistribution.reduce((best, h) => h.count > best.count ? h : best, { hour: 0, count: 0 })
 
   const statCards = [
-    { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, label: t("dashboard.revenue_30d"), value: formatCurrency(totalRevenue), sub: `${totalTx} ${t("dashboard.transactions")}`, gradient: "linear-gradient(135deg, #4f46e5, #7c3aed)", delay: "0s" },
-    { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>, label: t("dashboard.avg_transaction"), value: formatCurrency(avgTx), sub: t("dashboard.per_sale"), gradient: "linear-gradient(135deg, #0891b2, #6366f1)", delay: "0.1s" },
-    { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>, label: t("dashboard.est_profit"), value: formatCurrency(estProfit), sub: `${data.month.count} ${t("dashboard.this_month")}`, gradient: "linear-gradient(135deg, #059669, #10b981)", delay: "0.2s" },
-    { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, label: t("dashboard.peak_hour"), value: `${peakHour.hour}:00`, sub: `${peakHour.count} ${t("dashboard.sales_at_peak")}`, gradient: "linear-gradient(135deg, #d97706, #f59e0b)", delay: "0.3s" },
+    { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, label: t("dashboard.revenue_30d"), value: formatCurrency(totalRevenue), sub: `${totalTx} ${t("dashboard.transactions")}`, gradient: "linear-gradient(135deg, var(--accent), var(--purple))", delay: "0s" },
+    { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>, label: t("dashboard.avg_transaction"), value: formatCurrency(avgTx), sub: t("dashboard.per_sale"), gradient: "linear-gradient(135deg, var(--st-info), var(--accent))", delay: "0.1s" },
+    { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>, label: t("dashboard.est_profit"), value: formatCurrency(estProfit), sub: `${data.month.count} ${t("dashboard.this_month")}`, gradient: "linear-gradient(135deg, var(--st-ok), var(--success))", delay: "0.2s" },
+    { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, label: t("dashboard.peak_hour"), value: `${peakHour.hour}:00`, sub: `${peakHour.count} ${t("dashboard.sales_at_peak")}`, gradient: "linear-gradient(135deg, var(--amber), var(--warning))", delay: "0.3s" },
   ]
 
   return (
