@@ -159,9 +159,9 @@ export function StaffPage() {
   }, [changePinFor, changePinValue])
 
   const tabs = useMemo(() => [
-    { key: "team" as const, label: t("nav.staff_team") },
-    { key: "audit" as const, label: t("nav.staff_audit") },
-  ], [t])
+    { key: "team" as const, label: t("nav.staff_team"), count: users.length },
+    { key: "audit" as const, label: t("nav.staff_audit"), count: audit.length },
+  ], [t, users.length, audit.length])
 
   const paginatedAudit = useMemo(() =>
     audit.slice((auditPage - 1) * AUDIT_PAGE_SIZE, auditPage * AUDIT_PAGE_SIZE),
@@ -217,11 +217,17 @@ export function StaffPage() {
         </div>
       )}
 
-      <div className="flex gap-1 rounded-xl p-1 mb-6 w-fit" style={{ background: "var(--surface-card)" }}>
+      <div className="flex overflow-x-auto mb-6" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
         {tabs.map((t_) => (
           <button key={t_.key} onClick={() => setTab(t_.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t_.key ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-600/20" : "text-secondary hover:opacity-80"}`}>
+            className={`relative px-4 py-2.5 text-sm font-semibold transition-all ${tab === t_.key ? "text-violet-600 dark:text-violet-400" : "text-secondary hover:text-primary"} `}
+            style={tab === t_.key ? { boxShadow: "inset 0 -2px 0 var(--accent)" } : undefined}>
             {t_.label}
+            {typeof t_.count !== "undefined" && (
+              <span className="ml-1.5 rounded-full text-[10px] font-bold px-1.5 py-0.5" style={tab === t_.key
+                ? { background: "var(--accent-soft)", color: "var(--accent)" }
+                : { background: "transparent", color: "var(--text-muted)" }}>{t_.count}</span>
+            )}
           </button>
         ))}
       </div>

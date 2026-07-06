@@ -362,6 +362,18 @@ export function DeliveryPage() {
         </div>
       </div>
 
+      {/* Status filter tabs — HR underline style */}
+      <div className="flex overflow-x-auto mb-6" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+        {[{ value: "All", label: t("delivery.all_orders") },
+          ...STATUS_ORDER.map(s => ({ value: s, label: t(`status.${s}`) }))].map(st => (
+          <button key={st.value} onClick={() => { setStatusFilter(st.value); setPage(1) }}
+            className={`relative px-3 py-2 text-xs font-semibold transition-all whitespace-nowrap ${statusFilter === st.value ? "text-violet-600 dark:text-violet-400" : "text-secondary hover:text-primary"}`}
+            style={statusFilter === st.value ? { boxShadow: "inset 0 -2px 0 var(--accent)" } : undefined}>
+            {st.label}
+          </button>
+        ))}
+      </div>
+
       {errorMsg && (
         <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-center gap-2 animate-slide-up">
           <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
