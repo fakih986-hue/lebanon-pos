@@ -222,6 +222,58 @@
   --sidebar-icon-active-color: #F2D27A;
 }
 
+/* ── Titan Design Scale Tokens ───────────────────────
+ *  POS-UI-1: Typography, spacing, z-index, animation.
+ *  Additive — no existing tokens changed.
+ *  Matches Titan HR design language quality level.
+ */
+
+:root {
+  /* Typography scale (8 sizes) */
+  --fs-caption:   11px;   /* Table headers, field labels */
+  --fs-meta:      12px;   /* Secondary text, timestamps, chip text */
+  --fs-body:      13px;   /* Default — table cells, body copy */
+  --fs-subhead:   15px;   /* Card/section titles, modal titles */
+  --fs-h3:        18px;   /* Section headers, dense page H1 */
+  --fs-page:      22px;   /* Page title */
+  --fs-stat:      24px;   /* KPI / stat numbers */
+  --fs-display:   28px;   /* Single hero metric maximum */
+
+  /* Spacing scale (4px grid, 10 stops) */
+  --sp-2:   2px;
+  --sp-4:   4px;
+  --sp-8:   8px;
+  --sp-12:  12px;
+  --sp-16:  16px;
+  --sp-20:  20px;
+  --sp-24:  24px;
+  --sp-32:  32px;
+  --sp-40:  40px;
+  --sp-48:  48px;
+
+  /* Z-index scale */
+  --z-sidebar:  50;
+  --z-topbar:   30;
+  --z-popover:  80;
+  --z-overlay:  100;
+  --z-modal:    110;
+  --z-dropdown: 120;
+  --z-toast:    9999;
+
+  /* Animation durations */
+  --dur-fast:    80ms;
+  --dur-btn:     140ms;
+  --dur-field:   150ms;
+  --dur-card:    180ms;
+  --dur-drawer:  200ms;
+  --dur-modal:   200ms;
+  --dur-toast:   220ms;
+
+  /* Animation easings */
+  --ease-ui:     cubic-bezier(0.2, 0.8, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 *,
 *::before,
 *::after {
