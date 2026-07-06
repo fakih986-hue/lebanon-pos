@@ -83,28 +83,24 @@ export default function Sidebar() {
       <Link
         to={item.path}
         title={expanded ? undefined : t(item.labelKey)}
-        className={`relative flex items-center rounded-[8px] transition-all ${expanded ? "mx-1.5 gap-2.5 px-2.5 py-2" : "mx-1.5 justify-center py-2"}`}
+        className={`relative flex items-center rounded-[10px] transition-all ${expanded ? "mx-1.5 gap-2.5 px-3 py-2" : "mx-1.5 justify-center py-2"}`}
         style={{
-          background: active
-            ? "linear-gradient(90deg, rgba(214,166,58,0.20) 0%, rgba(214,166,58,0.08) 45%, rgba(214,166,58,0.02) 100%)"
-            : "transparent",
-          borderLeft: active && expanded ? "3px solid #D6A63A" : "3px solid transparent",
-          boxShadow: active
-            ? "inset 0 0 0 1px rgba(214,166,58,0.10), 0 0 24px rgba(214,166,58,0.08)"
-            : "none",
-          color: active ? "#FFFFFF" : "#94A3B8",
-          transition: "all 200ms ease",
+          background: active ? "var(--sidebar-active-bg)" : "var(--sidebar-item)",
+          borderInlineStart: active && expanded ? "3px solid var(--sidebar-active-border)" : "3px solid transparent",
+          boxShadow: active ? "var(--sidebar-active-glow)" : "none",
+          color: active ? "var(--sidebar-active-text)" : "var(--sidebar-icon-color)",
+          transition: "background var(--dur-btn) ease, color var(--dur-btn) ease, box-shadow var(--dur-btn) ease",
         }}
         onMouseEnter={(e) => {
           if (!active) {
-            e.currentTarget.style.background = "#111827"
-            e.currentTarget.style.color = "#F8FAFC"
+            e.currentTarget.style.background = "var(--sidebar-item-hover)"
+            e.currentTarget.style.color = "var(--sidebar-text)"
           }
         }}
         onMouseLeave={(e) => {
           if (!active) {
-            e.currentTarget.style.background = "transparent"
-            e.currentTarget.style.color = "#94A3B8"
+            e.currentTarget.style.background = "var(--sidebar-item)"
+            e.currentTarget.style.color = "var(--sidebar-icon-color)"
           }
         }}
       >
@@ -115,7 +111,7 @@ export default function Sidebar() {
             width: 28,
             height: 28,
             background: active ? "rgba(214,166,58,0.12)" : "transparent",
-            color: active ? "#F2D27A" : "#94A3B8",
+            color: active ? "var(--sidebar-icon-active-color)" : "var(--sidebar-icon-color)",
           }}
         >
           <Icon size={16} strokeWidth={1.75} />
@@ -125,7 +121,7 @@ export default function Sidebar() {
         {expanded && (
           <span
             className="truncate text-[12.5px] font-medium"
-            style={{ color: active ? "#FFFFFF" : "#94A3B8" }}
+            style={{ color: active ? "var(--sidebar-active-text)" : "var(--sidebar-icon-color)" }}
           >
             {t(item.labelKey)}
           </span>
@@ -173,7 +169,7 @@ export default function Sidebar() {
               {expanded && (
                 <p
                   className="mx-3.5 mb-1 text-[11px] font-bold uppercase tracking-[0.12em]"
-                  style={{ color: "#64748B" }}
+                  style={{ color: "var(--sidebar-section-text)" }}
                 >
                   {t(`desktop.group.${group}`)}
                 </p>
@@ -213,13 +209,13 @@ export default function Sidebar() {
           <span
             className="h-1.5 w-1.5 shrink-0 rounded-full"
             style={{
-              background: activeShift ? "#22C55E" : "#52525b",
+              background: activeShift ? "var(--brand)" : "var(--surface-3)",
               boxShadow: activeShift ? "0 0 6px rgba(34,197,94,0.5)" : "none",
             }}
           />
           {expanded && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[10px] font-semibold" style={{ color: activeShift ? "#22C55E" : "var(--sidebar-text-2)" }}>
+              <p className="truncate text-[10px] font-semibold" style={{ color: activeShift ? "var(--brand-text)" : "var(--sidebar-text-2)" }}>
                 {activeShift ? activeShift.shiftNumber : t("desktop.closed")}
               </p>
               {activeShift && (
@@ -295,7 +291,7 @@ export function BottomNav() {
               {active && (
                 <span
                   className="absolute top-0 left-1/2 -translate-x-1/2 h-[3px] w-5 rounded-b-full"
-                  style={{ background: "#D6A63A" }}
+                  style={{ background: "var(--sidebar-active-border)" }}
                 />
               )}
 

@@ -276,7 +276,7 @@ export default function LoginScreen() {
   return (
     <main
       className="relative flex min-h-screen items-center justify-center overflow-hidden p-4"
-      style={{ background: "var(--bg)" }}
+      style={{ background: "var(--page-bg)" }}
     >
       {/* Background watermark — very subtle */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">

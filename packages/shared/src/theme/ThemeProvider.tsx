@@ -12,15 +12,35 @@ type ThemeContextType = {
 
 const ThemeContext = createContext<ThemeContextType | null>(null)
 
+function getSystemTheme(): Theme {
+  if (typeof window === "undefined") return "dark"
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    return (localStorage.getItem(STORAGE_KEY) as Theme) || "dark"
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved === "light" || saved === "dark") return saved
+    return getSystemTheme()
   })
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, theme)
     document.documentElement.setAttribute("data-theme", theme)
   }, [theme])
+
+  // Listen for system theme changes when no explicit preference is saved
+  useEffect(() => {
+    const hasSaved = localStorage.getItem(STORAGE_KEY)
+    if (hasSaved) return
+
+    const mq = window.matchMedia("(prefers-color-scheme: light)")
+    const handler = (e: MediaQueryListEvent) => {
+      setThemeState(e.matches ? "light" : "dark")
+    }
+    mq.addEventListener("change", handler)
+    return () => mq.removeEventListener("change", handler)
+  }, [])
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme)
