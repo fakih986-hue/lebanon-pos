@@ -362,9 +362,16 @@ export default function CustomersPage() {
           tabs={[
             { label: "Ledger", count: filteredCustomers.length },
             { label: "Pay debt", count: customers.filter((customer) => customer.balance > 0).length },
-            { label: "Add customer" },
           ]}
         />
+
+        <button
+          type="button"
+          onClick={() => setActivePanel("Add customer")}
+          className="btn-primary btn-sm h-10 shrink-0 px-3"
+        >
+          + Add customer
+        </button>
 
         <label className="relative w-full sm:w-64">
           <span className="sr-only">Search customers</span>
