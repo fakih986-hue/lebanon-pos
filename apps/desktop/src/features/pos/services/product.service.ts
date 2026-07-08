@@ -645,3 +645,55 @@ export function saveReceiveDefaults(input: ReceiveDefaults) {
   const updated: ReceiveDefaults = { ...existing, ...input }
   localStorage.setItem(BATCH_DEFAULTS_KEY, JSON.stringify(updated))
 }
+
+// ── Data cleanup tools ───────────────────────────────────────────
+export type CleanupResult = { changed: number; message: string }
+
+/** Merge all matching categories into one (case-insensitive) */
+export function mergeCategories(from: string, to: string): CleanupResult {
+  const products = getProductsSync()
+  const fromNorm = normalizeName(from)
+  const toNorm = normalizeName(to)
+  let changed = 0
+  const updated = products.map(p => {
+    if (normalizeName(p.category) === fromNorm) {
+      changed++
+      return { ...p, category: toNorm }
+    }
+    return p
+  })
+  if (changed > 0) writeProducts(updated)
+  return { changed, message: `Merged ${changed} products from "${from}" to "${to}"` }
+}
+
+/** Detect products with duplicate barcodes */
+export function detectDuplicateBarcodes() {
+  const products = getProductsSync()
+  const seen = new Map<string, number>()
+  const duplicates: Array<{ id: number; name: string; barcode: string }> = []
+  for (const p of products) {
+    if (!p.barcode) continue
+    const existing = seen.get(p.barcode)
+    if (existing !== undefined) {
+      const first = products[existing]
+      if (first) duplicates.push({ id: first.id, name: first.name, barcode: p.barcode })
+      duplicates.push({ id: p.id, name: p.name, barcode: p.barcode })
+    } else {
+      seen.set(p.barcode, products.indexOf(p))
+    }
+  }
+  return duplicates
+}
+
+/** Detect products missing required fields */
+export function detectIncompleteProducts() {
+  return getProductsSync().filter(p =>
+    !p.name || !p.barcode || p.price <= 0 || !p.category
+  ).map(p => ({
+    id: p.id, name: p.name,
+    missing: [
+      !p.name && "name", !p.barcode && "barcode",
+      p.price <= 0 && "price", !p.category && "category",
+    ].filter(Boolean).join(", "),
+  }))
+}
