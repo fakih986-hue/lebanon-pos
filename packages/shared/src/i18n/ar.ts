@@ -26,6 +26,9 @@ export const ar = {
   "login.driver_title": "دخول السائق",
   "login.secure_footer": "لبنان بوز · وصول آمن",
   "login.error_required": "يرجى ملء جميع الحقول",
+  "login.store_not_specified": "لم يتم تحديد المتجر",
+  "login.driver_code": "كود السائق",
+  "login.driver_code_placeholder": "مثال: 1122",
   "login.error_failed": "فشل تسجيل الدخول",
 
   /* Dashboard */
@@ -421,6 +424,8 @@ export const ar = {
   "pos.exchange_rate": "1 دولار = {rate}",
   "pos.quick_sale": "بيع سريع",
   "pos.tap_hint": "اضغط على صنف أو امسح ضوئياً للبيع السريع.",
+  "pos.tap_to_dismiss": "اضغط في أي مكان للإغلاق",
+  "pos.receipt_view_print": "عرض / طباعة الإيصال",
   "pos.loading_products": "جاري تحميل المنتجات...",
   "pos.no_products": "لا توجد منتجات",
   "pos.try_another": "جرب بحثاً أو فئة أخرى.",
