@@ -292,93 +292,22 @@ describe("POST /api/sync/push — sale stock integrity", () => {
 describe("POST /api/sync/push — product delete cascading", () => {
   beforeEach(() => { vi.clearAllMocks() })
 
-  it("deletes inventoryBatch and stockAdjustment when product is deleted", async () => {
-    vi.mocked(prisma.inventoryBatch.deleteMany).mockResolvedValue({ count: 2 } as any)
-    vi.mocked(prisma.stockAdjustment.deleteMany).mockResolvedValue({ count: 1 } as any)
-    vi.mocked(prisma.stockCountSession.findMany).mockResolvedValue([])
-    vi.mocked(prisma.product.deleteMany).mockResolvedValue({ count: 1 } as any)
+  it("product.delete now silently archives — preserves inventory history", async () => {
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
     vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
 
     const res = await request("POST", "/api/sync/push", {
       token,
-      body: {
-        operations: [{
-          id: "op-delete-1",
-          entity: "product",
-          action: "delete",
-          payload: { id: 42 },
-        }],
-      },
+      body: { operations: [{ id: "op-del-now-archive", entity: "product", action: "delete", payload: { id: 42 } }] },
     })
 
     expect(res.status).toBe(200)
-    expect(res.body.results[0].status).toBe("ok")
-
-    // Verify cascading deleteMany calls
-    expect(vi.mocked(prisma.inventoryBatch.deleteMany).mock.calls[0][0]).toMatchObject({
-      where: { tenantId: "t1", productId: 42 },
+    // Product is archived, not deleted
+    expect(vi.mocked(prisma.product.updateMany).mock.calls[0][0]).toMatchObject({
+      where: { tenantId: "t1", id: 42 }, data: { archived: true },
     })
-    expect(vi.mocked(prisma.stockAdjustment.deleteMany).mock.calls[0][0]).toMatchObject({
-      where: { tenantId: "t1", productId: 42 },
-    })
-    // Final product delete
-    expect(vi.mocked(prisma.product.deleteMany).mock.calls[0][0]).toMatchObject({
-      where: { tenantId: "t1", id: 42 },
-    })
-  })
-
-  it("deletes stockCountLines when product has count sessions", async () => {
-    vi.mocked(prisma.inventoryBatch.deleteMany).mockResolvedValue({ count: 0 } as any)
-    vi.mocked(prisma.stockAdjustment.deleteMany).mockResolvedValue({ count: 0 } as any)
-    vi.mocked(prisma.stockCountSession.findMany).mockResolvedValue([
-      { id: "session-1" },
-      { id: "session-2" },
-    ] as any)
-    vi.mocked(prisma.stockCountLine.deleteMany).mockResolvedValue({ count: 2 } as any)
-    vi.mocked(prisma.product.deleteMany).mockResolvedValue({ count: 1 } as any)
-    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
-
-    const res = await request("POST", "/api/sync/push", {
-      token,
-      body: {
-        operations: [{
-          id: "op-delete-2",
-          entity: "product",
-          action: "delete",
-          payload: { id: 99 },
-        }],
-      },
-    })
-
-    expect(res.status).toBe(200)
-    // Verify stockCountLine was deleted for the found sessions
-    expect(vi.mocked(prisma.stockCountLine.deleteMany).mock.calls[0][0]).toMatchObject({
-      where: { productId: 99, sessionId: { in: ["session-1", "session-2"] } },
-    })
-  })
-
-  it("skips stockCountLine deletion when no count sessions exist", async () => {
-    vi.mocked(prisma.inventoryBatch.deleteMany).mockResolvedValue({ count: 0 } as any)
-    vi.mocked(prisma.stockAdjustment.deleteMany).mockResolvedValue({ count: 0 } as any)
-    vi.mocked(prisma.stockCountSession.findMany).mockResolvedValue([])
-    vi.mocked(prisma.product.deleteMany).mockResolvedValue({ count: 1 } as any)
-    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
-
-    const res = await request("POST", "/api/sync/push", {
-      token,
-      body: {
-        operations: [{
-          id: "op-delete-3",
-          entity: "product",
-          action: "delete",
-          payload: { id: 7 },
-        }],
-      },
-    })
-
-    expect(res.status).toBe(200)
-    // stockCountLine.deleteMany should NOT be called
-    expect(vi.mocked(prisma.stockCountLine.deleteMany).mock.calls.length).toBe(0)
+    expect(vi.mocked(prisma.product.deleteMany)).not.toHaveBeenCalled()
+    expect(vi.mocked(prisma.inventoryBatch.deleteMany)).not.toHaveBeenCalled()
   })
 })
 

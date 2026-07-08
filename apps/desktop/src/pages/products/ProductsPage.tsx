@@ -92,6 +92,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   const [suppliers, setSuppliers] =
     useState<SupplierLedger[]>(getSupplierLedger())
   const [search, setSearch] = useState("")
+  const [showArchived, setShowArchived] = useState(false)
   const debouncedSearch = useDebounce(search, 200)
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
@@ -212,6 +213,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     const query = search.trim().toLowerCase()
 
     return products.filter((product) => {
+      if (!showArchived && product.archived) return false
       const matchesCategory =
         selectedCategory === "All" || product.category === selectedCategory
       const matchesSearch =
@@ -219,7 +221,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
 
       return matchesCategory && matchesSearch
     })
-  }, [products, debouncedSearch, selectedCategory])
+  }, [products, debouncedSearch, selectedCategory, showArchived])
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? products[0]
   const adjustmentProduct =
@@ -975,6 +977,12 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
           </p>
         </div>
       )}
+      <div className="mb-3 flex items-center justify-end gap-2">
+        <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer" style={{ color: "var(--text-3)" }}>
+          <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} className="rounded" />
+          Show archived
+        </label>
+      </div>
       <ProductTable
         filteredProducts={filteredProducts}
         lowStockCount={lowStockCount}

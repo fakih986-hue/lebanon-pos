@@ -325,14 +325,34 @@ export function updateProduct(productId: number, patch: Partial<Product>) {
   assertCanWrite("update product")
   const cleanPatch = cleanProductPatch(patch)
 
+  // Block direct stock edits — stock must change through receiving/sale/adjustment
+  if ("stock" in cleanPatch) {
+    console.warn(`[updateProduct] Direct stock edit blocked for product ${productId}. Use receiving or stock adjustment.`)
+    return undefined
+  }
+
   // Validate barcode/alias uniqueness against other products
   if (typeof cleanPatch.barcode === "string" && cleanPatch.barcode.length > 0) {
     const conflict = getProductsSync().find(
-      (p) => p.id !== productId && (p.barcode === cleanPatch.barcode || (p.barcodeAliases ?? []).includes(cleanPatch.barcode!))
+      (p) => p.id !== productId && ((p.barcode ?? "") === cleanPatch.barcode || (p.barcodeAliases ?? []).includes(cleanPatch.barcode!))
     )
     if (conflict) {
       console.warn(`[updateProduct] Barcode ${cleanPatch.barcode} already used by "${conflict.name}"`)
       return undefined
+    }
+  }
+  // Also check that new aliases don't conflict with other products' primary barcodes
+  if (Array.isArray(cleanPatch.barcodeAliases)) {
+    const allProducts = getProductsSync()
+    for (const alias of cleanPatch.barcodeAliases) {
+      if (!alias) continue
+      const conflict = allProducts.find(p =>
+        p.id !== productId && ((p.barcode ?? "") === alias || (p.barcodeAliases ?? []).includes(alias))
+      )
+      if (conflict) {
+        console.warn(`[updateProduct] Alias ${alias} already used by "${conflict.name}"`)
+        return undefined
+      }
     }
   }
 
@@ -382,20 +402,19 @@ export function createProduct(input: {
   assertCanWrite("create product")
   const currentProducts = getProductsSync()
   const normalizedBarcode = normalizeBarcode(input.barcode)
-  const existing = currentProducts.find((p) => p.barcode === normalizedBarcode)
-  if (existing) {
-    const updated = updateProduct(existing.id, {
-      name: normalizeName(input.name),
-      price: input.price,
-      cost: input.cost,
-      stock: existing.stock + input.stock,
-      category: normalizeName(input.category),
-      accent: input.accent,
-      parentId: input.parentId ?? null,
-      variantName: input.variantName ?? undefined,
-    })
-    return updated
+
+  // Check for barcode conflicts — primary AND aliases
+  if (normalizedBarcode) {
+    const conflict = currentProducts.find(p =>
+      (p.barcode ?? "") === normalizedBarcode || (p.barcodeAliases ?? []).includes(normalizedBarcode)
+    )
+    if (conflict) {
+      // Barcode exists → restock through receiving, not direct stock merge
+      console.warn(`[createProduct] Barcode ${normalizedBarcode} already used by "${conflict.name}" — receive stock instead`)
+      return undefined
+    }
   }
+
   const nextId = currentProducts.reduce((max, p) => Math.max(max, p.id), 0) + 1
   const product: Product = {
     id: nextId,
@@ -412,6 +431,19 @@ export function createProduct(input: {
   }
   const nextProducts = [...currentProducts, product]
   writeProducts(nextProducts)
+
+  // Create initial batch for opening stock
+  if (input.stock > 0) {
+    receiveInventoryBatches([{
+      productId: product.id,
+      productName: product.name,
+      barcode: product.barcode ?? "",
+      quantity: input.stock,
+      unitCost: input.cost,
+      unitPrice: input.price,
+    }])
+  }
+
   enqueueSyncOperation({
     entity: "product",
     action: "create",

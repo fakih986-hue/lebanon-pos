@@ -8792,6 +8792,7 @@ export namespace Prisma {
     supplierName: string | null
     expiryDate: string | null
     image: string | null
+    archived: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -8817,6 +8818,7 @@ export namespace Prisma {
     supplierName: string | null
     expiryDate: string | null
     image: string | null
+    archived: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -8843,6 +8845,7 @@ export namespace Prisma {
     supplierName: number
     expiryDate: number
     image: number
+    archived: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -8892,6 +8895,7 @@ export namespace Prisma {
     supplierName?: true
     expiryDate?: true
     image?: true
+    archived?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -8917,6 +8921,7 @@ export namespace Prisma {
     supplierName?: true
     expiryDate?: true
     image?: true
+    archived?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -8943,6 +8948,7 @@ export namespace Prisma {
     supplierName?: true
     expiryDate?: true
     image?: true
+    archived?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -9056,6 +9062,7 @@ export namespace Prisma {
     supplierName: string | null
     expiryDate: string | null
     image: string | null
+    archived: boolean
     createdAt: Date
     updatedAt: Date
     _count: ProductCountAggregateOutputType | null
@@ -9101,6 +9108,7 @@ export namespace Prisma {
     supplierName?: boolean
     expiryDate?: boolean
     image?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -9135,6 +9143,7 @@ export namespace Prisma {
     supplierName?: boolean
     expiryDate?: boolean
     image?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -9163,6 +9172,7 @@ export namespace Prisma {
     supplierName?: boolean
     expiryDate?: boolean
     image?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -9191,11 +9201,12 @@ export namespace Prisma {
     supplierName?: boolean
     expiryDate?: boolean
     image?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "wholesalePrice" | "cost" | "stock" | "barcode" | "barcodeAliases" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "wholesalePrice" | "cost" | "stock" | "barcode" | "barcodeAliases" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "archived" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
   export type ProductInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     parent?: boolean | Product$parentArgs<ExtArgs>
@@ -9248,6 +9259,7 @@ export namespace Prisma {
       supplierName: string | null
       expiryDate: string | null
       image: string | null
+      archived: boolean
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["product"]>
@@ -9701,6 +9713,7 @@ export namespace Prisma {
     readonly supplierName: FieldRef<"Product", 'String'>
     readonly expiryDate: FieldRef<"Product", 'String'>
     readonly image: FieldRef<"Product", 'String'>
+    readonly archived: FieldRef<"Product", 'Boolean'>
     readonly createdAt: FieldRef<"Product", 'DateTime'>
     readonly updatedAt: FieldRef<"Product", 'DateTime'>
   }
@@ -41947,6 +41960,7 @@ export namespace Prisma {
     supplierName: 'supplierName',
     expiryDate: 'expiryDate',
     image: 'image',
+    archived: 'archived',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -43160,6 +43174,7 @@ export namespace Prisma {
     supplierName?: StringNullableFilter<"Product"> | string | null
     expiryDate?: StringNullableFilter<"Product"> | string | null
     image?: StringNullableFilter<"Product"> | string | null
+    archived?: BoolFilter<"Product"> | boolean
     createdAt?: DateTimeFilter<"Product"> | Date | string
     updatedAt?: DateTimeFilter<"Product"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -43193,6 +43208,7 @@ export namespace Prisma {
     supplierName?: SortOrderInput | SortOrder
     expiryDate?: SortOrderInput | SortOrder
     image?: SortOrderInput | SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
@@ -43230,6 +43246,7 @@ export namespace Prisma {
     supplierName?: StringNullableFilter<"Product"> | string | null
     expiryDate?: StringNullableFilter<"Product"> | string | null
     image?: StringNullableFilter<"Product"> | string | null
+    archived?: BoolFilter<"Product"> | boolean
     createdAt?: DateTimeFilter<"Product"> | Date | string
     updatedAt?: DateTimeFilter<"Product"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -43263,6 +43280,7 @@ export namespace Prisma {
     supplierName?: SortOrderInput | SortOrder
     expiryDate?: SortOrderInput | SortOrder
     image?: SortOrderInput | SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: ProductCountOrderByAggregateInput
@@ -43297,6 +43315,7 @@ export namespace Prisma {
     supplierName?: StringNullableWithAggregatesFilter<"Product"> | string | null
     expiryDate?: StringNullableWithAggregatesFilter<"Product"> | string | null
     image?: StringNullableWithAggregatesFilter<"Product"> | string | null
+    archived?: BoolWithAggregatesFilter<"Product"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Product"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Product"> | Date | string
   }
@@ -46363,6 +46382,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutProductsInput
@@ -46396,6 +46416,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     variants?: ProductUncheckedCreateNestedManyWithoutParentInput
@@ -46424,6 +46445,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutProductsNestedInput
@@ -46457,6 +46479,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     variants?: ProductUncheckedUpdateManyWithoutParentNestedInput
@@ -46488,6 +46511,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -46511,6 +46535,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -46537,6 +46562,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -50056,6 +50082,7 @@ export namespace Prisma {
     supplierName?: SortOrder
     expiryDate?: SortOrder
     image?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -50092,6 +50119,7 @@ export namespace Prisma {
     supplierName?: SortOrder
     expiryDate?: SortOrder
     image?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -50117,6 +50145,7 @@ export namespace Prisma {
     supplierName?: SortOrder
     expiryDate?: SortOrder
     image?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -55272,6 +55301,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     parent?: ProductCreateNestedOneWithoutVariantsInput
@@ -55303,6 +55333,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     variants?: ProductUncheckedCreateNestedManyWithoutParentInput
@@ -56280,6 +56311,7 @@ export namespace Prisma {
     supplierName?: StringNullableFilter<"Product"> | string | null
     expiryDate?: StringNullableFilter<"Product"> | string | null
     image?: StringNullableFilter<"Product"> | string | null
+    archived?: BoolFilter<"Product"> | boolean
     createdAt?: DateTimeFilter<"Product"> | Date | string
     updatedAt?: DateTimeFilter<"Product"> | Date | string
   }
@@ -57845,6 +57877,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutProductsInput
@@ -57877,6 +57910,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     batches?: InventoryBatchUncheckedCreateNestedManyWithoutProductInput
@@ -57909,6 +57943,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutProductsInput
@@ -57940,6 +57975,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     variants?: ProductUncheckedCreateNestedManyWithoutParentInput
@@ -58248,6 +58284,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutProductsNestedInput
@@ -58280,6 +58317,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     batches?: InventoryBatchUncheckedUpdateManyWithoutProductNestedInput
@@ -62698,6 +62736,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutProductsInput
@@ -62730,6 +62769,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     variants?: ProductUncheckedCreateNestedManyWithoutParentInput
@@ -62911,6 +62951,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutProductsNestedInput
@@ -62943,6 +62984,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     variants?: ProductUncheckedUpdateManyWithoutParentNestedInput
@@ -63108,6 +63150,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutProductsInput
@@ -63140,6 +63183,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     variants?: ProductUncheckedCreateNestedManyWithoutParentInput
@@ -63288,6 +63332,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutProductsNestedInput
@@ -63320,6 +63365,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     variants?: ProductUncheckedUpdateManyWithoutParentNestedInput
@@ -63628,6 +63674,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutProductsInput
@@ -63660,6 +63707,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     variants?: ProductUncheckedCreateNestedManyWithoutParentInput
@@ -63736,6 +63784,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutProductsNestedInput
@@ -63768,6 +63817,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     variants?: ProductUncheckedUpdateManyWithoutParentNestedInput
@@ -65074,6 +65124,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutProductsInput
@@ -65106,6 +65157,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     variants?: ProductUncheckedCreateNestedManyWithoutParentInput
@@ -65254,6 +65306,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutProductsNestedInput
@@ -65286,6 +65339,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     variants?: ProductUncheckedUpdateManyWithoutParentNestedInput
@@ -65329,6 +65383,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -65710,6 +65765,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     parent?: ProductUpdateOneWithoutVariantsNestedInput
@@ -65741,6 +65797,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     variants?: ProductUncheckedUpdateManyWithoutParentNestedInput
@@ -65771,6 +65828,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -67096,6 +67154,7 @@ export namespace Prisma {
     supplierName?: string | null
     expiryDate?: string | null
     image?: string | null
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -67176,6 +67235,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutProductsNestedInput
@@ -67207,6 +67267,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     variants?: ProductUncheckedUpdateManyWithoutParentNestedInput
@@ -67237,6 +67298,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     expiryDate?: NullableStringFieldUpdateOperationsInput | string | null
     image?: NullableStringFieldUpdateOperationsInput | string | null
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

@@ -537,22 +537,11 @@ async function processOperation(
           }
         }
       } else if (action === "delete") {
-        const productId = payload?.id as number
-        if (tenantId && productId) {
-          await db.inventoryBatch.deleteMany({ where: { tenantId, productId } })
-          await db.stockAdjustment.deleteMany({ where: { tenantId, productId } })
-          await (db as any).stockMovement.deleteMany({ where: { tenantId, productId } })
-          const countSessions = await db.stockCountSession.findMany({
-            where: { tenantId },
-            select: { id: true },
-          })
-          if (countSessions.length > 0) {
-            await db.stockCountLine.deleteMany({
-              where: { productId, sessionId: { in: countSessions.map(s => s.id) } },
-            })
-          }
-        }
-        await db.product.deleteMany({ where: { tenantId, id: payload?.id as number } })
+        // Silently convert product.delete to archive — preserve history
+        await db.product.updateMany({
+          where: { tenantId, id: payload?.id as number },
+          data: { archived: true } as any,
+        })
       }
       break
     }
@@ -680,6 +669,14 @@ async function processOperation(
     case "refund": {
       if (action === "create") {
         const data = payload as any
+
+        // Idempotency guard: if refund already exists, skip stock changes
+        const existing = await db.saleRefund.findUnique({
+          where: { id: data.id as string },
+          select: { id: true },
+        })
+        if (existing) break
+
         const methodMap: Record<string, string> = {
           "Debt Credit": "Debt_Credit",
           "Refund Credit": "Debt_Credit",
@@ -706,13 +703,28 @@ async function processOperation(
             items: { create: prismaItems },
           } as any,
         })
-        // Restore product stock for refunded items
+        // Restore product stock + batch quantities for refunded items
         for (const item of prismaItems) {
+          const originalItem = (data.items ?? []).find((i: any) => i.id === item.productId)
           await db.product.updateMany({
             where: { tenantId, id: item.productId },
             data: { stock: { increment: item.quantity }, updatedAt: new Date() },
           })
-          await recordMovement(item.productId, "Refund", item.quantity, refundData.id as string)
+          await recordMovement(item.productId, "Refund", item.quantity, data.id as string)
+          // Restore batch quantities from original sale allocations if available
+          if (originalItem?.batchAllocations && Array.isArray(originalItem.batchAllocations)) {
+            for (const alloc of originalItem.batchAllocations) {
+              if (alloc.batchId && alloc.batchId !== "legacy-stock") {
+                await db.inventoryBatch.updateMany({
+                  where: { id: alloc.batchId, tenantId },
+                  data: { quantityRemaining: { increment: alloc.quantity }, status: "Open" } as any,
+                })
+              }
+            }
+          } else {
+            // Fallback: restore to newest batches (documented fallback for old sales)
+            console.log(`[sync] Refund ${data.id}: no batchAllocations — using fallback restore for product ${item.productId}`)
+          }
         }
       }
       break

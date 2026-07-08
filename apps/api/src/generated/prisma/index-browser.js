@@ -202,6 +202,7 @@ exports.Prisma.ProductScalarFieldEnum = {
   supplierName: 'supplierName',
   expiryDate: 'expiryDate',
   image: 'image',
+  archived: 'archived',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };

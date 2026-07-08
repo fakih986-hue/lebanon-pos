@@ -225,38 +225,14 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[]) {
 
   writeBatches([...batches, ...getInventoryBatches()])
 
-  // Optimistic local stock update — so products show new quantities immediately
-  // without waiting for the next background pull from the server (up to 120s).
-  // The server is still the source of truth; a pull will reconcile if needed.
-  if (canUseStorage()) {
-    try {
-      const raw = window.localStorage.getItem(PRODUCTS_KEY)
-      if (raw) {
-        const products: Array<Record<string, unknown>> = JSON.parse(raw)
-        const stockById = new Map<number, number>()
-        for (const b of batches) {
-          stockById.set(b.productId, (stockById.get(b.productId) ?? 0) + b.initialQuantity)
-        }
-        const updated = products.map((p) => {
-          const add = stockById.get(p.id as number)
-          return add ? { ...p, stock: ((p.stock as number) ?? 0) + add } : p
-        })
-        writeLocalWithIndexedDB(PRODUCTS_KEY, updated)
-        window.dispatchEvent(new Event(PRODUCTS_EVENT))
-
-        // Record stock movement for each received batch
-        for (const b of batches) {
-          recordStockMovement({
-            productId: b.productId, productName: b.productName,
-            type: "Receive", quantity: b.initialQuantity,
-            reference: b.batchNumber,
-            note: `Received batch ${b.batchNumber}${b.supplierName ? ` from ${b.supplierName}` : ""}`,
-          })
-        }
-      }
-    } catch {
-      // Non-critical — server pull will correct stock on next cycle
-    }
+  // Record stock movements for each received batch
+  for (const b of batches) {
+    recordStockMovement({
+      productId: b.productId, productName: b.productName,
+      type: "Receive", quantity: b.initialQuantity,
+      reference: b.batchNumber,
+      note: `Received batch ${b.batchNumber}${b.supplierName ? ` from ${b.supplierName}` : ""}`,
+    })
   }
 
   enqueueSyncOperation({
