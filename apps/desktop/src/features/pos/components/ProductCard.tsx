@@ -16,13 +16,15 @@ type Props = {
   searchQuery?: string
 }
 
+/* Category accent ramp (Midnight Gold): muted hues that sit calmly on dark
+ * surfaces — accents mark identity, never compete with money or actions. */
 const accents: Record<ProductAccent, { solid: string; soft: string }> = {
-  amber:   { solid: "#d97706", soft: "rgba(217,119,6,0.08)"   },
-  cyan:    { solid: "#0891b2", soft: "rgba(8,145,178,0.08)"   },
-  emerald: { solid: "#047857", soft: "rgba(4,120,87,0.08)"    },
-  indigo:  { solid: "#6366f1", soft: "rgba(99,102,241,0.08)"  },
-  rose:    { solid: "#e11d48", soft: "rgba(225,29,72,0.08)"   },
-  violet:  { solid: "#8b5cf6", soft: "rgba(139,92,246,0.08)"  },
+  amber:   { solid: "#C9A25C", soft: "rgba(201,162,92,0.14)"  },
+  cyan:    { solid: "#5CA8C9", soft: "rgba(92,168,201,0.14)"  },
+  emerald: { solid: "#5CB894", soft: "rgba(92,184,148,0.14)"  },
+  indigo:  { solid: "#7D8CD9", soft: "rgba(125,140,217,0.14)" },
+  rose:    { solid: "#C97B8A", soft: "rgba(201,123,138,0.14)" },
+  violet:  { solid: "#A186C9", soft: "rgba(161,134,201,0.14)" },
 }
 
 function HighlightedText({ text, query }: { text: string; query?: string }) {
@@ -134,8 +136,8 @@ const ProductCard = memo(function ProductCard({
               </div>
             ) : (
               <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[12px] font-bold text-white"
-                style={{ background: accent.solid }}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[12px] font-bold"
+                style={{ background: accent.soft, color: accent.solid }}
               >
                 {product.name.charAt(0).toUpperCase()}
               </span>
@@ -149,7 +151,7 @@ const ProductCard = memo(function ProductCard({
               <p className="text-[10px] font-medium leading-tight mt-0.5" style={{ color: stockColor }}>
                 {stockLabel}
                 {wholesale && product.wholesalePrice != null && (
-                  <span className="ms-1.5 rounded px-1 py-px text-[8px] font-bold text-white" style={{ background: accent.solid }}>WS</span>
+                  <span className="ms-1.5 rounded px-1 py-px text-[8px] font-bold" style={{ background: accent.soft, color: accent.solid }}>WS</span>
                 )}
               </p>
             </div>
@@ -158,8 +160,8 @@ const ProductCard = memo(function ProductCard({
             {cartQuantity > 0 && (
               <MotionSpan
                 key={cartQuantity}
-                className="flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-                style={{ background: accent.solid, color: "#fff" }}
+                className="flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums"
+                style={{ background: "var(--brand)", color: "var(--brand-contrast)" }}
                 initial={{ scale: 1.4, opacity: 0.6 }}
                 animate={{ scale: 1,   opacity: 1   }}
                 transition={{ type: "spring", stiffness: 500, damping: 20 }}
@@ -183,8 +185,8 @@ const ProductCard = memo(function ProductCard({
             <span
               className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors"
               style={{
-                background: outOfStock ? "var(--surface-3)" : accent.solid,
-                color: "#fff",
+                background: outOfStock ? "var(--surface-3)" : accent.soft,
+                color: outOfStock ? "var(--text-3)" : accent.solid,
               }}
             >
               <Plus size={13} strokeWidth={2.5} />

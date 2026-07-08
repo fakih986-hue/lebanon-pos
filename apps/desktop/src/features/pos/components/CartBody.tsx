@@ -387,15 +387,43 @@ export default function CartBody({
             </label>
           </div>
 
+          {/* Quick-cash chips: tap a banknote to add it to the tender */}
+          <div className="flex flex-wrap gap-1.5">
+            {[1, 5, 10, 20, 50, 100].map((note) => (
+              <button
+                key={`usd-${note}`}
+                type="button"
+                disabled={items.length === 0}
+                onClick={() => onPaidUsdChange(String((parseFloat(paidUsd) || 0) + note))}
+                className="rounded-lg border px-2.5 py-1.5 text-[11px] font-bold tabular-nums transition active:scale-[0.95] disabled:opacity-30"
+                style={{ borderColor: "var(--border-strong)", background: "var(--surface-2)", color: "var(--text)" }}
+              >
+                ${note}
+              </button>
+            ))}
+            {[100_000, 250_000, 500_000, 1_000_000].map((note) => (
+              <button
+                key={`lbp-${note}`}
+                type="button"
+                disabled={items.length === 0}
+                onClick={() => onPaidLbpChange(String((parseFloat(paidLbp) || 0) + note))}
+                className="rounded-lg border px-2.5 py-1.5 text-[11px] font-bold tabular-nums transition active:scale-[0.95] disabled:opacity-30"
+                style={{ borderColor: "var(--border-strong)", background: "var(--surface-2)", color: "var(--text-2)" }}
+              >
+                {note >= 1_000_000 ? `${note / 1_000_000}M` : `${note / 1000}k`} LL
+              </button>
+            ))}
+          </div>
+
           <div className="flex gap-2">
             <button type="button" onClick={() => onFillExactTender("USD")} disabled={items.length === 0}
               className="flex-1 rounded-lg py-1.5 text-[11px] font-bold transition active:scale-[0.97] disabled:opacity-30"
-              style={{ background: "var(--brand)", color: "#ffffff" }}>
+              style={{ background: "var(--brand)", color: "var(--brand-contrast)" }}>
               {t("pos.exact_usd")}
             </button>
             <button type="button" onClick={() => onFillExactTender("LBP")} disabled={items.length === 0}
               className="flex-1 rounded-lg py-1.5 text-[11px] font-bold transition active:scale-[0.97] disabled:opacity-30"
-              style={{ background: "var(--brand)", color: "#ffffff" }}>
+              style={{ background: "var(--brand)", color: "var(--brand-contrast)" }}>
               {t("pos.exact_lbp")}
             </button>
           </div>
@@ -545,19 +573,23 @@ export default function CartBody({
           </div>
         </div>
 
-        {/* THE number — total */}
-        <div className="flex items-end justify-between border-t pt-2.5" style={{ borderColor: "var(--border)" }}>
-          <div>
-            <span className="block text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
-              {t("pos.total_usd")}
+        {/* THE number — total (Midnight Gold hero: gold rule, 40px, dual-currency stack) */}
+        <div className="flex items-end justify-between border-t-2 pt-2.5" style={{ borderColor: "var(--brand-border)" }}>
+          <span className="text-[12px] font-semibold uppercase tracking-wide pb-1" style={{ color: "var(--text-3)" }}>
+            {t("pos.total_usd")}
+          </span>
+          <div className="text-end">
+            <span
+              key={total}
+              className="money-tick block font-bold tabular-nums leading-none"
+              style={{ fontSize: "var(--fs-total)", letterSpacing: "-0.02em", color: "var(--text)" }}
+            >
+              {formatCurrency(total)}
             </span>
-            <span className="block text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
+            <span className="block text-[13px] font-semibold tabular-nums mt-1" style={{ color: "var(--text-2)" }}>
               {formatLbpCurrency(totalLbp)}
             </span>
           </div>
-          <span className="text-[32px] font-bold tabular-nums leading-none" style={{ color: "var(--text)" }}>
-            {formatCurrency(total)}
-          </span>
         </div>
 
         {hasDiscount && (
