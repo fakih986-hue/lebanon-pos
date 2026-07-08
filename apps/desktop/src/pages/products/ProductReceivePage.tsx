@@ -677,8 +677,8 @@ export default function ProductReceivePage() {
                       <button key={method} type="button" onClick={() => setPurchasePaymentMethod(method)}
                         className="flex items-center justify-center gap-1.5 h-8 rounded-xl border text-[11px] font-bold transition"
                         style={active
-                          ? { background: "var(--brand)", borderColor: "var(--brand)", color: "#fff" }
-                          : { borderColor: "var(--border)", color: "var(--text-2)", background: "var(--surface-2)" }
+                          ? { background: "var(--surface-3)", borderColor: "var(--border-strong)", color: "var(--text)" }
+                          : { borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface-2)" }
                         }>
                         <Icon size={12} />
                         {method === "On Account" ? "Account" : method === "Bank Transfer" ? "Bank" : method}
@@ -744,8 +744,8 @@ export default function ProductReceivePage() {
                   <button key={size} type="button" onClick={() => setLabelSize(size)}
                     className="rounded-xl border py-2 text-[11px] font-bold transition"
                     style={labelSize === size
-                      ? { background: "var(--brand)", borderColor: "var(--brand)", color: "#fff" }
-                      : { borderColor: "var(--border)", color: "var(--text-2)", background: "var(--surface-2)" }
+                      ? { background: "var(--surface-3)", borderColor: "var(--border-strong)", color: "var(--text)" }
+                      : { borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface-2)" }
                     }>
                     {labelSizes[size].label}
                   </button>
@@ -762,7 +762,7 @@ export default function ProductReceivePage() {
               ) : null })()}
 
               <button type="button" onClick={printLabels} disabled={labelsToPrint === 0}
-                className="btn btn-primary w-full justify-center gap-2 h-10 text-[13px] disabled:opacity-40">
+                className="btn btn-default w-full justify-center gap-2 h-10 text-[13px] disabled:opacity-40">
                 <Printer size={14} /> Print {labelsToPrint > 0 ? `${labelsToPrint} labels` : ""}
               </button>
             </div>
