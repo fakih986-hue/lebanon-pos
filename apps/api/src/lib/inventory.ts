@@ -25,3 +25,16 @@ export async function decrementProductStock(
     }
   }
 }
+
+export async function increaseProductStock(
+  tx: any,
+  tenantId: string,
+  items: DecrementItem[],
+): Promise<void> {
+  for (const item of items) {
+    await tx.product.updateMany({
+      where: { tenantId, id: item.productId },
+      data: { stock: { increment: item.quantity }, updatedAt: new Date() },
+    })
+  }
+}

@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken"
 import { z } from "zod"
 import prisma from "../lib/prisma.js"
 import { Prisma } from "../generated/prisma/index.js"
-import { decrementProductStock } from "../lib/inventory.js"
+import { decrementProductStock, increaseProductStock } from "../lib/inventory.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 import { broadcastToTenant, broadcastToUser, getConnectedDrivers } from "../ws/index.js"
 
@@ -491,11 +491,15 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerRes
       updateData.driverId = body.driverId
       updateData.driverAssignedAt = new Date()
       if (body.driverId) {
-        const driver = await prisma.staffUser.findUnique({
-          where: { id: body.driverId },
+        const driver = await prisma.staffUser.findFirst({
+          where: { id: body.driverId, role: "Driver", active: true },
           select: { name: true },
         })
-        if (driver) updateData.assignedName = driver.name
+        if (!driver) {
+          json(res, { error: "Driver not found or inactive" }, 400)
+          return
+        }
+        updateData.assignedName = driver.name
       } else {
         updateData.assignedName = null
       }
@@ -525,8 +529,14 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerRes
         include: { items: true },
       })
 
-      if (updateResult.count > 0 && body.status === "Delivered" && updated && updated.items.length > 0) {
-        await decrementProductStock(tx, tenantId, updated.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+      // Stock handling: decrement when order enters active handling,
+      // restore when cancelled. Delivered does NOT decrement again.
+      if (updateResult.count > 0 && updated && updated.items.length > 0) {
+        if (body.status === "Confirmed" || body.status === "OutForDelivery") {
+          await decrementProductStock(tx, tenantId, updated.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+        } else if (body.status === "Cancelled") {
+          await increaseProductStock(tx, tenantId, updated.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+        }
       }
 
       return updated!
@@ -663,8 +673,11 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
         include: { items: true },
       })
 
-      if (updateResult.count > 0 && newStatus === "Delivered" && result && result.items.length > 0) {
-        await decrementProductStock(tx, order.tenantId, result.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+      // Stock handling: decrement on active status, restore on cancel
+      if (updateResult.count > 0 && result && result.items.length > 0) {
+        if (newStatus === "OutForDelivery") {
+          await decrementProductStock(tx, order.tenantId, result.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+        }
       }
 
       return result!
