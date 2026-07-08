@@ -4180,6 +4180,14 @@ export namespace Prisma {
     offlineGraceDays: number | null
     leaseExpiresAt: Date | null
     policyVersion: number | null
+    planName: string | null
+    trialStartDate: Date | null
+    trialEndDate: Date | null
+    subscriptionStart: Date | null
+    subscriptionEnd: Date | null
+    renewalDate: Date | null
+    billingContact: string | null
+    internalNotes: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4197,6 +4205,14 @@ export namespace Prisma {
     offlineGraceDays: number | null
     leaseExpiresAt: Date | null
     policyVersion: number | null
+    planName: string | null
+    trialStartDate: Date | null
+    trialEndDate: Date | null
+    subscriptionStart: Date | null
+    subscriptionEnd: Date | null
+    renewalDate: Date | null
+    billingContact: string | null
+    internalNotes: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4214,6 +4230,14 @@ export namespace Prisma {
     offlineGraceDays: number
     leaseExpiresAt: number
     policyVersion: number
+    planName: number
+    trialStartDate: number
+    trialEndDate: number
+    subscriptionStart: number
+    subscriptionEnd: number
+    renewalDate: number
+    billingContact: number
+    internalNotes: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -4243,6 +4267,14 @@ export namespace Prisma {
     offlineGraceDays?: true
     leaseExpiresAt?: true
     policyVersion?: true
+    planName?: true
+    trialStartDate?: true
+    trialEndDate?: true
+    subscriptionStart?: true
+    subscriptionEnd?: true
+    renewalDate?: true
+    billingContact?: true
+    internalNotes?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4260,6 +4292,14 @@ export namespace Prisma {
     offlineGraceDays?: true
     leaseExpiresAt?: true
     policyVersion?: true
+    planName?: true
+    trialStartDate?: true
+    trialEndDate?: true
+    subscriptionStart?: true
+    subscriptionEnd?: true
+    renewalDate?: true
+    billingContact?: true
+    internalNotes?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4277,6 +4317,14 @@ export namespace Prisma {
     offlineGraceDays?: true
     leaseExpiresAt?: true
     policyVersion?: true
+    planName?: true
+    trialStartDate?: true
+    trialEndDate?: true
+    subscriptionStart?: true
+    subscriptionEnd?: true
+    renewalDate?: true
+    billingContact?: true
+    internalNotes?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -4381,6 +4429,14 @@ export namespace Prisma {
     offlineGraceDays: number
     leaseExpiresAt: Date | null
     policyVersion: number
+    planName: string
+    trialStartDate: Date | null
+    trialEndDate: Date | null
+    subscriptionStart: Date | null
+    subscriptionEnd: Date | null
+    renewalDate: Date | null
+    billingContact: string
+    internalNotes: string
     createdAt: Date
     updatedAt: Date
     _count: TenantCountAggregateOutputType | null
@@ -4417,6 +4473,14 @@ export namespace Prisma {
     offlineGraceDays?: boolean
     leaseExpiresAt?: boolean
     policyVersion?: boolean
+    planName?: boolean
+    trialStartDate?: boolean
+    trialEndDate?: boolean
+    subscriptionStart?: boolean
+    subscriptionEnd?: boolean
+    renewalDate?: boolean
+    billingContact?: boolean
+    internalNotes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     users?: boolean | Tenant$usersArgs<ExtArgs>
@@ -4457,6 +4521,14 @@ export namespace Prisma {
     offlineGraceDays?: boolean
     leaseExpiresAt?: boolean
     policyVersion?: boolean
+    planName?: boolean
+    trialStartDate?: boolean
+    trialEndDate?: boolean
+    subscriptionStart?: boolean
+    subscriptionEnd?: boolean
+    renewalDate?: boolean
+    billingContact?: boolean
+    internalNotes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["tenant"]>
@@ -4474,6 +4546,14 @@ export namespace Prisma {
     offlineGraceDays?: boolean
     leaseExpiresAt?: boolean
     policyVersion?: boolean
+    planName?: boolean
+    trialStartDate?: boolean
+    trialEndDate?: boolean
+    subscriptionStart?: boolean
+    subscriptionEnd?: boolean
+    renewalDate?: boolean
+    billingContact?: boolean
+    internalNotes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["tenant"]>
@@ -4491,11 +4571,19 @@ export namespace Prisma {
     offlineGraceDays?: boolean
     leaseExpiresAt?: boolean
     policyVersion?: boolean
+    planName?: boolean
+    trialStartDate?: boolean
+    trialEndDate?: boolean
+    subscriptionStart?: boolean
+    subscriptionEnd?: boolean
+    renewalDate?: boolean
+    billingContact?: boolean
+    internalNotes?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "cloudApiKey" | "licenseStatus" | "licenseReason" | "licenseMessage" | "suspendedAt" | "offlineGraceDays" | "leaseExpiresAt" | "policyVersion" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
+  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "cloudApiKey" | "licenseStatus" | "licenseReason" | "licenseMessage" | "suspendedAt" | "offlineGraceDays" | "leaseExpiresAt" | "policyVersion" | "planName" | "trialStartDate" | "trialEndDate" | "subscriptionStart" | "subscriptionEnd" | "renewalDate" | "billingContact" | "internalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
   export type TenantInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     users?: boolean | Tenant$usersArgs<ExtArgs>
     products?: boolean | Tenant$productsArgs<ExtArgs>
@@ -4563,6 +4651,14 @@ export namespace Prisma {
       offlineGraceDays: number
       leaseExpiresAt: Date | null
       policyVersion: number
+      planName: string
+      trialStartDate: Date | null
+      trialEndDate: Date | null
+      subscriptionStart: Date | null
+      subscriptionEnd: Date | null
+      renewalDate: Date | null
+      billingContact: string
+      internalNotes: string
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["tenant"]>
@@ -5022,6 +5118,14 @@ export namespace Prisma {
     readonly offlineGraceDays: FieldRef<"Tenant", 'Int'>
     readonly leaseExpiresAt: FieldRef<"Tenant", 'DateTime'>
     readonly policyVersion: FieldRef<"Tenant", 'Int'>
+    readonly planName: FieldRef<"Tenant", 'String'>
+    readonly trialStartDate: FieldRef<"Tenant", 'DateTime'>
+    readonly trialEndDate: FieldRef<"Tenant", 'DateTime'>
+    readonly subscriptionStart: FieldRef<"Tenant", 'DateTime'>
+    readonly subscriptionEnd: FieldRef<"Tenant", 'DateTime'>
+    readonly renewalDate: FieldRef<"Tenant", 'DateTime'>
+    readonly billingContact: FieldRef<"Tenant", 'String'>
+    readonly internalNotes: FieldRef<"Tenant", 'String'>
     readonly createdAt: FieldRef<"Tenant", 'DateTime'>
     readonly updatedAt: FieldRef<"Tenant", 'DateTime'>
   }
@@ -40429,6 +40533,14 @@ export namespace Prisma {
     offlineGraceDays: 'offlineGraceDays',
     leaseExpiresAt: 'leaseExpiresAt',
     policyVersion: 'policyVersion',
+    planName: 'planName',
+    trialStartDate: 'trialStartDate',
+    trialEndDate: 'trialEndDate',
+    subscriptionStart: 'subscriptionStart',
+    subscriptionEnd: 'subscriptionEnd',
+    renewalDate: 'renewalDate',
+    billingContact: 'billingContact',
+    internalNotes: 'internalNotes',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -41257,6 +41369,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFilter<"Tenant"> | number
     leaseExpiresAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     policyVersion?: IntFilter<"Tenant"> | number
+    planName?: StringFilter<"Tenant"> | string
+    trialStartDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    trialEndDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    subscriptionStart?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    subscriptionEnd?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    renewalDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    billingContact?: StringFilter<"Tenant"> | string
+    internalNotes?: StringFilter<"Tenant"> | string
     createdAt?: DateTimeFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeFilter<"Tenant"> | Date | string
     users?: StaffUserListRelationFilter
@@ -41296,6 +41416,14 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     leaseExpiresAt?: SortOrderInput | SortOrder
     policyVersion?: SortOrder
+    planName?: SortOrder
+    trialStartDate?: SortOrderInput | SortOrder
+    trialEndDate?: SortOrderInput | SortOrder
+    subscriptionStart?: SortOrderInput | SortOrder
+    subscriptionEnd?: SortOrderInput | SortOrder
+    renewalDate?: SortOrderInput | SortOrder
+    billingContact?: SortOrder
+    internalNotes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     users?: StaffUserOrderByRelationAggregateInput
@@ -41338,6 +41466,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFilter<"Tenant"> | number
     leaseExpiresAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     policyVersion?: IntFilter<"Tenant"> | number
+    planName?: StringFilter<"Tenant"> | string
+    trialStartDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    trialEndDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    subscriptionStart?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    subscriptionEnd?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    renewalDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    billingContact?: StringFilter<"Tenant"> | string
+    internalNotes?: StringFilter<"Tenant"> | string
     createdAt?: DateTimeFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeFilter<"Tenant"> | Date | string
     users?: StaffUserListRelationFilter
@@ -41377,6 +41513,14 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     leaseExpiresAt?: SortOrderInput | SortOrder
     policyVersion?: SortOrder
+    planName?: SortOrder
+    trialStartDate?: SortOrderInput | SortOrder
+    trialEndDate?: SortOrderInput | SortOrder
+    subscriptionStart?: SortOrderInput | SortOrder
+    subscriptionEnd?: SortOrderInput | SortOrder
+    renewalDate?: SortOrderInput | SortOrder
+    billingContact?: SortOrder
+    internalNotes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: TenantCountOrderByAggregateInput
@@ -41402,6 +41546,14 @@ export namespace Prisma {
     offlineGraceDays?: IntWithAggregatesFilter<"Tenant"> | number
     leaseExpiresAt?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
     policyVersion?: IntWithAggregatesFilter<"Tenant"> | number
+    planName?: StringWithAggregatesFilter<"Tenant"> | string
+    trialStartDate?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
+    trialEndDate?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
+    subscriptionStart?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
+    subscriptionEnd?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
+    renewalDate?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
+    billingContact?: StringWithAggregatesFilter<"Tenant"> | string
+    internalNotes?: StringWithAggregatesFilter<"Tenant"> | string
     createdAt?: DateTimeWithAggregatesFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Tenant"> | Date | string
   }
@@ -44224,6 +44376,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -44263,6 +44423,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -44302,6 +44470,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -44341,6 +44517,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -44380,6 +44564,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -44397,6 +44589,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -44414,6 +44614,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -47832,6 +48040,14 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     leaseExpiresAt?: SortOrder
     policyVersion?: SortOrder
+    planName?: SortOrder
+    trialStartDate?: SortOrder
+    trialEndDate?: SortOrder
+    subscriptionStart?: SortOrder
+    subscriptionEnd?: SortOrder
+    renewalDate?: SortOrder
+    billingContact?: SortOrder
+    internalNotes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -47854,6 +48070,14 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     leaseExpiresAt?: SortOrder
     policyVersion?: SortOrder
+    planName?: SortOrder
+    trialStartDate?: SortOrder
+    trialEndDate?: SortOrder
+    subscriptionStart?: SortOrder
+    subscriptionEnd?: SortOrder
+    renewalDate?: SortOrder
+    billingContact?: SortOrder
+    internalNotes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -47871,6 +48095,14 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     leaseExpiresAt?: SortOrder
     policyVersion?: SortOrder
+    planName?: SortOrder
+    trialStartDate?: SortOrder
+    trialEndDate?: SortOrder
+    subscriptionStart?: SortOrder
+    subscriptionEnd?: SortOrder
+    renewalDate?: SortOrder
+    billingContact?: SortOrder
+    internalNotes?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -55033,6 +55265,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     products?: ProductCreateNestedManyWithoutTenantInput
@@ -55071,6 +55311,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     products?: ProductUncheckedCreateNestedManyWithoutTenantInput
@@ -55341,6 +55589,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: ProductUpdateManyWithoutTenantNestedInput
@@ -55379,6 +55635,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: ProductUncheckedUpdateManyWithoutTenantNestedInput
@@ -55481,6 +55745,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -55519,6 +55791,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -55573,6 +55853,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -55611,6 +55899,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -55649,6 +55945,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -55687,6 +55991,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -56028,6 +56340,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -56066,6 +56386,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -56270,6 +56598,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -56308,6 +56644,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -56471,6 +56815,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -56509,6 +56861,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -56855,6 +57215,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -56893,6 +57261,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -57032,6 +57408,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -57070,6 +57454,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -57286,6 +57678,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -57324,6 +57724,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -57508,6 +57916,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -57546,6 +57962,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -57632,6 +58056,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -57670,6 +58102,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -57761,6 +58201,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -57799,6 +58247,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -57880,6 +58336,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -57918,6 +58382,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -58009,6 +58481,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -58047,6 +58527,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -58128,6 +58616,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -58166,6 +58662,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -58354,6 +58858,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -58392,6 +58904,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -58478,6 +58998,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -58516,6 +59044,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -58635,6 +59171,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -58673,6 +59217,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -58766,6 +59318,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -58804,6 +59364,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -58901,6 +59469,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -58939,6 +59515,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -59026,6 +59610,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -59064,6 +59656,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -59151,6 +59751,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -59189,6 +59797,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -59266,6 +59882,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -59304,6 +59928,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -59440,6 +60072,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -59478,6 +60118,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -59610,6 +60258,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -59648,6 +60304,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -59702,6 +60366,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -59740,6 +60412,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -59778,6 +60458,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -59816,6 +60504,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -59911,6 +60607,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -59949,6 +60653,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -60034,6 +60746,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -60072,6 +60792,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -60223,6 +60951,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -60261,6 +60997,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -60408,6 +61152,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -60446,6 +61198,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -60564,6 +61324,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -60602,6 +61370,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -60710,6 +61486,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -60748,6 +61532,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -60836,6 +61628,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -60874,6 +61674,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -61122,6 +61930,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -61160,6 +61976,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -61322,6 +62146,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -61360,6 +62192,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -61654,6 +62494,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -61692,6 +62540,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -61746,6 +62602,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -61784,6 +62648,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -61822,6 +62694,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -61860,6 +62740,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -61914,6 +62802,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -61952,6 +62848,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -61990,6 +62894,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -62028,6 +62940,14 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -62146,6 +63066,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -62184,6 +63112,14 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput

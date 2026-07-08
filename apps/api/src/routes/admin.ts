@@ -42,6 +42,14 @@ const updateTenantSchema = z.object({
   licenseReason: z.string().optional(),
   licenseMessage: z.string().optional(),
   offlineGraceDays: z.number().int().min(1).max(90).optional(),
+  planName: z.string().optional(),
+  trialStartDate: z.string().optional(),
+  trialEndDate: z.string().optional(),
+  subscriptionStart: z.string().optional(),
+  subscriptionEnd: z.string().optional(),
+  renewalDate: z.string().optional(),
+  billingContact: z.string().optional(),
+  internalNotes: z.string().optional(),
 })
 
 const loginSchema = z.object({
@@ -140,15 +148,7 @@ router.put("/tenants/:id", requireAuth, requireAdmin, async (req: AuthRequest, r
       const existing = await prisma.tenant.findUnique({ where: { subdomain: parsed.data.subdomain } })
       if (existing) { json(res, { error: "Subdomain is already taken" }, 409); return }
     }
-    // Build update data — when suspended is toggled, update license fields too
-    const updateData: Record<string, unknown> = { ...parsed.data }
-    if (typeof parsed.data.suspended === "boolean") {
-      updateData.licenseStatus = parsed.data.suspended ? "suspended" : "active"
-      updateData.suspendedAt = parsed.data.suspended ? new Date() : null
-      updateData.leaseExpiresAt = parsed.data.suspended ? null : null
-      updateData.policyVersion = { increment: 1 }
-    }
-    // Manually build: we can't spread { increment: 1 } into a Prisma call directly
+    // Build update data
     const { suspended, licenseReason, licenseMessage, offlineGraceDays, ...rest } = parsed.data
     const data: any = { ...rest }
     if (typeof suspended === "boolean") {
@@ -161,11 +161,33 @@ router.put("/tenants/:id", requireAuth, requireAdmin, async (req: AuthRequest, r
     if (licenseReason !== undefined) data.licenseReason = licenseReason
     if (licenseMessage !== undefined) data.licenseMessage = licenseMessage
     if (offlineGraceDays !== undefined) data.offlineGraceDays = offlineGraceDays
+    // Subscription fields: forward directly
+    if (parsed.data.planName !== undefined) data.planName = parsed.data.planName
+    if (parsed.data.trialStartDate !== undefined) data.trialStartDate = parsed.data.trialStartDate ? new Date(parsed.data.trialStartDate) : null
+    if (parsed.data.trialEndDate !== undefined) data.trialEndDate = parsed.data.trialEndDate ? new Date(parsed.data.trialEndDate) : null
+    if (parsed.data.subscriptionStart !== undefined) data.subscriptionStart = parsed.data.subscriptionStart ? new Date(parsed.data.subscriptionStart) : null
+    if (parsed.data.subscriptionEnd !== undefined) data.subscriptionEnd = parsed.data.subscriptionEnd ? new Date(parsed.data.subscriptionEnd) : null
+    if (parsed.data.renewalDate !== undefined) data.renewalDate = parsed.data.renewalDate ? new Date(parsed.data.renewalDate) : null
+    if (parsed.data.billingContact !== undefined) data.billingContact = parsed.data.billingContact
+    if (parsed.data.internalNotes !== undefined) data.internalNotes = parsed.data.internalNotes
+
+    // Record audit event for license state changes
+    if (typeof suspended === "boolean" && suspended !== tenant.suspended) {
+      const action = suspended ? "tenant.suspend" : "tenant.resume"
+      await prisma.auditEvent.create({
+        data: {
+          tenantId: tenant.id,
+          action, entity: "tenant",
+          summary: `Store "${tenant.name}" ${suspended ? "suspended" : "resumed"} by admin`,
+          userId: req.auth!.userId, userName: "Admin", userRole: "Admin",
+        },
+      })
+    }
 
     const updated = await prisma.tenant.update({
       where: { id: req.params?.id },
       data,
-      select: { id: true, name: true, subdomain: true, suspended: true, licenseStatus: true, licenseReason: true, licenseMessage: true, suspendedAt: true, offlineGraceDays: true, policyVersion: true, createdAt: true },
+      select: { id: true, name: true, subdomain: true, suspended: true, licenseStatus: true, licenseReason: true, licenseMessage: true, suspendedAt: true, offlineGraceDays: true, policyVersion: true, planName: true, trialStartDate: true, trialEndDate: true, subscriptionStart: true, subscriptionEnd: true, renewalDate: true, billingContact: true, internalNotes: true, createdAt: true },
     })
     json(res, updated)
   } catch (err) {

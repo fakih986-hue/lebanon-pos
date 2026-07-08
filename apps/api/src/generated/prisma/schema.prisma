@@ -79,6 +79,16 @@ model Tenant {
   leaseExpiresAt   DateTime? // when the offline lease expires
   policyVersion    Int       @default(1) // increments on every license change — triggers desktop re-check
 
+  // ── Subscription metadata (v2) ─────────────────────────────────────
+  planName          String    @default("") // free | basic | pro | enterprise
+  trialStartDate    DateTime? // when trial started
+  trialEndDate      DateTime? // when trial expires
+  subscriptionStart DateTime? // when paid subscription started
+  subscriptionEnd   DateTime? // when subscription expires
+  renewalDate       DateTime? // next renewal date
+  billingContact    String    @default("") // owner email/phone for billing
+  internalNotes     String    @default("") // admin-only notes
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
