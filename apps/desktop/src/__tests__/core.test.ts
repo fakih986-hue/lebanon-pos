@@ -103,7 +103,8 @@ describe("security.service", () => {
     })
 
     it("Cashier has minimal permissions", () => {
-      expect(rolePermissions.Cashier).toEqual(["sales.checkout", "customers.manage"])
+      // Sprint 5 tightened Cashier to checkout-only (customers.manage removed)
+      expect(rolePermissions.Cashier).toEqual(["sales.checkout"])
     })
   })
 

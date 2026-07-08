@@ -21,6 +21,7 @@ import QuickPOSMode from "../components/QuickPOSMode"
 import KeyboardShortcutsModal from "../components/KeyboardShortcutsModal"
 import { openWhatsAppShare, receiptMessage } from "../lib/whatsapp"
 import {
+  computeCashChange,
   formatCurrency,
   formatNumber,
   lbpToUsd,
@@ -256,8 +257,10 @@ export default function POSPage() {
   const paidTotalUsd = roundMoney(paidUsdAmount + lbpToUsd(paidLbpAmount, exchangeRate))
   const paidTotalLbp = usdToLbp(paidTotalUsd, exchangeRate)
   const cashStillDueUsd = roundMoney(Math.max(0, total - paidTotalUsd))
-  const cashChangeUsd = roundMoney(Math.max(0, paidTotalUsd - total))
-  const cashChangeLbp = usdToLbp(cashChangeUsd, exchangeRate)
+  const { changeUsd: cashChangeUsd, changeLbp: cashChangeLbp } = computeCashChange({
+    paidUsd: paidUsdAmount, paidLbp: paidLbpAmount,
+    totalUsd: total, totalLbp, exchangeRate,
+  })
   const cashTenderValid =
     paymentMethod !== "Cash" || items.length === 0 || paidTotalUsd + 0.005 >= total
   const creditLimitExceeded = Boolean(

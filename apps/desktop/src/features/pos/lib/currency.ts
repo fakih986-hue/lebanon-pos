@@ -58,3 +58,29 @@ export function usdToLbpRounded(value: number, exchangeRate: number, nearest = 5
 export function formatLbpRounded(value: number, nearest = 5000) {
   return formatLbpCurrency(roundLbp(value, nearest))
 }
+
+/**
+ * Cash change for a sale, tender-mode aware.
+ *
+ * Pure-LBP tenders compute the LBP change directly (paidLbp − totalLbp) so the
+ * displayed change matches banknote arithmetic exactly. Converting through USD
+ * first loses up to half a cent to 2-decimal rounding, which shows up as a
+ * few-hundred-LBP drift (e.g. 250,000 paid on 1,790 due must give 248,210,
+ * not 247,915). USD and mixed tenders keep the USD-canonical path.
+ */
+export function computeCashChange(input: {
+  paidUsd: number
+  paidLbp: number
+  totalUsd: number
+  totalLbp: number
+  exchangeRate: number
+}): { changeUsd: number; changeLbp: number } {
+  const { paidUsd, paidLbp, totalUsd, totalLbp, exchangeRate } = input
+  const paidTotalUsd = roundMoney(paidUsd + lbpToUsd(paidLbp, exchangeRate))
+  const changeUsd = roundMoney(Math.max(0, paidTotalUsd - totalUsd))
+
+  if (paidUsd === 0 && paidLbp > 0) {
+    return { changeUsd, changeLbp: Math.max(0, paidLbp - totalLbp) }
+  }
+  return { changeUsd, changeLbp: usdToLbp(changeUsd, exchangeRate) }
+}
