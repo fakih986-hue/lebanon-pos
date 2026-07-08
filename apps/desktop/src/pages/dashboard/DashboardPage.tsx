@@ -18,12 +18,7 @@ import { useI18n } from "@lebanonpos/shared"
 
 type DateRange = "today" | "week" | "month"
 
-const PM_COLORS: Record<string, { solid: string; soft: string; text: string }> = {
-  Cash:   { solid: "#10b981", soft: "rgba(16,185,129,0.15)",  text: "#6ee7b7" },
-  Card:   { solid: "#6366f1", soft: "rgba(99,102,241,0.15)",  text: "#a5b4fc" },
-  Wallet: { solid: "#8b5cf6", soft: "rgba(139,92,246,0.15)", text: "#c4b5fd" },
-  Debt:   { solid: "#f59e0b", soft: "rgba(245,158,11,0.15)",  text: "#fde68a" },
-}
+import { paymentColor } from "../../features/pos/lib/paymentColors"
 
 function getDateStart(range: DateRange) {
   const now = new Date()
@@ -64,11 +59,11 @@ function TrendChart({ sales, range }: { sales: Sale[]; range: DateRange }) {
 
   return (
     <div>
-      <div className="flex items-end gap-[3px] h-36 mt-4">
+      <div className="flex items-stretch gap-[3px] h-36 mt-4">
         {data.map((d, i) => {
           const pct = (d.total / max) * 100
           return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group relative">
+            <div key={i} className="flex-1 flex flex-col items-center justify-end gap-0.5 group relative">
               {/* Tooltip */}
               {d.total > 0 && (
                 <div
@@ -86,9 +81,9 @@ function TrendChart({ sales, range }: { sales: Sale[]; range: DateRange }) {
                 style={{
                   height: `${Math.max(pct, 2)}%`,
                   background: d.isToday
-                    ? `linear-gradient(180deg, var(--brand), var(--brand-hover, var(--brand)))`
-                    : `linear-gradient(180deg, var(--brand-soft) 0%, var(--brand-soft) 100%)`,
-                  opacity: d.total === 0 ? 0.3 : 1,
+                    ? `linear-gradient(180deg, var(--brand-hover), var(--brand))`
+                    : `linear-gradient(180deg, rgba(212,168,67,0.55), rgba(212,168,67,0.30))`,
+                  opacity: d.total === 0 ? 0.25 : 1,
                   boxShadow: d.isToday && d.total > 0 ? `0 -4px 16px var(--brand-soft)` : "none",
                 }}
               />
@@ -109,7 +104,7 @@ function TrendChart({ sales, range }: { sales: Sale[]; range: DateRange }) {
         <span className="flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full" style={{ background: "var(--brand)" }} />
           Today
-          <span className="h-2 w-2 rounded-full ms-2" style={{ background: "var(--brand-soft)" }} />
+          <span className="h-2 w-2 rounded-full ms-2" style={{ background: "rgba(212,168,67,0.45)" }} />
           Past
         </span>
         <span className="font-bold tabular-nums" style={{ color: "var(--text-2)" }}>{formatCurrency(totalRevenue)} total</span>
@@ -357,14 +352,14 @@ export default function DashboardPage() {
                     <div className="flex h-3 overflow-hidden rounded-full gap-0.5">
                       {Object.entries(paymentMix).map(([method, amount]) => {
                         const pct = paymentTotal > 0 ? (amount / paymentTotal) * 100 : 0
-                        const col = PM_COLORS[method]?.solid ?? "#6b7280"
+                        const col = paymentColor(method).solid
                         return <div key={method} className="rounded-full transition-all" style={{ width: `${pct}%`, background: col }} />
                       })}
                     </div>
 
                     {Object.entries(paymentMix).map(([method, amount]) => {
                       const pct = paymentTotal > 0 ? (amount / paymentTotal) * 100 : 0
-                      const col = PM_COLORS[method] ?? { solid: "#6b7280", soft: "rgba(107,114,128,0.15)", text: "#9ca3af" }
+                      const col = paymentColor(method)
                       return (
                         <div key={method} className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2 min-w-0">
@@ -503,7 +498,7 @@ export default function DashboardPage() {
                   <p className="px-4 py-8 text-center text-[12px]" style={{ color: "var(--text-3)" }}>No sales yet</p>
                 )}
                 {recentSales.map((sale) => {
-                  const col = PM_COLORS[sale.paymentMethod] ?? { solid: "#6b7280", soft: "rgba(107,114,128,0.15)", text: "#9ca3af" }
+                  const col = paymentColor(sale.paymentMethod)
                   return (
                     <div key={sale.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--surface-hover)] transition-colors">
                       <ReceiptText size={14} style={{ color: "var(--text-3)", flexShrink: 0 }} />

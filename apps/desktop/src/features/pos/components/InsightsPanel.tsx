@@ -10,12 +10,7 @@ import {
 } from "../lib/salesHelpers"
 import type { Sale } from "../services/sales.service"
 
-const PAYMENT_COLORS: Record<string, string> = {
-  Cash: "#10b981",
-  Card: "#6366f1",
-  Wallet: "#8b5cf6",
-  Debt: "#f59e0b",
-}
+import { paymentColor } from "../lib/paymentColors"
 
 function MiniBarChart({ data }: { data: Array<{ label: string; value: number }> }) {
   const max = Math.max(...data.map((d) => d.value), 1)
@@ -126,7 +121,7 @@ export default function InsightsPanel({
                   <div className="h-2 w-full rounded-full bg-zinc-100">
                     <div
                       className="h-2 rounded-full transition-all"
-                      style={{ width: `${pct}%`, backgroundColor: PAYMENT_COLORS[method] ?? "#6b7280" }}
+                      style={{ width: `${pct}%`, backgroundColor: paymentColor(method).solid }}
                     />
                   </div>
                 </div>
