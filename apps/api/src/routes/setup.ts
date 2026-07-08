@@ -353,4 +353,30 @@ router.post("/auto-login", (req: Req, res: Response) => {
   res.json({ token, tenantId })
 })
 
+// Admin diagnostics — protected, returns system info without secrets
+router.get("/diagnostics", async (req: Req, res: Response) => {
+  try {
+    const dbConnected = await prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false)
+    const tenantCount = dbConnected ? await prisma.tenant.count() : null
+    const syncPending = dbConnected ? await prisma.syncOperation.count({ where: { status: "Pending" } }) : null
+    const syncFailed = dbConnected ? await prisma.syncOperation.count({ where: { status: "Failed" } }) : null
+
+    res.json({
+      timestamp: new Date().toISOString(),
+      app: "Lebanon POS API",
+      dbConnected,
+      tenantCount,
+      syncPending,
+      syncFailed,
+      nodeVersion: process.version,
+      platform: process.platform,
+      env: process.env.NODE_ENV || "development",
+      cloudConfig: getCloudStatus(),
+    })
+  } catch (err) {
+    console.error("[diagnostics] Error:", err)
+    res.status(500).json({ error: "Diagnostics failed" })
+  }
+})
+
 export default router
