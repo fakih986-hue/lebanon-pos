@@ -739,3 +739,111 @@ export function detectIncompleteProducts() {
     ].filter(Boolean).join(", "),
   }))
 }
+
+// ── Product views / quick filters ────────────────────────────────
+
+export function getLowStockProducts(products?: Product[]) {
+  const list = products ?? getProductsSync()
+  return list.filter(p => !p.archived && p.stock <= (p.reorderPoint ?? 10) && p.stock >= 0)
+}
+
+export function getNoBarcodeProducts(products?: Product[]) {
+  const list = products ?? getProductsSync()
+  return list.filter(p => !p.archived && (!p.barcode || p.barcode.trim() === ""))
+}
+
+export type ProductSortKey = "name" | "stock" | "category" | "price" | "cost" | "margin"
+export type SortDir = "asc" | "desc"
+
+export function sortProducts(list: Product[], key: ProductSortKey, dir: SortDir): Product[] {
+  const sorted = [...list]
+  const cmp = (a: number, b: number) => dir === "asc" ? a - b : b - a
+  const strCmp = (a: string, b: string) => dir === "asc" ? a.localeCompare(b) : b.localeCompare(a)
+
+  switch (key) {
+    case "name":     sorted.sort((a, b) => strCmp(a.name, b.name)); break
+    case "stock":    sorted.sort((a, b) => cmp(a.stock, b.stock)); break
+    case "category": sorted.sort((a, b) => strCmp(a.category, b.category)); break
+    case "price":    sorted.sort((a, b) => cmp(a.price, b.price)); break
+    case "cost":     sorted.sort((a, b) => cmp(a.cost, b.cost)); break
+    case "margin":   sorted.sort((a, b) => cmp(a.price - a.cost, b.price - b.cost)); break
+  }
+  return sorted
+}
+
+export function filterByStockStatus(list: Product[], status: "ok" | "low" | "out"): Product[] {
+  return list.filter(p => {
+    if (p.archived) return false
+    if (status === "out") return p.stock <= 0
+    if (status === "low") return p.stock > 0 && p.stock <= (p.reorderPoint ?? 10)
+    return p.stock > (p.reorderPoint ?? 10)
+  })
+}
+
+export function filterByCategory(list: Product[], category: string): Product[] {
+  const norm = normalizeName(category)
+  return list.filter(p => normalizeName(p.category) === norm)
+}
+
+export function filterBySupplier(list: Product[], supplierId: string): Product[] {
+  return list.filter(p => p.supplierId === supplierId)
+}
+
+// ── Receiving helpers ────────────────────────────────────────────
+
+export type ReceiveRowValidation = {
+  valid: boolean
+  errors: string[]
+  warnings: string[]
+}
+
+export function validateReceiveRow(row: {
+  name?: string; barcode?: string; quantity: number; cost?: number; price?: number
+}): ReceiveRowValidation {
+  const errors: string[] = []
+  const warnings: string[] = []
+
+  if (!row.name?.trim()) errors.push("Name required")
+  if (!row.barcode?.trim()) errors.push("Barcode required")
+  if (!row.quantity || row.quantity <= 0) errors.push("Quantity must be > 0")
+  if (row.price !== undefined && row.price < 0) errors.push("Price cannot be negative")
+  if (row.cost !== undefined && row.cost < 0) errors.push("Cost cannot be negative")
+  if (row.price !== undefined && row.cost !== undefined && row.price > 0 && row.cost > 0 && row.cost > row.price) {
+    warnings.push("Cost exceeds price")
+  }
+
+  return { valid: errors.length === 0, errors, warnings }
+}
+
+export type SpreadsheetRowResult = {
+  rows: Array<{
+    name: string; barcode: string; category: string; quantity: number
+    cost: number; price: number
+  }>
+  rejected: Array<{ index: number; reason: string; raw: string }>
+}
+
+export function parseSpreadsheetPaste(text: string): SpreadsheetRowResult {
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim())
+  const rows: SpreadsheetRowResult["rows"] = []
+  const rejected: SpreadsheetRowResult["rejected"] = []
+
+  lines.forEach((line, i) => {
+    const cols = line.split(/\t|,|;/).map(c => c.trim().replace(/^"|"$/g, ""))
+    const name = cols[0] || ""
+    const barcode = cols[1] || ""
+    const category = cols[2] || "General"
+    const qty = Number(cols[3])
+    const cost = Number(cols[4]) || 0
+    const price = Number(cols[5]) || 0
+
+    if (!name || !barcode || !qty || qty <= 0) {
+      rejected.push({ index: i + 1, reason: `Missing ${!name ? "name" : !barcode ? "barcode" : "valid quantity"}`, raw: line })
+      return
+    }
+
+    rows.push({ name, barcode, category, quantity: qty, cost, price })
+  })
+
+  return { rows, rejected }
+}

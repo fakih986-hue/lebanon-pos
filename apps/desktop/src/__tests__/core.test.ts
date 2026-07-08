@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { productHasBarcode, productMatchesSearch } from "../features/pos/services/product.service"
+import { productHasBarcode, productMatchesSearch, getLowStockProducts, getNoBarcodeProducts, sortProducts, filterByStockStatus, filterByCategory, filterBySupplier, validateReceiveRow, parseSpreadsheetPaste } from "../features/pos/services/product.service"
 import { getLocalDateKey } from "../features/pos/services/dailyClose.service"
 import { userCan, rolePermissions, type StaffUser, type Permission } from "../features/pos/services/security.service"
 import type { Product } from "../features/pos/types/product"
@@ -63,6 +63,172 @@ describe("product.service", () => {
 
     it("returns false for no match", () => {
       expect(productMatchesSearch(baseProduct, "Pizza")).toBe(false)
+    })
+  })
+
+  describe("getLowStockProducts", () => {
+    it("returns products at or below reorder point", () => {
+      const products: Product[] = [
+        { ...baseProduct, id: 1, stock: 5, reorderPoint: 10 },
+        { ...baseProduct, id: 2, stock: 20, reorderPoint: 10 },
+        { ...baseProduct, id: 3, stock: 0, reorderPoint: 10 },
+      ]
+      const result = getLowStockProducts(products)
+      expect(result.map(p => p.id)).toEqual([1, 3])
+    })
+
+    it("excludes archived products", () => {
+      const products: Product[] = [
+        { ...baseProduct, id: 1, stock: 5, reorderPoint: 10, archived: true },
+        { ...baseProduct, id: 2, stock: 5, reorderPoint: 10, archived: false },
+      ]
+      const result = getLowStockProducts(products)
+      expect(result.map(p => p.id)).toEqual([2])
+    })
+  })
+
+  describe("getNoBarcodeProducts", () => {
+    it("returns products without barcode", () => {
+      const products: Product[] = [
+        { ...baseProduct, id: 1, barcode: "123" },
+        { ...baseProduct, id: 2, barcode: "" },
+        { ...baseProduct, id: 3, barcode: "" },
+      ]
+      const result = getNoBarcodeProducts(products)
+      expect(result.map(p => p.id)).toEqual([2, 3])
+    })
+  })
+
+  describe("sortProducts", () => {
+    const products: Product[] = [
+      { ...baseProduct, id: 1, name: "Apple", stock: 50, category: "Fruit", price: 2, cost: 1 },
+      { ...baseProduct, id: 2, name: "Banana", stock: 10, category: "Fruit", price: 1.5, cost: 0.8 },
+      { ...baseProduct, id: 3, name: "Croissant", stock: 30, category: "Bakery", price: 3, cost: 1.2 },
+    ]
+
+    it("sorts by name ascending", () => {
+      const sorted = sortProducts(products, "name", "asc")
+      expect(sorted.map(p => p.id)).toEqual([1, 2, 3])
+    })
+
+    it("sorts by name descending", () => {
+      const sorted = sortProducts(products, "name", "desc")
+      expect(sorted.map(p => p.id)).toEqual([3, 2, 1])
+    })
+
+    it("sorts by stock ascending", () => {
+      const sorted = sortProducts(products, "stock", "asc")
+      expect(sorted.map(p => p.id)).toEqual([2, 3, 1])
+    })
+
+    it("sorts by margin descending", () => {
+      const sorted = sortProducts(products, "margin", "desc")
+      const margins = sorted.map(p => p.price - p.cost)
+      expect(margins[0]).toBe(1.8) // Croissant
+      expect(margins[2]).toBe(0.7) // Banana
+    })
+  })
+
+  describe("filterByStockStatus", () => {
+    const products: Product[] = [
+      { ...baseProduct, id: 1, stock: 0, reorderPoint: 10 },
+      { ...baseProduct, id: 2, stock: 5, reorderPoint: 10 },
+      { ...baseProduct, id: 3, stock: 30, reorderPoint: 10 },
+    ]
+
+    it("filters out-of-stock", () => {
+      expect(filterByStockStatus(products, "out").map(p => p.id)).toEqual([1])
+    })
+
+    it("filters low stock", () => {
+      expect(filterByStockStatus(products, "low").map(p => p.id)).toEqual([2])
+    })
+
+    it("filters ok stock", () => {
+      expect(filterByStockStatus(products, "ok").map(p => p.id)).toEqual([3])
+    })
+
+    it("excludes archived", () => {
+      const p = [...products, { ...baseProduct, id: 4, stock: 0, reorderPoint: 10, archived: true }]
+      expect(filterByStockStatus(p, "out").map(x => x.id)).toEqual([1])
+    })
+  })
+
+  describe("filterByCategory", () => {
+    it("filters by normalized category (whitespace-tolerant, case-sensitive)", () => {
+      const products: Product[] = [
+        { ...baseProduct, id: 1, category: "Beverages" },
+        { ...baseProduct, id: 2, category: "  Beverages  " },
+        { ...baseProduct, id: 3, category: "Bakery" },
+      ]
+      expect(filterByCategory(products, "Beverages").map(p => p.id)).toEqual([1, 2])
+    })
+
+    it("does not match different case", () => {
+      const products: Product[] = [
+        { ...baseProduct, id: 1, category: "Beverages" },
+        { ...baseProduct, id: 2, category: "beverages" },
+      ]
+      expect(filterByCategory(products, "Beverages").map(p => p.id)).toEqual([1])
+    })
+  })
+
+  describe("validateReceiveRow", () => {
+    it("validates complete row", () => {
+      const v = validateReceiveRow({ name: "Cola", barcode: "123", quantity: 10, cost: 1, price: 2 })
+      expect(v.valid).toBe(true)
+      expect(v.errors).toHaveLength(0)
+    })
+
+    it("flags missing name", () => {
+      const v = validateReceiveRow({ name: "", barcode: "123", quantity: 10 })
+      expect(v.valid).toBe(false)
+      expect(v.errors).toContain("Name required")
+    })
+
+    it("flags missing barcode", () => {
+      const v = validateReceiveRow({ name: "Cola", barcode: "", quantity: 10 })
+      expect(v.valid).toBe(false)
+      expect(v.errors).toContain("Barcode required")
+    })
+
+    it("flags zero quantity", () => {
+      const v = validateReceiveRow({ name: "Cola", barcode: "123", quantity: 0 })
+      expect(v.valid).toBe(false)
+      expect(v.errors).toContain("Quantity must be > 0")
+    })
+
+    it("warns when cost exceeds price", () => {
+      const v = validateReceiveRow({ name: "Cola", barcode: "123", quantity: 10, cost: 5, price: 3 })
+      expect(v.valid).toBe(true)
+      expect(v.warnings).toContain("Cost exceeds price")
+    })
+  })
+
+  describe("parseSpreadsheetPaste", () => {
+    it("parses tab-separated rows", () => {
+      const result = parseSpreadsheetPaste("Cola\t123\tBeverages\t10\t1\t2\nBread\t456\tBakery\t5\t2\t3")
+      expect(result.rows).toHaveLength(2)
+      expect(result.rejected).toHaveLength(0)
+      expect(result.rows[0].name).toBe("Cola")
+      expect(result.rows[0].quantity).toBe(10)
+    })
+
+    it("parses comma-separated rows", () => {
+      const result = parseSpreadsheetPaste("Cola,123,Beverages,10,1,2")
+      expect(result.rows).toHaveLength(1)
+      expect(result.rows[0].barcode).toBe("123")
+    })
+
+    it("rejects rows with missing name", () => {
+      const result = parseSpreadsheetPaste(",123,Beverages,10,1,2")
+      expect(result.rejected).toHaveLength(1)
+      expect(result.rows).toHaveLength(0)
+    })
+
+    it("rejects rows with invalid quantity", () => {
+      const result = parseSpreadsheetPaste("Cola\t123\tBeverages\t0\t1\t2")
+      expect(result.rejected).toHaveLength(1)
     })
   })
 })

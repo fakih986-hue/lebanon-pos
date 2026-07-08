@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react"
 import { useDebounce } from "../../hooks/useDebounce"
 import type { Product } from "../../features/pos/types/product"
-import { ImagePlus, Plus, Download, SlidersHorizontal, X } from "lucide-react"
+import { ImagePlus, Plus, Download, SlidersHorizontal, X, Search, Filter, ArrowUpDown } from "lucide-react"
 import KpiCards from "../../features/pos/components/KpiCards"
 import AlertsPanel from "../../features/pos/components/AlertsPanel"
 import StockControlPanel from "../../features/pos/components/StockControlPanel"
 import ProductSetupForm from "../../features/pos/components/ProductSetupForm"
 import ProductTable from "../../features/pos/components/ProductTable"
+import ProductQuickCreate from "../../features/pos/components/ProductQuickCreate"
 import Spinner from "../../components/ui/Spinner"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 import { getApiUrl, getAuthToken } from "../../features/pos/services/sync.service"
@@ -25,11 +26,17 @@ type StockAdjustmentReason,
 import {
   createProduct,
   deleteProduct,
+  getLowStockProducts,
+  getNoBarcodeProducts,
   getProducts,
   productMatchesSearch,
   renameCategory,
+  sortProducts,
   subscribeProducts,
   updateProduct,
+  detectDuplicateBarcodes,
+  type ProductSortKey,
+  type SortDir,
 } from "../../features/pos/services/product.service"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import { subscribeSales } from "../../features/pos/services/sales.service"
@@ -147,6 +154,12 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   const [isParent, setIsParent] = useState(false)
   const [variantName, setVariantName] = useState("")
   const [newVariantName, setNewVariantName] = useState("")
+  const [quickView, setQuickView] = useState<"active" | "archived" | "low" | "nobarcode" | "duplicates">("active")
+  const [sortKey, setSortKey] = useState<ProductSortKey>("name")
+  const [sortDir, setSortDir] = useState<SortDir>("asc")
+  const [showQuickCreate, setShowQuickCreate] = useState(false)
+  const [lotSearch, setLotSearch] = useState("")
+  const [lotFilter, setLotFilter] = useState<"all" | "open" | "consumed" | "expired">("open")
   const [newVariantPrice, setNewVariantPrice] = useState("")
   const [newVariantStock, setNewVariantStock] = useState("")
   const [newVariantBarcode, setNewVariantBarcode] = useState("")
@@ -210,18 +223,39 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   )
 
   const filteredProducts = useMemo(() => {
-    const query = search.trim().toLowerCase()
+    let list = products
 
-    return products.filter((product) => {
-      if (!showArchived && product.archived) return false
-      const matchesCategory =
-        selectedCategory === "All" || product.category === selectedCategory
-      const matchesSearch =
-        query.length === 0 || productMatchesSearch(product, query)
+    if (quickView === "archived") {
+      list = list.filter(p => p.archived)
+    } else {
+      list = list.filter(p => !p.archived)
+    }
 
-      return matchesCategory && matchesSearch
-    })
-  }, [products, debouncedSearch, selectedCategory, showArchived])
+    if (quickView === "low") {
+      list = getLowStockProducts(list)
+    } else if (quickView === "nobarcode") {
+      list = getNoBarcodeProducts(list)
+    } else if (quickView === "duplicates") {
+      const dupBarcodes = new Set(detectDuplicateBarcodes().map(d => d.barcode))
+      list = list.filter(p => p.barcode && dupBarcodes.has(p.barcode))
+    }
+
+    if (quickView !== "duplicates" && quickView !== "nobarcode") {
+      const query = search.trim().toLowerCase()
+      const matchesCategory = selectedCategory === "All" ||
+        list.some(p => p.category === selectedCategory) // will filter below
+
+      list = list.filter((product) => {
+        const matchesCat = selectedCategory === "All" || product.category === selectedCategory
+        const matchesSearch = query.length === 0 || productMatchesSearch(product, query)
+        return matchesCat && matchesSearch
+      })
+    }
+
+    return sortProducts(list, sortKey, sortDir)
+  }, [products, debouncedSearch, selectedCategory, quickView, sortKey, sortDir])
+
+  const duplicateBarcodes = useMemo(() => detectDuplicateBarcodes(), [products])
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? products[0]
   const adjustmentProduct =
@@ -276,6 +310,24 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
         }),
     [products]
   )
+
+  const filteredLots = useMemo(() => {
+    const all = getInventoryBatches()
+    let list = all
+    if (lotFilter === "open") list = list.filter(b => b.quantityRemaining > 0)
+    else if (lotFilter === "consumed") list = list.filter(b => b.quantityRemaining <= 0)
+    else if (lotFilter === "expired") list = list.filter(b => b.expiryDate && new Date(b.expiryDate) < new Date())
+    if (lotSearch.trim()) {
+      const q = lotSearch.trim().toLowerCase()
+      list = list.filter(b =>
+        b.productName.toLowerCase().includes(q) ||
+        b.barcode.toLowerCase().includes(q) ||
+        b.batchNumber.toLowerCase().includes(q) ||
+        (b.supplierName ?? "").toLowerCase().includes(q)
+      )
+    }
+    return list.sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))
+  }, [lotSearch, lotFilter, products, batchVersion])
   const selectedProductBatches = useMemo(
     () =>
       openBatches.filter(
@@ -292,9 +344,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     (sum, product) => sum + product.stock * product.cost,
     0
   )
-  const lowStockCount = products.filter(
-    (product) => product.stock <= (product.reorderPoint ?? 10)
-  ).length
+  const lowStockCount = getLowStockProducts(products).length
   const productViews: Array<{
     label: ProductWorkspaceView
     count?: number
@@ -721,40 +771,73 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
               Stock tracked by received lot, cost, expiry and remaining quantity.
             </p>
           </div>
-          <span className="chip chip-brand" style={{ fontSize: "12px", height: "28px" }}>
-            {formatNumber(openBatches.length)} open lots
-          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2 px-5 pt-4">
+          <div className="relative flex-1 min-w-48">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-3)" }} />
+            <input placeholder="Search lots by product, barcode, batch, supplier..."
+              value={lotSearch} onChange={e => setLotSearch(e.target.value)}
+              className="input w-full pl-8 text-[13px]" />
+          </div>
+          <div className="flex rounded-lg p-0.5 gap-0.5" style={{ background: "var(--surface-2)" }}>
+            {(["all", "open", "consumed", "expired"] as const).map(s => (
+              <button key={s} onClick={() => setLotFilter(s)}
+                className="px-3 py-1 text-[11px] font-semibold rounded-md capitalize"
+                style={{
+                  background: lotFilter === s ? "var(--brand)" : "transparent",
+                  color: lotFilter === s ? "#fff" : "var(--text-2)",
+                }}>
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="min-w-full border-separate border-spacing-0 text-[13px]">
             <thead>
               <tr>
-                {["Lot", "Product", "Supplier", "Qty", "Cost", "Expiry"].map((h, i) => (
-                  <th key={h} className="border-b px-4 py-3 text-start text-[10px] font-bold uppercase tracking-[0.14em]"
-                    style={{ borderColor: "var(--border)", color: "var(--text-3)", textAlign: i >= 3 && i <= 4 ? "right" : "left" }}>
+                {["Lot", "Barcode", "Product", "Supplier", "Remain", "Initial", "Cost", "Value", "Received", "Status"].map((h, i) => (
+                  <th key={h} className="border-b px-3 py-3 text-start text-[10px] font-bold uppercase tracking-[0.14em]"
+                    style={{ borderColor: "var(--border)", color: "var(--text-3)", textAlign: i >= 4 && i <= 7 ? "right" : "left" }}>
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {openBatches.slice(0, 12).map((batch) => (
+              {filteredLots.slice(0, 50).map((batch) => (
                 <tr key={batch.id} className="t-row">
-                  <td className="border-b px-4 py-3 font-bold tabular-nums" style={{ borderColor: "var(--border)", color: "var(--brand)" }}>{batch.batchNumber}</td>
-                  <td className="border-b px-4 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{batch.productName}</td>
-                  <td className="border-b px-4 py-3" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{batch.supplierName ?? "—"}</td>
-                  <td className="border-b px-4 py-3 text-end font-bold tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{formatNumber(batch.quantityRemaining)}</td>
-                  <td className="border-b px-4 py-3 text-end tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{formatCurrency(batch.unitCost)}</td>
-                  <td className="border-b px-4 py-3" style={{ borderColor: "var(--border)", color: batch.expiryDate ? "var(--text-2)" : "var(--text-3)" }}>
-                    {batch.expiryDate ? formatDate(batch.expiryDate) : "—"}
+                  <td className="border-b px-3 py-3 font-bold tabular-nums" style={{ borderColor: "var(--border)", color: "var(--brand)" }}>
+                    <span className="text-[11px]">{batch.batchNumber}</span>
+                  </td>
+                  <td className="border-b px-3 py-3 font-mono text-[11px]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{batch.barcode}</td>
+                  <td className="border-b px-3 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>{batch.productName}</td>
+                  <td className="border-b px-3 py-3" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{batch.supplierName ?? "—"}</td>
+                  <td className="border-b px-3 py-3 text-end font-bold tabular-nums" style={{ borderColor: "var(--border)", color: batch.quantityRemaining > 0 ? "var(--text)" : "var(--text-3)" }}>
+                    {formatNumber(batch.quantityRemaining)}
+                  </td>
+                  <td className="border-b px-3 py-3 text-end tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{formatNumber(batch.initialQuantity)}</td>
+                  <td className="border-b px-3 py-3 text-end tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>{formatCurrency(batch.unitCost)}</td>
+                  <td className="border-b px-3 py-3 text-end font-semibold tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text)" }}>
+                    {formatCurrency(batch.unitCost * batch.quantityRemaining)}
+                  </td>
+                  <td className="border-b px-3 py-3 tabular-nums" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
+                    {batch.receivedAt ? formatDate(batch.receivedAt) : "—"}
+                  </td>
+                  <td className="border-b px-3 py-3">
+                    <span className="chip text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{
+                      background: batch.status === "Open" ? "var(--emerald-100)" : batch.status === "Consumed" ? "var(--slate-100)" : "var(--rose-100)",
+                      color: batch.status === "Open" ? "var(--emerald-700)" : batch.status === "Consumed" ? "var(--slate-600)" : "var(--rose-700)",
+                    }}>{batch.status}</span>
                   </td>
                 </tr>
               ))}
-              {openBatches.length === 0 && (
+              {filteredLots.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
-                    Receiving batches will appear here.
+                  <td colSpan={10} className="px-4 py-12 text-center text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
+                    {lotFilter !== "all" ? `No ${lotFilter} lots found.` : "No lots found. Receiving stock will create batches here."}
                   </td>
                 </tr>
               )}
@@ -953,6 +1036,59 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
 
       {activeProductView === "Catalog" ? (
       <>
+      {/* Quick views & toolbar */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="flex rounded-lg p-0.5 gap-0.5" style={{ background: "var(--surface-2)" }}>
+          {([
+            ["active", `Active (${products.filter(p => !p.archived).length})`],
+            ["archived", `Archived (${products.filter(p => p.archived).length})`],
+            ["low", `Low (${getLowStockProducts(products).length})`],
+            ["nobarcode", `No Barcode (${getNoBarcodeProducts(products).length})`],
+            ["duplicates", `Dupes (${duplicateBarcodes.length})`],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => { setQuickView(key); setSearch(""); setSelectedCategory("All") }}
+              className="px-3 py-1.5 text-[11px] font-semibold rounded-md transition-colors"
+              style={{
+                background: quickView === key ? "var(--brand)" : "transparent",
+                color: quickView === key ? "#fff" : "var(--text-2)",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1" />
+
+        <div className="flex items-center gap-2">
+          <select value={sortKey} onChange={e => setSortKey(e.target.value as ProductSortKey)}
+            className="input h-8 text-[12px] w-24">
+            <option value="name">Name</option>
+            <option value="stock">Stock</option>
+            <option value="category">Category</option>
+            <option value="price">Price</option>
+            <option value="cost">Cost</option>
+            <option value="margin">Margin</option>
+          </select>
+          <button onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}
+            className="icon-btn h-8 w-8 flex items-center justify-center rounded-md"
+            style={{ color: "var(--text-2)", border: "1px solid var(--border)" }}>
+            <ArrowUpDown size={14} />
+          </button>
+        </div>
+
+        <button onClick={() => setShowQuickCreate(true)}
+          className="btn btn-primary btn-sm flex items-center gap-1">
+          <Plus size={14} /> New Product
+        </button>
+        <button onClick={() => setBulkEditOpen(o => !o)}
+          className="btn btn-default btn-sm flex items-center gap-1">
+          <SlidersHorizontal size={14} /> Bulk Edit
+        </button>
+      </div>
+
       {bulkEditOpen && (
         <div className="card mb-4 p-4" style={{ borderLeft: "3px solid var(--blue)" }}>
           <h3 className="mb-3 text-[13px] font-bold" style={{ color: "var(--text)" }}>Bulk Price Edit</h3>
@@ -980,12 +1116,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
           </p>
         </div>
       )}
-      <div className="mb-3 flex items-center justify-end gap-2">
-        <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer" style={{ color: "var(--text-3)" }}>
-          <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} className="rounded" />
-          Show archived
-        </label>
-      </div>
+
       <ProductTable
         filteredProducts={filteredProducts}
         lowStockCount={lowStockCount}
@@ -1079,6 +1210,18 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       >
         <p>Remove this variant? This cannot be undone.</p>
       </ConfirmDialog>
+
+      {/* Quick Create Product Modal */}
+      {showQuickCreate && (
+        <ProductQuickCreate
+          categories={categories}
+          onClose={() => setShowQuickCreate(false)}
+          onCreated={() => {
+            setProducts(getProducts())
+            setBatchVersion(v => v + 1)
+          }}
+        />
+      )}
 
       {/* Edit Product Modal */}
       {editProduct && (

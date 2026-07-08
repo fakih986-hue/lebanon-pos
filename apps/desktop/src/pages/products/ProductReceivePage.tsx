@@ -19,6 +19,7 @@ import { createId } from "../../features/pos/lib/storage"
 import {
   findProductByBarcode, generateProductBarcode,
   getProducts, receiveProducts, updateProduct,
+  parseSpreadsheetPaste,
 } from "../../features/pos/services/product.service"
 import { recordAuditEvent } from "../../features/pos/services/security.service"
 import { getSettings } from "../../features/pos/services/settings.service"
@@ -220,7 +221,8 @@ export default function ProductReceivePage() {
   }
   function saveBatch() {
     if (readyRows.length === 0) { showToast(t("pos.receive.no_ready_rows"), "error"); return }
-    receiveProducts(readyRows.map((r) => ({ name: r.name, category: r.category, cost: r.cost, price: r.price, stock: r.quantity, barcode: r.barcode, accent: r.accent, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, supplierId: selectedSupplier?.id, supplierName: selectedSupplier?.name })))
+    const result = receiveProducts(readyRows.map((r) => ({ name: r.name, category: r.category, cost: r.cost, price: r.price, stock: r.quantity, barcode: r.barcode, accent: r.accent, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, supplierId: selectedSupplier?.id, supplierName: selectedSupplier?.name })))
+    const { errors, rejectedCount } = result ?? { errors: [], rejectedCount: 0 }
     getProducts().then(setProducts)
     setLastReceivedTotal(totalUnits)
     let poNumber = ""
@@ -232,7 +234,24 @@ export default function ProductReceivePage() {
       } catch { }
     }
     recordAuditEvent({ action: "inventory.receive", entity: "inventory", summary: `${totalUnits} units received.`, metadata: { rows: readyRows.length, totalUnits, totalCost } })
-    showToast(`${formatNumber(totalUnits)} units received${poNumber ? ` · ${poNumber}` : ""}.`)
+    if (rejectedCount > 0) {
+      showToast(`${formatNumber(totalUnits)} units received · ${rejectedCount} row(s) rejected. See receiving log.`, "error")
+      for (const err of errors) showToast(err, "error")
+    } else {
+      showToast(`${formatNumber(totalUnits)} units received${poNumber ? ` · ${poNumber}` : ""}.`)
+    }
+  }
+  function pasteFromSpreadsheet() {
+    const text = prompt("Paste spreadsheet data (Name, Barcode, Category, Qty, Cost, Price):")
+    if (!text?.trim()) return
+    const { rows: parsed, rejected } = parseSpreadsheetPaste(text)
+    parsed.forEach(r => addRow({ name: r.name, barcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price }))
+    if (rejected.length > 0) {
+      showToast(`${parsed.length} rows added · ${rejected.length} rejected: ${rejected.map(r => `Row ${r.index}: ${r.reason}`).join("; ")}`, "error")
+    } else {
+      showToast(`${parsed.length} rows imported.`)
+    }
+    if (parsed.length > 0) setActiveRowId("")
   }
   function resetBatch() {
     const row = createRow()
@@ -340,6 +359,10 @@ export default function ProductReceivePage() {
               <button type="button" onClick={() => addRow()}
                 className="btn btn-default h-9 gap-1.5 text-[13px]">
                 <Plus size={14} /> Add Row
+              </button>
+              <button type="button" onClick={pasteFromSpreadsheet}
+                className="btn btn-default h-9 gap-1.5 text-[13px]" title="Paste from spreadsheet">
+                Paste
               </button>
               <button type="button" onClick={saveBatch} disabled={readyRows.length === 0}
                 className="btn btn-primary h-9 gap-1.5 text-[13px] disabled:opacity-40">
