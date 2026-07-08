@@ -13,8 +13,9 @@ type ThemeContextType = {
 const ThemeContext = createContext<ThemeContextType | null>(null)
 
 function getSystemTheme(): Theme {
-  if (typeof window === "undefined") return "dark"
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"
+  // Midnight Gold is dark-first: dark is the brand default regardless of OS
+  // preference. Users can still switch to light and it persists.
+  return "dark"
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -28,19 +29,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, theme)
     document.documentElement.setAttribute("data-theme", theme)
   }, [theme])
-
-  // Listen for system theme changes when no explicit preference is saved
-  useEffect(() => {
-    const hasSaved = localStorage.getItem(STORAGE_KEY)
-    if (hasSaved) return
-
-    const mq = window.matchMedia("(prefers-color-scheme: light)")
-    const handler = (e: MediaQueryListEvent) => {
-      setThemeState(e.matches ? "light" : "dark")
-    }
-    mq.addEventListener("change", handler)
-    return () => mq.removeEventListener("change", handler)
-  }, [])
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme)

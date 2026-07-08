@@ -85,6 +85,7 @@
 
   /* Focus */
   --focus-ring: rgba(156,111,20,0.22);
+  --brand-contrast: #FFFFFF;
 
   /* Radii */
   --radius-sm: 6px;
@@ -128,57 +129,57 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --page-bg: #0d0e17;
+  --page-bg: #0B0E14;
 
-  --surface: #161824;
-  --surface-2: #111320;
-  --surface-3: #1a1d30;
-  --surface-hover: #1c1e30;
+  --surface: #12161F;
+  --surface-2: #171C27;
+  --surface-3: #1E2430;
+  --surface-hover: #1A2029;
 
-  --border: #262941;
-  --border-soft: #1a1d30;
-  --border-strong: #2c3050;
-  --hairline: #1a1d30;
+  --border: rgba(148,163,184,0.10);
+  --border-soft: rgba(148,163,184,0.06);
+  --border-strong: rgba(148,163,184,0.18);
+  --hairline: rgba(148,163,184,0.08);
 
-  --text: #eceef7;
-  --text-2: #9ba0ba;
-  --text-3: #626683;
-  --text-inverse: #0d0e17;
+  --text: #F4F6FA;
+  --text-2: #9AA4B8;
+  --text-3: #5F6B80;
+  --text-inverse: #0B0E14;
 
-  --brand: #D6A63A;
-  --brand-hover: #F2D27A;
-  --brand-soft: rgba(214,166,58,0.14);
-  --brand-border: rgba(214,166,58,0.34);
-  --brand-text: #F2D27A;
+  --brand: #D4A843;
+  --brand-hover: #E4BC5C;
+  --brand-soft: rgba(212,168,67,0.12);
+  --brand-border: rgba(212,168,67,0.35);
+  --brand-text: #E4BC5C;
 
   --ink: #04060A;
   --ink-hover: #111827;
 
-  --blue: #60a5fa;
-  --blue-soft: rgba(96,165,250,0.14);
-  --blue-text: #bfdbfe;
-  --amber: #D6A63A;
-  --amber-soft: rgba(214,166,58,0.14);
-  --amber-text: #F2D27A;
-  --rose: #EF4444;
-  --rose-soft: rgba(239,68,68,0.14);
-  --rose-text: #fecdd3;
-  --purple: #a78bfa;
-  --purple-soft: rgba(167,139,250,0.14);
-  --purple-text: #ddd6fe;
+  --blue: #60A5FA;
+  --blue-soft: rgba(96,165,250,0.12);
+  --blue-text: #BFDBFE;
+  --amber: #D4A843;
+  --amber-soft: rgba(212,168,67,0.12);
+  --amber-text: #E4BC5C;
+  --rose: #F87171;
+  --rose-soft: rgba(248,113,113,0.12);
+  --rose-text: #FECACA;
+  --purple: #A78BFA;
+  --purple-soft: rgba(167,139,250,0.12);
+  --purple-text: #DDD6FE;
 
-  --st-ok: #34d399;
-  --st-ok-soft: rgba(52,211,153,0.14);
-  --st-ok-text: #86efac;
-  --st-warn: #fbbf24;
-  --st-warn-soft: rgba(251,191,36,0.14);
-  --st-warn-text: #fcd34d;
-  --st-err: #f87171;
-  --st-err-soft: rgba(248,113,113,0.14);
-  --st-err-text: #fecaca;
-  --st-info: #38bdf8;
-  --st-info-soft: rgba(56,189,248,0.14);
-  --st-info-text: #bae6fd;
+  --st-ok: #34D399;
+  --st-ok-soft: rgba(52,211,153,0.12);
+  --st-ok-text: #86EFAC;
+  --st-warn: #FBBF24;
+  --st-warn-soft: rgba(251,191,36,0.12);
+  --st-warn-text: #FCD34D;
+  --st-err: #F87171;
+  --st-err-soft: rgba(248,113,113,0.12);
+  --st-err-text: #FECACA;
+  --st-info: #60A5FA;
+  --st-info-soft: rgba(96,165,250,0.12);
+  --st-info-text: #BFDBFE;
 
   --success: var(--st-ok);
   --success-soft: var(--st-ok-soft);
@@ -193,12 +194,13 @@
   --info-soft: var(--st-info-soft);
   --info-text: var(--st-info-text);
 
-  --focus-ring: rgba(214,166,58,0.25);
+  --focus-ring: rgba(212,168,67,0.28);
+  --brand-contrast: #2C1F05;
 
-  --elev-1: 0 1px 2px rgba(0,0,0,0.32);
-  --elev-2: 0 10px 28px rgba(0,0,0,0.38);
-  --elev-3: 0 18px 44px rgba(0,0,0,0.44);
-  --elev-4: 0 26px 70px rgba(0,0,0,0.50);
+  --elev-1: 0 1px 2px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04);
+  --elev-2: 0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  --elev-3: 0 16px 48px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.05);
+  --elev-4: 0 26px 70px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
 
   --shadow-xs: var(--elev-1);
   --shadow-sm: var(--elev-2);
@@ -238,6 +240,7 @@
   --fs-page:      22px;   /* Page title */
   --fs-stat:      24px;   /* KPI / stat numbers */
   --fs-display:   28px;   /* Single hero metric maximum */
+  --fs-total:     40px;   /* POS cart grand total only */
 
   /* Spacing scale (4px grid, 10 stops) */
   --sp-2:   2px;
@@ -684,7 +687,7 @@ textarea:focus,
 /* Primary */
 .btn-primary,
 .btn-checkout {
-  color: #FFFFFF;
+  color: var(--brand-contrast);
   background: var(--brand);
   border-color: var(--brand);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
@@ -878,14 +881,14 @@ tbody tr:hover {
 }
 
 .pos-command-primary {
-  color: #FFFFFF;
+  color: var(--brand-contrast);
   background: var(--brand);
   border-color: var(--brand);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
 }
 
 .pos-command-primary:hover:not(:disabled) {
-  color: #FFFFFF;
+  color: var(--brand-contrast);
   background: var(--brand-hover);
   border-color: var(--brand-hover);
   box-shadow: 0 4px 14px color-mix(in srgb, var(--brand) 35%, transparent);
@@ -967,6 +970,62 @@ tbody tr:hover {
 .focus\:ring-amber-100:focus {
   box-shadow: 0 0 0 3px var(--focus-ring) !important;
 }
+
+/* ── Money typography (Midnight Gold) ──────
+ *   Every money value in the app renders through these.
+ *   Tabular numerals: columns of amounts always align.
+ */
+.money {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.money-secondary {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-2);
+  line-height: 1.1;
+}
+
+.money-profit { color: var(--st-ok); }
+.money-debt   { color: var(--st-err); }
+
+.money-stat {
+  font-size: var(--fs-stat);
+  font-weight: 700;
+}
+
+.money-display {
+  font-size: var(--fs-display);
+  font-weight: 700;
+}
+
+.money-total {
+  font-size: var(--fs-total);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Dual-currency stack: USD primary over LBP secondary */
+.money-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+[dir="rtl"] .money-stack { align-items: flex-start; }
+
+/* Number tick: applied on value change */
+@keyframes money-tick {
+  from { opacity: 0.35; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.money-tick { animation: money-tick 0.2s var(--ease-ui); }
 
 /* ── Status chips (pill badges) ──────────── */
 .chip {
