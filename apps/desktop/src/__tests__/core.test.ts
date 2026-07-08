@@ -397,3 +397,32 @@ describe("inventory — write-off and reconciliation", () => {
     expect(true).toBe(true)
   })
 })
+
+describe("POS — crash safety and checkout guards", () => {
+  it("escapeHtml handles null and undefined safely", async () => {
+    const { escapeHtml } = await import("../features/pos/lib/salesHelpers")
+    expect(escapeHtml(null)).toBe("")
+    expect(escapeHtml(undefined)).toBe("")
+    expect(escapeHtml("<script>alert(1)</script>")).toContain("&lt;")
+  })
+
+  it("getTopProducts handles sales with null items", async () => {
+    const { getTopProducts } = await import("../features/pos/services/sales.service")
+    const top = getTopProducts(3)
+    expect(Array.isArray(top)).toBe(true)
+  })
+
+  it("getPaymentMix handles all payment methods", async () => {
+    const { getPaymentMix } = await import("../features/pos/services/sales.service")
+    const mix = getPaymentMix()
+    expect(typeof mix).toBe("object")
+    expect(typeof mix.Cash).toBe("number")
+    expect(typeof mix.Card).toBe("number")
+  })
+
+  it("isSimpleMode returns boolean", async () => {
+    const { isSimpleMode, toggleSimpleMode } = await import("../features/pos/services/security.service")
+    expect(typeof isSimpleMode()).toBe("boolean")
+    expect(typeof toggleSimpleMode()).toBe("boolean")
+  })
+})

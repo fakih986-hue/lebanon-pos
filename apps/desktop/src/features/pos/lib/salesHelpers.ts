@@ -100,8 +100,9 @@ export function getSaleExchangeRate(sale: Sale, fallbackRate: number) {
   return sale.tender?.exchangeRate ?? fallbackRate
 }
 
-export function escapeHtml(value: string) {
-  return value
+export function escapeHtml(value: string | undefined | null) {
+  const s = value ?? ""
+  return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

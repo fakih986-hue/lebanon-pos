@@ -183,13 +183,13 @@ function isToday(value: string) {
 }
 
 function getSaleGrossSubtotal(sale: Sale) {
-  return sale.items.reduce((sum, item) => sum + item.total, 0)
+  return (sale.items ?? []).reduce((sum, item) => sum + item.total, 0)
 }
 
 function getRefundCost(refund: SaleRefund, sales: Sale[]) {
   const sale = sales.find((currentSale) => currentSale.id === refund.saleId)
 
-  return refund.items.reduce((sum, item) => {
+  return (refund.items ?? []).reduce((sum, item) => {
     const saleItem = sale?.items.find((currentItem) => currentItem.id === item.id)
     const unitCost = item.cost ?? saleItem?.cost ?? 0
 
@@ -465,7 +465,7 @@ export function getTopProducts(limit = 5) {
   >()
 
   getSales().forEach((sale) => {
-    sale.items.forEach((item) => {
+    (sale.items ?? []).forEach((item) => {
       const currentTotal = productTotals.get(String(item.id)) ?? {
         name: item.name,
         quantity: 0,

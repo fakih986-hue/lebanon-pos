@@ -116,7 +116,7 @@ export default function POSPage() {
     useState<Product | null>(null)
   const [saleNote, setSaleNote] = useState("")
   const [sellAtCost, setSellAtCost] = useState(false)
-  const [quickMode, setQuickMode] = useState(false)
+  const [quickMode, setQuickMode] = useState(true) // default to scanner-first
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   const productListRef = useRef<HTMLDivElement | null>(null)
