@@ -24,8 +24,11 @@ import {
 import { recordAuditEvent } from "../../features/pos/services/security.service"
 import { getSettings } from "../../features/pos/services/settings.service"
 import {
-  getSupplierLedger, recordPurchaseOrder, subscribeSuppliers,
-  type PurchasePaymentMethod, type SupplierLedger,
+  getSupplierLedger, subscribeSuppliers,
+  recordPurchaseOrder,
+  receiveAndRecord,
+  type SupplierLedger,
+  type ReceivingSummary,
 } from "../../features/pos/services/supplier.service"
 import type { Product, ProductAccent } from "../../features/pos/types/product"
 import { showToast } from "../../features/pos/services/toast.service"
@@ -221,25 +224,31 @@ export default function ProductReceivePage() {
   }
   function saveBatch() {
     if (readyRows.length === 0) { showToast(t("pos.receive.no_ready_rows"), "error"); return }
-    const result = receiveProducts(readyRows.map((r) => ({ name: r.name, category: r.category, cost: r.cost, price: r.price, stock: r.quantity, barcode: r.barcode, accent: r.accent, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, supplierId: selectedSupplier?.id, supplierName: selectedSupplier?.name })))
-    const { errors, rejectedCount } = result ?? { errors: [], rejectedCount: 0 }
-    getProducts().then(setProducts)
-    setLastReceivedTotal(totalUnits)
-    let poNumber = ""
-    if (selectedSupplier && totalCost > 0) {
-      try {
-        const po = recordPurchaseOrder({ supplierId: selectedSupplier.id, supplierName: selectedSupplier.name, status: "Received", invoiceNumber: supplierInvoiceNumber, note: supplierNote, paymentMethod: purchasePaymentMethod, paidAmount: purchasePaymentMethod === "On Account" ? 0 : totalCost, items: readyRows.map((r) => ({ name: r.name, barcode: r.barcode, quantity: r.quantity, unitCost: r.cost, unitPrice: r.price, total: r.quantity * r.cost })) })
-        poNumber = po.poNumber
-        setSuppliers(getSupplierLedger())
-      } catch { }
-    }
-    recordAuditEvent({ action: "inventory.receive", entity: "inventory", summary: `${totalUnits} units received.`, metadata: { rows: readyRows.length, totalUnits, totalCost } })
-    if (rejectedCount > 0) {
-      showToast(`${formatNumber(totalUnits)} units received · ${rejectedCount} row(s) rejected. See receiving log.`, "error")
-      for (const err of errors) showToast(err, "error")
-    } else {
-      showToast(`${formatNumber(totalUnits)} units received${poNumber ? ` · ${poNumber}` : ""}.`)
-    }
+    const supplierId = selectedSupplier?.id
+    receiveAndRecord(
+      readyRows.map((r) => ({ name: r.name, barcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate })),
+      supplierId ? {
+        supplierId,
+        supplierName: selectedSupplier!.name,
+        invoiceNumber: supplierInvoiceNumber,
+        paymentMethod: purchasePaymentMethod,
+        note: supplierNote,
+      } : undefined
+    ).then(summary => {
+      getProducts().then(setProducts)
+      setLastReceivedTotal(totalUnits)
+      setSuppliers(getSupplierLedger())
+      recordAuditEvent({ action: "inventory.receive", entity: "inventory", summary: `${totalUnits} units received.`, metadata: { rows: readyRows.length, totalUnits, totalCost, poNumber: summary.poNumber } })
+      if (summary.errors.length > 0) {
+        showToast(`${summary.acceptedCount} products · ${summary.batchesCreated} batches · ${summary.rejectedCount} rejected`, "error")
+        for (const err of summary.errors.slice(0, 3)) showToast(err, "error")
+      } else {
+        const parts = [`${summary.productsCreated} new`, `${summary.productsUpdated} updated`, `${summary.batchesCreated} batches`]
+        if (summary.poNumber) parts.push(`PO ${summary.poNumber}`)
+        if (summary.paymentRecorded) parts.push("paid")
+        showToast(parts.join(" · "), "success")
+      }
+    })
   }
   function pasteFromSpreadsheet() {
     const text = prompt("Paste spreadsheet data (Name, Barcode, Category, Qty, Cost, Price):")

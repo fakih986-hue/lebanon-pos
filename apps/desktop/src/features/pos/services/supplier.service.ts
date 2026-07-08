@@ -339,6 +339,16 @@ export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
     throw new Error("Choose a supplier before recording payment.")
   }
 
+  // Idempotency: skip duplicate payment for same PO/supplier with same amount and reference
+  const existingPayments = getSupplierPayments()
+  const duplicate = existingPayments.find(p =>
+    p.supplierId === input.supplierId &&
+    Math.abs(p.amount - input.amount) < 0.005 &&
+    p.reference === cleanText(input.reference) &&
+    (p.createdAt && (Date.now() - new Date(p.createdAt).getTime()) < 30000) // within 30 seconds
+  )
+  if (duplicate) return duplicate
+
   const purchaseOrder = input.purchaseOrderId
     ? getPurchaseOrders().find(
         (currentOrder) => currentOrder.id === input.purchaseOrderId
@@ -553,5 +563,94 @@ export function subscribeSuppliers(callback: () => void) {
   return () => {
     window.removeEventListener(SUPPLIER_EVENT, handleSuppliersChanged)
     window.removeEventListener("storage", handleSuppliersChanged)
+  }
+}
+
+// ── Received receiving orchestration ───────────────────────────────
+
+export type ReceivingContext = {
+  supplierId?: string
+  supplierName?: string
+  invoiceNumber?: string
+  paymentMethod?: SupplierPaymentMethod | "On Account"
+  note?: string
+}
+
+export type ReceivingSummary = {
+  acceptedCount: number
+  rejectedCount: number
+  errors: string[]
+  productsCreated: number
+  productsUpdated: number
+  batchesCreated: number
+  poNumber?: string
+  paymentRecorded: boolean
+  totalValue: number
+}
+
+export async function receiveAndRecord(
+  entries: Array<{
+    name: string; barcode: string; category: string; quantity: number
+    cost: number; price: number; reorderPoint?: number; reorderQuantity?: number
+    expiryDate?: string
+  }>,
+  context?: ReceivingContext
+): Promise<ReceivingSummary> {
+  const { receiveProducts } = await import("./product.service")
+
+  // Create PO first (Draft) so batch inputs can carry the PO reference
+  let poNumber: string | undefined
+  let paymentRecorded = false
+  const totalCost = entries.reduce((s, e) => s + e.quantity * e.cost, 0)
+
+  if (context?.supplierId && totalCost > 0) {
+    try {
+      const po = recordPurchaseOrder({
+        supplierId: context.supplierId,
+        supplierName: context.supplierName ?? "",
+        status: "Draft",
+        invoiceNumber: context.invoiceNumber ?? "",
+        note: context.note ?? "",
+        paymentMethod: context.paymentMethod ?? "On Account",
+        paidAmount: context.paymentMethod && context.paymentMethod !== "On Account" ? totalCost : 0,
+        items: entries.map(e => ({
+          name: e.name, barcode: e.barcode, quantity: e.quantity,
+          unitCost: e.cost, unitPrice: e.price, total: e.quantity * e.cost,
+        })),
+      })
+      poNumber = po.poNumber
+      paymentRecorded = context.paymentMethod !== undefined && context.paymentMethod !== "On Account"
+
+      // Now update PO to Received status
+      const orders = getPurchaseOrders()
+      const createdPo = orders.find(o => o.id === po.id)
+      if (createdPo) {
+        createdPo.status = "Received"
+        createdPo.receivedAt = new Date().toISOString()
+        writePurchaseOrders(orders)
+      }
+    } catch { /* PO creation failure is non-fatal */ }
+  }
+
+  const receiveResult = receiveProducts(
+    entries.map(e => ({
+      name: e.name, barcode: e.barcode, category: e.category,
+      stock: e.quantity, cost: e.cost, price: e.price,
+      reorderPoint: e.reorderPoint, reorderQuantity: e.reorderQuantity,
+      expiryDate: e.expiryDate,
+      supplierId: context?.supplierId, supplierName: context?.supplierName,
+    }))
+  )
+
+  return {
+    acceptedCount: receiveResult.acceptedCount,
+    rejectedCount: receiveResult.rejectedCount,
+    errors: receiveResult.errors,
+    productsCreated: receiveResult.newlyCreated.length,
+    productsUpdated: receiveResult.modifiedExisting.length,
+    batchesCreated: receiveResult.batchesCreated,
+    poNumber,
+    paymentRecorded,
+    totalValue: totalCost,
   }
 }

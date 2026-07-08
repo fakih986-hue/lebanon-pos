@@ -333,3 +333,37 @@ describe("sales.service (pure)", () => {
     }
   })
 })
+
+describe("supplier.service — types and safety", () => {
+  it("ReceiveResult has correct shape", async () => {
+    const { receiveProducts } = await import("../features/pos/services/product.service")
+    // verify the type exports and function signature
+    expect(typeof receiveProducts).toBe("function")
+    const result = receiveProducts([])
+    expect(result).toBeDefined()
+    expect(result).toHaveProperty("acceptedCount")
+    expect(result).toHaveProperty("rejectedCount")
+    expect(result).toHaveProperty("errors")
+    expect(result).toHaveProperty("newlyCreated")
+    expect(result).toHaveProperty("modifiedExisting")
+    expect(result).toHaveProperty("batchesCreated")
+    expect(result.acceptedCount).toBe(0)
+    expect(result.rejectedCount).toBe(0)
+    expect(result.batchesCreated).toBe(0)
+  })
+
+  it("validateReceiveRow catches invalid receiving entries", async () => {
+    const { validateReceiveRow } = await import("../features/pos/services/product.service")
+    const v = validateReceiveRow({ name: "", barcode: "", quantity: 0 })
+    expect(v.valid).toBe(false)
+    expect(v.errors.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it("ReceivingContext type exports from supplier service", async () => {
+    const mod = await import("../features/pos/services/supplier.service")
+    expect(typeof mod.receiveAndRecord).toBe("function")
+    expect(typeof mod.recordSupplierPayment).toBe("function")
+    expect(typeof mod.recordPurchaseOrder).toBe("function")
+    expect(typeof mod.getSupplierLedger).toBe("function")
+  })
+})

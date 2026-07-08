@@ -24,6 +24,15 @@ export type ProductReceiveInput = {
   expiryDate?: string
 }
 
+export type ReceiveResult = {
+  acceptedCount: number
+  rejectedCount: number
+  errors: string[]
+  newlyCreated: Product[]
+  modifiedExisting: Product[]
+  batchesCreated: number
+}
+
 export type ProductStockMovement = {
   productId: number
   quantity: number
@@ -311,11 +320,14 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
   }
 
   // Enqueue inventory receives AFTER product creates/updates
+  let batchesCreated = 0
   if (batchInputs.length > 0) {
-    receiveInventoryBatches(batchInputs)
+    const batches = receiveInventoryBatches(batchInputs)
+    batchesCreated = batches.length
   }
 
-  return { errors, rejectedCount, newlyCreated, modifiedExisting }
+  const acceptedCount = newlyCreated.length + modifiedExisting.length
+  return { acceptedCount, rejectedCount, errors, newlyCreated, modifiedExisting, batchesCreated }
 }
 
 export function updateProduct(productId: number, patch: Partial<Product>) {
