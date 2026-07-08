@@ -812,6 +812,18 @@ tbody tr:hover {
 .pos-workspace {
   background: var(--pos-bg);
   color: var(--pos-text);
+  position: relative;
+}
+
+/* Ambient brand glow — barely-there radial at the top of the POS canvas.
+ * Gives the workspace depth without competing with content. */
+[data-theme="dark"] .pos-workspace::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 320px;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 100% at 50% 0%, rgba(212,168,67,0.05) 0%, transparent 70%);
 }
 
 .pos-command-panel,

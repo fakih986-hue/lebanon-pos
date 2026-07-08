@@ -68,17 +68,15 @@ const ProductCard = memo(function ProductCard({
   const [addCount,  setAddCount]  = useState(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
+  // Premium rule: stock only speaks when it needs attention.
+  // Healthy stock stays silent — the card breathes, low/out shout.
   const stockLabel = outOfStock
     ? t("pos.out_of_stock")
     : lowStock
     ? `${product.stock} left`
-    : `${product.stock} in stock`
+    : null
 
-  const stockColor = outOfStock
-    ? "var(--rose)"
-    : lowStock
-    ? "var(--warning)"
-    : "var(--text-3)"
+  const stockColor = outOfStock ? "var(--rose)" : "var(--warning)"
 
   const handleClick = useCallback(() => {
     if (outOfStock) return
@@ -148,12 +146,14 @@ const ProductCard = memo(function ProductCard({
               <p className="truncate text-[12px] font-bold leading-tight" style={{ color: "var(--text)" }}>
                 <HighlightedText text={product.name} query={searchQuery} />
               </p>
-              <p className="text-[10px] font-medium leading-tight mt-0.5" style={{ color: stockColor }}>
-                {stockLabel}
-                {wholesale && product.wholesalePrice != null && (
-                  <span className="ms-1.5 rounded px-1 py-px text-[8px] font-bold" style={{ background: accent.soft, color: accent.solid }}>WS</span>
-                )}
-              </p>
+              {(stockLabel || (wholesale && product.wholesalePrice != null)) && (
+                <p className="text-[10px] font-semibold leading-tight mt-0.5" style={{ color: stockColor }}>
+                  {stockLabel}
+                  {wholesale && product.wholesalePrice != null && (
+                    <span className="ms-1.5 rounded px-1 py-px text-[8px] font-bold" style={{ background: accent.soft, color: accent.solid }}>WS</span>
+                  )}
+                </p>
+              )}
             </div>
 
             {/* Cart quantity badge */}
@@ -174,7 +174,7 @@ const ProductCard = memo(function ProductCard({
           {/* Row 2: Price + Cart button */}
           <div className="flex items-end justify-between gap-2">
             <div className="min-w-0 leading-none">
-              <span className="text-[15px] font-bold tabular-nums" style={{ color: "var(--text)" }}>
+              <span className="text-[16px] font-bold tabular-nums" style={{ color: "var(--text)", letterSpacing: "-0.01em" }}>
                 {formatCurrency(effectivePrice)}
               </span>
               <span className="ms-1 text-[10px] font-medium tabular-nums" style={{ color: "var(--text-3)" }}>

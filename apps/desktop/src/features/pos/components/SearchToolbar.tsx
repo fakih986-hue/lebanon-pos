@@ -60,6 +60,8 @@ export default function SearchToolbar({
   }, [menuOpen])
 
   const hasInput = scanCode.trim().length > 0
+  const [focused, setFocused] = useState(true)
+  const hot = focused || hasInput
 
   return (
     <div className="flex flex-col gap-2">
@@ -70,20 +72,22 @@ export default function SearchToolbar({
         style={{
           background: "var(--surface)",
           border: "1.5px solid",
-          borderColor: hasInput ? "var(--brand)" : "var(--border)",
-          boxShadow: hasInput ? "0 0 0 3px var(--brand-soft)" : "var(--shadow-xs)",
+          borderColor: hot ? "var(--brand)" : "var(--border)",
+          boxShadow: hot
+            ? "0 0 0 3px var(--brand-soft), 0 8px 32px rgba(212,168,67,0.10)"
+            : "var(--shadow-xs)",
         }}
       >
         {/* Colored scan icon — left side */}
         <div
           className="flex shrink-0 items-center justify-center"
           style={{
-            width: 52,
-            color: hasInput ? "var(--brand)" : "var(--text-3)",
+            width: 56,
+            color: hot ? "var(--brand)" : "var(--text-3)",
             transition: "color 0.2s",
           }}
         >
-          <Scan size={20} strokeWidth={2} />
+          <Scan size={22} strokeWidth={2} />
         </div>
 
         {/* Input */}
@@ -95,17 +99,28 @@ export default function SearchToolbar({
           onKeyDown={(e) => {
             if (e.key === "Enter") { e.preventDefault(); onQuickAdd(scanCode) }
           }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           placeholder={t("pos.scan_placeholder")}
-          className="min-w-0 flex-1 bg-transparent py-3 text-[15px] font-bold outline-none placeholder:font-medium"
+          className="min-w-0 flex-1 bg-transparent py-4 font-bold outline-none placeholder:font-medium"
           style={{
             color: "var(--text)",
             caretColor: "var(--brand)",
+            fontSize: 17,
           }}
           dir={dir}
         />
 
-        {/* Right side: clear (when text) or subtle count */}
-        <div className="flex shrink-0 items-center gap-1 pe-2">
+        {/* Right side: clear (when text) or keyboard hint */}
+        <div className="flex shrink-0 items-center gap-1 pe-3">
+          {!hasInput && (
+            <span
+              className="hidden rounded-md border px-1.5 py-0.5 text-[10px] font-bold sm:inline"
+              style={{ borderColor: "var(--border-strong)", color: "var(--text-3)" }}
+            >
+              /
+            </span>
+          )}
           <AnimatePresence>
             {hasInput && (
               <MotionButton
@@ -191,7 +206,7 @@ export default function SearchToolbar({
           type="button"
           onClick={() => onToggleQuickMode()}
           className="flex h-7 items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-bold transition"
-          style={{ background: "rgba(214,166,58,0.10)", borderColor: "rgba(214,166,58,0.25)", color: "#D6A63A" }}
+          style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
           whileTap={{ scale: 0.92 }}
           title="Quick POS — full screen"
         >
