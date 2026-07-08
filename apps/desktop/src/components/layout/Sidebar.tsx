@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router"
 import {
-  BarChart3, Banknote, Boxes, Building2, Car,
+  BarChart3, Banknote, Boxes, Building2,
   CircleDollarSign, PackagePlus, PanelLeftClose, PanelLeftOpen,
   PanelRightClose, PanelRightOpen, ReceiptText, ScanLine,
   SlidersHorizontal, Truck, UserCog, Users,
@@ -25,7 +25,7 @@ type MenuItem = {
   path: string
   icon: LucideIcon
   permission: Permission
-  group: "Register" | "Inventory" | "Finance" | "Team" | "System"
+  group: "Register" | "Inventory" | "Finance" | "Operations" | "System"
 }
 
 export const menuItems: MenuItem[] = [
@@ -37,13 +37,12 @@ export const menuItems: MenuItem[] = [
   { label: "Suppliers",  labelKey: "desktop.nav.suppliers",   path: "/suppliers",        icon: Building2,         permission: "accounting.manage",group: "Inventory" },
   { label: "Dashboard",  labelKey: "nav.dashboard",           path: "/dashboard",        icon: BarChart3,         permission: "reports.view",     group: "Finance"   },
   { label: "Accounting", labelKey: "desktop.nav.accounting",  path: "/accounting",       icon: Banknote,          permission: "accounting.manage",group: "Finance"   },
-  { label: "Staff",      labelKey: "desktop.nav.staff",       path: "/staff",            icon: UserCog,           permission: "staff.manage",     group: "Team"      },
-  { label: "Delivery",   labelKey: "nav.delivery",            path: "/delivery",         icon: Truck,             permission: "delivery.manage",  group: "Team"      },
-  { label: "Drivers",    labelKey: "nav.drivers",             path: "/delivery/drivers", icon: Car,               permission: "delivery.manage",  group: "Team"      },
+  { label: "Delivery",   labelKey: "nav.delivery",            path: "/delivery",         icon: Truck,             permission: "delivery.manage",  group: "Operations" },
+  { label: "Staff",      labelKey: "desktop.nav.staff",       path: "/staff",            icon: UserCog,           permission: "staff.manage",     group: "Operations" },
   { label: "Settings",   labelKey: "nav.settings",            path: "/settings",         icon: SlidersHorizontal, permission: "settings.manage",  group: "System"    },
 ]
 
-const menuGroups: MenuItem["group"][] = ["Register", "Finance", "Inventory", "Team", "System"]
+const menuGroups: MenuItem["group"][] = ["Register", "Finance", "Inventory", "Operations", "System"]
 
 function isActivePath(pathname: string, path: string) {
   if (path === "/") return pathname === "/"
