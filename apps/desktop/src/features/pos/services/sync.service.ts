@@ -178,9 +178,13 @@ export async function clearStoreData() {
   localStorage.removeItem(SYNC_QUEUE_KEY)
   localStorage.removeItem(LAST_SYNC_KEY)
   localStorage.removeItem(SUSPENDED_KEY)
+  localStorage.removeItem(SUSPENDED_AT_KEY)
   localStorage.removeItem("lebanonpos.session.v1")
   localStorage.removeItem("lebanonpos.current-user.v1")
   localStorage.removeItem("lebanonpos.held-sales.v1")
+  localStorage.removeItem("lebanonpos.license.v1")
+  localStorage.removeItem("lebanonpos.simple-mode.v1")
+  localStorage.removeItem("lebanonpos.pin-attempts.v1")
   // Also clear IndexedDB to prevent stale data accumulation across stores
   try { await clearIndexedDB() } catch (e) { console.error("[sync] clearIndexedDB failed:", e) }
 }

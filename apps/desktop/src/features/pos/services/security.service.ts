@@ -112,8 +112,8 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     "shifts.manage",
     "delivery.manage",
   ],
-  Cashier: ["sales.checkout", "customers.manage"],
-  Driver: ["sales.checkout", "delivery.manage", "customers.manage"],
+  Cashier: ["sales.checkout"],
+  Driver: ["delivery.manage"],
 }
 
 const initialUsers: StaffUser[] = []
