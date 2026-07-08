@@ -77,7 +77,7 @@ const ProductCard = memo(function ProductCard({
   const stockColor = outOfStock
     ? "var(--rose)"
     : lowStock
-    ? "#F59E0B"
+    ? "var(--warning)"
     : "var(--text-3)"
 
   const handleClick = useCallback(() => {
@@ -216,7 +216,7 @@ const ProductCard = memo(function ProductCard({
             onClick={(e) => { e.stopPropagation(); onFavoriteToggle() }}
             className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full transition"
             style={product.favorite
-              ? { background: "rgba(214,166,58,0.15)", color: "#D6A63A" }
+              ? { background: "var(--brand-soft)", color: "var(--brand)" }
               : { background: "transparent", color: "transparent" }
             }
             aria-label={product.favorite ? "Remove favorite" : "Add favorite"}

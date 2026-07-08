@@ -411,7 +411,7 @@ export default function ProductReceivePage() {
                         onClick={(e) => { e.stopPropagation(); setActiveRowId(row.id); startCamera() }}
                         className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg border transition"
                         style={active && cameraEngine
-                          ? { background: "rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.28)", color: "#ef4444" }
+                          ? { background: "rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.28)", color: "var(--danger)" }
                           : { borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface-2)" }
                         }
                         title="Scan via camera"
@@ -484,7 +484,7 @@ export default function ProductReceivePage() {
                       type="button"
                       onClick={(e) => { e.stopPropagation(); applySuggestion(row.id, row.barcode) }}
                       className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold transition hover:opacity-80 w-full text-start"
-                      style={{ background: "rgba(59,130,246,0.08)", color: "#60a5fa" }}
+                      style={{ background: "rgba(59,130,246,0.08)", color: "var(--blue)" }}
                     >
                       <Search size={12} className="shrink-0" />
                       <span className="truncate">

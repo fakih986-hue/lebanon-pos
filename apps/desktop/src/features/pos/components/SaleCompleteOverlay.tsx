@@ -79,7 +79,7 @@ export default function SaleCompleteOverlay({ sale, onViewReceipt }: Props) {
                     exit={{ scale: 0, rotate: 12, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 420, damping: 22 }}
                   >
-                    <ShoppingCart size={52} style={{ color: "#10b981" }} strokeWidth={1.8} />
+                    <ShoppingCart size={52} style={{ color: "var(--success)" }} strokeWidth={1.8} />
                   </MotionDiv>
                 ) : (
                   <MotionDiv
@@ -88,7 +88,7 @@ export default function SaleCompleteOverlay({ sale, onViewReceipt }: Props) {
                     animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: "spring", stiffness: 500, damping: 22 }}
                   >
-                    <Check size={56} strokeWidth={3} style={{ color: "#10b981" }} />
+                    <Check size={56} strokeWidth={3} style={{ color: "var(--success)" }} />
                   </MotionDiv>
                 )}
               </AnimatePresence>
