@@ -47,8 +47,9 @@ import {
   type HeldSale,
 } from "../services/heldSale.service"
 import { recordDebtSale } from "../services/customer.service"
-import { recordAuditEvent, userCan } from "../services/security.service"
+import { recordAuditEvent, userCan, isSimpleMode, getCurrentUser } from "../services/security.service"
 import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
+import { isLicenseBlocked, getLicenseStatus } from "../services/sync.service"
 import type { Product } from "../types/product"
 import { usePosData } from "../hooks/usePosData"
 import { useBarcodeScanner } from "../hooks/useBarcodeScanner"
@@ -350,7 +351,14 @@ export default function POSPage() {
     })
     const product = exactProduct ?? matchingProducts[0]
     if (!product) {
-      setScannerStatus(`No item found for ${value.trim()}.`)
+      // Role-based unknown barcode handling
+      const currentRole = getCurrentUser()?.role
+      if (currentRole === "Admin" || currentRole === "Manager") {
+        setScannerStatus(`Unknown barcode: "${value.trim()}". Manager — create product?`)
+        // Allow existing product creation flow via navigateto /products if needed
+      } else {
+        setScannerStatus(`"${value.trim()}" not found. Please ask a manager.`)
+      }
       return
     }
     addProductToSale(product, exactProduct ? "barcode" : "quick add")
@@ -409,10 +417,18 @@ export default function POSPage() {
   }, [])
 
   const setItemPrice = useCallback(function setItemPrice(id: number, price: number) {
+    // Block price reduction below cost unless user has discount permission
+    if (!userCan("sales.discount")) {
+      const item = items.find(i => i.id === id)
+      if (item && price < item.cost) {
+        setScannerStatus("Price below cost — requires manager approval")
+        return
+      }
+    }
     setItems((currentItems) =>
       currentItems.map((item) => item.id === id ? { ...item, price } : item)
     )
-  }, [])
+  }, [items])
 
   // --- Tender / discount ---
   function resetTender() {
@@ -542,6 +558,14 @@ export default function POSPage() {
 
   const completeSale = useCallback(function completeSale() {
     if (checkoutBlocked || isCompleting) return
+
+    // License check before local writes — preserve cart if blocked
+    if (isLicenseBlocked()) {
+      const license = getLicenseStatus()
+      setScannerStatus(license?.message || "Store is suspended. Sale blocked.")
+      return
+    }
+
     setIsCompleting(true)
 
     const saleNumber = `S-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`
@@ -628,6 +652,8 @@ export default function POSPage() {
       setSaleNote("")
       setIsCartOpen(false)
       setScannerStatus("Sale completed. Scanner ready for the next sale.")
+      // Keep scanner focused for next sale
+      setTimeout(() => scanInputRef.current?.focus(), 100)
     } catch (err) {
       // Reverse completed steps — cart is preserved so user can retry
       if (recordedSaleId) {

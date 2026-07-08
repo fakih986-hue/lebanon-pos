@@ -719,6 +719,37 @@ export function userCan(permission: Permission, user = getCurrentUser()) {
   return rolePermissions[user.role]?.includes(permission) ?? false
 }
 
+// ── Simple POS Mode ──────────────────────────────────────────────────
+// Cashiers are always in simple mode. Manager/Admin can toggle.
+// When active: sidebar hides advanced nav, POS strips owner/admin actions.
+const SIMPLE_MODE_KEY = "lebanonpos.simple-mode.v1"
+
+export function isSimpleMode(): boolean {
+  const currentUser = getCurrentUser()
+  // Cashiers are always in simple mode
+  if (currentUser?.role === "Cashier") return true
+  // Manager/Admin: read persisted toggle, default to false (full access)
+  try {
+    return localStorage.getItem(SIMPLE_MODE_KEY) === "true"
+  } catch { return false }
+}
+
+export function setSimpleMode(enabled: boolean): void {
+  const currentUser = getCurrentUser()
+  // Cashiers cannot exit simple mode
+  if (currentUser?.role === "Cashier") return
+  localStorage.setItem(SIMPLE_MODE_KEY, enabled ? "true" : "false")
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("lebanonpos-simple-mode-changed"))
+  }
+}
+
+export function toggleSimpleMode(): boolean {
+  const next = !isSimpleMode()
+  setSimpleMode(next)
+  return next
+}
+
 export function getAuditEvents() {
   ensureSecurityData()
 
