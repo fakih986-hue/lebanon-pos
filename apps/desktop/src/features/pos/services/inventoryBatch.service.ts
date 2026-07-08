@@ -1,4 +1,4 @@
-import { enqueueSyncOperation } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 

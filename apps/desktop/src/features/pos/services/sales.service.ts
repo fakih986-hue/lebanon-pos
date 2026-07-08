@@ -10,7 +10,7 @@ import {
   getCurrentUser,
   recordAuditEvent,
 } from "./security.service"
-import { enqueueSyncOperation } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 
 const SALES_KEY = "lebanonpos.sales.v1"
@@ -231,6 +231,7 @@ export function getRefundsForSale(saleId: string) {
 }
 
 export function recordSale(input: RecordSaleInput) {
+  assertCanWrite("record sale")
   const cost = input.items.reduce(
     (sum, item) => sum + item.cost * item.quantity,
     0
@@ -286,6 +287,7 @@ export function recordSale(input: RecordSaleInput) {
 }
 
 export function recordRefund(input: RecordRefundInput) {
+  assertCanWrite("record refund")
   const currentUser = getCurrentUser()
   const activeShift = getActiveShift()
   const refund: SaleRefund = {

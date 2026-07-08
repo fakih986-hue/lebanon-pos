@@ -80,6 +80,27 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
   }
 
   const { operations } = parsed.data
+
+  // ── License check: block business writes on server side ──────────────
+  // Never trust desktop-only enforcement. Server also blocks writes when
+  // tenant is read_only or suspended after grace expiry.
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { licenseStatus: true, suspendedAt: true, offlineGraceDays: true },
+  })
+  if (tenant) {
+    const isBlocked =
+      tenant.licenseStatus === "read_only" ||
+      tenant.licenseStatus === "recovery" ||
+      (tenant.licenseStatus === "suspended" && tenant.suspendedAt &&
+        (Date.now() - new Date(tenant.suspendedAt).getTime()) > (tenant.offlineGraceDays * 24 * 60 * 60 * 1000))
+
+    if (isBlocked) {
+      json(res, { error: "Store is currently suspended. Contact support.", code: "LICENSE_BLOCKED" }, 403)
+      return
+    }
+  }
+
   const results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string }> = []
 
   for (const op of operations) {

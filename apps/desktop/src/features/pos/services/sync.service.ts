@@ -310,33 +310,84 @@ function getLicenseLease(): LicenseLease | null {
   } catch { return null }
 }
 
-/** Check if business writes should be blocked based on local license */
+/** Check if business writes should be blocked based on local license.
+ *  ── Behavior matrix ──
+ *  active + lease valid        → NOT blocked (full access)
+ *  active + lease expired      → NOT blocked (recheck warning, still allows writes)
+ *  suspended + within grace    → NOT blocked (writes allowed with warning)
+ *  suspended + grace expired   → BLOCKED
+ *  read_only                   → BLOCKED immediately
+ *  recovery                    → BLOCKED for business writes
+ */
 export function isLicenseBlocked(): boolean {
   const lease = getLicenseLease()
   if (!lease) return false
 
-  // If explicitly suspended online — block immediately
-  if (lease.status === "suspended" || lease.status === "read_only") return true
+  // read_only and recovery ALWAYS block — no grace period
+  if (lease.status === "read_only" || lease.status === "recovery") return true
 
-  // If lease has an explicit expiry and it's past — block
-  if (lease.leaseExpiresAt) {
-    const expiry = new Date(lease.leaseExpiresAt).getTime()
-    if (Date.now() > expiry) return true
-  }
-
-  // If suspendedAt is set, check offline grace period
-  if (lease.suspendedAt && lease.status !== "active") {
+  // suspended with grace period: block only after grace expires
+  if (lease.status === "suspended") {
+    if (!lease.suspendedAt) return false // no timestamp → can't calculate grace → allow
     const elapsed = Date.now() - new Date(lease.suspendedAt).getTime()
     const graceMs = lease.offlineGraceDays * 24 * 60 * 60 * 1000
-    if (elapsed > graceMs) return true
+    return elapsed > graceMs
+  }
+
+  // active with expired lease → NOT blocked (recheck warning only)
+  // lease expiry is advisory, not a hard lock — only suspension/read_only blocks writes
+
+  return false
+}
+
+/** True if the tenant is in a grace period (shows warning but still allows writes) */
+export function isLicenseGrace(): boolean {
+  const lease = getLicenseLease()
+  if (!lease) return false
+
+  // suspended but within grace → show warning
+  if (lease.status === "suspended" && lease.suspendedAt) {
+    const elapsed = Date.now() - new Date(lease.suspendedAt).getTime()
+    const graceMs = lease.offlineGraceDays * 24 * 60 * 60 * 1000
+    return elapsed <= graceMs
+  }
+
+  // active but lease expired → show recheck warning
+  if (lease.status === "active" && lease.leaseExpiresAt) {
+    return Date.now() > new Date(lease.leaseExpiresAt).getTime()
   }
 
   return false
 }
 
+/** Days remaining in grace period (0 if expired or not in grace) */
+export function getLicenseRemainingDays(): number {
+  const lease = getLicenseLease()
+  if (!lease || !lease.suspendedAt) return 0
+  const elapsed = Date.now() - new Date(lease.suspendedAt).getTime()
+  const remaining = lease.offlineGraceDays - Math.floor(elapsed / (24 * 60 * 60 * 1000))
+  return Math.max(0, remaining)
+}
+
 /** Get the current license status (for UI display) */
 export function getLicenseStatus(): LicenseLease | null {
   return getLicenseLease()
+}
+
+/**
+ * Assert that business writes are allowed.
+ * Call at the start of every business mutation.
+ * Throws if blocked; logs warning if in grace.
+ */
+export function assertCanWrite(action: string): void {
+  if (isLicenseBlocked()) {
+    const lease = getLicenseLease()
+    const msg = lease?.message || "This store is currently suspended. Please contact support."
+    throw new Error(msg)
+  }
+  if (isLicenseGrace()) {
+    console.warn(`[license] Grace period active — ${action} allowed with warning. Days remaining:`, getLicenseRemainingDays())
+  }
 }
 
 async function clearIndexedDB() {

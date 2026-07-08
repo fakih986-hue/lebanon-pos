@@ -1,7 +1,7 @@
 import { products } from "../data/products"
 import type { Product, ProductAccent } from "../types/product"
 import { receiveInventoryBatches } from "./inventoryBatch.service"
-import { enqueueSyncOperation } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage } from "../lib/storage"
 
@@ -169,6 +169,7 @@ export function subscribeProducts(callback: (products: Product[]) => void) {
 }
 
 export function receiveProducts(entries: ProductReceiveInput[]) {
+  assertCanWrite("receive products")
   const currentProducts = getProductsSync()
   const nextProducts = [...currentProducts]
   let nextId =
