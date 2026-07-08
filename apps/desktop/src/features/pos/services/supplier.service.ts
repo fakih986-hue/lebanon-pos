@@ -19,6 +19,7 @@ export type Supplier = {
   contact: string
   address: string
   notes: string
+  archived?: boolean
   createdAt: string
 }
 
@@ -153,6 +154,41 @@ export function getSupplierPayments() {
   return readCollection<SupplierPayment>(SUPPLIER_PAYMENTS_KEY)
 }
 
+export function archiveSupplier(supplierId: string) {
+  assertCanWrite("delete supplier")
+  const suppliers = getSuppliers()
+  const supplier = suppliers.find((item) => item.id === supplierId)
+  if (!supplier) return
+
+  writeCollection(SUPPLIERS_KEY, suppliers.map((item) =>
+    item.id === supplierId ? { ...item, archived: true } : item
+  ))
+  enqueueSyncOperation({
+    entity: "supplier",
+    action: "update",
+    summary: `${supplier.name} archived.`,
+    payload: { id: supplierId, archived: true },
+  })
+}
+
+export function restoreSupplier(supplierId: string) {
+  assertCanWrite("delete supplier")
+  const suppliers = getSuppliers()
+  const supplier = suppliers.find((item) => item.id === supplierId)
+  if (!supplier) return
+
+  writeCollection(SUPPLIERS_KEY, suppliers.map((item) =>
+    item.id === supplierId ? { ...item, archived: false } : item
+  ))
+  enqueueSyncOperation({
+    entity: "supplier",
+    action: "update",
+    summary: `${supplier.name} restored.`,
+    payload: { id: supplierId, archived: false },
+  })
+}
+
+// Legacy delete — prefer archiveSupplier() unless no history exists
 export function deleteSupplier(supplierId: string) {
   assertCanWrite("delete supplier")
   const suppliers = getSuppliers()
@@ -430,7 +466,7 @@ export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
 }
 
 export function getSupplierLedger() {
-  const suppliers = getSuppliers()
+  const suppliers = getSuppliers().filter(s => !s.archived)
   const purchaseOrders = getPurchaseOrders()
   const payments = getSupplierPayments()
 
