@@ -3,7 +3,7 @@ import {
   getCurrentUser,
   recordAuditEvent,
 } from "./security.service"
-import { enqueueSyncOperation } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 
@@ -154,6 +154,7 @@ export function getSupplierPayments() {
 }
 
 export function deleteSupplier(supplierId: string) {
+  assertCanWrite("delete supplier")
   const suppliers = getSuppliers()
   const supplier = suppliers.find((item) => item.id === supplierId)
   if (!supplier) return
@@ -200,6 +201,7 @@ export function deleteSupplier(supplierId: string) {
 }
 
 export function createSupplier(input: CreateSupplierInput) {
+  assertCanWrite("create supplier")
   const supplier: Supplier = {
     id: createId("supplier"),
     name: cleanText(input.name),
@@ -292,6 +294,7 @@ function updatePurchaseOrderPaidTotal(purchaseOrderId: string) {
 }
 
 export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
+  assertCanWrite("record supplier payment")
   const supplier = getSuppliers().find(
     (currentSupplier) => currentSupplier.id === input.supplierId
   )
@@ -356,6 +359,7 @@ export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
 }
 
 export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
+  assertCanWrite("record purchase order")
   const shift = getActiveShift()
   const user = getCurrentUser()
   const total = input.items.reduce((sum, item) => sum + item.total, 0)

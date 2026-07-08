@@ -1221,3 +1221,108 @@ function disconnectSyncWebSocket() {
     wsClient = null
   }
 }
+
+// ── Emergency Recovery Export ──────────────────────────────────────
+// Available in ALL license states (active, grace, suspended, read_only).
+// Exports all local data without mutation. PINs are masked.
+// Downloadable as a JSON file for offline backup/recovery.
+
+export interface RecoveryPack {
+  exportedAt: string
+  store: {
+    apiUrl: string | null
+    cloudUrl?: string
+    tenantName?: string
+    subdomain?: string
+    hasAuthToken: boolean
+    hasCloudKey: boolean
+  }
+  license: LicenseLease | null
+  sync: {
+    queuePending: number
+    queueFailed: number
+    lastSyncAt: string | null
+    isSuspended: boolean
+  }
+  data: Record<string, unknown>
+  users: Array<{ id: string; name: string; role: string; active: boolean; pinMasked: string }>
+}
+
+export function createRecoveryPack(): RecoveryPack {
+  const apiUrl = getApiUrl()
+  const token = getAuthToken()
+  const license = getLicenseLease()
+  const queue = getSyncQueue()
+  const lastSyncAt = typeof localStorage !== "undefined" ? localStorage.getItem(LAST_SYNC_KEY) : null
+
+  // Collect all local data (skip raw sync operations, tokens, keys)
+  const dataKeys = [
+    "lebanonpos.products.v1", "lebanonpos.sales.v1",
+    "lebanonpos.customers.v1", "lebanonpos.suppliers.v1",
+    "lebanonpos.debt-sales.v1", "lebanonpos.debt-payments.v1",
+    "lebanonpos.expenses.v1", "lebanonpos.daily-closes.v1",
+    "lebanonpos.shifts.v1", "lebanonpos.settings.v1",
+    "lebanonpos.inventory-batches.v1", "lebanonpos.inventory-adjustments.v1",
+    "lebanonpos.held-sales.v1", "lebanonpos.delivery-orders.v1",
+  ]
+
+  const data: Record<string, unknown> = {}
+  if (typeof localStorage !== "undefined") {
+    for (const key of dataKeys) {
+      try {
+        const raw = localStorage.getItem(key)
+        if (raw) data[key] = JSON.parse(raw)
+      } catch { /* skip corrupt keys */ }
+    }
+  }
+
+  // Redact user PINs
+  const usersRaw = typeof localStorage !== "undefined"
+    ? localStorage.getItem("lebanonpos.users.v1") : null
+  const users = usersRaw ? (() => {
+    try {
+      const arr = JSON.parse(usersRaw)
+      if (!Array.isArray(arr)) return []
+      return arr.map((u: any) => ({
+        id: u.id ?? "",
+        name: u.name ?? "Unknown",
+        role: u.role ?? "Cashier",
+        active: u.active !== false,
+        pinMasked: u.pin ? `SHA256:${String(u.pin).substring(0, 10)}...` : "none",
+      }))
+    } catch { return [] }
+  })() : []
+
+  return {
+    exportedAt: new Date().toISOString(),
+    store: {
+      apiUrl,
+      tenantName: undefined,
+      subdomain: undefined,
+      hasAuthToken: !!token,
+      hasCloudKey: !!localStorage.getItem("lebanonpos.cloud-key"),
+    },
+    license,
+    sync: {
+      queuePending: queue.filter((o: any) => o.status === "Pending").length,
+      queueFailed: queue.filter((o: any) => o.status === "Failed").length,
+      lastSyncAt,
+      isSuspended: isSuspended(),
+    },
+    data,
+    users,
+  }
+}
+
+/** Trigger download of the recovery pack as a JSON file */
+export function downloadRecoveryPack(): void {
+  const pack = createRecoveryPack()
+  const json = JSON.stringify(pack, null, 2)
+  const blob = new Blob([json], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `lebanonpos-recovery-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}

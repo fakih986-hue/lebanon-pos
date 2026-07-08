@@ -335,6 +335,7 @@ export function recordRefund(input: RecordRefundInput) {
 }
 
 export function voidSale(saleId: string, restoreStock = true) {
+  assertCanWrite("void sale")
   const sales = getSales()
   const sale = sales.find((item) => item.id === saleId)
   if (!sale) return

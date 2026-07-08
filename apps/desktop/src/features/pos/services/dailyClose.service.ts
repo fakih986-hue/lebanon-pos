@@ -74,6 +74,7 @@ export function getDailyCloses() {
 }
 
 export function closeBusinessDay(input: CloseBusinessDayInput) {
+  assertCanWrite("close business day")
   const user = getCurrentUser()
   const close: DailyClose = {
     ...input,

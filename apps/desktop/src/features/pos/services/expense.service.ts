@@ -90,6 +90,7 @@ export function getExpenses() {
 }
 
 export function createExpense(input: CreateExpenseInput) {
+  assertCanWrite("create expense")
   const user = getCurrentUser()
   const shift = getActiveShift()
   const amount = Math.max(0, input.amount)

@@ -175,6 +175,7 @@ export function getDebtPayments() {
 }
 
 export function deleteCustomer(customerId: string) {
+  assertCanWrite("delete customer")
   const customers = getCustomers()
   const customer = customers.find((item) => item.id === customerId)
   if (!customer) return
@@ -229,6 +230,7 @@ export function addCustomer(input: CreateCustomerInput) {
 }
 
 export function updateCustomer(customerId: string, patch: Partial<Customer>) {
+  assertCanWrite("update customer")
   const customers = getCustomers()
   let updated: Customer | undefined
   const next = customers.map((c) => {
@@ -249,6 +251,7 @@ export function updateCustomer(customerId: string, patch: Partial<Customer>) {
 }
 
 export function recordDebtSale(input: RecordDebtSaleInput) {
+  assertCanWrite("record debt sale")
   const sale: DebtSale = {
     id: createId(),
     customerId: input.customerId,
@@ -292,6 +295,7 @@ export function reverseDebtSale(saleNumber: string) {
 }
 
 export function recordDebtPayment(input: RecordDebtPaymentInput) {
+  assertCanWrite("record debt payment")
   const payment: DebtPayment = {
     id: createId(),
     customerId: input.customerId,

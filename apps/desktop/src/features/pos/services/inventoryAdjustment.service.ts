@@ -9,7 +9,7 @@ import {
 } from "./product.service"
 import { recordAuditEvent } from "./security.service"
 import { canUseStorage, createId } from "../lib/storage"
-import { enqueueSyncOperation } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 
 const ADJUSTMENTS_KEY = "lebanonpos.inventory-adjustments.v1"
@@ -88,6 +88,7 @@ export function getStockAdjustments() {
 }
 
 export function recordStockAdjustment(input: RecordStockAdjustmentInput) {
+  assertCanWrite("record stock adjustment")
   const product = getProductsSync().find((item) => item.id === input.productId)
 
   if (!product || input.quantityChange === 0) {

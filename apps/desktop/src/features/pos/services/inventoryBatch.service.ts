@@ -125,6 +125,7 @@ export function getOpenBatchesForProduct(productId: number) {
 }
 
 export function receiveInventoryBatches(entries: ReceiveBatchInput[]) {
+  assertCanWrite("receive inventory batches")
   const now = new Date().toISOString()
   const batches = entries
     .filter((entry) => entry.quantity > 0)
@@ -254,6 +255,7 @@ export function consumeInventoryBatches(items: ConsumeBatchInput[]) {
 }
 
 export function adjustInventoryBatches(input: InventoryBatchAdjustmentInput) {
+  assertCanWrite("adjust inventory")
   const batches = getInventoryBatches()
   const quantityDelta = input.quantityDelta
   const allocations: BatchAllocation[] = []

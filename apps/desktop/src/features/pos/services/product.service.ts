@@ -289,6 +289,7 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
 }
 
 export function updateProduct(productId: number, patch: Partial<Product>) {
+  assertCanWrite("update product")
   const cleanPatch = cleanProductPatch(patch)
   let updatedProduct: Product | undefined
   const nextProducts = getProductsSync().map((product) => {
@@ -333,6 +334,7 @@ export function createProduct(input: {
   parentId?: number | null
   variantName?: string
 }): Product | undefined {
+  assertCanWrite("create product")
   const currentProducts = getProductsSync()
   const normalizedBarcode = normalizeBarcode(input.barcode)
   const existing = currentProducts.find((p) => p.barcode === normalizedBarcode)
@@ -375,6 +377,7 @@ export function createProduct(input: {
 }
 
 export function deleteProduct(productId: number) {
+  assertCanWrite("delete product")
   const products = getProductsSync()
   const product = products.find((item) => item.id === productId)
   if (!product) return
