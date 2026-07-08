@@ -77,6 +77,8 @@ function updateBatchStatus(batch: InventoryBatch) {
     }
   }
 }
+
+export type BatchAllocation = {
   batchId: string
   batchNumber: string
   quantity: number
@@ -168,10 +170,6 @@ function writeBatches(batches: InventoryBatch[]) {
 
   writeLocalWithIndexedDB(BATCHES_KEY, batches)
   window.dispatchEvent(new Event(BATCHES_EVENT))
-}
-
-function updateBatchStatus(batch: InventoryBatch) {
-  batch.status = batch.quantityRemaining <= 0 ? "Consumed" : "Open"
 }
 
 function sortBatchesForConsumption(a: InventoryBatch, b: InventoryBatch) {
