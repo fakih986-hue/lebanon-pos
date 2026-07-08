@@ -302,10 +302,17 @@ export default function SuppliersPage() {
                 { label: "Accounts", count: filteredSuppliers.length },
                 { label: "Orders", count: purchaseOrders.length },
                 { label: "Pay supplier", count: selectedOpenOrders.length },
-                { label: "Add supplier" },
                 { label: "Activity", count: selectedActivity.length },
               ]}
             />
+
+            <button
+              type="button"
+              onClick={() => setActiveWorkspace("Add supplier")}
+              className="btn-primary btn-sm h-10 shrink-0 px-3"
+            >
+              + Add supplier
+            </button>
 
             <label className="relative w-full sm:w-64">
               <span className="sr-only">Search suppliers</span>
