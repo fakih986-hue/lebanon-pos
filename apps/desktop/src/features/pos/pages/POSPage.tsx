@@ -282,7 +282,10 @@ export default function POSPage() {
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.id === product.id)
       if (existingItem) {
-        if (existingItem.quantity >= product.stock) return currentItems
+        if (existingItem.quantity >= product.stock) {
+          setScannerStatus(`${product.name}: only ${product.stock} available.`)
+          return currentItems
+        }
         return currentItems.map((item) =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1, price: effectivePrice }

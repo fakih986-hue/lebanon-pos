@@ -14,7 +14,7 @@ import { formatCurrency } from "../../features/pos/lib/currency"
 import {
   getActiveShift, getCurrentUser, userCan, subscribeSecurity, type Permission,
 } from "../../features/pos/services/security.service"
-import { getSyncStatus, subscribeSync, getApiUrl, getKnownStores } from "../../features/pos/services/sync.service"
+import { getSyncStatus, subscribeSync, getApiUrl, getKnownStores, isLicenseGrace, getLicenseRemainingDays } from "../../features/pos/services/sync.service"
 import { getSettings } from "../../features/pos/services/settings.service"
 
 const SIDEBAR_EXPANDED_KEY = "lebanonpos.sidebar-expanded.v1"
@@ -263,6 +263,21 @@ export default function Sidebar() {
             {expanded && (
               <span className="text-[10px] font-semibold text-red-400">
                 {syncPending} pending
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* License grace warning */}
+        {isLicenseGrace() && (
+          <div
+            className={`flex items-center gap-1.5 rounded-[8px] px-2 py-1.5 ${!expanded ? "justify-center" : ""}`}
+            style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}
+          >
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "var(--amber)" }} />
+            {expanded && (
+              <span className="text-[10px] font-semibold" style={{ color: "var(--amber-text)" }}>
+                {getLicenseRemainingDays()}d grace
               </span>
             )}
           </div>

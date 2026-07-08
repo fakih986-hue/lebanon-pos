@@ -622,3 +622,26 @@ export function generateProductBarcode() {
 
   return `${prefix}${Date.now().toString().slice(-10)}`.slice(0, 13)
 }
+
+// ── Batch receiving helpers ──────────────────────────────────────
+const BATCH_DEFAULTS_KEY = "lebanonpos.receive-defaults.v1"
+
+export type ReceiveDefaults = {
+  supplierId?: string; supplierName?: string
+  purchaseOrderNumber?: string
+  category?: string; cost?: number; price?: number
+  reorderPoint?: number; reorderQuantity?: number
+}
+
+export function getReceiveDefaults(): ReceiveDefaults {
+  try {
+    const raw = localStorage.getItem(BATCH_DEFAULTS_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch { return {} }
+}
+
+export function saveReceiveDefaults(input: ReceiveDefaults) {
+  const existing = getReceiveDefaults()
+  const updated: ReceiveDefaults = { ...existing, ...input }
+  localStorage.setItem(BATCH_DEFAULTS_KEY, JSON.stringify(updated))
+}
