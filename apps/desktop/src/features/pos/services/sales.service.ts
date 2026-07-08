@@ -394,7 +394,9 @@ export function voidSale(saleId: string, restoreStock = true) {
 export function getSalesMetrics() {
   const sales = getSales()
   const refunds = getRefunds()
-  const todaySales = sales.filter((sale) => isToday(sale.createdAt))
+  const todaySales = sales.filter(
+    (sale) => isToday(sale.createdAt) && sale.status !== "Voided"
+  )
   const todayRefunds = refunds.filter((refund) => isToday(refund.createdAt))
   const paidTodaySales = todaySales.filter((sale) => sale.paymentMethod !== "Debt")
   const settings = getSettings()
@@ -432,18 +434,20 @@ export function getSalesMetrics() {
 }
 
 export function getPaymentMix() {
-  const totals = getSales().reduce<Record<SalePaymentMethod, number>>(
-    (totals, sale) => ({
-      ...totals,
-      [sale.paymentMethod]: totals[sale.paymentMethod] + sale.total,
-    }),
-    {
-      Cash: 0,
-      Card: 0,
-      Wallet: 0,
-      Debt: 0,
-    }
-  )
+  const totals = getSales()
+    .filter((sale) => sale.status !== "Voided")
+    .reduce<Record<SalePaymentMethod, number>>(
+      (totals, sale) => ({
+        ...totals,
+        [sale.paymentMethod]: totals[sale.paymentMethod] + sale.total,
+      }),
+      {
+        Cash: 0,
+        Card: 0,
+        Wallet: 0,
+        Debt: 0,
+      }
+    )
 
   getRefunds().forEach((refund) => {
     const method = refund.method === "Debt_Credit" ? "Debt" : refund.method
@@ -515,4 +519,48 @@ export function subscribeRefunds(callback: (refunds: SaleRefund[]) => void) {
     window.removeEventListener(REFUNDS_EVENT, handleRefundsChanged)
     window.removeEventListener("storage", handleRefundsChanged)
   }
+}
+
+export type OpAlert = { type: "warning" | "danger" | "info"; message: string; action?: string }
+
+export function getOperationalAlerts(): OpAlert[] {
+  const alerts: OpAlert[] = []
+
+  // License-based alerts
+  try {
+    const licenseRaw = localStorage.getItem("lebanonpos.license.v1")
+    if (licenseRaw) {
+      const license = JSON.parse(licenseRaw)
+      if (license.status === "grace") {
+        alerts.push({
+          type: "warning",
+          message: `License grace period — ${license.message || "Contact support to renew."}`,
+        })
+      }
+      if (license.status === "suspended") {
+        alerts.push({
+          type: "danger",
+          message: `Store suspended — ${license.message || "Contact support."}`,
+        })
+      }
+    }
+  } catch { /* ignore corrupt license data */ }
+
+  // Failed sync alert
+  try {
+    const queueRaw = localStorage.getItem("lebanonpos.sync-queue.v1")
+    if (queueRaw) {
+      const queue = JSON.parse(queueRaw)
+      const failed = (Array.isArray(queue) ? queue : []).filter((o: any) => o.status === "Failed").length
+      if (failed > 0) {
+        alerts.push({
+          type: "warning",
+          message: `${failed} sync operation${failed > 1 ? "s" : ""} failed. Check Settings.`,
+          action: "retry-sync",
+        })
+      }
+    }
+  } catch { /* ignore corrupt queue */ }
+
+  return alerts
 }
