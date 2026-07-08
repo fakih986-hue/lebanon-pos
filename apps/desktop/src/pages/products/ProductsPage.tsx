@@ -429,17 +429,20 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
 
   function saveProductEdit() {
     if (!editProduct) return
-    updateProduct(editProduct.id, {
+    const result = updateProduct(editProduct.id, {
       name: editName,
       category: editCategory,
       price: normalizeNumber(editPrice),
       cost: normalizeNumber(editCost),
       barcode: editBarcode || undefined,
       barcodeAliases: editBarcodeAliases.split(",").map((a: string) => a.trim()).filter((a: string) => a.length > 0),
-      stock: normalizeNumber(editStock),
       reorderPoint: normalizeNumber(editReorderPoint),
       reorderQuantity: normalizeNumber(editReorderQty),
     })
+    if (result === undefined) {
+      showToast(`${editName} could not be updated. Check for duplicate barcodes.`, "error")
+      return
+    }
     showToast(`${editName} updated.`)
     setEditProduct(null)
   }
@@ -1115,7 +1118,8 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
               <div className="grid grid-cols-3 gap-3">
                 <label className="block">
                   <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Stock</span>
-                  <input type="number" min="0" value={editStock} onChange={(e) => setEditStock(e.target.value)} className="input w-full" />
+                  <span className="flex items-center h-10 px-3 rounded-lg text-sm font-semibold" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>{editProduct?.stock ?? "—"} units</span>
+                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>Use receiving to change stock</p>
                 </label>
                 <label className="block">
                   <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Reorder Pt</span>

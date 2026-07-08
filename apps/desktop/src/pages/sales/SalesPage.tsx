@@ -28,6 +28,7 @@ import {
   type Sale,
   type SalePaymentMethod,
   type SaleRefund,
+  type RefundItem,
 } from "../../features/pos/services/sales.service"
 import { recordDebtPayment } from "../../features/pos/services/customer.service"
 import { restoreInventoryBatches } from "../../features/pos/services/inventoryBatch.service"
@@ -143,7 +144,7 @@ export default function SalesPage() {
   const [pendingRefund, setPendingRefund] = useState<{
     sale: Sale
     refundTotal: number
-    refundItems: Array<{ id: number; name: string; barcode: string; quantity: number; unitPrice: number; cost: number; total: number }>
+    refundItems: RefundItem[]
     refundReason: string
   } | null>(null)
   const [voidSaleId, setVoidSaleId] = useState<string | null>(null)
@@ -241,14 +242,25 @@ export default function SalesPage() {
     const refundItems = sale.items.map((item) => {
       const available = getRefundableQuantity(sale, item, refunds)
       const qty = Math.min(parseReturnQuantity(refundQuantities[String(item.id)] ?? ""), available)
-      return { ...item, quantity: qty, total: item.unitPrice * qty }
+      let batchAllocations: typeof item.batchAllocations = undefined
+      if (item.batchAllocations && qty > 0) {
+        let remaining = qty
+        batchAllocations = []
+        for (const alloc of item.batchAllocations) {
+          if (remaining <= 0) break
+          const taken = Math.min(remaining, alloc.quantity)
+          batchAllocations.push({ ...alloc, quantity: taken })
+          remaining -= taken
+        }
+      }
+      return { ...item, quantity: qty, total: item.unitPrice * qty, batchAllocations }
     }).filter((item) => item.quantity > 0)
 
     if (refundItems.length === 0) { setRefundStatus(t("pos.sales.choose_item_qty")); return }
     const alreadyRefunded = saleRefunds.reduce((s, r) => s + r.total, 0)
     const refundTotal = Math.min(Math.max(0, sale.total - alreadyRefunded), getRefundTotal(sale, refundItems))
     if (refundTotal <= 0) { setRefundStatus(t("pos.sales.no_refundable_balance")); return }
-    setPendingRefund({ sale, refundTotal, refundItems: refundItems.map((i) => ({ id: i.id, name: i.name, barcode: i.barcode, quantity: i.quantity, unitPrice: i.unitPrice, cost: i.cost, total: i.total })), refundReason })
+    setPendingRefund({ sale, refundTotal, refundItems, refundReason })
   }
 
   function executeRefund() {

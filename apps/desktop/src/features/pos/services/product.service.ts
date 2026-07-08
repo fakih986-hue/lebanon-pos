@@ -1,6 +1,6 @@
 import { products } from "../data/products"
 import type { Product, ProductAccent } from "../types/product"
-import { receiveInventoryBatches } from "./inventoryBatch.service"
+import { receiveInventoryBatches, type ReceiveBatchInput } from "./inventoryBatch.service"
 import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
 import { recordAuditEvent } from "./security.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
@@ -178,6 +178,7 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
 
   let rejectedCount = 0
   const errors: string[] = []
+  const batchInputs: ReceiveBatchInput[] = []
 
   entries.forEach((entry, index) => {
     const barcode = normalizeBarcode(entry.barcode)
@@ -234,19 +235,17 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
       }
       const updatedProduct = nextProducts[existingIndex]
 
-      receiveInventoryBatches([
-        {
-          productId: updatedProduct.id,
-          productName: updatedProduct.name,
-          barcode: updatedProduct.barcode,
-          quantity: entry.stock,
-          unitCost: entry.cost,
-          unitPrice: entry.price,
-          expiryDate: entry.expiryDate,
-          supplierId: entry.supplierId,
-          supplierName: entry.supplierName,
-        },
-      ])
+      batchInputs.push({
+        productId: updatedProduct.id,
+        productName: updatedProduct.name,
+        barcode: updatedProduct.barcode,
+        quantity: entry.stock,
+        unitCost: entry.cost,
+        unitPrice: entry.price,
+        expiryDate: entry.expiryDate,
+        supplierId: entry.supplierId,
+        supplierName: entry.supplierName,
+      })
 
       return
     }
@@ -269,19 +268,17 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
     }
 
     nextProducts.push(product)
-    receiveInventoryBatches([
-      {
-        productId: product.id,
-        productName: product.name,
-        barcode: product.barcode,
-        quantity: entry.stock,
-        unitCost: product.cost,
-        unitPrice: product.price,
-        expiryDate: product.expiryDate,
-        supplierId: product.supplierId,
-        supplierName: product.supplierName,
-      },
-    ])
+    batchInputs.push({
+      productId: product.id,
+      productName: product.name,
+      barcode: product.barcode,
+      quantity: entry.stock,
+      unitCost: product.cost,
+      unitPrice: product.price,
+      expiryDate: product.expiryDate,
+      supplierId: product.supplierId,
+      supplierName: product.supplierName,
+    })
     nextId += 1
   })
 
@@ -313,12 +310,12 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
     })
   }
 
-  // Log validation errors for caller visibility
-  if (errors.length > 0) {
-    console.warn(`[receiveProducts] ${rejectedCount} entries rejected:`, errors)
+  // Enqueue inventory receives AFTER product creates/updates
+  if (batchInputs.length > 0) {
+    receiveInventoryBatches(batchInputs)
   }
 
-  return nextProducts
+  return { errors, rejectedCount, newlyCreated, modifiedExisting }
 }
 
 export function updateProduct(productId: number, patch: Partial<Product>) {
@@ -432,6 +429,14 @@ export function createProduct(input: {
   const nextProducts = [...currentProducts, product]
   writeProducts(nextProducts)
 
+  // Queue product create FIRST so server has the product before receiving batch
+  enqueueSyncOperation({
+    entity: "product",
+    action: "create",
+    summary: `${product.name} created.`,
+    payload: product,
+  })
+
   // Create initial batch for opening stock
   if (input.stock > 0) {
     receiveInventoryBatches([{
@@ -444,12 +449,6 @@ export function createProduct(input: {
     }])
   }
 
-  enqueueSyncOperation({
-    entity: "product",
-    action: "create",
-    summary: `${product.name} created.`,
-    payload: product,
-  })
   return product
 }
 
@@ -474,7 +473,7 @@ export function archiveProduct(productId: number) {
   recordAuditEvent({
     action: "product.archive", entity: "product",
     summary: `${product.name} archived${idsToArchive.length > 1 ? ` with ${idsToArchive.length - 1} variants` : ""}`,
-    metadata: { productId, archivedIds: idsToArchive },
+    metadata: { productId, archivedIds: idsToArchive.join(",") },
   })
 }
 

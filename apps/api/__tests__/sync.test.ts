@@ -33,7 +33,7 @@ vi.mock("../src/lib/prisma", () => {
     appSettings: { findUnique: vi.fn(), upsert: vi.fn() },
     tenant: { findUnique: vi.fn().mockResolvedValue({ licenseStatus: "active", suspendedAt: null, offlineGraceDays: 7 }) },
     expense: model(),
-    inventoryBatch: model(),
+    inventoryBatch: { ...model(), updateMany: vi.fn() },
     stockAdjustment: model(),
     stockMovement: model(),
     stockCountSession: { ...model() },
@@ -404,6 +404,206 @@ describe("POST /api/sync/push — concurrent stock race", () => {
     const productUpdateCalls = vi.mocked(prisma.product.updateMany).mock.calls
     const decrementCalls = productUpdateCalls.filter((c: any) => c[0]?.data?.stock?.decrement !== undefined)
     expect(decrementCalls.length).toBe(1)
+  })
+})
+
+describe("POST /api/sync/push — product.delete archive safety", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it("product.delete with barcode fallback archives by tenantId + barcode", async () => {
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-del-barcode", entity: "product", action: "delete", payload: { barcode: "5281000123457" } }] },
+    })
+
+    expect(res.status).toBe(200)
+    // Archives by barcode (no id in payload)
+    expect(vi.mocked(prisma.product.updateMany).mock.calls[0][0]).toMatchObject({
+      where: { tenantId: "t1", barcode: "5281000123457" }, data: { archived: true },
+    })
+    expect(vi.mocked(prisma.product.deleteMany)).not.toHaveBeenCalled()
+    expect(vi.mocked(prisma.inventoryBatch.deleteMany)).not.toHaveBeenCalled()
+    expect(vi.mocked(prisma.stockMovement.deleteMany)).not.toHaveBeenCalled()
+  })
+
+  it("product.delete with id archives by id (not barcode) when both present", async () => {
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-del-both", entity: "product", action: "delete", payload: { id: 99, barcode: "5281999999999" } }] },
+    })
+
+    expect(res.status).toBe(200)
+    // id takes priority
+    expect(vi.mocked(prisma.product.updateMany).mock.calls[0][0]).toMatchObject({
+      where: { tenantId: "t1", id: 99 }, data: { archived: true },
+    })
+  })
+})
+
+describe("POST /api/sync/push — refund idempotency and batch restore", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it("refund retry does not double-restore product stock or batch quantity", async () => {
+    // First push: refund does not exist yet
+    vi.mocked(prisma.saleRefund.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.saleRefund.upsert).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    // Mock stockMovement.create
+    const stockMovMock = (prisma as any).stockMovement
+    if (stockMovMock.create) vi.mocked(stockMovMock.create).mockResolvedValue({} as any)
+    if (stockMovMock.findFirst) vi.mocked(stockMovMock.findFirst).mockResolvedValue(null)
+
+    const refundPayload = {
+      id: "ref-retry-1",
+      refundNumber: "R-001",
+      saleId: "sale-1",
+      saleNumber: "S-001",
+      method: "Cash",
+      reason: "Test",
+      total: 30,
+      items: [{ id: 1, name: "Cola", barcode: "111", quantity: 3, unitPrice: 10, total: 30, cost: 5 }],
+    }
+
+    const op = [{ id: "op-ref-1", entity: "refund", action: "create", payload: refundPayload }]
+
+    const res1 = await request("POST", "/api/sync/push", { token, body: { operations: op } })
+    expect(res1.status).toBe(200)
+
+    // Second push: same refund — should skip
+    vi.mocked(prisma.saleRefund.findUnique).mockResolvedValue({ id: "ref-retry-1" } as any)
+
+    const res2 = await request("POST", "/api/sync/push", { token, body: { operations: op } })
+    expect(res2.status).toBe(200)
+
+    // Stock should only have been incremented once (from first push)
+    const stockCalls = vi.mocked(prisma.product.updateMany).mock.calls.filter(
+      (c: any) => c[0]?.data?.stock?.increment !== undefined
+    )
+    expect(stockCalls.length).toBe(1)
+  })
+
+  it("refund restores batch quantities from batchAllocations", async () => {
+    vi.mocked(prisma.saleRefund.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.saleRefund.upsert).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    vi.mocked(prisma.inventoryBatch.updateMany).mockResolvedValue({ count: 1 } as any)
+    const stockMovMock = (prisma as any).stockMovement
+    if (stockMovMock.create) vi.mocked(stockMovMock.create).mockResolvedValue({} as any)
+    if (stockMovMock.findFirst) vi.mocked(stockMovMock.findFirst).mockResolvedValue(null)
+
+    const refundPayload = {
+      id: "ref-batch-1",
+      refundNumber: "R-BATCH-1",
+      saleId: "sale-batch-1",
+      saleNumber: "S-BATCH-1",
+      method: "Cash",
+      reason: "Test",
+      total: 10,
+      items: [{
+        id: 1, name: "Cola", barcode: "111", quantity: 2, unitPrice: 5, total: 10, cost: 3,
+        batchAllocations: [{ batchId: "batch-a", batchNumber: "BN-001", quantity: 2 }],
+      }],
+    }
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-ref-batch", entity: "refund", action: "create", payload: refundPayload }] },
+    })
+
+    expect(res.status).toBe(200)
+    // Batch should be restored
+    const batchCalls = vi.mocked(prisma.inventoryBatch.updateMany).mock.calls
+    expect(batchCalls.length).toBeGreaterThanOrEqual(1)
+    const batchRestoreCall = batchCalls[0][0]
+    expect(batchRestoreCall.where).toMatchObject({ id: "batch-a", tenantId: "t1" })
+    expect(batchRestoreCall.data).toMatchObject({ quantityRemaining: { increment: 2 }, status: "Open" })
+  })
+
+  it("refund without batchAllocations triggers fallback batch restore", async () => {
+    vi.mocked(prisma.saleRefund.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.saleRefund.upsert).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    vi.mocked(prisma.inventoryBatch.updateMany).mockResolvedValue({ count: 1 } as any)
+    // Mock findFirst for fallback
+    vi.mocked(prisma.inventoryBatch.findFirst).mockResolvedValue({ id: "batch-fallback", productId: 1 } as any)
+    const stockMovMock = (prisma as any).stockMovement
+    if (stockMovMock.create) vi.mocked(stockMovMock.create).mockResolvedValue({} as any)
+    if (stockMovMock.findFirst) vi.mocked(stockMovMock.findFirst).mockResolvedValue(null)
+
+    const refundPayload = {
+      id: "ref-fallback-1",
+      refundNumber: "R-FALLBACK-1",
+      saleId: "sale-fallback-1",
+      saleNumber: "S-FALLBACK-1",
+      method: "Cash",
+      reason: "Test",
+      total: 10,
+      items: [{ id: 1, name: "Cola", barcode: "111", quantity: 2, unitPrice: 5, total: 10, cost: 3 }],
+    }
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-ref-fallback", entity: "refund", action: "create", payload: refundPayload }] },
+    })
+
+    expect(res.status).toBe(200)
+    // Fallback: restored to newest batch
+    expect(vi.mocked(prisma.inventoryBatch.findFirst)).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ productId: 1 }) })
+    )
+    const batchCalls = vi.mocked(prisma.inventoryBatch.updateMany).mock.calls
+    expect(batchCalls.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it("refund matches original item by barcode (not desktop productId)", async () => {
+    vi.mocked(prisma.saleRefund.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.saleRefund.upsert).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.syncOperation.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+    vi.mocked(prisma.inventoryBatch.updateMany).mockResolvedValue({ count: 1 } as any)
+    const stockMovMock = (prisma as any).stockMovement
+    if (stockMovMock.create) vi.mocked(stockMovMock.create).mockResolvedValue({} as any)
+    if (stockMovMock.findFirst) vi.mocked(stockMovMock.findFirst).mockResolvedValue(null)
+
+    // Desktop productId=500, but server resolved productId=3 via barcode "111"
+    // The matching should use barcode "111" to find originalItem, not id=500
+    const refundPayload = {
+      id: "ref-match-test",
+      refundNumber: "R-MATCH",
+      saleId: "sale-match-1",
+      saleNumber: "S-MATCH-1",
+      method: "Cash",
+      reason: "Match test",
+      total: 10,
+      items: [{
+        id: 500, name: "Cola", barcode: "111", quantity: 1, unitPrice: 10, total: 10, cost: 5,
+        batchAllocations: [{ batchId: "batch-match", batchNumber: "BN-MATCH", quantity: 1 }],
+      }],
+    }
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-ref-match", entity: "refund", action: "create", payload: refundPayload }] },
+    })
+
+    expect(res.status).toBe(200)
+    // findFirst was called to resolve productId by barcode
+    expect(vi.mocked(prisma.product.findFirst)).toHaveBeenCalled()
   })
 })
 })

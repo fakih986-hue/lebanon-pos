@@ -538,10 +538,20 @@ async function processOperation(
         }
       } else if (action === "delete") {
         // Silently convert product.delete to archive — preserve history
-        await db.product.updateMany({
-          where: { tenantId, id: payload?.id as number },
-          data: { archived: true } as any,
-        })
+        const payloadId = (payload as any)?.id
+        const payloadBarcode = (payload as any)?.barcode
+        if (payloadId) {
+          await db.product.updateMany({
+            where: { tenantId, id: payloadId as number },
+            data: { archived: true } as any,
+          })
+        } else if (payloadBarcode) {
+          await db.product.updateMany({
+            where: { tenantId, barcode: payloadBarcode as string },
+            data: { archived: true } as any,
+          })
+        }
+        // Never cascade delete — inventory batches, stock movements, and count lines remain intact
       }
       break
     }
@@ -705,7 +715,7 @@ async function processOperation(
         })
         // Restore product stock + batch quantities for refunded items
         for (const item of prismaItems) {
-          const originalItem = (data.items ?? []).find((i: any) => i.id === item.productId)
+          const originalItem = (data.items ?? []).find((i: any) => i.barcode === item.barcode)
           await db.product.updateMany({
             where: { tenantId, id: item.productId },
             data: { stock: { increment: item.quantity }, updatedAt: new Date() },
@@ -722,8 +732,18 @@ async function processOperation(
               }
             }
           } else {
-            // Fallback: restore to newest batches (documented fallback for old sales)
-            console.log(`[sync] Refund ${data.id}: no batchAllocations — using fallback restore for product ${item.productId}`)
+            // Fallback: restore to newest open batch for this product
+            const newestBatch = await db.inventoryBatch.findFirst({
+              where: { tenantId, productId: item.productId },
+              orderBy: { receivedAt: "desc" },
+            })
+            if (newestBatch) {
+              await db.inventoryBatch.updateMany({
+                where: { id: newestBatch.id, tenantId },
+                data: { quantityRemaining: { increment: item.quantity }, status: "Open" } as any,
+              })
+            }
+            console.log(`[sync] Refund ${data.id}: no batchAllocations — restored ${item.quantity} to newest batch ${newestBatch?.id ?? "N/A"} for product ${item.productId}`)
           }
         }
       }
