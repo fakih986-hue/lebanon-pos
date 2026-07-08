@@ -2,9 +2,20 @@ import { getToken, clearToken } from "../main"
 
 const BASE = import.meta.env.VITE_API_URL || ""
 
+function getTenantId(): string {
+  return localStorage.getItem("lebanonpos.admin.tenantId") || ""
+}
+
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getToken()
-  const res = await fetch(`${BASE}${path}`, {
+  const tenantId = getTenantId()
+
+  let url = `${BASE}${path}`
+  if (tenantId && path.startsWith("/api/") && !path.includes("tenantId=")) {
+    url += (path.includes("?") ? "&" : "?") + `tenantId=${encodeURIComponent(tenantId)}`
+  }
+
+  const res = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",

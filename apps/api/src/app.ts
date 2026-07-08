@@ -109,6 +109,66 @@ app.get("/api/products", requireAuth, async (req: AuthRequest, res: ServerRespon
   }
 })
 
+app.get("/api/customers", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    const search = (req.query.search as string) || ""
+    const skip = parseInt(req.query.skip as string) || 0
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 200)
+
+    const where: any = { tenantId }
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { mobile: { contains: search, mode: "insensitive" } },
+      ]
+    }
+
+    const customers = await prisma.customer.findMany({
+      where,
+      orderBy: { name: "asc" },
+      skip,
+      take: limit,
+    })
+
+    json(res, customers)
+  } catch (err) {
+    console.error("[customers] List error:", err)
+    json(res, { error: "Failed to list customers" }, 500)
+  }
+})
+
+app.get("/api/sales", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    const search = (req.query.search as string) || ""
+    const skip = parseInt(req.query.skip as string) || 0
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 200)
+
+    const where: any = { tenantId }
+    if (search) {
+      where.OR = [
+        { saleNumber: { contains: search, mode: "insensitive" } },
+        { cashier: { contains: search, mode: "insensitive" } },
+        { customerName: { contains: search, mode: "insensitive" } },
+      ]
+    }
+
+    const sales = await prisma.sale.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+      include: { items: true },
+    })
+
+    json(res, sales)
+  } catch (err) {
+    console.error("[sales] List error:", err)
+    json(res, { error: "Failed to list sales" }, 500)
+  }
+})
+
 app.use(express.static("public"))
 
 function spaHandler(publicDir: string) {

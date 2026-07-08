@@ -15,10 +15,13 @@ export function CustomersPage() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
 
+  const tenantId = localStorage.getItem("lebanonpos.admin.tenantId") || ""
+
   const loadCustomers = useCallback(async () => {
     setLoading(true); setError(null)
     try {
       const params = new URLSearchParams()
+      if (tenantId) params.set("tenantId", tenantId)
       if (search.trim()) params.set("search", search.trim())
       params.set("skip", String((page - 1) * PAGE_SIZE))
       params.set("limit", String(PAGE_SIZE + 1))

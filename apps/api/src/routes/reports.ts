@@ -8,7 +8,7 @@ const router = Router()
 // ── Low-stock alerts ─────────────────────────────────────────────────
 router.get("/low-stock", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = req.auth!.tenantId
+    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
     const products = await prisma.product.findMany({
       where: {
         tenantId,
@@ -46,7 +46,7 @@ router.get("/low-stock", requireAuth, async (req: AuthRequest, res: ServerRespon
 // ── X Report (mid-shift summary) ─────────────────────────────────────
 router.get("/x-report", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = req.auth!.tenantId
+    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
 
     const openShift = await prisma.shift.findFirst({
       where: { tenantId, status: "Open" },
@@ -136,7 +136,7 @@ router.get("/x-report", requireAuth, async (req: AuthRequest, res: ServerRespons
 // ── Z Report (end-of-shift summary + close) ──────────────────────────
 router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = req.auth!.tenantId
+    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
     const body = (req as any).body ?? {}
     const shiftId = body.shiftId as string | undefined
     const closingCash = body.closingCash as number | undefined
@@ -250,7 +250,7 @@ router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerRespon
 // ── Margin per product/category ──────────────────────────────────────
 router.get("/margin", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = req.auth!.tenantId
+    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
     const days = Math.min(90, Math.max(1, Number((req as any).query?.days) || 30))
     const since = new Date(Date.now() - days * 86400000)
 
@@ -341,7 +341,7 @@ router.get("/margin", requireAuth, async (req: AuthRequest, res: ServerResponse)
 // ── Customer debt aging ──────────────────────────────────────────────
 router.get("/debt-aging", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = req.auth!.tenantId
+    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
 
     const [debtSales, debtPayments, customers] = await Promise.all([
       prisma.debtSale.findMany({
@@ -428,7 +428,7 @@ router.get("/debt-aging", requireAuth, async (req: AuthRequest, res: ServerRespo
 // ── Excel export ─────────────────────────────────────────────────────
 router.get("/export/:type", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = req.auth!.tenantId
+    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
     const type = (req as any).params?.type as string
 
     let csv: string

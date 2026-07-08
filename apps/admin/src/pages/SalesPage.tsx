@@ -74,8 +74,11 @@ export function SalesPage() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
 
+  const tenantId = localStorage.getItem("lebanonpos.admin.tenantId") || ""
+
   useEffect(() => {
     const params = new URLSearchParams()
+    if (tenantId) params.set("tenantId", tenantId)
     params.set("skip", String((page - 1) * PAGE_SIZE))
     params.set("limit", String(PAGE_SIZE + 1))
     setLoading(true)
