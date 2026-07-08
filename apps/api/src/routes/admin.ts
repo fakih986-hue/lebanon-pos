@@ -108,10 +108,17 @@ router.get("/tenants/:id", requireAuth, requireAdmin, async (req: AuthRequest, r
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: req.params?.id },
-      select: { id: true, name: true, subdomain: true, suspended: true, cloudApiKey: true, createdAt: true },
+      select: { id: true, name: true, subdomain: true, suspended: true, cloudApiKey: true, createdAt: true, licenseStatus: true, policyVersion: true },
     })
     if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
-    json(res, tenant)
+    // Mask cloud API key — only show first 8 and last 4 chars
+    const masked = {
+      ...tenant,
+      cloudApiKey: tenant.cloudApiKey
+        ? `${tenant.cloudApiKey.substring(0, 8)}...${tenant.cloudApiKey.substring(tenant.cloudApiKey.length - 4)}`
+        : "",
+    }
+    json(res, masked)
   } catch (err) {
     console.error("Get tenant error:", err)
     json(res, { error: "Failed to get tenant" }, 500)
@@ -291,6 +298,27 @@ router.post("/tenants", requireAuth, requireAdmin, async (req: AuthRequest, res:
   } catch (err) {
     console.error("Create tenant error:", err)
     json(res, { error: "Failed to create tenant" }, 500)
+  }
+})
+
+// ── API Key Rotation ────────────────────────────────────────
+router.post("/tenants/:id/rotate-key", requireAuth, requireAdmin, async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: req.params?.id },
+      select: { id: true, name: true },
+    })
+    if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
+    const newKey = generateCloudApiKey()
+    await prisma.tenant.update({
+      where: { id: tenant.id },
+      data: { cloudApiKey: newKey, policyVersion: { increment: 1 } },
+    })
+    // Return new key fully (one-time, explicit rotation action)
+    json(res, { tenantId: tenant.id, cloudApiKey: newKey })
+  } catch (err) {
+    console.error("Rotate API key error:", err)
+    json(res, { error: "Failed to rotate API key" }, 500)
   }
 })
 

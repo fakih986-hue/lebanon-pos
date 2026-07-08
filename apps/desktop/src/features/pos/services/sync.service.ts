@@ -189,6 +189,17 @@ export async function clearStoreData() {
   try { await clearIndexedDB() } catch (e) { console.error("[sync] clearIndexedDB failed:", e) }
 }
 
+/** Count pending sync operations that will be lost on store switch */
+export function getUnsyncedCount(): number {
+  try {
+    const raw = localStorage.getItem(SYNC_QUEUE_KEY)
+    if (!raw) return 0
+    const queue = JSON.parse(raw)
+    if (!Array.isArray(queue)) return 0
+    return queue.filter((o: any) => o.status === "Pending" || o.status === "Failed").length
+  } catch { return 0 }
+}
+
 // ── Suspension enforcement ──────────────────────────────────────────
 export function isSuspended(): boolean {
   return localStorage.getItem(SUSPENDED_KEY) === "true"
