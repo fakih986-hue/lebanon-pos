@@ -35,8 +35,10 @@ import {
   subscribeProducts,
   updateProduct,
   detectDuplicateBarcodes,
+  getReconciliationIssues,
   type ProductSortKey,
   type SortDir,
+  type ReconciliationIssue,
 } from "../../features/pos/services/product.service"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import { subscribeSales } from "../../features/pos/services/sales.service"
@@ -256,6 +258,8 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   }, [products, debouncedSearch, selectedCategory, quickView, sortKey, sortDir])
 
   const duplicateBarcodes = useMemo(() => detectDuplicateBarcodes(), [products])
+  const [reconIssues, setReconIssues] = useState<ReconciliationIssue[]>([])
+  const [reconLoading, setReconLoading] = useState(false)
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? products[0]
   const adjustmentProduct =
@@ -860,10 +864,14 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
         promoSuggestions={promoSuggestions}
         buildSupplierOrderMessage={buildSupplierOrderMessage}
         copySupplierOrder={copySupplierOrder}
+        onWriteOffProduct={(id) => { setAdjustmentProductId(id); setAdjustmentMode("Remove"); setActiveProductView("Control") }}
+        onViewProduct={(id) => { setSelectedProductId(id); setActiveProductView("Lots") }}
+        onReceiveProduct={(id) => { window.location.href = "/products/new" }}
       />
       ) : null}
 
       {activeProductView === "Control" ? (
+      <>
       <StockControlPanel
         products={products}
         adjustmentProduct={adjustmentProduct}
@@ -894,6 +902,67 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
         onSaveCountLine={saveCountLine}
         onPostStockCount={postStockCount}
       />
+      {/* Reconciliation section */}
+      <section className="card mt-5 overflow-hidden">
+        <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "var(--border)" }}>
+          <div>
+            <h2 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Inventory Reconciliation</h2>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>
+              Detect stock vs batch mismatches, orphan batches, and data integrity issues.
+            </p>
+          </div>
+          <button onClick={async () => {
+            setReconLoading(true)
+            const issues = await getReconciliationIssues()
+            setReconIssues(issues)
+            setReconLoading(false)
+          }}
+            className="btn btn-default btn-sm" disabled={reconLoading}>
+            {reconLoading ? "Scanning..." : reconIssues.length > 0 ? `Refresh` : "Run Scan"}
+          </button>
+        </div>
+
+        {reconIssues.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border-separate border-spacing-0 text-[13px]">
+              <thead>
+                <tr>
+                  {["Product","Issue","Detail","Suggested Action"].map(h => (
+                    <th key={h} className="border-b px-4 py-3 text-start text-[10px] font-bold uppercase tracking-[0.14em]"
+                      style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {reconIssues.map((issue, i) => (
+                  <tr key={i} className="t-row">
+                    <td className="border-b px-4 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>
+                      {issue.productName}
+                    </td>
+                    <td className="border-b px-4 py-3">
+                      <span className="chip text-[10px] px-2 py-0.5 rounded font-bold" style={{
+                        background: issue.severity === "error" ? "var(--rose-100)" : "var(--amber-100)",
+                        color: issue.severity === "error" ? "var(--rose-700)" : "var(--amber-700)",
+                      }}>{issue.type.replace(/_/g, " ")}</span>
+                    </td>
+                    <td className="border-b px-4 py-3 text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>
+                      {issue.detail}
+                    </td>
+                    <td className="border-b px-4 py-3 text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
+                      {issue.suggestedAction}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : reconIssues.length === 0 && !reconLoading ? (
+          <div className="px-5 py-12 text-center text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
+            Click 'Run Scan' to check inventory integrity.
+          </div>
+        ) : null}
+      </section>
+      </>
       ) : null}
 
       {activeProductView === "Setup" ? (

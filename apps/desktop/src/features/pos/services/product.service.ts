@@ -859,3 +859,140 @@ export function parseSpreadsheetPaste(text: string): SpreadsheetRowResult {
 
   return { rows, rejected }
 }
+
+// ── Write-off ─────────────────────────────────────────────────────
+
+export type WriteOffInput = {
+  productId: number
+  quantity: number
+  reason: "Damage" | "Expired" | "Theft" | "Manual Correction"
+  batchId?: string
+  note?: string
+}
+
+export async function writeOffStock(input: WriteOffInput) {
+  const { recordStockAdjustment } = await import("./inventoryAdjustment.service")
+  return recordStockAdjustment({
+    productId: input.productId,
+    quantityChange: -Math.abs(input.quantity),
+    reason: input.reason,
+    note: input.note || `Write-off: ${input.reason}`,
+    batchId: input.batchId,
+  })
+}
+
+// ── Reconciliation ─────────────────────────────────────────────────
+
+export type ReconciliationIssue = {
+  type: "stock_batch_mismatch" | "negative_batch" | "consumed_with_remaining" | "open_with_zero" | "stock_no_lots" | "orphan_batch"
+  severity: "error" | "warn"
+  productId: number
+  productName: string
+  barcode: string
+  detail: string
+  batchId?: string
+  stockOnHand: number
+  batchTotal: number
+  suggestedAction: string
+}
+
+export async function getReconciliationIssues(): Promise<ReconciliationIssue[]> {
+  const { getInventoryBatches } = await import("./inventoryBatch.service")
+  const issues: ReconciliationIssue[] = []
+  const products = getProductsSync()
+  const batches = getInventoryBatches()
+
+  const batchSumByProduct = new Map<number, number>()
+  for (const b of batches) {
+    const sum = batchSumByProduct.get(b.productId) || 0
+    batchSumByProduct.set(b.productId, sum + b.quantityRemaining)
+  }
+
+  // Stock vs batch mismatch
+  for (const p of products) {
+    if (p.archived) continue
+    const batchTotal = batchSumByProduct.get(p.id) || 0
+    if (Math.abs(p.stock - batchTotal) > 0.5) {
+      issues.push({
+        type: "stock_batch_mismatch",
+        severity: "warn",
+        productId: p.id, productName: p.name, barcode: p.barcode ?? "",
+        detail: `Product stock=${p.stock}, batch total=${batchTotal}, diff=${p.stock - batchTotal}`,
+        stockOnHand: p.stock, batchTotal,
+        suggestedAction: "Run a stock count or adjust the difference via Control panel.",
+      })
+    }
+  }
+
+  // Negative batch quantities
+  for (const b of batches) {
+    if (b.quantityRemaining < 0) {
+      issues.push({
+        type: "negative_batch", severity: "error",
+        productId: b.productId, productName: b.productName, barcode: b.barcode,
+        detail: `Batch ${b.batchNumber} has negative remaining: ${b.quantityRemaining}`,
+        batchId: b.id, stockOnHand: products.find(p => p.id === b.productId)?.stock ?? 0,
+        batchTotal: b.quantityRemaining,
+        suggestedAction: "Adjust or repair this batch via Control panel.",
+      })
+    }
+  }
+
+  // Consumed lots with remaining quantity
+  for (const b of batches) {
+    if (b.status === "Consumed" && b.quantityRemaining > 0) {
+      issues.push({
+        type: "consumed_with_remaining", severity: "error",
+        productId: b.productId, productName: b.productName, barcode: b.barcode,
+        detail: `Batch ${b.batchNumber} is Consumed but has ${b.quantityRemaining} remaining`,
+        batchId: b.id, stockOnHand: products.find(p => p.id === b.productId)?.stock ?? 0,
+        batchTotal: b.quantityRemaining,
+        suggestedAction: "Set this batch to Open if stock still exists.",
+      })
+    }
+  }
+
+  // Open lots with zero quantity
+  for (const b of batches) {
+    if (b.status === "Open" && b.quantityRemaining <= 0 && b.initialQuantity > 0) {
+      issues.push({
+        type: "open_with_zero", severity: "warn",
+        productId: b.productId, productName: b.productName, barcode: b.barcode,
+        detail: `Batch ${b.batchNumber} is Open but has ${b.quantityRemaining} remaining`,
+        batchId: b.id, stockOnHand: products.find(p => p.id === b.productId)?.stock ?? 0,
+        batchTotal: b.quantityRemaining,
+        suggestedAction: "Mark this batch as Consumed.",
+      })
+    }
+  }
+
+  // Products with stock but no lots
+  for (const p of products) {
+    if (p.archived) continue
+    if (p.stock > 0 && !batchSumByProduct.has(p.id)) {
+      issues.push({
+        type: "stock_no_lots", severity: "warn",
+        productId: p.id, productName: p.name, barcode: p.barcode ?? "",
+        detail: `Product has ${p.stock} units but no inventory batches`,
+        stockOnHand: p.stock, batchTotal: 0,
+        suggestedAction: "Receive this product to create an opening batch.",
+      })
+    }
+  }
+
+  // Orphan batches — product missing or archived
+  for (const b of batches) {
+    const product = products.find(p => p.id === b.productId)
+    if (!product || product.archived) {
+      issues.push({
+        type: "orphan_batch", severity: "warn",
+        productId: b.productId, productName: b.productName, barcode: b.barcode,
+        detail: `Batch ${b.batchNumber} belongs to ${product?.archived ? "archived" : "missing"} product`,
+        batchId: b.id, stockOnHand: 0, batchTotal: b.quantityRemaining,
+        suggestedAction: product?.archived ? "Restore the product or write off this batch." : "The product no longer exists — write off this batch.",
+      })
+    }
+  }
+
+  return issues.sort((a, b) => a.severity === "error" ? -1 : 1)
+}

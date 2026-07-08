@@ -28,6 +28,9 @@ type Props = {
   promoSuggestions: PromoSuggestion[]
   buildSupplierOrderMessage: (group: SupplierReorderGroup) => string
   copySupplierOrder: (group: SupplierReorderGroup) => void
+  onWriteOffProduct?: (productId: number) => void
+  onViewProduct?: (productId: number) => void
+  onReceiveProduct?: (productId: number) => void
 }
 
 export default function AlertsPanel({
@@ -38,6 +41,9 @@ export default function AlertsPanel({
   promoSuggestions,
   buildSupplierOrderMessage,
   copySupplierOrder,
+  onWriteOffProduct,
+  onViewProduct,
+  onReceiveProduct,
 }: Props) {
   const { t } = useI18n()
 
@@ -137,6 +143,12 @@ export default function AlertsPanel({
                     </p>
                   </div>
                 </div>
+                {onReceiveProduct && (
+                  <button type="button" onClick={() => onReceiveProduct(suggestion.product.id)}
+                    className="mt-2 w-full text-[10px] font-bold px-2 py-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-500">
+                    Receive Stock →
+                  </button>
+                )}
               </article>
             ))}
 
@@ -255,11 +267,17 @@ export default function AlertsPanel({
                       )}`
                     : ""}
                 </p>
-                {alert.batch ? (
-                  <p className="mt-1 text-xs font-bold opacity-75">
-                    {t("pos.alerts.batch_info", { batch: alert.batch.batchNumber, qty: formatNumber(alert.batch.quantityRemaining) })}
-                  </p>
-                ) : null}
+            {alert.batch ? (
+              <p className="mt-1 text-xs font-bold opacity-75">
+                {t("pos.alerts.batch_info", { batch: alert.batch.batchNumber, qty: formatNumber(alert.batch.quantityRemaining) })}
+              </p>
+            ) : null}
+            {onWriteOffProduct && (
+              <button type="button" onClick={() => onWriteOffProduct(alert.product.id)}
+                className="mt-2 text-[10px] font-bold px-2 py-1 rounded border border-current opacity-60 hover:opacity-100">
+                Write Off
+              </button>
+            )}
               </div>
             ))}
 
@@ -296,9 +314,15 @@ export default function AlertsPanel({
                     {formatNumber(item.product.stock)}
                   </p>
                 </div>
-                <p className="mt-1 text-sm text-zinc-500">
-                  {t("pos.alerts.value", { value: formatCurrency(item.product.stock * item.product.cost) })}
-                </p>
+            <p className="mt-1 text-sm text-zinc-500">
+              {t("pos.alerts.value", { value: formatCurrency(item.product.stock * item.product.cost) })}
+            </p>
+            {onViewProduct && (
+              <button type="button" onClick={() => onViewProduct(item.product.id)}
+                className="mt-2 text-[10px] font-bold px-2 py-1 rounded border border-zinc-300 text-zinc-600 hover:bg-zinc-100">
+                View
+              </button>
+            )}
               </div>
             ))}
 
