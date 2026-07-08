@@ -89,11 +89,13 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
     select: { licenseStatus: true, suspendedAt: true, offlineGraceDays: true },
   })
   if (tenant) {
+    // Treat null/undefined/active as not blocked
+    const status = (tenant.licenseStatus || "active")
     const isBlocked =
-      tenant.licenseStatus === "read_only" ||
-      tenant.licenseStatus === "recovery" ||
-      (tenant.licenseStatus === "suspended" && tenant.suspendedAt &&
-        (Date.now() - new Date(tenant.suspendedAt).getTime()) > (tenant.offlineGraceDays * 24 * 60 * 60 * 1000))
+      status === "read_only" ||
+      status === "recovery" ||
+      (status === "suspended" && tenant.suspendedAt &&
+        (Date.now() - new Date(tenant.suspendedAt).getTime()) > ((tenant.offlineGraceDays ?? 7) * 24 * 60 * 60 * 1000))
 
     if (isBlocked) {
       json(res, { error: "Store is currently suspended. Contact support.", code: "LICENSE_BLOCKED" }, 403)

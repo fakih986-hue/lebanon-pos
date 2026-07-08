@@ -31,6 +31,7 @@ vi.mock("../src/lib/prisma", () => {
     shift: model(),
     auditEvent: model(),
     appSettings: { findUnique: vi.fn(), upsert: vi.fn() },
+    tenant: { findUnique: vi.fn().mockResolvedValue({ licenseStatus: "active", suspendedAt: null, offlineGraceDays: 7 }) },
     expense: model(),
     inventoryBatch: model(),
     stockAdjustment: model(),

@@ -120,7 +120,7 @@ describe("GET /api/images/serve/:id", () => {
   beforeEach(() => { vi.clearAllMocks() })
 
   it("serves image as binary", async () => {
-    vi.mocked(prisma.product.findUnique).mockResolvedValue({
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({
       image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
     } as any)
 
@@ -135,7 +135,7 @@ describe("GET /api/images/serve/:id", () => {
   })
 
   it("returns 404 when product has no image", async () => {
-    vi.mocked(prisma.product.findUnique).mockResolvedValue({ image: null } as any)
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({ image: null } as any)
     const res = await request("GET", "/api/images/serve/1", { token })
     expect(res.status).toBe(404)
   })
