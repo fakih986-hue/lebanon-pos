@@ -39,6 +39,15 @@ export default function CloseDayPanel({
               {formatDateKey(summary.dateKey)}
             </p>
           </div>
+          {todayClose && (
+            <span
+              className="ms-auto inline-flex rotate-[-4deg] items-center gap-1.5 rounded-lg border-2 px-3 py-1.5 text-[12px] font-black uppercase tracking-[0.14em]"
+              style={{ borderColor: "var(--success)", color: "var(--success-text)", background: "var(--success-soft)" }}
+            >
+              <CheckCircle2 size={14} />
+              Day sealed
+            </span>
+          )}
         </div>
       </div>
 
@@ -156,8 +165,8 @@ export default function CloseDayPanel({
                 <div
                   className="mt-3 flex items-center justify-between rounded-lg px-3 py-2.5"
                   style={matched
-                    ? { background: "var(--brand-soft)", color: "var(--brand-text)" }
-                    : { background: "var(--rose-soft)", color: "var(--rose-text)" }
+                    ? { background: "var(--success-soft)", color: "var(--success-text)", border: "1px solid var(--success)" }
+                    : { background: "var(--danger-soft)", color: "var(--danger-text)", border: "1px solid var(--danger)" }
                   }
                 >
                   <span className="text-[13px] font-bold">
@@ -235,7 +244,7 @@ export default function CloseDayPanel({
               type="button"
               onClick={() => onCloseDay()}
               disabled={!canManageAccounting}
-              className="flex h-11 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
+              className="btn-primary btn-md h-11 px-5"
             >
               <CheckCircle2 size={17} />
               {todayClose ? "Reclose Today" : "Close Today"}
