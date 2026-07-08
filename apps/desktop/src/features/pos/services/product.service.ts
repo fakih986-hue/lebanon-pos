@@ -323,6 +323,18 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
 export function updateProduct(productId: number, patch: Partial<Product>) {
   assertCanWrite("update product")
   const cleanPatch = cleanProductPatch(patch)
+
+  // Validate barcode/alias uniqueness against other products
+  if (typeof cleanPatch.barcode === "string" && cleanPatch.barcode.length > 0) {
+    const conflict = getProductsSync().find(
+      (p) => p.id !== productId && (p.barcode === cleanPatch.barcode || (p.barcodeAliases ?? []).includes(cleanPatch.barcode!))
+    )
+    if (conflict) {
+      console.warn(`[updateProduct] Barcode ${cleanPatch.barcode} already used by "${conflict.name}"`)
+      return undefined
+    }
+  }
+
   let updatedProduct: Product | undefined
   const nextProducts = getProductsSync().map((product) => {
     if (product.id !== productId) {
@@ -406,6 +418,46 @@ export function createProduct(input: {
     payload: product,
   })
   return product
+}
+
+export function archiveProduct(productId: number) {
+  assertCanWrite("delete product")
+  const product = getProductsSync().find((item) => item.id === productId)
+  if (!product) return
+
+  const idsToArchive = [productId, ...getProductsSync().filter(p => p.parentId === productId).map(p => p.id)]
+  const nextProducts = getProductsSync().map(p =>
+    idsToArchive.includes(p.id) ? { ...p, archived: true } : p
+  )
+  writeProducts(nextProducts)
+  idsToArchive.forEach(id => {
+    enqueueSyncOperation({
+      entity: "product",
+      action: "update",
+      summary: `Product ${id} archived.`,
+      payload: { id, archived: true },
+    })
+  })
+}
+
+export function restoreProduct(productId: number) {
+  assertCanWrite("delete product")
+  const product = getProductsSync().find((item) => item.id === productId)
+  if (!product) return
+
+  const idsToRestore = [productId, ...getProductsSync().filter(p => p.parentId === productId).map(p => p.id)]
+  const nextProducts = getProductsSync().map(p =>
+    idsToRestore.includes(p.id) ? { ...p, archived: false } : p
+  )
+  writeProducts(nextProducts)
+  idsToRestore.forEach(id => {
+    enqueueSyncOperation({
+      entity: "product",
+      action: "update",
+      summary: `Product ${id} restored.`,
+      payload: { id, archived: false },
+    })
+  })
 }
 
 export function deleteProduct(productId: number) {

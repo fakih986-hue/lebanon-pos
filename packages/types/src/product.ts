@@ -22,6 +22,7 @@ export type Product = {
   supplierName?: string | null
   expiryDate?: string | null
   image?: string | null
+  archived?: boolean
   createdAt?: string
   updatedAt?: string
 }

@@ -208,6 +208,7 @@ export default function POSPage() {
   const filteredProducts = useMemo(() => {
     const query = (debouncedSearch || scanCode).trim().toLowerCase()
     return products.filter((product) => {
+      if (product.archived) return false
       const matchesCategory =
         selectedCategory === "All" ||
         (selectedCategory === "Favorites" && product.favorite) ||
