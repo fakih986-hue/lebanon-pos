@@ -452,9 +452,8 @@ export default function CustomersPage() {
                             customerId: customer.id,
                           }))
                         }}
-                        className={`cursor-pointer transition hover:bg-zinc-50 ${
-                          active ? "bg-emerald-50/70" : ""
-                        }`}
+                        className="t-row cursor-pointer transition"
+                        style={active ? { background: "var(--brand-soft)", boxShadow: "inset 3px 0 0 var(--brand)" } : undefined}
                       >
                         <td className="border-b border-zinc-100 px-4 py-2.5">
                           <div className="flex items-center gap-2">
