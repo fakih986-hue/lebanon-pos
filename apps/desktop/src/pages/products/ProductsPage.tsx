@@ -346,7 +346,8 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   )
   const lowStockCount = getLowStockProducts(products).length
   const productViews: Array<{
-    label: ProductWorkspaceView
+    value?: ProductWorkspaceView
+    label: string
     count?: number
   }> = [
     {
@@ -362,15 +363,18 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       count: reorderSuggestions.length + expiryAlerts.length,
     },
     {
-      label: "Control",
+      value: "Control",
+      label: "Stock control",
       count: activeStockCount ? 1 : recentAdjustments.length,
     },
     {
-      label: "Lots",
+      value: "Lots",
+      label: "Batches",
       count: openBatches.length,
     },
     {
-      label: "Setup",
+      value: "Setup",
+      label: "Add product",
     },
   ]
 
