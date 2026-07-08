@@ -150,14 +150,14 @@ export default function DeliveryPage() {
           <div className="relative flex-1 sm:flex-initial">
             <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
             <input id="deliverySearch" type="text" placeholder={t("delivery.search_placeholder")} value={search} onChange={e => setSearch(e.target.value)}
-              className="ps-8 pe-3 py-1.5 text-sm border border-zinc-300 rounded-lg w-full sm:w-48 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="input h-9 ps-8 pe-3 text-sm w-full sm:w-48" />
           </div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-            className="text-sm border border-zinc-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            className="input h-9 text-sm px-2">
             <option value="All">{t("delivery.all_status")}</option>
             {STATUS_ORDER.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <button onClick={loadOrders} className="text-sm px-3 py-1.5 bg-zinc-100 rounded-lg hover:bg-zinc-200">{t("delivery.refresh")}</button>
+          <button onClick={loadOrders} className="btn-default btn-sm">{t("delivery.refresh")}</button>
         </div>
       </div>
 
@@ -166,7 +166,7 @@ export default function DeliveryPage() {
       ) : (
         <div className="space-y-2">
           {filtered.map(order => (
-            <div key={order.id} className="bg-white rounded-lg border border-zinc-200 overflow-hidden">
+            <div key={order.id} className="card overflow-hidden">
               <div className="p-3 flex flex-col sm:flex-row sm:items-center gap-2 cursor-pointer" onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -186,7 +186,7 @@ export default function DeliveryPage() {
               </div>
 
               {expandedId === order.id && (
-                <div className="border-t border-zinc-100 p-3 space-y-3">
+                <div className="p-3 space-y-3" style={{ borderTop: "1px solid var(--border-soft)" }}>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div><span className="text-zinc-500">{t("delivery.items")}:</span> {order.items.length}</div>
                     <div><span className="text-zinc-500">{t("delivery.total")}:</span> {formatCurrency(order.total)}</div>
@@ -200,7 +200,7 @@ export default function DeliveryPage() {
                     <thead><tr className="text-zinc-500 border-b"><th className="text-start py-1">{t("delivery.item")}</th><th className="text-end py-1">{t("delivery.qty")}</th><th className="text-end py-1">{t("delivery.price")}</th><th className="text-end py-1">{t("delivery.total")}</th></tr></thead>
                     <tbody>
                       {order.items.map(item => (
-                        <tr key={item.id} className="border-b border-zinc-50">
+                        <tr key={item.id} style={{ borderBottom: "1px solid var(--border-soft)" }}>
                           <td className="py-1">{item.productName}</td>
                           <td className="text-end py-1">{item.quantity}</td>
                           <td className="text-end py-1">{formatCurrency(item.unitPrice)}</td>
@@ -214,12 +214,12 @@ export default function DeliveryPage() {
                     <div className="flex gap-2 pt-1">
                       {nextStatus(order.status) && (
                         <button onClick={() => updateStatus(order.id, nextStatus(order.status)!)}
-                          className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                          className="btn-primary btn-sm text-xs">
                           {t("delivery.mark_as")} {nextStatus(order.status)}
                         </button>
                       )}
                       <button onClick={() => updateStatus(order.id, "Cancelled")}
-                        className="text-xs px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200">
+                        className="btn-danger btn-sm text-xs">
                         {t("delivery.cancel_order")}
                       </button>
                     </div>

@@ -78,47 +78,47 @@ export default function DriversPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold flex items-center gap-2"><Truck className="w-5 h-5" /> {t("drivers.title")}</h1>
         <button onClick={() => { resetForm(); setShowForm(!showForm) }}
-          className="flex items-center gap-1.5 text-sm px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          className="btn-primary btn-sm gap-1.5">
           <Plus className="w-4 h-4" /> {showForm ? t("drivers.cancel") : t("drivers.add")}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-zinc-200 p-4 mb-4 space-y-3">
+        <form onSubmit={handleSubmit} className="card p-4 mb-4 space-y-3">
           <h2 className="font-semibold text-sm">{editingId ? t("drivers.edit") : t("drivers.new")}</h2>
           <div className="grid grid-cols-2 gap-3">
             <label className="block text-sm font-medium text-zinc-700">
               {t("drivers.name")}
               <input value={name} onChange={e => setName(e.target.value)} placeholder={t("drivers.name_placeholder")} required
-                className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                className="input mt-1 h-10 w-full px-3 text-sm" />
             </label>
             <label className="block text-sm font-medium text-zinc-700">
               {t("drivers.code_label")}
               <input value={code} onChange={e => setCode(e.target.value)} placeholder={t("drivers.code_placeholder")} inputMode="numeric" required
-                className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                className="input mt-1 h-10 w-full px-3 text-sm" />
             </label>
             <label className="block text-sm font-medium text-zinc-700">
               {t("drivers.phone")}
               <input value={mobile} onChange={e => setMobile(e.target.value)} placeholder={t("drivers.phone_placeholder")}
-                className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                className="input mt-1 h-10 w-full px-3 text-sm" />
             </label>
             <label className="block text-sm font-medium text-zinc-700">
               {t("drivers.pin")} {editingId ? t("drivers.pin_label_edit") : "*"}
               <input type="password" value={pin} onChange={e => setPin(e.target.value)} placeholder={t("drivers.pin_placeholder")} required={!editingId}
-                className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100" />
+                className="input mt-1 h-10 w-full px-3 text-sm" />
             </label>
           </div>
           <div className="flex gap-2 pt-1">
-            <button type="submit" className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <button type="submit" className="btn-primary btn-md">
               {editingId ? t("drivers.update") : t("drivers.create")}
             </button>
-            <button type="button" onClick={resetForm} className="text-sm px-4 py-2 bg-zinc-100 rounded-lg hover:bg-zinc-200">{t("drivers.cancel")}</button>
+            <button type="button" onClick={resetForm} className="btn-default btn-md">{t("drivers.cancel")}</button>
           </div>
         </form>
       )}
 
       {loading ? (
-        <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 bg-zinc-100 rounded-lg animate-pulse" />)}</div>
+        <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="skeleton h-14 rounded-lg" />)}</div>
       ) : drivers.length === 0 ? (
         <div className="text-center py-16 text-zinc-400">
           <Truck className="w-12 h-12 mx-auto mb-3 opacity-40" />
@@ -126,7 +126,7 @@ export default function DriversPage() {
           <p className="text-sm mt-1">{t("drivers.no_drivers_sub")}</p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-zinc-200 overflow-hidden">
+        <div className="card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-zinc-50">
@@ -145,8 +145,8 @@ export default function DriversPage() {
                   <td className="px-4 py-3 text-zinc-500">{d.mobile || "—"}</td>
                   <td className="px-4 py-3 text-center">
                     <button onClick={() => toggleActive(d)}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${d.active ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${d.active ? "bg-emerald-500" : "bg-zinc-400"}`} />
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${d.active ? "chip-success" : "chip-neutral"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${d.active ? "bg-[var(--success)]" : "bg-[var(--text-3)]"}`} />
                       {d.active ? t("drivers.active") : t("drivers.inactive")}
                     </button>
                   </td>
