@@ -74,20 +74,20 @@ function exportSalesCsv(sales: Sale[]) {
   const rate = s.usdToLbpRate
   const header = ["Sale #", "Date", "Payment", "Customer", "Cashier", "Items", "Subtotal", "Discount", "Tax", "Total", "Total (LBP)", "Profit", "Profit (LBP)", "Status"]
   const rows = sales.map((s) => [
-    s.saleNumber,
-    new Date(s.createdAt).toLocaleString(),
-    s.paymentMethod,
+    s.saleNumber ?? "",
+    s.createdAt ? new Date(s.createdAt).toLocaleString() : "",
+    s.paymentMethod ?? "",
     s.customerName ?? "",
-    s.cashier,
-    s.items.reduce((sum, i) => sum + i.quantity, 0),
-    s.subtotal.toFixed(2),
+    s.cashier ?? "",
+    (Array.isArray(s.items) ? s.items.reduce((sum, i) => sum + (i.quantity ?? 0), 0) : 0),
+    (s.subtotal ?? 0).toFixed(2),
     (s.discountTotal ?? 0).toFixed(2),
-    s.tax.toFixed(2),
-    s.total.toFixed(2),
-    Math.round(s.total * rate).toString(),
+    (s.tax ?? 0).toFixed(2),
+    (s.total ?? 0).toFixed(2),
+    Math.round((s.total ?? 0) * (rate ?? 0)).toString(),
     (s.profit ?? 0).toFixed(2),
-    Math.round((s.profit ?? 0) * rate).toString(),
-    s.status,
+    Math.round((s.profit ?? 0) * (rate ?? 0)).toString(),
+    s.status ?? "",
   ])
   const csv = [header, ...rows]
     .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
@@ -163,7 +163,7 @@ export default function SalesPage() {
 
   // All unique cashiers for filter
   const cashiers = useMemo(() => {
-    const names = new Set(sales.map((s) => s.cashier).filter(Boolean))
+    const names = new Set(sales.map((s) => s.cashier).filter((c): c is string => typeof c === "string" && c.length > 0))
     return Array.from(names).sort()
   }, [sales])
 
@@ -178,11 +178,11 @@ export default function SalesPage() {
       if (rangeStart && new Date(sale.createdAt) < rangeStart) return false
       if (query) {
         const matchesSearch =
-          sale.saleNumber.toLowerCase().includes(query) ||
+          (sale.saleNumber ?? "").toLowerCase().includes(query) ||
           (sale.customerName ?? "").toLowerCase().includes(query) ||
-          sale.cashier.toLowerCase().includes(query) ||
+          (sale.cashier ?? "").toLowerCase().includes(query) ||
           (sale.shiftNumber ?? "").toLowerCase().includes(query) ||
-          sale.items.some((item) => getItemName(item).toLowerCase().includes(query))
+          (Array.isArray(sale.items) && sale.items.some((item) => getItemName(item).toLowerCase().includes(query)))
         if (!matchesSearch) return false
       }
       return true
