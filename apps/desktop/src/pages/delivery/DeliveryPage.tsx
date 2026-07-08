@@ -5,6 +5,8 @@ import { useDebounce } from "../../hooks/useDebounce"
 import { useHotkeys } from "../../hooks/useHotkey"
 import Spinner from "../../components/ui/Spinner"
 import EmptyState from "../../components/ui/EmptyState"
+import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
+import DriversPage from "../drivers/DriversPage"
 import { formatCurrency } from "../../features/pos/lib/currency"
 import { showToast } from "../../features/pos/services/toast.service"
 import { getApiUrl, getAuthToken } from "../../features/pos/services/sync.service"
@@ -53,6 +55,7 @@ export default function DeliveryPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("All")
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<"Orders" | "Drivers">("Orders")
   const debouncedSearch = useDebounce(search, 200)
 
   useHotkeys([{ key: "f", modifiers: ["ctrl"], handler: () => document.getElementById("deliverySearch")?.focus() }])
@@ -127,6 +130,20 @@ export default function DeliveryPage() {
 
   return (
     <div className="p-4 max-w-5xl mx-auto">
+      <WorkspaceTabs<"Orders" | "Drivers">
+        className="mb-4"
+        active={activeTab}
+        onChange={setActiveTab}
+        tabs={[
+          { label: "Orders", count: orders.length },
+          { label: "Drivers" },
+        ]}
+      />
+
+      {activeTab === "Drivers" ? (
+        <DriversPage />
+      ) : (
+      <>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
         <h1 className="text-xl font-bold flex items-center gap-2"><Truck className="w-5 h-5" /> {t("delivery.title")}</h1>
         <div className="flex gap-2 w-full sm:w-auto">
@@ -212,6 +229,8 @@ export default function DeliveryPage() {
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
     </div>
   )
