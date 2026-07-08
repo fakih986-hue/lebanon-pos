@@ -12,9 +12,10 @@ import { useI18n } from "@lebanonpos/shared"
 import TitanLogo from "../TitanLogo"
 import { formatCurrency } from "../../features/pos/lib/currency"
 import {
-  getActiveShift, userCan, subscribeSecurity, type Permission,
+  getActiveShift, getCurrentUser, userCan, subscribeSecurity, type Permission,
 } from "../../features/pos/services/security.service"
-import { getSyncStatus, subscribeSync } from "../../features/pos/services/sync.service"
+import { getSyncStatus, subscribeSync, getApiUrl, getKnownStores } from "../../features/pos/services/sync.service"
+import { getSettings } from "../../features/pos/services/settings.service"
 
 const SIDEBAR_EXPANDED_KEY = "lebanonpos.sidebar-expanded.v1"
 
@@ -62,6 +63,9 @@ export default function Sidebar() {
     typeof window !== "undefined" && window.localStorage.getItem(SIDEBAR_EXPANDED_KEY) === "true"
   )
   const activeShift = getActiveShift()
+  const currentUser = getCurrentUser()
+  const storeName = getSettings().storeName
+  const currentStore = getKnownStores().find((s) => s.apiUrl === getApiUrl())
   const visibleMenuItems = menuItems.filter((item) => userCan(item.permission))
 
   useEffect(() => subscribeSecurity(() => setSecurityVersion((v) => v + 1)), [])
@@ -157,6 +161,27 @@ export default function Sidebar() {
         </Link>
       </div>
 
+      {/* ──────────────── Store identity ──────────────── */}
+      {expanded && (
+        <div
+          className="mx-2 mb-2 flex items-center gap-2 rounded-[10px] border px-2.5 py-2"
+          style={{ borderColor: "var(--sidebar-border)", background: "rgba(255,255,255,0.02)" }}
+        >
+          <span
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[12px] font-black"
+            style={{ background: "var(--sidebar-active-bg)", color: "var(--sidebar-icon-active-color)" }}
+          >
+            {storeName.charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-[12px] font-bold" style={{ color: "var(--sidebar-text)" }}>{storeName}</p>
+            {currentStore?.subdomain && (
+              <p className="truncate text-[10px]" style={{ color: "var(--sidebar-section-text)" }}>/{currentStore.subdomain}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ──────────────── Nav ──────────────── */}
       <nav className="min-h-0 flex-1 overflow-y-auto py-2 [scrollbar-width:none]">
         {menuGroups.map((group, gi) => {
@@ -239,6 +264,27 @@ export default function Sidebar() {
               <span className="text-[10px] font-semibold text-red-400">
                 {syncPending} pending
               </span>
+            )}
+          </div>
+        )}
+
+        {/* Current user + role */}
+        {currentUser && (
+          <div
+            className={`flex items-center gap-2 rounded-[8px] px-2 py-1.5 ${!expanded ? "justify-center" : ""}`}
+            title={`${currentUser.name} · ${currentUser.role}`}
+          >
+            <span
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black"
+              style={{ background: "rgba(255,255,255,0.06)", color: "var(--sidebar-text-2)" }}
+            >
+              {currentUser.name.charAt(0).toUpperCase()}
+            </span>
+            {expanded && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[11px] font-semibold" style={{ color: "var(--sidebar-text)" }}>{currentUser.name}</p>
+                <p className="truncate text-[9px] font-medium" style={{ color: "var(--sidebar-section-text)" }}>{currentUser.role}</p>
+              </div>
             )}
           </div>
         )}

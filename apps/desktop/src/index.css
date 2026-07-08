@@ -1091,6 +1091,51 @@ tbody tr:hover {
   animation: pop-in 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
+/* ── Numpad (PIN lock, tender, quantity) ──── */
+.numpad-key:hover:not(:disabled) {
+  background: var(--surface-hover) !important;
+  border-color: var(--border-strong) !important;
+}
+
+.numpad-key:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* PIN dots */
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  min-height: 16px;
+}
+
+.pin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+
+.pin-dot.filled {
+  background: var(--brand);
+  border-color: var(--brand);
+  transform: scale(1.08);
+}
+
+/* Wrong-PIN shake */
+@keyframes pin-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+.animate-pin-shake {
+  animation: pin-shake 0.4s ease;
+}
+
 /* ── Skeleton loading shimmer ─────────────── */
 .skeleton,
 .loading-skeleton {

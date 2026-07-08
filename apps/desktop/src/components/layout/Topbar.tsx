@@ -98,6 +98,14 @@ export default function Topbar() {
           <span className="hidden max-w-[110px] truncate sm:inline">
             {currentUser?.name ?? "-"}
           </span>
+          {currentUser?.role && (
+            <span
+              className="hidden rounded-full px-2 py-0.5 text-[10px] font-bold md:inline"
+              style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}
+            >
+              {currentUser.role}
+            </span>
+          )}
         </div>
 
         <button

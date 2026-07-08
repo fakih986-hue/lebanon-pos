@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { CloudDownload, KeyRound, ShieldCheck, Store, X, Save } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 import TitanLogo, { TitanMark } from "../../components/TitanLogo"
+import Numpad from "../../components/ui/Numpad"
 
 import {
   getUsers,
@@ -36,6 +37,8 @@ export default function LoginScreen() {
   const users = getUsers().filter((u) => u.active)
   const [pin, setPin] = useState("")
   const [status, setStatus] = useState(t("desktop.lock_hint"))
+  const [shake, setShake] = useState(false)
+  const pinInputRef = useRef<HTMLInputElement>(null)
 
   // Re-render the user list when synced data lands (e.g. hub auto-sync below)
   useEffect(() => {
@@ -143,6 +146,8 @@ export default function LoginScreen() {
       console.log("[LoginScreen] unlockWithPin result:", user?.name ?? "null")
       if (!user) {
         setPin("")
+        setShake(true)
+        setTimeout(() => setShake(false), 450)
         showToast(t("desktop.lock_pin_not_recognized"), "error")
         return
       }
@@ -338,21 +343,38 @@ export default function LoginScreen() {
             </div>
           </div>
 
-          <label className="block mt-5">
-            <span className="block text-[12px] font-bold mb-1.5" style={{ color: "var(--text-2)" }}>
-              {t("login.pin")}
-            </span>
-            <input
-              type="password"
-              inputMode="numeric"
-              autoFocus
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleUnlock() } }}
-              className="input w-full text-center font-bold tracking-[0.35em]"
-              style={{ height: 56, fontSize: 24 }}
-            />
-          </label>
+          <div className={`mt-5${shake ? " animate-pin-shake" : ""}`}>
+            <label className="block">
+              <span className="block text-[12px] font-bold mb-1.5" style={{ color: "var(--text-2)" }}>
+                {t("login.pin")}
+              </span>
+              {/* Hidden-ish input keeps physical keyboard + scanner entry working */}
+              <input
+                ref={pinInputRef}
+                type="password"
+                inputMode="numeric"
+                autoFocus
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleUnlock() } }}
+                className="input w-full text-center font-bold tracking-[0.35em]"
+                style={{ height: 0, minHeight: 0, opacity: 0, padding: 0, border: "none", position: "absolute" }}
+                aria-label={t("login.pin")}
+              />
+              <div className="pin-dots py-3" aria-hidden="true">
+                {[0, 1, 2, 3, 4, 5, 6, 7].slice(0, Math.max(4, pin.length)).map((i) => (
+                  <span key={i} className={`pin-dot${i < pin.length ? " filled" : ""}`} />
+                ))}
+              </div>
+            </label>
+
+            <div className="mt-2">
+              <Numpad
+                onDigit={(d) => { setPin((p) => (p + d).slice(0, 8)); pinInputRef.current?.focus() }}
+                onBackspace={() => { setPin((p) => p.slice(0, -1)); pinInputRef.current?.focus() }}
+              />
+            </div>
+          </div>
 
           <button
             type="button"
