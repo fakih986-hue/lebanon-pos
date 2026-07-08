@@ -4,10 +4,79 @@ import { canUseStorage, createId } from "../lib/storage"
 
 const BATCHES_KEY  = "lebanonpos.inventory-batches.v1"
 const BATCHES_EVENT = "lebanonpos-inventory-batches-changed"
+const MOVEMENTS_KEY = "lebanonpos.stock-movements.v1"
 const PRODUCTS_KEY  = "lebanonpos.products.v1"
 const PRODUCTS_EVENT = "lebanonpos-products-changed"
 
-export type BatchAllocation = {
+export type MovementType = "Receive" | "Sale" | "Refund" | "Adjustment" | "WriteOff"
+
+export interface StockMovement {
+  id: string
+  productId: number
+  productName: string
+  type: MovementType
+  quantity: number      // positive = increase, negative = decrease
+  balance: number       // running balance after movement
+  reference: string     // sale ID, batch ID, adjustment ID, etc.
+  note: string
+  createdAt: string
+  userId?: string
+  userName?: string
+}
+
+function writeMovements(movements: StockMovement[]) {
+  writeLocalWithIndexedDB(MOVEMENTS_KEY, movements)
+}
+
+function getMovements(): StockMovement[] {
+  if (!canUseStorage()) return []
+  try {
+    const raw = typeof window !== "undefined" ? window.localStorage.getItem(MOVEMENTS_KEY) : null
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function recordStockMovement(params: {
+  productId: number; productName: string; type: MovementType;
+  quantity: number; reference: string; note?: string; userId?: string; userName?: string;
+}) {
+  if (!canUseStorage()) return
+  const existing = getMovements()
+  // Calculate running balance for this product
+  const prevBalance = existing
+    .filter(m => m.productId === params.productId)
+    .reduce((sum, m) => sum + m.quantity, 0)
+  const balance = prevBalance + params.quantity
+
+  const movement: StockMovement = {
+    id: createId("stkmv"),
+    productId: params.productId,
+    productName: params.productName,
+    type: params.type,
+    quantity: params.quantity,
+    balance,
+    reference: params.reference,
+    note: params.note ?? "",
+    createdAt: new Date().toISOString(),
+    userId: params.userId,
+    userName: params.userName,
+  }
+  writeMovements([movement, ...existing])
+}
+
+function updateBatchStatus(batch: InventoryBatch) {
+  if (batch.quantityRemaining <= 0) {
+    batch.status = "Consumed"
+  }
+  // Auto-mark as expired if expiry date has passed
+  if (batch.status === "Open" && batch.expiryDate) {
+    const now = new Date()
+    const expiry = new Date(batch.expiryDate)
+    if (now > expiry) {
+      batch.status = "Expired"
+    }
+  }
+}
   batchId: string
   batchNumber: string
   quantity: number
@@ -106,6 +175,11 @@ function updateBatchStatus(batch: InventoryBatch) {
 }
 
 function sortBatchesForConsumption(a: InventoryBatch, b: InventoryBatch) {
+  // Expired batches go last (should not be consumed)
+  const aExpired = a.status === "Expired" ? 1 : 0
+  const bExpired = b.status === "Expired" ? 1 : 0
+  if (aExpired !== bExpired) return aExpired - bExpired
+
   const aExpiry = a.expiryDate || "9999-12-31"
   const bExpiry = b.expiryDate || "9999-12-31"
 
@@ -171,6 +245,16 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[]) {
         })
         writeLocalWithIndexedDB(PRODUCTS_KEY, updated)
         window.dispatchEvent(new Event(PRODUCTS_EVENT))
+
+        // Record stock movement for each received batch
+        for (const b of batches) {
+          recordStockMovement({
+            productId: b.productId, productName: b.productName,
+            type: "Receive", quantity: b.initialQuantity,
+            reference: b.batchNumber,
+            note: `Received batch ${b.batchNumber}${b.supplierName ? ` from ${b.supplierName}` : ""}`,
+          })
+        }
       }
     } catch {
       // Non-critical — server pull will correct stock on next cycle
@@ -249,6 +333,20 @@ export function consumeInventoryBatches(items: ConsumeBatchInput[]) {
       summary: `${changedBatches.length} consumed inventory batch${changedBatches.length === 1 ? "" : "es"} queued for sync.`,
       payload: changedBatches,
     })
+  }
+
+  // Record stock movement for each consumed item
+  for (const item of items) {
+    const allocs = allocationsByProduct.get(item.productId)
+    if (allocs) {
+      const batchRefs = allocs.map(a => a.batchNumber).join(", ")
+      recordStockMovement({
+        productId: item.productId, productName: item.productName,
+        type: "Sale", quantity: -item.quantity,
+        reference: batchRefs,
+        note: `Consumed from: ${batchRefs}`,
+      })
+    }
   }
 
   return allocationsByProduct
@@ -361,6 +459,15 @@ export function adjustInventoryBatches(input: InventoryBatchAdjustmentInput) {
 
   writeBatches(batches)
 
+  // Record stock movement for adjustment
+  recordStockMovement({
+    productId: input.productId, productName: input.productName ?? `Product #${input.productId}`,
+    type: quantityDelta > 0 ? "Receive" : "Adjustment",
+    quantity: quantityDelta,
+    reference: input.batchId ?? "manual",
+    note: input.reason ?? "Manual adjustment",
+  })
+
   return allocations
 }
 
@@ -414,6 +521,16 @@ export function restoreInventoryBatches(items: ConsumeBatchInput[]) {
     summary: "Returned inventory batches queued for sync.",
     payload: batches,
   })
+
+  // Record stock movement for refund/restore
+  for (const item of items) {
+    recordStockMovement({
+      productId: item.productId, productName: item.productName,
+      type: "Refund", quantity: item.quantity,
+      reference: "refund-restore",
+      note: `Stock restored from refund`,
+    })
+  }
 }
 
 export function subscribeInventoryBatches(callback: () => void) {

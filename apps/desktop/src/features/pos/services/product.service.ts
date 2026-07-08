@@ -175,12 +175,39 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
   let nextId =
     nextProducts.reduce((maxId, product) => Math.max(maxId, product.id), 0) + 1
 
+  let rejectedCount = 0
+  const errors: string[] = []
+
   entries.forEach((entry, index) => {
     const barcode = normalizeBarcode(entry.barcode)
     const name = normalizeName(entry.name)
     const category = normalizeName(entry.category)
 
-    if (!barcode || !name || !category || entry.stock <= 0) {
+    if (!barcode) {
+      rejectedCount++
+      errors.push(`Entry #${index + 1}: barcode is missing`)
+      return
+    }
+    if (!name) {
+      rejectedCount++
+      errors.push(`Entry #${index + 1}: product name is missing`)
+      return
+    }
+    if (entry.stock <= 0) {
+      rejectedCount++
+      errors.push(`Entry #${index + 1}: quantity must be greater than 0`)
+      return
+    }
+
+    // Check for duplicate barcodes across ALL products (not just current batch)
+    const allProducts = nextProducts.filter((p) => !p.id || p.id > 0)
+    const barcodeConflict = allProducts.find(
+      (p) => productHasBarcode(p, barcode) && 
+        (p.name !== name || p.category !== category)
+    )
+    if (barcodeConflict) {
+      rejectedCount++
+      errors.push(`"${barcode}" already used by "${barcodeConflict.name}"`)
       return
     }
 
@@ -283,6 +310,11 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
       summary: `${mod.name} stock updated.`,
       payload: mod,
     })
+  }
+
+  // Log validation errors for caller visibility
+  if (errors.length > 0) {
+    console.warn(`[receiveProducts] ${rejectedCount} entries rejected:`, errors)
   }
 
   return nextProducts
