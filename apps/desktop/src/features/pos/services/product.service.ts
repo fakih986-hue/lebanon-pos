@@ -2,6 +2,7 @@ import { products } from "../data/products"
 import type { Product, ProductAccent } from "../types/product"
 import { receiveInventoryBatches } from "./inventoryBatch.service"
 import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
+import { recordAuditEvent } from "./security.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage } from "../lib/storage"
 
@@ -438,6 +439,11 @@ export function archiveProduct(productId: number) {
       payload: { id, archived: true },
     })
   })
+  recordAuditEvent({
+    action: "product.archive", entity: "product",
+    summary: `${product.name} archived${idsToArchive.length > 1 ? ` with ${idsToArchive.length - 1} variants` : ""}`,
+    metadata: { productId, archivedIds: idsToArchive },
+  })
 }
 
 export function restoreProduct(productId: number) {
@@ -457,6 +463,11 @@ export function restoreProduct(productId: number) {
       summary: `Product ${id} restored.`,
       payload: { id, archived: false },
     })
+  })
+  recordAuditEvent({
+    action: "product.restore", entity: "product",
+    summary: `${product.name} restored`,
+    metadata: { productId },
   })
 }
 
