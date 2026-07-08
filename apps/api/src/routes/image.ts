@@ -162,9 +162,15 @@ router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: 
 
 router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = req.auth!.tenantId
     const body = (req as any).body ?? {}
+    // Admin JWT has empty tenantId — fall back to body parameter
+    const tenantId = (body.tenantId as string) || req.auth!.tenantId
     const force = body.force === true
+
+    if (!tenantId) {
+      json(res, { error: "tenantId is required — pass in request body for admin users" }, 400)
+      return
+    }
 
     const where: Record<string, unknown> = { tenantId, isParent: false }
     if (!force) where.image = null

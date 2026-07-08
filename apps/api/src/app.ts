@@ -4,6 +4,7 @@ import path from "node:path"
 import fs from "node:fs"
 import { fileURLToPath } from "node:url"
 import { json } from "./middleware/auth.js"
+import { requireAuth, type AuthRequest } from "./middleware/auth.js"
 import prisma from "./lib/prisma.js"
 import { Decimal } from "./generated/prisma/runtime/library.js"
 import cors from "cors"
@@ -78,6 +79,36 @@ app.get("/api/health", async (_req: IncomingMessage, res: ServerResponse) => {
   }
 })
 
+app.get("/api/products", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    const search = (req.query.search as string) || ""
+    const skip = parseInt(req.query.skip as string) || 0
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 200)
+
+    const where: any = { tenantId }
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { barcode: { contains: search, mode: "insensitive" } },
+        { category: { contains: search, mode: "insensitive" } },
+      ]
+    }
+
+    const products = await prisma.product.findMany({
+      where,
+      orderBy: { name: "asc" },
+      skip,
+      take: limit,
+    })
+
+    json(res, products)
+  } catch (err) {
+    console.error("[products] List error:", err)
+    json(res, { error: "Failed to list products" }, 500)
+  }
+})
+
 app.use(express.static("public"))
 
 function spaHandler(publicDir: string) {
@@ -122,7 +153,7 @@ app.get(/^\/driver(?:\/[^.]*)?$/, spaHandler("driver"))
 app.get(/^\/order(?:\/[^.]*)?$/, spaHandler("order"))
 
 // POS SPA at root — must be last to not catch more specific SPA routes above
-app.get(/^\/(?:[^.]*)?$/, spaHandler(""))
+app.get(/^\/(?!api\/|admin|owner|driver|order)[^.]*$/, spaHandler(""))
 
 app.use(errorHandler)
 

@@ -24,10 +24,13 @@ export function ProductsPage() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
 
+  const tenantId = localStorage.getItem("lebanonpos.admin.tenantId") || ""
+
   const loadProducts = useCallback(async () => {
     setLoading(true); setError(null)
     try {
       const params = new URLSearchParams()
+      if (tenantId) params.set("tenantId", tenantId)
       if (search.trim()) params.set("search", search.trim())
       params.set("skip", String((page - 1) * PAGE_SIZE))
       params.set("limit", String(PAGE_SIZE + 1))
@@ -51,8 +54,12 @@ export function ProductsPage() {
     setGenerating(true)
     setGenStatus(null)
     try {
-      const body = force ? { force: true } : undefined
-      const data = await api<{ generated: number; placeholders: number; total: number; tokenMissing?: boolean }>("/api/images/generate-all", { method: "POST", body: body ? JSON.stringify(body) : undefined })
+      const body = { force, ...(tenantId ? { tenantId } : {}) }
+      const hasBody = force || tenantId
+      const data = await api<{ generated: number; placeholders: number; total: number; tokenMissing?: boolean }>(
+        "/api/images/generate-all",
+        { method: "POST", body: hasBody ? JSON.stringify(body) : undefined }
+      )
       if (data.tokenMissing) {
         setGenStatus(t("products.images_token_missing") || "AI token not set — using placeholder images")
       } else if (data.total === 0) {

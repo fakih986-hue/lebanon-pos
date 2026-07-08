@@ -24,6 +24,7 @@ export function LoginPage() {
       })
       setToken(res.token)
       localStorage.setItem("lebanonpos.admin.tenant", res.user.tenantName)
+      localStorage.setItem("lebanonpos.admin.tenantId", res.user.tenantId)
       navigate("/admin/dashboard")
     } catch (err) {
       setError((err as Error).message)
