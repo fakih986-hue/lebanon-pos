@@ -246,8 +246,10 @@ describe("dailyClose.service", () => {
     })
 
     it("uses current date when no argument", () => {
+      // Build expected from LOCAL date parts — toISOString() is UTC and
+      // mismatches after local midnight in UTC+ timezones (e.g. Beirut).
       const today = new Date()
-      const expected = today.toISOString().slice(0, 10)
+      const expected = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
       expect(getLocalDateKey()).toBe(expected)
     })
   })
