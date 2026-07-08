@@ -69,6 +69,16 @@ model Tenant {
   subdomain   String   @unique
   suspended   Boolean  @default(false)
   cloudApiKey String   @default("")   // per-tenant sync key, generated at create
+
+  // ── License / suspension system (v2) ────────────────────────────────
+  licenseStatus     String   @default("active")  // active | grace | suspended | read_only | recovery
+  licenseReason     String   @default("")        // admin-facing: why suspended/grace
+  licenseMessage    String   @default("")        // user-facing: shown in POS overlay
+  suspendedAt       DateTime?                    // when suspension started
+  offlineGraceDays  Int      @default(7)         // days POS can work offline before locking
+  leaseExpiresAt    DateTime?                    // when the offline lease expires
+  policyVersion     Int      @default(1)         // increments on every license change — triggers desktop re-check
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -243,7 +243,7 @@ router.post("/login", async (req: any, res: any) => {
       userId: user.id,
       tenantId: user.tenantId,
       role: user.role,
-      tokenVersion: user.pinVersion ?? 1,
+      tokenVersion: user.tokenVersion ?? 1,
     })
 
     res.json({

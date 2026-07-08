@@ -55,7 +55,12 @@ router.get("/status", requireAuth, async (req: AuthRequest, res: ServerResponse)
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: req.auth!.tenantId },
-      select: { name: true, subdomain: true, suspended: true },
+      select: {
+        name: true, subdomain: true, suspended: true,
+        licenseStatus: true, licenseReason: true, licenseMessage: true,
+        suspendedAt: true, offlineGraceDays: true, leaseExpiresAt: true,
+        policyVersion: true,
+      },
     })
     if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
     json(res, tenant)

@@ -10,6 +10,8 @@ const AUTH_TOKEN_KEY = "lebanonpos.auth-token"
 const SUSPENDED_KEY  = "lebanonpos.suspended.v1"
 const SUSPENDED_AT_KEY = "lebanonpos.suspended-at.v1"
 const SUSPEND_EVENT  = "lebanonpos-suspended-changed"
+const LICENSE_KEY    = "lebanonpos.license.v1"
+const LICENSE_EVENT  = "lebanonpos-license-changed"
 
 /** Operations that exceed this many attempts are considered permanently dead
  *  and stop counting as "pending" in the badge. */
@@ -237,6 +239,8 @@ export async function checkTenantStatus(): Promise<boolean> {
       throw new Error(`Status check failed: ${res.status}`)
     }
     const data = await res.json()
+    // v2: store full license lease alongside legacy suspended flag
+    storeLicenseLease(data)
     setSuspended(data.suspended === true)
     return data.suspended === true
   } catch {
@@ -249,6 +253,90 @@ export function subscribeSuspended(callback: (suspended: boolean) => void) {
   const onChange = () => callback(isSuspended())
   window.addEventListener(SUSPEND_EVENT, onChange)
   return () => window.removeEventListener(SUSPEND_EVENT, onChange)
+}
+
+// ── License / Remote-stop system (v2) ────────────────────────────────
+
+export type LicenseStatus = "active" | "grace" | "suspended" | "read_only" | "recovery"
+
+export interface LicenseLease {
+  status: LicenseStatus
+  reason: string
+  message: string
+  suspendedAt: string | null
+  offlineGraceDays: number
+  leaseExpiresAt: string | null
+  policyVersion: number
+  checkedAt: string
+}
+
+/** Store the license lease from the server status response */
+function storeLicenseLease(data: {
+  suspended: boolean
+  licenseStatus?: string
+  licenseReason?: string
+  licenseMessage?: string
+  suspendedAt?: string | null
+  offlineGraceDays?: number
+  leaseExpiresAt?: string | null
+  policyVersion?: number
+}) {
+  // Backward compat: derive license status from legacy suspended flag
+  const status: LicenseStatus = data.licenseStatus as LicenseStatus
+    || (data.suspended ? "suspended" : "active")
+
+  const lease: LicenseLease = {
+    status,
+    reason: data.licenseReason ?? "",
+    message: data.licenseMessage ?? "",
+    suspendedAt: data.suspendedAt ?? null,
+    offlineGraceDays: data.offlineGraceDays ?? 7,
+    leaseExpiresAt: data.leaseExpiresAt ?? null,
+    policyVersion: data.policyVersion ?? 1,
+    checkedAt: new Date().toISOString(),
+  }
+
+  localStorage.setItem(LICENSE_KEY, JSON.stringify(lease))
+  // Keep legacy suspended key in sync for backward compat
+  setSuspended(data.suspended === true)
+  window.dispatchEvent(new Event(LICENSE_EVENT))
+}
+
+/** Get the last known license lease from local storage */
+function getLicenseLease(): LicenseLease | null {
+  try {
+    const raw = localStorage.getItem(LICENSE_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+/** Check if business writes should be blocked based on local license */
+export function isLicenseBlocked(): boolean {
+  const lease = getLicenseLease()
+  if (!lease) return false
+
+  // If explicitly suspended online — block immediately
+  if (lease.status === "suspended" || lease.status === "read_only") return true
+
+  // If lease has an explicit expiry and it's past — block
+  if (lease.leaseExpiresAt) {
+    const expiry = new Date(lease.leaseExpiresAt).getTime()
+    if (Date.now() > expiry) return true
+  }
+
+  // If suspendedAt is set, check offline grace period
+  if (lease.suspendedAt && lease.status !== "active") {
+    const elapsed = Date.now() - new Date(lease.suspendedAt).getTime()
+    const graceMs = lease.offlineGraceDays * 24 * 60 * 60 * 1000
+    if (elapsed > graceMs) return true
+  }
+
+  return false
+}
+
+/** Get the current license status (for UI display) */
+export function getLicenseStatus(): LicenseLease | null {
+  return getLicenseLease()
 }
 
 async function clearIndexedDB() {
@@ -475,6 +563,13 @@ export function getSyncStatus(): SyncStatus {
 
 export async function enqueueSyncOperation(input: EnqueueSyncInput) {
   if (!canUseStorage()) return undefined
+
+  // License check — block business writes when license is suspended/expired
+  if (isLicenseBlocked()) {
+    console.warn("[sync] License blocked — skipping enqueue:", input.entity, input.action)
+    return undefined
+  }
+
   const operation: SyncOperation = {
     id: createId(),
     entity: input.entity,

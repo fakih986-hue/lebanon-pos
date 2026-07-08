@@ -39,6 +39,9 @@ const updateTenantSchema = z.object({
   name: z.string().trim().min(1).optional(),
   subdomain: z.string().trim().toLowerCase().regex(/^[a-z0-9-]{3,}$/).optional(),
   suspended: z.boolean().optional(),
+  licenseReason: z.string().optional(),
+  licenseMessage: z.string().optional(),
+  offlineGraceDays: z.number().int().min(1).max(90).optional(),
 })
 
 const loginSchema = z.object({
@@ -128,10 +131,32 @@ router.put("/tenants/:id", requireAuth, requireAdmin, async (req: AuthRequest, r
       const existing = await prisma.tenant.findUnique({ where: { subdomain: parsed.data.subdomain } })
       if (existing) { json(res, { error: "Subdomain is already taken" }, 409); return }
     }
+    // Build update data — when suspended is toggled, update license fields too
+    const updateData: Record<string, unknown> = { ...parsed.data }
+    if (typeof parsed.data.suspended === "boolean") {
+      updateData.licenseStatus = parsed.data.suspended ? "suspended" : "active"
+      updateData.suspendedAt = parsed.data.suspended ? new Date() : null
+      updateData.leaseExpiresAt = parsed.data.suspended ? null : null
+      updateData.policyVersion = { increment: 1 }
+    }
+    // Manually build: we can't spread { increment: 1 } into a Prisma call directly
+    const { suspended, licenseReason, licenseMessage, offlineGraceDays, ...rest } = parsed.data
+    const data: any = { ...rest }
+    if (typeof suspended === "boolean") {
+      data.suspended = suspended
+      data.licenseStatus = suspended ? "suspended" : "active"
+      data.suspendedAt = suspended ? new Date() : null
+      data.leaseExpiresAt = null
+      data.policyVersion = { increment: 1 }
+    }
+    if (licenseReason !== undefined) data.licenseReason = licenseReason
+    if (licenseMessage !== undefined) data.licenseMessage = licenseMessage
+    if (offlineGraceDays !== undefined) data.offlineGraceDays = offlineGraceDays
+
     const updated = await prisma.tenant.update({
       where: { id: req.params?.id },
-      data: parsed.data,
-      select: { id: true, name: true, subdomain: true, suspended: true, createdAt: true },
+      data,
+      select: { id: true, name: true, subdomain: true, suspended: true, licenseStatus: true, licenseReason: true, licenseMessage: true, suspendedAt: true, offlineGraceDays: true, policyVersion: true, createdAt: true },
     })
     json(res, updated)
   } catch (err) {
@@ -325,7 +350,7 @@ router.post("/tenants/:id/users/:userId/reset-pin", requireAuth, requireAdmin, a
 
     await prisma.staffUser.update({
       where: { id: user.id },
-      data: { pin: await bcrypt.hash(newPin, 12), pinVersion: { increment: 1 } },
+      data: { pin: await bcrypt.hash(newPin, 12), pinVersion: { increment: 1 }, tokenVersion: { increment: 1 } },
     })
     json(res, { userId: user.id, name: user.name, pin: newPin })
   } catch (err) {

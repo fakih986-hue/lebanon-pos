@@ -4151,8 +4151,20 @@ export namespace Prisma {
 
   export type AggregateTenant = {
     _count: TenantCountAggregateOutputType | null
+    _avg: TenantAvgAggregateOutputType | null
+    _sum: TenantSumAggregateOutputType | null
     _min: TenantMinAggregateOutputType | null
     _max: TenantMaxAggregateOutputType | null
+  }
+
+  export type TenantAvgAggregateOutputType = {
+    offlineGraceDays: number | null
+    policyVersion: number | null
+  }
+
+  export type TenantSumAggregateOutputType = {
+    offlineGraceDays: number | null
+    policyVersion: number | null
   }
 
   export type TenantMinAggregateOutputType = {
@@ -4161,6 +4173,13 @@ export namespace Prisma {
     subdomain: string | null
     suspended: boolean | null
     cloudApiKey: string | null
+    licenseStatus: string | null
+    licenseReason: string | null
+    licenseMessage: string | null
+    suspendedAt: Date | null
+    offlineGraceDays: number | null
+    leaseExpiresAt: Date | null
+    policyVersion: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4171,6 +4190,13 @@ export namespace Prisma {
     subdomain: string | null
     suspended: boolean | null
     cloudApiKey: string | null
+    licenseStatus: string | null
+    licenseReason: string | null
+    licenseMessage: string | null
+    suspendedAt: Date | null
+    offlineGraceDays: number | null
+    leaseExpiresAt: Date | null
+    policyVersion: number | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -4181,11 +4207,28 @@ export namespace Prisma {
     subdomain: number
     suspended: number
     cloudApiKey: number
+    licenseStatus: number
+    licenseReason: number
+    licenseMessage: number
+    suspendedAt: number
+    offlineGraceDays: number
+    leaseExpiresAt: number
+    policyVersion: number
     createdAt: number
     updatedAt: number
     _all: number
   }
 
+
+  export type TenantAvgAggregateInputType = {
+    offlineGraceDays?: true
+    policyVersion?: true
+  }
+
+  export type TenantSumAggregateInputType = {
+    offlineGraceDays?: true
+    policyVersion?: true
+  }
 
   export type TenantMinAggregateInputType = {
     id?: true
@@ -4193,6 +4236,13 @@ export namespace Prisma {
     subdomain?: true
     suspended?: true
     cloudApiKey?: true
+    licenseStatus?: true
+    licenseReason?: true
+    licenseMessage?: true
+    suspendedAt?: true
+    offlineGraceDays?: true
+    leaseExpiresAt?: true
+    policyVersion?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4203,6 +4253,13 @@ export namespace Prisma {
     subdomain?: true
     suspended?: true
     cloudApiKey?: true
+    licenseStatus?: true
+    licenseReason?: true
+    licenseMessage?: true
+    suspendedAt?: true
+    offlineGraceDays?: true
+    leaseExpiresAt?: true
+    policyVersion?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -4213,6 +4270,13 @@ export namespace Prisma {
     subdomain?: true
     suspended?: true
     cloudApiKey?: true
+    licenseStatus?: true
+    licenseReason?: true
+    licenseMessage?: true
+    suspendedAt?: true
+    offlineGraceDays?: true
+    leaseExpiresAt?: true
+    policyVersion?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -4256,6 +4320,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: TenantAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: TenantSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: TenantMinAggregateInputType
@@ -4286,6 +4362,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: TenantCountAggregateInputType | true
+    _avg?: TenantAvgAggregateInputType
+    _sum?: TenantSumAggregateInputType
     _min?: TenantMinAggregateInputType
     _max?: TenantMaxAggregateInputType
   }
@@ -4296,9 +4374,18 @@ export namespace Prisma {
     subdomain: string
     suspended: boolean
     cloudApiKey: string
+    licenseStatus: string
+    licenseReason: string
+    licenseMessage: string
+    suspendedAt: Date | null
+    offlineGraceDays: number
+    leaseExpiresAt: Date | null
+    policyVersion: number
     createdAt: Date
     updatedAt: Date
     _count: TenantCountAggregateOutputType | null
+    _avg: TenantAvgAggregateOutputType | null
+    _sum: TenantSumAggregateOutputType | null
     _min: TenantMinAggregateOutputType | null
     _max: TenantMaxAggregateOutputType | null
   }
@@ -4323,6 +4410,13 @@ export namespace Prisma {
     subdomain?: boolean
     suspended?: boolean
     cloudApiKey?: boolean
+    licenseStatus?: boolean
+    licenseReason?: boolean
+    licenseMessage?: boolean
+    suspendedAt?: boolean
+    offlineGraceDays?: boolean
+    leaseExpiresAt?: boolean
+    policyVersion?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     users?: boolean | Tenant$usersArgs<ExtArgs>
@@ -4356,6 +4450,13 @@ export namespace Prisma {
     subdomain?: boolean
     suspended?: boolean
     cloudApiKey?: boolean
+    licenseStatus?: boolean
+    licenseReason?: boolean
+    licenseMessage?: boolean
+    suspendedAt?: boolean
+    offlineGraceDays?: boolean
+    leaseExpiresAt?: boolean
+    policyVersion?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["tenant"]>
@@ -4366,6 +4467,13 @@ export namespace Prisma {
     subdomain?: boolean
     suspended?: boolean
     cloudApiKey?: boolean
+    licenseStatus?: boolean
+    licenseReason?: boolean
+    licenseMessage?: boolean
+    suspendedAt?: boolean
+    offlineGraceDays?: boolean
+    leaseExpiresAt?: boolean
+    policyVersion?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["tenant"]>
@@ -4376,11 +4484,18 @@ export namespace Prisma {
     subdomain?: boolean
     suspended?: boolean
     cloudApiKey?: boolean
+    licenseStatus?: boolean
+    licenseReason?: boolean
+    licenseMessage?: boolean
+    suspendedAt?: boolean
+    offlineGraceDays?: boolean
+    leaseExpiresAt?: boolean
+    policyVersion?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "cloudApiKey" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
+  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "cloudApiKey" | "licenseStatus" | "licenseReason" | "licenseMessage" | "suspendedAt" | "offlineGraceDays" | "leaseExpiresAt" | "policyVersion" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
   export type TenantInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     users?: boolean | Tenant$usersArgs<ExtArgs>
     products?: boolean | Tenant$productsArgs<ExtArgs>
@@ -4441,6 +4556,13 @@ export namespace Prisma {
       subdomain: string
       suspended: boolean
       cloudApiKey: string
+      licenseStatus: string
+      licenseReason: string
+      licenseMessage: string
+      suspendedAt: Date | null
+      offlineGraceDays: number
+      leaseExpiresAt: Date | null
+      policyVersion: number
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["tenant"]>
@@ -4893,6 +5015,13 @@ export namespace Prisma {
     readonly subdomain: FieldRef<"Tenant", 'String'>
     readonly suspended: FieldRef<"Tenant", 'Boolean'>
     readonly cloudApiKey: FieldRef<"Tenant", 'String'>
+    readonly licenseStatus: FieldRef<"Tenant", 'String'>
+    readonly licenseReason: FieldRef<"Tenant", 'String'>
+    readonly licenseMessage: FieldRef<"Tenant", 'String'>
+    readonly suspendedAt: FieldRef<"Tenant", 'DateTime'>
+    readonly offlineGraceDays: FieldRef<"Tenant", 'Int'>
+    readonly leaseExpiresAt: FieldRef<"Tenant", 'DateTime'>
+    readonly policyVersion: FieldRef<"Tenant", 'Int'>
     readonly createdAt: FieldRef<"Tenant", 'DateTime'>
     readonly updatedAt: FieldRef<"Tenant", 'DateTime'>
   }
@@ -40293,6 +40422,13 @@ export namespace Prisma {
     subdomain: 'subdomain',
     suspended: 'suspended',
     cloudApiKey: 'cloudApiKey',
+    licenseStatus: 'licenseStatus',
+    licenseReason: 'licenseReason',
+    licenseMessage: 'licenseMessage',
+    suspendedAt: 'suspendedAt',
+    offlineGraceDays: 'offlineGraceDays',
+    leaseExpiresAt: 'leaseExpiresAt',
+    policyVersion: 'policyVersion',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -41114,6 +41250,13 @@ export namespace Prisma {
     subdomain?: StringFilter<"Tenant"> | string
     suspended?: BoolFilter<"Tenant"> | boolean
     cloudApiKey?: StringFilter<"Tenant"> | string
+    licenseStatus?: StringFilter<"Tenant"> | string
+    licenseReason?: StringFilter<"Tenant"> | string
+    licenseMessage?: StringFilter<"Tenant"> | string
+    suspendedAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    offlineGraceDays?: IntFilter<"Tenant"> | number
+    leaseExpiresAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    policyVersion?: IntFilter<"Tenant"> | number
     createdAt?: DateTimeFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeFilter<"Tenant"> | Date | string
     users?: StaffUserListRelationFilter
@@ -41146,6 +41289,13 @@ export namespace Prisma {
     subdomain?: SortOrder
     suspended?: SortOrder
     cloudApiKey?: SortOrder
+    licenseStatus?: SortOrder
+    licenseReason?: SortOrder
+    licenseMessage?: SortOrder
+    suspendedAt?: SortOrderInput | SortOrder
+    offlineGraceDays?: SortOrder
+    leaseExpiresAt?: SortOrderInput | SortOrder
+    policyVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     users?: StaffUserOrderByRelationAggregateInput
@@ -41181,6 +41331,13 @@ export namespace Prisma {
     name?: StringFilter<"Tenant"> | string
     suspended?: BoolFilter<"Tenant"> | boolean
     cloudApiKey?: StringFilter<"Tenant"> | string
+    licenseStatus?: StringFilter<"Tenant"> | string
+    licenseReason?: StringFilter<"Tenant"> | string
+    licenseMessage?: StringFilter<"Tenant"> | string
+    suspendedAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    offlineGraceDays?: IntFilter<"Tenant"> | number
+    leaseExpiresAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
+    policyVersion?: IntFilter<"Tenant"> | number
     createdAt?: DateTimeFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeFilter<"Tenant"> | Date | string
     users?: StaffUserListRelationFilter
@@ -41213,11 +41370,20 @@ export namespace Prisma {
     subdomain?: SortOrder
     suspended?: SortOrder
     cloudApiKey?: SortOrder
+    licenseStatus?: SortOrder
+    licenseReason?: SortOrder
+    licenseMessage?: SortOrder
+    suspendedAt?: SortOrderInput | SortOrder
+    offlineGraceDays?: SortOrder
+    leaseExpiresAt?: SortOrderInput | SortOrder
+    policyVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: TenantCountOrderByAggregateInput
+    _avg?: TenantAvgOrderByAggregateInput
     _max?: TenantMaxOrderByAggregateInput
     _min?: TenantMinOrderByAggregateInput
+    _sum?: TenantSumOrderByAggregateInput
   }
 
   export type TenantScalarWhereWithAggregatesInput = {
@@ -41229,6 +41395,13 @@ export namespace Prisma {
     subdomain?: StringWithAggregatesFilter<"Tenant"> | string
     suspended?: BoolWithAggregatesFilter<"Tenant"> | boolean
     cloudApiKey?: StringWithAggregatesFilter<"Tenant"> | string
+    licenseStatus?: StringWithAggregatesFilter<"Tenant"> | string
+    licenseReason?: StringWithAggregatesFilter<"Tenant"> | string
+    licenseMessage?: StringWithAggregatesFilter<"Tenant"> | string
+    suspendedAt?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
+    offlineGraceDays?: IntWithAggregatesFilter<"Tenant"> | number
+    leaseExpiresAt?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
+    policyVersion?: IntWithAggregatesFilter<"Tenant"> | number
     createdAt?: DateTimeWithAggregatesFilter<"Tenant"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Tenant"> | Date | string
   }
@@ -44044,6 +44217,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -44076,6 +44256,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -44108,6 +44295,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -44140,6 +44334,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -44172,6 +44373,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -44182,6 +44390,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -44192,6 +44407,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -47344,6 +47566,28 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
   export type DateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -47486,6 +47730,11 @@ export namespace Prisma {
     none?: StockMovementWhereInput
   }
 
+  export type SortOrderInput = {
+    sort: SortOrder
+    nulls?: NullsOrder
+  }
+
   export type StaffUserOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
@@ -47576,8 +47825,20 @@ export namespace Prisma {
     subdomain?: SortOrder
     suspended?: SortOrder
     cloudApiKey?: SortOrder
+    licenseStatus?: SortOrder
+    licenseReason?: SortOrder
+    licenseMessage?: SortOrder
+    suspendedAt?: SortOrder
+    offlineGraceDays?: SortOrder
+    leaseExpiresAt?: SortOrder
+    policyVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type TenantAvgOrderByAggregateInput = {
+    offlineGraceDays?: SortOrder
+    policyVersion?: SortOrder
   }
 
   export type TenantMaxOrderByAggregateInput = {
@@ -47586,6 +47847,13 @@ export namespace Prisma {
     subdomain?: SortOrder
     suspended?: SortOrder
     cloudApiKey?: SortOrder
+    licenseStatus?: SortOrder
+    licenseReason?: SortOrder
+    licenseMessage?: SortOrder
+    suspendedAt?: SortOrder
+    offlineGraceDays?: SortOrder
+    leaseExpiresAt?: SortOrder
+    policyVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -47596,8 +47864,20 @@ export namespace Prisma {
     subdomain?: SortOrder
     suspended?: SortOrder
     cloudApiKey?: SortOrder
+    licenseStatus?: SortOrder
+    licenseReason?: SortOrder
+    licenseMessage?: SortOrder
+    suspendedAt?: SortOrder
+    offlineGraceDays?: SortOrder
+    leaseExpiresAt?: SortOrder
+    policyVersion?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type TenantSumOrderByAggregateInput = {
+    offlineGraceDays?: SortOrder
+    policyVersion?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -47626,6 +47906,36 @@ export namespace Prisma {
     _max?: NestedBoolFilter<$PrismaModel>
   }
 
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
+  }
+
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -47638,17 +47948,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
-  }
-
-  export type IntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
   }
 
   export type EnumUserRoleFilter<$PrismaModel = never> = {
@@ -47721,22 +48020,6 @@ export namespace Prisma {
   export type StaffUserSumOrderByAggregateInput = {
     pinVersion?: SortOrder
     tokenVersion?: SortOrder
-  }
-
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type EnumUserRoleWithAggregatesFilter<$PrismaModel = never> = {
@@ -47914,11 +48197,6 @@ export namespace Prisma {
     every?: StockCountLineWhereInput
     some?: StockCountLineWhereInput
     none?: StockCountLineWhereInput
-  }
-
-  export type SortOrderInput = {
-    sort: SortOrder
-    nulls?: NullsOrder
   }
 
   export type StockCountLineOrderByRelationAggregateInput = {
@@ -48705,17 +48983,6 @@ export namespace Prisma {
     not?: NestedEnumPaymentStatusFilter<$PrismaModel> | $Enums.PaymentStatus
   }
 
-  export type DateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
   export type SupplierScalarRelationFilter = {
     is?: SupplierWhereInput
     isNot?: SupplierWhereInput
@@ -48811,20 +49078,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumPaymentStatusFilter<$PrismaModel>
     _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
-  }
-
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type PurchaseOrderScalarRelationFilter = {
@@ -50274,6 +50527,18 @@ export namespace Prisma {
     set?: boolean
   }
 
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
+  }
+
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
   }
@@ -50946,14 +51211,6 @@ export namespace Prisma {
     connectOrCreate?: DeliveryOrderCreateOrConnectWithoutDriverInput | DeliveryOrderCreateOrConnectWithoutDriverInput[]
     createMany?: DeliveryOrderCreateManyDriverInputEnvelope
     connect?: DeliveryOrderWhereUniqueInput | DeliveryOrderWhereUniqueInput[]
-  }
-
-  export type IntFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
   }
 
   export type EnumUserRoleFieldUpdateOperationsInput = {
@@ -52003,10 +52260,6 @@ export namespace Prisma {
     set?: $Enums.PaymentStatus
   }
 
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
-  }
-
   export type TenantUpdateOneRequiredWithoutPurchaseOrdersNestedInput = {
     create?: XOR<TenantCreateWithoutPurchaseOrdersInput, TenantUncheckedCreateWithoutPurchaseOrdersInput>
     connectOrCreate?: TenantCreateOrConnectWithoutPurchaseOrdersInput
@@ -52552,6 +52805,28 @@ export namespace Prisma {
     not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
+  export type NestedIntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
+  }
+
   export type NestedDateTimeFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
@@ -52580,17 +52855,6 @@ export namespace Prisma {
     _max?: NestedStringFilter<$PrismaModel>
   }
 
-  export type NestedIntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
-  }
-
   export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
     equals?: boolean | BooleanFieldRefInput<$PrismaModel>
     not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
@@ -52599,25 +52863,29 @@ export namespace Prisma {
     _max?: NestedBoolFilter<$PrismaModel>
   }
 
-  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
     lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedDateTimeFilter<$PrismaModel>
-    _max?: NestedDateTimeFilter<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
-  export type NestedEnumUserRoleFilter<$PrismaModel = never> = {
-    equals?: $Enums.UserRole | EnumUserRoleFieldRefInput<$PrismaModel>
-    in?: $Enums.UserRole[] | ListEnumUserRoleFieldRefInput<$PrismaModel>
-    notIn?: $Enums.UserRole[] | ListEnumUserRoleFieldRefInput<$PrismaModel>
-    not?: NestedEnumUserRoleFilter<$PrismaModel> | $Enums.UserRole
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
@@ -52645,6 +52913,27 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatFilter<$PrismaModel> | number
+  }
+
+  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel>
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+
+  export type NestedEnumUserRoleFilter<$PrismaModel = never> = {
+    equals?: $Enums.UserRole | EnumUserRoleFieldRefInput<$PrismaModel>
+    in?: $Enums.UserRole[] | ListEnumUserRoleFieldRefInput<$PrismaModel>
+    notIn?: $Enums.UserRole[] | ListEnumUserRoleFieldRefInput<$PrismaModel>
+    not?: NestedEnumUserRoleFilter<$PrismaModel> | $Enums.UserRole
   }
 
   export type NestedEnumUserRoleWithAggregatesFilter<$PrismaModel = never> = {
@@ -52682,17 +52971,6 @@ export namespace Prisma {
     _sum?: NestedDecimalFilter<$PrismaModel>
     _min?: NestedDecimalFilter<$PrismaModel>
     _max?: NestedDecimalFilter<$PrismaModel>
-  }
-
-  export type NestedIntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedStringNullableFilter<$PrismaModel = never> = {
@@ -52861,17 +53139,6 @@ export namespace Prisma {
     not?: NestedEnumPaymentStatusFilter<$PrismaModel> | $Enums.PaymentStatus
   }
 
-  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
   export type NestedEnumPurchaseOrderStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.PurchaseOrderStatus | EnumPurchaseOrderStatusFieldRefInput<$PrismaModel>
     in?: $Enums.PurchaseOrderStatus[] | ListEnumPurchaseOrderStatusFieldRefInput<$PrismaModel>
@@ -52890,20 +53157,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumPaymentStatusFilter<$PrismaModel>
     _max?: NestedEnumPaymentStatusFilter<$PrismaModel>
-  }
-
-  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    notIn?: Date[] | string[] | ListDateTimeFieldRefInput<$PrismaModel> | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type NestedEnumShiftStatusFilter<$PrismaModel = never> = {
@@ -54773,6 +55026,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     products?: ProductCreateNestedManyWithoutTenantInput
@@ -54804,6 +55064,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     products?: ProductUncheckedCreateNestedManyWithoutTenantInput
@@ -55067,6 +55334,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: ProductUpdateManyWithoutTenantNestedInput
@@ -55098,6 +55372,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     products?: ProductUncheckedUpdateManyWithoutTenantNestedInput
@@ -55193,6 +55474,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -55224,6 +55512,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -55271,6 +55566,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -55302,6 +55604,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -55333,6 +55642,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -55364,6 +55680,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -55698,6 +56021,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -55729,6 +56059,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -55926,6 +56263,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -55957,6 +56301,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -56113,6 +56464,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -56144,6 +56502,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -56483,6 +56848,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -56514,6 +56886,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -56646,6 +57025,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -56677,6 +57063,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -56886,6 +57279,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -56917,6 +57317,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -57094,6 +57501,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -57125,6 +57539,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -57204,6 +57625,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -57235,6 +57663,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -57319,6 +57754,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -57350,6 +57792,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -57424,6 +57873,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -57455,6 +57911,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -57539,6 +58002,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -57570,6 +58040,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -57644,6 +58121,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -57675,6 +58159,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -57856,6 +58347,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -57887,6 +58385,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -57966,6 +58471,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -57997,6 +58509,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -58109,6 +58628,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -58140,6 +58666,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -58226,6 +58759,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -58257,6 +58797,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -58347,6 +58894,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -58378,6 +58932,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -58458,6 +59019,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -58489,6 +59057,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -58569,6 +59144,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -58600,6 +59182,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -58670,6 +59259,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -58701,6 +59297,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -58830,6 +59433,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -58861,6 +59471,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -58986,6 +59603,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -59017,6 +59641,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -59064,6 +59695,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -59095,6 +59733,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -59126,6 +59771,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -59157,6 +59809,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -59245,6 +59904,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -59276,6 +59942,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -59354,6 +60027,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -59385,6 +60065,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -59529,6 +60216,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -59560,6 +60254,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -59700,6 +60401,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -59731,6 +60439,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -59842,6 +60557,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -59873,6 +60595,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -59974,6 +60703,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -60005,6 +60741,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -60086,6 +60829,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -60117,6 +60867,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -60358,6 +61115,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -60389,6 +61153,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -60544,6 +61315,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -60575,6 +61353,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -60862,6 +61647,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -60893,6 +61685,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -60940,6 +61739,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -60971,6 +61777,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -61002,6 +61815,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -61033,6 +61853,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -61080,6 +61907,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -61111,6 +61945,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
@@ -61142,6 +61983,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserCreateNestedManyWithoutTenantInput
@@ -61173,6 +62021,13 @@ export namespace Prisma {
     subdomain: string
     suspended?: boolean
     cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
     createdAt?: Date | string
     updatedAt?: Date | string
     users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
@@ -61284,6 +62139,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUpdateManyWithoutTenantNestedInput
@@ -61315,6 +62177,13 @@ export namespace Prisma {
     subdomain?: StringFieldUpdateOperationsInput | string
     suspended?: BoolFieldUpdateOperationsInput | boolean
     cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput

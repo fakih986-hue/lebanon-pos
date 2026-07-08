@@ -127,6 +127,13 @@ exports.Prisma.TenantScalarFieldEnum = {
   subdomain: 'subdomain',
   suspended: 'suspended',
   cloudApiKey: 'cloudApiKey',
+  licenseStatus: 'licenseStatus',
+  licenseReason: 'licenseReason',
+  licenseMessage: 'licenseMessage',
+  suspendedAt: 'suspendedAt',
+  offlineGraceDays: 'offlineGraceDays',
+  leaseExpiresAt: 'leaseExpiresAt',
+  policyVersion: 'policyVersion',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
