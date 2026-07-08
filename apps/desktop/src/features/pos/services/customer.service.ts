@@ -16,6 +16,7 @@ export type Customer = {
   isWholesale?: boolean
   sellAtCost?: boolean
   notes: string
+  archived?: boolean
   createdAt: string
 }
 
@@ -174,6 +175,41 @@ export function getDebtPayments() {
   return readCollection<DebtPayment>(DEBT_PAYMENTS_KEY, [])
 }
 
+export function archiveCustomer(customerId: string) {
+  assertCanWrite("delete customer")
+  const customers = getCustomers()
+  const customer = customers.find((item) => item.id === customerId)
+  if (!customer) return
+
+  writeCollection(CUSTOMERS_KEY, customers.map((item) =>
+    item.id === customerId ? { ...item, archived: true } : item
+  ))
+  enqueueSyncOperation({
+    entity: "customer",
+    action: "update",
+    summary: `${customer.name} archived.`,
+    payload: { id: customerId, archived: true },
+  })
+}
+
+export function restoreCustomer(customerId: string) {
+  assertCanWrite("delete customer")
+  const customers = getCustomers()
+  const customer = customers.find((item) => item.id === customerId)
+  if (!customer) return
+
+  writeCollection(CUSTOMERS_KEY, customers.map((item) =>
+    item.id === customerId ? { ...item, archived: false } : item
+  ))
+  enqueueSyncOperation({
+    entity: "customer",
+    action: "update",
+    summary: `${customer.name} restored.`,
+    payload: { id: customerId, archived: false },
+  })
+}
+
+// Legacy delete — prefer archiveCustomer() unless no history exists
 export function deleteCustomer(customerId: string) {
   assertCanWrite("delete customer")
   const customers = getCustomers()
@@ -321,7 +357,7 @@ export function recordDebtPayment(input: RecordDebtPaymentInput) {
 }
 
 export function getCustomerLedger() {
-  const customers = getCustomers()
+  const customers = getCustomers().filter(c => !c.archived)
   const sales = getDebtSales()
   const payments = getDebtPayments()
 
