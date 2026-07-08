@@ -1244,6 +1244,8 @@ function disconnectSyncWebSocket() {
 
 export interface RecoveryPack {
   exportedAt: string
+  appVersion: string
+  dataCounts: Record<string, number>
   store: {
     apiUrl: string | null
     cloudUrl?: string
@@ -1310,6 +1312,8 @@ export function createRecoveryPack(): RecoveryPack {
 
   return {
     exportedAt: new Date().toISOString(),
+    appVersion: "4.0.0",
+    dataCounts: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, Array.isArray(v) ? v.length : 1])),
     store: {
       apiUrl,
       tenantName: undefined,
@@ -1327,6 +1331,31 @@ export function createRecoveryPack(): RecoveryPack {
     data,
     users,
   }
+}
+
+/** Validate that a recovery pack has the minimum expected structure */
+export function validateRecoveryPack(pack: unknown): pack is RecoveryPack {
+  if (!pack || typeof pack !== "object") return false
+  const p = pack as Record<string, unknown>
+  if (!p.exportedAt || !p.store || !p.sync) return false
+  const s = p.store as Record<string, unknown>
+  if (typeof s.apiUrl !== "string" || typeof s.hasAuthToken !== "boolean") return false
+  return true
+}
+
+/** Warn if restoring to a different store */
+export function getStoreIdentity(): string {
+  const apiUrl = getApiUrl()
+  const authToken = getAuthToken()
+  let subdomain = ""
+  try {
+    const raw = localStorage.getItem("lebanonpos.settings.v1")
+    if (raw) {
+      const settings = JSON.parse(raw)
+      subdomain = (Array.isArray(settings) ? settings[0]?.subdomain : settings?.subdomain) ?? ""
+    }
+  } catch { /* ignore */ }
+  return `${apiUrl || "no-url"}|${subdomain || "no-store"}`
 }
 
 /** Trigger download of the recovery pack as a JSON file */

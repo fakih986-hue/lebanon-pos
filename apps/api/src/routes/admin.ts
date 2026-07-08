@@ -69,7 +69,9 @@ router.post("/login", async (req: AuthRequest, res: ServerResponse) => {
       passwordsMatch = password === masterPassword
       // Generate bcrypt hash for future use
       const newHash = await bcrypt.hash(masterPassword, 12)
-      console.log("[admin] Generated ADMIN_PASSWORD_HASH — add to .env:", newHash)
+      if (process.env.NODE_ENV !== "production") {
+        console.log("[admin] ADMIN_PASSWORD_HASH:", newHash)
+      }
     }
 
     if (!passwordsMatch) {
