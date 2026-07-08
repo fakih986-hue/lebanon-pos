@@ -58,37 +58,39 @@ router.get("/x-report", requireAuth, async (req: AuthRequest, res: ServerRespons
     }
 
     const since = openShift.openedAt
+    // Shift attribution: match by shiftId first, time fallback for old records
+    const shiftFilter: any = { tenantId, OR: [{ shiftId: openShift.id }, { shiftId: null, createdAt: { gte: since } }] }
 
     const [sales, refunds, expenses, supplierPayments] = await Promise.all([
       prisma.sale.aggregate({
-        where: { tenantId, status: "Completed", createdAt: { gte: since } },
+        where: { ...shiftFilter, status: { not: "Voided" } },
         _sum: { total: true, cost: true, profit: true },
         _count: true,
       }),
       prisma.saleRefund.aggregate({
-        where: { tenantId, createdAt: { gte: since } },
+        where: shiftFilter,
         _sum: { total: true },
         _count: true,
       }),
       prisma.expense.aggregate({
-        where: { tenantId, createdAt: { gte: since } },
+        where: shiftFilter,
         _sum: { amount: true },
         _count: true,
       }),
       prisma.supplierPayment.aggregate({
-        where: { tenantId, createdAt: { gte: since } },
+        where: shiftFilter,
         _sum: { amount: true },
       }),
     ])
 
     const [cashSales, walletSales] = await Promise.all([
       prisma.sale.aggregate({
-        where: { tenantId, status: "Completed", paymentMethod: "Cash", createdAt: { gte: since } },
+        where: { ...shiftFilter, status: { not: "Voided" }, paymentMethod: "Cash" },
         _sum: { total: true },
         _count: true,
       }),
       prisma.sale.aggregate({
-        where: { tenantId, status: "Completed", paymentMethod: "Wallet", createdAt: { gte: since } },
+        where: { ...shiftFilter, status: { not: "Voided" }, paymentMethod: "Wallet" },
         _sum: { total: true },
       }),
     ])
@@ -150,27 +152,29 @@ router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerRespon
     }
 
     const since = shift.openedAt
+    // Shift attribution: match by shiftId first, time fallback for old records
+    const shiftFilter: any = { tenantId, OR: [{ shiftId: shift.id }, { shiftId: null, createdAt: { gte: since } }] }
 
     const [salesAgg, refundsAgg, expensesAgg, supplierPaymentsAgg, cashSalesAgg] = await Promise.all([
       prisma.sale.aggregate({
-        where: { tenantId, status: "Completed", createdAt: { gte: since } },
+        where: { ...shiftFilter, status: { not: "Voided" } },
         _sum: { total: true, cost: true, profit: true },
         _count: true,
       }),
       prisma.saleRefund.aggregate({
-        where: { tenantId, createdAt: { gte: since } },
+        where: shiftFilter,
         _sum: { total: true },
       }),
       prisma.expense.aggregate({
-        where: { tenantId, createdAt: { gte: since } },
+        where: shiftFilter,
         _sum: { amount: true },
       }),
       prisma.supplierPayment.aggregate({
-        where: { tenantId, createdAt: { gte: since } },
+        where: shiftFilter,
         _sum: { amount: true },
       }),
       prisma.sale.aggregate({
-        where: { tenantId, status: "Completed", paymentMethod: "Cash", createdAt: { gte: since } },
+        where: { ...shiftFilter, status: { not: "Voided" }, paymentMethod: "Cash" },
         _sum: { total: true },
       }),
     ])
@@ -178,7 +182,8 @@ router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerRespon
     const cashSales = Number(cashSalesAgg._sum.total ?? 0)
     const cashRefunds = Number(refundsAgg._sum.total ?? 0)
     const cashExpenses = Number(expensesAgg._sum.amount ?? 0)
-    const expectedCash = Number(shift.openingFloatUsd ?? 0) + cashSales - cashRefunds - cashExpenses
+    const cashSupplierPayments = Number(supplierPaymentsAgg._sum.amount ?? 0)
+    const expectedCash = Number(shift.openingFloatUsd ?? 0) + cashSales - cashRefunds - cashExpenses - cashSupplierPayments
     const difference = (closingCash ?? 0) - expectedCash
 
     const now = new Date()

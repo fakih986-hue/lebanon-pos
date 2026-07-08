@@ -1,4 +1,4 @@
-import { enqueueSyncOperation, getApiUrl, isSuspensionGracePeriodExpired } from "./sync.service"
+import { enqueueSyncOperation, getApiUrl, isSuspensionGracePeriodExpired, assertCanWrite } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 
@@ -781,11 +781,30 @@ export function getShifts() {
   return readCollection<Shift>(SHIFTS_KEY, [])
 }
 
+/** Check if a record (sale/refund/expense/payment) belongs to a shift.
+ *  Rule: if record.shiftId exists, match by shift.id.
+ *        Otherwise fall back to openedAt <= record.createdAt <= closedAt (or now if open). */
+export function recordBelongsToShift(
+  record: { shiftId?: string | null; shiftNumber?: string | null; createdAt: string },
+  shift: Shift,
+): boolean {
+  if (record.shiftId && shift.id) {
+    return record.shiftId === shift.id
+  }
+  // Time fallback for records without shiftId
+  const recordTime = new Date(record.createdAt).getTime()
+  const openedTime = new Date(shift.openedAt).getTime()
+  const closedTime = shift.closedAt ? new Date(shift.closedAt).getTime() : Date.now()
+  return recordTime >= openedTime && recordTime <= closedTime
+}
+
 export function getActiveShift() {
   return getShifts().find((shift) => shift.status === "Open")
 }
 
 export function openShift(openingFloatUsd: number) {
+  assertCanWrite("open shift")
+  if (typeof openingFloatUsd !== "number" || openingFloatUsd < 0) return null
   const user = getCurrentUser()
   const shifts = getShifts()
   const openShiftNow = shifts.find((shift) => shift.status === "Open")
@@ -834,8 +853,14 @@ export function closeShift(input: {
   closingCashUsd: number
   notes?: string
 }) {
+  assertCanWrite("close shift")
   const user = getCurrentUser()
   const shifts = getShifts()
+  const existing = shifts.find(s => s.id === input.shiftId)
+  if (!existing) return null
+  if (existing.status === "Closed") return existing
+  if (typeof input.closingCashUsd !== "number" || input.closingCashUsd < 0) return null
+
   const differenceUsd = input.closingCashUsd - input.expectedCashUsd
   let closedShift: Shift | undefined
 
