@@ -12,35 +12,36 @@
 @keyframes slide-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes bounce-in { 0% { opacity: 0; transform: scale(0.3); } 50% { transform: scale(1.05); } 70% { transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
 
+/* ── Midnight Gold — customer ordering (matches the POS brand) ── */
 :root, [data-theme="dark"] {
-  --bg-page: #0F172A;
-  --surface-card: #1E293B;
-  --surface-card-hover: rgba(255,255,255,0.06);
-  --border-card: #334155;
-  --text-primary: #FFFFFF;
-  --text-secondary: #CBD5E1;
-  --text-muted: #94A3B8;
-  --accent-from: #8B5CF6;
-  --accent-to: #7C3AED;
-  --accent-soft: rgba(139,92,246,0.15);
+  --bg-page: #0B0E14;
+  --surface-card: #12161F;
+  --surface-card-hover: rgba(255,255,255,0.05);
+  --border-card: rgba(148,163,184,0.14);
+  --text-primary: #F4F6FA;
+  --text-secondary: #9AA4B8;
+  --text-muted: #5F6B80;
+  --accent-from: #D4A843;
+  --accent-to: #B8912F;
+  --accent-soft: rgba(212,168,67,0.15);
   --dot-pattern: rgba(255,255,255,0.03);
-  --glow-bg: radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.08) 0%, transparent 50%);
-  --header-bg: rgba(15,23,42,0.8);
+  --glow-bg: radial-gradient(ellipse at 50% 0%, rgba(212,168,67,0.08) 0%, transparent 50%);
+  --header-bg: rgba(11,14,20,0.8);
 }
 
 [data-theme="light"] {
-  --bg-page: #f8fafc;
+  --bg-page: #FAF8F4;
   --surface-card: #ffffff;
-  --surface-card-hover: #f1f5f9;
-  --border-card: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-muted: #94a3b8;
-  --accent-from: #047857;
-  --accent-to: #059669;
-  --accent-soft: rgba(5,150,105,0.12);
+  --surface-card-hover: #f4f1eb;
+  --border-card: #e8e4dc;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-muted: #8C8578;
+  --accent-from: #9C6F14;
+  --accent-to: #B8912F;
+  --accent-soft: rgba(156,111,20,0.12);
   --dot-pattern: rgba(0,0,0,0.03);
-  --glow-bg: radial-gradient(ellipse at 50% 0%, rgba(5,150,105,0.06) 0%, transparent 50%);
+  --glow-bg: radial-gradient(ellipse at 50% 0%, rgba(156,111,20,0.06) 0%, transparent 50%);
   --header-bg: rgba(255,255,255,0.85);
 }
 
@@ -52,12 +53,11 @@
     -moz-osx-font-smoothing: grayscale;
   }
   [dir="rtl"] { text-align: right; }
-  [data-theme="dark"] *::selection { background: var(--accent-soft); color: inherit; }
-  [data-theme="light"] *::selection { background: rgba(16,185,129,0.3); color: inherit; }
+  *::selection { background: var(--accent-soft); color: inherit; }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  ::-webkit-scrollbar-thumb { background: var(--border-card); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 }
 
 .bg-gradient-page { background: var(--bg-page); }
@@ -68,24 +68,65 @@
 .text-secondary { color: var(--text-secondary); }
 .text-muted { color: var(--text-muted); }
 
-[data-theme="dark"] .from-emerald-400 { --tw-gradient-from: #A78BFA; }
-[data-theme="dark"] .from-emerald-500 { --tw-gradient-from: #8B5CF6; }
-[data-theme="dark"] .from-emerald-600 { --tw-gradient-from: #7C3AED; }
-[data-theme="dark"] .to-emerald-400 { --tw-gradient-to: #A78BFA; }
-[data-theme="dark"] .to-emerald-500 { --tw-gradient-to: #8B5CF6; }
-[data-theme="dark"] .to-emerald-600 { --tw-gradient-to: #7C3AED; }
-[data-theme="dark"] .hover\:from-emerald-400:hover { --tw-gradient-from: #C4B5FD; }
-[data-theme="dark"] .hover\:from-emerald-500:hover { --tw-gradient-from: #A78BFA; }
-[data-theme="dark"] .hover\:to-emerald-400:hover { --tw-gradient-to: #C4B5FD; }
-[data-theme="dark"] .shadow-emerald-600\/20 { --tw-shadow-color: rgba(139,92,246,0.2); }
-[data-theme="dark"] .bg-emerald-500\/10 { background-color: rgba(139,92,246,0.1); }
-[data-theme="dark"] .bg-emerald-500\/20 { background-color: rgba(139,92,246,0.2); }
-[data-theme="dark"] .text-emerald-300 { color: #C4B5FD; }
-[data-theme="dark"] .text-emerald-400 { color: #A78BFA; }
-[data-theme="dark"] .border-emerald-500\/20 { border-color: rgba(139,92,246,0.2); }
-[data-theme="dark"] .focus\:ring-emerald-500\/40:focus { --tw-ring-color: rgba(139,92,246,0.3); }
-[data-theme="dark"] .focus\:border-emerald-500\/40:focus { border-color: rgba(139,92,246,0.4); }
+/* ── Accent remap: pages use emerald/indigo utility classes; these map them
+ *    onto the gold ramp per theme. Dark gold buttons carry DARK text (see
+ *    the .text-white overrides below) — white on gold fails contrast. ── */
+[data-theme="dark"] .from-emerald-400 { --tw-gradient-from: #E4BC5C; }
+[data-theme="dark"] .from-emerald-500 { --tw-gradient-from: #D4A843; }
+[data-theme="dark"] .from-emerald-600 { --tw-gradient-from: #B8912F; }
+[data-theme="dark"] .to-emerald-400 { --tw-gradient-to: #E4BC5C; }
+[data-theme="dark"] .to-emerald-500 { --tw-gradient-to: #D4A843; }
+[data-theme="dark"] .to-emerald-600 { --tw-gradient-to: #B8912F; }
+[data-theme="dark"] .hover\:from-emerald-400:hover { --tw-gradient-from: #EDCB77; }
+[data-theme="dark"] .hover\:from-emerald-500:hover { --tw-gradient-from: #E4BC5C; }
+[data-theme="dark"] .hover\:to-emerald-400:hover { --tw-gradient-to: #EDCB77; }
+[data-theme="dark"] .shadow-emerald-600\/20 { --tw-shadow-color: rgba(212,168,67,0.2); }
+[data-theme="dark"] .bg-emerald-500\/10 { background-color: rgba(212,168,67,0.1); }
+[data-theme="dark"] .bg-emerald-500\/20 { background-color: rgba(212,168,67,0.2); }
+[data-theme="dark"] .bg-emerald-600 { background-color: #D4A843; }
+[data-theme="dark"] .bg-emerald-500 { background-color: #D4A843; }
+[data-theme="dark"] .text-emerald-300 { color: #EDCB77; }
+[data-theme="dark"] .text-emerald-400 { color: #E4BC5C; }
+[data-theme="dark"] .border-emerald-500\/20 { border-color: rgba(212,168,67,0.2); }
+[data-theme="dark"] .focus\:ring-emerald-500\/40:focus { --tw-ring-color: rgba(212,168,67,0.3); }
+[data-theme="dark"] .focus\:border-emerald-500\/40:focus { border-color: rgba(212,168,67,0.4); }
 
-[data-theme="dark"] .from-indigo-400 { --tw-gradient-from: #8B5CF6; }
-[data-theme="dark"] .to-violet-600 { --tw-gradient-to: #7C3AED; }
-[data-theme="dark"] .shadow-indigo-600\/20 { --tw-shadow-color: rgba(139,92,246,0.2); }
+[data-theme="dark"] .from-indigo-400 { --tw-gradient-from: #D4A843; }
+[data-theme="dark"] .from-indigo-600 { --tw-gradient-from: #B8912F; }
+[data-theme="dark"] .to-violet-600 { --tw-gradient-to: #D4A843; }
+[data-theme="dark"] .shadow-indigo-600\/20 { --tw-shadow-color: rgba(212,168,67,0.2); }
+[data-theme="dark"] .focus\:ring-indigo-500\/40:focus { --tw-ring-color: rgba(212,168,67,0.3); }
+
+/* Dark text on gold surfaces (buttons/badges declare text-white in markup) */
+[data-theme="dark"] .from-emerald-400.text-white,
+[data-theme="dark"] .from-emerald-500.text-white,
+[data-theme="dark"] .from-emerald-600.text-white,
+[data-theme="dark"] .from-indigo-600.text-white,
+[data-theme="dark"] .bg-emerald-500.text-white,
+[data-theme="dark"] .bg-emerald-600.text-white { color: #2C1F05; }
+
+/* Light theme: emerald/indigo utilities map to the deep-gold brand */
+[data-theme="light"] .from-emerald-400 { --tw-gradient-from: #B8912F; }
+[data-theme="light"] .from-emerald-500 { --tw-gradient-from: #A67C1A; }
+[data-theme="light"] .from-emerald-600 { --tw-gradient-from: #9C6F14; }
+[data-theme="light"] .to-emerald-400 { --tw-gradient-to: #B8912F; }
+[data-theme="light"] .to-emerald-500 { --tw-gradient-to: #A67C1A; }
+[data-theme="light"] .to-emerald-600 { --tw-gradient-to: #9C6F14; }
+[data-theme="light"] .hover\:from-emerald-400:hover { --tw-gradient-from: #C9A227; }
+[data-theme="light"] .hover\:from-emerald-500:hover { --tw-gradient-from: #B8912F; }
+[data-theme="light"] .hover\:to-emerald-400:hover { --tw-gradient-to: #C9A227; }
+[data-theme="light"] .shadow-emerald-600\/20 { --tw-shadow-color: rgba(156,111,20,0.2); }
+[data-theme="light"] .bg-emerald-500\/10 { background-color: rgba(156,111,20,0.1); }
+[data-theme="light"] .bg-emerald-500\/20 { background-color: rgba(156,111,20,0.15); }
+[data-theme="light"] .bg-emerald-600 { background-color: #9C6F14; }
+[data-theme="light"] .bg-emerald-500 { background-color: #9C6F14; }
+[data-theme="light"] .text-emerald-300 { color: #B8912F; }
+[data-theme="light"] .text-emerald-400 { color: #9C6F14; }
+[data-theme="light"] .border-emerald-500\/20 { border-color: rgba(156,111,20,0.25); }
+[data-theme="light"] .focus\:ring-emerald-500\/40:focus { --tw-ring-color: rgba(156,111,20,0.3); }
+[data-theme="light"] .focus\:border-emerald-500\/40:focus { border-color: rgba(156,111,20,0.4); }
+[data-theme="light"] .from-indigo-400 { --tw-gradient-from: #B8912F; }
+[data-theme="light"] .from-indigo-600 { --tw-gradient-from: #9C6F14; }
+[data-theme="light"] .to-violet-600 { --tw-gradient-to: #B8912F; }
+[data-theme="light"] .shadow-indigo-600\/20 { --tw-shadow-color: rgba(156,111,20,0.2); }
+[data-theme="light"] .focus\:ring-indigo-500\/40:focus { --tw-ring-color: rgba(156,111,20,0.3); }
