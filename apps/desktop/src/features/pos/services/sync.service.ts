@@ -89,6 +89,7 @@ const PULL_TARGETS: Record<string, { key: string; event: string }> = {
   stockCounts:      { key: "lebanonpos.stock-counts.v1",          event: "lebanonpos-stock-counts-changed" },
   dailyCloses:      { key: "lebanonpos.daily-closes.v1",          event: "lebanonpos-daily-closes-changed" },
   deliveryOrders:   { key: "lebanonpos.delivery-orders.v1",       event: "lebanonpos-delivery-changed" },
+  cashMovements:    { key: "lebanonpos.cash-movements.v1",        event: "lebanonpos-cash-movements-changed" },
 }
 
 const DELETE_TARGETS: Record<string, Array<{ key: string; event: string }>> = {
@@ -106,6 +107,7 @@ const DELETE_TARGETS: Record<string, Array<{ key: string; event: string }>> = {
   shift:            [PULL_TARGETS.shifts],
   inventory:        [PULL_TARGETS.batches, PULL_TARGETS.adjustments, PULL_TARGETS.stockCounts],
   "delivery-order": [PULL_TARGETS.deliveryOrders],
+  "cash-movement":  [PULL_TARGETS.cashMovements],
 }
 
 type PulledDeletion = {
@@ -845,6 +847,7 @@ const FULL_PULL_ENTITY_MAP: Record<string, string> = {
   users: "users",
   shifts: "shifts",
   auditEvents: "audit-events",
+  cashMovements: "cash-movements",
 }
 
 async function pullFullEntity(apiUrl: string, token: string, entityPath: string, target: { key: string; event: string }): Promise<void> {

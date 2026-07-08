@@ -114,6 +114,7 @@ model Tenant {
   syncOperations      SyncOperation[]
   deliveryOrders      DeliveryOrder[]
   stockMovements      StockMovement[]
+  cashMovements        CashMovement[]
 }
 
 model StaffUser {
@@ -660,6 +661,28 @@ model DailyClose {
   createdAt       DateTime @default(now())
 
   @@unique([tenantId, dateKey])
+}
+
+model CashMovement {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  shiftId       String?
+  shiftNumber   String?
+  type          String   // CashIn | CashOut | SafeDrop | DrawerCorrection | PettyCash
+  direction     String   @default("Out")  // In | Out
+  amountUsd     Decimal  @db.Decimal(18, 4)
+  reason        String
+  note          String   @default("")
+  referenceEntity String? // e.g. "sale", "supplier-payment"
+  referenceId   String?
+  recordedById  String?
+  recordedByName String
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, shiftId])
+  @@index([tenantId, type])
 }
 
 model SyncOperation {

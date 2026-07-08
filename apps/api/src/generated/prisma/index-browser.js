@@ -552,6 +552,23 @@ exports.Prisma.DailyCloseScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.CashMovementScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  shiftId: 'shiftId',
+  shiftNumber: 'shiftNumber',
+  type: 'type',
+  direction: 'direction',
+  amountUsd: 'amountUsd',
+  reason: 'reason',
+  note: 'note',
+  referenceEntity: 'referenceEntity',
+  referenceId: 'referenceId',
+  recordedById: 'recordedById',
+  recordedByName: 'recordedByName',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SyncOperationScalarFieldEnum = {
   id: 'id',
   tenantId: 'tenantId',
@@ -703,6 +720,7 @@ exports.Prisma.ModelName = {
   DeliveryOrder: 'DeliveryOrder',
   DeliveryOrderItem: 'DeliveryOrderItem',
   DailyClose: 'DailyClose',
+  CashMovement: 'CashMovement',
   SyncOperation: 'SyncOperation',
   RateLimitEntry: 'RateLimitEntry',
   StockMovement: 'StockMovement'

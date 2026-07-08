@@ -29,6 +29,7 @@ const syncOperationSchema = z.object({
     "settings",
     "delivery-order",
     "held-sale",
+    "cash-movement",
   ]),
   action: z.enum([
     "create",
@@ -984,6 +985,16 @@ async function processOperation(
       }
       break
     }
+    case "cash-movement": {
+      if (action === "create") {
+        await db.cashMovement.upsert({
+          where: { id: payload?.id as string },
+          update: { ...payload } as any,
+          create: { ...payload, tenantId } as any,
+        })
+      }
+      break
+    }
     default:
       console.warn(`Unknown sync entity: ${entity}`)
   }
@@ -1006,6 +1017,7 @@ function validateSyncOperation(op: SyncOperationInput) {
     inventory: ["receive", "adjust", "count", "update"],
     settings: ["create", "update"],
     "delivery-order": ["create", "update"],
+    "cash-movement": ["create"],
     "held-sale": ["create", "delete"],
   }
 

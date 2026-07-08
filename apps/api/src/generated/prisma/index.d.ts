@@ -144,6 +144,11 @@ export type DeliveryOrderItem = $Result.DefaultSelection<Prisma.$DeliveryOrderIt
  */
 export type DailyClose = $Result.DefaultSelection<Prisma.$DailyClosePayload>
 /**
+ * Model CashMovement
+ * 
+ */
+export type CashMovement = $Result.DefaultSelection<Prisma.$CashMovementPayload>
+/**
  * Model SyncOperation
  * 
  */
@@ -677,6 +682,16 @@ export class PrismaClient<
   get dailyClose(): Prisma.DailyCloseDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.cashMovement`: Exposes CRUD operations for the **CashMovement** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more CashMovements
+    * const cashMovements = await prisma.cashMovement.findMany()
+    * ```
+    */
+  get cashMovement(): Prisma.CashMovementDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.syncOperation`: Exposes CRUD operations for the **SyncOperation** model.
     * Example usage:
     * ```ts
@@ -1172,6 +1187,7 @@ export namespace Prisma {
     DeliveryOrder: 'DeliveryOrder',
     DeliveryOrderItem: 'DeliveryOrderItem',
     DailyClose: 'DailyClose',
+    CashMovement: 'CashMovement',
     SyncOperation: 'SyncOperation',
     RateLimitEntry: 'RateLimitEntry',
     StockMovement: 'StockMovement'
@@ -1193,7 +1209,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "syncOperation" | "rateLimitEntry" | "stockMovement"
+      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "rateLimitEntry" | "stockMovement"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3121,6 +3137,80 @@ export namespace Prisma {
           }
         }
       }
+      CashMovement: {
+        payload: Prisma.$CashMovementPayload<ExtArgs>
+        fields: Prisma.CashMovementFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.CashMovementFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashMovementPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.CashMovementFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashMovementPayload>
+          }
+          findFirst: {
+            args: Prisma.CashMovementFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashMovementPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.CashMovementFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashMovementPayload>
+          }
+          findMany: {
+            args: Prisma.CashMovementFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashMovementPayload>[]
+          }
+          create: {
+            args: Prisma.CashMovementCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashMovementPayload>
+          }
+          createMany: {
+            args: Prisma.CashMovementCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.CashMovementCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashMovementPayload>[]
+          }
+          delete: {
+            args: Prisma.CashMovementDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashMovementPayload>
+          }
+          update: {
+            args: Prisma.CashMovementUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashMovementPayload>
+          }
+          deleteMany: {
+            args: Prisma.CashMovementDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.CashMovementUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.CashMovementUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashMovementPayload>[]
+          }
+          upsert: {
+            args: Prisma.CashMovementUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$CashMovementPayload>
+          }
+          aggregate: {
+            args: Prisma.CashMovementAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateCashMovement>
+          }
+          groupBy: {
+            args: Prisma.CashMovementGroupByArgs<ExtArgs>
+            result: $Utils.Optional<CashMovementGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.CashMovementCountArgs<ExtArgs>
+            result: $Utils.Optional<CashMovementCountAggregateOutputType> | number
+          }
+        }
+      }
       SyncOperation: {
         payload: Prisma.$SyncOperationPayload<ExtArgs>
         fields: Prisma.SyncOperationFieldRefs
@@ -3465,6 +3555,7 @@ export namespace Prisma {
     deliveryOrder?: DeliveryOrderOmit
     deliveryOrderItem?: DeliveryOrderItemOmit
     dailyClose?: DailyCloseOmit
+    cashMovement?: CashMovementOmit
     syncOperation?: SyncOperationOmit
     rateLimitEntry?: RateLimitEntryOmit
     stockMovement?: StockMovementOmit
@@ -3569,6 +3660,7 @@ export namespace Prisma {
     syncOperations: number
     deliveryOrders: number
     stockMovements: number
+    cashMovements: number
   }
 
   export type TenantCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3593,6 +3685,7 @@ export namespace Prisma {
     syncOperations?: boolean | TenantCountOutputTypeCountSyncOperationsArgs
     deliveryOrders?: boolean | TenantCountOutputTypeCountDeliveryOrdersArgs
     stockMovements?: boolean | TenantCountOutputTypeCountStockMovementsArgs
+    cashMovements?: boolean | TenantCountOutputTypeCountCashMovementsArgs
   }
 
   // Custom InputTypes
@@ -3751,6 +3844,13 @@ export namespace Prisma {
    */
   export type TenantCountOutputTypeCountStockMovementsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: StockMovementWhereInput
+  }
+
+  /**
+   * TenantCountOutputType without action
+   */
+  export type TenantCountOutputTypeCountCashMovementsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CashMovementWhereInput
   }
 
 
@@ -4505,6 +4605,7 @@ export namespace Prisma {
     syncOperations?: boolean | Tenant$syncOperationsArgs<ExtArgs>
     deliveryOrders?: boolean | Tenant$deliveryOrdersArgs<ExtArgs>
     stockMovements?: boolean | Tenant$stockMovementsArgs<ExtArgs>
+    cashMovements?: boolean | Tenant$cashMovementsArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenant"]>
 
@@ -4607,6 +4708,7 @@ export namespace Prisma {
     syncOperations?: boolean | Tenant$syncOperationsArgs<ExtArgs>
     deliveryOrders?: boolean | Tenant$deliveryOrdersArgs<ExtArgs>
     stockMovements?: boolean | Tenant$stockMovementsArgs<ExtArgs>
+    cashMovements?: boolean | Tenant$cashMovementsArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type TenantIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -4637,6 +4739,7 @@ export namespace Prisma {
       syncOperations: Prisma.$SyncOperationPayload<ExtArgs>[]
       deliveryOrders: Prisma.$DeliveryOrderPayload<ExtArgs>[]
       stockMovements: Prisma.$StockMovementPayload<ExtArgs>[]
+      cashMovements: Prisma.$CashMovementPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -5077,6 +5180,7 @@ export namespace Prisma {
     syncOperations<T extends Tenant$syncOperationsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$syncOperationsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SyncOperationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     deliveryOrders<T extends Tenant$deliveryOrdersArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$deliveryOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DeliveryOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     stockMovements<T extends Tenant$stockMovementsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$stockMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    cashMovements<T extends Tenant$cashMovementsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$cashMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6036,6 +6140,30 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: StockMovementScalarFieldEnum | StockMovementScalarFieldEnum[]
+  }
+
+  /**
+   * Tenant.cashMovements
+   */
+  export type Tenant$cashMovementsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementInclude<ExtArgs> | null
+    where?: CashMovementWhereInput
+    orderBy?: CashMovementOrderByWithRelationInput | CashMovementOrderByWithRelationInput[]
+    cursor?: CashMovementWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: CashMovementScalarFieldEnum | CashMovementScalarFieldEnum[]
   }
 
   /**
@@ -37139,6 +37267,1215 @@ export namespace Prisma {
 
 
   /**
+   * Model CashMovement
+   */
+
+  export type AggregateCashMovement = {
+    _count: CashMovementCountAggregateOutputType | null
+    _avg: CashMovementAvgAggregateOutputType | null
+    _sum: CashMovementSumAggregateOutputType | null
+    _min: CashMovementMinAggregateOutputType | null
+    _max: CashMovementMaxAggregateOutputType | null
+  }
+
+  export type CashMovementAvgAggregateOutputType = {
+    amountUsd: Decimal | null
+  }
+
+  export type CashMovementSumAggregateOutputType = {
+    amountUsd: Decimal | null
+  }
+
+  export type CashMovementMinAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    shiftId: string | null
+    shiftNumber: string | null
+    type: string | null
+    direction: string | null
+    amountUsd: Decimal | null
+    reason: string | null
+    note: string | null
+    referenceEntity: string | null
+    referenceId: string | null
+    recordedById: string | null
+    recordedByName: string | null
+    createdAt: Date | null
+  }
+
+  export type CashMovementMaxAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    shiftId: string | null
+    shiftNumber: string | null
+    type: string | null
+    direction: string | null
+    amountUsd: Decimal | null
+    reason: string | null
+    note: string | null
+    referenceEntity: string | null
+    referenceId: string | null
+    recordedById: string | null
+    recordedByName: string | null
+    createdAt: Date | null
+  }
+
+  export type CashMovementCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    shiftId: number
+    shiftNumber: number
+    type: number
+    direction: number
+    amountUsd: number
+    reason: number
+    note: number
+    referenceEntity: number
+    referenceId: number
+    recordedById: number
+    recordedByName: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type CashMovementAvgAggregateInputType = {
+    amountUsd?: true
+  }
+
+  export type CashMovementSumAggregateInputType = {
+    amountUsd?: true
+  }
+
+  export type CashMovementMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    shiftId?: true
+    shiftNumber?: true
+    type?: true
+    direction?: true
+    amountUsd?: true
+    reason?: true
+    note?: true
+    referenceEntity?: true
+    referenceId?: true
+    recordedById?: true
+    recordedByName?: true
+    createdAt?: true
+  }
+
+  export type CashMovementMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    shiftId?: true
+    shiftNumber?: true
+    type?: true
+    direction?: true
+    amountUsd?: true
+    reason?: true
+    note?: true
+    referenceEntity?: true
+    referenceId?: true
+    recordedById?: true
+    recordedByName?: true
+    createdAt?: true
+  }
+
+  export type CashMovementCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    shiftId?: true
+    shiftNumber?: true
+    type?: true
+    direction?: true
+    amountUsd?: true
+    reason?: true
+    note?: true
+    referenceEntity?: true
+    referenceId?: true
+    recordedById?: true
+    recordedByName?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type CashMovementAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CashMovement to aggregate.
+     */
+    where?: CashMovementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CashMovements to fetch.
+     */
+    orderBy?: CashMovementOrderByWithRelationInput | CashMovementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: CashMovementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CashMovements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CashMovements.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned CashMovements
+    **/
+    _count?: true | CashMovementCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: CashMovementAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CashMovementSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: CashMovementMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: CashMovementMaxAggregateInputType
+  }
+
+  export type GetCashMovementAggregateType<T extends CashMovementAggregateArgs> = {
+        [P in keyof T & keyof AggregateCashMovement]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateCashMovement[P]>
+      : GetScalarType<T[P], AggregateCashMovement[P]>
+  }
+
+
+
+
+  export type CashMovementGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: CashMovementWhereInput
+    orderBy?: CashMovementOrderByWithAggregationInput | CashMovementOrderByWithAggregationInput[]
+    by: CashMovementScalarFieldEnum[] | CashMovementScalarFieldEnum
+    having?: CashMovementScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: CashMovementCountAggregateInputType | true
+    _avg?: CashMovementAvgAggregateInputType
+    _sum?: CashMovementSumAggregateInputType
+    _min?: CashMovementMinAggregateInputType
+    _max?: CashMovementMaxAggregateInputType
+  }
+
+  export type CashMovementGroupByOutputType = {
+    id: string
+    tenantId: string
+    shiftId: string | null
+    shiftNumber: string | null
+    type: string
+    direction: string
+    amountUsd: Decimal
+    reason: string
+    note: string
+    referenceEntity: string | null
+    referenceId: string | null
+    recordedById: string | null
+    recordedByName: string
+    createdAt: Date
+    _count: CashMovementCountAggregateOutputType | null
+    _avg: CashMovementAvgAggregateOutputType | null
+    _sum: CashMovementSumAggregateOutputType | null
+    _min: CashMovementMinAggregateOutputType | null
+    _max: CashMovementMaxAggregateOutputType | null
+  }
+
+  type GetCashMovementGroupByPayload<T extends CashMovementGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<CashMovementGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof CashMovementGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], CashMovementGroupByOutputType[P]>
+            : GetScalarType<T[P], CashMovementGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type CashMovementSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    shiftId?: boolean
+    shiftNumber?: boolean
+    type?: boolean
+    direction?: boolean
+    amountUsd?: boolean
+    reason?: boolean
+    note?: boolean
+    referenceEntity?: boolean
+    referenceId?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    createdAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["cashMovement"]>
+
+  export type CashMovementSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    shiftId?: boolean
+    shiftNumber?: boolean
+    type?: boolean
+    direction?: boolean
+    amountUsd?: boolean
+    reason?: boolean
+    note?: boolean
+    referenceEntity?: boolean
+    referenceId?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    createdAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["cashMovement"]>
+
+  export type CashMovementSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    shiftId?: boolean
+    shiftNumber?: boolean
+    type?: boolean
+    direction?: boolean
+    amountUsd?: boolean
+    reason?: boolean
+    note?: boolean
+    referenceEntity?: boolean
+    referenceId?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    createdAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["cashMovement"]>
+
+  export type CashMovementSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    shiftId?: boolean
+    shiftNumber?: boolean
+    type?: boolean
+    direction?: boolean
+    amountUsd?: boolean
+    reason?: boolean
+    note?: boolean
+    referenceEntity?: boolean
+    referenceId?: boolean
+    recordedById?: boolean
+    recordedByName?: boolean
+    createdAt?: boolean
+  }
+
+  export type CashMovementOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "shiftId" | "shiftNumber" | "type" | "direction" | "amountUsd" | "reason" | "note" | "referenceEntity" | "referenceId" | "recordedById" | "recordedByName" | "createdAt", ExtArgs["result"]["cashMovement"]>
+  export type CashMovementInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }
+  export type CashMovementIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }
+  export type CashMovementIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }
+
+  export type $CashMovementPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "CashMovement"
+    objects: {
+      tenant: Prisma.$TenantPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tenantId: string
+      shiftId: string | null
+      shiftNumber: string | null
+      type: string
+      direction: string
+      amountUsd: Prisma.Decimal
+      reason: string
+      note: string
+      referenceEntity: string | null
+      referenceId: string | null
+      recordedById: string | null
+      recordedByName: string
+      createdAt: Date
+    }, ExtArgs["result"]["cashMovement"]>
+    composites: {}
+  }
+
+  type CashMovementGetPayload<S extends boolean | null | undefined | CashMovementDefaultArgs> = $Result.GetResult<Prisma.$CashMovementPayload, S>
+
+  type CashMovementCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<CashMovementFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: CashMovementCountAggregateInputType | true
+    }
+
+  export interface CashMovementDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['CashMovement'], meta: { name: 'CashMovement' } }
+    /**
+     * Find zero or one CashMovement that matches the filter.
+     * @param {CashMovementFindUniqueArgs} args - Arguments to find a CashMovement
+     * @example
+     * // Get one CashMovement
+     * const cashMovement = await prisma.cashMovement.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends CashMovementFindUniqueArgs>(args: SelectSubset<T, CashMovementFindUniqueArgs<ExtArgs>>): Prisma__CashMovementClient<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one CashMovement that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {CashMovementFindUniqueOrThrowArgs} args - Arguments to find a CashMovement
+     * @example
+     * // Get one CashMovement
+     * const cashMovement = await prisma.cashMovement.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends CashMovementFindUniqueOrThrowArgs>(args: SelectSubset<T, CashMovementFindUniqueOrThrowArgs<ExtArgs>>): Prisma__CashMovementClient<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first CashMovement that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashMovementFindFirstArgs} args - Arguments to find a CashMovement
+     * @example
+     * // Get one CashMovement
+     * const cashMovement = await prisma.cashMovement.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends CashMovementFindFirstArgs>(args?: SelectSubset<T, CashMovementFindFirstArgs<ExtArgs>>): Prisma__CashMovementClient<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first CashMovement that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashMovementFindFirstOrThrowArgs} args - Arguments to find a CashMovement
+     * @example
+     * // Get one CashMovement
+     * const cashMovement = await prisma.cashMovement.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends CashMovementFindFirstOrThrowArgs>(args?: SelectSubset<T, CashMovementFindFirstOrThrowArgs<ExtArgs>>): Prisma__CashMovementClient<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more CashMovements that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashMovementFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all CashMovements
+     * const cashMovements = await prisma.cashMovement.findMany()
+     * 
+     * // Get first 10 CashMovements
+     * const cashMovements = await prisma.cashMovement.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const cashMovementWithIdOnly = await prisma.cashMovement.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends CashMovementFindManyArgs>(args?: SelectSubset<T, CashMovementFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a CashMovement.
+     * @param {CashMovementCreateArgs} args - Arguments to create a CashMovement.
+     * @example
+     * // Create one CashMovement
+     * const CashMovement = await prisma.cashMovement.create({
+     *   data: {
+     *     // ... data to create a CashMovement
+     *   }
+     * })
+     * 
+     */
+    create<T extends CashMovementCreateArgs>(args: SelectSubset<T, CashMovementCreateArgs<ExtArgs>>): Prisma__CashMovementClient<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many CashMovements.
+     * @param {CashMovementCreateManyArgs} args - Arguments to create many CashMovements.
+     * @example
+     * // Create many CashMovements
+     * const cashMovement = await prisma.cashMovement.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends CashMovementCreateManyArgs>(args?: SelectSubset<T, CashMovementCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many CashMovements and returns the data saved in the database.
+     * @param {CashMovementCreateManyAndReturnArgs} args - Arguments to create many CashMovements.
+     * @example
+     * // Create many CashMovements
+     * const cashMovement = await prisma.cashMovement.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many CashMovements and only return the `id`
+     * const cashMovementWithIdOnly = await prisma.cashMovement.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends CashMovementCreateManyAndReturnArgs>(args?: SelectSubset<T, CashMovementCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a CashMovement.
+     * @param {CashMovementDeleteArgs} args - Arguments to delete one CashMovement.
+     * @example
+     * // Delete one CashMovement
+     * const CashMovement = await prisma.cashMovement.delete({
+     *   where: {
+     *     // ... filter to delete one CashMovement
+     *   }
+     * })
+     * 
+     */
+    delete<T extends CashMovementDeleteArgs>(args: SelectSubset<T, CashMovementDeleteArgs<ExtArgs>>): Prisma__CashMovementClient<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one CashMovement.
+     * @param {CashMovementUpdateArgs} args - Arguments to update one CashMovement.
+     * @example
+     * // Update one CashMovement
+     * const cashMovement = await prisma.cashMovement.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends CashMovementUpdateArgs>(args: SelectSubset<T, CashMovementUpdateArgs<ExtArgs>>): Prisma__CashMovementClient<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more CashMovements.
+     * @param {CashMovementDeleteManyArgs} args - Arguments to filter CashMovements to delete.
+     * @example
+     * // Delete a few CashMovements
+     * const { count } = await prisma.cashMovement.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends CashMovementDeleteManyArgs>(args?: SelectSubset<T, CashMovementDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CashMovements.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashMovementUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many CashMovements
+     * const cashMovement = await prisma.cashMovement.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends CashMovementUpdateManyArgs>(args: SelectSubset<T, CashMovementUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more CashMovements and returns the data updated in the database.
+     * @param {CashMovementUpdateManyAndReturnArgs} args - Arguments to update many CashMovements.
+     * @example
+     * // Update many CashMovements
+     * const cashMovement = await prisma.cashMovement.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more CashMovements and only return the `id`
+     * const cashMovementWithIdOnly = await prisma.cashMovement.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends CashMovementUpdateManyAndReturnArgs>(args: SelectSubset<T, CashMovementUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one CashMovement.
+     * @param {CashMovementUpsertArgs} args - Arguments to update or create a CashMovement.
+     * @example
+     * // Update or create a CashMovement
+     * const cashMovement = await prisma.cashMovement.upsert({
+     *   create: {
+     *     // ... data to create a CashMovement
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the CashMovement we want to update
+     *   }
+     * })
+     */
+    upsert<T extends CashMovementUpsertArgs>(args: SelectSubset<T, CashMovementUpsertArgs<ExtArgs>>): Prisma__CashMovementClient<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of CashMovements.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashMovementCountArgs} args - Arguments to filter CashMovements to count.
+     * @example
+     * // Count the number of CashMovements
+     * const count = await prisma.cashMovement.count({
+     *   where: {
+     *     // ... the filter for the CashMovements we want to count
+     *   }
+     * })
+    **/
+    count<T extends CashMovementCountArgs>(
+      args?: Subset<T, CashMovementCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], CashMovementCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a CashMovement.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashMovementAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends CashMovementAggregateArgs>(args: Subset<T, CashMovementAggregateArgs>): Prisma.PrismaPromise<GetCashMovementAggregateType<T>>
+
+    /**
+     * Group by CashMovement.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {CashMovementGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends CashMovementGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: CashMovementGroupByArgs['orderBy'] }
+        : { orderBy?: CashMovementGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, CashMovementGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetCashMovementGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the CashMovement model
+   */
+  readonly fields: CashMovementFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for CashMovement.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__CashMovementClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the CashMovement model
+   */
+  interface CashMovementFieldRefs {
+    readonly id: FieldRef<"CashMovement", 'String'>
+    readonly tenantId: FieldRef<"CashMovement", 'String'>
+    readonly shiftId: FieldRef<"CashMovement", 'String'>
+    readonly shiftNumber: FieldRef<"CashMovement", 'String'>
+    readonly type: FieldRef<"CashMovement", 'String'>
+    readonly direction: FieldRef<"CashMovement", 'String'>
+    readonly amountUsd: FieldRef<"CashMovement", 'Decimal'>
+    readonly reason: FieldRef<"CashMovement", 'String'>
+    readonly note: FieldRef<"CashMovement", 'String'>
+    readonly referenceEntity: FieldRef<"CashMovement", 'String'>
+    readonly referenceId: FieldRef<"CashMovement", 'String'>
+    readonly recordedById: FieldRef<"CashMovement", 'String'>
+    readonly recordedByName: FieldRef<"CashMovement", 'String'>
+    readonly createdAt: FieldRef<"CashMovement", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * CashMovement findUnique
+   */
+  export type CashMovementFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementInclude<ExtArgs> | null
+    /**
+     * Filter, which CashMovement to fetch.
+     */
+    where: CashMovementWhereUniqueInput
+  }
+
+  /**
+   * CashMovement findUniqueOrThrow
+   */
+  export type CashMovementFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementInclude<ExtArgs> | null
+    /**
+     * Filter, which CashMovement to fetch.
+     */
+    where: CashMovementWhereUniqueInput
+  }
+
+  /**
+   * CashMovement findFirst
+   */
+  export type CashMovementFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementInclude<ExtArgs> | null
+    /**
+     * Filter, which CashMovement to fetch.
+     */
+    where?: CashMovementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CashMovements to fetch.
+     */
+    orderBy?: CashMovementOrderByWithRelationInput | CashMovementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CashMovements.
+     */
+    cursor?: CashMovementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CashMovements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CashMovements.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CashMovements.
+     */
+    distinct?: CashMovementScalarFieldEnum | CashMovementScalarFieldEnum[]
+  }
+
+  /**
+   * CashMovement findFirstOrThrow
+   */
+  export type CashMovementFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementInclude<ExtArgs> | null
+    /**
+     * Filter, which CashMovement to fetch.
+     */
+    where?: CashMovementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CashMovements to fetch.
+     */
+    orderBy?: CashMovementOrderByWithRelationInput | CashMovementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for CashMovements.
+     */
+    cursor?: CashMovementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CashMovements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CashMovements.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of CashMovements.
+     */
+    distinct?: CashMovementScalarFieldEnum | CashMovementScalarFieldEnum[]
+  }
+
+  /**
+   * CashMovement findMany
+   */
+  export type CashMovementFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementInclude<ExtArgs> | null
+    /**
+     * Filter, which CashMovements to fetch.
+     */
+    where?: CashMovementWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of CashMovements to fetch.
+     */
+    orderBy?: CashMovementOrderByWithRelationInput | CashMovementOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing CashMovements.
+     */
+    cursor?: CashMovementWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` CashMovements from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` CashMovements.
+     */
+    skip?: number
+    distinct?: CashMovementScalarFieldEnum | CashMovementScalarFieldEnum[]
+  }
+
+  /**
+   * CashMovement create
+   */
+  export type CashMovementCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementInclude<ExtArgs> | null
+    /**
+     * The data needed to create a CashMovement.
+     */
+    data: XOR<CashMovementCreateInput, CashMovementUncheckedCreateInput>
+  }
+
+  /**
+   * CashMovement createMany
+   */
+  export type CashMovementCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many CashMovements.
+     */
+    data: CashMovementCreateManyInput | CashMovementCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * CashMovement createManyAndReturn
+   */
+  export type CashMovementCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * The data used to create many CashMovements.
+     */
+    data: CashMovementCreateManyInput | CashMovementCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CashMovement update
+   */
+  export type CashMovementUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementInclude<ExtArgs> | null
+    /**
+     * The data needed to update a CashMovement.
+     */
+    data: XOR<CashMovementUpdateInput, CashMovementUncheckedUpdateInput>
+    /**
+     * Choose, which CashMovement to update.
+     */
+    where: CashMovementWhereUniqueInput
+  }
+
+  /**
+   * CashMovement updateMany
+   */
+  export type CashMovementUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update CashMovements.
+     */
+    data: XOR<CashMovementUpdateManyMutationInput, CashMovementUncheckedUpdateManyInput>
+    /**
+     * Filter which CashMovements to update
+     */
+    where?: CashMovementWhereInput
+    /**
+     * Limit how many CashMovements to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * CashMovement updateManyAndReturn
+   */
+  export type CashMovementUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * The data used to update CashMovements.
+     */
+    data: XOR<CashMovementUpdateManyMutationInput, CashMovementUncheckedUpdateManyInput>
+    /**
+     * Filter which CashMovements to update
+     */
+    where?: CashMovementWhereInput
+    /**
+     * Limit how many CashMovements to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * CashMovement upsert
+   */
+  export type CashMovementUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementInclude<ExtArgs> | null
+    /**
+     * The filter to search for the CashMovement to update in case it exists.
+     */
+    where: CashMovementWhereUniqueInput
+    /**
+     * In case the CashMovement found by the `where` argument doesn't exist, create a new CashMovement with this data.
+     */
+    create: XOR<CashMovementCreateInput, CashMovementUncheckedCreateInput>
+    /**
+     * In case the CashMovement was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<CashMovementUpdateInput, CashMovementUncheckedUpdateInput>
+  }
+
+  /**
+   * CashMovement delete
+   */
+  export type CashMovementDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementInclude<ExtArgs> | null
+    /**
+     * Filter which CashMovement to delete.
+     */
+    where: CashMovementWhereUniqueInput
+  }
+
+  /**
+   * CashMovement deleteMany
+   */
+  export type CashMovementDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which CashMovements to delete
+     */
+    where?: CashMovementWhereInput
+    /**
+     * Limit how many CashMovements to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * CashMovement without action
+   */
+  export type CashMovementDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the CashMovement
+     */
+    select?: CashMovementSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the CashMovement
+     */
+    omit?: CashMovementOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: CashMovementInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model SyncOperation
    */
 
@@ -41029,6 +42366,26 @@ export namespace Prisma {
   export type DailyCloseScalarFieldEnum = (typeof DailyCloseScalarFieldEnum)[keyof typeof DailyCloseScalarFieldEnum]
 
 
+  export const CashMovementScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    shiftId: 'shiftId',
+    shiftNumber: 'shiftNumber',
+    type: 'type',
+    direction: 'direction',
+    amountUsd: 'amountUsd',
+    reason: 'reason',
+    note: 'note',
+    referenceEntity: 'referenceEntity',
+    referenceId: 'referenceId',
+    recordedById: 'recordedById',
+    recordedByName: 'recordedByName',
+    createdAt: 'createdAt'
+  };
+
+  export type CashMovementScalarFieldEnum = (typeof CashMovementScalarFieldEnum)[keyof typeof CashMovementScalarFieldEnum]
+
+
   export const SyncOperationScalarFieldEnum: {
     id: 'id',
     tenantId: 'tenantId',
@@ -41401,6 +42758,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationListRelationFilter
     deliveryOrders?: DeliveryOrderListRelationFilter
     stockMovements?: StockMovementListRelationFilter
+    cashMovements?: CashMovementListRelationFilter
   }
 
   export type TenantOrderByWithRelationInput = {
@@ -41448,6 +42806,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationOrderByRelationAggregateInput
     deliveryOrders?: DeliveryOrderOrderByRelationAggregateInput
     stockMovements?: StockMovementOrderByRelationAggregateInput
+    cashMovements?: CashMovementOrderByRelationAggregateInput
   }
 
   export type TenantWhereUniqueInput = Prisma.AtLeast<{
@@ -41498,6 +42857,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationListRelationFilter
     deliveryOrders?: DeliveryOrderListRelationFilter
     stockMovements?: StockMovementListRelationFilter
+    cashMovements?: CashMovementListRelationFilter
   }, "id" | "subdomain">
 
   export type TenantOrderByWithAggregationInput = {
@@ -44136,6 +45496,108 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"DailyClose"> | Date | string
   }
 
+  export type CashMovementWhereInput = {
+    AND?: CashMovementWhereInput | CashMovementWhereInput[]
+    OR?: CashMovementWhereInput[]
+    NOT?: CashMovementWhereInput | CashMovementWhereInput[]
+    id?: StringFilter<"CashMovement"> | string
+    tenantId?: StringFilter<"CashMovement"> | string
+    shiftId?: StringNullableFilter<"CashMovement"> | string | null
+    shiftNumber?: StringNullableFilter<"CashMovement"> | string | null
+    type?: StringFilter<"CashMovement"> | string
+    direction?: StringFilter<"CashMovement"> | string
+    amountUsd?: DecimalFilter<"CashMovement"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"CashMovement"> | string
+    note?: StringFilter<"CashMovement"> | string
+    referenceEntity?: StringNullableFilter<"CashMovement"> | string | null
+    referenceId?: StringNullableFilter<"CashMovement"> | string | null
+    recordedById?: StringNullableFilter<"CashMovement"> | string | null
+    recordedByName?: StringFilter<"CashMovement"> | string
+    createdAt?: DateTimeFilter<"CashMovement"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+  }
+
+  export type CashMovementOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    shiftId?: SortOrderInput | SortOrder
+    shiftNumber?: SortOrderInput | SortOrder
+    type?: SortOrder
+    direction?: SortOrder
+    amountUsd?: SortOrder
+    reason?: SortOrder
+    note?: SortOrder
+    referenceEntity?: SortOrderInput | SortOrder
+    referenceId?: SortOrderInput | SortOrder
+    recordedById?: SortOrderInput | SortOrder
+    recordedByName?: SortOrder
+    createdAt?: SortOrder
+    tenant?: TenantOrderByWithRelationInput
+  }
+
+  export type CashMovementWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: CashMovementWhereInput | CashMovementWhereInput[]
+    OR?: CashMovementWhereInput[]
+    NOT?: CashMovementWhereInput | CashMovementWhereInput[]
+    tenantId?: StringFilter<"CashMovement"> | string
+    shiftId?: StringNullableFilter<"CashMovement"> | string | null
+    shiftNumber?: StringNullableFilter<"CashMovement"> | string | null
+    type?: StringFilter<"CashMovement"> | string
+    direction?: StringFilter<"CashMovement"> | string
+    amountUsd?: DecimalFilter<"CashMovement"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"CashMovement"> | string
+    note?: StringFilter<"CashMovement"> | string
+    referenceEntity?: StringNullableFilter<"CashMovement"> | string | null
+    referenceId?: StringNullableFilter<"CashMovement"> | string | null
+    recordedById?: StringNullableFilter<"CashMovement"> | string | null
+    recordedByName?: StringFilter<"CashMovement"> | string
+    createdAt?: DateTimeFilter<"CashMovement"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+  }, "id">
+
+  export type CashMovementOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    shiftId?: SortOrderInput | SortOrder
+    shiftNumber?: SortOrderInput | SortOrder
+    type?: SortOrder
+    direction?: SortOrder
+    amountUsd?: SortOrder
+    reason?: SortOrder
+    note?: SortOrder
+    referenceEntity?: SortOrderInput | SortOrder
+    referenceId?: SortOrderInput | SortOrder
+    recordedById?: SortOrderInput | SortOrder
+    recordedByName?: SortOrder
+    createdAt?: SortOrder
+    _count?: CashMovementCountOrderByAggregateInput
+    _avg?: CashMovementAvgOrderByAggregateInput
+    _max?: CashMovementMaxOrderByAggregateInput
+    _min?: CashMovementMinOrderByAggregateInput
+    _sum?: CashMovementSumOrderByAggregateInput
+  }
+
+  export type CashMovementScalarWhereWithAggregatesInput = {
+    AND?: CashMovementScalarWhereWithAggregatesInput | CashMovementScalarWhereWithAggregatesInput[]
+    OR?: CashMovementScalarWhereWithAggregatesInput[]
+    NOT?: CashMovementScalarWhereWithAggregatesInput | CashMovementScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"CashMovement"> | string
+    tenantId?: StringWithAggregatesFilter<"CashMovement"> | string
+    shiftId?: StringNullableWithAggregatesFilter<"CashMovement"> | string | null
+    shiftNumber?: StringNullableWithAggregatesFilter<"CashMovement"> | string | null
+    type?: StringWithAggregatesFilter<"CashMovement"> | string
+    direction?: StringWithAggregatesFilter<"CashMovement"> | string
+    amountUsd?: DecimalWithAggregatesFilter<"CashMovement"> | Decimal | DecimalJsLike | number | string
+    reason?: StringWithAggregatesFilter<"CashMovement"> | string
+    note?: StringWithAggregatesFilter<"CashMovement"> | string
+    referenceEntity?: StringNullableWithAggregatesFilter<"CashMovement"> | string | null
+    referenceId?: StringNullableWithAggregatesFilter<"CashMovement"> | string | null
+    recordedById?: StringNullableWithAggregatesFilter<"CashMovement"> | string | null
+    recordedByName?: StringWithAggregatesFilter<"CashMovement"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"CashMovement"> | Date | string
+  }
+
   export type SyncOperationWhereInput = {
     AND?: SyncOperationWhereInput | SyncOperationWhereInput[]
     OR?: SyncOperationWhereInput[]
@@ -44408,6 +45870,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateInput = {
@@ -44455,6 +45918,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUpdateInput = {
@@ -44502,6 +45966,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateInput = {
@@ -44549,6 +46014,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateManyInput = {
@@ -47512,6 +48978,124 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type CashMovementCreateInput = {
+    id?: string
+    shiftId?: string | null
+    shiftNumber?: string | null
+    type: string
+    direction?: string
+    amountUsd: Decimal | DecimalJsLike | number | string
+    reason: string
+    note?: string
+    referenceEntity?: string | null
+    referenceId?: string | null
+    recordedById?: string | null
+    recordedByName: string
+    createdAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutCashMovementsInput
+  }
+
+  export type CashMovementUncheckedCreateInput = {
+    id?: string
+    tenantId: string
+    shiftId?: string | null
+    shiftNumber?: string | null
+    type: string
+    direction?: string
+    amountUsd: Decimal | DecimalJsLike | number | string
+    reason: string
+    note?: string
+    referenceEntity?: string | null
+    referenceId?: string | null
+    recordedById?: string | null
+    recordedByName: string
+    createdAt?: Date | string
+  }
+
+  export type CashMovementUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    direction?: StringFieldUpdateOperationsInput | string
+    amountUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    referenceEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutCashMovementsNestedInput
+  }
+
+  export type CashMovementUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    direction?: StringFieldUpdateOperationsInput | string
+    amountUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    referenceEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CashMovementCreateManyInput = {
+    id?: string
+    tenantId: string
+    shiftId?: string | null
+    shiftNumber?: string | null
+    type: string
+    direction?: string
+    amountUsd: Decimal | DecimalJsLike | number | string
+    reason: string
+    note?: string
+    referenceEntity?: string | null
+    referenceId?: string | null
+    recordedById?: string | null
+    recordedByName: string
+    createdAt?: Date | string
+  }
+
+  export type CashMovementUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    direction?: StringFieldUpdateOperationsInput | string
+    amountUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    referenceEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CashMovementUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    direction?: StringFieldUpdateOperationsInput | string
+    amountUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    referenceEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type SyncOperationCreateInput = {
     id?: string
     entity: string
@@ -47938,6 +49522,12 @@ export namespace Prisma {
     none?: StockMovementWhereInput
   }
 
+  export type CashMovementListRelationFilter = {
+    every?: CashMovementWhereInput
+    some?: CashMovementWhereInput
+    none?: CashMovementWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -48024,6 +49614,10 @@ export namespace Prisma {
   }
 
   export type StockMovementOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type CashMovementOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -50309,6 +51903,65 @@ export namespace Prisma {
     cashOut?: SortOrder
   }
 
+  export type CashMovementCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    shiftId?: SortOrder
+    shiftNumber?: SortOrder
+    type?: SortOrder
+    direction?: SortOrder
+    amountUsd?: SortOrder
+    reason?: SortOrder
+    note?: SortOrder
+    referenceEntity?: SortOrder
+    referenceId?: SortOrder
+    recordedById?: SortOrder
+    recordedByName?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CashMovementAvgOrderByAggregateInput = {
+    amountUsd?: SortOrder
+  }
+
+  export type CashMovementMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    shiftId?: SortOrder
+    shiftNumber?: SortOrder
+    type?: SortOrder
+    direction?: SortOrder
+    amountUsd?: SortOrder
+    reason?: SortOrder
+    note?: SortOrder
+    referenceEntity?: SortOrder
+    referenceId?: SortOrder
+    recordedById?: SortOrder
+    recordedByName?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CashMovementMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    shiftId?: SortOrder
+    shiftNumber?: SortOrder
+    type?: SortOrder
+    direction?: SortOrder
+    amountUsd?: SortOrder
+    reason?: SortOrder
+    note?: SortOrder
+    referenceEntity?: SortOrder
+    referenceId?: SortOrder
+    recordedById?: SortOrder
+    recordedByName?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type CashMovementSumOrderByAggregateInput = {
+    amountUsd?: SortOrder
+  }
+
   export type SyncOperationCountOrderByAggregateInput = {
     id?: SortOrder
     tenantId?: SortOrder
@@ -50598,6 +52251,13 @@ export namespace Prisma {
     connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
   }
 
+  export type CashMovementCreateNestedManyWithoutTenantInput = {
+    create?: XOR<CashMovementCreateWithoutTenantInput, CashMovementUncheckedCreateWithoutTenantInput> | CashMovementCreateWithoutTenantInput[] | CashMovementUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: CashMovementCreateOrConnectWithoutTenantInput | CashMovementCreateOrConnectWithoutTenantInput[]
+    createMany?: CashMovementCreateManyTenantInputEnvelope
+    connect?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
+  }
+
   export type StaffUserUncheckedCreateNestedManyWithoutTenantInput = {
     create?: XOR<StaffUserCreateWithoutTenantInput, StaffUserUncheckedCreateWithoutTenantInput> | StaffUserCreateWithoutTenantInput[] | StaffUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: StaffUserCreateOrConnectWithoutTenantInput | StaffUserCreateOrConnectWithoutTenantInput[]
@@ -50749,6 +52409,13 @@ export namespace Prisma {
     connectOrCreate?: StockMovementCreateOrConnectWithoutTenantInput | StockMovementCreateOrConnectWithoutTenantInput[]
     createMany?: StockMovementCreateManyTenantInputEnvelope
     connect?: StockMovementWhereUniqueInput | StockMovementWhereUniqueInput[]
+  }
+
+  export type CashMovementUncheckedCreateNestedManyWithoutTenantInput = {
+    create?: XOR<CashMovementCreateWithoutTenantInput, CashMovementUncheckedCreateWithoutTenantInput> | CashMovementCreateWithoutTenantInput[] | CashMovementUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: CashMovementCreateOrConnectWithoutTenantInput | CashMovementCreateOrConnectWithoutTenantInput[]
+    createMany?: CashMovementCreateManyTenantInputEnvelope
+    connect?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -51079,6 +52746,20 @@ export namespace Prisma {
     deleteMany?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
   }
 
+  export type CashMovementUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<CashMovementCreateWithoutTenantInput, CashMovementUncheckedCreateWithoutTenantInput> | CashMovementCreateWithoutTenantInput[] | CashMovementUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: CashMovementCreateOrConnectWithoutTenantInput | CashMovementCreateOrConnectWithoutTenantInput[]
+    upsert?: CashMovementUpsertWithWhereUniqueWithoutTenantInput | CashMovementUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: CashMovementCreateManyTenantInputEnvelope
+    set?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
+    disconnect?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
+    delete?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
+    connect?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
+    update?: CashMovementUpdateWithWhereUniqueWithoutTenantInput | CashMovementUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: CashMovementUpdateManyWithWhereWithoutTenantInput | CashMovementUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: CashMovementScalarWhereInput | CashMovementScalarWhereInput[]
+  }
+
   export type StaffUserUncheckedUpdateManyWithoutTenantNestedInput = {
     create?: XOR<StaffUserCreateWithoutTenantInput, StaffUserUncheckedCreateWithoutTenantInput> | StaffUserCreateWithoutTenantInput[] | StaffUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: StaffUserCreateOrConnectWithoutTenantInput | StaffUserCreateOrConnectWithoutTenantInput[]
@@ -51381,6 +53062,20 @@ export namespace Prisma {
     update?: StockMovementUpdateWithWhereUniqueWithoutTenantInput | StockMovementUpdateWithWhereUniqueWithoutTenantInput[]
     updateMany?: StockMovementUpdateManyWithWhereWithoutTenantInput | StockMovementUpdateManyWithWhereWithoutTenantInput[]
     deleteMany?: StockMovementScalarWhereInput | StockMovementScalarWhereInput[]
+  }
+
+  export type CashMovementUncheckedUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<CashMovementCreateWithoutTenantInput, CashMovementUncheckedCreateWithoutTenantInput> | CashMovementCreateWithoutTenantInput[] | CashMovementUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: CashMovementCreateOrConnectWithoutTenantInput | CashMovementCreateOrConnectWithoutTenantInput[]
+    upsert?: CashMovementUpsertWithWhereUniqueWithoutTenantInput | CashMovementUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: CashMovementCreateManyTenantInputEnvelope
+    set?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
+    disconnect?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
+    delete?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
+    connect?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
+    update?: CashMovementUpdateWithWhereUniqueWithoutTenantInput | CashMovementUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: CashMovementUpdateManyWithWhereWithoutTenantInput | CashMovementUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: CashMovementScalarWhereInput | CashMovementScalarWhereInput[]
   }
 
   export type TenantCreateNestedOneWithoutUsersInput = {
@@ -52976,6 +54671,20 @@ export namespace Prisma {
     update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutDailyClosesInput, TenantUpdateWithoutDailyClosesInput>, TenantUncheckedUpdateWithoutDailyClosesInput>
   }
 
+  export type TenantCreateNestedOneWithoutCashMovementsInput = {
+    create?: XOR<TenantCreateWithoutCashMovementsInput, TenantUncheckedCreateWithoutCashMovementsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutCashMovementsInput
+    connect?: TenantWhereUniqueInput
+  }
+
+  export type TenantUpdateOneRequiredWithoutCashMovementsNestedInput = {
+    create?: XOR<TenantCreateWithoutCashMovementsInput, TenantUncheckedCreateWithoutCashMovementsInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutCashMovementsInput
+    upsert?: TenantUpsertWithoutCashMovementsInput
+    connect?: TenantWhereUniqueInput
+    update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutCashMovementsInput, TenantUpdateWithoutCashMovementsInput>, TenantUncheckedUpdateWithoutCashMovementsInput>
+  }
+
   export type TenantCreateNestedOneWithoutSyncOperationsInput = {
     create?: XOR<TenantCreateWithoutSyncOperationsInput, TenantUncheckedCreateWithoutSyncOperationsInput>
     connectOrCreate?: TenantCreateOrConnectWithoutSyncOperationsInput
@@ -54454,6 +56163,48 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type CashMovementCreateWithoutTenantInput = {
+    id?: string
+    shiftId?: string | null
+    shiftNumber?: string | null
+    type: string
+    direction?: string
+    amountUsd: Decimal | DecimalJsLike | number | string
+    reason: string
+    note?: string
+    referenceEntity?: string | null
+    referenceId?: string | null
+    recordedById?: string | null
+    recordedByName: string
+    createdAt?: Date | string
+  }
+
+  export type CashMovementUncheckedCreateWithoutTenantInput = {
+    id?: string
+    shiftId?: string | null
+    shiftNumber?: string | null
+    type: string
+    direction?: string
+    amountUsd: Decimal | DecimalJsLike | number | string
+    reason: string
+    note?: string
+    referenceEntity?: string | null
+    referenceId?: string | null
+    recordedById?: string | null
+    recordedByName: string
+    createdAt?: Date | string
+  }
+
+  export type CashMovementCreateOrConnectWithoutTenantInput = {
+    where: CashMovementWhereUniqueInput
+    create: XOR<CashMovementCreateWithoutTenantInput, CashMovementUncheckedCreateWithoutTenantInput>
+  }
+
+  export type CashMovementCreateManyTenantInputEnvelope = {
+    data: CashMovementCreateManyTenantInput | CashMovementCreateManyTenantInput[]
+    skipDuplicates?: boolean
+  }
+
   export type StaffUserUpsertWithWhereUniqueWithoutTenantInput = {
     where: StaffUserWhereUniqueInput
     update: XOR<StaffUserUpdateWithoutTenantInput, StaffUserUncheckedUpdateWithoutTenantInput>
@@ -55252,6 +57003,42 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"StockMovement"> | Date | string
   }
 
+  export type CashMovementUpsertWithWhereUniqueWithoutTenantInput = {
+    where: CashMovementWhereUniqueInput
+    update: XOR<CashMovementUpdateWithoutTenantInput, CashMovementUncheckedUpdateWithoutTenantInput>
+    create: XOR<CashMovementCreateWithoutTenantInput, CashMovementUncheckedCreateWithoutTenantInput>
+  }
+
+  export type CashMovementUpdateWithWhereUniqueWithoutTenantInput = {
+    where: CashMovementWhereUniqueInput
+    data: XOR<CashMovementUpdateWithoutTenantInput, CashMovementUncheckedUpdateWithoutTenantInput>
+  }
+
+  export type CashMovementUpdateManyWithWhereWithoutTenantInput = {
+    where: CashMovementScalarWhereInput
+    data: XOR<CashMovementUpdateManyMutationInput, CashMovementUncheckedUpdateManyWithoutTenantInput>
+  }
+
+  export type CashMovementScalarWhereInput = {
+    AND?: CashMovementScalarWhereInput | CashMovementScalarWhereInput[]
+    OR?: CashMovementScalarWhereInput[]
+    NOT?: CashMovementScalarWhereInput | CashMovementScalarWhereInput[]
+    id?: StringFilter<"CashMovement"> | string
+    tenantId?: StringFilter<"CashMovement"> | string
+    shiftId?: StringNullableFilter<"CashMovement"> | string | null
+    shiftNumber?: StringNullableFilter<"CashMovement"> | string | null
+    type?: StringFilter<"CashMovement"> | string
+    direction?: StringFilter<"CashMovement"> | string
+    amountUsd?: DecimalFilter<"CashMovement"> | Decimal | DecimalJsLike | number | string
+    reason?: StringFilter<"CashMovement"> | string
+    note?: StringFilter<"CashMovement"> | string
+    referenceEntity?: StringNullableFilter<"CashMovement"> | string | null
+    referenceId?: StringNullableFilter<"CashMovement"> | string | null
+    recordedById?: StringNullableFilter<"CashMovement"> | string | null
+    recordedByName?: StringFilter<"CashMovement"> | string
+    createdAt?: DateTimeFilter<"CashMovement"> | Date | string
+  }
+
   export type TenantCreateWithoutUsersInput = {
     id?: string
     name: string
@@ -55296,6 +57083,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutUsersInput = {
@@ -55342,6 +57130,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutUsersInput = {
@@ -55620,6 +57409,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutUsersInput = {
@@ -55666,6 +57456,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ShiftUpsertWithWhereUniqueWithoutOpenedByInput = {
@@ -55776,6 +57567,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSettingsInput = {
@@ -55822,6 +57614,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSettingsInput = {
@@ -55884,6 +57677,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSettingsInput = {
@@ -55930,6 +57724,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutProductsInput = {
@@ -55976,6 +57771,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutProductsInput = {
@@ -56022,6 +57818,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutProductsInput = {
@@ -56371,6 +58168,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutProductsInput = {
@@ -56417,6 +58215,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ProductUpsertWithoutVariantsInput = {
@@ -56629,6 +58428,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSalesInput = {
@@ -56675,6 +58475,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSalesInput = {
@@ -56846,6 +58647,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSalesInput = {
@@ -56892,6 +58694,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SaleItemUpsertWithWhereUniqueWithoutSaleInput = {
@@ -57246,6 +59049,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutRefundsInput = {
@@ -57292,6 +59096,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutRefundsInput = {
@@ -57439,6 +59244,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutRefundsInput = {
@@ -57485,6 +59291,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SaleUpsertWithoutRefundsInput = {
@@ -57709,6 +59516,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutCustomersInput = {
@@ -57755,6 +59563,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutCustomersInput = {
@@ -57947,6 +59756,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutCustomersInput = {
@@ -57993,6 +59803,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type DebtSaleUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -58087,6 +59898,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDebtSalesInput = {
@@ -58133,6 +59945,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDebtSalesInput = {
@@ -58232,6 +60045,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDebtSalesInput = {
@@ -58278,6 +60092,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type CustomerUpsertWithoutDebtSalesInput = {
@@ -58367,6 +60182,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDebtPaymentsInput = {
@@ -58413,6 +60229,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDebtPaymentsInput = {
@@ -58512,6 +60329,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDebtPaymentsInput = {
@@ -58558,6 +60376,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type CustomerUpsertWithoutDebtPaymentsInput = {
@@ -58647,6 +60466,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSuppliersInput = {
@@ -58693,6 +60513,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSuppliersInput = {
@@ -58889,6 +60710,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSuppliersInput = {
@@ -58935,6 +60757,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type PurchaseOrderUpsertWithWhereUniqueWithoutSupplierInput = {
@@ -59029,6 +60852,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutPurchaseOrdersInput = {
@@ -59075,6 +60899,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutPurchaseOrdersInput = {
@@ -59202,6 +61027,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutPurchaseOrdersInput = {
@@ -59248,6 +61074,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SupplierUpsertWithoutPurchaseOrdersInput = {
@@ -59349,6 +61176,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutPurchaseOrderItemsInput = {
@@ -59395,6 +61223,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutPurchaseOrderItemsInput = {
@@ -59500,6 +61329,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutPurchaseOrderItemsInput = {
@@ -59546,6 +61376,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type PurchaseOrderUpsertWithoutItemsInput = {
@@ -59641,6 +61472,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSupplierPaymentsInput = {
@@ -59687,6 +61519,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSupplierPaymentsInput = {
@@ -59782,6 +61615,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSupplierPaymentsInput = {
@@ -59828,6 +61662,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SupplierUpsertWithoutSupplierPaymentsInput = {
@@ -59913,6 +61748,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutShiftsInput = {
@@ -59959,6 +61795,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutShiftsInput = {
@@ -60103,6 +61940,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutShiftsInput = {
@@ -60149,6 +61987,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type StaffUserUpsertWithoutOpenedShiftsInput = {
@@ -60289,6 +62128,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutAuditEventsInput = {
@@ -60335,6 +62175,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutAuditEventsInput = {
@@ -60397,6 +62238,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutAuditEventsInput = {
@@ -60443,6 +62285,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutExpensesInput = {
@@ -60489,6 +62332,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutExpensesInput = {
@@ -60535,6 +62379,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutExpensesInput = {
@@ -60638,6 +62483,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutExpensesInput = {
@@ -60684,6 +62530,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type StaffUserUpsertWithoutExpensesInput = {
@@ -60777,6 +62624,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutInventoryBatchesInput = {
@@ -60823,6 +62671,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutInventoryBatchesInput = {
@@ -60982,6 +62831,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutInventoryBatchesInput = {
@@ -61028,6 +62878,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ProductUpsertWithoutBatchesInput = {
@@ -61183,6 +63034,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutStockAdjustmentsInput = {
@@ -61229,6 +63081,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutStockAdjustmentsInput = {
@@ -61355,6 +63208,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutStockAdjustmentsInput = {
@@ -61401,6 +63255,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ProductUpsertWithoutAdjustmentsInput = {
@@ -61517,6 +63372,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutStockCountsInput = {
@@ -61563,6 +63419,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutStockCountsInput = {
@@ -61659,6 +63516,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutStockCountsInput = {
@@ -61705,6 +63563,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type StockCountLineUpsertWithWhereUniqueWithoutSessionInput = {
@@ -61961,6 +63820,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDeliveryOrdersInput = {
@@ -62007,6 +63867,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDeliveryOrdersInput = {
@@ -62177,6 +64038,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDeliveryOrdersInput = {
@@ -62223,6 +64085,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type CustomerUpsertWithoutDeliveryOrdersInput = {
@@ -62525,6 +64388,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDailyClosesInput = {
@@ -62571,6 +64435,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDailyClosesInput = {
@@ -62633,6 +64498,7 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDailyClosesInput = {
@@ -62676,6 +64542,211 @@ export namespace Prisma {
     inventoryBatches?: InventoryBatchUncheckedUpdateManyWithoutTenantNestedInput
     stockAdjustments?: StockAdjustmentUncheckedUpdateManyWithoutTenantNestedInput
     stockCounts?: StockCountSessionUncheckedUpdateManyWithoutTenantNestedInput
+    syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantCreateWithoutCashMovementsInput = {
+    id?: string
+    name: string
+    subdomain: string
+    suspended?: boolean
+    cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: StaffUserCreateNestedManyWithoutTenantInput
+    products?: ProductCreateNestedManyWithoutTenantInput
+    sales?: SaleCreateNestedManyWithoutTenantInput
+    refunds?: SaleRefundCreateNestedManyWithoutTenantInput
+    customers?: CustomerCreateNestedManyWithoutTenantInput
+    debtSales?: DebtSaleCreateNestedManyWithoutTenantInput
+    debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
+    suppliers?: SupplierCreateNestedManyWithoutTenantInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
+    supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
+    shifts?: ShiftCreateNestedManyWithoutTenantInput
+    auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
+    settings?: AppSettingsCreateNestedOneWithoutTenantInput
+    expenses?: ExpenseCreateNestedManyWithoutTenantInput
+    inventoryBatches?: InventoryBatchCreateNestedManyWithoutTenantInput
+    stockAdjustments?: StockAdjustmentCreateNestedManyWithoutTenantInput
+    stockCounts?: StockCountSessionCreateNestedManyWithoutTenantInput
+    dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
+    syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantUncheckedCreateWithoutCashMovementsInput = {
+    id?: string
+    name: string
+    subdomain: string
+    suspended?: boolean
+    cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
+    products?: ProductUncheckedCreateNestedManyWithoutTenantInput
+    sales?: SaleUncheckedCreateNestedManyWithoutTenantInput
+    refunds?: SaleRefundUncheckedCreateNestedManyWithoutTenantInput
+    customers?: CustomerUncheckedCreateNestedManyWithoutTenantInput
+    debtSales?: DebtSaleUncheckedCreateNestedManyWithoutTenantInput
+    debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
+    suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
+    supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
+    shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
+    auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
+    settings?: AppSettingsUncheckedCreateNestedOneWithoutTenantInput
+    expenses?: ExpenseUncheckedCreateNestedManyWithoutTenantInput
+    inventoryBatches?: InventoryBatchUncheckedCreateNestedManyWithoutTenantInput
+    stockAdjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutTenantInput
+    stockCounts?: StockCountSessionUncheckedCreateNestedManyWithoutTenantInput
+    dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
+    syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantCreateOrConnectWithoutCashMovementsInput = {
+    where: TenantWhereUniqueInput
+    create: XOR<TenantCreateWithoutCashMovementsInput, TenantUncheckedCreateWithoutCashMovementsInput>
+  }
+
+  export type TenantUpsertWithoutCashMovementsInput = {
+    update: XOR<TenantUpdateWithoutCashMovementsInput, TenantUncheckedUpdateWithoutCashMovementsInput>
+    create: XOR<TenantCreateWithoutCashMovementsInput, TenantUncheckedCreateWithoutCashMovementsInput>
+    where?: TenantWhereInput
+  }
+
+  export type TenantUpdateToOneWithWhereWithoutCashMovementsInput = {
+    where?: TenantWhereInput
+    data: XOR<TenantUpdateWithoutCashMovementsInput, TenantUncheckedUpdateWithoutCashMovementsInput>
+  }
+
+  export type TenantUpdateWithoutCashMovementsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: StaffUserUpdateManyWithoutTenantNestedInput
+    products?: ProductUpdateManyWithoutTenantNestedInput
+    sales?: SaleUpdateManyWithoutTenantNestedInput
+    refunds?: SaleRefundUpdateManyWithoutTenantNestedInput
+    customers?: CustomerUpdateManyWithoutTenantNestedInput
+    debtSales?: DebtSaleUpdateManyWithoutTenantNestedInput
+    debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
+    suppliers?: SupplierUpdateManyWithoutTenantNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
+    supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
+    shifts?: ShiftUpdateManyWithoutTenantNestedInput
+    auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
+    settings?: AppSettingsUpdateOneWithoutTenantNestedInput
+    expenses?: ExpenseUpdateManyWithoutTenantNestedInput
+    inventoryBatches?: InventoryBatchUpdateManyWithoutTenantNestedInput
+    stockAdjustments?: StockAdjustmentUpdateManyWithoutTenantNestedInput
+    stockCounts?: StockCountSessionUpdateManyWithoutTenantNestedInput
+    dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
+    syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantUncheckedUpdateWithoutCashMovementsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
+    products?: ProductUncheckedUpdateManyWithoutTenantNestedInput
+    sales?: SaleUncheckedUpdateManyWithoutTenantNestedInput
+    refunds?: SaleRefundUncheckedUpdateManyWithoutTenantNestedInput
+    customers?: CustomerUncheckedUpdateManyWithoutTenantNestedInput
+    debtSales?: DebtSaleUncheckedUpdateManyWithoutTenantNestedInput
+    debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
+    supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
+    auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
+    settings?: AppSettingsUncheckedUpdateOneWithoutTenantNestedInput
+    expenses?: ExpenseUncheckedUpdateManyWithoutTenantNestedInput
+    inventoryBatches?: InventoryBatchUncheckedUpdateManyWithoutTenantNestedInput
+    stockAdjustments?: StockAdjustmentUncheckedUpdateManyWithoutTenantNestedInput
+    stockCounts?: StockCountSessionUncheckedUpdateManyWithoutTenantNestedInput
+    dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
@@ -62725,6 +64796,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSyncOperationsInput = {
@@ -62771,6 +64843,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSyncOperationsInput = {
@@ -62833,6 +64906,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSyncOperationsInput = {
@@ -62879,6 +64953,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutStockMovementsInput = {
@@ -62925,6 +65000,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutStockMovementsInput = {
@@ -62971,6 +65047,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutStockMovementsInput = {
@@ -63097,6 +65174,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutStockMovementsInput = {
@@ -63143,6 +65221,7 @@ export namespace Prisma {
     dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ProductUpsertWithoutStockMovementsInput = {
@@ -63543,6 +65622,22 @@ export namespace Prisma {
     balance: number
     reference: string
     note?: string
+    createdAt?: Date | string
+  }
+
+  export type CashMovementCreateManyTenantInput = {
+    id?: string
+    shiftId?: string | null
+    shiftNumber?: string | null
+    type: string
+    direction?: string
+    amountUsd: Decimal | DecimalJsLike | number | string
+    reason: string
+    note?: string
+    referenceEntity?: string | null
+    referenceId?: string | null
+    recordedById?: string | null
+    recordedByName: string
     createdAt?: Date | string
   }
 
@@ -64579,6 +66674,54 @@ export namespace Prisma {
     balance?: FloatFieldUpdateOperationsInput | number
     reference?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CashMovementUpdateWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    direction?: StringFieldUpdateOperationsInput | string
+    amountUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    referenceEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CashMovementUncheckedUpdateWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    direction?: StringFieldUpdateOperationsInput | string
+    amountUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    referenceEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type CashMovementUncheckedUpdateManyWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: StringFieldUpdateOperationsInput | string
+    direction?: StringFieldUpdateOperationsInput | string
+    amountUsd?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    reason?: StringFieldUpdateOperationsInput | string
+    note?: StringFieldUpdateOperationsInput | string
+    referenceEntity?: NullableStringFieldUpdateOperationsInput | string | null
+    referenceId?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedById?: NullableStringFieldUpdateOperationsInput | string | null
+    recordedByName?: StringFieldUpdateOperationsInput | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
