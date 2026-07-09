@@ -157,6 +157,7 @@ exports.Prisma.StaffUserScalarFieldEnum = {
   tokenVersion: 'tokenVersion',
   role: 'role',
   active: 'active',
+  pinChanged: 'pinChanged',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -464,6 +465,7 @@ exports.Prisma.StockAdjustmentScalarFieldEnum = {
   reason: 'reason',
   note: 'note',
   batchId: 'batchId',
+  batchAllocations: 'batchAllocations',
   valueImpact: 'valueImpact',
   createdAt: 'createdAt'
 };

@@ -6218,6 +6218,7 @@ export namespace Prisma {
     tokenVersion: number | null
     role: $Enums.UserRole | null
     active: boolean | null
+    pinChanged: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -6233,6 +6234,7 @@ export namespace Prisma {
     tokenVersion: number | null
     role: $Enums.UserRole | null
     active: boolean | null
+    pinChanged: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -6248,6 +6250,7 @@ export namespace Prisma {
     tokenVersion: number
     role: number
     active: number
+    pinChanged: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -6275,6 +6278,7 @@ export namespace Prisma {
     tokenVersion?: true
     role?: true
     active?: true
+    pinChanged?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -6290,6 +6294,7 @@ export namespace Prisma {
     tokenVersion?: true
     role?: true
     active?: true
+    pinChanged?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -6305,6 +6310,7 @@ export namespace Prisma {
     tokenVersion?: true
     role?: true
     active?: true
+    pinChanged?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -6407,6 +6413,7 @@ export namespace Prisma {
     tokenVersion: number
     role: $Enums.UserRole
     active: boolean
+    pinChanged: boolean
     createdAt: Date
     updatedAt: Date
     _count: StaffUserCountAggregateOutputType | null
@@ -6441,6 +6448,7 @@ export namespace Prisma {
     tokenVersion?: boolean
     role?: boolean
     active?: boolean
+    pinChanged?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -6462,6 +6470,7 @@ export namespace Prisma {
     tokenVersion?: boolean
     role?: boolean
     active?: boolean
+    pinChanged?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -6478,6 +6487,7 @@ export namespace Prisma {
     tokenVersion?: boolean
     role?: boolean
     active?: boolean
+    pinChanged?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -6494,11 +6504,12 @@ export namespace Prisma {
     tokenVersion?: boolean
     role?: boolean
     active?: boolean
+    pinChanged?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type StaffUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "code" | "pin" | "pinVersion" | "tokenVersion" | "role" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["staffUser"]>
+  export type StaffUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "code" | "pin" | "pinVersion" | "tokenVersion" | "role" | "active" | "pinChanged" | "createdAt" | "updatedAt", ExtArgs["result"]["staffUser"]>
   export type StaffUserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedShifts?: boolean | StaffUser$openedShiftsArgs<ExtArgs>
@@ -6534,6 +6545,7 @@ export namespace Prisma {
       tokenVersion: number
       role: $Enums.UserRole
       active: boolean
+      pinChanged: boolean
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["staffUser"]>
@@ -6974,6 +6986,7 @@ export namespace Prisma {
     readonly tokenVersion: FieldRef<"StaffUser", 'Int'>
     readonly role: FieldRef<"StaffUser", 'UserRole'>
     readonly active: FieldRef<"StaffUser", 'Boolean'>
+    readonly pinChanged: FieldRef<"StaffUser", 'Boolean'>
     readonly createdAt: FieldRef<"StaffUser", 'DateTime'>
     readonly updatedAt: FieldRef<"StaffUser", 'DateTime'>
   }
@@ -29858,6 +29871,7 @@ export namespace Prisma {
     reason: number
     note: number
     batchId: number
+    batchAllocations: number
     valueImpact: number
     createdAt: number
     _all: number
@@ -29927,6 +29941,7 @@ export namespace Prisma {
     reason?: true
     note?: true
     batchId?: true
+    batchAllocations?: true
     valueImpact?: true
     createdAt?: true
     _all?: true
@@ -30031,6 +30046,7 @@ export namespace Prisma {
     reason: string
     note: string | null
     batchId: string | null
+    batchAllocations: JsonValue | null
     valueImpact: Decimal
     createdAt: Date
     _count: StockAdjustmentCountAggregateOutputType | null
@@ -30067,6 +30083,7 @@ export namespace Prisma {
     reason?: boolean
     note?: boolean
     batchId?: boolean
+    batchAllocations?: boolean
     valueImpact?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -30086,6 +30103,7 @@ export namespace Prisma {
     reason?: boolean
     note?: boolean
     batchId?: boolean
+    batchAllocations?: boolean
     valueImpact?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -30105,6 +30123,7 @@ export namespace Prisma {
     reason?: boolean
     note?: boolean
     batchId?: boolean
+    batchAllocations?: boolean
     valueImpact?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -30124,11 +30143,12 @@ export namespace Prisma {
     reason?: boolean
     note?: boolean
     batchId?: boolean
+    batchAllocations?: boolean
     valueImpact?: boolean
     createdAt?: boolean
   }
 
-  export type StockAdjustmentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "adjustmentNumber" | "productId" | "productName" | "barcode" | "quantityBefore" | "quantityChange" | "quantityAfter" | "reason" | "note" | "batchId" | "valueImpact" | "createdAt", ExtArgs["result"]["stockAdjustment"]>
+  export type StockAdjustmentOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "adjustmentNumber" | "productId" | "productName" | "barcode" | "quantityBefore" | "quantityChange" | "quantityAfter" | "reason" | "note" | "batchId" | "batchAllocations" | "valueImpact" | "createdAt", ExtArgs["result"]["stockAdjustment"]>
   export type StockAdjustmentInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -30161,6 +30181,7 @@ export namespace Prisma {
       reason: string
       note: string | null
       batchId: string | null
+      batchAllocations: Prisma.JsonValue | null
       valueImpact: Prisma.Decimal
       createdAt: Date
     }, ExtArgs["result"]["stockAdjustment"]>
@@ -30600,6 +30621,7 @@ export namespace Prisma {
     readonly reason: FieldRef<"StockAdjustment", 'String'>
     readonly note: FieldRef<"StockAdjustment", 'String'>
     readonly batchId: FieldRef<"StockAdjustment", 'String'>
+    readonly batchAllocations: FieldRef<"StockAdjustment", 'Json'>
     readonly valueImpact: FieldRef<"StockAdjustment", 'Decimal'>
     readonly createdAt: FieldRef<"StockAdjustment", 'DateTime'>
   }
@@ -41909,6 +41931,7 @@ export namespace Prisma {
     tokenVersion: 'tokenVersion',
     role: 'role',
     active: 'active',
+    pinChanged: 'pinChanged',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -42273,6 +42296,7 @@ export namespace Prisma {
     reason: 'reason',
     note: 'note',
     batchId: 'batchId',
+    batchAllocations: 'batchAllocations',
     valueImpact: 'valueImpact',
     createdAt: 'createdAt'
   };
@@ -42946,6 +42970,7 @@ export namespace Prisma {
     tokenVersion?: IntFilter<"StaffUser"> | number
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
+    pinChanged?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
     updatedAt?: DateTimeFilter<"StaffUser"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -42966,6 +42991,7 @@ export namespace Prisma {
     tokenVersion?: SortOrder
     role?: SortOrder
     active?: SortOrder
+    pinChanged?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
@@ -42990,6 +43016,7 @@ export namespace Prisma {
     tokenVersion?: IntFilter<"StaffUser"> | number
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
+    pinChanged?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
     updatedAt?: DateTimeFilter<"StaffUser"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -43010,6 +43037,7 @@ export namespace Prisma {
     tokenVersion?: SortOrder
     role?: SortOrder
     active?: SortOrder
+    pinChanged?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: StaffUserCountOrderByAggregateInput
@@ -43033,6 +43061,7 @@ export namespace Prisma {
     tokenVersion?: IntWithAggregatesFilter<"StaffUser"> | number
     role?: EnumUserRoleWithAggregatesFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolWithAggregatesFilter<"StaffUser"> | boolean
+    pinChanged?: BoolWithAggregatesFilter<"StaffUser"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"StaffUser"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"StaffUser"> | Date | string
   }
@@ -44897,6 +44926,7 @@ export namespace Prisma {
     reason?: StringFilter<"StockAdjustment"> | string
     note?: StringNullableFilter<"StockAdjustment"> | string | null
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
+    batchAllocations?: JsonNullableFilter<"StockAdjustment">
     valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"StockAdjustment"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -44916,6 +44946,7 @@ export namespace Prisma {
     reason?: SortOrder
     note?: SortOrderInput | SortOrder
     batchId?: SortOrderInput | SortOrder
+    batchAllocations?: SortOrderInput | SortOrder
     valueImpact?: SortOrder
     createdAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
@@ -44939,6 +44970,7 @@ export namespace Prisma {
     reason?: StringFilter<"StockAdjustment"> | string
     note?: StringNullableFilter<"StockAdjustment"> | string | null
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
+    batchAllocations?: JsonNullableFilter<"StockAdjustment">
     valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"StockAdjustment"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -44958,6 +44990,7 @@ export namespace Prisma {
     reason?: SortOrder
     note?: SortOrderInput | SortOrder
     batchId?: SortOrderInput | SortOrder
+    batchAllocations?: SortOrderInput | SortOrder
     valueImpact?: SortOrder
     createdAt?: SortOrder
     _count?: StockAdjustmentCountOrderByAggregateInput
@@ -44983,6 +45016,7 @@ export namespace Prisma {
     reason?: StringWithAggregatesFilter<"StockAdjustment"> | string
     note?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
     batchId?: StringNullableWithAggregatesFilter<"StockAdjustment"> | string | null
+    batchAllocations?: JsonNullableWithAggregatesFilter<"StockAdjustment">
     valueImpact?: DecimalWithAggregatesFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeWithAggregatesFilter<"StockAdjustment"> | Date | string
   }
@@ -46121,6 +46155,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutUsersInput
@@ -46141,6 +46176,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
@@ -46159,6 +46195,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
@@ -46179,6 +46216,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
@@ -46198,6 +46236,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -46212,6 +46251,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -46227,6 +46267,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -48303,6 +48344,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutStockAdjustmentsInput
@@ -48322,6 +48364,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
@@ -48337,6 +48380,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutStockAdjustmentsNestedInput
@@ -48356,6 +48400,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -48373,6 +48418,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
@@ -48388,6 +48434,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -48405,6 +48452,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -49830,6 +49878,7 @@ export namespace Prisma {
     tokenVersion?: SortOrder
     role?: SortOrder
     active?: SortOrder
+    pinChanged?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -49850,6 +49899,7 @@ export namespace Prisma {
     tokenVersion?: SortOrder
     role?: SortOrder
     active?: SortOrder
+    pinChanged?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -49865,6 +49915,7 @@ export namespace Prisma {
     tokenVersion?: SortOrder
     role?: SortOrder
     active?: SortOrder
+    pinChanged?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -51434,6 +51485,7 @@ export namespace Prisma {
     reason?: SortOrder
     note?: SortOrder
     batchId?: SortOrder
+    batchAllocations?: SortOrder
     valueImpact?: SortOrder
     createdAt?: SortOrder
   }
@@ -55246,6 +55298,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     openedShifts?: ShiftCreateNestedManyWithoutOpenedByInput
@@ -55264,6 +55317,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
@@ -55943,6 +55997,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     product: ProductCreateNestedOneWithoutAdjustmentsInput
@@ -55960,6 +56015,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
@@ -56266,6 +56322,7 @@ export namespace Prisma {
     tokenVersion?: IntFilter<"StaffUser"> | number
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
     active?: BoolFilter<"StaffUser"> | boolean
+    pinChanged?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
     updatedAt?: DateTimeFilter<"StaffUser"> | Date | string
   }
@@ -56848,6 +56905,7 @@ export namespace Prisma {
     reason?: StringFilter<"StockAdjustment"> | string
     note?: StringNullableFilter<"StockAdjustment"> | string | null
     batchId?: StringNullableFilter<"StockAdjustment"> | string | null
+    batchAllocations?: JsonNullableFilter<"StockAdjustment">
     valueImpact?: DecimalFilter<"StockAdjustment"> | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFilter<"StockAdjustment"> | Date | string
   }
@@ -58052,6 +58110,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutStockAdjustmentsInput
@@ -58069,6 +58128,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
@@ -61851,6 +61911,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutUsersInput
@@ -61870,6 +61931,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     closedShifts?: ShiftUncheckedCreateNestedManyWithoutClosedByInput
@@ -61892,6 +61954,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutUsersInput
@@ -61911,6 +61974,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
@@ -62049,6 +62113,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
@@ -62068,6 +62133,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     closedShifts?: ShiftUncheckedUpdateManyWithoutClosedByNestedInput
@@ -62096,6 +62162,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
@@ -62115,6 +62182,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
@@ -62435,6 +62503,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutUsersInput
@@ -62454,6 +62523,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
@@ -62592,6 +62662,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
@@ -62611,6 +62682,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
@@ -63972,6 +64044,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutUsersInput
@@ -63991,6 +64064,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     openedShifts?: ShiftUncheckedCreateNestedManyWithoutOpenedByInput
@@ -64202,6 +64276,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutUsersNestedInput
@@ -64221,6 +64296,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
@@ -65358,6 +65434,7 @@ export namespace Prisma {
     tokenVersion?: number
     role: $Enums.UserRole
     active?: boolean
+    pinChanged?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -65593,6 +65670,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
@@ -65706,6 +65784,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUpdateManyWithoutOpenedByNestedInput
@@ -65724,6 +65803,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     openedShifts?: ShiftUncheckedUpdateManyWithoutOpenedByNestedInput
@@ -65742,6 +65822,7 @@ export namespace Prisma {
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
     active?: BoolFieldUpdateOperationsInput | boolean
+    pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -66445,6 +66526,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     product?: ProductUpdateOneRequiredWithoutAdjustmentsNestedInput
@@ -66462,6 +66544,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -66478,6 +66561,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -67189,6 +67273,7 @@ export namespace Prisma {
     reason: string
     note?: string | null
     batchId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact: Decimal | DecimalJsLike | number | string
     createdAt?: Date | string
   }
@@ -67368,6 +67453,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutStockAdjustmentsNestedInput
@@ -67385,6 +67471,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -67401,6 +67488,7 @@ export namespace Prisma {
     reason?: StringFieldUpdateOperationsInput | string
     note?: NullableStringFieldUpdateOperationsInput | string | null
     batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     valueImpact?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
