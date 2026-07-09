@@ -423,12 +423,18 @@ export default function SettingsPage() {
                 <Store size={22} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-zinc-950">
-                  Business profile
-                </h2>
-                <p className="text-sm text-zinc-500">
-                  Receipt, VAT, exchange rate, and operating defaults.
-                </p>
+              <h2 className="text-xl font-bold text-zinc-950">
+                Offline sync
+              </h2>
+              <p className="text-sm text-zinc-500">
+                Last sync: {formatDateTime(syncStatus.lastSyncedAt)}
+              </p>
+              {syncStatus.failed > 0 && (
+                <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-rose-100 text-rose-700 ml-2">{syncStatus.failed} failed</span>
+              )}
+              {syncStatus.pending > 10 && (
+                <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-700 ml-1">{syncStatus.pending} pending</span>
+              )}
               </div>
             </div>
           </div>
@@ -437,11 +443,13 @@ export default function SettingsPage() {
             <label className="block text-sm font-bold text-zinc-700">
               Store name
               <input
-                value={settings.storeName}
-                onChange={(event) => {
-                  updateSettings({ storeName: event.target.value })
-                  setSettingsErrors((prev) => ({ ...prev, storeName: undefined }))
-                }}
+              value={settings.storeName}
+              onChange={(event) => {
+                updateSettings({ storeName: event.target.value })
+                setSettingsErrors((prev) => ({ ...prev, storeName: undefined }))
+              }}
+              aria-label="Store name"
+              aria-describedby={settingsErrors.storeName ? "storeName-error" : undefined}
                 className={`mt-2 h-11 w-full rounded-lg border px-3 font-medium outline-none focus:ring-4 ${
                   settingsErrors.storeName
                     ? "border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-100"
@@ -449,7 +457,7 @@ export default function SettingsPage() {
                 }`}
               />
               {settingsErrors.storeName ? (
-                <p className="mt-1 text-xs font-medium text-rose-600">{settingsErrors.storeName}</p>
+                <p id="storeName-error" className="mt-1 text-xs font-medium text-rose-600">{settingsErrors.storeName}</p>
               ) : null}
             </label>
 
@@ -603,6 +611,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={handleSave}
+              aria-label="Save business settings"
               className="flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-bold text-white transition hover:bg-emerald-500"
             >
               <Save size={17} />
@@ -688,6 +697,7 @@ export default function SettingsPage() {
           </div>
           <div className="flex justify-end border-t border-zinc-200 p-4">
             <button type="button" onClick={handleSave}
+              aria-label="Save delivery settings"
               className="flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-bold text-white transition hover:bg-emerald-500">
               <Save size={17} />
               Save Settings
