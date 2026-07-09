@@ -29,6 +29,7 @@ import {
   roundLbp,
   usdToLbp,
 } from "../lib/currency"
+import { playErrorBuzz, playScanBlip } from "../lib/sound"
 import {
   getHeldSaleItemCount,
   parseMoney,
@@ -327,13 +328,16 @@ export default function POSPage() {
     const cartItem = items.find((item) => item.id === product.id)
     if (product.stock <= 0) {
       setScannerStatus(`${product.name} is out of stock.`)
+      playErrorBuzz()
       return
     }
     if (cartItem && cartItem.quantity >= product.stock) {
       setScannerStatus(`${product.name} reached available stock.`)
+      playErrorBuzz()
       return
     }
     addItem(product)
+    playScanBlip()
     setScanCode("")
     setSearch("")
     setScannerStatus(`${product.name} added by ${source}.`)
@@ -366,6 +370,7 @@ export default function POSPage() {
       } else {
         setScannerStatus(`"${value.trim()}" not found. Please ask a manager.`)
       }
+      playErrorBuzz()
       return
     }
     addProductToSale(product, exactProduct ? "barcode" : "quick add")

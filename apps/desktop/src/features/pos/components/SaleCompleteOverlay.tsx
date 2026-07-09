@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Check, Printer, ShoppingCart } from "lucide-react"
 import { formatCurrency, formatLbpCurrency } from "../lib/currency"
+import { playSaleChime } from "../lib/sound"
 import { useI18n } from "@lebanonpos/shared"
 const MotionDiv = motion.div as any
 const MotionP = motion.p as any
@@ -22,6 +23,7 @@ export default function SaleCompleteOverlay({ sale, onViewReceipt }: Props) {
     setSnapshot(sale)
     setVisible(true)
     setShowCheck(false)
+    playSaleChime()
 
     const t1 = setTimeout(() => setShowCheck(true), 420)
     const t2 = setTimeout(() => setVisible(false), 3500)
