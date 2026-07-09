@@ -6,6 +6,46 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-5 (Accounting/Cash Drawer Hardening) — COMPLETE
+
+**CloseDayPanel:**
+- Fixed closeNote threading: `closeNote` now passed from CloseDayPanel through `onCloseDay(note)` callback to AccountingPage's `confirmCloseDay()`, which sends it to `closeBusinessDay()`. Previously hardcoded as `note: ""`.
+- `aria-label` on cash reconciliation input: "Counted cash in drawer"
+- `role="status" aria-live="polite"` on cash reconciliation result banner — screen readers announce balanced/over/short
+- `aria-label` on WhatsApp ("Share daily summary via WhatsApp") and Print ("Print daily report") buttons
+- `aria-label` on Close/Reclose button
+
+**ExpenseForm:**
+- `aria-label` on vendor input ("Vendor name")
+- `aria-describedby="vendor-error"` linking error text to input
+- `role="group" aria-label="Expense category"` on category buttons
+- `role="group" aria-label="Payment method"` on payment method buttons
+- `aria-pressed` on payment method buttons
+
+**SalesPage:**
+- `aria-pressed` on payment filter buttons (All/Cash/Card/Wallet/Debt)
+- `aria-pressed` on status filter buttons (All/Completed/Voided/Debt)
+
+**No changes to:**
+- Money math (`getAccountingSummary`, `closeBusinessDay`), daily close logic, cash drawer calculations, sync/storage, backend/schema
+
+**Regression checks:**
+- Desktop typecheck: PASS
+- Desktop tests: **70/70 PASS**
+- Desktop build: PASS (2.33s)
+
+**Files changed:**
+- `apps/desktop/src/pages/accounting/AccountingPage.tsx` (+3/-2: closeNote state, fix confirmCloseDay)
+- `apps/desktop/src/pages/accounting/components/CloseDayPanel.tsx` (+10/-2: aria-labels, note callback, aria-live)
+- `apps/desktop/src/pages/accounting/components/ExpenseForm.tsx` (+8/-0: aria-describedby, role=group, aria-pressed)
+- `apps/desktop/src/pages/sales/SalesPage.tsx` (+2/-0: aria-pressed on filter buttons)
+
+**Deferred:** Opening float tracking, cash reconciliation persistence, payment method KPI breakdown — require data model changes
+
+**Verdict: PASS**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-4 (Supplier/Receiving Polish) — COMPLETE
 
 **SuppliersPage:**
