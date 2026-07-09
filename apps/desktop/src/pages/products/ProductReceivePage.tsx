@@ -366,14 +366,17 @@ export default function ProductReceivePage() {
 
             <div className="flex gap-2 ms-1">
               <button type="button" onClick={() => addRow()}
+                aria-label="Add receiving row"
                 className="btn btn-default h-9 gap-1.5 text-[13px]">
                 <Plus size={14} /> Add Row
               </button>
               <button type="button" onClick={pasteFromSpreadsheet}
+                aria-label="Paste rows from spreadsheet"
                 className="btn btn-default h-9 gap-1.5 text-[13px]" title="Paste from spreadsheet">
                 Paste
               </button>
               <button type="button" onClick={saveBatch} disabled={readyRows.length === 0}
+                aria-label="Save and receive all ready rows"
                 className="btn btn-primary h-9 gap-1.5 text-[13px] disabled:opacity-40">
                 <CheckCircle2 size={14} /> Save Batch
               </button>
@@ -434,6 +437,7 @@ export default function ProductReceivePage() {
                         className="shrink-0 flex items-center gap-1 h-7 rounded-lg border px-2.5 text-[11px] font-semibold transition hover:opacity-80"
                         style={{ borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface-2)" }}
                         title="Generate barcode"
+                        aria-label="Generate barcode for row"
                       >
                         <Barcode size={11} /> Gen
                       </button>
@@ -447,6 +451,7 @@ export default function ProductReceivePage() {
                           : { borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface-2)" }
                         }
                         title="Scan via camera"
+                        aria-label="Scan barcode via camera"
                       >
                         <Camera size={11} />
                       </button>
@@ -456,15 +461,18 @@ export default function ProductReceivePage() {
                     <div className="flex items-center gap-1 shrink-0">
                       <button type="button" onClick={(e) => { e.stopPropagation(); duplicateRow(row) }}
                         className="flex h-7 w-7 items-center justify-center rounded-lg border transition hover:opacity-80"
-                        style={{ borderColor: "var(--border)", color: "var(--text-3)" }} title="Duplicate">
-                        <Copy size={12} />
+                        style={{ borderColor: "var(--border)", color: "var(--text-3)" }} title="Duplicate"
+                        aria-label="Duplicate row"
+                      >
+                        <Copy size={12} />                      
                       </button>
                       <button type="button" onClick={(e) => { e.stopPropagation(); removeRow(row.id) }}
                         className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
                         style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
                         onMouseEnter={(e) => { e.currentTarget.style.color = "var(--rose)"; e.currentTarget.style.borderColor = "var(--rose)" }}
                         onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-3)"; e.currentTarget.style.borderColor = "var(--border)" }}
-                        title="Remove">
+                        title="Remove"
+                        aria-label="Remove row">
                         <Trash2 size={12} />
                       </button>
                     </div>
@@ -684,7 +692,8 @@ export default function ProductReceivePage() {
               </div>
 
               {suppliers.length > 0 ? (
-                <select value={selectedSupplierId} onChange={(e) => setSelectedSupplierId(e.target.value)} className="input w-full">
+                <select value={selectedSupplierId} onChange={(e) => setSelectedSupplierId(e.target.value)} className="input w-full"
+                  aria-label="Select supplier">
                   <option value="">No supplier</option>
                   {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name} — {formatCurrency(s.balance)}</option>)}
                 </select>
@@ -707,6 +716,7 @@ export default function ProductReceivePage() {
                     const active = purchasePaymentMethod === method
                     return (
                       <button key={method} type="button" onClick={() => setPurchasePaymentMethod(method)}
+                        aria-pressed={active}
                         className="flex items-center justify-center gap-1.5 h-8 rounded-xl border text-[11px] font-bold transition"
                         style={active
                           ? { background: "var(--surface-3)", borderColor: "var(--border-strong)", color: "var(--text)" }
@@ -745,10 +755,12 @@ export default function ProductReceivePage() {
 
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" onClick={saveBatch} disabled={readyRows.length === 0}
+                  aria-label="Save and receive batch"
                   className="btn btn-primary h-10 gap-2 justify-center text-[13px] disabled:opacity-40">
                   <CheckCircle2 size={14} /> Save
                 </button>
                 <button type="button" onClick={resetBatch}
+                  aria-label="Clear all receiving rows"
                   className="btn btn-default h-10 gap-2 justify-center text-[13px]">
                   <RotateCcw size={14} /> Clear
                 </button>

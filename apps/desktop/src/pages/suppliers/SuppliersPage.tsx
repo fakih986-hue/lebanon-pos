@@ -19,18 +19,19 @@ import type { LucideIcon } from "lucide-react"
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import { parseMoney } from "../../features/pos/lib/helpers"
 import {
+  archiveSupplier,
   createSupplier,
   getPurchaseOrders,
   getSupplierActivity,
   getSupplierLedger,
   getSupplierTotals,
   recordSupplierPayment,
+  restoreSupplier,
   subscribeSuppliers,
   type PurchaseOrder,
   type SupplierLedger,
   type SupplierPaymentMethod,
 } from "../../features/pos/services/supplier.service"
-import { deleteSupplier } from "../../features/pos/services/supplier.service"
 import { showToast } from "../../features/pos/services/toast.service"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import { useI18n } from "@lebanonpos/shared"
@@ -121,6 +122,7 @@ export default function SuppliersPage() {
   })
   const [formErrors, setFormErrors] = useState<Partial<Record<"name" | "mobile", string>>>({})
   const [deleteSupplierId, setDeleteSupplierId] = useState<string | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
   const { t } = useI18n()
   const [activeWorkspace, setActiveWorkspace] =
     useState<SupplierWorkspace>("Accounts")
@@ -155,19 +157,20 @@ export default function SuppliersPage() {
   }, [])
 
   const filteredSuppliers = useMemo(() => {
-    const query = search.trim().toLowerCase()
+    let list = suppliers.filter(s => showArchived ? s.archived === true : !s.archived)
 
-    if (!query) {
-      return suppliers
+    const query = search.trim().toLowerCase()
+    if (query) {
+      list = list.filter(
+        (supplier) =>
+          supplier.name.toLowerCase().includes(query) ||
+          supplier.mobile.includes(query) ||
+          supplier.contact.toLowerCase().includes(query)
+      )
     }
 
-    return suppliers.filter(
-      (supplier) =>
-        supplier.name.toLowerCase().includes(query) ||
-        supplier.mobile.includes(query) ||
-        supplier.contact.toLowerCase().includes(query)
-    )
-      }, [debouncedSearch, suppliers])
+    return list
+  }, [debouncedSearch, suppliers, showArchived])
   const selectedSupplier = suppliers.find(
     (supplier) => supplier.id === selectedSupplierId
   )
@@ -310,6 +313,7 @@ export default function SuppliersPage() {
               type="button"
               onClick={() => setActiveWorkspace("Add supplier")}
               className="btn-primary btn-sm h-10 shrink-0 px-3"
+              aria-label="Add supplier"
             >
               + Add supplier
             </button>
@@ -332,7 +336,7 @@ export default function SuppliersPage() {
 
           {activeWorkspace === "Accounts" ? (
           <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-            <div className="border-b border-zinc-200 p-4">
+            <div className="border-b border-zinc-200 p-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-zinc-950">
                   Supplier accounts
@@ -341,6 +345,10 @@ export default function SuppliersPage() {
                   Purchases from receiving and later payments stay connected.
                 </p>
               </div>
+              <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer" style={{ color: "var(--text-2)" }}>
+                <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />
+                Show archived
+              </label>
             </div>
 
             <div className="overflow-x-auto">
@@ -437,6 +445,26 @@ export default function SuppliersPage() {
                           {formatDate(supplier.lastActivityAt)}
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-2.5">
+                          <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              if (supplier.archived) {
+                                restoreSupplier(supplier.id)
+                                showToast(`${supplier.name} restored.`)
+                              } else {
+                                archiveSupplier(supplier.id)
+                                showToast(`${supplier.name} archived.`)
+                              }
+                              refreshSuppliers()
+                            }}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
+                            title={supplier.archived ? "Restore supplier" : "Archive supplier"}
+                            aria-label={supplier.archived ? `Restore ${supplier.name}` : `Archive ${supplier.name}`}
+                          >
+                            {supplier.archived ? "↩" : "📦"}
+                          </button>
                           <button
                             type="button"
                             onClick={(event) => {
@@ -448,6 +476,7 @@ export default function SuppliersPage() {
                           >
                             <X size={15} />
                           </button>
+                          </div>
                         </td>
                       </tr>
                     )
@@ -692,6 +721,7 @@ export default function SuppliersPage() {
                     <button
                       key={method.label}
                       type="button"
+                      aria-pressed={active}
                       onClick={() =>
                         setPayment((currentPayment) => ({
                           ...currentPayment,
