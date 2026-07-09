@@ -1055,10 +1055,6 @@ export default function POSPage() {
           canApplyDiscount={canApplyDiscount}
           settings={settings}
           isCompleting={isCompleting}
-          usdInputRef={usdInputRef}
-          lbpInputRef={lbpInputRef}
-          onUsdEnter={() => lbpInputRef.current?.focus()}
-          onLbpEnter={() => handleReview()}
         />
       </div>
 
