@@ -150,14 +150,16 @@ export default function DeliveryPage() {
           <div className="relative flex-1 sm:flex-initial">
             <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
             <input id="deliverySearch" type="text" placeholder={t("delivery.search_placeholder")} value={search} onChange={e => setSearch(e.target.value)}
+              aria-label={t("delivery.search_placeholder")}
               className="input h-9 ps-8 pe-3 text-sm w-full sm:w-48" />
           </div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+            aria-label={t("delivery.filter_by_status")}
             className="input h-9 text-sm px-2">
             <option value="All">{t("delivery.all_status")}</option>
             {STATUS_ORDER.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <button onClick={loadOrders} className="btn-default btn-sm">{t("delivery.refresh")}</button>
+          <button onClick={loadOrders} className="btn-default btn-sm" aria-label={t("delivery.refresh")}>{t("delivery.refresh")}</button>
         </div>
       </div>
 
@@ -167,11 +169,18 @@ export default function DeliveryPage() {
         <div className="space-y-2">
           {filtered.map(order => (
             <div key={order.id} className="card overflow-hidden">
-              <div className="p-3 flex flex-col sm:flex-row sm:items-center gap-2 cursor-pointer" onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}>
+              <div className="p-3 flex flex-col sm:flex-row sm:items-center gap-2 cursor-pointer"
+                role="button" tabIndex={0} aria-expanded={expandedId === order.id}
+                aria-label={`Order ${order.orderNumber} for ${order.customerName} — ${order.status}`}
+                onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedId(expandedId === order.id ? null : order.id) }}}
+                onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm">{order.orderNumber}</span>
                     <span className={`chip ${STATUS_COLORS[order.status] || "chip-neutral"}`}>{order.status}</span>
+                    {!order.assignedTo && order.status !== "Delivered" && order.status !== "Cancelled" && (
+                      <span className="chip chip-warning text-[10px]">Unassigned</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500">
                     <span className="flex items-center gap-1"><User className="w-3 h-3" />{order.customerName}</span>
@@ -181,7 +190,7 @@ export default function DeliveryPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-sm">{formatCurrency(order.total)}</span>
-                  {expandedId === order.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  {expandedId === order.id ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
                 </div>
               </div>
 
@@ -214,11 +223,13 @@ export default function DeliveryPage() {
                     <div className="flex gap-2 pt-1">
                       {nextStatus(order.status) && (
                         <button onClick={() => updateStatus(order.id, nextStatus(order.status)!)}
+                          aria-label={`Mark ${order.orderNumber} as ${nextStatus(order.status)}`}
                           className="btn-primary btn-sm text-xs">
                           {t("delivery.mark_as")} {nextStatus(order.status)}
                         </button>
                       )}
                       <button onClick={() => updateStatus(order.id, "Cancelled")}
+                        aria-label={`Cancel order ${order.orderNumber}`}
                         className="btn-danger btn-sm text-xs">
                         {t("delivery.cancel_order")}
                       </button>

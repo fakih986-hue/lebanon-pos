@@ -78,6 +78,7 @@ export default function DriversPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold flex items-center gap-2"><Truck className="w-5 h-5" /> {t("drivers.title")}</h1>
         <button onClick={() => { resetForm(); setShowForm(!showForm) }}
+          aria-expanded={showForm}
           className="btn-primary btn-sm gap-1.5">
           <Plus className="w-4 h-4" /> {showForm ? t("drivers.cancel") : t("drivers.add")}
         </button>
@@ -85,7 +86,7 @@ export default function DriversPage() {
 
       {showForm && (
         <form onSubmit={handleSubmit} className="card p-4 mb-4 space-y-3">
-          <h2 className="font-semibold text-sm">{editingId ? t("drivers.edit") : t("drivers.new")}</h2>
+          <h2 className="font-semibold text-sm" id="driver-form-title">{editingId ? t("drivers.edit") : t("drivers.new")}</h2>
           <div className="grid grid-cols-2 gap-3">
             <label className="block text-sm font-medium text-zinc-700">
               {t("drivers.name")}
@@ -145,13 +146,17 @@ export default function DriversPage() {
                   <td className="px-4 py-3 text-zinc-500">{d.mobile || "—"}</td>
                   <td className="px-4 py-3 text-center">
                     <button onClick={() => toggleActive(d)}
+                      aria-pressed={d.active}
+                      aria-label={`${d.name}: ${d.active ? t("drivers.active") : t("drivers.inactive")}`}
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${d.active ? "chip-success" : "chip-neutral"}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${d.active ? "bg-[var(--success)]" : "bg-[var(--text-3)]"}`} />
                       {d.active ? t("drivers.active") : t("drivers.inactive")}
                     </button>
                   </td>
                   <td className="px-4 py-3 text-end">
-                    <button onClick={() => startEdit(d)} className="text-xs px-2.5 py-1.5 bg-zinc-100 rounded-lg hover:bg-zinc-200">
+                    <button onClick={() => startEdit(d)}
+                      aria-label={`Edit ${d.name}`}
+                      className="text-xs px-2.5 py-1.5 bg-zinc-100 rounded-lg hover:bg-zinc-200">
                       <Pencil className="w-3.5 h-3.5 inline me-1" /> {t("drivers.edit_btn")}
                     </button>
                   </td>
