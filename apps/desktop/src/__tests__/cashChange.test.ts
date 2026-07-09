@@ -142,3 +142,64 @@ describe("Exact LBP tender — fillExactTender scenario", () => {
     expect(paidTotalUsd + 0.005).toBeGreaterThanOrEqual(totalUsd)
   })
 })
+
+describe("Canonical cash payable rounding", () => {
+  const RATE = 89_500
+
+  it("$9.13 → 820,000 LBP payable (ceil to 5000 banknote)", () => {
+    const rawUsd = 9.13
+    const rawLbp = usdToLbp(rawUsd, RATE)          // 817,135
+    const payableLbp = ceilLbp(rawLbp, 5000)        // 820,000
+    const payableUsd = lbpToUsd(payableLbp, RATE)   // ~9.16
+
+    expect(Math.round(rawLbp)).toBe(817_135)           // raw conversion (floating point)
+    expect(payableLbp).toBe(820_000)                   // canonical cash payable
+    expect(payableUsd).toBeGreaterThan(rawUsd)       // payable exceeds raw
+  })
+
+  it("Exact LBP against canonical payable → zero change", () => {
+    const payableLbp = ceilLbp(usdToLbp(9.13, RATE), 5000)  // 820,000
+    const payableUsd = lbpToUsd(payableLbp, RATE)
+    const { changeUsd, changeLbp } = computeCashChange({
+      paidUsd: 0, paidLbp: payableLbp,       // Exact LBP fills 820,000
+      totalUsd: payableUsd, totalLbp: payableLbp,  // Compared against canonical
+      exchangeRate: RATE,
+    })
+    expect(changeLbp).toBe(0)
+    expect(changeUsd).toBe(0)
+  })
+
+  it("Paying above canonical payable → correct change in LBP", () => {
+    const payableLbp = ceilLbp(usdToLbp(9.13, RATE), 5000)  // 820,000
+    const payableUsd = lbpToUsd(payableLbp, RATE)
+    const paidLbp = 1_000_000
+    const { changeLbp } = computeCashChange({
+      paidUsd: 0, paidLbp,
+      totalUsd: payableUsd, totalLbp: payableLbp,
+      exchangeRate: RATE,
+    })
+    expect(changeLbp).toBe(180_000)
+  })
+
+  it("Exact USD against canonical payable → zero change", () => {
+    const payableLbp = ceilLbp(usdToLbp(9.13, RATE), 5000)  // 820,000
+    const payableUsd = lbpToUsd(payableLbp, RATE)            // ~9.16
+    const { changeUsd, changeLbp } = computeCashChange({
+      paidUsd: payableUsd, paidLbp: 0,
+      totalUsd: payableUsd, totalLbp: payableLbp,
+      exchangeRate: RATE,
+    })
+    expect(changeUsd).toBe(0)
+    expect(changeLbp).toBe(0)
+  })
+
+  it("Mixed tender against canonical payable", () => {
+    const payableLbp = ceilLbp(usdToLbp(9.13, RATE), 5000)  // 820,000
+    const payableUsd = lbpToUsd(payableLbp, RATE)
+    // Pay $4 + 462,100 LBP = $4 + ~$5.16 = $9.16
+    const paidUsd = 4
+    const paidLbp = 462_100
+    const paidTotalUsd = roundMoney(paidUsd + lbpToUsd(paidLbp, RATE))
+    expect(paidTotalUsd + 0.005).toBeGreaterThanOrEqual(payableUsd)
+  })
+})

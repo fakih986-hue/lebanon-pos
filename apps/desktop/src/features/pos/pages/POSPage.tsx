@@ -246,6 +246,9 @@ export default function POSPage() {
   const total = roundMoney(subtotal + tax)
   const exchangeRate = Math.max(1, settings.usdToLbpRate)
   const totalLbp = usdToLbp(total, exchangeRate)
+  // Canonical cash payable — rounded to nearest banknote so change makes practical sense
+  const payableLbp = ceilLbp(totalLbp, 5000)
+  const payableUsd = lbpToUsd(payableLbp, exchangeRate)
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const selectedCustomer = customers.find(
     (customer) => customer.id === selectedCustomerId
@@ -264,14 +267,14 @@ export default function POSPage() {
   const tenderMode: TenderMode = paidLbpAmount > 0 ? (paidUsdAmount > 0 ? "Mixed" : "LBP") : "USD"
   const paidTotalUsd = roundMoney(paidUsdAmount + lbpToUsd(paidLbpAmount, exchangeRate))
   const paidTotalLbp = usdToLbp(paidTotalUsd, exchangeRate)
-  const cashStillDueUsd = roundMoney(Math.max(0, total - paidTotalUsd))
+  const cashStillDueUsd = roundMoney(Math.max(0, payableUsd - paidTotalUsd))
   const { changeUsd: cashChangeUsd, changeLbp: cashChangeLbp } = computeCashChange({
     paidUsd: paidUsdAmount, paidLbp: paidLbpAmount,
-    totalUsd: total, totalLbp, exchangeRate,
+    totalUsd: payableUsd, totalLbp: payableLbp, exchangeRate,
   })
   const cashTenderValid =
     paymentMethod !== "Cash" || items.length === 0 ||
-    (tenderMode === "LBP" ? paidLbpAmount >= totalLbp : paidTotalUsd + 0.005 >= total)
+    (tenderMode === "LBP" ? paidLbpAmount >= payableLbp : paidTotalUsd + 0.005 >= payableUsd)
   const creditLimitExceeded = Boolean(
     paymentMethod === "Debt" &&
       selectedCustomer &&
@@ -478,13 +481,13 @@ export default function POSPage() {
 
   const fillExactTender = useCallback(function fillExactTender(currency: "USD" | "LBP") {
     if (currency === "USD") {
-      setPaidUsd(total.toFixed(2))
+      setPaidUsd(payableUsd.toFixed(2))
       setPaidLbp("")
       return
     }
-    setPaidLbp(String(ceilLbp(totalLbp)))
+    setPaidLbp(String(payableLbp))
     setPaidUsd("")
-  }, [total, totalLbp])
+  }, [payableUsd, payableLbp])
 
   // --- Sale lifecycle ---
   const cleanSale = useCallback(function cleanSale() {
