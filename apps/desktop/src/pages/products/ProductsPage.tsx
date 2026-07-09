@@ -8,6 +8,7 @@ import StockControlPanel from "../../features/pos/components/StockControlPanel"
 import ProductSetupForm from "../../features/pos/components/ProductSetupForm"
 import ProductTable from "../../features/pos/components/ProductTable"
 import ProductQuickCreate from "../../features/pos/components/ProductQuickCreate"
+import ProductEditDrawer from "../../features/pos/components/ProductEditDrawer"
 import Spinner from "../../components/ui/Spinner"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 import { getApiUrl, getAuthToken } from "../../features/pos/services/sync.service"
@@ -330,8 +331,26 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
         (b.supplierName ?? "").toLowerCase().includes(q)
       )
     }
-    return list.sort((a, b) => b.receivedAt.localeCompare(a.receivedAt))
+    return list.sort((a, b) => {
+      // FEFO: soonest expiry first, expired first if applicable
+      const aExp = a.expiryDate || "9999-12-31"
+      const bExp = b.expiryDate || "9999-12-31"
+      return aExp.localeCompare(bExp)
+    })
   }, [lotSearch, lotFilter, products, batchVersion])
+
+  function getExpiryChip(batch: { expiryDate?: string; status: string }) {
+    if (!batch.expiryDate) return null
+    const now = new Date()
+    const exp = new Date(batch.expiryDate)
+    const diffMs = exp.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+    if (diffMs < 0) return { label: "Expired", bg: "var(--rose-100)", fg: "var(--rose-700)" }
+    if (diffDays === 0) return { label: "Today", bg: "var(--rose-100)", fg: "var(--rose-700)" }
+    if (diffDays <= 7) return { label: `${diffDays}d`, bg: "var(--rose-100)", fg: "var(--rose-700)" }
+    if (diffDays <= 30) return { label: `${diffDays}d`, bg: "var(--amber-100)", fg: "var(--amber-700)" }
+    return { label: `${diffDays}d`, bg: "var(--emerald-100)", fg: "var(--emerald-700)" }
+  }
   const selectedProductBatches = useMemo(
     () =>
       openBatches.filter(
@@ -837,10 +856,20 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
                     {batch.receivedAt ? formatDate(batch.receivedAt) : "—"}
                   </td>
                   <td className="border-b px-3 py-3">
-                    <span className="chip text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{
-                      background: batch.status === "Open" ? "var(--emerald-100)" : batch.status === "Consumed" ? "var(--slate-100)" : "var(--rose-100)",
-                      color: batch.status === "Open" ? "var(--emerald-700)" : batch.status === "Consumed" ? "var(--slate-600)" : "var(--rose-700)",
-                    }}>{batch.status}</span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span className="chip text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{
+                        background: batch.status === "Open" ? "var(--emerald-100)" : batch.status === "Consumed" ? "var(--slate-100)" : "var(--rose-100)",
+                        color: batch.status === "Open" ? "var(--emerald-700)" : batch.status === "Consumed" ? "var(--slate-600)" : "var(--rose-700)",
+                      }}>{batch.status}</span>
+                      {(() => {
+                        const chip = getExpiryChip(batch)
+                        if (!chip) return null
+                        return (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold"
+                            style={{ background: chip.bg, color: chip.fg }}>{chip.label}</span>
+                        )
+                      })()}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -1298,63 +1327,21 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
         />
       )}
 
-      {/* Edit Product Modal */}
+      {/* Edit Product Drawer */}
       {editProduct && (
-        <div className="modal-overlay" onClick={() => setEditProduct(null)}>
-          <div className="modal-card" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Edit Product</h2>
-              <button onClick={() => setEditProduct(null)} className="btn-icon" style={{ color: "var(--text-3)" }} aria-label="Close edit modal">✕</button>
-            </div>
-            <div className="modal-body space-y-3">
-              <label className="block">
-                <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Name</span>
-                <input value={editName} onChange={(e) => setEditName(e.target.value)} className="input w-full" />
-              </label>
-              <label className="block">
-                <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Category</span>
-                <input value={editCategory} onChange={(e) => setEditCategory(e.target.value)} className="input w-full" />
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Price $</span>
-                  <input type="number" min="0" step="0.01" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="input w-full" />
-                </label>
-                <label className="block">
-                  <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Cost $</span>
-                  <input type="number" min="0" step="0.01" value={editCost} onChange={(e) => setEditCost(e.target.value)} className="input w-full" />
-                </label>
-              </div>
-              <label className="block">
-                <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Barcode</span>
-                <input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} className="input w-full font-mono" />
-              </label>
-              <label className="block">
-                <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Barcode Aliases <span className="font-normal" style={{ color: "var(--text-3)" }}>(comma-separated)</span></span>
-                <input value={editBarcodeAliases} onChange={(e) => setEditBarcodeAliases(e.target.value)} placeholder="5281000123457, 5281000123458" className="input w-full font-mono" />
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                <label className="block">
-                  <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Stock</span>
-                  <span className="flex items-center h-10 px-3 rounded-lg text-sm font-semibold" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>{editProduct?.stock ?? "—"} units</span>
-                  <p className="text-[10px] mt-0.5" style={{ color: "var(--text-3)" }}>Use receiving to change stock</p>
-                </label>
-                <label className="block">
-                  <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Reorder Pt</span>
-                  <input type="number" min="0" value={editReorderPoint} onChange={(e) => setEditReorderPoint(e.target.value)} className="input w-full" />
-                </label>
-                <label className="block">
-                  <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Reorder Qty</span>
-                  <input type="number" min="0" value={editReorderQty} onChange={(e) => setEditReorderQty(e.target.value)} className="input w-full" />
-                </label>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button onClick={() => setEditProduct(null)} className="btn btn-default">Cancel</button>
-              <button onClick={saveProductEdit} className="btn btn-primary">Save Changes</button>
-            </div>
-          </div>
-        </div>
+        <ProductEditDrawer
+          product={editProduct}
+          editName={editName} onEditNameChange={setEditName}
+          editCategory={editCategory} onEditCategoryChange={setEditCategory}
+          editPrice={editPrice} onEditPriceChange={setEditPrice}
+          editCost={editCost} onEditCostChange={setEditCost}
+          editBarcode={editBarcode} onEditBarcodeChange={setEditBarcode}
+          editBarcodeAliases={editBarcodeAliases} onEditBarcodeAliasesChange={setEditBarcodeAliases}
+          editReorderPoint={editReorderPoint} onEditReorderPointChange={setEditReorderPoint}
+          editReorderQty={editReorderQty} onEditReorderQtyChange={setEditReorderQty}
+          onSave={saveProductEdit}
+          onClose={() => setEditProduct(null)}
+        />
       )}
 
       </>
