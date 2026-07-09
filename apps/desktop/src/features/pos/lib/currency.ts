@@ -50,6 +50,12 @@ export function roundLbp(value: number, nearest = 5000) {
   return Math.round(value / nearest) * nearest
 }
 
+/** Round an LBP amount UP to the nearest banknote increment so the paid amount always covers the total. */
+export function ceilLbp(value: number, nearest = 5000) {
+  if (nearest <= 0) return Math.ceil(value)
+  return Math.ceil(value / nearest) * nearest
+}
+
 /** Convert USD → LBP and round to a clean banknote increment. */
 export function usdToLbpRounded(value: number, exchangeRate: number, nearest = 5000) {
   return roundLbp(usdToLbp(value, exchangeRate), nearest)

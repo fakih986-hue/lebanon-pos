@@ -27,6 +27,7 @@ import {
   lbpToUsd,
   roundMoney,
   roundLbp,
+  ceilLbp,
   usdToLbp,
 } from "../lib/currency"
 import { playErrorBuzz, playScanBlip } from "../lib/sound"
@@ -263,7 +264,8 @@ export default function POSPage() {
     totalUsd: total, totalLbp, exchangeRate,
   })
   const cashTenderValid =
-    paymentMethod !== "Cash" || items.length === 0 || paidTotalUsd + 0.005 >= total
+    paymentMethod !== "Cash" || items.length === 0 ||
+    (tenderMode === "LBP" ? paidLbpAmount >= totalLbp : paidTotalUsd + 0.005 >= total)
   const creditLimitExceeded = Boolean(
     paymentMethod === "Debt" &&
       selectedCustomer &&
@@ -474,7 +476,7 @@ export default function POSPage() {
       setPaidLbp("")
       return
     }
-    setPaidLbp(String(roundLbp(totalLbp)))
+    setPaidLbp(String(ceilLbp(totalLbp)))
     setPaidUsd("")
   }, [total, totalLbp])
 
