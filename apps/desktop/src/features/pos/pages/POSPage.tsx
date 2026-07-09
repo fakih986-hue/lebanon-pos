@@ -677,6 +677,7 @@ export default function POSPage() {
       const saleRecord = {
         number: saleNumber, paymentMethod, customerName: selectedCustomer?.name,
         grossSubtotal, subtotal, discountTotal, tax, total, totalLbp, exchangeRate,
+        payableLbp, payableUsd,
         tender, profit: saleResult.profit,
         customerBalanceBefore: paymentMethod === "Debt" ? customerBalanceBefore : undefined,
         customerBalanceAfter, items,
@@ -1135,6 +1136,25 @@ export default function POSPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Cash rounding disclosure — only for cash sales with rounding gap */}
+              {paymentMethod === "Cash" && payableLbp !== totalLbp && (
+                <div className="rounded-xl p-3 space-y-1" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                  <div className="flex justify-between text-[11px] font-semibold">
+                    <span style={{ color: "var(--text-3)" }}>Cash rounding</span>
+                    <span className="tabular-nums" style={{ color: "var(--brand-text)" }}>
+                      +{formatLbpCurrency(payableLbp - totalLbp)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[12px] font-bold">
+                    <span style={{ color: "var(--text-2)" }}>Cash payable</span>
+                    <div className="text-end tabular-nums">
+                      <span style={{ color: "var(--text)" }}>{formatLbpCurrency(payableLbp)}</span>
+                      <span className="text-[10px] ms-1" style={{ color: "var(--text-3)" }}>({formatCurrency(payableUsd)})</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Payment info */}
               <div className="flex items-center justify-between text-[12px] pt-2 border-t" style={{ borderColor: "var(--border)" }}>

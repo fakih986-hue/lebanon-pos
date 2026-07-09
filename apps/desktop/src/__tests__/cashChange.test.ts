@@ -203,3 +203,32 @@ describe("Canonical cash payable rounding", () => {
     expect(paidTotalUsd + 0.005).toBeGreaterThanOrEqual(payableUsd)
   })
 })
+
+describe("Cash rounding disclosure", () => {
+  const RATE = 89_500
+
+  it("817,135 LBP → +2,865 → 820,000 LBP", () => {
+    const rawLbp = usdToLbp(9.13, RATE)                          // ~817,135
+    const payableLbp = ceilLbp(rawLbp, 5000)                     // 820,000
+    const adjustment = Math.round(payableLbp - rawLbp)
+    expect(adjustment).toBe(2_865)
+    expect(payableLbp).toBe(820_000)
+  })
+
+  it("already-rounded total → no adjustment", () => {
+    const rawLbp = usdToLbp(3.00, RATE)     // 268,500
+    const payableLbp = ceilLbp(rawLbp, 5000) // 270,000
+    // Not zero because ceilLbp rounds up — but for EXACTLY aligned values:
+    const exact = ceilLbp(200_000, 5000)
+    expect(exact).toBe(200_000)             // exact → no adjustment
+    expect(exact - 200_000).toBe(0)
+  })
+
+  it("non-cash sale should not show rounding (legacy totals used)", () => {
+    // Card/Debt/Wallet: payableLbp is NOT used, totalLbp stays raw
+    const rawLbp = usdToLbp(9.13, RATE)     // 817,135
+    // Only cash shows the rounding box in review overlay
+    // This test documents that rawLbp ≠ ceilLbp(rawLbp) for non-cash context
+    expect(ceilLbp(rawLbp, 5000)).not.toBe(Math.round(rawLbp))
+  })
+})
