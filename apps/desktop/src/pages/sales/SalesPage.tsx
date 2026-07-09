@@ -632,6 +632,10 @@ export default function SalesPage() {
         onCancel={() => setPendingRefund(null)}
       >
         <p>{t("pos.sales.confirm_refund", { count: pendingRefund?.refundItems.length ?? 0, total: formatCurrency(pendingRefund?.refundTotal ?? 0) })}</p>
+        {pendingRefund?.refundReason && <p className="mt-1 text-xs" style={{ color: "var(--text-3)" }}>Reason: {pendingRefund.refundReason}</p>}
+        <p className="mt-2 text-xs font-semibold" style={{ color: "var(--text-2)" }}>
+          Stock will be restored and batch quantities returned. {pendingRefund?.sale.paymentMethod === "Debt" ? "Customer debt will be reduced." : ""}
+        </p>
       </ConfirmDialog>
 
       <ConfirmDialog
@@ -643,6 +647,9 @@ export default function SalesPage() {
         onCancel={() => setVoidSaleId(null)}
       >
         <p>{t("pos.sales.void_sale_message")}</p>
+        <p className="mt-2 text-xs font-semibold" style={{ color: "var(--rose-text)" }}>
+          This will reverse the sale, restore inventory, and remove any customer debt. This cannot be undone.
+        </p>
       </ConfirmDialog>
     </main>
   )

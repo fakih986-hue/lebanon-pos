@@ -352,6 +352,7 @@ const ReceiptPreview = memo(function ReceiptPreview({
                 type="button"
                 onClick={() => onRecordRefund(sale)}
                 disabled={refundDraftItems.length === 0}
+                aria-label={`Record refund of ${refundDraftItems.length} items for ${formatCurrency(refundDraftTotal)}`}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-rose-600 px-3 text-sm font-bold text-white transition hover:bg-rose-500 disabled:bg-zinc-200 disabled:text-zinc-400"
               >
                 <RotateCcw size={16} />
@@ -368,6 +369,7 @@ const ReceiptPreview = memo(function ReceiptPreview({
             <button
               type="button"
               onClick={() => onVoid(sale.id)}
+              aria-label={`Void sale ${sale.saleNumber}`}
               className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-3 text-sm font-bold text-rose-600 transition hover:bg-rose-50"
             >
               <X size={16} />
