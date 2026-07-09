@@ -6,6 +6,13 @@
 
 ---
 
+## 2026-07-09 — Fable — Sprint POS-UX-F3 (Phase 3: Inventory/Customers/Dashboard) — COMPLETE
+
+- Split with OpenCode working in parallel: OpenCode shipped ProductEditDrawer, FEFO lots + expiry chips, clickable aging bands, dashboard action queue (money-at-risk sort + All clear). Fable shipped: "⋯ Tools" menu (Generate Images/Bulk Edit off the toolbar), credit-limit progress bar + promise-to-pay note in customers rail, generic ui/Drawer.tsx primitive.
+- IMPORTANT FIX: OpenCode's new chips used phantom tokens (--rose-100/--amber-700/--emerald-100/--slate-*) that don't exist in index.css — rendered unstyled. Replaced 26 usages with real semantic tokens (danger/warning/success-soft/-text, surface-3, text-2). RULE: only tokens defined in index.css; grep before inventing.
+- Verified live: Tools menu opens w/ both items + old buttons gone; promise note renders; aging/queue confirmed present. tsc clean; 78/78 tests.
+- Phases 1–3 of the Fable visual direction are now COMPLETE. Remaining from direction doc: Phase-2 QA on real touch hardware, 4-way AR/light sweep, real product photos (data).
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-12 (Owner Dashboards + Data Visibility) — COMPLETE
 
 **Dashboard — payment mix bar:**

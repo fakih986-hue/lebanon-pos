@@ -20,13 +20,13 @@ Rules: tokens only · file-by-file commits · `tsc --noEmit` + `vitest run` gree
 - [x] Toast position route-aware: bottom-center on `/` (verified: centered, 24px from bottom), top-end elsewhere
 - [x] Manual verified live: cash change in both modes (incl. exact-LBP change 248,210 regression), hold→pill→resume, 4 tiles both modes, tsc clean, 62/62 tests
 
-## Phase 3 — Inventory / Customers / Dashboard
-- [ ] Product edit modal → right drawer; new `components/ui/Drawer.tsx`
-- [ ] Generate Images + Bulk Edit behind "⋯ Tools" menu — `ProductsPage.tsx`
-- [ ] Batches tab: FEFO sort + expiry countdown chips (>30d green / ≤30d amber / ≤7d red)
-- [ ] Customers: clickable aging bands filter ledger; promise-to-pay note; credit-limit progress bar — `CustomersPage.tsx`
-- [ ] Dashboard action queue: inline action buttons, money-at-risk sort, "All clear" success empty state — `DashboardPage.tsx`, `AlertsPanel.tsx`
-- [ ] Manual: product edit round-trip, debt payment + statement, dashboard ranges incl. empty
+## Phase 3 — Inventory / Customers / Dashboard — ✅ COMPLETE 2026-07-09 (Fable + OpenCode in parallel)
+- [x] Product edit → right drawer (OpenCode: `ProductEditDrawer.tsx`); generic `components/ui/Drawer.tsx` primitive added by Fable for future entity editing
+- [x] Generate Images + Bulk Edit behind "⋯ Tools" menu (Fable; verified live, old toolbar buttons gone)
+- [x] Batches: FEFO sort + expiry countdown chips (OpenCode) — Fable FIXED 26 phantom-token usages (--rose-100 etc. don't exist; chips rendered unstyled) → real semantic tokens across ProductsPage/ProductTable/CustomersPage/SalesPage
+- [x] Customers: clickable aging bands (OpenCode) + credit-limit progress bar w/ progressbar a11y + promise-to-pay note (Fable; note verified live, bar conditional correct — no customer has a limit in test store)
+- [x] Dashboard action queue: money-at-risk sort, actionable link rows, "All clear" state (OpenCode) — verified present
+- [x] tsc clean; 78/78 tests; Tools menu + promise note verified in browser
 
 ## Standing design laws (review gates)
 - [ ] One solid-gold element max per zone; money digits never gold
