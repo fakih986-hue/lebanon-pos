@@ -6,6 +6,40 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-BUG-1 (Exact LBP Tender Fix) — COMPLETE
+
+**Bug:** Exact LBP button underpaid ~50% of sales, blocking checkout.
+- `roundLbp` uses `Math.round` (round-to-nearest), which rounds DOWN for values where `mod 5000 < 2500`.
+- Example: $2.31 = 206,745 LBP, `roundLbp` → 205,000 (1,745 LBP short).
+- `cashTenderValid` converted LBP→USD for comparison, losing LBP-side precision.
+
+**Fix (3 changes):**
+1. `currency.ts`: Added `ceilLbp(value, nearest=5000)` — always rounds UP. Used by Exact LBP fill.
+2. `POSPage.tsx:fillExactTender`: Changed LBP path from `roundLbp(totalLbp)` to `ceilLbp(totalLbp)`.
+3. `POSPage.tsx:cashTenderValid`: Made LBP-aware — pure-LBP tenders now compare `paidLbp >= totalLbp` directly, mirroring `computeCashChange` design. Mixed/USD tenders unchanged.
+
+**Preserved:** `roundLbp` unchanged (still used for quick-cash chips where rounding is fine). USD exact path unchanged. Mixed tender unchanged. Change logic unchanged.
+
+**Tests added (8 new):**
+- `cashChange.test.ts`: 8 new tests (was 5, now 13)
+  - `roundLbp` behavior tests (3: rounds down, ties, exact)
+  - `ceilLbp` behavior tests (3: covers total, just over, tiny values, invariant that ceil >= raw for 9 values)
+  - Exact LBP scenario tests (5: $2.31 underpay vs new, $0.02 small, $3.00 exact, pure-LBP paid >= total, mixed tender still works)
+
+**Regression checks:**
+- Desktop typecheck: PASS
+- Desktop tests: **70/70 PASS** (13 cashChange + 57 core)
+- Desktop build: PASS (2.73s)
+
+**Files changed:**
+- `apps/desktop/src/features/pos/lib/currency.ts` (+7: `ceilLbp` function)
+- `apps/desktop/src/features/pos/pages/POSPage.tsx` (+2: `ceilLbp` import, LBP-aware `cashTenderValid`)
+- `apps/desktop/src/__tests__/cashChange.test.ts` (+82: 8 new regression tests)
+
+**Verdict: PASS**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-2 (Product/Inventory Polish) — COMPLETE
 
 **Tab naming verified — already renamed from earlier sprint:**
