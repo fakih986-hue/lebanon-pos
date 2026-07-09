@@ -21,12 +21,14 @@ import {
 import { formatCurrency, formatLbpCurrency, formatNumber, usdToLbp } from "../../features/pos/lib/currency"
 import {
   addCustomer,
+  archiveCustomer,
   buildCustomerStatement,
   deleteCustomer,
   getCustomerActivity,
   getCustomerLedger,
   getLedgerTotals,
   recordDebtPayment,
+  restoreCustomer,
   subscribeLedger,
   updateCustomer,
   type CustomerLedger,
@@ -93,6 +95,14 @@ const paymentMethods: Array<{
     label: "Wallet",
     icon: WalletCards,
   },
+  {
+    label: "Bank Transfer",
+    icon: HandCoins,
+  },
+  {
+    label: "Refund Credit",
+    icon: HandCoins,
+  },
 ]
 
 function normalizeNumber(value: string) {
@@ -135,6 +145,10 @@ export default function CustomersPage() {
   const [formErrors, setFormErrors] = useState<Partial<Record<"name" | "mobile", string>>>({})
   const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null)
   const [editCustomer, setEditCustomer] = useState<EditCustomerForm | null>(null)
+  const [sortBy, setSortBy] = useState<"name" | "balance" | "lastActivity">("name")
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+  const [agingFilter, setAgingFilter] = useState<string>("")
+  const [showArchived, setShowArchived] = useState(false)
   const { t } = useI18n()
 
   function refreshLedger(preferredCustomerId?: string) {
@@ -178,18 +192,30 @@ export default function CustomersPage() {
   }, [customers])
 
   const filteredCustomers = useMemo(() => {
-    const query = search.trim().toLowerCase()
+    let list = customers.filter(c => showArchived ? c.archived === true : !c.archived)
 
-    if (!query) {
-      return customers
+    if (agingFilter) {
+      const days = parseInt(agingFilter)
+      if (!isNaN(days)) {
+        list = list.filter(c => {
+          const total = c.aging.current + c.aging.days30 + c.aging.days60 + c.aging.days90
+          return total > 0.001 && c.oldestUnpaidDays >= days && c.oldestUnpaidDays < days + 30
+        })
+      }
     }
 
-    return customers.filter(
-      (customer) =>
-        customer.name.toLowerCase().includes(query) ||
-        customer.mobile.includes(query)
-    )
-      }, [customers, debouncedSearch])
+    const query = search.trim().toLowerCase()
+    if (query) {
+      list = list.filter(c => c.name.toLowerCase().includes(query) || c.mobile.includes(query))
+    }
+
+    return list.sort((a, b) => {
+      const cmp = sortDir === "asc" ? 1 : -1
+      if (sortBy === "balance") return (b.balance - a.balance) * cmp
+      if (sortBy === "lastActivity") return ((a.lastActivityAt ?? "").localeCompare(b.lastActivityAt ?? "")) * cmp
+      return a.name.localeCompare(b.name) * cmp
+    })
+  }, [customers, debouncedSearch, sortBy, sortDir, agingFilter, showArchived])
 
   const selectedCustomer = customers.find(
     (customer) => customer.id === selectedCustomerId
@@ -275,6 +301,7 @@ export default function CustomersPage() {
     }
 
     const amount = Math.min(payment.amount, customer.balance)
+    const wasCapped = payment.amount > customer.balance
 
     try {
       recordDebtPayment({
@@ -289,6 +316,9 @@ export default function CustomersPage() {
         reference: "",
       }))
       setFormErrors({})
+      if (wasCapped) {
+        showToast(`Amount capped to ${formatCurrency(amount)} (outstanding balance).`, "error")
+      }
       showToast(`${formatCurrency(amount)} received from ${customer.name}.`)
       setActivePanel("Ledger")
       refreshLedger(customer.id)
@@ -341,15 +371,19 @@ export default function CustomersPage() {
           <p className="text-[12px] font-bold uppercase tracking-wide mb-3" style={{ color: "var(--text-3)" }}>Outstanding by age</p>
           <div className="grid grid-cols-4 gap-2">
             {[
-              { label: "0–30 days", value: agingTotals.current, color: "var(--brand-text)", bg: "var(--brand-soft)" },
-              { label: "30–60 days", value: agingTotals.days30, color: "var(--amber-text)", bg: "var(--amber-soft)" },
-              { label: "60–90 days", value: agingTotals.days60, color: "#EA580C", bg: "rgba(234,88,12,0.12)" },
-              { label: "90+ days", value: agingTotals.days90, color: "var(--rose-text)", bg: "var(--rose-soft)" },
+              { label: "0–30 days", value: agingTotals.current, color: "var(--brand-text)", bg: "var(--brand-soft)", days: "0" },
+              { label: "30–60 days", value: agingTotals.days30, color: "var(--amber-text)", bg: "var(--amber-soft)", days: "30" },
+              { label: "60–90 days", value: agingTotals.days60, color: "#EA580C", bg: "rgba(234,88,12,0.12)", days: "60" },
+              { label: "90+ days", value: agingTotals.days90, color: "var(--rose-text)", bg: "var(--rose-soft)", days: "90" },
             ].map((b) => (
-              <div key={b.label} className="rounded-lg p-3" style={{ background: b.bg }}>
+              <button key={b.label} onClick={() => setAgingFilter(a => a === b.days ? "" : b.days)}
+                className={`rounded-lg p-3 text-left transition cursor-pointer ${agingFilter === b.days ? "ring-2 ring-zinc-400" : ""}`}
+                style={{ background: b.bg }}
+                aria-pressed={agingFilter === b.days}
+                aria-label={`Filter by ${b.label} debt`}>
                 <p className="text-[11px] font-semibold" style={{ color: b.color }}>{b.label}</p>
                 <p className="mt-1 text-[17px] font-bold tabular-nums" style={{ color: b.color }}>{formatCurrency(b.value)}</p>
-              </div>
+              </button>
             ))}
           </div>
         </section>
@@ -402,6 +436,21 @@ export default function CustomersPage() {
         </button>
       </div>
 
+      {/* Archive toggle + filter info */}
+      <div className="mt-2 flex items-center gap-3">
+        <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer" style={{ color: "var(--text-2)" }}>
+          <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />
+          Show archived
+        </label>
+        {agingFilter && (
+          <button onClick={() => setAgingFilter("")}
+            className="text-[11px] font-bold px-2 py-1 rounded"
+            style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+            Filter: {agingFilter === "0" ? "0–30d" : agingFilter === "30" ? "30–60d" : agingFilter === "60" ? "60–90d" : "90+d"} ✕
+          </button>
+        )}
+      </div>
+
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
         <section className="min-w-0 space-y-5">
           <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -409,8 +458,8 @@ export default function CustomersPage() {
               <table className="min-w-full border-separate border-spacing-0 text-sm">
                 <thead>
                   <tr className="text-start text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
-                    <th className="border-b border-zinc-200 px-4 py-3">
-                      Customer
+                    <th className="border-b border-zinc-200 px-4 py-3 cursor-pointer hover:text-zinc-700" onClick={() => { setSortBy("name"); setSortDir(d => d === "asc" ? "desc" : "asc") }}>
+                      Customer {sortBy === "name" && (sortDir === "asc" ? "↑" : "↓")}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
                       Contact
@@ -421,11 +470,11 @@ export default function CustomersPage() {
                     <th className="border-b border-zinc-200 px-4 py-3 text-end">
                       Paid
                     </th>
-                    <th className="border-b border-zinc-200 px-4 py-3 text-end">
-                      Balance
+                    <th className="border-b border-zinc-200 px-4 py-3 text-end cursor-pointer hover:text-zinc-700" onClick={() => { setSortBy("balance"); setSortDir("desc") }}>
+                      Balance {sortBy === "balance" ? "↓" : "↕"}
                     </th>
-                    <th className="border-b border-zinc-200 px-4 py-3">
-                      Last activity
+                    <th className="border-b border-zinc-200 px-4 py-3 cursor-pointer hover:text-zinc-700" onClick={() => { setSortBy("lastActivity"); setSortDir("desc") }}>
+                      Last activity {sortBy === "lastActivity" ? "↓" : "↕"}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
                       <span className="sr-only">Actions</span>
@@ -475,6 +524,16 @@ export default function CustomersPage() {
                                 over limit
                               </span>
                             )}
+                            {!customer.overLimit && customer.creditLimit > 0 && customer.balance > customer.creditLimit * 0.8 && (
+                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>
+                                near limit
+                              </span>
+                            )}
+                            {!customer.overdue && !customer.overLimit && customer.balance <= 0 && (
+                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--emerald-100)", color: "var(--emerald-700)" }}>
+                                good
+                              </span>
+                            )}
                           </div>
                           {customer.notes ? (
                             <div className="mt-1 max-w-64 truncate text-xs text-zinc-500">
@@ -500,6 +559,14 @@ export default function CustomersPage() {
                         <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-bold text-rose-700">
                           {formatCurrency(customer.balance)}
                           {customer.balance > 0 && <div className="text-[10px] text-rose-400">{formatLbpCurrency(usdToLbp(customer.balance, getSettings().usdToLbpRate))}</div>}
+                          {customer.creditLimit > 0 && (
+                            <div className="mt-1 h-1 w-full rounded-full" style={{ background: "var(--surface-3)" }}>
+                              <div className="h-1 rounded-full transition-all" style={{
+                                width: `${Math.min(100, (customer.balance / customer.creditLimit) * 100)}%`,
+                                background: customer.overLimit ? "var(--rose)" : customer.balance > customer.creditLimit * 0.8 ? "var(--amber)" : "var(--brand)",
+                              }} />
+                            </div>
+                          )}
                         </td>
                         <td className="border-b border-zinc-100 px-4 py-2.5 text-zinc-500">
                           {formatDate(customer.lastActivityAt)}
@@ -527,6 +594,7 @@ export default function CustomersPage() {
                                 className="flex h-9 w-9 items-center justify-center rounded-lg border transition"
                                 style={{ borderColor: "var(--border)", color: "#25D366" }}
                                 title="Send WhatsApp reminder"
+                                aria-label={`WhatsApp ${customer.name}`}
                               >
                                 <MessageCircle size={15} />
                               </button>
@@ -539,8 +607,28 @@ export default function CustomersPage() {
                               }}
                               className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
                               title="Edit customer"
+                              aria-label={`Edit ${customer.name}`}
                             >
                               <Pencil size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                if (customer.archived) {
+                                  restoreCustomer(customer.id)
+                                  showToast(`${customer.name} restored.`)
+                                } else {
+                                  archiveCustomer(customer.id)
+                                  showToast(`${customer.name} archived.`)
+                                }
+                                refreshLedger()
+                              }}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
+                              title={customer.archived ? "Restore customer" : "Archive customer"}
+                              aria-label={customer.archived ? `Restore ${customer.name}` : `Archive ${customer.name}`}
+                            >
+                              {customer.archived ? "↩" : "📦"}
                             </button>
                             <button
                               type="button"
@@ -557,6 +645,7 @@ export default function CustomersPage() {
                               }}
                               className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700"
                               title="Download statement"
+                              aria-label={`Download statement for ${customer.name}`}
                             >
                               <Download size={15} />
                             </button>
@@ -570,6 +659,7 @@ export default function CustomersPage() {
                               }}
                               className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700"
                               title="Print statement"
+                              aria-label={`Print statement for ${customer.name}`}
                             >
                               <Printer size={15} />
                             </button>
@@ -776,6 +866,7 @@ export default function CustomersPage() {
                           method: method.label,
                         }))
                       }
+                      aria-pressed={active}
                       className={`flex h-11 items-center justify-center gap-2 rounded-lg border text-sm font-bold transition ${
                         active
                           ? "border-emerald-600 bg-emerald-50 text-emerald-800"

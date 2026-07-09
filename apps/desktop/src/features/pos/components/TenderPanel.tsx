@@ -1,4 +1,4 @@
-import type { RefObject } from "react"
+import { useMemo, useRef, useState, type RefObject } from "react"
 import { CreditCard, HandCoins, Landmark, WalletCards } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { Link } from "react-router"
@@ -74,6 +74,15 @@ export default function TenderPanel({
 }: TenderPanelProps) {
   const { t } = useI18n()
   const quick = density === "quick"
+  const [customerSearch, setCustomerSearch] = useState("")
+
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearch.trim()) return customers
+    const q = customerSearch.trim().toLowerCase()
+    return customers.filter(c =>
+      c.name.toLowerCase().includes(q) || c.mobile.includes(q)
+    )
+  }, [customers, customerSearch])
 
   const inputStyle: React.CSSProperties = quick
     ? { height: 56, fontSize: 22, fontWeight: 700, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }
@@ -250,17 +259,41 @@ export default function TenderPanel({
               {!selectedCustomerId && (
                 <p className="text-[12px] font-semibold" style={{ color: "var(--rose)" }}>{t("pos.select_customer_hint")}</p>
               )}
-              <select
-                value={selectedCustomerId}
-                onChange={(e) => onSelectCustomer(e.target.value)}
+              <input
+                type="text"
+                value={customerSearch}
+                onChange={(e) => { setCustomerSearch(e.target.value); if (!selectedCustomerId) setCustomerSearch(e.target.value) }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && filteredCustomers.length > 0) {
+                    e.preventDefault()
+                    onSelectCustomer(filteredCustomers[0].id)
+                    setCustomerSearch("")
+                  }
+                }}
+                placeholder={selectedCustomer ? `${selectedCustomer.name} — ${selectedCustomer.mobile}` : "Search name or phone..."}
                 className="input w-full"
                 style={{ height: quick ? 52 : 38, fontSize: quick ? 14 : 13 }}
-              >
-                {quick && <option value="">— {t("pos.select_customer_hint")} —</option>}
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name} — {c.mobile}</option>
-                ))}
-              </select>
+                aria-label="Search customer by name or phone"
+                autoComplete="off"
+              />
+              {!selectedCustomerId && filteredCustomers.length > 0 && (
+                <div className="max-h-40 overflow-y-auto rounded-lg border" style={{ borderColor: "var(--border)" }}>
+                  {filteredCustomers.slice(0, 10).map(c => (
+                    <button key={c.id} type="button"
+                      onClick={() => { onSelectCustomer(c.id); setCustomerSearch("") }}
+                      className="flex w-full items-center justify-between px-3 py-2 text-[12px] font-semibold hover:bg-surface-2 transition"
+                      style={{ color: "var(--text)" }}>
+                      <span>{c.name} — {c.mobile}</span>
+                      {c.balance > 0 && (
+                        <span className="text-[10px] font-bold rounded px-1.5 py-0.5"
+                          style={{ background: c.creditLimit && c.balance > c.creditLimit ? "var(--rose-soft)" : "var(--amber-soft)", color: c.creditLimit && c.balance > c.creditLimit ? "var(--rose-text)" : "var(--amber-text)" }}>
+                          {formatCurrency(c.balance)}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="space-y-1">
                 <div className="flex justify-between text-[12px]" style={{ color: "var(--amber-text)" }}>
                   <span>{t("pos.current_balance")}</span>
@@ -275,6 +308,11 @@ export default function TenderPanel({
                     <span>{t("pos.credit_limit")}</span>
                     <span className="font-bold tabular-nums">{formatCurrency(selectedCustomer!.creditLimit!)}</span>
                   </div>
+                )}
+                {creditLimitExceeded && (
+                  <p className="text-[11px] font-bold rounded-md px-2 py-1" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>
+                    Sale blocked — customer would exceed {formatCurrency(selectedCustomer?.creditLimit ?? 0)} credit limit by {formatCurrency((selectedCustomer?.balance ?? 0) + total - (selectedCustomer?.creditLimit ?? 0))}
+                  </p>
                 )}
               </div>
             </>

@@ -6,6 +6,46 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-3 (Customer Debt Polish) — COMPLETE
+
+**Implemented per approved plan with PASS WITH CONSTRAINTS verdict.**
+
+**Phase A — Customer list/status badges:**
+- Sort controls: clickable headers for Name (↑↓), Balance (↓), Last Activity (↓)
+- Aging bands: clickable 0–30/30–60/60–90/90+ filter the table; active band highlighted with ring; "Filter: Xd" chip shows active filter with ✕ dismiss
+- Archive toggle: "Show archived" checkbox above table; `archiveCustomer()`/`restoreCustomer()` buttons on each row (uses existing service functions)
+- Risk/debt badges: "overdue" (rose), "over limit" (amber), "near limit" (amber, balance > 80% of creditLimit), "good" (emerald, no debt)
+- Credit limit progress bar: visual bar in balance column, fills brand→amber→rose as balance approaches/exceeds credit limit
+
+**Phase B — Profile/statement polish:**
+- Bank Transfer and Refund Credit payment methods added (types already supported in `DebtPayment.method`)
+- Overpayment warning: toast `"Amount capped to $X (outstanding balance)."` shown when payment exceeds balance
+- `aria-pressed` on payment method toggle buttons
+- `aria-label` on WhatsApp, Edit, Archive/Restore, Download, Print, Delete action buttons
+
+**Phase C — POS debt picker upgrade:**
+- Replaced raw `<select>` with searchable combobox (name/phone filter, Enter selects first match)
+- Balance+risk chip shown in dropdown options
+- Credit-limit exceeded explanation: `"Sale blocked — customer would exceed $X credit limit by $Y"` (prominent rose banner below credit limit row)
+- `aria-label` on customer search input
+
+**Phase D — Verification:**
+- Desktop typecheck: PASS
+- Desktop tests: **70/70 PASS** (13 cashChange + 57 core)
+- Desktop build: PASS (2.76s)
+
+**Deferred to follow-up (no P2 features per constraints):**
+- Inline New Customer in POS tender — requires POSPage surgery for `addCustomer` dispatch; documented as follow-up
+- Payment edit/void, branded statements, duplicate merge, promise-to-pay — explicitly out of scope
+
+**Files changed:**
+- `apps/desktop/src/pages/customers/CustomersPage.tsx` (+95 lines: sort, aging filters, archive toggle, risk badges, credit bar, overpayment warning, Bank Transfer/Refund Credit, aria-labels)
+- `apps/desktop/src/features/pos/components/TenderPanel.tsx` (+35 lines: searchable combobox, balance-in-options, credit-limit explanation, useState/useMemo imports)
+
+**Verdict: PASS**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-3 (Customer Debt Polish Plan) — PLAN ONLY
 
 **Status: AWAITING REVIEW — No Code Implemented**
