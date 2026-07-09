@@ -6,6 +6,48 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-HARDEN-1 (Commercial Hardening) — COMPLETE
+
+**Verified (no issues found):**
+- Fable POS-UX-F1 Phase 1 changes intact: Card tile in QuickPOS+CartBody, scan-error escalation with `scanError` 1.2s flash, "Clean"→"Clear sale" i18n, dynamic "Pay $X" button, cart steppers 36px.
+- Fable POS-UX-F2 Phase 2 changes intact: `TenderPanel.tsx` extracted as single tender engine (density full/quick), held sales pill shelf, toast route-aware positioning, LastSaleBanner present.
+- Checkout flows verified by code audit — no broken paths:
+  - Product tap adds item ✓
+  - Barcode scan adds/increments ✓
+  - Quantity increase/decrease/remove ✓
+  - Clear Sale cancel preserves cart ✓
+  - Clear Sale confirm empties cart ✓
+  - Cash exact USD/LBP works ✓
+  - Card/Wallet checkout paths ✓
+  - Debt requires customer (enforced, line 275) ✓
+  - Hold/resume/discard held sale ✓
+  - Failed checkout preserves cart (try/catch + flag rollback) ✓
+  - Offline/sync rejection shows error (event listener) ✓
+- Accessibility verified: `aria-pressed` on payment tiles, `aria-label` on held-sale discard, icon+text buttons (not icon-only), Escape closes review overlay.
+- Commercial error states: unknown barcode (role-based message), out-of-stock, stock cap reached, underpaid cash, credit limit exceeded, no-customer-for-debt, sync rejection — all show clear cashier-facing text.
+
+**Fixed:**
+- `null.id` audit bug at `security.service.ts:767`: `recordAuditEvent` now checks `if (!user) return undefined` before accessing `user.id`, `user.name`, `user.role`. Prevents `TypeError: Cannot read properties of null` on failed unlock with empty user store. 12 call sites validated — the 7 vulnerable ones (lines 455, 480, 515, 522, 573, 827, 894 in lock/unlock/shift paths) are now safe.
+- QuickPOSMode hardcoded `"Clear"` label → `t("pos.clear_sale")`.
+
+**Regression checks:**
+- API typecheck: PASS (0 errors)
+- Desktop typecheck: PASS (0 errors)
+- Desktop tests: **62/62 PASS**
+- Desktop build: PASS (2.62s)
+
+**Files changed:**
+- `apps/desktop/src/features/pos/services/security.service.ts` (+4 lines: null guard in recordAuditEvent)
+- `apps/desktop/src/features/pos/components/QuickPOSMode.tsx` (+1/-1: hardcoded "Clear" → i18n)
+
+**Remaining commercial risks:** None identified. POS checkout is verified safe after Fable Phase 1+2 changes.
+
+**Verdict: PASS**
+
+*Note: Fable Phase 3 (drawer, products/customers/dashboard polish) awaits approval. Do not start without explicit instruction.*
+
+---
+
 ## 2026-07-09 — Fable — Sprint POS-UX-F2 (Tender Unification, Phase 2) — COMPLETE
 
 - New `TenderPanel.tsx`: the single tender engine (payment row, cash inputs + quick-cash chips + exact + change/still-due, debt picker), density "full" | "quick". Consumed by CartBody and QuickPOSMode — one payment UX standard. Pure presentation; POSPage keeps all state/money math. QuickPOS Enter-flow (USD→LBP→review) preserved via onUsdEnter/onLbpEnter.

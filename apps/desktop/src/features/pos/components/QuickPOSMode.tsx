@@ -278,7 +278,7 @@ export default function QuickPOSMode({
             className="flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[12px] font-bold transition disabled:opacity-30"
             style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }}
             whileTap={{ scale: 0.92 }}>
-            <Eraser size={13} /> Clear
+            <Eraser size={13} /> {t("pos.clear_sale") || "Clear"}
           </MotionButton>
         </div>
       </div>

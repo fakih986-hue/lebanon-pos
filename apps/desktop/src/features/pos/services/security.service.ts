@@ -758,6 +758,10 @@ export function getAuditEvents() {
 
 export function recordAuditEvent(input: RecordAuditInput) {
   const user = getCurrentUser()
+  if (!user) {
+    console.warn("[audit] Skipping audit — no current user", input.action)
+    return undefined
+  }
   const event: AuditEvent = {
     id: createId("audit"),
     action: input.action,
