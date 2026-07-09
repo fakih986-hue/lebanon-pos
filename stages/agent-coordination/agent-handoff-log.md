@@ -6,6 +6,28 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-9 (Commercial Gap Audit) — COMPLETE
+
+**Audit:** Wrote `stages/ux-ui/pos-commercial-gap-audit-after-comm8.md`
+
+**Key findings:**
+- Commercial readiness score: **72/100**
+- 20 remaining gaps ranked P0/P1/P2 — verified in code, not speculative
+- Top P0: sale review missing, offline banner missing, edit modal not drawer, no FEFO expiry chips, no inline POS customer create, no open float explanation
+- Top P1: product card stock badges missing, 4 monolithic pages, no loading skeletons, no driver assignment UI
+- Top P2: no manager approval, cash rec not persisted, no promise-to-pay, no responsive layouts
+
+**Recommended next 3 sprints (recommended implementation order):**
+- **Sprint A**: POS Checkout Commercial Finish (sale review, offline banner, card badges, refund wizard) — P0
+- **Sprint B**: Products + Inventory Structural Split (drawer, FEFO chips, loading skeletons, Tools menu) — P0+P1
+- **Sprint C**: Owner Dashboards + Data Visibility (payment mix, license status, batch preview, driver assign, shift audit) — P1+P2
+
+**12 files identified as stable — no further work needed** (sales, product, inventoryBatch, sync, customer, supplier, currency, security, dailyClose services + TenderPanel, WorkspaceTabs, AlertsPanel, CloseDayPanel)
+
+**Verdict: Ready for stronger implementation sprints. No code changed (audit only).**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-8 (Settings/System Hardening) — COMPLETE
 
 **Sync health status badges:**
