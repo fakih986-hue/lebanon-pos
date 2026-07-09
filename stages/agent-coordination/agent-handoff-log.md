@@ -34,6 +34,7 @@
 **Files changed:**
 - `apps/desktop/src/pages/dashboard/DashboardPage.tsx` (+20: payment mix bar)
 - `apps/desktop/src/pages/settings/SettingsPage.tsx` (+28: license status card + imports)
+- `apps/desktop/src/pages/staff/StaffPage.tsx` (+10/-3: active/inactive filter toggle)
 
 **Verdict: PASS**
 
