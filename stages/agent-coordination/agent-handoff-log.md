@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-3 (Customer Debt Polish Plan) — PLAN ONLY
+
+**Status: AWAITING REVIEW — No Code Implemented**
+
+Wrote implementation plan to `stages/ux-ui/pos-comm-3-customer-debt-plan.md`.
+
+**Plan summary:**
+- 4 phases (A: customer list/badges, B: profile/statement labels, C: POS debt picker clarity, D: accessibility)
+- 22 tasks across `CustomersPage.tsx`, `TenderPanel.tsx`, `customer.service.ts`
+- P0 fixes: searchable POS customer picker, inline customer creation, credit limit explanation text, overpayment warning
+- P1 fixes: archive/restore UI, sort/filter, credit limit progress bar
+- P2 fixes: Bank Transfer/Refund Credit payment methods, accessibility
+
+**Explicit non-goals:** No ledger math changes, no debt balance changes, no checkout logic changes, no storage/sync changes, no POS tender math changes.
+
+**Risk:** `TenderPanel.tsx` is highest-risk — shared by CartBody and QuickPOSMode. Keep customer picker callback shape identical.
+
+**Next step:** Approve plan, then implement Phase A through D sequentially.
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-BUG-1 (Exact LBP Tender Fix) — COMPLETE
 
 **Bug:** Exact LBP button underpaid ~50% of sales, blocking checkout.
