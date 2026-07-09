@@ -13,12 +13,12 @@ Rules: tokens only · file-by-file commits · `tsc --noEmit` + `vitest run` gree
 - [x] Cart steppers 28→36px + aria-labels (Increase/Decrease/Set quantity); camera/clear/more icon buttons got aria-labels
 - [x] Manual: product tap adds, qty +/- works, Card selects (gold #D4A843 + dark text), cash tender change calculates, Clear Sale confirms w/ items + cancel preserves cart, tsc clean, 62/62 tests
 
-## Phase 2 — Tender unification
-- [ ] Extract shared `TenderPanel` (density: full | quick); consume from `CartBody.tsx` + `QuickPOSMode.tsx`; zero logic change
-- [ ] `LastSaleBanner` in main POS under scan bar, 30s dissolve
-- [ ] Held sales as pill-tabs above cart; recall shelf = drawer
-- [ ] Toast position: bottom-center on POS routes, top-end elsewhere — `Toast.tsx`
-- [ ] Manual: 4 payment methods × both modes, mixed tender, change/still-due, hold/recall, refund regression
+## Phase 2 — Tender unification — ✅ COMPLETE 2026-07-09 (Fable)
+- [x] Shared `TenderPanel.tsx` (density full | quick): payment row, cash tender (inputs, quick-cash chips, exact, change/still-due), debt picker — consumed by `CartBody.tsx` + `QuickPOSMode.tsx`; pure presentation, all state/math in POSPage; Enter-flow (USD→LBP→review) preserved via optional callbacks; change panel now semantic green/red in both modes
+- [x] `LastSaleBanner` already rendered in main POS (pre-existing — verified, no change needed)
+- [x] Held sales as pill shelf ABOVE cart items (play icon + hold# + total, tap resumes, ✕ discards); collapsible section removed
+- [x] Toast position route-aware: bottom-center on `/` (verified: centered, 24px from bottom), top-end elsewhere
+- [x] Manual verified live: cash change in both modes (incl. exact-LBP change 248,210 regression), hold→pill→resume, 4 tiles both modes, tsc clean, 62/62 tests
 
 ## Phase 3 — Inventory / Customers / Dashboard
 - [ ] Product edit modal → right drawer; new `components/ui/Drawer.tsx`

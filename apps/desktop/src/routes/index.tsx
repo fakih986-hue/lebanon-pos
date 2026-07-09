@@ -142,7 +142,7 @@ function Shell({ children }: { children: ReactNode }) {
       </div>
 
       <BottomNav />
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+      <ToastContainer toasts={toasts} onDismiss={dismiss} position={location.pathname === "/" ? "bottom-center" : "top-end"} />
 
       <AnimatePresence>
         {showIntro && <TitanIntro key="intro" onDone={() => setShowIntro(false)} />}

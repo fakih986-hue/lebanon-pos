@@ -60,11 +60,23 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: (id: 
   )
 }
 
-export default function ToastContainer({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismiss: (id: string) => void }) {
+export default function ToastContainer({
+  toasts,
+  onDismiss,
+  position = "top-end",
+}: {
+  toasts: ToastMessage[]
+  onDismiss: (id: string) => void
+  /** POS routes use bottom-center (cashier eyes live low); owner routes top-end. */
+  position?: "bottom-center" | "top-end"
+}) {
   if (toasts.length === 0) return null
+  const posClass = position === "bottom-center"
+    ? "bottom-24 left-1/2 -translate-x-1/2 items-center sm:bottom-6"
+    : "top-16 end-4 items-end"
   return (
     <div
-      className="pointer-events-none fixed bottom-24 right-4 z-[100] flex flex-col gap-2 sm:bottom-6"
+      className={`pointer-events-none fixed z-[100] flex flex-col gap-2 ${posClass}`}
       aria-live="polite"
     >
       {toasts.map((toast) => (

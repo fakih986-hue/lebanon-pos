@@ -6,6 +6,16 @@
 
 ---
 
+## 2026-07-09 — Fable — Sprint POS-UX-F2 (Tender Unification, Phase 2) — COMPLETE
+
+- New `TenderPanel.tsx`: the single tender engine (payment row, cash inputs + quick-cash chips + exact + change/still-due, debt picker), density "full" | "quick". Consumed by CartBody and QuickPOSMode — one payment UX standard. Pure presentation; POSPage keeps all state/money math. QuickPOS Enter-flow (USD→LBP→review) preserved via onUsdEnter/onLbpEnter.
+- Held sales: pill shelf above cart items (tap=resume, ✕=discard); collapsible section removed.
+- Toast routing: bottom-center on POS route (verified pixel-centered), top-end elsewhere (Toast.tsx position prop + routes/index.tsx).
+- LastSaleBanner: already present in main POS — verified, no change.
+- Dead imports cleaned in CartBody/QuickPOSMode.
+- Live verification: quick-mode 250k LL tender → change $2.77 / 248,210 LBP (exact-LBP fix intact), hold→pill→resume round-trip, Pay $X label, 4 tiles both modes. tsc clean, 62/62 vitest.
+- Phase 3 (drawer, products/customers/dashboard polish) awaits approval.
+
 ## 2026-07-09 — Fable — Sprint POS-UX-F1 (Premium Visual Foundation, Phase 1) — COMPLETE
 
 - Card payment method now visible in BOTH QuickPOS (`QuickPOSMode.tsx`, grid-cols-4) and main POS (`CartBody.tsx`); active tile = gold `--brand` + `--brand-contrast` text + aria-pressed. Removed per-method emerald/violet/amber active classes (design law: no method colors in tender UI).

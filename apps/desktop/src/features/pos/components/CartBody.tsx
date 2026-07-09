@@ -3,24 +3,17 @@ import { useI18n } from "@lebanonpos/shared"
 import {
   BadgePercent,
   ChevronDown,
-  CreditCard,
-  Eraser,
-  HandCoins,
-  Landmark,
   MessageSquare,
   PauseCircle,
   PlayCircle,
   ShoppingCart,
-  WalletCards,
 } from "lucide-react"
-import type { LucideIcon } from "lucide-react"
-import { Link } from "react-router"
 
 import CartItemCard from "./CartItemCard"
+import TenderPanel from "./TenderPanel"
 import {
   formatCurrency,
   formatLbpCurrency,
-  usdToLbp,
 } from "../lib/currency"
 import type { HeldSale } from "../services/heldSale.service"
 import {
@@ -33,17 +26,6 @@ import type { CustomerLedger } from "../services/customer.service"
 type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
 type TenderMode = "USD" | "LBP" | "Mixed"
 type DiscountMode = "USD" | "Percent"
-
-type PaymentOption = { label: PaymentMethod; icon: LucideIcon }
-
-// Design law: payment methods carry no color in tender UI (charts only).
-// Active = the zone's single gold element.
-const paymentOptions: PaymentOption[] = [
-  { label: "Cash",   icon: Landmark    },
-  { label: "Card",   icon: CreditCard  },
-  { label: "Wallet", icon: WalletCards },
-  { label: "Debt",   icon: HandCoins   },
-]
 
 interface CartItem { id: number; name: string; price: number; quantity: number; stock: number }
 
@@ -118,7 +100,6 @@ export default function CartBody({
   sellAtCost, onToggleSellAtCost, isCompleting,
 }: Props) {
   const [discountOpen, setDiscountOpen] = useState(false)
-  const [heldOpen, setHeldOpen] = useState(false)
   const { t } = useI18n()
   const usdInputRef = useRef<HTMLInputElement>(null)
 
@@ -136,6 +117,44 @@ export default function CartBody({
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto p-3 space-y-3" style={{ background: "var(--surface-2)" }}>
+      {/* Held sales — pill shelf above the cart; tap to resume, x to discard */}
+      {heldSales.length > 0 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none]" aria-label={t("pos.held_sales")}>
+          <PauseCircle size={14} className="shrink-0" style={{ color: "var(--text-3)" }} />
+          {heldSales.map((sale) => (
+            <span
+              key={sale.id}
+              className="flex shrink-0 items-center overflow-hidden rounded-full border"
+              style={{ borderColor: "var(--border-strong)", background: "var(--surface)" }}
+            >
+              <button
+                type="button"
+                onClick={() => onResumeHeld(sale)}
+                disabled={items.length > 0}
+                title={items.length > 0 ? t("pos.clear_sale_title") : t("pos.resume")}
+                className="flex items-center gap-1.5 ps-2.5 pe-1.5 py-1.5 text-[11px] font-bold transition hover:opacity-80 disabled:opacity-40"
+                style={{ color: "var(--text)" }}
+              >
+                <PlayCircle size={12} style={{ color: "var(--brand)" }} />
+                {sale.holdNumber}
+                <span className="tabular-nums" style={{ color: "var(--text-2)" }}>
+                  {formatCurrency(getHeldSaleTotal(sale, vatRate))}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onDiscardHeld(sale)}
+                aria-label={`${t("pos.discard")} ${sale.holdNumber}`}
+                className="flex h-full items-center px-1.5 py-1.5 text-[11px] transition hover:opacity-70"
+                style={{ color: "var(--text-3)", borderInlineStart: "1px solid var(--border)" }}
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Items */}
       {items.length > 0 ? (
         <div className="space-y-2">
@@ -168,66 +187,6 @@ export default function CartBody({
         </div>
       )}
 
-      {/* Held sales */}
-      {heldSales.length > 0 && (
-        <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-          <button
-            type="button"
-            onClick={() => setHeldOpen(!heldOpen)}
-            className="flex w-full items-center justify-between gap-3 px-3 py-2.5"
-            style={{ background: "var(--surface-2)" }}
-          >
-            <span className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: "var(--text-2)" }}>
-              <PauseCircle size={14} />
-              {t("pos.held_sales")}
-              <span
-                className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                style={{ background: "var(--surface-3)", color: "var(--text-2)" }}
-              >
-                {heldSales.length}
-              </span>
-            </span>
-            <ChevronDown size={14} className={`transition ${heldOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-3)" }} />
-          </button>
-
-          {heldOpen && (
-            <div className="divide-y p-2 space-y-1.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              {heldSales.slice(0, 4).map((sale) => (
-                <div key={sale.id} className="rounded-lg p-2.5" style={{ background: "var(--surface-2)" }}>
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <p className="text-[12px] font-bold" style={{ color: "var(--text)" }}>{sale.holdNumber}</p>
-                    <p className="text-[12px] font-bold" style={{ color: "var(--text)" }}>
-                      {formatCurrency(getHeldSaleTotal(sale, vatRate))}
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => onResumeHeld(sale)}
-                      disabled={items.length > 0}
-                      className="flex h-8 items-center justify-center gap-1.5 rounded-lg text-[12px] font-semibold transition disabled:opacity-30"
-                      style={{ background: "var(--text)", color: "var(--surface)" }}
-                    >
-                      <PlayCircle size={13} />
-                      {t("pos.resume")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDiscardHeld(sale)}
-                      className="flex h-8 items-center justify-center gap-1.5 rounded-lg border text-[12px] font-semibold transition hover:opacity-80"
-                      style={{ borderColor: "var(--surface-3)", color: "var(--text-2)" }}
-                    >
-                      <Eraser size={12} />
-                      {t("pos.discard")}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Tender machinery — only when there is something to sell */}
       {items.length > 0 && (<>
 
@@ -248,27 +207,32 @@ export default function CartBody({
         />
       </div>
 
-      {/* Payment method */}
-      <div className="flex items-center gap-1.5">
-        {paymentOptions.map(({ label, icon: Icon }) => {
-          const active = paymentMethod === label
-          return (
-            <button
-              key={label}
-              type="button"
-              onClick={() => onSelectPayment(label)}
-              aria-pressed={active}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-2 text-[11px] font-bold transition active:scale-[0.96]"
-              style={active
-                ? { background: "var(--brand)", borderColor: "var(--brand)", color: "var(--brand-contrast)" }
-                : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
-            >
-              <Icon size={13} />
-              {t("pos.payment." + label.toLowerCase())}
-            </button>
-          )
-        })}
-      </div>
+      {/* Payment method + tender — shared engine */}
+      <TenderPanel
+        density="full"
+        paymentMethod={paymentMethod}
+        onSelectPayment={onSelectPayment}
+        itemsCount={items.length}
+        paidUsd={paidUsd}
+        paidLbp={paidLbp}
+        onPaidUsdChange={onPaidUsdChange}
+        onPaidLbpChange={onPaidLbpChange}
+        onFillExactTender={onFillExactTender}
+        cashTenderValid={cashTenderValid}
+        paidTotalUsd={paidTotalUsd}
+        paidTotalLbp={paidTotalLbp}
+        cashChangeUsd={cashChangeUsd}
+        cashChangeLbp={cashChangeLbp}
+        cashStillDueUsd={cashStillDueUsd}
+        exchangeRate={exchangeRate}
+        total={total}
+        customers={customers}
+        selectedCustomerId={selectedCustomerId}
+        onSelectCustomer={onSelectCustomer}
+        selectedCustomer={selectedCustomer}
+        creditLimitExceeded={creditLimitExceeded}
+        usdInputRef={usdInputRef}
+      />
 
       {/* Discount */}
       <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
@@ -345,184 +309,6 @@ export default function CartBody({
           </div>
         )}
       </div>
-
-      {/* Cash tender */}
-      {paymentMethod === "Cash" && (
-        <div
-          className="rounded-xl border p-3 space-y-3"
-          style={{ borderColor: "var(--brand-border)", background: "var(--surface)" }}
-        >
-          <div className="flex items-center justify-between">
-            <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--brand-text)" }}>
-              {t("pos.cash_tender")}
-            </p>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className="block text-[11px] font-bold" style={{ color: "var(--text)" }}>
-              {t("pos.paid_usd")}
-              <input
-                ref={usdInputRef}
-                type="number" min="0" step="0.01"
-                value={paidUsd}
-                onChange={(e) => onPaidUsdChange(e.target.value)}
-                className="input mt-1 w-full"
-                style={{ height: 38, fontSize: 14, fontWeight: 700, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}
-              />
-            </label>
-            <label className="block text-[11px] font-bold" style={{ color: "var(--text)" }}>
-              {t("pos.paid_lbp")}
-              <input
-                type="number" min="0" step="1000"
-                value={paidLbp}
-                onChange={(e) => onPaidLbpChange(e.target.value)}
-                className="input mt-1 w-full"
-                style={{ height: 38, fontSize: 14, fontWeight: 700, background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--border)" }}
-              />
-            </label>
-          </div>
-
-          {/* Quick-cash chips: tap a banknote to add it to the tender */}
-          <div className="flex flex-wrap gap-1.5">
-            {[1, 5, 10, 20, 50, 100].map((note) => (
-              <button
-                key={`usd-${note}`}
-                type="button"
-                disabled={items.length === 0}
-                onClick={() => onPaidUsdChange(String((parseFloat(paidUsd) || 0) + note))}
-                className="rounded-lg border px-2.5 py-1.5 text-[11px] font-bold tabular-nums transition active:scale-[0.95] disabled:opacity-30"
-                style={{ borderColor: "var(--border-strong)", background: "var(--surface-2)", color: "var(--text)" }}
-              >
-                ${note}
-              </button>
-            ))}
-            {[100_000, 250_000, 500_000, 1_000_000].map((note) => (
-              <button
-                key={`lbp-${note}`}
-                type="button"
-                disabled={items.length === 0}
-                onClick={() => onPaidLbpChange(String((parseFloat(paidLbp) || 0) + note))}
-                className="rounded-lg border px-2.5 py-1.5 text-[11px] font-bold tabular-nums transition active:scale-[0.95] disabled:opacity-30"
-                style={{ borderColor: "var(--border-strong)", background: "var(--surface-2)", color: "var(--text-2)" }}
-              >
-                {note >= 1_000_000 ? `${note / 1_000_000}M` : `${note / 1000}k`} LL
-              </button>
-            ))}
-          </div>
-
-          <div className="flex gap-2">
-            <button type="button" onClick={() => onFillExactTender("USD")} disabled={items.length === 0}
-              className="flex-1 rounded-lg py-1.5 text-[11px] font-bold transition active:scale-[0.97] disabled:opacity-30"
-              style={{ background: "var(--brand)", color: "var(--brand-contrast)" }}>
-              {t("pos.exact_usd")}
-            </button>
-            <button type="button" onClick={() => onFillExactTender("LBP")} disabled={items.length === 0}
-              className="flex-1 rounded-lg py-1.5 text-[11px] font-bold transition active:scale-[0.97] disabled:opacity-30"
-              style={{ background: "var(--brand)", color: "var(--brand-contrast)" }}>
-              {t("pos.exact_lbp")}
-            </button>
-          </div>
-
-          {!cashTenderValid && items.length > 0 && (
-            <p className="text-[11px] font-semibold" style={{ color: "var(--rose)" }}>{t("pos.insufficient_payment")}</p>
-          )}
-
-          {cashTenderValid && paidTotalUsd > 0 && (
-            <div
-              className="rounded-xl p-3 space-y-2"
-              style={{ background: "var(--brand-soft)", border: "1px solid var(--brand-border)" }}
-            >
-              {/* Paid total row */}
-              <div className="flex items-center justify-between text-[12px]" style={{ color: "var(--text)" }}>
-                <span className="font-semibold">{t("pos.paid_total")}</span>
-                <span className="font-bold tabular-nums">
-                  {formatCurrency(paidTotalUsd)}
-                  <span className="mx-1 opacity-40">/</span>
-                  {formatLbpCurrency(paidTotalLbp)}
-                </span>
-              </div>
-
-              {/* Change / Remaining row */}
-              <div
-                className="flex items-center justify-between rounded-lg px-3 py-2"
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--brand-border)",
-                }}
-              >
-                <span className="text-[13px] font-bold" style={{ color: cashChangeUsd > 0 ? "var(--success)" : "var(--rose)" }}>
-                  {cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}
-                </span>
-                <div className="text-end">
-                  <span
-                    className="block tabular-nums leading-none font-bold"
-                    style={{ fontSize: cashChangeUsd > 0 ? 22 : 28, color: "var(--text)" }}
-                  >
-                    {cashChangeUsd > 0 ? formatCurrency(cashChangeUsd) : formatCurrency(cashStillDueUsd)}
-                  </span>
-                  <span className="block text-[11px] font-semibold tabular-nums mt-0.5" style={{ color: "var(--text-2)" }}>
-                    {cashChangeUsd > 0
-                      ? formatLbpCurrency(cashChangeLbp)
-                      : formatLbpCurrency(usdToLbp(cashStillDueUsd, exchangeRate))
-                    }
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Debt: customer picker */}
-      {paymentMethod === "Debt" && (
-        <div
-          className="rounded-xl border p-3 space-y-2"
-          style={{ borderColor: "var(--amber-soft)", background: "var(--amber-soft)" }}
-        >
-          <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--amber-text)" }}>
-            {t("pos.customer_debt")}
-          </p>
-          {customers.length > 0 ? (
-            <>
-              {!selectedCustomerId && (
-                <p className="text-[12px] font-semibold" style={{ color: "var(--rose)" }}>{t("pos.select_customer_hint")}</p>
-              )}
-              <select
-                value={selectedCustomerId}
-                onChange={(e) => onSelectCustomer(e.target.value)}
-                className="input w-full"
-                style={{ height: 38, fontSize: 13 }}
-              >
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name} — {c.mobile}</option>
-                ))}
-              </select>
-              <div className="space-y-1">
-                <div className="flex justify-between text-[12px]" style={{ color: "var(--amber-text)" }}>
-                  <span>{t("pos.current_balance")}</span>
-                  <span className="font-bold">{formatCurrency(selectedCustomer?.balance ?? 0)}</span>
-                </div>
-                <div className="flex justify-between text-[12px]" style={{ color: "var(--amber-text)" }}>
-                  <span>{t("pos.after_sale")}</span>
-                  <span className="font-bold">{formatCurrency((selectedCustomer?.balance ?? 0) + total)}</span>
-                </div>
-                {(selectedCustomer?.creditLimit ?? 0) > 0 && (
-                  <div className="flex justify-between text-[12px]" style={{ color: creditLimitExceeded ? "var(--rose)" : "var(--amber-text)" }}>
-                    <span>{t("pos.credit_limit")}</span>
-                    <span className="font-bold">{formatCurrency(selectedCustomer!.creditLimit)}</span>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <Link to="/customers"
-              className="flex h-9 w-full items-center justify-center rounded-lg text-[12px] font-bold text-white transition hover:opacity-90"
-              style={{ background: "var(--text)" }}>
-              {t("pos.add_customer")}
-            </Link>
-          )}
-        </div>
-      )}
 
       {/* Sell at Cost toggle */}
       {items.length > 0 && (
