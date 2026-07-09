@@ -7,27 +7,22 @@ const MotionP = motion.p as any
 import {
   ArrowLeft,
   Camera,
-  CreditCard,
   Eraser,
-  HandCoins,
-  Landmark,
   Minus,
   Plus,
   Scan,
   ShoppingCart,
   Trash2,
-  WalletCards,
   Zap,
 } from "lucide-react"
 import LastSaleBanner from "./LastSaleBanner"
+import TenderPanel from "../components/TenderPanel"
 import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatLbpCurrency, formatNumber, usdToLbp } from "../lib/currency"
 import type { Product } from "../types/product"
 
 type CartItem = Product & { quantity: number }
 type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
-type TenderMode    = "USD" | "LBP" | "Mixed"
-
 type CustomerLedger = { id: string; name: string; mobile: string; balance: number }
 
 type Props = {
@@ -46,8 +41,6 @@ type Props = {
   onIncreaseQty: (id: number) => void
   onDecreaseQty: (id: number) => void
   onRemoveItem: (id: number) => void
-  onSetQuantity: (id: number, qty: number) => void
-  onSetPrice: (id: number, price: number) => void
   onCleanSale: () => void
   onExit: () => void
   itemCount: number
@@ -64,6 +57,8 @@ type Props = {
   customers: CustomerLedger[]
   selectedCustomerId: string
   onSelectCustomer: (id: string) => void
+  selectedCustomer?: CustomerLedger
+  creditLimitExceeded?: boolean
   paidTotalUsd: number
   paidTotalLbp: number
   cashChangeUsd: number
@@ -77,13 +72,6 @@ type Props = {
   onWhatsAppReceipt: (sale: any) => void
 }
 
-const PAY_OPTIONS: { label: PaymentMethod; icon: typeof Landmark }[] = [
-  { label: "Cash",   icon: Landmark    },
-  { label: "Card",   icon: CreditCard  },
-  { label: "Wallet", icon: WalletCards },
-  { label: "Debt",   icon: HandCoins   },
-]
-
 export default function QuickPOSMode({
   scanInputRef, scanCode, onScanCodeChange, onQuickAdd,
   scannerStatus, cameraActive, cameraEngine, onStartCamera,
@@ -93,7 +81,7 @@ export default function QuickPOSMode({
   itemCount, total, totalLbp, exchangeRate,
   paymentMethod, onSelectPayment,
   paidUsd, paidLbp, onPaidUsdChange, onPaidLbpChange, onFillExactTender,
-  customers, selectedCustomerId, onSelectCustomer,
+  customers, selectedCustomerId, onSelectCustomer, selectedCustomer, creditLimitExceeded,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, checkoutBlocked, onCompleteSale,
   recentSales, onPrintReceipt, onWhatsAppReceipt,
@@ -253,6 +241,9 @@ export default function QuickPOSMode({
     )
   }
 
+  // NOTE: never add .pos-quick-shell to this root — its position:relative
+  // overrides Tailwind's `fixed` (index.css loads after utilities) and breaks
+  // the fullscreen worker mode.
   return (
     <section className="bg-page fixed inset-0 z-[200] flex flex-col overflow-hidden"
       onKeyDown={(e) => { if (e.key === "Escape" && showReview) setShowReview(false) }}>
@@ -427,120 +418,34 @@ export default function QuickPOSMode({
             <p className="mt-1 text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>{formatLbpCurrency(totalLbp)}</p>
           </div>
 
-          {/* Payment method */}
-          <div className="border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
-            <div className="grid grid-cols-4 gap-1.5">
-              {PAY_OPTIONS.map(({ label, icon: Icon }) => {
-                const active = paymentMethod === label
-                return (
-                  <MotionButton key={label} type="button" onClick={() => onSelectPayment(label)}
-                    aria-pressed={active}
-                    className="flex items-center justify-center gap-1 rounded-lg border py-2.5 text-[11px] font-bold transition"
-                    style={active
-                      ? { background: "var(--brand)", borderColor: "var(--brand)", color: "var(--brand-contrast)" }
-                      : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
-                    whileTap={{ scale: 0.94 }}>
-                    <Icon size={14} />
-                    {t("pos.payment." + label.toLowerCase())}
-                  </MotionButton>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Cash tender */}
-          {paymentMethod === "Cash" && (
-            <div className="border-b px-4 py-4 space-y-3" style={{ borderColor: "var(--border)" }}>
-
-              {/* USD input */}
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>USD Paid</p>
-                <div className="flex gap-2">
-                  <input ref={usdRef} type="number" inputMode="decimal" value={paidUsd}
-                      onChange={(e) => onPaidUsdChange(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") { e.preventDefault(); lbpRef.current?.focus() }
-                      }}
-                      placeholder="0.00" min="0" step="0.01"
-                      className="input min-w-0 flex-1 text-[22px] font-black tabular-nums"
-                      style={{ height: 56 }} />
-                    <MotionButton type="button" onClick={() => onFillExactTender("USD")}
-                      className="shrink-0 rounded-xl border px-4 text-[12px] font-black transition"
-                      style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)", height: 56 }}
-                      whileTap={{ scale: 0.92 }}>
-                      Exact
-                    </MotionButton>
-                </div>
-              </div>
-
-              {/* LBP input */}
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>LBP Paid</p>
-                <div className="flex gap-2">
-                  <input ref={lbpRef} type="number" inputMode="decimal" value={paidLbp}
-                      onChange={(e) => onPaidLbpChange(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") { e.preventDefault(); setShowReview(true) }
-                      }}
-                      placeholder="0" min="0" step="1000"
-                      className="input min-w-0 flex-1 text-[22px] font-black tabular-nums"
-                      style={{ height: 56 }} />
-                    <MotionButton type="button" onClick={() => onFillExactTender("LBP")}
-                      className="shrink-0 rounded-xl border px-4 text-[12px] font-black transition"
-                      style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)", height: 56 }}
-                      whileTap={{ scale: 0.92 }}>
-                      Exact
-                    </MotionButton>
-                </div>
-              </div>
-
-              {/* Change / remaining */}
-              {cashTenderValid && paidTotalUsd > 0 && (
-                <MotionDiv
-                  className="rounded-2xl p-4"
-                  style={{
-                    background: cashChangeUsd > 0 ? "rgba(16,185,129,0.12)" : "rgba(244,63,94,0.10)",
-                    border: `1.5px solid ${cashChangeUsd > 0 ? "rgba(16,185,129,0.30)" : "rgba(244,63,94,0.25)"}`,
-                  }}
-                  initial={{ scale: 0.95, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                >
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-white">
-                    {cashChangeUsd > 0 ? t("pos.change") : t("pos.remaining")}
-                  </p>
-                  <MotionP
-                    key={cashChangeUsd > 0 ? cashChangeUsd : cashStillDueUsd}
-                    className="mt-1 font-black tabular-nums leading-none"
-                    style={{ fontSize: 44, color: "#fff" }}
-                    initial={{ scale: 1.1 }} animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 24 }}
-                  >
-                    {cashChangeUsd > 0 ? formatCurrency(cashChangeUsd) : formatCurrency(cashStillDueUsd)}
-                  </MotionP>
-                  <p className="mt-1 text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>
-                    {cashChangeUsd > 0
-                      ? formatLbpCurrency(cashChangeLbp)
-                      : formatLbpCurrency(usdToLbp(cashStillDueUsd, exchangeRate))}
-                  </p>
-                </MotionDiv>
-              )}
-            </div>
-          )}
-
-          {/* Debt customer */}
-          {paymentMethod === "Debt" && customers.length > 0 && (
-            <div className="border-b px-4 py-4" style={{ borderColor: "var(--border)" }}>
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Customer</p>
-              <select value={selectedCustomerId} onChange={(e) => onSelectCustomer(e.target.value)}
-                className="input w-full text-[14px] font-bold" style={{ height: 52 }}>
-                <option value="">— Select customer —</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
+          <TenderPanel
+            density="quick"
+            paymentMethod={paymentMethod}
+            onSelectPayment={onSelectPayment}
+            itemsCount={itemCount}
+            paidUsd={paidUsd}
+            paidLbp={paidLbp}
+            onPaidUsdChange={onPaidUsdChange}
+            onPaidLbpChange={onPaidLbpChange}
+            onFillExactTender={onFillExactTender}
+            cashTenderValid={cashTenderValid}
+            paidTotalUsd={paidTotalUsd}
+            paidTotalLbp={paidTotalLbp}
+            cashChangeUsd={cashChangeUsd}
+            cashChangeLbp={cashChangeLbp}
+            cashStillDueUsd={cashStillDueUsd}
+            exchangeRate={exchangeRate}
+            total={total}
+            customers={customers}
+            selectedCustomerId={selectedCustomerId}
+            onSelectCustomer={onSelectCustomer}
+            selectedCustomer={selectedCustomer}
+            creditLimitExceeded={creditLimitExceeded}
+            usdInputRef={usdRef}
+            lbpInputRef={lbpRef}
+            onUsdEnter={() => lbpRef.current?.focus()}
+            onLbpEnter={() => setShowReview(true)}
+          />
 
           {/* Complete sale */}
           <div className="mt-auto p-4">

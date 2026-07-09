@@ -32,7 +32,7 @@ export default function KeyboardShortcutsModal({ open, onClose }: Props) {
             <Keyboard size={20} style={{ color: "var(--brand)" }} />
             <h2 className="text-[17px] font-bold" style={{ color: "var(--text)" }}>Keyboard Shortcuts</h2>
           </div>
-          <button onClick={onClose} style={{ color: "var(--text-3)" }}><X size={18} /></button>
+          <button onClick={onClose} aria-label="Close shortcuts" style={{ color: "var(--text-3)" }}><X size={18} /></button>
         </div>
 
         <div className="space-y-2">

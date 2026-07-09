@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Check, Plus, Star, X, ZoomIn } from "lucide-react"
+import { Plus, Star, X, ZoomIn } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../lib/currency"
@@ -92,6 +92,7 @@ const ProductCard = memo(function ProductCard({
   return (
     <>
       <MotionArticle
+        data-id={product.id}
         className={`pos-product-tile group relative select-none rounded-xl border ${
           outOfStock ? "opacity-40" : "cursor-pointer active:scale-[0.97]"
         }`}
@@ -242,6 +243,7 @@ const ProductCard = memo(function ProductCard({
           <button
             type="button"
             onClick={() => setImageZoom(false)}
+            aria-label="Close zoom"
             className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
           >
             <X size={20} />

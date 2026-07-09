@@ -49,7 +49,7 @@ export default function ProductQuickCreate({ categories, onClose, onCreated }: P
       <div className="modal-card" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "var(--border)" }}>
           <h2 className="text-[15px] font-bold" style={{ color: "var(--text)" }}>Quick Create Product</h2>
-          <button onClick={onClose} className="icon-btn" style={{ color: "var(--text-3)" }}><X size={18} /></button>
+          <button onClick={onClose} className="icon-btn" aria-label="Close quick create" style={{ color: "var(--text-3)" }}><X size={18} /></button>
         </div>
 
         <div className="p-5 flex flex-col gap-3">

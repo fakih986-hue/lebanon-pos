@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type RefObject } from "react"
+import { useMemo, useState, type RefObject } from "react"
 import { CreditCard, HandCoins, Landmark, WalletCards } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { Link } from "react-router"

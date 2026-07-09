@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { ChevronDown, MessageCircle, Users } from "lucide-react"
 import { useNavigate } from "react-router"
 import { getCustomerLedger, subscribeLedger, type CustomerLedger } from "../services/customer.service"
-import { formatCurrency, formatLbpCurrency, usdToLbp } from "../lib/currency"
+import { formatCurrency, usdToLbp } from "../lib/currency"
 import { getSettings } from "../services/settings.service"
 import { openWhatsApp, debtReminderMessage } from "../lib/whatsapp"
 

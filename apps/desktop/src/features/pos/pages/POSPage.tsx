@@ -16,10 +16,11 @@ import LastSaleBanner from "../components/LastSaleBanner"
 import SaleCompleteOverlay from "../components/SaleCompleteOverlay"
 import CartDrawer from "../components/CartDrawer"
 import CartPanel from "../components/CartPanel"
-import CartRailWidgets from "../components/CartRailWidgets"
+
 import VariantPicker from "../components/VariantPicker"
 import QuickPOSMode from "../components/QuickPOSMode"
 import KeyboardShortcutsModal from "../components/KeyboardShortcutsModal"
+import { playErrorBuzz, playScanBlip } from "../lib/sound"
 import { openWhatsAppShare, receiptMessage } from "../lib/whatsapp"
 import {
   computeCashChange,
@@ -32,7 +33,6 @@ import {
   usdToLbp,
 } from "../lib/currency"
 import {
-  getHeldSaleItemCount,
   parseMoney,
 } from "../lib/helpers"
 import { departmentIcons } from "../lib/pos.constants"
@@ -52,7 +52,7 @@ import {
 import { recordDebtSale } from "../services/customer.service"
 import { recordAuditEvent, userCan } from "../services/security.service"
 import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
-import { getSyncStatus, subscribeSync, type SyncStatus } from "../services/sync.service"
+
 import type { Product } from "../types/product"
 import { usePosData } from "../hooks/usePosData"
 import { useBarcodeScanner } from "../hooks/useBarcodeScanner"
@@ -246,9 +246,6 @@ export default function POSPage() {
     (customer) => customer.id === selectedCustomerId
   )
   const hasDiscount = discountTotal > 0
-  const heldSalesItemCount = heldSales.reduce(
-    (sum, heldSale) => sum + getHeldSaleItemCount(heldSale), 0
-  )
   const cartQuantities = useMemo(() => {
     const map: Record<number, number> = {}
     for (const item of items) map[item.id] = item.quantity
@@ -327,14 +324,17 @@ export default function POSPage() {
     }
     const cartItem = items.find((item) => item.id === product.id)
     if (product.stock <= 0) {
+      playErrorBuzz()
       setScannerStatus(`${product.name} is out of stock.`)
       return
     }
     if (cartItem && cartItem.quantity >= product.stock) {
+      playErrorBuzz()
       setScannerStatus(`${product.name} reached available stock.`)
       return
     }
     addItem(product)
+    playScanBlip()
     setScanCode("")
     setSearch("")
     setScannerStatus(`${product.name} added by ${source}.`)
@@ -706,8 +706,6 @@ export default function POSPage() {
                 onIncreaseQty={increaseQuantity}
                 onDecreaseQty={decreaseQuantity}
                 onRemoveItem={removeItem}
-                onSetQuantity={setItemQuantity}
-                onSetPrice={setItemPrice}
                 onCleanSale={cleanSale}
                 onExit={() => setQuickMode(false)}
                 itemCount={itemCount}
@@ -724,6 +722,8 @@ export default function POSPage() {
                 customers={customers}
                 selectedCustomerId={selectedCustomerId}
                 onSelectCustomer={setSelectedCustomerId}
+                selectedCustomer={selectedCustomer}
+                creditLimitExceeded={creditLimitExceeded}
                 paidTotalUsd={paidTotalUsd}
                 paidTotalLbp={paidTotalLbp}
                 cashChangeUsd={cashChangeUsd}
@@ -872,7 +872,6 @@ export default function POSPage() {
         </div>
 
         {/* ── Right: Persistent cart rail (desktop only) ── */}
-        <CartRailWidgets />
         <CartPanel
           items={items}
           onIncreaseQty={increaseQuantity}
@@ -921,7 +920,6 @@ export default function POSPage() {
           creditLimitExceeded={creditLimitExceeded}
           checkoutBlocked={checkoutBlocked}
           hasDiscount={hasDiscount}
-          heldSalesItemCount={heldSalesItemCount}
           canApplyDiscount={canApplyDiscount}
           sellAtCost={sellAtCost}
           onToggleSellAtCost={toggleSellAtCost}
@@ -962,7 +960,7 @@ export default function POSPage() {
           onDiscountValueChange={setDiscountValue}
           onHold={holdCurrentSale}
           onClean={cleanSale}
-          onhandleReview={handleReview}
+          onCompleteSale={handleReview}
           itemCount={itemCount}
           grossSubtotal={grossSubtotal}
           discountTotal={discountTotal}
@@ -980,7 +978,6 @@ export default function POSPage() {
           creditLimitExceeded={creditLimitExceeded}
           checkoutBlocked={checkoutBlocked}
           hasDiscount={hasDiscount}
-          heldSalesItemCount={heldSalesItemCount}
           canApplyDiscount={canApplyDiscount}
           sellAtCost={sellAtCost}
           onToggleSellAtCost={toggleSellAtCost}

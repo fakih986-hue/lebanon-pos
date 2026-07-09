@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import {
   Eraser,
   PauseCircle,
+  PlayCircle,
   ShoppingCart,
   X,
 } from "lucide-react"
@@ -12,11 +13,11 @@ import {
   formatCurrency,
   formatNumber,
 } from "../lib/currency"
+import { getHeldSaleTotal } from "../lib/helpers"
 import type { HeldSale } from "../services/heldSale.service"
 import type { CustomerLedger } from "../services/customer.service"
 
 type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
-type TenderMode = "USD" | "LBP" | "Mixed"
 type DiscountMode = "USD" | "Percent"
 
 const MotionDiv = motion.div as any
@@ -74,11 +75,9 @@ interface Props {
   creditLimitExceeded: boolean
   checkoutBlocked: boolean
   hasDiscount: boolean
-  heldSalesItemCount: number
   canApplyDiscount: boolean
   sellAtCost: boolean
   onToggleSellAtCost: () => void
-  isCompleting?: boolean
 }
 
 export default function CartDrawer({
@@ -93,8 +92,8 @@ export default function CartDrawer({
   onHold, onClean, onCompleteSale,
   itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
-  cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, heldSalesItemCount, canApplyDiscount,
-  sellAtCost, onToggleSellAtCost, isCompleting,
+  cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, canApplyDiscount,
+  sellAtCost, onToggleSellAtCost,
 }: Props) {
   const { t, dir } = useI18n()
   const drawerX = dir === "rtl" ? "-100%" : "100%"
@@ -183,6 +182,57 @@ export default function CartDrawer({
               </div>
             </div>
 
+            {/* Held sales pills — always visible above cart items */}
+            {heldSales.length > 0 && (
+              <div className="shrink-0 space-y-1 px-4 py-2" style={{ background: "var(--surface)" }}>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <PauseCircle size={12} style={{ color: "var(--text-3)" }} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-3)" }}>
+                    {t("pos.held_sales")}
+                  </span>
+                  <span
+                    className="rounded-full px-1.5 py-0.5 text-[9px] font-bold"
+                    style={{ background: "var(--surface-3)", color: "var(--text-2)" }}
+                  >
+                    {heldSales.length}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {heldSales.slice(0, 4).map((sale) => (
+                    <div
+                      key={sale.id}
+                      className="flex items-center gap-1.5 rounded-lg border px-2 py-1.5"
+                      style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => onResumeHeld(sale)}
+                        disabled={items.length > 0}
+                        className="flex items-center gap-1 text-[11px] font-bold transition disabled:opacity-30"
+                        style={{ color: "var(--text)" }}
+                        title={`Resume ${sale.holdNumber}`}
+                      >
+                        <PlayCircle size={12} style={{ color: "var(--brand)" }} />
+                        <span>{sale.holdNumber}</span>
+                        <span className="tabular-nums" style={{ color: "var(--text-2)" }}>
+                          {formatCurrency(getHeldSaleTotal(sale, vatRate))}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDiscardHeld(sale)}
+                        className="flex items-center justify-center rounded p-0.5 transition hover:opacity-70"
+                        style={{ color: "var(--text-3)" }}
+                        aria-label={`Discard ${sale.holdNumber}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* ── CartBody ── */}
             <CartBody
               items={items}
@@ -230,13 +280,11 @@ export default function CartDrawer({
               cashStillDueUsd={cashStillDueUsd}
               cashTenderValid={cashTenderValid}
               creditLimitExceeded={creditLimitExceeded}
-              checkoutBlocked={checkoutBlocked || isCompleting}
+              checkoutBlocked={checkoutBlocked}
               hasDiscount={hasDiscount}
-              heldSalesItemCount={heldSalesItemCount}
               canApplyDiscount={canApplyDiscount}
               sellAtCost={sellAtCost}
               onToggleSellAtCost={onToggleSellAtCost}
-              isCompleting={isCompleting}
             />
           </MotionAside>
         </div>

@@ -28,7 +28,7 @@ export default function FavoritesBar({ products, selectedCategory, onAddToCart }
       <div className="flex items-center gap-2 px-2 py-1.5 text-[11px]" style={{ borderBottom: "1px solid var(--border)", background: "var(--surface)" }}>
         <Star size={12} fill="var(--amber)" style={{ color: "var(--amber)", flexShrink: 0 }} />
         <span style={{ color: "var(--text-3)" }}>Star products to pin them here for quick access</span>
-        <button type="button" onClick={dismissHint} className="ms-auto shrink-0 hover:opacity-70" style={{ color: "var(--text-3)" }}>
+        <button type="button" onClick={dismissHint} aria-label="Dismiss favorites hint" className="ms-auto shrink-0 hover:opacity-70" style={{ color: "var(--text-3)" }}>
           <X size={12} />
         </button>
       </div>

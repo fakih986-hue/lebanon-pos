@@ -1,7 +1,7 @@
 import { Clock3, Eye, Printer, ReceiptText } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
-import { formatCurrency, formatNumber } from "../lib/currency"
+import { formatCurrency } from "../lib/currency"
 import {
   formatDate,
   getSaleQuantity,

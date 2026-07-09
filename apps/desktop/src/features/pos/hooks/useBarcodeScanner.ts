@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import type { ChangeEvent } from "react"
+import { playErrorBuzz } from "../lib/sound"
 import { normalizeBarcode } from "../lib/pos.constants"
 import {
   createBarcodeDetector,
@@ -54,7 +55,7 @@ function useBarcodeScanner(
     const barcode = normalizeBarcode(value)
     if (!barcode) { setScannerStatus("Scan a barcode first."); return }
     const product = findProductByBarcode(barcode)
-    if (!product) { setScannerStatus(`Barcode ${barcode} not found.`); return }
+    if (!product) { playErrorBuzz(); setScannerStatus(`Barcode ${barcode} not found.`); return }
     onScannedProduct(product, "barcode")
     setScannerStatus(`${product.name} added.`)
     setScanCode("")
