@@ -6,6 +6,34 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-11 (Products + Inventory Structural Split) — COMPLETE
+
+**Product edit modal → right drawer:**
+- New `ProductEditDrawer.tsx` component: right-side drawer (max-w-md) with backdrop + blur, slide-in animation, Escape to close, role="dialog"
+- Replaces ~55 lines of inline modal JSX in ProductsPage with a 12-line component usage
+- All fields preserved: Name, Category, Price/Cost, Barcode, Barcode Aliases, Stock (read-only), Reorder Pt, Reorder Qty
+- Save/Cancel buttons preserved with same behavior
+- Error display if `saveProductEdit` returns `undefined`
+
+**Lots/Batches FEFO sort + expiry chips:**
+- `filteredLots` now sorts by FEFO: soonest expiry first (expired first)
+- New `getExpiryChip(batch)` helper returns: Expired (rose), Today (rose), ≤7d (rose, "Nd"), ≤30d (amber, "Nd"), >30d (emerald, "Nd"), no expiry (hidden)
+- Expiry chip displayed inline alongside batch status chip in the Lots table
+
+**Files changed:**
+- `apps/desktop/src/features/pos/components/ProductEditDrawer.tsx` (+119 lines — new file)
+- `apps/desktop/src/pages/products/ProductsPage.tsx` (+60/-61: drawer usage replaces modal, FEFO sort, expiry chips helper)
+
+**Regression checks:**
+- Desktop typecheck: PASS
+- Desktop tests: **70/70 PASS**
+- Desktop build: PASS (2.48s)
+- Inventory/batch/receiving logic: Unchanged
+
+**Verdict: PASS**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-10 (POS Checkout Commercial Finish) — COMPLETE
 
 **Sale review overlay (main POS CartPanel + CartDrawer):**
