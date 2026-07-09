@@ -607,10 +607,20 @@ export default function StaffPage() {
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                    <span className="rounded-lg bg-zinc-100 px-2 py-1 text-zinc-700">
+                    <span className="rounded-lg bg-zinc-100 px-2 py-1 text-zinc-700"
+                      aria-label={`Role: ${roleNameLabels[user.role]}`}>
                       {roleNameLabels[user.role]}
                     </span>
-
+                    {(rolePermissions[user.role] ?? []).slice(0, 3).map(p => (
+                      <span key={p} className="rounded-lg px-2 py-1" style={{ background: "var(--surface-3)", color: "var(--text-2)" }}>
+                        {permissionLabels[p] ?? p}
+                      </span>
+                    ))}
+                    {(rolePermissions[user.role] ?? []).length > 3 && (
+                      <span className="rounded-lg px-2 py-1 text-zinc-400" title={(rolePermissions[user.role] ?? []).slice(3).map(p => permissionLabels[p] ?? p).join(", ")}>
+                        +{(rolePermissions[user.role] ?? []).length - 3} more
+                      </span>
+                    )}
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-2">
