@@ -6,6 +6,17 @@
 
 ---
 
+## 2026-07-09 — Fable — Sprint POS-UX-F1 (Premium Visual Foundation, Phase 1) — COMPLETE
+
+- Card payment method now visible in BOTH QuickPOS (`QuickPOSMode.tsx`, grid-cols-4) and main POS (`CartBody.tsx`); active tile = gold `--brand` + `--brand-contrast` text + aria-pressed. Removed per-method emerald/violet/amber active classes (design law: no method colors in tender UI).
+- Scan-bar error escalation: `scanError` transient state (1.2s) in POSPage flows to both scan bars — danger border + danger-soft ring on unknown barcode / out-of-stock / stock-cap. Pairs with existing error buzz.
+- "Clean" → "Clear sale" (i18n values EN+AR); new `pos.pay` key; checkout button now "Pay $X" (Debt keeps "Record Debt — $X").
+- Topbar version chip removed; cart steppers 28→36px w/ aria-labels; icon-only buttons (camera/clear/more) labeled.
+- Verified live in browser: add-to-cart, qty +/-, Card select, cash change calc, Clear Sale confirm + cancel-preserves-cart, error flash rgb(248,113,113). tsc clean, 62/62 vitest.
+- No behavior changes: money math / checkout / sync / stock untouched.
+- Docs: fable-implementation-checklist.md Phase 1 marked complete.
+- NEXT: Phase 2 (TenderPanel extraction) awaits approval. Note for OpenCode: pre-existing null-guard bug — failed unlock on empty user store throws at security.service.ts:627 recordAuditEvent (null.id); harmless but noisy, worth a guard.
+
 ## What Was Done
 
 ### 1. Titan HR Design System Extraction

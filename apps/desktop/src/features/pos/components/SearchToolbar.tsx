@@ -27,6 +27,8 @@ type Props = {
   quickMode: boolean
   onToggleQuickMode: () => void
   onShowShortcuts?: () => void
+  /** Transient: pulses the bar into a danger state after a failed scan. */
+  scanError?: boolean
 }
 
 export default function SearchToolbar({
@@ -45,6 +47,7 @@ export default function SearchToolbar({
   onScanCapture,
   onToggleQuickMode,
   onShowShortcuts,
+  scanError,
 }: Props) {
   const { t, dir } = useI18n()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -72,10 +75,12 @@ export default function SearchToolbar({
         style={{
           background: "var(--surface)",
           border: "1.5px solid",
-          borderColor: hot ? "var(--brand)" : "var(--border)",
-          boxShadow: hot
-            ? "0 0 0 3px var(--brand-soft), 0 8px 32px rgba(212,168,67,0.10)"
-            : "var(--shadow-xs)",
+          borderColor: scanError ? "var(--danger)" : hot ? "var(--brand)" : "var(--border)",
+          boxShadow: scanError
+            ? "0 0 0 3px var(--danger-soft)"
+            : hot
+              ? "0 0 0 3px var(--brand-soft), 0 8px 32px rgba(212,168,67,0.10)"
+              : "var(--shadow-xs)",
         }}
       >
         {/* Colored scan icon — left side */}
@@ -83,7 +88,7 @@ export default function SearchToolbar({
           className="flex shrink-0 items-center justify-center"
           style={{
             width: 56,
-            color: hot ? "var(--brand)" : "var(--text-3)",
+            color: scanError ? "var(--danger)" : hot ? "var(--brand)" : "var(--text-3)",
             transition: "color 0.2s",
           }}
         >
@@ -148,7 +153,7 @@ export default function SearchToolbar({
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <MotionSpan
             className="h-[6px] w-[6px] shrink-0 rounded-full"
-            style={{ background: cameraActive ? "var(--rose)" : "var(--brand)" }}
+            style={{ background: scanError ? "var(--danger)" : cameraActive ? "var(--rose)" : "var(--brand)" }}
             animate={cameraActive ? { scale: [1, 1.6, 1], opacity: [1, 0.3, 1] } : {}}
             transition={cameraActive ? { duration: 1, repeat: Infinity } : {}}
           />
@@ -184,6 +189,7 @@ export default function SearchToolbar({
             : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }
           }
           whileTap={{ scale: 0.88 }}
+          aria-label={cameraActive ? t("pos.stop") : t("pos.scan")}
           title={cameraActive ? t("pos.stop") : t("pos.scan")}
         >
           <Camera size={13} />
@@ -196,7 +202,8 @@ export default function SearchToolbar({
           className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
           style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }}
           whileTap={{ scale: 0.88 }}
-          title="Clear sale"
+          aria-label={t("pos.clean_sale")}
+          title={t("pos.clean_sale")}
         >
           <Eraser size={13} />
         </MotionButton>
@@ -221,6 +228,7 @@ export default function SearchToolbar({
             className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
             style={{ background: menuOpen ? "var(--surface-3)" : "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }}
             whileTap={{ scale: 0.88 }}
+            aria-label="More options"
           >
             <MoreVertical size={13} />
           </MotionButton>

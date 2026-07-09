@@ -7,6 +7,7 @@ const MotionP = motion.p as any
 import {
   ArrowLeft,
   Camera,
+  CreditCard,
   Eraser,
   HandCoins,
   Landmark,
@@ -74,10 +75,12 @@ type Props = {
   recentSales: { number: string; total: number; totalLbp: number; items: CartItem[] }[]
   onPrintReceipt: (sale: any) => void
   onWhatsAppReceipt: (sale: any) => void
+  scanError?: boolean
 }
 
 const PAY_OPTIONS: { label: PaymentMethod; icon: typeof Landmark }[] = [
   { label: "Cash",   icon: Landmark    },
+  { label: "Card",   icon: CreditCard  },
   { label: "Wallet", icon: WalletCards },
   { label: "Debt",   icon: HandCoins   },
 ]
@@ -95,6 +98,7 @@ export default function QuickPOSMode({
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, checkoutBlocked, onCompleteSale,
   recentSales, onPrintReceipt, onWhatsAppReceipt,
+  scanError,
 }: Props) {
   const { t, dir } = useI18n()
   const usdRef = useRef<HTMLInputElement>(null)
@@ -303,8 +307,8 @@ export default function QuickPOSMode({
           style={{
             background: "var(--surface)",
             border: "1.5px solid",
-            borderColor: hasInput ? "var(--brand)" : "var(--border)",
-            boxShadow: hasInput ? "0 0 0 3px var(--brand-soft)" : undefined,
+            borderColor: scanError ? "var(--danger)" : hasInput ? "var(--brand)" : "var(--border)",
+            boxShadow: scanError ? "0 0 0 3px var(--danger-soft)" : hasInput ? "0 0 0 3px var(--brand-soft)" : undefined,
           }}>
           <div className="flex shrink-0 items-center justify-center" style={{ width: 52, color: hasInput ? "var(--brand)" : "var(--text-3)", transition: "color 0.2s" }}>
             <Scan size={19} strokeWidth={2} />
@@ -427,7 +431,7 @@ export default function QuickPOSMode({
 
           {/* Payment method */}
           <div className="border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-4 gap-1.5">
               {PAY_OPTIONS.map(({ label, icon: Icon }) => (
                 <MotionButton key={label} type="button" onClick={() => onSelectPayment(label)}
                   className="flex items-center justify-center gap-1 rounded-lg border py-3 text-[12px] font-bold transition"

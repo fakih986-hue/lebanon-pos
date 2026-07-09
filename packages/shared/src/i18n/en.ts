@@ -418,7 +418,7 @@ export const en = {
   "pos.cart": "Cart",
   "pos.scan": "Scan",
   "pos.stop": "Stop",
-  "pos.clean": "Clean",
+  "pos.clean": "Clear sale",
   "pos.items_shown": "{n} shown",
   "pos.cart_count": "Cart {n}",
   "pos.exchange_rate": "1 USD = {rate}",
@@ -437,7 +437,8 @@ export const en = {
   /* POS - Cart Drawer */
   "pos.current_sale": "Current sale",
   "pos.items_total": "{n} items - {total}",
-  "pos.clean_sale": "Clean sale",
+  "pos.clean_sale": "Clear sale",
+  "pos.pay": "Pay",
   "pos.close_checkout": "Close checkout",
   "pos.cart_empty": "Cart is empty",
   "pos.cart_empty_hint": "Add products from the quick-sale screen.",

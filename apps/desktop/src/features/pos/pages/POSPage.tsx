@@ -317,6 +317,14 @@ export default function POSPage() {
     })
   }
 
+  const [scanError, setScanError] = useState(false)
+  const scanErrorTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const flashScanError = useCallback(() => {
+    setScanError(true)
+    if (scanErrorTimer.current) clearTimeout(scanErrorTimer.current)
+    scanErrorTimer.current = setTimeout(() => setScanError(false), 1200)
+  }, [])
+
   const addProductToSale = useCallback(function addProductToSale(product: Product, source: string) {
     if (product.isParent) {
       const variants = products.filter((p) => p.parentId === product.id)
@@ -329,11 +337,13 @@ export default function POSPage() {
     if (product.stock <= 0) {
       setScannerStatus(`${product.name} is out of stock.`)
       playErrorBuzz()
+      flashScanError()
       return
     }
     if (cartItem && cartItem.quantity >= product.stock) {
       setScannerStatus(`${product.name} reached available stock.`)
       playErrorBuzz()
+      flashScanError()
       return
     }
     addItem(product)
@@ -341,7 +351,7 @@ export default function POSPage() {
     setScanCode("")
     setSearch("")
     setScannerStatus(`${product.name} added by ${source}.`)
-  }, [products, items])
+  }, [products, items, flashScanError])
 
   function quickAddProduct(value: string) {
     const query = value.trim().toLowerCase()
@@ -371,6 +381,7 @@ export default function POSPage() {
         setScannerStatus(`"${value.trim()}" not found. Please ask a manager.`)
       }
       playErrorBuzz()
+      flashScanError()
       return
     }
     addProductToSale(product, exactProduct ? "barcode" : "quick add")
@@ -722,6 +733,7 @@ export default function POSPage() {
                 scanCode={scanCode}
                 onScanCodeChange={setScanCode}
                 onQuickAdd={quickAddProduct}
+                scanError={scanError}
                 scannerStatus={scannerStatus}
                 cameraActive={cameraActive}
                 cameraEngine={cameraEngine}
@@ -781,6 +793,7 @@ export default function POSPage() {
                   scanCode={scanCode}
                   onScanCodeChange={setScanCode}
                   onQuickAdd={quickAddProduct}
+                  scanError={scanError}
                   scannerStatus={scannerStatus}
                   cameraActive={cameraActive}
                   cameraEngine={cameraEngine}

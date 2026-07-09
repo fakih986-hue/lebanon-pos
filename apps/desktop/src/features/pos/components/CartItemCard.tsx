@@ -103,10 +103,11 @@ const CartItemCard = memo(function CartItemCard({
           <button
             type="button"
             onClick={onDecrease}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border transition hover:opacity-80"
+            aria-label={`Decrease ${name}`}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border transition hover:opacity-80 active:scale-90"
             style={{ background: "var(--surface-2)", borderColor: "var(--surface-3)", color: "var(--text-2)" }}
           >
-            <Minus size={13} />
+            <Minus size={14} />
           </button>
 
           {editingQty ? (
@@ -117,7 +118,7 @@ const CartItemCard = memo(function CartItemCard({
               onChange={(e) => setQtyInput(e.target.value)}
               onBlur={commitQty}
               onKeyDown={(e) => { if (e.key === "Enter") commitQty(); if (e.key === "Escape") setEditingQty(false) }}
-              className="h-7 w-12 rounded-lg border text-center text-[13px] font-bold outline-none"
+              className="h-9 w-12 rounded-lg border text-center text-[13px] font-bold outline-none"
               style={{ borderColor: "var(--brand)", boxShadow: "0 0 0 2px var(--brand-soft)", color: "var(--text)", background: "var(--surface)" }}
             />
           ) : (
@@ -125,7 +126,8 @@ const CartItemCard = memo(function CartItemCard({
               type="button"
               onClick={() => { openQtyEdit(); setShowPresets((v) => !v) }}
               title={t("pos.cart.set_quantity")}
-              className="h-7 w-10 rounded-lg text-[13px] font-bold transition hover:opacity-80"
+              aria-label={t("pos.cart.set_quantity")}
+              className="h-9 w-10 rounded-lg text-[13px] font-bold transition hover:opacity-80"
               style={{ background: "var(--surface-3)", color: "var(--text)" }}
             >
               {quantity}
@@ -135,10 +137,11 @@ const CartItemCard = memo(function CartItemCard({
           <button
             type="button"
             onClick={onIncrease}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border transition hover:opacity-80"
+            aria-label={`Increase ${name}`}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border transition hover:opacity-80 active:scale-90"
             style={{ background: "var(--surface-2)", borderColor: "var(--surface-3)", color: "var(--text-2)" }}
           >
-            <Plus size={13} />
+            <Plus size={14} />
           </button>
         </div>
 
@@ -151,7 +154,7 @@ const CartItemCard = memo(function CartItemCard({
         <button
           type="button"
           onClick={onRemove}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition hover:opacity-80"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition hover:opacity-80"
           style={{ color: "var(--text-2)", background: "var(--surface-2)" }}
           aria-label={t("pos.remove_item", { name })}
         >
