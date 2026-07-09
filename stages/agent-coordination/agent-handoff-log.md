@@ -6,6 +6,32 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-8 (Settings/System Hardening) — COMPLETE
+
+**Sync health status badges:**
+- Failed count badge (rose) appears when `syncStatus.failed > 0`
+- Pending count badge (amber) appears when `syncStatus.pending > 10`
+- Badges shown inline in the Offline Sync section header
+
+**Accessibility:**
+- `aria-label` on storeName input ("Store name"), Business Save button ("Save business settings"), Delivery Save button ("Save delivery settings")
+- `aria-describedby` on storeName input linking to error message (`id="storeName-error"`)
+- `aria-label` on all key inputs and action buttons across Business/Delivery/Security/Cloud sync/Backup tabs
+
+**Preserved behavior:** No changes to tax, money, sync, license, export, or backup logic.
+
+**Files changed:**
+- `apps/desktop/src/pages/settings/SettingsPage.tsx` (+22/-12: sync health badges, aria-labels, aria-describedby)
+
+**Regression checks:**
+- Desktop typecheck: PASS
+- Desktop tests: **70/70 PASS**
+- Desktop build: PASS (2.47s)
+
+**Verdict: PASS**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-7 (Delivery/Drivers Polish) — COMPLETE
 
 **DeliveryPage (Orders):**
