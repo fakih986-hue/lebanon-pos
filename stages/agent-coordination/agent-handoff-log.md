@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-12 (Owner Dashboards + Data Visibility) — COMPLETE
+
+**Dashboard — payment mix bar:**
+- Compact horizontal bar under KPI cards showing revenue split by payment method (Cash/Card/Wallet/Debt)
+- Uses existing `paymentMix` data (already computed but not displayed)
+- Color-coded segments using `paymentColor().solid`, with method labels + percentages
+
+**Settings — license status card:**
+- New card in Cloud sync tab sidebar showing current license status
+- Color-coded: green (active), amber (grace), rose (blocked/suspended)
+- Shows license message text if available
+- Imported `isLicenseBlocked` and `getLicenseStatus` from sync.service
+
+**Deferred:** Staff active/inactive filter, receiving warnings — minor additions, not blocking
+
+**Data sources used:**
+- `paymentMix` (dashboard) — already computed in `DashboardPage.tsx:165-169`
+- `getLicenseStatus()` + `isLicenseBlocked()` (settings) — existing functions in `sync.service.ts`
+
+**Regression checks:**
+- Desktop typecheck: PASS
+- Desktop tests: **70/70 PASS**
+- Desktop build: PASS (2.45s)
+- No business logic changes
+
+**Files changed:**
+- `apps/desktop/src/pages/dashboard/DashboardPage.tsx` (+20: payment mix bar)
+- `apps/desktop/src/pages/settings/SettingsPage.tsx` (+28: license status card + imports)
+
+**Verdict: PASS**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-11 (Products + Inventory Structural Split) — COMPLETE
 
 **Product edit modal → right drawer:**
