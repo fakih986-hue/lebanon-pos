@@ -150,6 +150,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   const [editReorderQty, setEditReorderQty] = useState("")
   const [editBarcodeAliases, setEditBarcodeAliases] = useState("")
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
+  const [toolsOpen, setToolsOpen] = useState(false)
   const [bulkEditCategory, setBulkEditCategory] = useState("All")
   const [bulkEditField, setBulkEditField] = useState<"price" | "cost">("price")
   const [bulkEditMode, setBulkEditMode] = useState<"percent" | "fixed">("percent")
@@ -345,11 +346,11 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     const exp = new Date(batch.expiryDate)
     const diffMs = exp.getTime() - now.getTime()
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-    if (diffMs < 0) return { label: "Expired", bg: "var(--rose-100)", fg: "var(--rose-700)" }
-    if (diffDays === 0) return { label: "Today", bg: "var(--rose-100)", fg: "var(--rose-700)" }
-    if (diffDays <= 7) return { label: `${diffDays}d`, bg: "var(--rose-100)", fg: "var(--rose-700)" }
-    if (diffDays <= 30) return { label: `${diffDays}d`, bg: "var(--amber-100)", fg: "var(--amber-700)" }
-    return { label: `${diffDays}d`, bg: "var(--emerald-100)", fg: "var(--emerald-700)" }
+    if (diffMs < 0) return { label: "Expired", bg: "var(--danger-soft)", fg: "var(--danger-text)" }
+    if (diffDays === 0) return { label: "Today", bg: "var(--danger-soft)", fg: "var(--danger-text)" }
+    if (diffDays <= 7) return { label: `${diffDays}d`, bg: "var(--danger-soft)", fg: "var(--danger-text)" }
+    if (diffDays <= 30) return { label: `${diffDays}d`, bg: "var(--warning-soft)", fg: "var(--warning-text)" }
+    return { label: `${diffDays}d`, bg: "var(--success-soft)", fg: "var(--success-text)" }
   }
   const selectedProductBatches = useMemo(
     () =>
@@ -758,12 +759,34 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
           <p className="text-[13px] mt-1" style={{ color: "var(--text-3)" }}>Manage your product catalog, stock levels, and inventory</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={generateProductImages} disabled={generatingImages}
-            className="btn btn-default btn-sm disabled:opacity-50">
-            {generatingImages ? "Generating…" : <><ImagePlus size={14} /> Generate Images</>}
-          </button>
-          <button type="button" onClick={() => setBulkEditOpen(true)}
-            className="btn btn-default btn-sm">± Bulk Edit</button>
+          {/* Power tools live behind one calm menu — the toolbar stays quiet */}
+          <div className="relative">
+            <button type="button" onClick={() => setToolsOpen((v) => !v)}
+              aria-expanded={toolsOpen} aria-haspopup="menu"
+              className="btn btn-default btn-sm">⋯ Tools</button>
+            {toolsOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setToolsOpen(false)} />
+                <div className="absolute end-0 top-full z-40 mt-1.5 w-52 overflow-hidden rounded-xl border p-1 shadow-xl"
+                  style={{ background: "var(--surface)", borderColor: "var(--border)" }} role="menu">
+                  <button type="button" role="menuitem" disabled={generatingImages}
+                    onClick={() => { setToolsOpen(false); generateProductImages() }}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-start text-[13px] font-semibold transition hover:opacity-80 disabled:opacity-50"
+                    style={{ color: "var(--text)" }}>
+                    <ImagePlus size={14} style={{ color: "var(--text-3)" }} />
+                    {generatingImages ? "Generating…" : "Generate Images"}
+                  </button>
+                  <button type="button" role="menuitem"
+                    onClick={() => { setToolsOpen(false); setBulkEditOpen(true) }}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-start text-[13px] font-semibold transition hover:opacity-80"
+                    style={{ color: "var(--text)" }}>
+                    <SlidersHorizontal size={14} style={{ color: "var(--text-3)" }} />
+                    Bulk Edit
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <button type="button" onClick={() => {
             const csv = ["Name,Category,Price,Cost,Stock,Barcode,Reorder Pt,Reorder Qty"].concat(
               products.map((p) => `"${p.name}","${p.category}",${p.price},${p.cost},${p.stock},"${p.barcode || ""}",${p.reorderPoint ?? ""},${p.reorderQuantity ?? ""}`)
@@ -860,8 +883,8 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
                   <td className="border-b px-3 py-3">
                     <div className="flex flex-wrap items-center gap-1">
                       <span className="chip text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{
-                        background: batch.status === "Open" ? "var(--emerald-100)" : batch.status === "Consumed" ? "var(--slate-100)" : "var(--rose-100)",
-                        color: batch.status === "Open" ? "var(--emerald-700)" : batch.status === "Consumed" ? "var(--slate-600)" : "var(--rose-700)",
+                        background: batch.status === "Open" ? "var(--success-soft)" : batch.status === "Consumed" ? "var(--surface-3)" : "var(--danger-soft)",
+                        color: batch.status === "Open" ? "var(--success-text)" : batch.status === "Consumed" ? "var(--text-2)" : "var(--danger-text)",
                       }}>{batch.status}</span>
                       {(() => {
                         const chip = getExpiryChip(batch)
@@ -974,8 +997,8 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
                     </td>
                     <td className="border-b px-4 py-3">
                       <span className="chip text-[10px] px-2 py-0.5 rounded font-bold" style={{
-                        background: issue.severity === "error" ? "var(--rose-100)" : "var(--amber-100)",
-                        color: issue.severity === "error" ? "var(--rose-700)" : "var(--amber-700)",
+                        background: issue.severity === "error" ? "var(--danger-soft)" : "var(--warning-soft)",
+                        color: issue.severity === "error" ? "var(--danger-text)" : "var(--warning-text)",
                       }}>{issue.type.replace(/_/g, " ")}</span>
                     </td>
                     <td className="border-b px-4 py-3 text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>

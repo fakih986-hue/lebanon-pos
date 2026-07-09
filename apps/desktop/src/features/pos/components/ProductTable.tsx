@@ -147,7 +147,7 @@ function ProductRow({
           <span className={status.className}>{status.label}</span>
           {(!product.barcode || product.barcode.trim() === "") && (
             <span className="chip text-[10px] px-1.5 py-0.5 rounded font-semibold"
-              style={{ background: "var(--amber-100)", color: "var(--amber-700)" }}>
+              style={{ background: "var(--warning-soft)", color: "var(--warning-text)" }}>
               No barcode
             </span>
           )}

@@ -685,7 +685,7 @@ function SaleRow({ sale, selected, refunds, onSelect, onView, onPrint }: {
           )}
           {hasRounding && (
             <span className="chip text-[10px] px-1.5 py-0.5 rounded font-bold"
-              style={{ background: "var(--amber-100)", color: "var(--amber-700)" }}>
+              style={{ background: "var(--warning-soft)", color: "var(--warning-text)" }}>
               rounded
             </span>
           )}

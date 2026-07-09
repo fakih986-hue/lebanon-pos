@@ -532,7 +532,7 @@ export default function CustomersPage() {
                               </span>
                             )}
                             {!customer.overdue && !customer.overLimit && customer.balance <= 0 && (
-                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--emerald-100)", color: "var(--emerald-700)" }}>
+                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--success-soft)", color: "var(--success-text)" }}>
                                 good
                               </span>
                             )}
@@ -933,10 +933,63 @@ export default function CustomersPage() {
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
                       Balance
                     </p>
-                    <p className="text-lg font-bold text-rose-700">
+                    <p className="text-lg font-bold tabular-nums" style={{ color: selectedCustomer.balance > 0 ? "var(--danger-text)" : "var(--text)" }}>
                       {formatCurrency(selectedCustomer.balance)}
                     </p>
                   </div>
+                </div>
+
+                {/* Credit-limit usage — fills toward danger */}
+                {selectedCustomer.creditLimit > 0 && (
+                  <div className="mt-3">
+                    <div className="mb-1 flex items-center justify-between text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
+                      <span>Credit limit</span>
+                      <span className="tabular-nums">
+                        {formatCurrency(selectedCustomer.balance)} / {formatCurrency(selectedCustomer.creditLimit)}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: "var(--surface-3)" }}>
+                      {(() => {
+                        const pct = Math.min(100, (selectedCustomer.balance / selectedCustomer.creditLimit) * 100)
+                        const color = pct >= 100 ? "var(--danger)" : pct >= 75 ? "var(--warning)" : "var(--success)"
+                        return (
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.max(pct, 2)}%`, background: color }}
+                            role="progressbar"
+                            aria-valuenow={Math.round(pct)}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label="Credit limit used"
+                          />
+                        )
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* Promise-to-pay note — quick inline commitment tracking */}
+                <div className="mt-3">
+                  <label className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
+                    <CalendarClock size={12} />
+                    Promise to pay / note
+                  </label>
+                  <div className="flex gap-1.5">
+                    <input
+                      key={selectedCustomer.id}
+                      defaultValue={selectedCustomer.notes}
+                      placeholder="e.g. will pay Friday"
+                      maxLength={160}
+                      className="input h-9 min-w-0 flex-1 text-[12px]"
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter") return
+                        const value = (e.target as HTMLInputElement).value.trim()
+                        updateCustomer(selectedCustomer.id, { notes: value })
+                        showToast("Note saved.")
+                      }}
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px]" style={{ color: "var(--text-3)" }}>Enter to save</p>
                 </div>
               </div>
             ) : null}
