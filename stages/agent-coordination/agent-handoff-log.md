@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-6 (Dashboard / Owner Command Center) — COMPLETE
+
+**Action queue — unified and actionable:**
+- Now draws from 5 real data sources: low stock products, overLimit customers, overdue customers, dead stock items, operational alerts (license grace, failed sync)
+- Sorted by money-at-risk (descending): overLimit/overdue debt → dead stock value → low stock → sync/license alerts
+- Clickable items navigate to resolution pages (`/customers`, `/products`, `/settings`)
+- `getOperationalAlerts` (previously unused) now wired into dashboard
+- `getDeadStockItems` (previously unused) now wired into dashboard
+- "All clear" success empty state with green checkmark icon (was neutral text)
+
+**Daily close status — 5th KPI card:**
+- Shows "Day open" with amber indicator or "Day closed" with green checkmark
+- Links to close from Accounting page
+- Grid updated from xl:grid-cols-4 to sm:grid-cols-3 xl:grid-cols-5
+
+**Accessibility:**
+- `aria-pressed` on date range buttons (Today/Week/Month)
+- `aria-label` on all 5 KPI cards (label + value)
+- `aria-label` on all action queue items
+- Action queue linked items use React Router `<Link>` for keyboard accessibility
+
+**No changes to:** Money math, accounting, customer debt, inventory, delivery, sync logic, backend/schema
+
+**Regression checks:**
+- Desktop typecheck: PASS
+- Desktop tests: **70/70 PASS**
+- Desktop build: PASS (2.50s)
+
+**Files changed:**
+- `apps/desktop/src/pages/dashboard/DashboardPage.tsx` (+65/-50: unified action queue, daily close card, operational alerts, dead stock, aria-labels, aria-pressed)
+
+**Verdict: PASS**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-5 (Accounting/Cash Drawer Hardening) — COMPLETE
 
 **CloseDayPanel:**
