@@ -6,6 +6,35 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-10 (POS Checkout Commercial Finish) — COMPLETE
+
+**Sale review overlay (main POS CartPanel + CartDrawer):**
+- New `handleReview()` function — sets `showReview=true`; CartPanel and CartDrawer now route through review before calling `completeSale()`
+- Review overlay shows: item count, total (USD+LBP), payment method, cash tender amounts, change due (green), blocked reason (rose banner)
+- QuickPOSMode already has its own review overlay — untouched (keeps calling `completeSale` directly after its review)
+- Escape closes review and returns to tender; Enter completes sale (disabled when blocked)
+- Blocked reasons: "Add items to the cart first", "Insufficient payment — still due $X", "Select a customer for debt sale", "Credit limit exceeded by $X"
+
+**Offline/sync status chip:**
+- Imported `getSyncStatus`, `subscribeSync`, `SyncStatus` type
+- New `syncStatus` state with subscription effect
+- Compact chip in POS header: "Offline — N unsent" (rose) when offline; "N failed sync" (amber) when failed
+
+**Regression checks:**
+- Desktop typecheck: PASS
+- Desktop tests: **70/70 PASS**
+- Desktop build: PASS (2.38s)
+- Exact LBP tender: Untouched (cashTenderValid + fillExactTender unchanged)
+- Money math: Unchanged (checkout totals, tax, discount, cash change, batch consumption all intact)
+- QuickPOS review: Existing review overlay unchanged
+
+**Files changed:**
+- `apps/desktop/src/features/pos/pages/POSPage.tsx` (+127/-6: review overlay JSX, handleReview, sync status, blocked reasons, formatLbpCurrency import)
+
+**Verdict: PASS**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-9 (Commercial Gap Audit) — COMPLETE
 
 **Audit:** Wrote `stages/ux-ui/pos-commercial-gap-audit-after-comm8.md`
