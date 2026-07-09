@@ -6,6 +6,40 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-4 (Supplier/Receiving Polish) — COMPLETE
+
+**SuppliersPage:**
+- Archive/restore buttons on each row (uses existing `archiveSupplier/restoreSupplier` service functions)
+- "Show archived" toggle in accounts section header
+- Hard delete still available via X button with confirm dialog
+- `aria-label` on "+ Add supplier" button
+- `aria-pressed` on payment method toggle buttons (Cash/Card/Bank Transfer/Wallet)
+
+**ProductReceivePage:**
+- `aria-label` on all toolbar buttons: "Add receiving row", "Paste rows from spreadsheet", "Save and receive all ready rows"
+- `aria-label` on row action buttons: "Generate barcode for row", "Scan barcode via camera", "Duplicate row", "Remove row" (was only `title` before)
+- `aria-label` on sidebar: "Select supplier" on supplier dropdown, "Save and receive batch" on Save, "Clear all receiving rows" on Clear
+- `aria-pressed` on payment method toggle buttons (Account/Cash/Card/Bank/Wallet)
+- Fixed duplicate `title` attribute on Remove button
+
+**No changes to:**
+- Inventory math, stock movement rules, sync/storage behavior, POS checkout, backend/schema
+- Receiving math (`receiveProducts`, `receiveInventoryBatches`, `receiveAndRecord` all unchanged)
+
+**Regression checks:**
+- Desktop typecheck: PASS
+- Desktop tests: **70/70 PASS**
+- Desktop build: PASS (2.63s)
+- No console errors, no duplicate title warnings
+
+**Files changed:**
+- `apps/desktop/src/pages/suppliers/SuppliersPage.tsx` (+42 lines: archive/restore, archive toggle, aria-labels)
+- `apps/desktop/src/pages/products/ProductReceivePage.tsx` (+16 lines: aria-labels on toolbar/rows/sidebar, fixed duplicate title)
+
+**Verdict: PASS**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-3 (Customer Debt Polish) — COMPLETE
 
 **Implemented per approved plan with PASS WITH CONSTRAINTS verdict.**
