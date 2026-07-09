@@ -73,23 +73,27 @@ function getItemName(item: any): string {
 function exportSalesCsv(sales: Sale[]) {
   const s = getSettings()
   const rate = s.usdToLbpRate
-  const header = ["Sale #", "Date", "Payment", "Customer", "Cashier", "Items", "Subtotal", "Discount", "Tax", "Total", "Total (LBP)", "Profit", "Profit (LBP)", "Status"]
-  const rows = sales.map((s) => [
-    s.saleNumber ?? "",
-    s.createdAt ? new Date(s.createdAt).toLocaleString() : "",
-    s.paymentMethod ?? "",
-    s.customerName ?? "",
-    s.cashier ?? "",
-    (Array.isArray(s.items) ? s.items.reduce((sum, i) => sum + (i.quantity ?? 0), 0) : 0),
-    (s.subtotal ?? 0).toFixed(2),
-    (s.discountTotal ?? 0).toFixed(2),
-    (s.tax ?? 0).toFixed(2),
-    (s.total ?? 0).toFixed(2),
-    Math.round((s.total ?? 0) * (rate ?? 0)).toString(),
-    (s.profit ?? 0).toFixed(2),
-    Math.round((s.profit ?? 0) * (rate ?? 0)).toString(),
-    s.status ?? "",
-  ])
+  const header = ["Sale #", "Date", "Payment", "Customer", "Cashier", "Items", "Subtotal", "Discount", "Tax", "Total", "Total (LBP)", "Cash Payable (LBP)", "Profit", "Profit (LBP)", "Status"]
+  const rows = sales.map((s) => {
+    const payableLbp = (s as any).payableLbp as number | undefined
+    return [
+      s.saleNumber ?? "",
+      s.createdAt ? new Date(s.createdAt).toLocaleString() : "",
+      s.paymentMethod ?? "",
+      s.customerName ?? "",
+      s.cashier ?? "",
+      (Array.isArray(s.items) ? s.items.reduce((sum, i) => sum + (i.quantity ?? 0), 0) : 0),
+      (s.subtotal ?? 0).toFixed(2),
+      (s.discountTotal ?? 0).toFixed(2),
+      (s.tax ?? 0).toFixed(2),
+      (s.total ?? 0).toFixed(2),
+      Math.round((s.total ?? 0) * (rate ?? 0)).toString(),
+      payableLbp ? Math.round(payableLbp).toString() : "",
+      (s.profit ?? 0).toFixed(2),
+      Math.round((s.profit ?? 0) * (rate ?? 0)).toString(),
+      s.status ?? "",
+    ]
+  })
   const csv = [header, ...rows]
     .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
     .join("\n")
@@ -650,11 +654,13 @@ function SaleRow({ sale, selected, refunds, onSelect, onView, onPrint }: {
   onSelect: () => void; onView: () => void; onPrint: () => void
 }) {
   const saleRefunds = refunds.filter((r) => r.saleId === sale.id)
+  const hasRounding = (sale as any).payableLbp && (sale as any).payableLbp !== (sale as any).totalLbp
   return (
     <button
       type="button"
       onClick={onSelect}
       onDoubleClick={onView}
+      aria-label={`Sale ${sale.saleNumber}, ${sale.paymentMethod}, ${formatCurrency(sale.total)}${sale.customerName ? `, ${sale.customerName}` : ""}${saleRefunds.length > 0 ? `, ${saleRefunds.length} refunds` : ""}`}
       className="w-full rounded-xl border px-4 py-3 text-start transition"
       style={selected
         ? { borderColor: "var(--brand)", background: "var(--brand-soft)" }
@@ -669,6 +675,12 @@ function SaleRow({ sale, selected, refunds, onSelect, onView, onPrint }: {
           <span className="text-[13px] font-bold truncate" style={{ color: "var(--text)" }}>{sale.saleNumber}</span>
           {saleRefunds.length > 0 && (
             <span className="chip chip-warning">↩ {saleRefunds.length}</span>
+          )}
+          {hasRounding && (
+            <span className="chip text-[10px] px-1.5 py-0.5 rounded font-bold"
+              style={{ background: "var(--amber-100)", color: "var(--amber-700)" }}>
+              rounded
+            </span>
           )}
         </div>
         <span className="text-[14px] font-bold tabular-nums shrink-0" style={{ color: "var(--text)" }}>
