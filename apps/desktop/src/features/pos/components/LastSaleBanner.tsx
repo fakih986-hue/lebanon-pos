@@ -35,11 +35,11 @@ export default function LastSaleBanner({ sales, onNewSale, onPrintReceipt, onWha
           <CheckCircle2 size={13} className="shrink-0" style={{ color: i === 0 ? "var(--brand)" : "var(--text-3)" }} />
           <span className="text-[11px] font-semibold min-w-0 flex-1" style={{ color: "var(--text)" }}>
             {sale.number}
-            <span className="ms-1.5 font-bold tabular-nums" style={{ color: i === 0 ? "var(--brand-text)" : "var(--text-2)" }}>
+            <span className="ml-1.5 font-bold tabular-nums" style={{ color: i === 0 ? "var(--brand-text)" : "var(--text-2)" }}>
               {formatCurrency(sale.total)}
             </span>
             {sale.customerName && (
-              <span className="ms-1 text-[10px] opacity-50" style={{ color: "var(--text-3)" }}>{sale.customerName}</span>
+              <span className="ml-1 text-[10px] opacity-50" style={{ color: "var(--text-3)" }}>{sale.customerName}</span>
             )}
           </span>
           {i === 0 && (
@@ -57,7 +57,7 @@ export default function LastSaleBanner({ sales, onNewSale, onPrintReceipt, onWha
                 type="button"
                 onClick={() => onPrintReceipt(sale)}
                 className="flex h-6 items-center gap-1 rounded-md border px-2 text-[10px] font-bold transition hover:opacity-80"
-                style={{ borderColor: "var(--brand-border)", color: "var(--brand-text)", background: "var(--surface)" }}
+                style={{ borderColor: "var(--brand-border)", color: "var(--brand-text)", background: "white" }}
               >
                 <Printer size={10} />
               </button>
@@ -66,7 +66,7 @@ export default function LastSaleBanner({ sales, onNewSale, onPrintReceipt, onWha
                   type="button"
                   onClick={() => onWhatsApp(sale)}
                   className="flex h-6 items-center gap-1 rounded-md border px-2 text-[10px] font-bold transition hover:opacity-80"
-                  style={{ borderColor: "var(--border)", color: "#25D366", background: "var(--surface)" }}
+                  style={{ borderColor: "var(--border)", color: "#25D366", background: "white" }}
                 >
                   <MessageCircle size={10} />
                 </button>
@@ -74,28 +74,15 @@ export default function LastSaleBanner({ sales, onNewSale, onPrintReceipt, onWha
             </div>
           )}
           {i > 0 && (
-            <div className="flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                onClick={() => onPrintReceipt(sale)}
-                className="flex h-6 w-6 items-center justify-center rounded-md transition hover:opacity-80"
-                style={{ color: "var(--text-3)" }}
-                title={t("pos.print")}
-              >
-                <Printer size={10} />
-              </button>
-              {onWhatsApp && (
-                <button
-                  type="button"
-                  onClick={() => onWhatsApp(sale)}
-                  className="flex h-6 w-6 items-center justify-center rounded-md transition hover:opacity-80"
-                  style={{ color: "#25D366" }}
-                  title="WhatsApp"
-                >
-                  <MessageCircle size={10} />
-                </button>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => onPrintReceipt(sale)}
+              className="flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-bold transition hover:opacity-80"
+              style={{ color: "var(--text-3)" }}
+              title={t("pos.print")}
+            >
+              <Printer size={10} />
+            </button>
           )}
         </div>
       ))}

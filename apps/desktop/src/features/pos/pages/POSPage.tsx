@@ -16,22 +16,18 @@ import LastSaleBanner from "../components/LastSaleBanner"
 import SaleCompleteOverlay from "../components/SaleCompleteOverlay"
 import CartDrawer from "../components/CartDrawer"
 import CartPanel from "../components/CartPanel"
+import CartRailWidgets from "../components/CartRailWidgets"
 import VariantPicker from "../components/VariantPicker"
 import QuickPOSMode from "../components/QuickPOSMode"
 import KeyboardShortcutsModal from "../components/KeyboardShortcutsModal"
 import { openWhatsAppShare, receiptMessage } from "../lib/whatsapp"
 import {
-  computeCashChange,
   formatCurrency,
-  formatLbpCurrency,
   formatNumber,
   lbpToUsd,
   roundMoney,
-  roundLbp,
-  ceilLbp,
   usdToLbp,
 } from "../lib/currency"
-import { playErrorBuzz, playScanBlip } from "../lib/sound"
 import {
   getHeldSaleItemCount,
   parseMoney,
@@ -51,9 +47,8 @@ import {
   type HeldSale,
 } from "../services/heldSale.service"
 import { recordDebtSale } from "../services/customer.service"
-import { recordAuditEvent, userCan, isSimpleMode, getCurrentUser } from "../services/security.service"
+import { recordAuditEvent, userCan } from "../services/security.service"
 import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
-import { isLicenseBlocked, getLicenseStatus, getSyncStatus, subscribeSync, type SyncStatus } from "../services/sync.service"
 import type { Product } from "../types/product"
 import { usePosData } from "../hooks/usePosData"
 import { useBarcodeScanner } from "../hooks/useBarcodeScanner"
@@ -100,7 +95,6 @@ export default function POSPage() {
   const [discountMode, setDiscountMode] = useState<DiscountMode>("USD")
   const [discountValue, setDiscountValue] = useState("")
   const [lastSale, setLastSale] = useState<LastSaleSummary | null>(null)
-  const [isCompleting, setIsCompleting] = useState(false)
   const [recentSales, setRecentSales] = useState<LastSaleSummary[]>(() => {
     try {
       const stored = localStorage.getItem("lebanonpos.recent-sales.v1")
@@ -119,10 +113,8 @@ export default function POSPage() {
     useState<Product | null>(null)
   const [saleNote, setSaleNote] = useState("")
   const [sellAtCost, setSellAtCost] = useState(false)
-  const [quickMode, setQuickMode] = useState(false) // start in normal grid mode
+  const [quickMode, setQuickMode] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-  const [showReview, setShowReview] = useState(false)
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => getSyncStatus())
 
   const productListRef = useRef<HTMLDivElement | null>(null)
 
@@ -171,9 +163,6 @@ export default function POSPage() {
     return () => window.removeEventListener("sync:operation-rejected", onRejected)
   }, [])
 
-  // --- Subscribe to sync status ---
-  useEffect(() => subscribeSync(() => setSyncStatus(getSyncStatus())), [])
-
   // Auto-activate sellAtCost when selecting a cost-customer
   useEffect(() => {
     if (selectedCustomer?.sellAtCost) {
@@ -193,7 +182,7 @@ export default function POSPage() {
     const categoryNames = [
       "All",
       "Favorites",
-      ...Array.from(new Set(products.map((product) => product.category).filter(Boolean))),
+      ...Array.from(new Set(products.map((product) => product.category))),
     ]
     return categoryNames.map((category) => {
       const departmentProducts =
@@ -201,7 +190,7 @@ export default function POSPage() {
           ? products
           : category === "Favorites"
             ? products.filter((product) => product.favorite)
-          : products.filter((product) => product.category && product.category === category)
+          : products.filter((product) => product.category === category)
       const Icon = departmentIcons[category] ?? PackageSearch
 
       return {
@@ -217,11 +206,10 @@ export default function POSPage() {
   const filteredProducts = useMemo(() => {
     const query = (debouncedSearch || scanCode).trim().toLowerCase()
     return products.filter((product) => {
-      if (product.archived) return false
       const matchesCategory =
         selectedCategory === "All" ||
         (selectedCategory === "Favorites" && product.favorite) ||
-        (product.category && product.category === selectedCategory)
+        product.category === selectedCategory
       const matchesSearch =
         query.length === 0 || productMatchesSearch(product, query)
       return matchesCategory && matchesSearch
@@ -246,9 +234,6 @@ export default function POSPage() {
   const total = roundMoney(subtotal + tax)
   const exchangeRate = Math.max(1, settings.usdToLbpRate)
   const totalLbp = usdToLbp(total, exchangeRate)
-  // Canonical cash payable — rounded to nearest banknote so change makes practical sense
-  const payableLbp = ceilLbp(totalLbp, 5000)
-  const payableUsd = lbpToUsd(payableLbp, exchangeRate)
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const selectedCustomer = customers.find(
     (customer) => customer.id === selectedCustomerId
@@ -267,14 +252,11 @@ export default function POSPage() {
   const tenderMode: TenderMode = paidLbpAmount > 0 ? (paidUsdAmount > 0 ? "Mixed" : "LBP") : "USD"
   const paidTotalUsd = roundMoney(paidUsdAmount + lbpToUsd(paidLbpAmount, exchangeRate))
   const paidTotalLbp = usdToLbp(paidTotalUsd, exchangeRate)
-  const cashStillDueUsd = roundMoney(Math.max(0, payableUsd - paidTotalUsd))
-  const { changeUsd: cashChangeUsd, changeLbp: cashChangeLbp } = computeCashChange({
-    paidUsd: paidUsdAmount, paidLbp: paidLbpAmount,
-    totalUsd: payableUsd, totalLbp: payableLbp, exchangeRate,
-  })
+  const cashStillDueUsd = roundMoney(Math.max(0, total - paidTotalUsd))
+  const cashChangeUsd = roundMoney(Math.max(0, paidTotalUsd - total))
+  const cashChangeLbp = usdToLbp(cashChangeUsd, exchangeRate)
   const cashTenderValid =
-    paymentMethod !== "Cash" || items.length === 0 ||
-    (tenderMode === "LBP" ? paidLbpAmount >= payableLbp : paidTotalUsd + 0.005 >= payableUsd)
+    paymentMethod !== "Cash" || items.length === 0 || paidTotalUsd + 0.005 >= total
   const creditLimitExceeded = Boolean(
     paymentMethod === "Debt" &&
       selectedCustomer &&
@@ -297,10 +279,7 @@ export default function POSPage() {
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.id === product.id)
       if (existingItem) {
-        if (existingItem.quantity >= product.stock) {
-          setScannerStatus(`${product.name}: only ${product.stock} available.`)
-          return currentItems
-        }
+        if (existingItem.quantity >= product.stock) return currentItems
         return currentItems.map((item) =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1, price: effectivePrice }
@@ -328,14 +307,6 @@ export default function POSPage() {
     })
   }
 
-  const [scanError, setScanError] = useState(false)
-  const scanErrorTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const flashScanError = useCallback(() => {
-    setScanError(true)
-    if (scanErrorTimer.current) clearTimeout(scanErrorTimer.current)
-    scanErrorTimer.current = setTimeout(() => setScanError(false), 1200)
-  }, [])
-
   const addProductToSale = useCallback(function addProductToSale(product: Product, source: string) {
     if (product.isParent) {
       const variants = products.filter((p) => p.parentId === product.id)
@@ -347,22 +318,17 @@ export default function POSPage() {
     const cartItem = items.find((item) => item.id === product.id)
     if (product.stock <= 0) {
       setScannerStatus(`${product.name} is out of stock.`)
-      playErrorBuzz()
-      flashScanError()
       return
     }
     if (cartItem && cartItem.quantity >= product.stock) {
       setScannerStatus(`${product.name} reached available stock.`)
-      playErrorBuzz()
-      flashScanError()
       return
     }
     addItem(product)
-    playScanBlip()
     setScanCode("")
     setSearch("")
     setScannerStatus(`${product.name} added by ${source}.`)
-  }, [products, items, flashScanError])
+  }, [products, items])
 
   function quickAddProduct(value: string) {
     const query = value.trim().toLowerCase()
@@ -378,21 +344,12 @@ export default function POSPage() {
     )
     const matchingProducts = products.filter((product) => {
       const matchesCategory =
-        selectedCategory === "All" || (product.category && product.category === selectedCategory)
+        selectedCategory === "All" || product.category === selectedCategory
       return matchesCategory && productMatchesSearch(product, query || barcode)
     })
     const product = exactProduct ?? matchingProducts[0]
     if (!product) {
-      // Role-based unknown barcode handling
-      const currentRole = getCurrentUser()?.role
-      if (currentRole === "Admin" || currentRole === "Manager") {
-        setScannerStatus(`Unknown barcode: "${value.trim()}". Manager — create product?`)
-        // Allow existing product creation flow via navigateto /products if needed
-      } else {
-        setScannerStatus(`"${value.trim()}" not found. Please ask a manager.`)
-      }
-      playErrorBuzz()
-      flashScanError()
+      setScannerStatus(`No item found for ${value.trim()}.`)
       return
     }
     addProductToSale(product, exactProduct ? "barcode" : "quick add")
@@ -451,18 +408,10 @@ export default function POSPage() {
   }, [])
 
   const setItemPrice = useCallback(function setItemPrice(id: number, price: number) {
-    // Block price reduction below cost unless user has discount permission
-    if (!userCan("sales.discount")) {
-      const item = items.find(i => i.id === id)
-      if (item && price < item.cost) {
-        setScannerStatus("Price below cost — requires manager approval")
-        return
-      }
-    }
     setItems((currentItems) =>
       currentItems.map((item) => item.id === id ? { ...item, price } : item)
     )
-  }, [items])
+  }, [])
 
   // --- Tender / discount ---
   function resetTender() {
@@ -481,13 +430,13 @@ export default function POSPage() {
 
   const fillExactTender = useCallback(function fillExactTender(currency: "USD" | "LBP") {
     if (currency === "USD") {
-      setPaidUsd(payableUsd.toFixed(2))
+      setPaidUsd(total.toFixed(2))
       setPaidLbp("")
       return
     }
-    setPaidLbp(String(payableLbp))
+    setPaidLbp(String(Math.round(totalLbp)))
     setPaidUsd("")
-  }, [payableUsd, payableLbp])
+  }, [total, totalLbp])
 
   // --- Sale lifecycle ---
   const cleanSale = useCallback(function cleanSale() {
@@ -590,22 +539,8 @@ export default function POSPage() {
     })
   }, [])
 
-  function handleReview() {
-    if (checkoutBlocked || isCompleting) return
-    setShowReview(true)
-  }
-
   const completeSale = useCallback(function completeSale() {
-    if (checkoutBlocked || isCompleting) return
-
-    // License check before local writes — preserve cart if blocked
-    if (isLicenseBlocked()) {
-      const license = getLicenseStatus()
-      setScannerStatus(license?.message || "Store is suspended. Sale blocked.")
-      return
-    }
-
-    setIsCompleting(true)
+    if (checkoutBlocked) return
 
     const saleNumber = `S-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`
 
@@ -677,8 +612,7 @@ export default function POSPage() {
       const saleRecord = {
         number: saleNumber, paymentMethod, customerName: selectedCustomer?.name,
         grossSubtotal, subtotal, discountTotal, tax, total, totalLbp, exchangeRate,
-        payableLbp, payableUsd,
-        tender, profit: saleResult.profit,
+        tender,
         customerBalanceBefore: paymentMethod === "Debt" ? customerBalanceBefore : undefined,
         customerBalanceAfter, items,
       }
@@ -692,8 +626,6 @@ export default function POSPage() {
       setSaleNote("")
       setIsCartOpen(false)
       setScannerStatus("Sale completed. Scanner ready for the next sale.")
-      // Keep scanner focused for next sale
-      setTimeout(() => scanInputRef.current?.focus(), 100)
     } catch (err) {
       // Reverse completed steps — cart is preserved so user can retry
       if (recordedSaleId) {
@@ -715,10 +647,8 @@ export default function POSPage() {
         }
       }
       setScannerStatus(`Checkout failed. Cart preserved, try again.`)
-    } finally {
-      setIsCompleting(false)
     }
-  }, [checkoutBlocked, isCompleting, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal])
+  }, [checkoutBlocked, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal])
 
   return (
     <main className="pos-workspace relative min-h-0 flex-1 overflow-hidden">
@@ -730,35 +660,18 @@ export default function POSPage() {
             <LastSaleBanner
               sales={recentSales}
               onNewSale={cleanSale}
-              onPrintReceipt={(s) => printLastSaleReceipt(s as any, settings)}
+              onPrintReceipt={(s) => printLastSaleReceipt(s, settings)}
               onWhatsApp={(s) => {
-                const items = s.items ?? []
                 openWhatsAppShare(receiptMessage({
                   storeName: settings.storeName,
                   saleNumber: s.number,
                   total: s.total,
                   totalLbp: s.totalLbp,
-                  items: items.map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                  items: s.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
                   footer: settings.receiptFooter,
                 }))
               }}
             />
-
-            {/* Sync / offline status chip */}
-            {(!syncStatus.online || syncStatus.failed > 0 || syncStatus.pending > 10) && (
-              <div className="flex items-center gap-1.5 text-[10px] font-bold">
-                {!syncStatus.online && (
-                  <span className="rounded-full px-2 py-0.5" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>
-                    Offline — {syncStatus.pending} unsent
-                  </span>
-                )}
-                {syncStatus.failed > 0 && (
-                  <span className="rounded-full px-2 py-0.5" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>
-                    {syncStatus.failed} failed sync
-                  </span>
-                )}
-              </div>
-            )}
 
             {quickMode ? (
               <QuickPOSMode
@@ -766,7 +679,6 @@ export default function POSPage() {
                 scanCode={scanCode}
                 onScanCodeChange={setScanCode}
                 onQuickAdd={quickAddProduct}
-                scanError={scanError}
                 scannerStatus={scannerStatus}
                 cameraActive={cameraActive}
                 cameraEngine={cameraEngine}
@@ -802,19 +714,17 @@ export default function POSPage() {
                 cashChangeLbp={cashChangeLbp}
                 cashStillDueUsd={cashStillDueUsd}
                 cashTenderValid={cashTenderValid}
-                checkoutBlocked={checkoutBlocked || isCompleting}
-                isCompleting={isCompleting}
-          onCompleteSale={handleReview}
-                recentSales={recentSales as any}
-                onPrintReceipt={(s) => printLastSaleReceipt(s as any, settings)}
+                checkoutBlocked={checkoutBlocked}
+                onCompleteSale={completeSale}
+                recentSales={recentSales}
+                onPrintReceipt={(s) => printLastSaleReceipt(s, settings)}
                 onWhatsAppReceipt={(s) => {
-                  const its = s.items ?? []
                   openWhatsAppShare(receiptMessage({
                     storeName: settings.storeName,
                     saleNumber: s.number,
                     total: s.total,
                     totalLbp: s.totalLbp,
-                    items: its.map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                    items: s.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
                     footer: settings.receiptFooter,
                   }))
                 }}
@@ -826,7 +736,6 @@ export default function POSPage() {
                   scanCode={scanCode}
                   onScanCodeChange={setScanCode}
                   onQuickAdd={quickAddProduct}
-                  scanError={scanError}
                   scannerStatus={scannerStatus}
                   cameraActive={cameraActive}
                   cameraEngine={cameraEngine}
@@ -853,7 +762,7 @@ export default function POSPage() {
                 <FavoritesBar
                   products={products}
                   selectedCategory={selectedCategory}
-                  onAddToCart={(p) => addProductToSale(p, "favorites")}
+                  onAddToCart={addProductToSale}
                 />
 
                 <div
@@ -947,6 +856,7 @@ export default function POSPage() {
         </div>
 
         {/* ── Right: Persistent cart rail (desktop only) ── */}
+        <CartRailWidgets />
         <CartPanel
           items={items}
           onIncreaseQty={increaseQuantity}
@@ -999,7 +909,6 @@ export default function POSPage() {
           canApplyDiscount={canApplyDiscount}
           sellAtCost={sellAtCost}
           onToggleSellAtCost={toggleSellAtCost}
-          isCompleting={isCompleting}
         />
       </div>
 
@@ -1037,7 +946,7 @@ export default function POSPage() {
           onDiscountValueChange={setDiscountValue}
           onHold={holdCurrentSale}
           onClean={cleanSale}
-          onCompleteSale={handleReview}
+          onCompleteSale={completeSale}
           itemCount={itemCount}
           grossSubtotal={grossSubtotal}
           discountTotal={discountTotal}
@@ -1055,14 +964,13 @@ export default function POSPage() {
           creditLimitExceeded={creditLimitExceeded}
           checkoutBlocked={checkoutBlocked}
           hasDiscount={hasDiscount}
-          sellAtCost={sellAtCost}
+          heldSalesItemCount={heldSalesItemCount}
           canApplyDiscount={canApplyDiscount}
-          settings={settings}
-          isCompleting={isCompleting}
+          sellAtCost={sellAtCost}
+          onToggleSellAtCost={toggleSellAtCost}
         />
       </div>
 
-      {/* Confirm action dialog */}
       {confirmAction && (
         <ConfirmDialog
           open={!!confirmAction}
@@ -1089,115 +997,6 @@ export default function POSPage() {
       ) : null}
 
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-
-      {/* Sale review overlay — main POS confirmation step */}
-      {showReview && (
-        <section className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-          style={{ background: "rgba(5,7,13,0.92)", backdropFilter: "blur(16px)" }}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") { e.preventDefault(); setShowReview(false) }
-            if (e.key === "Enter" && !checkoutBlocked) { e.preventDefault(); setShowReview(false); completeSale() }
-          }}
-          tabIndex={0}
-          aria-label="Review sale before completing"
-        >
-          <div className="w-full max-w-md rounded-3xl overflow-hidden"
-            style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-            <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>Confirm Sale</h2>
-                <span className="rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: "var(--surface-2)", color: "var(--text-3)" }}>
-                  {itemCount} item{itemCount !== 1 ? "s" : ""}
-                </span>
-              </div>
-            </div>
-
-            <div className="px-5 py-4 space-y-3">
-              {/* Blocked reason */}
-              {checkoutBlocked && (
-                <div className="rounded-xl p-3 text-[12px] font-bold" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>
-                  {items.length === 0 ? "Add items to the cart first." :
-                   paymentMethod === "Cash" && !cashTenderValid ? `Insufficient payment — still due ${formatCurrency(cashStillDueUsd)}` :
-                   paymentMethod === "Debt" && !selectedCustomer ? "Select a customer for debt sale." :
-                   creditLimitExceeded ? `Credit limit exceeded by ${formatCurrency((selectedCustomer?.balance ?? 0) + total - (selectedCustomer?.creditLimit ?? 0))}` : 
-                   "Cannot complete sale. Check payment details."}
-                </div>
-              )}
-
-              {/* Totals */}
-              <div className="flex items-end justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Total</span>
-                <div className="text-end leading-none">
-                  <div className="text-[32px] font-bold tabular-nums" style={{ color: "var(--text)" }}>
-                    {formatCurrency(total)}
-                  </div>
-                  <div className="text-[12px] font-semibold tabular-nums mt-0.5" style={{ color: "var(--text-3)" }}>
-                    {formatLbpCurrency(totalLbp)}
-                  </div>
-                </div>
-              </div>
-
-              {/* Cash rounding disclosure — only for cash sales with rounding gap */}
-              {paymentMethod === "Cash" && payableLbp !== totalLbp && (
-                <div className="rounded-xl p-3 space-y-1" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
-                  <div className="flex justify-between text-[11px] font-semibold">
-                    <span style={{ color: "var(--text-3)" }}>Cash rounding</span>
-                    <span className="tabular-nums" style={{ color: "var(--brand-text)" }}>
-                      +{formatLbpCurrency(payableLbp - totalLbp)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-[12px] font-bold">
-                    <span style={{ color: "var(--text-2)" }}>Cash payable</span>
-                    <div className="text-end tabular-nums">
-                      <span style={{ color: "var(--text)" }}>{formatLbpCurrency(payableLbp)}</span>
-                      <span className="text-[10px] ms-1" style={{ color: "var(--text-3)" }}>({formatCurrency(payableUsd)})</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Payment info */}
-              <div className="flex items-center justify-between text-[12px] pt-2 border-t" style={{ borderColor: "var(--border)" }}>
-                <span className="font-semibold" style={{ color: "var(--text-3)" }}>{paymentMethod}</span>
-                {paymentMethod === "Cash" && (
-                  <span className="font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
-                    USD {paidUsd || "0"} / LBP {paidLbp || "0"}
-                  </span>
-                )}
-                {paymentMethod === "Debt" && selectedCustomer && (
-                  <span className="font-semibold" style={{ color: "var(--amber-text)" }}>
-                    {selectedCustomer.name} — Balance: {formatCurrency(selectedCustomer.balance)}
-                  </span>
-                )}
-              </div>
-
-              {/* Change / Still due */}
-              {paymentMethod === "Cash" && cashTenderValid && cashChangeUsd > 0 && (
-                <div className="rounded-xl p-3 text-center" style={{ background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.25)" }}>
-                  <span className="text-[11px] font-bold uppercase" style={{ color: "var(--success)" }}>Change due</span>
-                  <div className="text-[28px] font-bold tabular-nums mt-1" style={{ color: "var(--success)" }}>
-                    {formatCurrency(cashChangeUsd)}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="px-5 py-4 flex gap-3 border-t" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
-              <button type="button" onClick={() => setShowReview(false)}
-                className="flex-1 h-12 rounded-xl text-[13px] font-bold transition active:scale-[0.98]"
-                style={{ border: "1px solid var(--border)", color: "var(--text-2)", background: "var(--surface)" }}>
-                Back
-              </button>
-              <button type="button" onClick={() => { setShowReview(false); completeSale() }}
-                disabled={checkoutBlocked}
-                className="flex-[2.5] h-12 rounded-xl text-[15px] font-bold transition active:scale-[0.98] disabled:opacity-40"
-                style={{ background: "var(--brand)", color: "var(--brand-contrast)" }}>
-                Confirm — Pay {formatCurrency(total)}
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
 
       <SaleCompleteOverlay sale={lastSale}
         onViewReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}

@@ -139,8 +139,8 @@ export function getInventoryNotifications(products: Product[]) {
         title: "No shift open",
         detail: "Start a shift to track cash",
         severity: "Warning",
-        actionLabel: "Open POS",
-        actionPath: "/",
+        actionLabel: "Open shift",
+        actionPath: "/settings",
       })
     }
   } catch { /* security service unavailable */ }

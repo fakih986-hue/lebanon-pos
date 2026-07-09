@@ -28,7 +28,6 @@ import {
   type Sale,
   type SalePaymentMethod,
   type SaleRefund,
-  type RefundItem,
 } from "../../features/pos/services/sales.service"
 import { recordDebtPayment } from "../../features/pos/services/customer.service"
 import { restoreInventoryBatches } from "../../features/pos/services/inventoryBatch.service"
@@ -73,27 +72,23 @@ function getItemName(item: any): string {
 function exportSalesCsv(sales: Sale[]) {
   const s = getSettings()
   const rate = s.usdToLbpRate
-  const header = ["Sale #", "Date", "Payment", "Customer", "Cashier", "Items", "Subtotal", "Discount", "Tax", "Total", "Total (LBP)", "Cash Payable (LBP)", "Profit", "Profit (LBP)", "Status"]
-  const rows = sales.map((s) => {
-    const payableLbp = (s as any).payableLbp as number | undefined
-    return [
-      s.saleNumber ?? "",
-      s.createdAt ? new Date(s.createdAt).toLocaleString() : "",
-      s.paymentMethod ?? "",
-      s.customerName ?? "",
-      s.cashier ?? "",
-      (Array.isArray(s.items) ? s.items.reduce((sum, i) => sum + (i.quantity ?? 0), 0) : 0),
-      (s.subtotal ?? 0).toFixed(2),
-      (s.discountTotal ?? 0).toFixed(2),
-      (s.tax ?? 0).toFixed(2),
-      (s.total ?? 0).toFixed(2),
-      Math.round((s.total ?? 0) * (rate ?? 0)).toString(),
-      payableLbp ? Math.round(payableLbp).toString() : "",
-      (s.profit ?? 0).toFixed(2),
-      Math.round((s.profit ?? 0) * (rate ?? 0)).toString(),
-      s.status ?? "",
-    ]
-  })
+  const header = ["Sale #", "Date", "Payment", "Customer", "Cashier", "Items", "Subtotal", "Discount", "Tax", "Total", "Total (LBP)", "Profit", "Profit (LBP)", "Status"]
+  const rows = sales.map((s) => [
+    s.saleNumber,
+    new Date(s.createdAt).toLocaleString(),
+    s.paymentMethod,
+    s.customerName ?? "",
+    s.cashier,
+    s.items.reduce((sum, i) => sum + i.quantity, 0),
+    s.subtotal.toFixed(2),
+    (s.discountTotal ?? 0).toFixed(2),
+    s.tax.toFixed(2),
+    s.total.toFixed(2),
+    Math.round(s.total * rate).toString(),
+    (s.profit ?? 0).toFixed(2),
+    Math.round((s.profit ?? 0) * rate).toString(),
+    s.status,
+  ])
   const csv = [header, ...rows]
     .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
     .join("\n")
@@ -117,10 +112,15 @@ function groupSalesByDay(sales: Sale[]) {
 }
 
 const PM_COLORS: Record<string, string> = {
-  Cash:   "chip-success",
-  Card:   "chip-info",
-  Wallet: "chip-neutral",
-  Debt:   "chip-warning",
+  Cash:   "bg-emerald-100 text-emerald-700",
+  Card:   "bg-indigo-100 text-indigo-700",
+  Wallet: "bg-violet-100 text-violet-700",
+  Debt:   "bg-amber-100 text-amber-700",
+}
+const STATUS_COLORS: Record<string, string> = {
+  Completed: "bg-emerald-100 text-emerald-700",
+  Voided:    "bg-zinc-100 text-zinc-500 line-through",
+  Debt:      "bg-amber-100 text-amber-700",
 }
 
 export default function SalesPage() {
@@ -148,7 +148,7 @@ export default function SalesPage() {
   const [pendingRefund, setPendingRefund] = useState<{
     sale: Sale
     refundTotal: number
-    refundItems: RefundItem[]
+    refundItems: Array<{ id: number; name: string; barcode: string; quantity: number; unitPrice: number; cost: number; total: number }>
     refundReason: string
   } | null>(null)
   const [voidSaleId, setVoidSaleId] = useState<string | null>(null)
@@ -168,7 +168,7 @@ export default function SalesPage() {
 
   // All unique cashiers for filter
   const cashiers = useMemo(() => {
-    const names = new Set(sales.map((s) => s.cashier).filter((c): c is string => typeof c === "string" && c.length > 0))
+    const names = new Set(sales.map((s) => s.cashier).filter(Boolean))
     return Array.from(names).sort()
   }, [sales])
 
@@ -183,11 +183,11 @@ export default function SalesPage() {
       if (rangeStart && new Date(sale.createdAt) < rangeStart) return false
       if (query) {
         const matchesSearch =
-          (sale.saleNumber ?? "").toLowerCase().includes(query) ||
+          sale.saleNumber.toLowerCase().includes(query) ||
           (sale.customerName ?? "").toLowerCase().includes(query) ||
-          (sale.cashier ?? "").toLowerCase().includes(query) ||
+          sale.cashier.toLowerCase().includes(query) ||
           (sale.shiftNumber ?? "").toLowerCase().includes(query) ||
-          (Array.isArray(sale.items) && sale.items.some((item) => getItemName(item).toLowerCase().includes(query)))
+          sale.items.some((item) => getItemName(item).toLowerCase().includes(query))
         if (!matchesSearch) return false
       }
       return true
@@ -246,25 +246,14 @@ export default function SalesPage() {
     const refundItems = sale.items.map((item) => {
       const available = getRefundableQuantity(sale, item, refunds)
       const qty = Math.min(parseReturnQuantity(refundQuantities[String(item.id)] ?? ""), available)
-      let batchAllocations: typeof item.batchAllocations = undefined
-      if (item.batchAllocations && qty > 0) {
-        let remaining = qty
-        batchAllocations = []
-        for (const alloc of item.batchAllocations) {
-          if (remaining <= 0) break
-          const taken = Math.min(remaining, alloc.quantity)
-          batchAllocations.push({ ...alloc, quantity: taken })
-          remaining -= taken
-        }
-      }
-      return { ...item, quantity: qty, total: item.unitPrice * qty, batchAllocations }
+      return { ...item, quantity: qty, total: item.unitPrice * qty }
     }).filter((item) => item.quantity > 0)
 
     if (refundItems.length === 0) { setRefundStatus(t("pos.sales.choose_item_qty")); return }
     const alreadyRefunded = saleRefunds.reduce((s, r) => s + r.total, 0)
     const refundTotal = Math.min(Math.max(0, sale.total - alreadyRefunded), getRefundTotal(sale, refundItems))
     if (refundTotal <= 0) { setRefundStatus(t("pos.sales.no_refundable_balance")); return }
-    setPendingRefund({ sale, refundTotal, refundItems, refundReason })
+    setPendingRefund({ sale, refundTotal, refundItems: refundItems.map((i) => ({ id: i.id, name: i.name, barcode: i.barcode, quantity: i.quantity, unitPrice: i.unitPrice, cost: i.cost, total: i.total })), refundReason })
   }
 
   function executeRefund() {
@@ -382,7 +371,7 @@ export default function SalesPage() {
             {/* Date range */}
             <div>
               <p className="mb-2 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
-                <Calendar size={11} className="inline me-1" />
+                <Calendar size={11} className="inline mr-1" />
                 Date Range
               </p>
               <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
@@ -411,7 +400,6 @@ export default function SalesPage() {
                   <button
                     key={pm}
                     type="button"
-                    aria-pressed={paymentFilter === pm}
                     onClick={() => setPaymentFilter(pm)}
                     className="h-8 rounded-lg border px-3 text-[12px] font-semibold transition"
                     style={paymentFilter === pm
@@ -433,7 +421,6 @@ export default function SalesPage() {
                   <button
                     key={s}
                     type="button"
-                    aria-pressed={statusFilter === s}
                     onClick={() => setStatusFilter(s)}
                     className="h-8 rounded-lg border px-3 text-[12px] font-semibold transition"
                     style={statusFilter === s
@@ -632,10 +619,6 @@ export default function SalesPage() {
         onCancel={() => setPendingRefund(null)}
       >
         <p>{t("pos.sales.confirm_refund", { count: pendingRefund?.refundItems.length ?? 0, total: formatCurrency(pendingRefund?.refundTotal ?? 0) })}</p>
-        {pendingRefund?.refundReason && <p className="mt-1 text-xs" style={{ color: "var(--text-3)" }}>Reason: {pendingRefund.refundReason}</p>}
-        <p className="mt-2 text-xs font-semibold" style={{ color: "var(--text-2)" }}>
-          Stock will be restored and batch quantities returned. {pendingRefund?.sale.paymentMethod === "Debt" ? "Customer debt will be reduced." : ""}
-        </p>
       </ConfirmDialog>
 
       <ConfirmDialog
@@ -647,9 +630,6 @@ export default function SalesPage() {
         onCancel={() => setVoidSaleId(null)}
       >
         <p>{t("pos.sales.void_sale_message")}</p>
-        <p className="mt-2 text-xs font-semibold" style={{ color: "var(--rose-text)" }}>
-          This will reverse the sale, restore inventory, and remove any customer debt. This cannot be undone.
-        </p>
       </ConfirmDialog>
     </main>
   )
@@ -661,14 +641,12 @@ function SaleRow({ sale, selected, refunds, onSelect, onView, onPrint }: {
   onSelect: () => void; onView: () => void; onPrint: () => void
 }) {
   const saleRefunds = refunds.filter((r) => r.saleId === sale.id)
-  const hasRounding = (sale as any).payableLbp && (sale as any).payableLbp !== (sale as any).totalLbp
   return (
     <button
       type="button"
       onClick={onSelect}
       onDoubleClick={onView}
-      aria-label={`Sale ${sale.saleNumber}, ${sale.paymentMethod}, ${formatCurrency(sale.total)}${sale.customerName ? `, ${sale.customerName}` : ""}${saleRefunds.length > 0 ? `, ${saleRefunds.length} refunds` : ""}`}
-      className="w-full rounded-xl border px-4 py-3 text-start transition"
+      className="w-full rounded-xl border px-4 py-3 text-left transition"
       style={selected
         ? { borderColor: "var(--brand)", background: "var(--brand-soft)" }
         : { borderColor: "var(--border)", background: "var(--surface)" }
@@ -676,21 +654,15 @@ function SaleRow({ sale, selected, refunds, onSelect, onView, onPrint }: {
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`chip ${PM_COLORS[sale.paymentMethod] ?? "chip-neutral"}`}>
+          <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${PM_COLORS[sale.paymentMethod] ?? "bg-zinc-100 text-zinc-600"}`}>
             {sale.paymentMethod}
           </span>
           <span className="text-[13px] font-bold truncate" style={{ color: "var(--text)" }}>{sale.saleNumber}</span>
           {saleRefunds.length > 0 && (
-            <span className="chip chip-warning">↩ {saleRefunds.length}</span>
-          )}
-          {hasRounding && (
-            <span className="chip text-[10px] px-1.5 py-0.5 rounded font-bold"
-              style={{ background: "var(--warning-soft)", color: "var(--warning-text)" }}>
-              rounded
-            </span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">↩ {saleRefunds.length}</span>
           )}
         </div>
-        <span className="text-[14px] font-bold tabular-nums shrink-0" style={{ color: "var(--text)" }}>
+        <span className="text-[14px] font-black tabular-nums shrink-0" style={{ color: "var(--text)" }}>
           {formatCurrency(sale.total)}
         </span>
       </div>
@@ -698,7 +670,7 @@ function SaleRow({ sale, selected, refunds, onSelect, onView, onPrint }: {
         <div className="mt-1 flex gap-3 text-[11px]" style={{ color: "var(--text-3)" }}>
           {sale.customerName && <span>{sale.customerName}</span>}
           {sale.cashier && <span>{sale.cashier}</span>}
-          <span className="ms-auto">{new Date(sale.createdAt).toLocaleTimeString("en-LB", { hour: "2-digit", minute: "2-digit" })}</span>
+          <span className="ml-auto">{new Date(sale.createdAt).toLocaleTimeString("en-LB", { hour: "2-digit", minute: "2-digit" })}</span>
         </div>
       )}
     </button>
