@@ -143,7 +143,15 @@ function ProductRow({
         {formatNumber(product.stock)}
       </td>
       <td className={cell} style={cellStyle}>
-        <span className={status.className}>{status.label}</span>
+        <div className="flex flex-wrap items-center gap-1">
+          <span className={status.className}>{status.label}</span>
+          {(!product.barcode || product.barcode.trim() === "") && (
+            <span className="chip text-[10px] px-1.5 py-0.5 rounded font-semibold"
+              style={{ background: "var(--amber-100)", color: "var(--amber-700)" }}>
+              No barcode
+            </span>
+          )}
+        </div>
       </td>
       <td className={cell} style={cellStyle}>
         <button

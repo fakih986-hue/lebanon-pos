@@ -791,6 +791,8 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
           <div className="flex rounded-lg p-0.5 gap-0.5" style={{ background: "var(--surface-2)" }}>
             {(["all", "open", "consumed", "expired"] as const).map(s => (
               <button key={s} onClick={() => setLotFilter(s)}
+                aria-pressed={lotFilter === s}
+                aria-label={`Filter: ${s} lots`}
                 className="px-3 py-1 text-[11px] font-semibold rounded-md capitalize"
                 style={{
                   background: lotFilter === s ? "var(--brand)" : "transparent",
@@ -1302,7 +1304,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
           <div className="modal-card" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Edit Product</h2>
-              <button onClick={() => setEditProduct(null)} className="btn-icon" style={{ color: "var(--text-3)" }}>✕</button>
+              <button onClick={() => setEditProduct(null)} className="btn-icon" style={{ color: "var(--text-3)" }} aria-label="Close edit modal">✕</button>
             </div>
             <div className="modal-body space-y-3">
               <label className="block">

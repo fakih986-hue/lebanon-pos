@@ -29,6 +29,8 @@ export default function WorkspaceTabs<T extends string>({ tabs, active, onChange
             key={value}
             type="button"
             onClick={() => onChange(value)}
+            aria-pressed={selected}
+            aria-label={`${tab.label}${typeof tab.count === "number" ? ` (${tab.count})` : ""}`}
             className={cn(
               "flex h-10 items-center gap-2 whitespace-nowrap px-4 text-[13px] font-bold transition relative",
               selected

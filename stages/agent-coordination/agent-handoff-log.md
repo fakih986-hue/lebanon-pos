@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-2 (Product/Inventory Polish) — COMPLETE
+
+**Tab naming verified — already renamed from earlier sprint:**
+- "Control" → "Stock control" ✓ (already in productViews)
+- "Lots" → "Batches" ✓ (already in productViews)
+- "Setup" → "Add product" ✓ (already in productViews)
+
+**Product table polish:**
+- Added "No barcode" amber badge to ProductTable rows when product has no barcode — appears alongside stock status chip.
+- Stock status badges (Active/Low/Out) already present — verified working.
+
+**Accessibility improvements:**
+- `WorkspaceTabs`: added `aria-pressed={selected}` and `aria-label` to all tab buttons.
+- Lots filter buttons: added `aria-pressed` and `aria-label` ("Filter: all/open/consumed/expired lots").
+- Edit Product modal: added `aria-label="Close edit modal"` to ✕ close button.
+
+**No changes to:**
+- Product data logic, stock deduction, receiving, sync, storage, backend/API/schema.
+- Cart/checkout behavior, inventory math, FEFO, batch consumption.
+
+**Regression checks:**
+- API typecheck: PASS
+- Desktop typecheck: PASS
+- Desktop tests: **62/62 PASS**
+- Desktop build: PASS (2.33s)
+
+**Files changed:**
+- `apps/desktop/src/features/pos/components/ProductTable.tsx` (+6 lines: No barcode badge)
+- `apps/desktop/src/components/ui/WorkspaceTabs.tsx` (+2 lines: aria-pressed + aria-label)
+- `apps/desktop/src/pages/products/ProductsPage.tsx` (+3 lines: Lots filter aria-labels, modal close aria-label)
+
+**Verdict: PASS**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-HARDEN-1 (Commercial Hardening) — COMPLETE
 
 **Verified (no issues found):**
