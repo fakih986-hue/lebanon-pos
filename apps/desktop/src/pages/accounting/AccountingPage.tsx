@@ -54,6 +54,7 @@ export default function AccountingPage() {
   )
   const [dailyCloses, setDailyCloses] = useState<DailyClose[]>(getDailyCloses())
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
+  const [closeNote, setCloseNote] = useState("")
   const [activeWorkspace, setActiveWorkspace] =
     useState<AccountingWorkspace>("Close day")
   const canManageAccounting = userCan("accounting.manage")
@@ -111,7 +112,8 @@ export default function AccountingPage() {
       .reduce((sum, expense) => sum + expense.amount, 0),
   }))
 
-  function handleCloseDay() {
+  function handleCloseDay(note: string) {
+    setCloseNote(note)
     setShowCloseConfirm(true)
   }
 
@@ -133,7 +135,7 @@ export default function AccountingPage() {
       netProfit: summary.netProfit,
       cashIn: summary.cashIn,
       cashOut: summary.cashOut,
-      note: "",
+      note: closeNote.trim(),
     })
     setShowCloseConfirm(false)
     showToast(t("pos.accounting.day_closed", { date: formatDateKey(close.dateKey) }))

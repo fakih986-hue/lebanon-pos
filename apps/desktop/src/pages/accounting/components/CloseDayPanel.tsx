@@ -9,7 +9,7 @@ import { formatDateKey, type AccountingSummary } from "../accounting.helpers"
 type Props = {
   summary: AccountingSummary
   todayClose: boolean
-  onCloseDay: () => void
+  onCloseDay: (note: string) => void
   canManageAccounting: boolean
 }
 
@@ -150,20 +150,23 @@ export default function CloseDayPanel({
                 <span className="block text-[12px] font-semibold mb-1.5" style={{ color: "var(--text-2)" }}>
                   Counted cash (actual in drawer)
                 </span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={countedCash}
-                  onChange={(e) => setCountedCash(e.target.value)}
-                  placeholder={expected.toFixed(2)}
-                  className="input w-full text-end font-bold"
-                  style={{ height: 44, fontSize: 16 }}
-                />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={countedCash}
+                    onChange={(e) => setCountedCash(e.target.value)}
+                    placeholder={expected.toFixed(2)}
+                    className="input w-full text-end font-bold"
+                    style={{ height: 44, fontSize: 16 }}
+                    aria-label="Counted cash in drawer"
+                  />
               </label>
               {hasCount && (
                 <div
                   className="mt-3 flex items-center justify-between rounded-lg px-3 py-2.5"
+                  role="status"
+                  aria-live="polite"
                   style={matched
                     ? { background: "var(--success-soft)", color: "var(--success-text)", border: "1px solid var(--success)" }
                     : { background: "var(--danger-soft)", color: "var(--danger-text)", border: "1px solid var(--danger)" }
@@ -211,6 +214,7 @@ export default function CloseDayPanel({
               }}
               className="flex h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-bold transition hover:opacity-80"
               style={{ borderColor: "var(--border)", color: "#25D366" }}
+              aria-label="Share daily summary via WhatsApp"
             >
               <MessageCircle size={16} />
               WhatsApp summary
@@ -236,16 +240,19 @@ export default function CloseDayPanel({
                 w.document.close(); w.focus(); setTimeout(() => w.print(), 250)
               }}
               className="flex h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-bold transition hover:opacity-80"
-              style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>
+              style={{ borderColor: "var(--border)", color: "var(--text-2)" }}
+              aria-label="Print daily report"
+            >
               <Printer size={16} />
               Print Report
             </button>
-            <button
-              type="button"
-              onClick={() => onCloseDay()}
-              disabled={!canManageAccounting}
-              className="btn-primary btn-md h-11 px-5"
-            >
+              <button
+                type="button"
+                onClick={() => onCloseDay(closeNote)}
+                disabled={!canManageAccounting}
+                className="btn-primary btn-md h-11 px-5"
+                aria-label={todayClose ? "Reclose today" : "Close today"}
+              >
               <CheckCircle2 size={17} />
               {todayClose ? "Reclose Today" : "Close Today"}
             </button>

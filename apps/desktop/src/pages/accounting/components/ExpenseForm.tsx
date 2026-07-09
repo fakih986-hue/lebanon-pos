@@ -103,6 +103,8 @@ export default function ExpenseFormPanel({ canManageAccounting }: Props) {
               setErrors((prev) => ({ ...prev, vendor: undefined }))
             }}
             placeholder="Supplier name"
+            aria-label="Vendor name"
+            aria-describedby={errors.vendor ? "vendor-error" : undefined}
             className={`mt-2 h-11 w-full rounded-lg border px-3 outline-none focus:ring-4 ${
               errors.vendor
                 ? "border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-100"
@@ -110,11 +112,11 @@ export default function ExpenseFormPanel({ canManageAccounting }: Props) {
             }`}
           />
           {errors.vendor ? (
-            <p className="mt-1 text-xs font-medium text-rose-600">{errors.vendor}</p>
+            <p id="vendor-error" className="mt-1 text-xs font-medium text-rose-600">{errors.vendor}</p>
           ) : null}
         </label>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Expense category">
           {expenseCategories.map((category) => (
             <button
               key={category}
@@ -153,11 +155,12 @@ export default function ExpenseFormPanel({ canManageAccounting }: Props) {
           ) : null}
         </label>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Payment method">
           {expensePaymentMethods.map((method) => (
             <button
               key={method}
               type="button"
+              aria-pressed={form.paymentMethod === method}
               onClick={() => updateForm({ paymentMethod: method })}
               className={`flex h-10 items-center justify-center gap-2 rounded-lg border text-sm font-bold transition ${
                 form.paymentMethod === method

@@ -407,6 +407,7 @@ export default function SalesPage() {
                   <button
                     key={pm}
                     type="button"
+                    aria-pressed={paymentFilter === pm}
                     onClick={() => setPaymentFilter(pm)}
                     className="h-8 rounded-lg border px-3 text-[12px] font-semibold transition"
                     style={paymentFilter === pm
@@ -428,6 +429,7 @@ export default function SalesPage() {
                   <button
                     key={s}
                     type="button"
+                    aria-pressed={statusFilter === s}
                     onClick={() => setStatusFilter(s)}
                     className="h-8 rounded-lg border px-3 text-[12px] font-semibold transition"
                     style={statusFilter === s
