@@ -339,6 +339,27 @@ export default function DashboardPage() {
           })}
         </section>
 
+        {/* Payment mix bar — compact under KPIs */}
+        {Object.keys(paymentMix).length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 px-1">
+            <span className="text-[10px] font-bold uppercase tracking-wide shrink-0" style={{ color: "var(--text-3)" }}>Revenue mix</span>
+            <div className="flex items-center h-2.5 rounded-full overflow-hidden min-w-24 flex-1" style={{ background: "var(--surface-3)" }}>
+              {Object.entries(paymentMix).sort(([, a], [, b]) => b - a).map(([method, total]) => {
+                const pct = paymentTotal > 0 ? (total / paymentTotal) * 100 : 0
+                return (
+                  <span key={method} className="h-full transition-all shrink-0" title={`${method}: ${formatCurrency(total)}`}
+                    style={{ width: `${pct}%`, background: paymentColor(method).solid }} />
+                )
+              })}
+            </div>
+            {Object.entries(paymentMix).slice(0, 4).map(([method, total]) => (
+              <span key={method} className="text-[10px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
+                {method} {paymentTotal > 0 ? Math.round((total / paymentTotal) * 100) : 0}%
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* ── Main grid ───────────────────────────────────── */}
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(300px,1fr)]">
 

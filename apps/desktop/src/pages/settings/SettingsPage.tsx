@@ -32,6 +32,8 @@ import {
   getKnownStores,
   getSyncQueue,
   getSyncStatus,
+  isLicenseBlocked,
+  getLicenseStatus,
   pullFromServer,
   retryFailedSync,
   setApiUrl,
@@ -1016,6 +1018,31 @@ export default function SettingsPage() {
             )}
           </section>
           ) : null}
+
+          {/* License status card — Cloud sync tab only */}
+          {activeWorkspace === "Cloud sync" && (() => {
+            const license = getLicenseStatus()
+            const blocked = isLicenseBlocked()
+            return (
+              <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${
+                    blocked ? "bg-rose-100 text-rose-700" :
+                    license?.status === "grace" ? "bg-amber-100 text-amber-700" :
+                    "bg-emerald-100 text-emerald-700"}`}>
+                    <Settings size={21} />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-zinc-950">License</h2>
+                    <span className={`text-sm font-bold ${blocked ? "text-rose-600" : license?.status === "grace" ? "text-amber-600" : "text-emerald-600"}`}>
+                      {license?.status ?? "unknown"}
+                    </span>
+                    {license?.message && <p className="text-xs text-zinc-500 mt-0.5">{license.message}</p>}
+                  </div>
+                </div>
+              </section>
+            )
+          })()}
 
           {activeWorkspace === "Backup" || activeWorkspace === "Security" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
