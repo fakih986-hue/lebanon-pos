@@ -228,6 +228,7 @@ export default function StaffPage() {
   const [activeWorkspace, setActiveWorkspace] =
     useState<StaffWorkspace>("Team")
   const [search, setSearch] = useState("")
+  const [activeOnly, setActiveOnly] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   useHotkeys([{ key: "f", modifiers: ["ctrl"], handler: () => searchRef.current?.focus() }])
   const debouncedSearch = useDebounce(search, 200)
@@ -319,14 +320,15 @@ export default function StaffPage() {
   const searchQuery = debouncedSearch.trim().toLowerCase()
 
   const filteredUsers = useMemo(() => {
-    if (!searchQuery) return users
-    return users.filter(
+    let list = activeOnly ? users.filter(u => u.active) : users
+    if (!searchQuery) return list
+    return list.filter(
       (u) =>
         u.name.toLowerCase().includes(searchQuery) ||
         u.mobile.includes(searchQuery) ||
         u.role.toLowerCase().includes(searchQuery)
     )
-  }, [users, searchQuery])
+  }, [users, searchQuery, activeOnly])
 
   const filteredShifts = useMemo(() => {
     if (!searchQuery) return shifts
@@ -567,6 +569,11 @@ export default function StaffPage() {
                     </option>
                   ))}
               </select>
+
+              <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer shrink-0" style={{ color: "var(--text-2)" }}>
+                <input type="checkbox" checked={activeOnly} onChange={e => setActiveOnly(e.target.checked)} />
+                Active only
+              </label>
             </div>
 
             <div className="grid gap-3 p-3">
