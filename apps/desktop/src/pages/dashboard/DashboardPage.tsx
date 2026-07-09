@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useState } from "react"
 import {
   Activity, AlertTriangle, ArrowUpRight, Banknote,
-  Boxes, CircleDollarSign, HandCoins, PackageSearch,
-  ReceiptText, TrendingUp,
+  Boxes, CheckCircle2, CircleDollarSign, HandCoins, PackageSearch,
+  ReceiptText, TrendingUp, WifiOff,
 } from "lucide-react"
+import { Link } from "react-router"
 
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import Spinner from "../../components/ui/Spinner"
-import { getCustomerLedger, getLedgerTotals, subscribeLedger } from "../../features/pos/services/customer.service"
+import { getCustomerLedger, getLedgerTotals, subscribeLedger, type CustomerLedger } from "../../features/pos/services/customer.service"
+import { getDailyCloses, subscribeDailyCloses, getLocalDateKey } from "../../features/pos/services/dailyClose.service"
 import { getExpenses, subscribeExpenses, type Expense } from "../../features/pos/services/expense.service"
 import { getProducts, subscribeProducts } from "../../features/pos/services/product.service"
-import { getSales, getSalesMetrics, getTopProducts, subscribeSales, type Sale } from "../../features/pos/services/sales.service"
+import { getSales, getSalesMetrics, getTopProducts, getOperationalAlerts, subscribeSales, type Sale } from "../../features/pos/services/sales.service"
 import { getSettings, subscribeSettings, type AppSettings } from "../../features/pos/services/settings.service"
-import { getExpiryAlerts, getReorderSuggestions } from "../../features/pos/services/stock.service"
+import { getDeadStockItems, getExpiryAlerts, getReorderSuggestions } from "../../features/pos/services/stock.service"
 import type { Product } from "../../features/pos/types/product"
 import { useI18n } from "@lebanonpos/shared"
 
@@ -174,10 +176,26 @@ export default function DashboardPage() {
   const stockValue    = products.reduce((sum, p) => sum + p.cost * p.stock, 0)
   const recentSales   = rangeSales.slice(0, 8)
   const lowStockProducts = products.filter((p) => p.stock <= settings.lowStockThreshold).sort((a, b) => a.stock - b.stock).slice(0, 5)
-  const riskyCustomers   = customerLedger.filter((c) => c.balance > 0).sort((a, b) => b.balance - a.balance).slice(0, 4)
+  const overLimitCustomers = customerLedger.filter((c) => c.overLimit).sort((a, b) => b.balance - a.balance).slice(0, 3)
+  const overdueCustomers   = customerLedger.filter((c) => c.overdue).sort((a, b) => b.balance - a.balance).slice(0, 3)
   const reorderSuggestions = useMemo(() => getReorderSuggestions(products), [products])
   const expiryAlerts       = useMemo(() => getExpiryAlerts(products, 30), [products])
-  const actionCount = lowStockProducts.length + riskyCustomers.length
+  const deadStockItems     = useMemo(() => getDeadStockItems(products, 60).slice(0, 3), [products])
+  const operationalAlerts  = useMemo(() => getOperationalAlerts(), [ledgerVersion])
+  const todayKey = getLocalDateKey()
+  const todayClosed = useMemo(() => getDailyCloses().some(c => c.dateKey === todayKey), [ledgerVersion])
+
+  // Combined action queue sorted by money-at-risk (desc)
+  const actionQueue = useMemo(() => {
+    const items: Array<{ type: string; label: string; sub: string; value: number; link: string; color: string; bg: string }> = []
+    for (const c of overLimitCustomers) items.push({ type: "overlimit", label: c.name, sub: `${c.oldestUnpaidDays}d overdue`, value: c.balance, link: "/customers", color: "var(--rose)", bg: "var(--rose-soft)" })
+    for (const c of overdueCustomers) items.push({ type: "overdue", label: c.name, sub: `${c.oldestUnpaidDays}d overdue`, value: c.balance, link: "/customers", color: "var(--rose)", bg: "var(--rose-soft)" })
+    for (const p of lowStockProducts) items.push({ type: "lowstock", label: p.name, sub: `${formatNumber(p.stock)} units left`, value: p.stock * p.cost, link: "/products", color: "var(--amber)", bg: "var(--amber-soft)" })
+    for (const d of deadStockItems) items.push({ type: "deadstock", label: d.product.name, sub: `No sales in 60d`, value: d.product.stock * d.product.cost, link: "/products", color: "var(--amber)", bg: "var(--amber-soft)" })
+    for (const a of operationalAlerts) items.push({ type: a.type, label: a.message, sub: a.action ?? "", value: 0, link: a.action === "retry-sync" ? "/settings" : "", color: a.type === "danger" ? "var(--rose)" : "var(--amber)", bg: a.type === "danger" ? "var(--rose-soft)" : "var(--amber-soft)" })
+    return items.sort((a, b) => b.value - a.value).slice(0, 8)
+  }, [lowStockProducts, overLimitCustomers, overdueCustomers, deadStockItems, operationalAlerts])
+  const actionCount = actionQueue.length
 
   const rangeLabel: Record<DateRange, string> = {
     today: t("desktop.dashboard.range_today"),
@@ -212,6 +230,7 @@ export default function DashboardPage() {
               <button
                 key={r}
                 type="button"
+                aria-pressed={dateRange === r}
                 onClick={() => setDateRange(r)}
                 className="rounded-lg px-4 h-9 text-[13px] font-bold transition-all"
                 style={dateRange === r
@@ -226,7 +245,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ── KPI row ─────────────────────────────────────── */}
-        <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
           {[
             {
               label: t("desktop.dashboard.net_paid"),
@@ -266,11 +285,21 @@ export default function DashboardPage() {
                 ? `${reorderSuggestions.filter((r) => r.suggestedQuantity > 0).length} to reorder`
                 : null,
             },
+            {
+              label: todayClosed ? "Day closed" : "Day open",
+              value: todayClosed ? formatCurrency(ledgerTotals.outstanding > 0 ? ledgerTotals.outstanding : 0) : "—",
+              sub: todayClosed ? "Ready for tomorrow" : "Close from Accounting",
+              icon: CheckCircle2,
+              bg: todayClosed ? "var(--success-soft)" : "var(--amber-soft)",
+              fg: todayClosed ? "var(--success)" : "var(--amber)",
+              alert: !todayClosed,
+            },
           ].map((card) => {
             const Icon = card.icon
             return (
               <div
                 key={card.label}
+                aria-label={`${card.label}: ${card.value}`}
                 className="flex flex-col gap-3 rounded-2xl border p-4"
                 style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "var(--shadow-xs)" }}
               >
@@ -422,8 +451,8 @@ export default function DashboardPage() {
             <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
               <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
                 <div className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "var(--danger-soft)" }}>
-                    <AlertTriangle size={13} strokeWidth={2} style={{ color: "var(--danger)" }} />
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: actionCount > 0 ? "var(--danger-soft)" : "var(--success-soft)" }}>
+                    <AlertTriangle size={13} strokeWidth={2} style={{ color: actionCount > 0 ? "var(--danger)" : "var(--success)" }} />
                   </span>
                   <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>{t("desktop.dashboard.action_queue")}</h3>
                 </div>
@@ -436,48 +465,34 @@ export default function DashboardPage() {
               </div>
 
               <div className="max-h-[280px] overflow-y-auto p-3 space-y-2">
-                {actionCount === 0 && (
-                  <p className="py-6 text-center text-[12px]" style={{ color: "var(--text-3)" }}>All clear — no urgent items</p>
+                {actionQueue.length === 0 && (
+                  <div className="py-8 text-center">
+                    <CheckCircle2 size={28} className="mx-auto mb-2" style={{ color: "var(--success)" }} />
+                    <p className="text-[13px] font-bold" style={{ color: "var(--success)" }}>All clear</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>No urgent items need attention</p>
+                  </div>
                 )}
 
-                {lowStockProducts.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between rounded-xl px-3 py-2.5"
-                    style={{ background: "var(--amber-soft)", border: "1px solid var(--amber-border, rgba(245,158,11,0.2))" }}>
-                    <div>
-                      <p className="text-[12px] font-bold" style={{ color: "var(--amber-text)" }}>{product.name}</p>
-                      <p className="text-[10px]" style={{ color: "var(--amber)" }}>{formatNumber(product.stock)} units left</p>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "var(--amber)", color: "#fff" }}>
-                      Low
-                    </span>
-                  </div>
-                ))}
-
-                {riskyCustomers.map((customer) => (
-                  <div key={customer.id} className="flex items-center justify-between rounded-xl px-3 py-2.5"
-                    style={{ background: "var(--rose-soft)", border: "1px solid rgba(244,63,94,0.2)" }}>
-                    <div>
-                      <p className="text-[12px] font-bold" style={{ color: "var(--rose-text)" }}>{customer.name}</p>
-                      <p className="text-[10px]" style={{ color: "var(--rose)" }}>{t("desktop.dashboard.owes")} {formatCurrency(customer.balance)}</p>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "var(--rose)", color: "#fff" }}>
-                      Debt
-                    </span>
-                  </div>
-                ))}
-
-                {expiryAlerts.slice(0, 3).map((p, i) => (
-                  <div key={`${p.product.id}-${i}`} className="flex items-center justify-between rounded-xl px-3 py-2.5"
-                    style={{ background: "var(--amber-soft)", border: "1px solid rgba(245,158,11,0.2)" }}>
-                    <div>
-                      <p className="text-[12px] font-bold" style={{ color: "var(--amber-text)" }}>{p.product.name}</p>
-                      <p className="text-[10px]" style={{ color: "var(--amber)" }}>Expires {p.batch?.expiryDate ?? p.product.expiryDate ?? "soon"}</p>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{ background: "var(--amber)", color: "#fff" }}>
-                      Expiry
-                    </span>
-                  </div>
-                ))}
+                {actionQueue.map((item, i) => {
+                  const Tag = item.link ? Link : "div"
+                  return (
+                    <Tag
+                      key={`${item.type}-${i}`}
+                      to={item.link || undefined}
+                      className="flex items-center justify-between rounded-xl px-3 py-2.5 transition hover:opacity-80 cursor-pointer"
+                      style={{ background: item.bg, border: `1px solid ${item.color}20` }}
+                      aria-label={`${item.label} — ${item.sub}`}
+                    >
+                      <div>
+                        <p className="text-[12px] font-bold" style={{ color: item.color }}>{item.label}</p>
+                        <p className="text-[10px]" style={{ color: item.color, opacity: 0.7 }}>{item.sub}</p>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg shrink-0" style={{ background: item.color, color: "#fff" }}>
+                        {item.type === "overlimit" ? "Over limit" : item.type === "overdue" ? "Overdue" : item.type === "lowstock" ? "Low" : item.type === "deadstock" ? "Dead" : item.type === "warning" ? "⚠" : "!"}
+                      </span>
+                    </Tag>
+                  )
+                })}
               </div>
             </div>
 
