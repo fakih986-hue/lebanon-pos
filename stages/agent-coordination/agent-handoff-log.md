@@ -6,6 +6,37 @@
 
 ---
 
+## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-7 (Delivery/Drivers Polish) — COMPLETE
+
+**DeliveryPage (Orders):**
+- Order cards now keyboard-accessible: `role="button"`, `tabIndex={0}`, `aria-expanded`, `onKeyDown` (Enter/Space)
+- `aria-label` on each card: "Order {number} for {customer} — {status}"
+- `aria-label` on search input, status filter select, refresh button
+- `aria-label` on action buttons: "Mark {order} as {status}", "Cancel order {order}"
+- `aria-hidden="true"` on chevron icons (decorative)
+- "Unassigned" warning chip on orders with no driver assigned (when status is not Delivered/Cancelled)
+
+**DriversPage:**
+- `aria-pressed` + `aria-label` on active/inactive toggle button ("{name}: Active/Inactive")
+- `aria-label` on edit button ("Edit {name}")
+- `aria-expanded` on Add/Edit form toggle button
+- `id="driver-form-title"` on form heading for `aria-labelledby` association
+
+**Deferred:** Driver assignment UI (requires cross-tab state sharing + backend endpoint), delivery map/GPS tracking
+
+**Regression checks:**
+- Desktop typecheck: PASS
+- Desktop tests: **70/70 PASS**
+- Desktop build: PASS (2.70s)
+
+**Files changed:**
+- `apps/desktop/src/pages/delivery/DeliveryPage.tsx` (+14/-3)
+- `apps/desktop/src/pages/drivers/DriversPage.tsx` (+8/-3)
+
+**Verdict: PASS**
+
+---
+
 ## 2026-07-09 — OpenCode (DeepSeek V4) — Sprint POS-COMM-6 (Dashboard / Owner Command Center) — COMPLETE
 
 **Action queue — unified and actionable:**
