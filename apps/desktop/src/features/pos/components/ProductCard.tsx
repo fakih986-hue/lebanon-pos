@@ -154,6 +154,9 @@ const ProductCard = memo(function ProductCard({
                   )}
                 </p>
               )}
+              {!product.barcode && (
+                <p className="text-[9px] font-bold mt-0.5" style={{ color: "var(--amber)" }}>No barcode</p>
+              )}
             </div>
 
             {/* Cart quantity badge */}

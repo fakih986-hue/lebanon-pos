@@ -330,8 +330,10 @@ export default function CustomersPage() {
   return (
     <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
       {isLoading ? (
-        <div className="flex min-h-[400px] items-center justify-center p-6">
-          <Spinner label="Loading customers..." />
+        <div className="p-6 space-y-2">
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} className="skeleton h-14 rounded-lg" style={{ background: "var(--surface-3)", animation: "pulse 1.5s infinite" }} />
+          ))}
         </div>
       ) : (
       <>

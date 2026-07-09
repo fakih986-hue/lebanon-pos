@@ -204,8 +204,20 @@ export default function DashboardPage() {
   }
 
   if (isLoading) return (
-    <main className="flex min-h-0 flex-1 items-center justify-center bg-page p-6">
-      <Spinner label={t("desktop.dashboard.loading")} />
+    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-4 sm:p-6">
+      <div className="mx-auto max-w-[1400px] space-y-5">
+        <div className="skeleton h-10 w-48 rounded-lg" style={{ background: "var(--surface-3)", animation: "pulse 1.5s infinite" }} />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+          {[1,2,3,4,5].map(i => (
+            <div key={i} className="skeleton h-28 rounded-2xl" style={{ background: "var(--surface-3)", animation: "pulse 1.5s infinite" }} />
+          ))}
+        </div>
+        <div className="skeleton h-3 w-full rounded" style={{ background: "var(--surface-3)", animation: "pulse 1.5s infinite" }} />
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(300px,1fr)]">
+          <div className="skeleton h-64 rounded-2xl" style={{ background: "var(--surface-3)", animation: "pulse 1.5s infinite" }} />
+          <div className="skeleton h-64 rounded-2xl" style={{ background: "var(--surface-3)", animation: "pulse 1.5s infinite" }} />
+        </div>
+      </div>
     </main>
   )
 

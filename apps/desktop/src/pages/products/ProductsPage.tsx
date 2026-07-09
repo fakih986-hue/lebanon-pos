@@ -744,8 +744,10 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   return (
     <main className="min-h-0 flex-1 overflow-y-auto app-page">
       {isLoading ? (
-        <div className="flex min-h-[400px] items-center justify-center p-6">
-          <Spinner label="Loading inventory..." />
+        <div className="app-page p-6 space-y-3">
+          {[1,2,3,4,5,6,7,8].map(i => (
+            <div key={i} className="skeleton h-14 rounded-lg" style={{ background: "var(--surface-3)", animation: "pulse 1.5s infinite" }} />
+          ))}
         </div>
       ) : (
       <>
