@@ -34,20 +34,16 @@ type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
 type TenderMode = "USD" | "LBP" | "Mixed"
 type DiscountMode = "USD" | "Percent"
 
-type PaymentOption = { label: PaymentMethod; icon: LucideIcon; color: string }
+type PaymentOption = { label: PaymentMethod; icon: LucideIcon }
 
+// Design law: payment methods carry no per-method color in tender UI.
+// Active = the zone's single gold element (dark text on gold).
 const paymentOptions: PaymentOption[] = [
-  { label: "Cash",   icon: Landmark,    color: "emerald" },
-  { label: "Wallet", icon: WalletCards, color: "violet"  },
-  { label: "Debt",   icon: HandCoins,   color: "amber"   },
+  { label: "Cash",   icon: Landmark    },
+  { label: "Card",   icon: CreditCard  },
+  { label: "Wallet", icon: WalletCards },
+  { label: "Debt",   icon: HandCoins   },
 ]
-
-const paymentColors: Record<string, { active: string; inactive: string }> = {
-  emerald: { active: "bg-emerald-600 border-emerald-600 text-white shadow-emerald-600/25", inactive: "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)] hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700" },
-  indigo:  { active: "bg-indigo-600 border-indigo-600 text-white shadow-indigo-600/25",   inactive: "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)] hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700" },
-  violet:  { active: "bg-violet-600 border-violet-600 text-white shadow-violet-600/25",   inactive: "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)] hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700" },
-  amber:   { active: "bg-amber-500 border-amber-500 text-white shadow-amber-500/25",      inactive: "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)] hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700" },
-}
 
 interface CartItem { id: number; name: string; price: number; quantity: number; stock: number }
 
@@ -252,17 +248,18 @@ export default function CartBody({
 
       {/* Payment method */}
       <div className="flex items-center gap-1.5">
-        {paymentOptions.map(({ label, icon: Icon, color }) => {
+        {paymentOptions.map(({ label, icon: Icon }) => {
           const active = paymentMethod === label
-          const colors = paymentColors[color]
           return (
             <button
               key={label}
               type="button"
               onClick={() => onSelectPayment(label)}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-1.5 text-[11px] font-bold transition ${
-                active ? colors.active : colors.inactive
-              }`}
+              aria-pressed={active}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-2 text-[11px] font-bold transition active:scale-[0.96]"
+              style={active
+                ? { background: "var(--brand)", borderColor: "var(--brand)", color: "var(--brand-contrast)" }
+                : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
             >
               <Icon size={13} />
               {t("pos.payment." + label.toLowerCase())}

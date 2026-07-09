@@ -1,4 +1,4 @@
-# Building the Lebanon POS Installer
+# Building the Titan POS Installer
 
 ## Prerequisites
 
@@ -40,14 +40,13 @@ pnpm electron:package
 This runs:
 1. `pnpm build:api`     — compiles the Express backend
 2. `pnpm build:desktop` — builds the React POS SPA
-3. `electron-builder`   — bundles everything into `apps/electron/dist-electron/`
+3. `electron-builder`   — bundles everything
 
-Output:
+Output (in `apps/electron/dist-v7/`):
 ```
-apps/electron/dist-electron/
-  Lebanon POS Setup 1.0.0.exe      ← NSIS installer (share this with store owners)
-  Lebanon POS 1.0.0.exe            ← Portable (no install needed)
-  latest.yml                       ← Auto-updater manifest
+Titan POS Setup 1.0.7.exe      ← NSIS installer (share this with store owners)
+Titan POS 1.0.7.exe            ← Portable (no install needed)
+latest.yml                     ← Auto-updater manifest
 ```
 
 ## Step 4 — Publish release (for auto-update)
@@ -60,13 +59,13 @@ electron-builder will publish the installer + `latest.yml` to the GitHub release
 
 ## What happens on first install (store owner experience)
 
-1. Owner runs `Lebanon POS Setup 1.0.0.exe`
-2. Installer puts app in `Program Files`, creates desktop shortcut
-3. Owner launches Lebanon POS
+1. Owner runs `Titan POS Setup 1.0.7.exe`
+2. Installer puts app in `Program Files`, creates desktop shortcut + Start Menu entry
+3. Owner launches Titan POS
 4. **Setup wizard appears** — owner enters:
    - PostgreSQL host/port/database/user/password
    - Admin portal password
-5. App saves `.env` to `%AppData%\Lebanon POS\`
+5. App saves `.env` to `%AppData%\Titan POS\`
 6. App starts the API server and opens the POS
 
 ## What happens on update

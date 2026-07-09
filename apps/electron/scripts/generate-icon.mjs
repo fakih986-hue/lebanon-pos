@@ -77,14 +77,14 @@ function buildPNG(size, pixels) {
 }
 
 // ── Draw the icon ─────────────────────────────────────────────────────────────
-// Lebanon POS logo: dark indigo background, rounded square, "L" letter
-// Colors: bg=#1e1b4b (indigo-950), accent=#6366f1 (indigo-500), text=#f8fafc
+// Titan POS logo: dark Midnight Gold base, gold brand accent, "T" letter mark
+// Colors: bg=#0B0E14 (midnight canvas), accent=#D4A843 (gold brand), text=#F8F9FA
 const SIZE = 256
 const pixels = new Uint8Array(SIZE * SIZE * 3)
 
-const BG    = [30, 27, 75]   // indigo-950
-const ACC   = [99, 102, 241] // indigo-500
-const WHITE = [248, 250, 252]
+const BG    = [11, 14, 20]    // #0B0E14 — Midnight Gold canvas
+const ACC   = [212, 168, 67]  // #D4A843 — Gold brand
+const WHITE = [248, 249, 250]
 
 // Fill background
 for (let i = 0; i < SIZE * SIZE; i++) {
@@ -111,19 +111,23 @@ function fillCircleCorner(cx, cy, r, col) {
       if (dx*dx + dy*dy <= r*r) setPixel(cx+dx, cy+dy, col[0], col[1], col[2])
 }
 
-// Rounded rectangle (accent card): inset 32px, corner radius 40
+// Gold rounded rectangle — layering from dark to bright for depth
 const P = 32, R = 40
-fillRect(P+R, P, SIZE-P-R, SIZE-P, ACC)
-fillRect(P, P+R, SIZE-P, SIZE-P-R, ACC)
-fillCircleCorner(P+R, P+R, R, ACC)
-fillCircleCorner(SIZE-P-R, P+R, R, ACC)
-fillCircleCorner(P+R, SIZE-P-R, R, ACC)
-fillCircleCorner(SIZE-P-R, SIZE-P-R, R, ACC)
+// Darker gold card base
+fillRect(P+R, P, SIZE-P-R, SIZE-P, [180, 140, 50])
+fillRect(P, P+R, SIZE-P, SIZE-P-R, [180, 140, 50])
+fillCircleCorner(P+R, P+R, R, [180, 140, 50])
+fillCircleCorner(SIZE-P-R, P+R, R, [180, 140, 50])
+fillCircleCorner(P+R, SIZE-P-R, R, [180, 140, 50])
+fillCircleCorner(SIZE-P-R, SIZE-P-R, R, [180, 140, 50])
+// Gold sheen — top-left lighter quadrant
+fillRect(P+R, P, SIZE/2+R, SIZE/2, [220, 180, 80])
+fillCircleCorner(P+R, P+R, R, [220, 180, 80])
 
-// "L" letter — thick strokes
-const LX = 86, LY = 72, LW = 28, LH = 120, SERIF = 68
-fillRect(LX, LY, LX+LW, LY+LH, WHITE)           // vertical stroke
-fillRect(LX, LY+LH-LW, LX+SERIF, LY+LH, WHITE)  // horizontal base
+// "T" letter — thick strokes in white
+const TX = 86, TY = 60, TW = 28, TH = 140, BAR = 80
+fillRect(TX, TY, TX+TW, TY+TH, WHITE)           // vertical stem
+fillRect(TX-BAR/2+TW/2, TY, TX+BAR/2+TW/2, TY+TW, WHITE)  // top bar
 
 const png = buildPNG(SIZE, pixels)
 writeFileSync(join(OUT_DIR, "icon.png"), png)

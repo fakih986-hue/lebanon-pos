@@ -39,6 +39,7 @@ export type LastSaleSummary = {
   totalLbp: number
   exchangeRate: number
   tender?: SaleTender
+  profit?: number
   customerBalanceBefore?: number
   customerBalanceAfter?: number
   items: CartItem[]
@@ -55,7 +56,7 @@ export function printSaleReceipt(
   const discountTotal = sale.discountTotal ?? 0
   const grossSubtotal = getSaleGrossSubtotal(sale)
   const refundedTotal = getSaleRefundTotal(refunds, sale.id)
-  const itemRows = sale.items
+  const itemRows = (Array.isArray(sale.items) ? sale.items : [])
     .map(
       (item) => `
         <tr>
@@ -80,7 +81,7 @@ export function printSaleReceipt(
   receiptWindow.document.write(`
     <html>
       <head>
-        <title>${sale.saleNumber}</title>
+        <title>${escapeHtml(sale.saleNumber ?? "Sale")}</title>
         <style>
           * { box-sizing: border-box; }
           body { margin: 0; font-family: Arial, sans-serif; color: #111; }
@@ -106,12 +107,12 @@ export function printSaleReceipt(
             <p class="center muted">${escapeHtml(settings.phone)}</p>
             <div class="rule"></div>
           ` : `<h1>Lebanon POS</h1><div class="rule"></div>`}
-          <p class="center muted">${sale.saleNumber}</p>
-          <p class="center muted">${formatReceiptDate(sale.createdAt)}</p>
+          <p class="center muted">${escapeHtml(sale.saleNumber ?? "")}</p>
+          <p class="center muted">${sale.createdAt ? formatReceiptDate(sale.createdAt) : ""}</p>
           <div class="row"><span>Cashier</span><strong>${escapeHtml(
-            sale.cashier
+            sale.cashier ?? ""
           )}</strong></div>
-          <div class="row"><span>Payment</span><strong>${sale.paymentMethod}</strong></div>
+          <div class="row"><span>Payment</span><strong>${sale.paymentMethod ?? ""}</strong></div>
           ${
             sale.customerName
               ? `<div class="row"><span>Customer</span><strong>${escapeHtml(
@@ -140,7 +141,7 @@ export function printSaleReceipt(
               : ""
           }
           <div class="row"><span>Subtotal</span><strong>${formatCurrency(
-            sale.subtotal
+            sale.subtotal ?? 0
           )}</strong></div>
           <div class="row"><span>VAT</span><strong>${formatCurrency(
             sale.tax
@@ -151,6 +152,14 @@ export function printSaleReceipt(
           <div class="row"><span>Total LBP</span><strong>${formatLbpCurrency(
             totalLbp
           )}</strong></div>
+          ${
+            (sale as any).payableLbp && (sale as any).payableLbp !== totalLbp
+              ? `
+                <div class="row" style="font-size: 11px; color: #856404;"><span>Cash rounding</span><strong>+${formatLbpCurrency((sale as any).payableLbp - totalLbp)}</strong></div>
+                <div class="row total"><span>Cash payable</span><span>${formatLbpCurrency((sale as any).payableLbp)}</span></div>
+              `
+              : ""
+          }
           ${
             refundedTotal > 0
               ? `
@@ -192,7 +201,7 @@ export function printSaleReceipt(
 }
 
 export function printLastSaleReceipt(lastSale: LastSaleSummary, settings: AppSettings) {
-  const lineItems = lastSale.items
+  const lineItems = (Array.isArray(lastSale.items) ? lastSale.items : [])
     .map(
       (item) => `
         <tr>

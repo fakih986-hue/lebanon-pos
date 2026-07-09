@@ -22,10 +22,13 @@ import QuickPOSMode from "../components/QuickPOSMode"
 import KeyboardShortcutsModal from "../components/KeyboardShortcutsModal"
 import { openWhatsAppShare, receiptMessage } from "../lib/whatsapp"
 import {
+  computeCashChange,
   formatCurrency,
+  formatLbpCurrency,
   formatNumber,
   lbpToUsd,
   roundMoney,
+  ceilLbp,
   usdToLbp,
 } from "../lib/currency"
 import {
@@ -49,6 +52,7 @@ import {
 import { recordDebtSale } from "../services/customer.service"
 import { recordAuditEvent, userCan } from "../services/security.service"
 import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
+import { getSyncStatus, subscribeSync, type SyncStatus } from "../services/sync.service"
 import type { Product } from "../types/product"
 import { usePosData } from "../hooks/usePosData"
 import { useBarcodeScanner } from "../hooks/useBarcodeScanner"
@@ -115,6 +119,7 @@ export default function POSPage() {
   const [sellAtCost, setSellAtCost] = useState(false)
   const [quickMode, setQuickMode] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [showReview, setShowReview] = useState(false)
 
   const productListRef = useRef<HTMLDivElement | null>(null)
 
@@ -234,6 +239,8 @@ export default function POSPage() {
   const total = roundMoney(subtotal + tax)
   const exchangeRate = Math.max(1, settings.usdToLbpRate)
   const totalLbp = usdToLbp(total, exchangeRate)
+  const payableLbp = ceilLbp(totalLbp, 5000)
+  const payableUsd = lbpToUsd(payableLbp, exchangeRate)
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const selectedCustomer = customers.find(
     (customer) => customer.id === selectedCustomerId
@@ -252,11 +259,14 @@ export default function POSPage() {
   const tenderMode: TenderMode = paidLbpAmount > 0 ? (paidUsdAmount > 0 ? "Mixed" : "LBP") : "USD"
   const paidTotalUsd = roundMoney(paidUsdAmount + lbpToUsd(paidLbpAmount, exchangeRate))
   const paidTotalLbp = usdToLbp(paidTotalUsd, exchangeRate)
-  const cashStillDueUsd = roundMoney(Math.max(0, total - paidTotalUsd))
-  const cashChangeUsd = roundMoney(Math.max(0, paidTotalUsd - total))
-  const cashChangeLbp = usdToLbp(cashChangeUsd, exchangeRate)
+  const cashStillDueUsd = roundMoney(Math.max(0, payableUsd - paidTotalUsd))
+  const { changeUsd: cashChangeUsd, changeLbp: cashChangeLbp } = computeCashChange({
+    paidUsd: paidUsdAmount, paidLbp: paidLbpAmount,
+    totalUsd: payableUsd, totalLbp: payableLbp, exchangeRate,
+  })
   const cashTenderValid =
-    paymentMethod !== "Cash" || items.length === 0 || paidTotalUsd + 0.005 >= total
+    paymentMethod !== "Cash" || items.length === 0 ||
+    (tenderMode === "LBP" ? paidLbpAmount >= payableLbp : paidTotalUsd + 0.005 >= payableUsd)
   const creditLimitExceeded = Boolean(
     paymentMethod === "Debt" &&
       selectedCustomer &&
@@ -430,13 +440,13 @@ export default function POSPage() {
 
   const fillExactTender = useCallback(function fillExactTender(currency: "USD" | "LBP") {
     if (currency === "USD") {
-      setPaidUsd(total.toFixed(2))
+      setPaidUsd(payableUsd.toFixed(2))
       setPaidLbp("")
       return
     }
-    setPaidLbp(String(Math.round(totalLbp)))
+    setPaidLbp(String(payableLbp))
     setPaidUsd("")
-  }, [total, totalLbp])
+  }, [payableUsd, payableLbp])
 
   // --- Sale lifecycle ---
   const cleanSale = useCallback(function cleanSale() {
@@ -539,6 +549,11 @@ export default function POSPage() {
     })
   }, [])
 
+  function handleReview() {
+    if (checkoutBlocked) return
+    setShowReview(true)
+  }
+
   const completeSale = useCallback(function completeSale() {
     if (checkoutBlocked) return
 
@@ -612,6 +627,7 @@ export default function POSPage() {
       const saleRecord = {
         number: saleNumber, paymentMethod, customerName: selectedCustomer?.name,
         grossSubtotal, subtotal, discountTotal, tax, total, totalLbp, exchangeRate,
+        payableLbp, payableUsd,
         tender,
         customerBalanceBefore: paymentMethod === "Debt" ? customerBalanceBefore : undefined,
         customerBalanceAfter, items,
@@ -715,7 +731,7 @@ export default function POSPage() {
                 cashStillDueUsd={cashStillDueUsd}
                 cashTenderValid={cashTenderValid}
                 checkoutBlocked={checkoutBlocked}
-                onCompleteSale={completeSale}
+          onCompleteSale={handleReview}
                 recentSales={recentSales}
                 onPrintReceipt={(s) => printLastSaleReceipt(s, settings)}
                 onWhatsAppReceipt={(s) => {
@@ -946,7 +962,7 @@ export default function POSPage() {
           onDiscountValueChange={setDiscountValue}
           onHold={holdCurrentSale}
           onClean={cleanSale}
-          onCompleteSale={completeSale}
+          onhandleReview={handleReview}
           itemCount={itemCount}
           grossSubtotal={grossSubtotal}
           discountTotal={discountTotal}
@@ -997,6 +1013,62 @@ export default function POSPage() {
       ) : null}
 
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+
+      {showReview && (
+        <section className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+          style={{ background: "rgba(5,7,13,0.92)", backdropFilter: "blur(16px)" }}
+          onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setShowReview(false) }; if (e.key === "Enter" && !checkoutBlocked) { e.preventDefault(); setShowReview(false); completeSale() }}}
+          tabIndex={0}>
+          <div className="w-full max-w-md rounded-3xl overflow-hidden"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
+              <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>Confirm Sale</h2>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              {checkoutBlocked && (
+                <div className="rounded-xl p-3 text-[12px] font-bold" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>
+                  {items.length === 0 ? "Add items to the cart first." :
+                   paymentMethod === "Cash" && !cashTenderValid ? `Insufficient payment — still due ${formatCurrency(cashStillDueUsd)}` :
+                   paymentMethod === "Debt" && !selectedCustomer ? "Select a customer for debt sale." :
+                   creditLimitExceeded ? `Credit limit exceeded` : "Cannot complete sale."}
+                </div>
+              )}
+              <div className="flex items-end justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Total</span>
+                <div className="text-end">
+                  <div className="text-[32px] font-bold tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(total)}</div>
+                  <div className="text-[12px] font-semibold tabular-nums mt-0.5" style={{ color: "var(--text-3)" }}>{formatLbpCurrency(totalLbp)}</div>
+                </div>
+              </div>
+              {paymentMethod === "Cash" && payableLbp !== totalLbp && (
+                <div className="rounded-xl p-3 space-y-1" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                  <div className="flex justify-between text-[11px] font-semibold">
+                    <span style={{ color: "var(--text-3)" }}>Cash rounding</span>
+                    <span className="tabular-nums" style={{ color: "var(--brand-text)" }}>+{formatLbpCurrency(payableLbp - totalLbp)}</span>
+                  </div>
+                  <div className="flex justify-between text-[12px] font-bold">
+                    <span style={{ color: "var(--text-2)" }}>Cash payable</span>
+                    <span className="tabular-nums" style={{ color: "var(--text)" }}>{formatLbpCurrency(payableLbp)}</span>
+                  </div>
+                </div>
+              )}
+              {cashTenderValid && cashChangeUsd > 0 && (
+                <div className="rounded-xl p-3 text-center" style={{ background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.25)" }}>
+                  <span className="text-[11px] font-bold uppercase" style={{ color: "var(--success)" }}>Change</span>
+                  <div className="text-[28px] font-bold tabular-nums mt-1" style={{ color: "var(--success)" }}>{formatCurrency(cashChangeUsd)}</div>
+                </div>
+              )}
+            </div>
+            <div className="px-5 py-4 flex gap-3 border-t" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+              <button type="button" onClick={() => setShowReview(false)} className="flex-1 h-12 rounded-xl text-[13px] font-bold"
+                style={{ border: "1px solid var(--border)", color: "var(--text-2)", background: "var(--surface)" }}>Back</button>
+              <button type="button" onClick={() => { setShowReview(false); completeSale() }} disabled={checkoutBlocked}
+                className="flex-[2.5] h-12 rounded-xl text-[15px] font-bold disabled:opacity-40"
+                style={{ background: "var(--brand)", color: "var(--brand-contrast)" }}>Confirm — Pay {formatCurrency(total)}</button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <SaleCompleteOverlay sale={lastSale}
         onViewReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}

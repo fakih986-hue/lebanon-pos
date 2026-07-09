@@ -209,28 +209,40 @@ export function MenuPage() {
         <div className="flex-1 overflow-y-auto p-4">
           {cart.length === 0 ? (
             <div className="mt-20 text-center">
-              <div className="text-5xl mb-2">🛒</div>
-              <p className="text-muted">{t("ordering.cart_empty")}</p>
-            </div>
+            <div className="text-5xl mb-3 opacity-30">🛒</div>
+            <p className="text-lg font-semibold text-primary">{t("ordering.cart_empty")}</p>
+            <button onClick={() => setShowCart(false)}
+              className="mt-4 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-sm font-semibold shadow-lg shadow-emerald-600/20 hover:from-emerald-500 hover:to-emerald-400 transition-all">
+              {t("ordering.back_to_menu")}
+            </button>
+          </div>
           ) : (
             <div className="space-y-3 max-w-md mx-auto">
               {cart.map((item) => (
-                <div key={item.product.id} className="flex items-center justify-between bg-glass border border-glass rounded-xl p-3">
-                  <div className="flex-1">
-                    <p className="font-medium text-primary text-sm">{item.product.name}</p>
-                    <p className="text-sm text-secondary">{fmt(item.product.price)}</p>
+                <div key={item.product.id} className="flex items-center gap-3 bg-glass border border-glass rounded-xl p-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-primary text-sm truncate">{item.product.name}</p>
+                    <p className="text-xs text-secondary">{fmt(item.product.price)} each · {fmt(item.product.price * item.quantity)}</p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button onClick={() => updateQuantity(item.product.id, -1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-glass text-primary font-bold hover:bg-glass-hover transition-all">–</button>
-                    <span className="w-6 text-center font-semibold text-primary">{item.quantity}</span>
+                      aria-label={`Decrease ${item.product.name} quantity`}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-glass text-primary text-lg font-bold hover:bg-glass-hover active:scale-95 transition-all">–</button>
+                    <span className="w-7 text-center font-bold text-primary text-sm">{item.quantity}</span>
                     <button onClick={() => updateQuantity(item.product.id, 1)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-bold shadow-lg shadow-emerald-600/20 hover:from-emerald-400 hover:to-emerald-500 transition-all">+</button>
+                      aria-label={`Increase ${item.product.name} quantity`}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white text-lg font-bold shadow-md shadow-emerald-600/20 hover:from-emerald-400 hover:to-emerald-500 active:scale-95 transition-all">+</button>
+                    <button onClick={() => updateQuantity(item.product.id, -item.quantity)}
+                      aria-label={`Remove ${item.product.name} from cart`}
+                      className="flex h-10 w-10 items-center justify-center rounded-xl border border-glass text-muted hover:text-rose-400 hover:border-rose-500/20 active:scale-95 transition-all">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
                   </div>
                 </div>
               ))}
               <div className="bg-glass border border-glass rounded-xl p-4">
-                <div className="flex justify-between text-sm text-secondary"><span>{t("ordering.subtotal")}</span><span>{fmt(cartStats.total)}</span></div>
+                <p className="text-xs text-secondary font-semibold mb-2 uppercase tracking-wide">{t("ordering.order_summary") || "Order Summary"}</p>
+                <div className="flex justify-between text-sm text-secondary"><span>{cartStats.count} {cartStats.count === 1 ? t("ordering.item") : t("ordering.items")}</span><span>{fmt(cartStats.total)}</span></div>
                 <div className="flex justify-between text-sm text-secondary"><span>{t("ordering.delivery_fee")}</span><span>{fmt(deliveryFee)}</span></div>
                 <div className="mt-2 pt-2 border-t border-glass flex justify-between text-lg font-bold text-primary"><span>{t("ordering.total")}</span><span>{fmt(cartStats.total + deliveryFee)}</span></div>
               </div>
@@ -239,17 +251,26 @@ export function MenuPage() {
         </div>
         {cart.length > 0 && (
           <div className="border-t border-glass p-4">
+            <h3 className="text-sm font-bold text-primary mb-3">{t("ordering.checkout_details") || "Your Details"}</h3>
             <div className="max-w-md mx-auto space-y-3">
               {orderError && (
                 <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl text-center">{orderError}</div>
               )}
-              <input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder={t("ordering.your_name")}
+              <input value={customerName} onChange={e => setCustomerName(e.target.value)}
+                placeholder={t("ordering.your_name")}
+                aria-label={t("ordering.your_name")}
                 className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-glass text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all" />
-              <input type="tel" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder={t("ordering.phone_number")}
+              <input type="tel" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)}
+                placeholder={t("ordering.phone_number")}
+                aria-label={t("ordering.phone_number")}
                 className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-glass text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all" />
-              <input value={address} onChange={e => setAddress(e.target.value)} placeholder={t("ordering.delivery_address")}
+              <input value={address} onChange={e => setAddress(e.target.value)}
+                placeholder={t("ordering.delivery_address")}
+                aria-label={t("ordering.delivery_address")}
                 className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-glass text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all" />
-              <input value={deliveryNote} onChange={e => setDeliveryNote(e.target.value)} placeholder={t("ordering.delivery_note")}
+              <input value={deliveryNote} onChange={e => setDeliveryNote(e.target.value)}
+                placeholder={t("ordering.delivery_note")}
+                aria-label={t("ordering.delivery_note")}
                 className="w-full px-4 py-3.5 rounded-xl bg-white/5 border border-glass text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all" />
               <div>
                 <label className="block text-xs text-secondary mb-2 font-semibold">{t("ordering.payment_method") || "Payment Method"}</label>
@@ -267,6 +288,14 @@ export function MenuPage() {
                   ))}
                 </div>
               </div>
+              {/* Block explanation */}
+              {(!customerName || !customerPhone || !address) && (
+                <div className="flex flex-wrap gap-1.5 text-[11px]">
+                  {!customerName && <span className="rounded-lg bg-rose-500/10 border border-rose-500/20 px-2 py-1 text-rose-300 font-medium">Name required</span>}
+                  {!customerPhone && <span className="rounded-lg bg-rose-500/10 border border-rose-500/20 px-2 py-1 text-rose-300 font-medium">Phone required</span>}
+                  {!address && <span className="rounded-lg bg-rose-500/10 border border-rose-500/20 px-2 py-1 text-rose-300 font-medium">Address required</span>}
+                </div>
+              )}
               <button onClick={placeOrder} disabled={submitting || !customerName || !customerPhone || !address}
                 className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-semibold shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:from-emerald-500 hover:to-emerald-400 active:from-emerald-700 active:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed">
                 {submitting ? t("ordering.placing_order") : `${t("ordering.place_order")} — ${fmt(cartStats.total + deliveryFee)}`}

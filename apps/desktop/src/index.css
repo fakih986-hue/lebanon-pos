@@ -4,49 +4,103 @@
 [data-theme="light"] {
   color-scheme: light;
 
-  --bg: #ffffff;
-  --surface: #f5f5f5;
-  --surface-2: #ececec;
-  --surface-3: #e3e3e3;
-  --surface-hover: #f0f0f0;
+  /* Page */
+  --page-bg: #F7F5F1;
 
-  --border: #e5e5e5;
-  --border-soft: #f0f0f0;
-  --border-strong: #d0d0d0;
+  /* Surface */
+  --surface: #FFFFFF;
+  --surface-2: #F6F4EF;
+  --surface-3: #ECE8E1;
+  --surface-hover: #F4F1EB;
 
-  --text: #111111;
-  --text-2: #555555;
-  --text-3: #888888;
-  --text-inverse: #ffffff;
+  /* Border */
+  --border: #E8E4DC;
+  --border-soft: #F1EDE6;
+  --border-strong: #D9D3C8;
+  --hairline: #F2F2F8;
 
-  --brand: #B8860B;
-  --brand-hover: #9A6A16;
-  --brand-soft: rgba(184,134,11,0.12);
-  --brand-border: rgba(184,134,11,0.35);
-  --brand-text: #6b4c0a;
+  /* Text */
+  --text: #1C1917;
+  --text-2: #57534E;
+  --text-3: #8C8578;
+  --text-inverse: #FFFFFF;
 
-  --ink: #0a0a0a;
-  --ink-hover: #1a1a1a;
-  --blue: #2563eb;
-  --blue-soft: #eaf1ff;
-  --blue-text: #1d4ed8;
-  --amber: #B8860B;
-  --amber-soft: rgba(184,134,11,0.12);
-  --amber-text: #6b4c0a;
-  --rose: #dc2626;
-  --rose-soft: #fff0f0;
-  --rose-text: #b91c1c;
-  --cyan-soft: #e7f8fb;
+  /* Brand (refined deep gold) */
+  --brand: #9C6F14;
+  --brand-hover: #7E5A10;
+  --brand-soft: rgba(156,111,20,0.10);
+  --brand-border: rgba(156,111,20,0.30);
+  --brand-text: #6B4C0A;
 
+  /* Ink */
+  --ink: #1C1917;
+  --ink-hover: #292524;
+
+  /* Semantic colors */
+  --blue: #3B6FD4;
+  --blue-soft: #EDF2FC;
+  --blue-text: #2A55A8;
+  --amber: #A8781D;
+  --amber-soft: rgba(168,120,29,0.10);
+  --amber-text: #6B4C0A;
+  --rose: #C2453A;
+  --rose-soft: #FBEFED;
+  --rose-text: #A03830;
+  --purple: #7C5CBF;
+  --purple-soft: rgba(124,92,191,0.10);
+  --purple-text: #5C3FA0;
+
+  /* Status colors */
+  --st-ok: #16a34a;
+  --st-ok-soft: rgba(22,163,74,0.10);
+  --st-ok-text: #15803d;
+  --st-warn: #b45309;
+  --st-warn-soft: rgba(180,83,9,0.10);
+  --st-warn-text: #92400e;
+  --st-err: #dc2626;
+  --st-err-soft: rgba(220,38,38,0.10);
+  --st-err-text: #b91c1c;
+  --st-info: #0e7aa5;
+  --st-info-soft: rgba(14,122,165,0.10);
+  --st-info-text: #0b5f82;
+
+  /* Shorthand aliases */
+  --success: var(--st-ok);
+  --success-soft: var(--st-ok-soft);
+  --success-text: var(--st-ok-text);
+  --warning: var(--st-warn);
+  --warning-soft: var(--st-warn-soft);
+  --warning-text: var(--st-warn-text);
+  --danger: var(--st-err);
+  --danger-soft: var(--st-err-soft);
+  --danger-text: var(--st-err-text);
+  --info: var(--st-info);
+  --info-soft: var(--st-info-soft);
+  --info-text: var(--st-info-text);
+
+  /* Focus */
+  --focus-ring: rgba(156,111,20,0.22);
+  --brand-contrast: #FFFFFF;
+
+  /* Radii */
   --radius-sm: 6px;
   --radius: 8px;
-  --radius-lg: 8px;
+  --radius-lg: 12px;
 
-  --shadow-xs: 0 1px 1px rgba(0,0,0,0.04);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.10);
+  /* Shadows — elevation scale */
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(13,40,90,0.06);
+  --elev-2: 0 4px 12px rgba(13,40,90,0.08);
+  --elev-3: 0 8px 24px rgba(13,40,90,0.10);
+  --elev-4: 0 16px 40px rgba(13,40,90,0.14);
 
+  /* Legacy shadow aliases */
+  --shadow-xs: var(--elev-1);
+  --shadow-sm: var(--elev-2);
+  --shadow-md: var(--elev-3);
+  --shadow-lg: var(--elev-4);
+
+  /* Sidebar — kept as-is, already solid */
   --sidebar-bg: linear-gradient(180deg, #0A0F18 0%, #080B12 45%, #05070D 100%);
   --sidebar-border: #1F2937;
   --sidebar-text: #F8FAFC;
@@ -63,51 +117,96 @@
   --sidebar-icon-color: #94A3B8;
   --sidebar-icon-active-color: #F2D27A;
 
-  --pos-bg: var(--bg);
+  --pos-bg: var(--page-bg);
   --pos-text: var(--text);
+
+  /* superset: OpenCode names */
+  --bg: var(--page-bg);
+  --cyan-soft: #E7F8FB;
+  --fs-total: 40px;
 }
+
 
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #05070D;
-  --surface: #0A0F18;
-  --surface-2: #111827;
-  --surface-3: #1A1F2E;
-  --surface-hover: #0D1320;
+  --page-bg: #0B0E14;
 
-  --border: #1F2937;
-  --border-soft: #151B2B;
-  --border-strong: #2D3748;
+  --surface: #12161F;
+  --surface-2: #171C27;
+  --surface-3: #1E2430;
+  --surface-hover: #1A2029;
 
-  --text: #F8FAFC;
-  --text-2: #CBD5E1;
-  --text-3: #94A3B8;
-  --text-inverse: #05070D;
+  --border: rgba(148,163,184,0.10);
+  --border-soft: rgba(148,163,184,0.06);
+  --border-strong: rgba(148,163,184,0.18);
+  --hairline: rgba(148,163,184,0.08);
 
-  --brand: #D6A63A;
-  --brand-hover: #F2D27A;
-  --brand-soft: rgba(214,166,58,0.14);
-  --brand-border: rgba(214,166,58,0.34);
-  --brand-text: #F2D27A;
+  --text: #F4F6FA;
+  --text-2: #9AA4B8;
+  --text-3: #5F6B80;
+  --text-inverse: #0B0E14;
+
+  --brand: #D4A843;
+  --brand-hover: #E4BC5C;
+  --brand-soft: rgba(212,168,67,0.12);
+  --brand-border: rgba(212,168,67,0.35);
+  --brand-text: #E4BC5C;
 
   --ink: #04060A;
   --ink-hover: #111827;
-  --blue: #60a5fa;
-  --blue-soft: rgba(96, 165, 250, 0.14);
-  --blue-text: #bfdbfe;
-  --amber: #D6A63A;
-  --amber-soft: rgba(214,166,58,0.14);
-  --amber-text: #F2D27A;
-  --rose: #EF4444;
-  --rose-soft: rgba(239,68,68,0.14);
-  --rose-text: #fecdd3;
-  --cyan-soft: rgba(34, 211, 238, 0.12);
 
-  --shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.22);
-  --shadow-sm: 0 10px 28px rgba(0, 0, 0, 0.28);
-  --shadow-md: 0 18px 44px rgba(0, 0, 0, 0.34);
-  --shadow-lg: 0 26px 70px rgba(0, 0, 0, 0.42);
+  --blue: #60A5FA;
+  --blue-soft: rgba(96,165,250,0.12);
+  --blue-text: #BFDBFE;
+  --amber: #D4A843;
+  --amber-soft: rgba(212,168,67,0.12);
+  --amber-text: #E4BC5C;
+  --rose: #F87171;
+  --rose-soft: rgba(248,113,113,0.12);
+  --rose-text: #FECACA;
+  --purple: #A78BFA;
+  --purple-soft: rgba(167,139,250,0.12);
+  --purple-text: #DDD6FE;
+
+  --st-ok: #34D399;
+  --st-ok-soft: rgba(52,211,153,0.12);
+  --st-ok-text: #86EFAC;
+  --st-warn: #FBBF24;
+  --st-warn-soft: rgba(251,191,36,0.12);
+  --st-warn-text: #FCD34D;
+  --st-err: #F87171;
+  --st-err-soft: rgba(248,113,113,0.12);
+  --st-err-text: #FECACA;
+  --st-info: #60A5FA;
+  --st-info-soft: rgba(96,165,250,0.12);
+  --st-info-text: #BFDBFE;
+
+  --success: var(--st-ok);
+  --success-soft: var(--st-ok-soft);
+  --success-text: var(--st-ok-text);
+  --warning: var(--st-warn);
+  --warning-soft: var(--st-warn-soft);
+  --warning-text: var(--st-warn-text);
+  --danger: var(--st-err);
+  --danger-soft: var(--st-err-soft);
+  --danger-text: var(--st-err-text);
+  --info: var(--st-info);
+  --info-soft: var(--st-info-soft);
+  --info-text: var(--st-info-text);
+
+  --focus-ring: rgba(212,168,67,0.28);
+  --brand-contrast: #2C1F05;
+
+  --elev-1: 0 1px 2px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04);
+  --elev-2: 0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  --elev-3: 0 16px 48px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.05);
+  --elev-4: 0 26px 70px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
+
+  --shadow-xs: var(--elev-1);
+  --shadow-sm: var(--elev-2);
+  --shadow-md: var(--elev-3);
+  --shadow-lg: var(--elev-4);
 
   --sidebar-bg: linear-gradient(180deg, #0A0F18 0%, #080B12 45%, #05070D 100%);
   --sidebar-border: #1F2937;
@@ -124,7 +223,60 @@
   --sidebar-icon-active: rgba(214,166,58,0.12);
   --sidebar-icon-color: #94A3B8;
   --sidebar-icon-active-color: #F2D27A;
+
+  /* superset: OpenCode names */
+  --bg: var(--page-bg);
+  --cyan-soft: rgba(34,211,238,0.12);
 }
+
+
+:root {
+  /* Typography scale (8 sizes) */
+  --fs-caption:   11px;   /* Table headers, field labels */
+  --fs-meta:      12px;   /* Secondary text, timestamps, chip text */
+  --fs-body:      13px;   /* Default — table cells, body copy */
+  --fs-subhead:   15px;   /* Card/section titles, modal titles */
+  --fs-h3:        18px;   /* Section headers, dense page H1 */
+  --fs-page:      22px;   /* Page title */
+  --fs-stat:      24px;   /* KPI / stat numbers */
+  --fs-display:   28px;   /* Single hero metric maximum */
+  --fs-total:     40px;   /* POS cart grand total only */
+
+  /* Spacing scale (4px grid, 10 stops) */
+  --sp-2:   2px;
+  --sp-4:   4px;
+  --sp-8:   8px;
+  --sp-12:  12px;
+  --sp-16:  16px;
+  --sp-20:  20px;
+  --sp-24:  24px;
+  --sp-32:  32px;
+  --sp-40:  40px;
+  --sp-48:  48px;
+
+  /* Z-index scale */
+  --z-sidebar:  50;
+  --z-topbar:   30;
+  --z-popover:  80;
+  --z-overlay:  100;
+  --z-modal:    110;
+  --z-dropdown: 120;
+  --z-toast:    9999;
+
+  /* Animation durations */
+  --dur-fast:    80ms;
+  --dur-btn:     140ms;
+  --dur-field:   150ms;
+  --dur-card:    180ms;
+  --dur-drawer:  200ms;
+  --dur-modal:   200ms;
+  --dur-toast:   220ms;
+
+  /* Animation easings */
+  --ease-ui:     cubic-bezier(0.2, 0.8, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 
 *,
 *::before,
@@ -626,6 +778,17 @@ tbody tr:hover {
 .pos-workspace {
   background: var(--pos-bg);
   color: var(--pos-text);
+  position: relative;
+}
+
+/* Ambient brand glow — barely-there radial at the top of the POS canvas. */
+[data-theme="dark"] .pos-workspace::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 320px;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 100% at 50% 0%, rgba(212,168,67,0.05) 0%, transparent 70%);
 }
 
 .pos-command-panel,

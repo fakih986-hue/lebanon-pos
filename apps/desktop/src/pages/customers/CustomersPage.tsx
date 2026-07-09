@@ -21,12 +21,14 @@ import {
 import { formatCurrency, formatLbpCurrency, formatNumber, usdToLbp } from "../../features/pos/lib/currency"
 import {
   addCustomer,
+  archiveCustomer,
   buildCustomerStatement,
   deleteCustomer,
   getCustomerActivity,
   getCustomerLedger,
   getLedgerTotals,
   recordDebtPayment,
+  restoreCustomer,
   subscribeLedger,
   updateCustomer,
   type CustomerLedger,
@@ -93,6 +95,14 @@ const paymentMethods: Array<{
     label: "Wallet",
     icon: WalletCards,
   },
+  {
+    label: "Bank Transfer",
+    icon: HandCoins,
+  },
+  {
+    label: "Refund Credit",
+    icon: HandCoins,
+  },
 ]
 
 function normalizeNumber(value: string) {
@@ -135,6 +145,10 @@ export default function CustomersPage() {
   const [formErrors, setFormErrors] = useState<Partial<Record<"name" | "mobile", string>>>({})
   const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null)
   const [editCustomer, setEditCustomer] = useState<EditCustomerForm | null>(null)
+  const [sortBy, setSortBy] = useState<"name" | "balance" | "lastActivity">("name")
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+  const [agingFilter, setAgingFilter] = useState<string>("")
+  const [showArchived, setShowArchived] = useState(false)
   const { t } = useI18n()
 
   function refreshLedger(preferredCustomerId?: string) {
@@ -178,18 +192,30 @@ export default function CustomersPage() {
   }, [customers])
 
   const filteredCustomers = useMemo(() => {
-    const query = search.trim().toLowerCase()
+    let list = customers.filter(c => showArchived ? c.archived === true : !c.archived)
 
-    if (!query) {
-      return customers
+    if (agingFilter) {
+      const days = parseInt(agingFilter)
+      if (!isNaN(days)) {
+        list = list.filter(c => {
+          const total = c.aging.current + c.aging.days30 + c.aging.days60 + c.aging.days90
+          return total > 0.001 && c.oldestUnpaidDays >= days && c.oldestUnpaidDays < days + 30
+        })
+      }
     }
 
-    return customers.filter(
-      (customer) =>
-        customer.name.toLowerCase().includes(query) ||
-        customer.mobile.includes(query)
-    )
-      }, [customers, debouncedSearch])
+    const query = search.trim().toLowerCase()
+    if (query) {
+      list = list.filter(c => c.name.toLowerCase().includes(query) || c.mobile.includes(query))
+    }
+
+    return list.sort((a, b) => {
+      const cmp = sortDir === "asc" ? 1 : -1
+      if (sortBy === "balance") return (b.balance - a.balance) * cmp
+      if (sortBy === "lastActivity") return ((a.lastActivityAt ?? "").localeCompare(b.lastActivityAt ?? "")) * cmp
+      return a.name.localeCompare(b.name) * cmp
+    })
+  }, [customers, debouncedSearch, sortBy, sortDir, agingFilter, showArchived])
 
   const selectedCustomer = customers.find(
     (customer) => customer.id === selectedCustomerId
@@ -275,6 +301,7 @@ export default function CustomersPage() {
     }
 
     const amount = Math.min(payment.amount, customer.balance)
+    const wasCapped = payment.amount > customer.balance
 
     try {
       recordDebtPayment({
@@ -289,6 +316,9 @@ export default function CustomersPage() {
         reference: "",
       }))
       setFormErrors({})
+      if (wasCapped) {
+        showToast(`Amount capped to ${formatCurrency(amount)} (outstanding balance).`, "error")
+      }
       showToast(`${formatCurrency(amount)} received from ${customer.name}.`)
       setActivePanel("Ledger")
       refreshLedger(customer.id)
@@ -300,8 +330,10 @@ export default function CustomersPage() {
   return (
     <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
       {isLoading ? (
-        <div className="flex min-h-[400px] items-center justify-center p-6">
-          <Spinner label="Loading customers..." />
+        <div className="p-6 space-y-2">
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} className="skeleton h-14 rounded-lg" style={{ background: "var(--surface-3)", animation: "pulse 1.5s infinite" }} />
+          ))}
         </div>
       ) : (
       <>
@@ -329,7 +361,7 @@ export default function CustomersPage() {
 
             <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
               <p className="text-sm font-medium text-zinc-500">Collected</p>
-              <p className="mt-2 text-2xl font-bold text-emerald-700">
+              <p className="mt-2 text-2xl font-bold" style={{ color: "var(--success)" }}>
                 {formatCurrency(totals.paidTotal)}
               </p>
             </div>
@@ -341,15 +373,19 @@ export default function CustomersPage() {
           <p className="text-[12px] font-bold uppercase tracking-wide mb-3" style={{ color: "var(--text-3)" }}>Outstanding by age</p>
           <div className="grid grid-cols-4 gap-2">
             {[
-              { label: "0–30 days", value: agingTotals.current, color: "var(--brand-text)", bg: "var(--brand-soft)" },
-              { label: "30–60 days", value: agingTotals.days30, color: "var(--amber-text)", bg: "var(--amber-soft)" },
-              { label: "60–90 days", value: agingTotals.days60, color: "#EA580C", bg: "rgba(234,88,12,0.12)" },
-              { label: "90+ days", value: agingTotals.days90, color: "var(--rose-text)", bg: "var(--rose-soft)" },
+              { label: "0–30 days", value: agingTotals.current, color: "var(--brand-text)", bg: "var(--brand-soft)", days: "0" },
+              { label: "30–60 days", value: agingTotals.days30, color: "var(--amber-text)", bg: "var(--amber-soft)", days: "30" },
+              { label: "60–90 days", value: agingTotals.days60, color: "#EA580C", bg: "rgba(234,88,12,0.12)", days: "60" },
+              { label: "90+ days", value: agingTotals.days90, color: "var(--rose-text)", bg: "var(--rose-soft)", days: "90" },
             ].map((b) => (
-              <div key={b.label} className="rounded-lg p-3" style={{ background: b.bg }}>
+              <button key={b.label} onClick={() => setAgingFilter(a => a === b.days ? "" : b.days)}
+                className={`rounded-lg p-3 text-left transition cursor-pointer ${agingFilter === b.days ? "ring-2 ring-zinc-400" : ""}`}
+                style={{ background: b.bg }}
+                aria-pressed={agingFilter === b.days}
+                aria-label={`Filter by ${b.label} debt`}>
                 <p className="text-[11px] font-semibold" style={{ color: b.color }}>{b.label}</p>
                 <p className="mt-1 text-[17px] font-bold tabular-nums" style={{ color: b.color }}>{formatCurrency(b.value)}</p>
-              </div>
+              </button>
             ))}
           </div>
         </section>
@@ -362,9 +398,16 @@ export default function CustomersPage() {
           tabs={[
             { label: "Ledger", count: filteredCustomers.length },
             { label: "Pay debt", count: customers.filter((customer) => customer.balance > 0).length },
-            { label: "Add customer" },
           ]}
         />
+
+        <button
+          type="button"
+          onClick={() => setActivePanel("Add customer")}
+          className="btn-primary btn-sm h-10 shrink-0 px-3"
+        >
+          + Add customer
+        </button>
 
         <label className="relative w-full sm:w-64">
           <span className="sr-only">Search customers</span>
@@ -395,6 +438,21 @@ export default function CustomersPage() {
         </button>
       </div>
 
+      {/* Archive toggle + filter info */}
+      <div className="mt-2 flex items-center gap-3">
+        <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer" style={{ color: "var(--text-2)" }}>
+          <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />
+          Show archived
+        </label>
+        {agingFilter && (
+          <button onClick={() => setAgingFilter("")}
+            className="text-[11px] font-bold px-2 py-1 rounded"
+            style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+            Filter: {agingFilter === "0" ? "0–30d" : agingFilter === "30" ? "30–60d" : agingFilter === "60" ? "60–90d" : "90+d"} ✕
+          </button>
+        )}
+      </div>
+
       <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
         <section className="min-w-0 space-y-5">
           <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -402,8 +460,8 @@ export default function CustomersPage() {
               <table className="min-w-full border-separate border-spacing-0 text-sm">
                 <thead>
                   <tr className="text-start text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
-                    <th className="border-b border-zinc-200 px-4 py-3">
-                      Customer
+                    <th className="border-b border-zinc-200 px-4 py-3 cursor-pointer hover:text-zinc-700" onClick={() => { setSortBy("name"); setSortDir(d => d === "asc" ? "desc" : "asc") }}>
+                      Customer {sortBy === "name" && (sortDir === "asc" ? "↑" : "↓")}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
                       Contact
@@ -414,11 +472,11 @@ export default function CustomersPage() {
                     <th className="border-b border-zinc-200 px-4 py-3 text-end">
                       Paid
                     </th>
-                    <th className="border-b border-zinc-200 px-4 py-3 text-end">
-                      Balance
+                    <th className="border-b border-zinc-200 px-4 py-3 text-end cursor-pointer hover:text-zinc-700" onClick={() => { setSortBy("balance"); setSortDir("desc") }}>
+                      Balance {sortBy === "balance" ? "↓" : "↕"}
                     </th>
-                    <th className="border-b border-zinc-200 px-4 py-3">
-                      Last activity
+                    <th className="border-b border-zinc-200 px-4 py-3 cursor-pointer hover:text-zinc-700" onClick={() => { setSortBy("lastActivity"); setSortDir("desc") }}>
+                      Last activity {sortBy === "lastActivity" ? "↓" : "↕"}
                     </th>
                     <th className="border-b border-zinc-200 px-4 py-3">
                       <span className="sr-only">Actions</span>
@@ -452,11 +510,10 @@ export default function CustomersPage() {
                             customerId: customer.id,
                           }))
                         }}
-                        className={`cursor-pointer transition hover:bg-zinc-50 ${
-                          active ? "bg-emerald-50/70" : ""
-                        }`}
+                        className="t-row cursor-pointer transition"
+                        style={active ? { background: "var(--brand-soft)", boxShadow: "inset 3px 0 0 var(--brand)" } : undefined}
                       >
-                        <td className="border-b border-zinc-100 px-4 py-4">
+                        <td className="border-b border-zinc-100 px-4 py-2.5">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-zinc-950">{customer.name}</span>
                             {customer.overdue && (
@@ -469,6 +526,16 @@ export default function CustomersPage() {
                                 over limit
                               </span>
                             )}
+                            {!customer.overLimit && customer.creditLimit > 0 && customer.balance > customer.creditLimit * 0.8 && (
+                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>
+                                near limit
+                              </span>
+                            )}
+                            {!customer.overdue && !customer.overLimit && customer.balance <= 0 && (
+                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--success-soft)", color: "var(--success-text)" }}>
+                                good
+                              </span>
+                            )}
                           </div>
                           {customer.notes ? (
                             <div className="mt-1 max-w-64 truncate text-xs text-zinc-500">
@@ -476,7 +543,7 @@ export default function CustomersPage() {
                             </div>
                           ) : null}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4">
+                        <td className="border-b border-zinc-100 px-4 py-2.5">
                           <a
                             href={`tel:${customer.mobile}`}
                             className="inline-flex items-center gap-2 font-semibold text-zinc-700 hover:text-emerald-700"
@@ -485,26 +552,34 @@ export default function CustomersPage() {
                             {customer.mobile}
                           </a>
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-semibold text-zinc-800">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-semibold text-zinc-800">
                           {formatCurrency(customer.debtTotal)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-semibold text-emerald-700">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-semibold" style={{ color: "var(--success)" }}>
                           {formatCurrency(customer.paidTotal)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-end font-bold text-rose-700">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-bold text-rose-700">
                           {formatCurrency(customer.balance)}
                           {customer.balance > 0 && <div className="text-[10px] text-rose-400">{formatLbpCurrency(usdToLbp(customer.balance, getSettings().usdToLbpRate))}</div>}
+                          {customer.creditLimit > 0 && (
+                            <div className="mt-1 h-1 w-full rounded-full" style={{ background: "var(--surface-3)" }}>
+                              <div className="h-1 rounded-full transition-all" style={{
+                                width: `${Math.min(100, (customer.balance / customer.creditLimit) * 100)}%`,
+                                background: customer.overLimit ? "var(--rose)" : customer.balance > customer.creditLimit * 0.8 ? "var(--amber)" : "var(--brand)",
+                              }} />
+                            </div>
+                          )}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4 text-zinc-500">
+                        <td className="border-b border-zinc-100 px-4 py-2.5 text-zinc-500">
                           {formatDate(customer.lastActivityAt)}
                         </td>
-                        <td className="border-b border-zinc-100 px-4 py-4">
+                        <td className="border-b border-zinc-100 px-4 py-2.5">
                           <div className="flex items-center justify-end gap-1.5">
                             {customer.sellAtCost && (
-                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-600" style={{ background: "rgba(214,166,58,0.12)" }}>COST</span>
+                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-600" style={{ background: "rgba(214,166,58,0.12)" }}>COST</span>
                             )}
                             {customer.isWholesale && (
-                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase text-emerald-700" style={{ background: "var(--brand-soft)" }}>WS</span>
+                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-700" style={{ background: "var(--brand-soft)" }}>WS</span>
                             )}
                             {customer.balance > 0 && customer.mobile && (
                               <button
@@ -521,6 +596,7 @@ export default function CustomersPage() {
                                 className="flex h-9 w-9 items-center justify-center rounded-lg border transition"
                                 style={{ borderColor: "var(--border)", color: "#25D366" }}
                                 title="Send WhatsApp reminder"
+                                aria-label={`WhatsApp ${customer.name}`}
                               >
                                 <MessageCircle size={15} />
                               </button>
@@ -533,8 +609,28 @@ export default function CustomersPage() {
                               }}
                               className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
                               title="Edit customer"
+                              aria-label={`Edit ${customer.name}`}
                             >
                               <Pencil size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                if (customer.archived) {
+                                  restoreCustomer(customer.id)
+                                  showToast(`${customer.name} restored.`)
+                                } else {
+                                  archiveCustomer(customer.id)
+                                  showToast(`${customer.name} archived.`)
+                                }
+                                refreshLedger()
+                              }}
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
+                              title={customer.archived ? "Restore customer" : "Archive customer"}
+                              aria-label={customer.archived ? `Restore ${customer.name}` : `Archive ${customer.name}`}
+                            >
+                              {customer.archived ? "↩" : "📦"}
                             </button>
                             <button
                               type="button"
@@ -551,6 +647,7 @@ export default function CustomersPage() {
                               }}
                               className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700"
                               title="Download statement"
+                              aria-label={`Download statement for ${customer.name}`}
                             >
                               <Download size={15} />
                             </button>
@@ -564,6 +661,7 @@ export default function CustomersPage() {
                               }}
                               className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700"
                               title="Print statement"
+                              aria-label={`Print statement for ${customer.name}`}
                             >
                               <Printer size={15} />
                             </button>
@@ -770,6 +868,7 @@ export default function CustomersPage() {
                           method: method.label,
                         }))
                       }
+                      aria-pressed={active}
                       className={`flex h-11 items-center justify-center gap-2 rounded-lg border text-sm font-bold transition ${
                         active
                           ? "border-emerald-600 bg-emerald-50 text-emerald-800"
@@ -834,10 +933,63 @@ export default function CustomersPage() {
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
                       Balance
                     </p>
-                    <p className="text-lg font-bold text-rose-700">
+                    <p className="text-lg font-bold tabular-nums" style={{ color: selectedCustomer.balance > 0 ? "var(--danger-text)" : "var(--text)" }}>
                       {formatCurrency(selectedCustomer.balance)}
                     </p>
                   </div>
+                </div>
+
+                {/* Credit-limit usage — fills toward danger */}
+                {selectedCustomer.creditLimit > 0 && (
+                  <div className="mt-3">
+                    <div className="mb-1 flex items-center justify-between text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
+                      <span>Credit limit</span>
+                      <span className="tabular-nums">
+                        {formatCurrency(selectedCustomer.balance)} / {formatCurrency(selectedCustomer.creditLimit)}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: "var(--surface-3)" }}>
+                      {(() => {
+                        const pct = Math.min(100, (selectedCustomer.balance / selectedCustomer.creditLimit) * 100)
+                        const color = pct >= 100 ? "var(--danger)" : pct >= 75 ? "var(--warning)" : "var(--success)"
+                        return (
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${Math.max(pct, 2)}%`, background: color }}
+                            role="progressbar"
+                            aria-valuenow={Math.round(pct)}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label="Credit limit used"
+                          />
+                        )
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* Promise-to-pay note — quick inline commitment tracking */}
+                <div className="mt-3">
+                  <label className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
+                    <CalendarClock size={12} />
+                    Promise to pay / note
+                  </label>
+                  <div className="flex gap-1.5">
+                    <input
+                      key={selectedCustomer.id}
+                      defaultValue={selectedCustomer.notes}
+                      placeholder="e.g. will pay Friday"
+                      maxLength={160}
+                      className="input h-9 min-w-0 flex-1 text-[12px]"
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter") return
+                        const value = (e.target as HTMLInputElement).value.trim()
+                        updateCustomer(selectedCustomer.id, { notes: value })
+                        showToast("Note saved.")
+                      }}
+                    />
+                  </div>
+                  <p className="mt-1 text-[10px]" style={{ color: "var(--text-3)" }}>Enter to save</p>
                 </div>
               </div>
             ) : null}
@@ -877,11 +1029,8 @@ export default function CustomersPage() {
                       </div>
                     </div>
                     <p
-                      className={`font-bold ${
-                        activity.type === "Sale"
-                          ? "text-rose-700"
-                          : "text-emerald-700"
-                      }`}
+                      className="font-bold"
+                      style={{ color: activity.type === "Sale" ? "var(--rose)" : "var(--success)" }}
                     >
                       {activity.type === "Sale" ? "+" : "-"}
                       {formatCurrency(activity.amount)}

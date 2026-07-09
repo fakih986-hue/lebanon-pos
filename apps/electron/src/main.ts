@@ -543,7 +543,7 @@ border-radius:99px;animation:slide 1.2s ease-in-out infinite alternate}
 </style></head>
 <body>
 <div class="logo">🏪</div>
-<div class="title">Lebanon POS</div>
+<div class="title">Titan POS</div>
 <div class="status" id="s">${loadMsg}</div>
 <div class="bar"><div class="bar-inner"></div></div>
 </body></html>`)}`)
@@ -685,7 +685,7 @@ function createMainWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     mainWindow = new BrowserWindow({
       width: 1600, height: 900, minWidth: 1024, minHeight: 600,
-      show: false, title: "Lebanon POS",
+      show: false, title: "Titan POS",
       webPreferences: {
         preload: path.join(__dirname, "preload.js"),
         nodeIntegration: false, contextIsolation: true,

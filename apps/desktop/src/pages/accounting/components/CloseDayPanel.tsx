@@ -9,7 +9,7 @@ import { formatDateKey, type AccountingSummary } from "../accounting.helpers"
 type Props = {
   summary: AccountingSummary
   todayClose: boolean
-  onCloseDay: () => void
+  onCloseDay: (note: string) => void
   canManageAccounting: boolean
 }
 
@@ -39,6 +39,15 @@ export default function CloseDayPanel({
               {formatDateKey(summary.dateKey)}
             </p>
           </div>
+          {todayClose && (
+            <span
+              className="ms-auto inline-flex rotate-[-4deg] items-center gap-1.5 rounded-lg border-2 px-3 py-1.5 text-[12px] font-black uppercase tracking-[0.14em]"
+              style={{ borderColor: "var(--success)", color: "var(--success-text)", background: "var(--success-soft)" }}
+            >
+              <CheckCircle2 size={14} />
+              Day sealed
+            </span>
+          )}
         </div>
       </div>
 
@@ -46,15 +55,15 @@ export default function CloseDayPanel({
         <div className="space-y-2 rounded-lg border border-zinc-200 p-4 text-sm">
           <div className="flex justify-between gap-3">
             <span className="text-zinc-500">Gross sales</span>
-            <div className="text-right"><strong>{formatCurrency(summary.grossSales)}</strong><div className="text-[10px] text-zinc-400">{lbp(summary.grossSales)}</div></div>
+            <div className="text-end"><strong>{formatCurrency(summary.grossSales)}</strong><div className="text-[10px] text-zinc-400">{lbp(summary.grossSales)}</div></div>
           </div>
           <div className="flex justify-between gap-3 text-rose-700">
             <span>Refunds</span>
-            <div className="text-right"><strong>-{formatCurrency(summary.refunds)}</strong><div className="text-[10px] text-rose-400">{lbp(summary.refunds)}</div></div>
+            <div className="text-end"><strong>-{formatCurrency(summary.refunds)}</strong><div className="text-[10px] text-rose-400">{lbp(summary.refunds)}</div></div>
            </div>
            <div className="flex justify-between gap-3 border-t border-zinc-200 pt-2">
              <span className="text-zinc-500">Net sales</span>
-             <div className="text-right"><strong>{formatCurrency(summary.netSales)}</strong><div className="text-[10px] text-zinc-400">{lbp(summary.netSales)}</div></div>
+             <div className="text-end"><strong>{formatCurrency(summary.netSales)}</strong><div className="text-[10px] text-zinc-400">{lbp(summary.netSales)}</div></div>
           </div>
           <div className="flex justify-between gap-3 text-zinc-500">
             <span>Cost of goods</span>
@@ -64,22 +73,23 @@ export default function CloseDayPanel({
           </div>
           <div className="flex justify-between gap-3 border-t border-zinc-200 pt-2 font-bold text-zinc-950">
             <span>Gross margin</span>
-            <div className="text-right"><span>{formatCurrency(summary.grossMargin)}</span><div className="text-[10px] text-zinc-400">{lbp(summary.grossMargin)}</div></div>
+            <div className="text-end"><span>{formatCurrency(summary.grossMargin)}</span><div className="text-[10px] text-zinc-400">{lbp(summary.grossMargin)}</div></div>
           </div>
         </div>
 
         <div className="space-y-2 rounded-lg border border-zinc-200 p-4 text-sm">
           <div className="flex justify-between gap-3">
             <span className="text-zinc-500">Operating expenses</span>
-            <strong className="text-rose-700">
-              -{formatCurrency(summary.expenses)}
-            </strong><div className="text-[10px] text-rose-400 mt-0.5">{lbp(summary.expenses)}</div>
+            <div className="text-end">
+              <strong className="text-rose-700">-{formatCurrency(summary.expenses)}</strong>
+              <div className="text-[10px] text-rose-400">{lbp(summary.expenses)}</div>
+            </div>
           </div>
           <div className="flex justify-between gap-3 border-t border-zinc-200 pt-2 text-lg font-bold">
             <span>Net profit</span>
-            <div className="text-right"><span
+            <div className="text-end"><span
               className={
-                summary.netProfit >= 0 ? "text-emerald-700" : "text-rose-700"
+                summary.netProfit >= 0 ? "text-[var(--success)]" : "text-rose-700"
               }
             >
               {formatCurrency(summary.netProfit)}
@@ -89,25 +99,31 @@ export default function CloseDayPanel({
           <div className="mt-3 rounded-lg bg-zinc-50 p-3">
             <div className="flex justify-between gap-3">
               <span className="text-zinc-500">Cash in</span>
-              <strong>{formatCurrency(summary.cashIn)}</strong>
-              <div className="text-[10px] text-zinc-400 text-right">{lbp(summary.cashIn)}</div>
+              <div className="text-end">
+                <strong>{formatCurrency(summary.cashIn)}</strong>
+                <div className="text-[10px] text-zinc-400">{lbp(summary.cashIn)}</div>
+              </div>
             </div>
             <div className="mt-2 flex justify-between gap-3 text-rose-700">
               <span>Cash out</span>
-              <strong>-{formatCurrency(summary.cashOut)}</strong>
-              <div className="text-[10px] text-rose-400 text-right">{lbp(summary.cashOut)}</div>
+              <div className="text-end">
+                <strong>-{formatCurrency(summary.cashOut)}</strong>
+                <div className="text-[10px] text-rose-400">{lbp(summary.cashOut)}</div>
+              </div>
             </div>
             <div className="mt-2 flex justify-between gap-3 text-zinc-500">
               <span>Supplier payments</span>
-              <strong className="text-zinc-900">
-                {formatCurrency(summary.supplierPayments)}
-              </strong>
-              <div className="text-[10px] text-zinc-400 text-right">{lbp(summary.supplierPayments)}</div>
+              <div className="text-end">
+                <strong className="text-zinc-900">{formatCurrency(summary.supplierPayments)}</strong>
+                <div className="text-[10px] text-zinc-400">{lbp(summary.supplierPayments)}</div>
+              </div>
             </div>
             <div className="mt-2 flex justify-between gap-3 border-t border-zinc-200 pt-2 font-bold">
               <span>Cash movement</span>
-              <span>{formatCurrency(summary.cashNet)}</span>
-              <div className="text-[10px] text-zinc-400 text-right">{lbp(summary.cashNet)}</div>
+              <div className="text-end">
+                <span>{formatCurrency(summary.cashNet)}</span>
+                <div className="text-[10px] text-zinc-400 font-normal">{lbp(summary.cashNet)}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -125,30 +141,35 @@ export default function CloseDayPanel({
               <p className="text-[13px] font-bold mb-3" style={{ color: "var(--text)" }}>Cash reconciliation</p>
               <div className="flex items-center justify-between mb-2 text-sm">
                 <span style={{ color: "var(--text-2)" }}>Expected in drawer</span>
-                <strong style={{ color: "var(--text)" }}>{formatCurrency(expected)}</strong>
-                <div className="text-[10px] text-zinc-400 text-right">{lbp(expected)}</div>
+                <div className="text-end">
+                  <strong style={{ color: "var(--text)" }}>{formatCurrency(expected)}</strong>
+                  <div className="text-[10px] text-zinc-400">{lbp(expected)}</div>
+                </div>
               </div>
               <label className="block">
                 <span className="block text-[12px] font-semibold mb-1.5" style={{ color: "var(--text-2)" }}>
                   Counted cash (actual in drawer)
                 </span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={countedCash}
-                  onChange={(e) => setCountedCash(e.target.value)}
-                  placeholder={expected.toFixed(2)}
-                  className="input w-full text-right font-bold"
-                  style={{ height: 44, fontSize: 16 }}
-                />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={countedCash}
+                    onChange={(e) => setCountedCash(e.target.value)}
+                    placeholder={expected.toFixed(2)}
+                    className="input w-full text-end font-bold"
+                    style={{ height: 44, fontSize: 16 }}
+                    aria-label="Counted cash in drawer"
+                  />
               </label>
               {hasCount && (
                 <div
                   className="mt-3 flex items-center justify-between rounded-lg px-3 py-2.5"
+                  role="status"
+                  aria-live="polite"
                   style={matched
-                    ? { background: "var(--brand-soft)", color: "var(--brand-text)" }
-                    : { background: "var(--rose-soft)", color: "var(--rose-text)" }
+                    ? { background: "var(--success-soft)", color: "var(--success-text)", border: "1px solid var(--success)" }
+                    : { background: "var(--danger-soft)", color: "var(--danger-text)", border: "1px solid var(--danger)" }
                   }
                 >
                   <span className="text-[13px] font-bold">
@@ -157,7 +178,7 @@ export default function CloseDayPanel({
                   <strong className="text-[15px]">
                     {variance > 0 ? "+" : ""}{formatCurrency(variance)}
                   </strong>
-                  <span className="text-[10px] ml-1.5">{lbp(variance)}</span>
+                  <span className="text-[10px] ms-1.5">{lbp(variance)}</span>
                 </div>
               )}
             </div>
@@ -193,6 +214,7 @@ export default function CloseDayPanel({
               }}
               className="flex h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-bold transition hover:opacity-80"
               style={{ borderColor: "var(--border)", color: "#25D366" }}
+              aria-label="Share daily summary via WhatsApp"
             >
               <MessageCircle size={16} />
               WhatsApp summary
@@ -218,16 +240,19 @@ export default function CloseDayPanel({
                 w.document.close(); w.focus(); setTimeout(() => w.print(), 250)
               }}
               className="flex h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-bold transition hover:opacity-80"
-              style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>
+              style={{ borderColor: "var(--border)", color: "var(--text-2)" }}
+              aria-label="Print daily report"
+            >
               <Printer size={16} />
               Print Report
             </button>
-            <button
-              type="button"
-              onClick={() => onCloseDay()}
-              disabled={!canManageAccounting}
-              className="flex h-11 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-4 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
-            >
+              <button
+                type="button"
+                onClick={() => onCloseDay(closeNote)}
+                disabled={!canManageAccounting}
+                className="btn-primary btn-md h-11 px-5"
+                aria-label={todayClose ? "Reclose today" : "Close today"}
+              >
               <CheckCircle2 size={17} />
               {todayClose ? "Reclose Today" : "Close Today"}
             </button>

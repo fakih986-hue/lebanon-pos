@@ -7,6 +7,7 @@ const MotionP = motion.p as any
 import {
   ArrowLeft,
   Camera,
+  CreditCard,
   Eraser,
   HandCoins,
   Landmark,
@@ -76,10 +77,11 @@ type Props = {
   onWhatsAppReceipt: (sale: any) => void
 }
 
-const PAY_OPTIONS: { label: PaymentMethod; icon: typeof Landmark; color: string; activeClass: string }[] = [
-  { label: "Cash",   icon: Landmark,    color: "emerald", activeClass: "bg-emerald-600 border-emerald-600 text-white" },
-  { label: "Wallet", icon: WalletCards, color: "violet",  activeClass: "bg-violet-600  border-violet-600  text-white" },
-  { label: "Debt",   icon: HandCoins,   color: "amber",   activeClass: "bg-amber-500   border-amber-500   text-white" },
+const PAY_OPTIONS: { label: PaymentMethod; icon: typeof Landmark }[] = [
+  { label: "Cash",   icon: Landmark    },
+  { label: "Card",   icon: CreditCard  },
+  { label: "Wallet", icon: WalletCards },
+  { label: "Debt",   icon: HandCoins   },
 ]
 
 export default function QuickPOSMode({
@@ -427,17 +429,22 @@ export default function QuickPOSMode({
 
           {/* Payment method */}
           <div className="border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
-            <div className="grid grid-cols-3 gap-1.5">
-              {PAY_OPTIONS.map(({ label, icon: Icon, activeClass }) => (
-                <MotionButton key={label} type="button" onClick={() => onSelectPayment(label)}
-                  className={`flex items-center justify-center gap-1 rounded-lg border py-2 text-[11px] font-bold transition ${
-                    paymentMethod === label ? activeClass : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)]"
-                  }`}
-                  whileTap={{ scale: 0.94 }}>
-                  <Icon size={14} />
-                  {t("pos.payment." + label.toLowerCase())}
-                </MotionButton>
-              ))}
+            <div className="grid grid-cols-4 gap-1.5">
+              {PAY_OPTIONS.map(({ label, icon: Icon }) => {
+                const active = paymentMethod === label
+                return (
+                  <MotionButton key={label} type="button" onClick={() => onSelectPayment(label)}
+                    aria-pressed={active}
+                    className="flex items-center justify-center gap-1 rounded-lg border py-2.5 text-[11px] font-bold transition"
+                    style={active
+                      ? { background: "var(--brand)", borderColor: "var(--brand)", color: "var(--brand-contrast)" }
+                      : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
+                    whileTap={{ scale: 0.94 }}>
+                    <Icon size={14} />
+                    {t("pos.payment." + label.toLowerCase())}
+                  </MotionButton>
+                )
+              })}
             </div>
           </div>
 
