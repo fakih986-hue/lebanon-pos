@@ -260,6 +260,7 @@ export function MenuPage() {
                     { value: "Wallet", label: t("ordering.wallet") || "Wallet" },
                   ].map(pm => (
                     <button key={pm.value} type="button" onClick={() => setPaymentMethod(pm.value)}
+                      aria-pressed={paymentMethod === pm.value}
                       className={`py-2.5 rounded-xl text-sm font-medium transition-all ${paymentMethod === pm.value ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" : "bg-white/5 border border-glass text-secondary hover:bg-white/10"}`}>
                       {pm.label}
                     </button>
@@ -302,6 +303,7 @@ export function MenuPage() {
               {locale === "en" ? "ع" : "EN"}
             </button>
             <button onClick={() => { setOrderError(null); setShowCart(true) }}
+              aria-label={`Open cart — ${cartStats.count} items`}
               className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-glass border border-glass">
               <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
               {cartStats.count > 0 && (
@@ -321,6 +323,7 @@ export function MenuPage() {
             value={searchInput}
             onChange={handleSearchChange}
             placeholder={t("ordering.search_menu")}
+            aria-label={t("ordering.search_menu")}
             className="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-glass text-primary placeholder:text-muted text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all"
           />
         </div>
@@ -330,6 +333,7 @@ export function MenuPage() {
         <div className="flex gap-2 max-w-md mx-auto">
           {categories.map((cat) => (
             <button key={cat} onClick={() => setActiveCategory(cat)}
+              aria-pressed={activeCategory === cat}
               className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 ${activeCategory === cat ? "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-600/20" : "bg-glass text-secondary hover:bg-glass-hover"}`}>
               {cat === "All" ? t("ordering.all") : cat}
             </button>
@@ -360,6 +364,7 @@ export function MenuPage() {
                 <p className="mt-2 text-sm font-medium text-primary leading-tight">{product.name}</p>
                 {product.variantName && <p className="text-xs text-secondary mt-0.5">{product.variantName}</p>}
                 <button onClick={() => addToCart(product)}
+                  aria-label={`Add ${product.name} to cart — ${fmt(product.price)}`}
                   className="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:from-emerald-500 hover:to-emerald-400 active:scale-95">
                   {t("ordering.add_to_cart")}
                 </button>
@@ -390,6 +395,7 @@ export function MenuPage() {
       {cartStats.count > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-20 bg-glass border-t border-glass px-4 py-3 shadow-2xl" style={{ backdropFilter: 'blur(16px)' }}>
           <button onClick={() => setShowCart(true)}
+            aria-label={`View cart — ${cartStats.count} items, total ${fmt(cartStats.total + deliveryFee)}`}
             className="flex w-full items-center justify-between rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-3.5 text-white shadow-xl shadow-emerald-600/20 max-w-md mx-auto">
             <span className="font-semibold">🛒 {cartStats.count} {cartStats.count === 1 ? t("ordering.item") : t("ordering.items")}</span>
             <span className="font-semibold">{fmt(cartStats.total + deliveryFee)}</span>
