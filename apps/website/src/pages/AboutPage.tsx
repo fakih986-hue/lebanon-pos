@@ -7,7 +7,7 @@ export default function AboutPage() {
       <div className="max-w-4xl mx-auto px-5 sm:px-8">
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 mb-4">The founder</p>
-          <h1 className="font-display font-bold tracking-tight leading-[0.95] text-[clamp(2.6rem,7vw,5rem)]">
+          <h1 className="font-display font-bold tracking-tight leading-[1.1] sm:leading-[0.95] text-[clamp(2.6rem,7vw,5rem)]">
             Behind <span className="text-gradient">Titan.</span>
           </h1>
         </Reveal>

@@ -34,7 +34,7 @@ export default function PayrollPage() {
           </span>
         </Reveal>
         <Reveal delay={100}>
-          <h1 className="font-display font-bold tracking-tight leading-[0.95] text-[clamp(2.6rem,7vw,5.5rem)] mt-7">
+          <h1 className="font-display font-bold tracking-tight leading-[1.1] sm:leading-[0.95] text-[clamp(2.6rem,7vw,5.5rem)] mt-7">
             Payroll that can
             <br />
             <span className="text-gradient">explain itself.</span>

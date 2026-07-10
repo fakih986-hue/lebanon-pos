@@ -6,7 +6,7 @@ export default function ContactPage() {
     <div className="pt-40 pb-16">
       <div className="max-w-3xl mx-auto px-5 sm:px-8 text-center">
         <Reveal>
-          <h1 className="font-display font-bold tracking-tight leading-[0.95] text-[clamp(2.6rem,8vw,6rem)]">
+          <h1 className="font-display font-bold tracking-tight leading-[1.1] sm:leading-[0.95] text-[clamp(2.6rem,8vw,6rem)]">
             Let's <span className="text-gradient">talk.</span>
           </h1>
         </Reveal>

@@ -87,7 +87,7 @@ export default function HomePage() {
             </span>
           </Reveal>
 
-          <h1 className="font-display font-bold tracking-tight leading-[0.95] text-[clamp(2.8rem,9vw,7rem)]">
+          <h1 className="font-display font-bold tracking-tight leading-[1.1] sm:leading-[0.95] text-[clamp(2.8rem,9vw,7rem)]">
             <KineticLine words="Run the business." />
             <br />
             <KineticLine words="We run the software." gradient baseDelay={320} />
@@ -250,7 +250,7 @@ export default function HomePage() {
             {PILLARS.map((p, i) => (
               <Reveal key={p.n} delay={i * 120}>
                 <div className="relative glass glass-hover shine rounded-2xl p-8 h-full overflow-hidden">
-                  <span className="font-display absolute -top-4 -right-2 text-[7rem] font-bold text-outline leading-none">{p.n}</span>
+                  <span className="font-display absolute -top-4 -right-2 text-[5.5rem] sm:text-[7rem] font-bold text-outline leading-none">{p.n}</span>
                   <h3 className="font-display text-xl font-bold mb-3 relative">{p.title}</h3>
                   <p className="text-sm text-slate-400 leading-relaxed relative max-w-[90%]">{p.desc}</p>
                 </div>

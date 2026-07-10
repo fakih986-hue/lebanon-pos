@@ -13,7 +13,7 @@ export default function CompanyPage() {
       <div className="max-w-5xl mx-auto px-5 sm:px-8">
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 mb-4">The company</p>
-          <h1 className="font-display font-bold tracking-tight leading-[0.95] text-[clamp(2.6rem,7vw,5.5rem)]">
+          <h1 className="font-display font-bold tracking-tight leading-[1.1] sm:leading-[0.95] text-[clamp(2.6rem,7vw,5.5rem)]">
             About <span className="text-gradient">Titan.</span>
           </h1>
         </Reveal>
@@ -45,7 +45,7 @@ export default function CompanyPage() {
             <Reveal key={v.n} delay={i * 120}>
               <TiltCard className="h-full">
                 <div className="relative glass glass-hover shine rounded-2xl p-8 h-full overflow-hidden">
-                  <span className="font-display absolute -top-5 -right-2 text-[6.5rem] font-bold text-outline leading-none">{v.n}</span>
+                  <span className="font-display absolute -top-5 -right-2 text-[5rem] sm:text-[6.5rem] font-bold text-outline leading-none">{v.n}</span>
                   <h3 className="font-display font-bold mb-3 relative">{v.title}</h3>
                   <p className="text-sm text-slate-400 leading-relaxed relative">{v.desc}</p>
                 </div>
