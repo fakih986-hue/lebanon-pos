@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-07-10 — Fable — Sprint POS-FINAL-POLISH-1 (whole-app coherence) — COMPLETE (commit bd618ba, NOT pushed)
+
+- Money-never-gold enforced: Customers Collected, Suppliers Paid, Sales revenue/profit digits -> semantic tokens. ROOT CAUSE to know: legacy override maps .text-emerald-700 -> --brand-text (gold); avoid emerald classes on money.
+- i18n: added missing pos.customers (EN+AR) — was rendering raw key as KPI label.
+- Sell-at-Cost toggles tokenized (raw amber-500/15 removed) + aria-pressed.
+- Products: Receive Products demoted to btn-default (one gold per zone; New Product is primary).
+- QuickPOS a11y: exit button labeled; review qty steppers 24->36px + labels.
+- Dashboard: single-day trend bar constrained (was full-width gold slab on Today).
+- Verified: tsc 0, 95/95 tests, vite build ok, smoke across all main pages, palette/labels re-verified live.
+- KNOWN dev-only: React key warning once on DashboardPage mount; all 12 maps keyed; no prod impact. Worth a future look (suspect transient duplicate key during hydration).
+- Push to Railway pending user approval.
+
 ## 2026-07-09 — Fable — Sprint POS-UX-F3 (Phase 3: Inventory/Customers/Dashboard) — COMPLETE
 
 - Split with OpenCode working in parallel: OpenCode shipped ProductEditDrawer, FEFO lots + expiry chips, clickable aging bands, dashboard action queue (money-at-risk sort + All clear). Fable shipped: "⋯ Tools" menu (Generate Images/Bulk Edit off the toolbar), credit-limit progress bar + promise-to-pay note in customers rail, generic ui/Drawer.tsx primitive.
