@@ -53,6 +53,7 @@ import {
   subscribeSuppliers,
   type SupplierPayment,
 } from "../../features/pos/services/supplier.service"
+import { computeExpectedCash } from "../../features/pos/services/shift.service"
 import { showToast } from "../../features/pos/services/toast.service"
 import { useDebounce } from "../../hooks/useDebounce"
 import { useHotkeys } from "../../hooks/useHotkey"
@@ -278,12 +279,7 @@ export default function StaffPage() {
     () => getShiftCashSupplierPayments(activeShift, supplierPayments),
     [activeShift, supplierPayments]
   )
-  const expectedCash =
-    (activeShift?.openingFloatUsd ?? 0) +
-    cashSales -
-    cashRefunds -
-    cashExpenses -
-    cashSupplierPayments
+  const expectedCash = activeShift ? computeExpectedCash(activeShift) : 0
   const countedCash = cashDenominations.reduce(
     (sum, denomination) =>
       sum + denomination * parseMoney(cashCounts[String(denomination)] ?? ""),
@@ -1026,6 +1022,11 @@ export default function StaffPage() {
                     <p className="mt-1 text-sm text-zinc-500">
                       {formatDateTime(shift.openedAt)}
                       {shift.closedAt ? ` - ${formatDateTime(shift.closedAt)}` : ""}
+                    </p>
+                    <p className="mt-0.5 text-[11px] font-mono text-zinc-400">
+                      {shift.registerId && <>Reg: {shift.registerId}</>}
+                      {shift.registerId && shift.deviceId && <> · </>}
+                      {shift.deviceId && <>Dev: {shift.deviceId}</>}
                     </p>
                   </div>
                   <span

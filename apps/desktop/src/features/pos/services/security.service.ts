@@ -1,6 +1,7 @@
-import { enqueueSyncOperation, getApiUrl, isSuspensionGracePeriodExpired, assertCanWrite } from "./sync.service"
+import { enqueueSyncOperation, getApiUrl, isSuspensionGracePeriodExpired, assertCanWrite, getDeviceId } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
+import { getSettings } from "./settings.service"
 
 const USERS_KEY = "lebanonpos.users.v1"
 const CURRENT_USER_KEY = "lebanonpos.current-user.v1"
@@ -63,6 +64,8 @@ export type Shift = {
   openedByName: string
   closedById?: string
   closedByName?: string
+  registerId?: string
+  deviceId?: string
   notes?: string
 }
 
@@ -821,6 +824,8 @@ export function openShift(openingFloatUsd: number) {
     status: "Open",
     openedAt: new Date().toISOString(),
     openingFloatUsd,
+    registerId: getSettings().registerId ?? "REG-001",
+    deviceId: getDeviceId(),
     openedById: user.id,
     openedByName: user.name,
   }

@@ -21,4 +21,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   /** Returns the current app version string */
   getAppVersion: (): Promise<string> => ipcRenderer.invoke("get-app-version"),
+
+  /** Returns the current BIND_HOST from the API .env file */
+  getBindHost: (): Promise<string> => ipcRenderer.invoke("get-bind-host"),
+
+  /** Sets BIND_HOST to 0.0.0.0 (hub/LAN mode) or 127.0.0.1 (local-only) and restarts the API */
+  setBindHost: (value: "0.0.0.0" | "127.0.0.1"): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke("set-bind-host", value),
 })

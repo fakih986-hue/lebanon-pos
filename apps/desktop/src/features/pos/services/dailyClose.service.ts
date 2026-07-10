@@ -1,7 +1,8 @@
 import { getCurrentUser, recordAuditEvent } from "./security.service"
-import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite, getDeviceId } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
+import { getRegisterId } from "./settings.service"
 
 const DAILY_CLOSES_KEY = "lebanonpos.daily-closes.v1"
 const DAILY_CLOSES_EVENT = "lebanonpos-daily-closes-changed"
@@ -22,6 +23,9 @@ export type DailyClose = {
   cashOut: number
   note: string
   closedBy: string
+  registerId?: string
+  deviceId?: string
+  unsyncedCountAtClose?: number
   createdAt: string
 }
 
@@ -79,6 +83,8 @@ export function closeBusinessDay(input: CloseBusinessDayInput) {
   const close: DailyClose = {
     ...input,
     id: createId(),
+    registerId: getRegisterId(),
+    deviceId: getDeviceId(),
     note: input.note.trim(),
     closedBy: user.name,
     createdAt: new Date().toISOString(),

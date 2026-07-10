@@ -1,18 +1,21 @@
-import { assertCanWrite, enqueueSyncOperation, getSyncQueue } from "./sync.service"
+import { assertCanWrite, enqueueSyncOperation, getSyncQueue, getDeviceId } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getCurrentUser, getActiveShift, recordAuditEvent, userCan } from "./security.service"
+import { getRegisterId } from "./settings.service"
 
 const MOVEMENTS_KEY = "lebanonpos.cash-movements.v1"
 const MOVEMENTS_EVENT = "lebanonpos-cash-movements-changed"
 
-export type CashMovementType = "CashIn" | "CashOut" | "SafeDrop" | "DrawerCorrection" | "PettyCash"
+export type CashMovementType = "CashIn" | "CashOut" | "SafeDrop" | "DrawerCorrection" | "PettyCash" | "OwnerDraw"
 export type CashDirection = "In" | "Out"
 
 export interface CashMovement {
   id: string
   shiftId?: string
   shiftNumber?: string
+  registerId?: string
+  deviceId?: string
   type: CashMovementType
   direction: CashDirection
   amountUsd: number
@@ -31,6 +34,7 @@ const TYPE_DIRECTION: Record<CashMovementType, CashDirection> = {
   SafeDrop: "Out",
   PettyCash: "Out",
   DrawerCorrection: "Out", // user must explicitly override direction
+  OwnerDraw: "Out",
 }
 
 export interface CreateCashMovementInput {
@@ -63,12 +67,18 @@ export function createCashMovement(input: CreateCashMovementInput): CashMovement
 
   const user = getCurrentUser()
   const shift = getActiveShift()
+
+  // Shift gate — cash movements require an open shift
+  if (!shift) return null
+
   const direction = input.direction ?? TYPE_DIRECTION[input.type] ?? "Out"
 
   const movement: CashMovement = {
     id: createId("cashmv"),
-    shiftId: shift?.id,
-    shiftNumber: shift?.shiftNumber,
+    shiftId: shift.id,
+    shiftNumber: shift.shiftNumber,
+    registerId: getRegisterId(),
+    deviceId: getDeviceId(),
     type: input.type,
     direction,
     amountUsd: input.amountUsd,

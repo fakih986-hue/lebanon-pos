@@ -1,6 +1,7 @@
 import { putMany } from "./db"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
+import type { ConnectionMode } from "./settings.service"
 
 const SYNC_QUEUE_KEY = "lebanonpos.sync-queue.v1"
 const LAST_SYNC_KEY  = "lebanonpos.sync-last.v1"
@@ -12,6 +13,8 @@ const SUSPENDED_AT_KEY = "lebanonpos.suspended-at.v1"
 const SUSPEND_EVENT  = "lebanonpos-suspended-changed"
 const LICENSE_KEY    = "lebanonpos.license.v1"
 const LICENSE_EVENT  = "lebanonpos-license-changed"
+const CONNECTION_MODE_KEY = "lebanonpos.connection-mode.v1"
+const CONNECTION_MODE_EVENT = "lebanonpos-connection-mode-changed"
 
 /** Operations that exceed this many attempts are considered permanently dead
  *  and stop counting as "pending" in the badge. */
@@ -141,6 +144,98 @@ export function setAuthToken(token: string) {
 export function clearAuthToken() {
   localStorage.removeItem(AUTH_TOKEN_KEY)
   stopBackgroundSync()
+}
+
+// ── Connection mode ──────────────────────────────────────────────────
+
+const CONNECTION_MODES: ConnectionMode[] = ["STORE_HUB", "CONNECT_TO_HUB", "DIRECT_RAILWAY"]
+
+export function getConnectionMode(): ConnectionMode {
+  const saved = localStorage.getItem(CONNECTION_MODE_KEY) as ConnectionMode | null
+  if (saved && CONNECTION_MODES.includes(saved)) return saved
+
+  const apiUrl = getApiUrl()
+  if (!apiUrl) return "DIRECT_RAILWAY"
+
+  if (apiUrl.includes("localhost") || apiUrl.includes("127.0.0.1") || apiUrl.includes("::1")) {
+    return "STORE_HUB"
+  }
+  if (/^https?:\/\/(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(apiUrl)) {
+    return "CONNECT_TO_HUB"
+  }
+  return "DIRECT_RAILWAY"
+}
+
+export function setConnectionMode(mode: ConnectionMode): void {
+  localStorage.setItem(CONNECTION_MODE_KEY, mode)
+  window.dispatchEvent(new Event(CONNECTION_MODE_EVENT))
+}
+
+export function subscribeConnectionMode(callback: (mode: ConnectionMode) => void) {
+  if (typeof window === "undefined") return () => undefined
+  const handler = () => callback(getConnectionMode())
+  window.addEventListener(CONNECTION_MODE_EVENT, handler)
+  window.addEventListener("storage", handler)
+  return () => {
+    window.removeEventListener(CONNECTION_MODE_EVENT, handler)
+    window.removeEventListener("storage", handler)
+  }
+}
+
+export function isLanUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1" ||
+      /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(hostname)
+    )
+  } catch {
+    return false
+  }
+}
+
+export function isRailwayUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname
+    return hostname.endsWith("railway.app") || hostname.endsWith("up.railway.app")
+  } catch {
+    return false
+  }
+}
+
+export function validateUrlForMode(url: string, mode: ConnectionMode): string | null {
+  if (!url.trim()) return "Server URL is required."
+  try {
+    new URL(url)
+  } catch {
+    return "Invalid URL format."
+  }
+  if (mode === "CONNECT_TO_HUB" && !isLanUrl(url)) {
+    return "In Hub client mode, the URL must be a LAN address (e.g., http://192.168.1.100:3015)."
+  }
+  if (mode === "STORE_HUB" && !isLanUrl(url)) {
+    return "In Hub mode, the URL should be localhost (http://localhost:3015)."
+  }
+  return null
+}
+
+export function getLocalApiUrl(): string {
+  return "http://localhost:3015"
+}
+
+// ── Device identity ──────────────────────────────────────────────────
+
+const DEVICE_ID_KEY = "lebanonpos.device-id.v1"
+
+export function getDeviceId(): string {
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY)
+  if (!deviceId) {
+    deviceId = `DEV-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+    localStorage.setItem(DEVICE_ID_KEY, deviceId)
+  }
+  return deviceId
 }
 
 // ── Multi-store support ──────────────────────────────────────────────
@@ -451,10 +546,12 @@ export type SyncStatus = {
   online: boolean
   pending: number   // actionable: Pending and attempts < MAX_ATTEMPTS
   failed: number    // Failed and attempts < MAX_ATTEMPTS
-  dead: number      // exhausted MAX_ATTEMPTS, needs manual clear
+  rejected: number  // Rejected (exhausted, cannot auto-retry)
+  dead: number      // exhausted MAX_ATTEMPTS, not Rejected
   synced: number
   total: number
   lastSyncedAt?: string
+  lastError?: string
   recentErrors: string[]
 }
 
@@ -601,19 +698,26 @@ export function getSyncStatus(): SyncStatus {
   const queue = readQueue()
   const recentErrors: string[] = []
 
-  let pending = 0, failed = 0, dead = 0, synced = 0
+  let pending = 0, failed = 0, rejected = 0, dead = 0, synced = 0
+  let lastError: string | undefined
 
   for (const op of queue) {
     if (op.status === "Synced") {
       synced++
-    } else if (op.status === "Rejected" || op.attempts >= MAX_ATTEMPTS) {
+    } else if (op.status === "Rejected") {
+      rejected++
+      if (op.error && recentErrors.length < 3) recentErrors.push(`${op.entity}: ${op.error}`)
+      if (op.error) lastError = op.error
+    } else if (op.attempts >= MAX_ATTEMPTS) {
       dead++
       if (op.error && recentErrors.length < 3) recentErrors.push(`${op.entity}: ${op.error}`)
+      if (op.error) lastError = op.error
     } else if (op.status === "Pending") {
       pending++
     } else if (op.status === "Failed") {
       failed++
       if (op.error && recentErrors.length < 3) recentErrors.push(`${op.entity}: ${op.error}`)
+      if (op.error) lastError = op.error
     }
   }
 
@@ -621,11 +725,114 @@ export function getSyncStatus(): SyncStatus {
     online: isBrowserOnline(),
     pending,
     failed,
+    rejected,
     dead,
     synced,
     total: queue.length,
     lastSyncedAt: readLastSyncedAt(),
+    lastError,
     recentErrors,
+  }
+}
+
+export function retryRejectedSync() {
+  const queue = readQueue().map((op) =>
+    op.status === "Rejected"
+      ? { ...op, status: "Pending" as const, attempts: 0, error: undefined }
+      : op
+  )
+  writeQueue(queue)
+  scheduleAutoFlush()
+}
+
+export function retrySingleSyncOperation(id: string) {
+  const queue = readQueue().map((op) =>
+    op.id === id && (op.status === "Failed" || op.status === "Rejected")
+      ? { ...op, status: "Pending" as const, attempts: 0, error: undefined }
+      : op
+  )
+  writeQueue(queue)
+  scheduleAutoFlush()
+}
+
+export function removeRejectedOperation(id: string) {
+  const queue = readQueue().filter((op) => op.id !== id || op.status !== "Rejected")
+  writeQueue(queue)
+}
+
+export function exportSyncDiagnostics() {
+  const queue = readQueue()
+  const status = getSyncStatus()
+  const apiUrl = getApiUrl()
+  const mode = getConnectionMode()
+  const lastSync = readLastSyncedAt()
+  const deviceId = getDeviceId()
+
+  const failedRejected = queue
+    .filter((op) => op.status === "Failed" || op.status === "Rejected")
+    .slice(0, 50)
+    .map((op) => ({
+      id: op.id,
+      entity: op.entity,
+      action: op.action,
+      summary: op.summary,
+      status: op.status,
+      attempts: op.attempts,
+      error: op.error,
+      createdAt: op.createdAt,
+      lastAttemptAt: op.lastAttemptAt,
+    }))
+
+  return {
+    exportedAt: new Date().toISOString(),
+    appVersion: "4.0.0",
+    connectionMode: mode,
+    apiUrl,
+    deviceId,
+    sync: {
+      pending: status.pending,
+      failed: status.failed,
+      rejected: status.rejected,
+      dead: status.dead,
+      synced: status.synced,
+      total: status.total,
+      lastSyncedAt: lastSync,
+      lastError: status.lastError,
+      online: status.online,
+    },
+    failedRejected,
+  }
+}
+
+export function downloadSyncDiagnostics() {
+  const diag = exportSyncDiagnostics()
+  const json = JSON.stringify(diag, null, 2)
+  const blob = new Blob([json], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `lebanonpos-sync-diag-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export function copySyncDiagnosticsSummary() {
+  const diag = exportSyncDiagnostics()
+  const summary = [
+    `Sync Diagnostics - ${diag.exportedAt}`,
+    `Mode: ${diag.connectionMode}`,
+    `API: ${diag.apiUrl}`,
+    `Device: ${diag.deviceId}`,
+    `Online: ${diag.sync.online}`,
+    `Pending: ${diag.sync.pending}`,
+    `Failed: ${diag.sync.failed}`,
+    `Rejected: ${diag.sync.rejected}`,
+    `Last Sync: ${diag.sync.lastSyncedAt ?? "never"}`,
+    diag.sync.lastError ? `Last Error: ${diag.sync.lastError}` : null,
+    `Failed/Rejected ops: ${diag.failedRejected.length}`,
+  ].filter(Boolean).join("\n")
+  if (typeof navigator !== "undefined") {
+    navigator.clipboard.writeText(summary).catch(() => {})
   }
 }
 
@@ -659,11 +866,19 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
       const response = await fetch(`${apiUrl}/api/sync/push`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ operations: [{ id: operation.id, entity: operation.entity, action: operation.action, payload: operation.payload }] }),
+        body: JSON.stringify({ deviceId: getDeviceId(), operations: [{ id: operation.id, entity: operation.entity, action: operation.action, payload: operation.payload }] }),
         signal: AbortSignal.timeout(5_000),
       })
-      if (response.ok) {
+      if (response.ok || response.status === 403) {
         const body = await response.json().catch(() => ({ results: [] as any[] }))
+        if (body.code === "DEVICE_NOT_APPROVED") {
+          const rejected = { ...operation, status: "Rejected" as const, attempts: 5, lastAttemptAt: new Date().toISOString(), error: body.error ?? "Device not approved" }
+          writeQueue(getSyncQueue().map((op) => op.id === operation.id ? rejected : op))
+          dispatchOperationRejected(rejected)
+          dispatchSyncChanged()
+          return operation
+        }
+        if (!response.ok) return operation
         const result = body.results?.find((r: { id: string }) => r.id === operation.id)
         if (result?.status === "rejected") {
           const rejected = { ...operation, status: "Rejected" as const, attempts: 5, lastAttemptAt: new Date().toISOString(), error: result.error ?? "Rejected by server" }
@@ -744,6 +959,7 @@ async function _flushSyncQueue() {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
+        deviceId: getDeviceId(),
         operations: pending.map((op) => ({
           id: op.id,
           entity: op.entity,
@@ -768,6 +984,19 @@ async function _flushSyncQueue() {
         )
         writeQueue(nextQueue)
         return { synced: 0, skipped: pending.length }
+      }
+      if (response.status === 403) {
+        const body = await response.json().catch(() => ({ error: "Device not approved" }))
+        if (body.code === "DEVICE_NOT_APPROVED") {
+          const now = new Date().toISOString()
+          const nextQueue = queue.map((op) => {
+            if (op.status !== "Pending" && op.status !== "Failed") return op
+            dispatchOperationRejected({ ...op, status: "Rejected", attempts: 5, lastAttemptAt: now, error: body.error ?? "Device not approved" })
+            return { ...op, status: "Rejected" as const, attempts: 5, lastAttemptAt: now, error: body.error ?? "Device not approved" }
+          })
+          writeQueue(nextQueue)
+          return { synced: 0, skipped: pending.length }
+        }
       }
       throw new Error(`Sync push failed: ${response.status}`)
     }

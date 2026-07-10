@@ -13,6 +13,7 @@ import SearchToolbar from "../components/SearchToolbar"
 import DepartmentTabs from "../components/DepartmentTabs"
 import FavoritesBar from "../components/FavoritesBar"
 import LastSaleBanner from "../components/LastSaleBanner"
+import SyncBanner from "../components/SyncBanner"
 import SaleCompleteOverlay from "../components/SaleCompleteOverlay"
 import CartDrawer from "../components/CartDrawer"
 import CartPanel from "../components/CartPanel"
@@ -673,6 +674,7 @@ export default function POSPage() {
         {/* ── Left: Product area ── */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <section className="flex h-full min-w-0 flex-col gap-3 overflow-hidden p-3 pb-24 sm:p-4 md:pb-4 xl:p-5">
+            <SyncBanner />
             <LastSaleBanner
               sales={recentSales}
               onNewSale={cleanSale}

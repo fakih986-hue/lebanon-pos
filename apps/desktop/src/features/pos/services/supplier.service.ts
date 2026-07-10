@@ -3,9 +3,10 @@ import {
   getCurrentUser,
   recordAuditEvent,
 } from "./security.service"
-import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite, getDeviceId } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
+import { getRegisterId } from "./settings.service"
 
 const SUPPLIERS_KEY = "lebanonpos.suppliers.v1"
 const PURCHASE_ORDERS_KEY = "lebanonpos.purchase-orders.v1"
@@ -55,6 +56,8 @@ export type PurchaseOrder = {
   createdBy: string
   shiftId?: string
   shiftNumber?: string
+  registerId?: string
+  deviceId?: string
   createdAt: string
   receivedAt?: string
 }
@@ -71,6 +74,8 @@ export type SupplierPayment = {
   recordedBy: string
   shiftId?: string
   shiftNumber?: string
+  registerId?: string
+  deviceId?: string
   createdAt: string
 }
 
@@ -368,6 +373,8 @@ export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
     recordedBy: user.name,
     shiftId: shift?.id,
     shiftNumber: shift?.shiftNumber,
+    registerId: getRegisterId(),
+    deviceId: getDeviceId(),
     createdAt: new Date().toISOString(),
   }
 
@@ -428,6 +435,8 @@ export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
     createdBy: user.name,
     shiftId: shift?.id,
     shiftNumber: shift?.shiftNumber,
+    registerId: getRegisterId(),
+    deviceId: getDeviceId(),
     createdAt: new Date().toISOString(),
     receivedAt: input.status === "Draft" ? undefined : new Date().toISOString(),
   }

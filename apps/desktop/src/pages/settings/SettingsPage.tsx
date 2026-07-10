@@ -5,7 +5,9 @@ import {
   BadgeDollarSign,
   Cloud,
   CloudOff,
+  Copy,
   Download,
+  Key,
   Lock,
   RotateCw,
   Save,
@@ -16,6 +18,7 @@ import {
 } from "lucide-react"
 
 import Spinner from "../../components/ui/Spinner"
+import ConfirmDialog from "../../components/ConfirmDialog"
 import {
   getSettings,
   saveSettings,
@@ -29,24 +32,41 @@ import {
   flushSyncQueue,
   getApiUrl,
   getAuthToken,
+  getConnectionMode,
   getKnownStores,
+  getLocalApiUrl,
   getSyncQueue,
   getSyncStatus,
+  isLanUrl,
   isLicenseBlocked,
   getLicenseStatus,
+  copySyncDiagnosticsSummary,
+  downloadSyncDiagnostics,
   pullFromServer,
   retryFailedSync,
+  retrySingleSyncOperation,
   setApiUrl,
   setAuthToken,
+  setConnectionMode,
+  subscribeConnectionMode,
   subscribeSync,
+  validateUrlForMode,
   type SyncOperation,
   type SyncStatus,
 } from "../../features/pos/services/sync.service"
+import type { ConnectionMode } from "../../features/pos/services/settings.service"
 import { restoreIndexedDBToLocal } from "../../features/pos/services/storage.service"
 import { showToast } from "../../features/pos/services/toast.service"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
 import { checkForUpdates, fetchReleaseManifest, clearUpdateCache } from "../../features/pos/services/update.service"
+import {
+  generatePairingCode,
+  getDeviceList,
+  renameDevice,
+  revokeDevice,
+  type PairedDevice,
+} from "../../features/pos/services/deviceRegistry.service"
 import { compareVersions, formatVersion, type UpdateStatus, type ReleaseManifest } from "../../features/pos/lib/version"
 
 type SettingsWorkspace = "Business" | "Cloud sync" | "Security" | "Backup" | "Delivery" | "About"
@@ -95,6 +115,24 @@ export default function SettingsPage() {
   const [syncQueue, setSyncQueue] = useState<SyncOperation[]>(getSyncQueue())
   const [apiUrl, setApiUrlState] = useState(getApiUrl() ?? "")
   const [authToken, setAuthTokenState] = useState(getAuthToken() ?? "")
+  const [connectionMode, setConnectionModeState] = useState<ConnectionMode>(getConnectionMode())
+  const [serverUrl, setServerUrl] = useState(getApiUrl() ?? getLocalApiUrl())
+  const [serverUrlError, setServerUrlError] = useState<string | null>(null)
+  const [serverSaving, setServerSaving] = useState(false)
+
+  // ── Hub LAN mode ──
+  const [bindHost, setBindHost] = useState("127.0.0.1")
+  const [showLanConfirm, setShowLanConfirm] = useState(false)
+  const [lanIp, setLanIp] = useState("")
+  const [copySuccess, setCopySuccess] = useState(false)
+  const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([])
+  const [pairingCode, setPairingCode] = useState<{ code: string; expiresAt: string } | null>(null)
+  const [pairingCodeLoading, setPairingCodeLoading] = useState(false)
+  const [pairingCodeCopied, setPairingCodeCopied] = useState(false)
+  const [pairingCodeExpired, setPairingCodeExpired] = useState(false)
+  const [renamingDevice, setRenamingDevice] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState("")
+  const [revokingDevice, setRevokingDevice] = useState<string | null>(null)
 
   // ── Cloud bridge config (hub only) ──
   const [cloudTenantId, setCloudTenantId] = useState("")
@@ -124,6 +162,19 @@ export default function SettingsPage() {
       api.getAppVersion().then(setInstalledVersion).catch(() => setInstalledVersion(null))
     }
   }, [])
+
+  useEffect(() => {
+    const api = (window as { electronAPI?: { getBindHost?: () => Promise<string>; getLocalIP?: () => Promise<string> } }).electronAPI
+    if (api?.getBindHost) {
+      api.getBindHost().then(setBindHost).catch(() => setBindHost("127.0.0.1"))
+    }
+    if (api?.getLocalIP) {
+      api.getLocalIP().then(setLanIp).catch(() => setLanIp(""))
+    }
+    if (connectionMode === "STORE_HUB") {
+      getDeviceList().then(setPairedDevices).catch(() => {})
+    }
+  }, [connectionMode])
 
   useEffect(() => {
     if (!installedVersion) return
@@ -157,6 +208,17 @@ export default function SettingsPage() {
       subscribeSync(() => {
         setSyncStatus(getSyncStatus())
         setSyncQueue(getSyncQueue())
+      }),
+    []
+  )
+
+  useEffect(
+    () =>
+      subscribeConnectionMode((mode) => {
+        setConnectionModeState(mode)
+        if (mode === "STORE_HUB") {
+          setServerUrl(getLocalApiUrl())
+        }
       }),
     []
   )
@@ -316,6 +378,23 @@ export default function SettingsPage() {
     showToast("Failed sync items moved back to pending.")
   }
 
+  function handleRetrySyncOperation(id: string) {
+    retrySingleSyncOperation(id)
+    setSyncStatus(getSyncStatus())
+    setSyncQueue(getSyncQueue())
+    showToast("Sync item moved back to pending.")
+  }
+
+  function handleDownloadSyncDiagnostics() {
+    downloadSyncDiagnostics()
+    showToast("Sync diagnostics exported.")
+  }
+
+  function handleCopySyncDiagnostics() {
+    copySyncDiagnosticsSummary()
+    showToast("Sync diagnostics copied.")
+  }
+
   function handleSaveServer() {
     setApiUrl(apiUrl)
     if (authToken) {
@@ -324,7 +403,6 @@ export default function SettingsPage() {
       clearAuthToken()
     }
     showToast("Server connection saved. Loading your data…")
-    // Full pull on connect so all data loads even if a stale sync cursor exists
     void pullFromServer(true).then(() => {
       setSyncStatus(getSyncStatus())
       setSyncQueue(getSyncQueue())
@@ -332,6 +410,91 @@ export default function SettingsPage() {
     }).catch(() => {
       showToast("Connection saved, but data pull failed. Tap Sync now.", "error")
     })
+  }
+
+  function handleSaveServerConnection() {
+    setServerUrlError(null)
+    const error = validateUrlForMode(serverUrl, connectionMode)
+    if (error) {
+      setServerUrlError(error)
+      return
+    }
+    setServerSaving(true)
+    setApiUrl(serverUrl)
+    setConnectionMode(connectionMode)
+    showToast("Connection saved. Loading your data…")
+    void pullFromServer(true).then(() => {
+      setSyncStatus(getSyncStatus())
+      setSyncQueue(getSyncQueue())
+      showToast("Data loaded from server.")
+      setServerSaving(false)
+    }).catch(() => {
+      showToast("Connection saved, but data pull failed. Tap Sync now.", "error")
+      setServerSaving(false)
+    })
+  }
+
+  function handleModeChange(mode: ConnectionMode) {
+    setConnectionModeState(mode)
+    setConnectionMode(mode)
+    setServerUrlError(null)
+    if (mode === "STORE_HUB") {
+      setServerUrl(getLocalApiUrl())
+    }
+  }
+
+  async function handleToggleLan() {
+    setShowLanConfirm(false)
+    const api = (window as { electronAPI?: { setBindHost?: (v: "0.0.0.0" | "127.0.0.1") => Promise<{ ok: boolean; error?: string }> } }).electronAPI
+    if (!api?.setBindHost) return
+    const newValue = bindHost === "0.0.0.0" ? "127.0.0.1" : "0.0.0.0"
+    const result = await api.setBindHost(newValue)
+    if (result.ok) {
+      setBindHost(newValue)
+      showToast(newValue === "0.0.0.0" ? "LAN access enabled. API restarted." : "LAN access disabled. API restarted.")
+    } else {
+      showToast(result.error ?? "Failed to toggle LAN access", "error")
+    }
+  }
+
+  async function handleGeneratePairingCode() {
+    setPairingCodeLoading(true)
+    setPairingCode(null)
+    setPairingCodeExpired(false)
+    try {
+      const result = await generatePairingCode()
+      setPairingCode({ code: result.code, expiresAt: result.expiresAt })
+      const expiresMs = new Date(result.expiresAt).getTime() - Date.now()
+      setTimeout(() => setPairingCodeExpired(true), Math.max(0, expiresMs))
+      showToast("Pairing code generated. Share it with the device you want to pair.")
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to generate code", "error")
+    } finally {
+      setPairingCodeLoading(false)
+    }
+  }
+
+  async function handleRenameDevice(deviceId: string) {
+    try {
+      await renameDevice(deviceId, renameValue)
+      setPairedDevices((prev) => prev.map((d) => d.deviceId === deviceId ? { ...d, deviceName: renameValue } : d))
+      setRenamingDevice(null)
+      setRenameValue("")
+      showToast("Device renamed.")
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to rename", "error")
+    }
+  }
+
+  async function handleRevokeDevice(deviceId: string) {
+    try {
+      await revokeDevice(deviceId)
+      setPairedDevices((prev) => prev.map((d) => d.deviceId === deviceId ? { ...d, status: "REVOKED" } : d))
+      setRevokingDevice(null)
+      showToast("Device revoked. It can no longer sync with this hub.")
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to revoke", "error")
+    }
   }
 
   async function handleRestoreFromIndexedDB() {
@@ -555,6 +718,30 @@ export default function SettingsPage() {
             <div className="md:col-span-2">
               <RatePanel />
             </div>
+            <label className="block text-sm font-bold text-zinc-700">
+              Register name
+              <input
+                value={settings.registerName ?? ""}
+                onChange={(event) => {
+                  updateSettings({ registerName: event.target.value })
+                  setSettingsErrors((prev) => ({ ...prev, registerName: undefined }))
+                }}
+                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              />
+            </label>
+            <label className="block text-sm font-bold text-zinc-700">
+              Register ID
+              <input
+                value={settings.registerId ?? ""}
+                onChange={(event) => {
+                  updateSettings({ registerId: event.target.value })
+                  setSettingsErrors((prev) => ({ ...prev, registerId: undefined }))
+                }}
+                placeholder="e.g. REG-001"
+                className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-mono text-xs outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              />
+              <p className="mt-1 text-xs text-zinc-500">Used to identify this register across devices. Shared when synced.</p>
+            </label>
 
             <label className="block text-sm font-bold text-zinc-700">
               Address
@@ -914,6 +1101,320 @@ export default function SettingsPage() {
         <aside className="space-y-5">
           {activeWorkspace === "Cloud sync" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                <Cloud size={21} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-zinc-950">Connection</h2>
+                <p className="text-sm text-zinc-500">How this device connects</p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {(["STORE_HUB", "CONNECT_TO_HUB", "DIRECT_RAILWAY"] as const).map((mode) => (
+                <label key={mode} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
+                  connectionMode === mode
+                    ? "border-emerald-300 bg-emerald-50"
+                    : "border-zinc-200 bg-zinc-50 hover:bg-zinc-100"
+                }`}>
+                  <input
+                    type="radio"
+                    name="connectionMode"
+                    value={mode}
+                    checked={connectionMode === mode}
+                    onChange={() => handleModeChange(mode)}
+                    className="mt-0.5 h-4 w-4 accent-emerald-600"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-zinc-900">
+                      {mode === "STORE_HUB" ? "Store Hub" :
+                       mode === "CONNECT_TO_HUB" ? "Connect to Hub" :
+                       "Direct to Cloud"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-zinc-500">
+                      {mode === "STORE_HUB"
+                        ? "This device runs the local API. Others on the LAN can connect to it."
+                        : mode === "CONNECT_TO_HUB"
+                        ? "Connects to a hub device on your local network."
+                        : "Connects directly to the Railway cloud server."}
+                    </p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-bold text-zinc-700">
+                {connectionMode === "STORE_HUB"
+                  ? "Local API URL"
+                  : connectionMode === "CONNECT_TO_HUB"
+                  ? "Hub LAN URL"
+                  : "Cloud Server URL"}
+                <input
+                  value={connectionMode === "STORE_HUB" ? getLocalApiUrl() : serverUrl}
+                  onChange={(e) => { setServerUrl(e.target.value); setServerUrlError(null) }}
+                  readOnly={connectionMode === "STORE_HUB"}
+                  placeholder={
+                    connectionMode === "CONNECT_TO_HUB"
+                      ? "http://192.168.1.100:3015"
+                      : "https://your-app.railway.app"
+                  }
+                  className={`mt-2 h-11 w-full rounded-lg border px-3 font-mono text-xs outline-none ${
+                    connectionMode === "STORE_HUB"
+                      ? "border-zinc-200 bg-zinc-100 text-zinc-500 cursor-not-allowed"
+                      : serverUrlError
+                      ? "border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-4 focus:ring-rose-100"
+                      : "border-zinc-200 bg-zinc-50 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  }`}
+                />
+                {serverUrlError && (
+                  <p className="mt-1 text-xs font-medium text-rose-600">{serverUrlError}</p>
+                )}
+              </label>
+
+              {connectionMode === "CONNECT_TO_HUB" && (
+                <p className="mt-2 text-xs text-zinc-500 leading-relaxed">
+                  Enter the LAN address of your hub device (e.g., http://192.168.1.100:3015).
+                  Find this in the hub's Settings → Connection.
+                </p>
+              )}
+              {connectionMode === "DIRECT_RAILWAY" && (
+                <p className="mt-2 text-xs text-zinc-500 leading-relaxed">
+                  Enter your Railway app URL (e.g., https://your-app.railway.app).
+                  Get this from your Railway dashboard.
+                </p>
+              )}
+              {connectionMode === "STORE_HUB" && (
+                <p className="mt-2 text-xs text-zinc-500 leading-relaxed">
+                  Your local API runs at {getLocalApiUrl()}. Other devices on your LAN
+                  can connect to your hub's LAN IP (e.g., http://192.168.1.50:3015).
+                  {!isLanUrl(serverUrl) && (
+                    <span className="block mt-1 text-amber-600 font-semibold">
+                      Hub mode requires a localhost URL. Switch to Connect to Hub or Direct to Cloud if
+                      this is not a hub device.
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSaveServerConnection}
+              disabled={serverSaving || (connectionMode === "STORE_HUB" ? false : !serverUrl.trim())}
+              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+            >
+              <Save size={16} />
+              {serverSaving ? "Saving…" : "Save Connection"}
+            </button>
+          </section>
+          ) : null}
+
+          {activeWorkspace === "Cloud sync" ? (
+          <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className={`flex h-11 w-11 items-center justify-center rounded-lg ${
+                connectionMode === "STORE_HUB" ? "bg-emerald-100 text-emerald-700" :
+                syncStatus.online ? "bg-sky-100 text-sky-700" : "bg-rose-100 text-rose-700"
+              }`}>
+                {connectionMode === "STORE_HUB" ? <Store size={21} /> :
+                 syncStatus.online ? <Cloud size={21} /> : <CloudOff size={21} />}
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-zinc-950">Hub status</h2>
+                <p className="text-sm text-zinc-500">
+                  Mode: {connectionMode === "STORE_HUB" ? "Store Hub" :
+                         connectionMode === "CONNECT_TO_HUB" ? "Hub Client" : "Direct to Cloud"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                <span className="text-sm font-medium text-zinc-700">API reachable</span>
+                <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                  syncStatus.online
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-rose-100 text-rose-800"
+                }`}>
+                  {syncStatus.online ? "Online" : "Offline"}
+                </span>
+              </div>
+
+              {connectionMode === "STORE_HUB" && (
+                <>
+                  <div className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                    <span className="text-sm font-medium text-zinc-700">BIND_HOST</span>
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                      bindHost === "0.0.0.0"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}>
+                      {bindHost}
+                    </span>
+                  </div>
+                  {lanIp && bindHost === "0.0.0.0" && (
+                    <div className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                      <span className="text-sm font-medium text-zinc-700">LAN IP</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs text-zinc-600">{lanIp}:3015</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(`http://${lanIp}:3015`)
+                            setCopySuccess(true)
+                            setTimeout(() => setCopySuccess(false), 2000)
+                          }}
+                          className="flex h-7 w-7 items-center justify-center rounded-md transition hover:bg-zinc-200"
+                          title="Copy LAN URL"
+                        >
+                          {copySuccess ? (
+                            <span className="text-xs font-bold text-emerald-600">✓</span>
+                          ) : (
+                            <Copy size={14} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowLanConfirm(true)}
+                    className={`flex h-11 w-full items-center justify-center gap-2 rounded-lg text-sm font-bold transition ${
+                      bindHost === "0.0.0.0"
+                        ? "border border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                        : "bg-emerald-600 text-white hover:bg-emerald-500"
+                    }`}
+                  >
+                    {bindHost === "0.0.0.0" ? "Disable LAN Access" : "Enable LAN Access"}
+                  </button>
+
+                  {bindHost === "0.0.0.0" && (
+                    <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                      <p className="text-sm font-bold text-zinc-700">Pairing code</p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Generate a code to pair a new device. Enter it on the device's login screen.
+                      </p>
+                      {pairingCode && !pairingCodeExpired ? (
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                            <span className="font-mono text-lg font-black tracking-widest text-emerald-800">{pairingCode.code}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(pairingCode.code)
+                                setPairingCodeCopied(true)
+                                setTimeout(() => setPairingCodeCopied(false), 2000)
+                              }}
+                              className="flex h-8 w-8 items-center justify-center rounded-md transition hover:bg-emerald-200"
+                            >
+                              {pairingCodeCopied ? <span className="text-xs font-bold text-emerald-700">✓</span> : <Copy size={14} />}
+                            </button>
+                          </div>
+                          <p className="text-xs text-amber-600 font-semibold">Expires in 10 minutes</p>
+                        </div>
+                      ) : pairingCodeExpired ? (
+                        <p className="mt-2 text-xs text-rose-600 font-semibold">Code expired. Generate a new one.</p>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={handleGeneratePairingCode}
+                        disabled={pairingCodeLoading}
+                        className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-zinc-800 text-xs font-bold text-white transition hover:bg-zinc-700 disabled:opacity-50"
+                      >
+                        <Key size={14} />
+                        {pairingCodeLoading ? "Generating…" : pairingCode ? "Regenerate Code" : "Generate Pairing Code"}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {connectionMode === "CONNECT_TO_HUB" && (
+                <p className="text-xs text-zinc-500 leading-relaxed px-1">
+                  This device connects to a hub on your LAN. Make sure the hub's
+                  LAN access is enabled and you have the correct IP address.
+                </p>
+              )}
+
+              {connectionMode === "DIRECT_RAILWAY" && (
+                <p className="text-xs text-zinc-500 leading-relaxed px-1">
+                  This device connects directly to Railway. No local hub needed.
+                </p>
+              )}
+            </div>
+          </section>
+          ) : null}
+
+          {activeWorkspace === "Cloud sync" && connectionMode === "STORE_HUB" ? (
+          <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
+                <Settings size={21} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-zinc-950">Device management</h2>
+                <p className="text-sm text-zinc-500">Only approved devices can sync to this hub</p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              {pairedDevices.length === 0 ? (
+                <p className="text-sm text-zinc-500 py-2">No paired devices yet. Generate a pairing code to add one.</p>
+              ) : pairedDevices.map((device) => (
+                <div key={device.deviceId} className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-zinc-900 truncate">{device.deviceName || device.deviceId}</p>
+                      <p className="mt-0.5 text-[11px] font-mono text-zinc-400 truncate">{device.deviceId}</p>
+                      <p className="mt-1 text-[11px] text-zinc-500">
+                        {device.registerId && <>Reg: {device.registerId}</>}
+                        {device.registerId && device.lastIp && <> · </>}
+                        {device.lastIp && <>IP: {device.lastIp}</>}
+                      </p>
+                      <p className="text-[11px] text-zinc-400">
+                        First seen: {new Date(device.firstSeenAt).toLocaleDateString()} · Last: {new Date(device.lastSeenAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        device.status === "APPROVED" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                      }`}>
+                        {device.status === "APPROVED" ? "Active" : "Revoked"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    {renamingDevice === device.deviceId ? (
+                      <div className="flex flex-1 gap-1">
+                        <input
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") handleRenameDevice(device.deviceId) }}
+                          placeholder="New name"
+                          className="h-8 flex-1 rounded-md border border-zinc-200 px-2 text-xs outline-none focus:border-emerald-400"
+                          autoFocus
+                        />
+                        <button onClick={() => handleRenameDevice(device.deviceId)} className="h-8 rounded-md bg-emerald-600 px-2 text-xs font-bold text-white">Save</button>
+                        <button onClick={() => { setRenamingDevice(null); setRenameValue("") }} className="h-8 rounded-md border border-zinc-200 px-2 text-xs font-bold text-zinc-600">Cancel</button>
+                      </div>
+                    ) : (
+                      <>
+                        <button onClick={() => { setRenamingDevice(device.deviceId); setRenameValue(device.deviceName) }} className="h-8 rounded-md border border-zinc-200 px-2.5 text-xs font-bold text-zinc-600 transition hover:bg-zinc-100">Rename</button>
+                        {device.status === "APPROVED" && (
+                          <button onClick={() => setRevokingDevice(device.deviceId)} className="h-8 rounded-md border border-rose-200 px-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50">Revoke</button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+          ) : null}
+
+          {activeWorkspace === "Cloud sync" ? (
+          <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div
@@ -970,7 +1471,37 @@ export default function SettingsPage() {
                   {syncStatus.failed}
                 </p>
               </div>
+              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-xs font-bold uppercase text-zinc-500">
+                  Rejected
+                </p>
+                <p className="text-2xl font-bold text-zinc-950">
+                  {syncStatus.rejected}
+                </p>
+              </div>
+              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-xs font-bold uppercase text-zinc-500">
+                  Dead
+                </p>
+                <p className="text-2xl font-bold text-zinc-950">
+                  {syncStatus.dead}
+                </p>
+              </div>
+              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-xs font-bold uppercase text-zinc-500">
+                  Total
+                </p>
+                <p className="text-2xl font-bold text-zinc-950">
+                  {syncStatus.total}
+                </p>
+              </div>
             </div>
+
+            {syncStatus.lastError ? (
+              <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm font-semibold text-rose-800">
+                Last sync error: {syncStatus.lastError}
+              </div>
+            ) : null}
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
@@ -984,15 +1515,32 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={handleRetryFailed}
-                disabled={syncStatus.failed === 0}
+                disabled={syncStatus.failed === 0 && syncStatus.rejected === 0}
                 className="flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-200 px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Retry Failed
               </button>
+              <button
+                type="button"
+                onClick={handleCopySyncDiagnostics}
+                className="flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-200 px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                Copy Diagnostics
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadSyncDiagnostics}
+                className="flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-200 px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                Export Diagnostics
+              </button>
             </div>
 
             <div className="mt-4 space-y-2">
-              {syncQueue.slice(0, 5).map((operation) => (
+              {syncQueue
+                .filter((operation) => operation.status === "Failed" || operation.status === "Rejected")
+                .slice(0, 8)
+                .map((operation) => (
                 <div
                   key={operation.id}
                   className="rounded-lg border border-zinc-200 p-3"
@@ -1013,12 +1561,27 @@ export default function SettingsPage() {
                     {operation.entity} / {operation.action} /{" "}
                     {formatDateTime(operation.createdAt)}
                   </p>
+                  {operation.error ? (
+                    <p className="mt-2 rounded-md bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">
+                      {operation.error}
+                    </p>
+                  ) : null}
+                  <div className="mt-2 flex items-center justify-between gap-2 text-xs text-zinc-500">
+                    <span>Attempts: {operation.attempts}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRetrySyncOperation(operation.id)}
+                      className="rounded-md border border-zinc-200 px-2.5 py-1 font-bold text-zinc-700 transition hover:bg-zinc-50"
+                    >
+                      Retry item
+                    </button>
+                  </div>
                 </div>
               ))}
 
-              {syncQueue.length === 0 ? (
+              {syncQueue.filter((operation) => operation.status === "Failed" || operation.status === "Rejected").length === 0 ? (
                 <div className="rounded-lg border border-dashed border-zinc-300 p-4 text-sm font-medium text-zinc-500">
-                  Queue is empty.
+                  No failed or rejected sync items.
                 </div>
               ) : null}
             </div>
@@ -1278,6 +1841,35 @@ export default function SettingsPage() {
               </div>
             </div>
           ) : null}
+
+        <ConfirmDialog
+          open={showLanConfirm}
+          title={bindHost === "0.0.0.0" ? "Disable LAN Access?" : "Enable LAN Access?"}
+          confirmLabel={bindHost === "0.0.0.0" ? "Disable" : "Enable"}
+          confirmDestructive={bindHost === "0.0.0.0"}
+          onConfirm={handleToggleLan}
+          onCancel={() => setShowLanConfirm(false)}
+        >
+          {bindHost === "0.0.0.0"
+            ? "Other devices on your LAN will no longer be able to connect to this hub. The API will restart."
+            : `This will expose the API to your local network (BIND_HOST=0.0.0.0).
+                Only enable this on a trusted network. The API will restart.
+                ${lanIp ? `Other devices can connect at http://${lanIp}:3015` : ""}`
+          }
+        </ConfirmDialog>
+
+        <ConfirmDialog
+          open={!!revokingDevice}
+          title="Revoke device?"
+          confirmLabel="Revoke"
+          confirmDestructive
+          onConfirm={() => { if (revokingDevice) handleRevokeDevice(revokingDevice) }}
+          onCancel={() => setRevokingDevice(null)}
+        >
+          This device will no longer be able to sync sales, expenses, or any data to this hub.
+          The device can still operate offline with its local data.
+        </ConfirmDialog>
+
         </aside>
       </div>
       </>

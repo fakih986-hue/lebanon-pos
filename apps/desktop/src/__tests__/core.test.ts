@@ -426,3 +426,124 @@ describe("POS — crash safety and checkout guards", () => {
     expect(typeof toggleSimpleMode()).toBe("boolean")
   })
 })
+
+describe("deviceId — device identity", () => {
+  beforeEach(() => {
+    localStorage.removeItem("lebanonpos.device-id.v1")
+    localStorage.removeItem("lebanonpos.auto-approved-device.v1")
+  })
+
+  it("getDeviceId persists across calls", async () => {
+    const { getDeviceId } = await import("../features/pos/services/sync.service")
+    const id1 = getDeviceId()
+    expect(id1).toMatch(/^DEV-/)
+    const id2 = getDeviceId()
+    expect(id2).toBe(id1)
+  })
+
+  it("getDeviceId format is DEV-XXXX-XXXX", async () => {
+    const { getDeviceId } = await import("../features/pos/services/sync.service")
+    const id = getDeviceId()
+    expect(id).toMatch(/^DEV-[A-Z0-9]+-[A-Z0-9]+$/)
+  })
+
+  it("auto-approves hub device when localStorage matches", async () => {
+    const { isHubDeviceAutoApproved } = await import("../features/pos/services/deviceRegistry.service")
+    const { getDeviceId } = await import("../features/pos/services/sync.service")
+    const deviceId = getDeviceId()
+    localStorage.setItem("lebanonpos.auto-approved-device.v1", deviceId)
+    expect(isHubDeviceAutoApproved()).toBe(true)
+  })
+
+  it("unknown device is not auto-approved", async () => {
+    const { isHubDeviceAutoApproved } = await import("../features/pos/services/deviceRegistry.service")
+    localStorage.removeItem("lebanonpos.auto-approved-device.v1")
+    expect(isHubDeviceAutoApproved()).toBe(false)
+  })
+})
+
+describe("shift.service - register reconciliation", () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it("groups today's shifts by register and flags open shifts for review", async () => {
+    const { getRegisterShiftSummaries } = await import("../features/pos/services/shift.service")
+    localStorage.setItem("lebanonpos.shifts.v1", JSON.stringify([
+      {
+        id: "shift-a",
+        shiftNumber: "SHIFT-001",
+        status: "Open",
+        openedAt: "2026-07-10T08:00:00.000Z",
+        openingFloatUsd: 100,
+        openedById: "u1",
+        openedByName: "Ali",
+        registerId: "REG-A",
+        deviceId: "DEV-A",
+      },
+      {
+        id: "shift-b",
+        shiftNumber: "SHIFT-002",
+        status: "Closed",
+        openedAt: "2026-07-10T09:00:00.000Z",
+        closedAt: "2026-07-10T17:00:00.000Z",
+        openingFloatUsd: 50,
+        closingCashUsd: 150,
+        differenceUsd: 0,
+        openedById: "u2",
+        openedByName: "Maya",
+        registerId: "REG-B",
+        deviceId: "DEV-B",
+      },
+    ]))
+
+    const summaries = getRegisterShiftSummaries("2026-07-10")
+    expect(summaries.map((summary) => summary.registerId).sort()).toEqual(["REG-A", "REG-B"])
+    expect(summaries.find((summary) => summary.registerId === "REG-A")?.needsReview).toBe(true)
+    expect(summaries.find((summary) => summary.registerId === "REG-B")?.status).toBe("Closed")
+  })
+
+  it("computes expected cash with owner draws and cash movements", async () => {
+    const { getRegisterCashTotals } = await import("../features/pos/services/shift.service")
+    localStorage.setItem("lebanonpos.shifts.v1", JSON.stringify([
+      {
+        id: "shift-a",
+        shiftNumber: "SHIFT-001",
+        status: "Closed",
+        openedAt: "2026-07-10T08:00:00.000Z",
+        closedAt: "2026-07-10T17:00:00.000Z",
+        openingFloatUsd: 100,
+        closingCashUsd: 175,
+        differenceUsd: 0,
+        openedById: "u1",
+        openedByName: "Ali",
+        registerId: "REG-A",
+        deviceId: "DEV-A",
+      },
+    ]))
+    localStorage.setItem("lebanonpos.sales.v1", JSON.stringify([
+      { id: "sale-a", paymentMethod: "Cash", status: "Completed", total: 120, createdAt: "2026-07-10T10:00:00.000Z", shiftId: "shift-a" },
+    ]))
+    localStorage.setItem("lebanonpos.refunds.v1", JSON.stringify([
+      { id: "refund-a", method: "Cash", total: 10, createdAt: "2026-07-10T11:00:00.000Z", shiftId: "shift-a" },
+    ]))
+    localStorage.setItem("lebanonpos.expenses.v1", JSON.stringify([
+      { id: "expense-a", paymentMethod: "Cash", amount: 5, createdAt: "2026-07-10T12:00:00.000Z", shiftId: "shift-a" },
+    ]))
+    localStorage.setItem("lebanonpos.supplier-payments.v1", JSON.stringify([
+      { id: "supplier-payment-a", method: "Cash", amount: 20, createdAt: "2026-07-10T13:00:00.000Z", shiftId: "shift-a" },
+    ]))
+    localStorage.setItem("lebanonpos.cash-movements.v1", JSON.stringify([
+      { id: "cash-in", type: "CashIn", direction: "In", amountUsd: 15, createdAt: "2026-07-10T14:00:00.000Z", shiftId: "shift-a" },
+      { id: "owner-draw", type: "OwnerDraw", direction: "Out", amountUsd: 25, createdAt: "2026-07-10T15:00:00.000Z", shiftId: "shift-a" },
+    ]))
+
+    const totals = getRegisterCashTotals("2026-07-10")
+    expect(totals.expectedCash).toBe(175)
+    expect(totals.countedCash).toBe(175)
+    expect(totals.variance).toBe(0)
+    expect(totals.ownerDraws).toBe(25)
+    expect(totals.cashSales).toBe(120)
+    expect(totals.cashSupplierPayments).toBe(20)
+  })
+})

@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react"
-import { ChevronDown, CircleDollarSign, Clock, Landmark, Lock } from "lucide-react"
+import { ChevronDown, CircleDollarSign, Clock, HandCoins, Landmark, Lock } from "lucide-react"
 import { getActiveShift, getShifts, openShift, closeShift, subscribeSecurity, type Shift } from "../services/security.service"
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../lib/currency"
 import { getSettings } from "../services/settings.service"
 import { showToast } from "../services/toast.service"
+import { subscribeSales, subscribeRefunds } from "../services/sales.service"
+import { subscribeExpenses } from "../services/expense.service"
+import { subscribeSuppliers } from "../services/supplier.service"
+import { createCashMovement, subscribeCashMovements } from "../services/cashMovement.service"
+import { computeExpectedCash } from "../services/shift.service"
 
 export default function CashDrawerPanel({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
   const [shift, setShift] = useState<Shift | undefined>(getActiveShift())
@@ -11,13 +16,21 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
   const [countedCash, setCountedCash] = useState("")
   const [note, setNote] = useState("")
   const [showHistory, setShowHistory] = useState(false)
+  const [drawerNote, setDrawerNote] = useState("")
+  const [renderTick, setRenderTick] = useState(0)
   const rate = getSettings().usdToLbpRate
 
-  useEffect(() => subscribeSecurity(() => setShift(getActiveShift())), [])
+  useEffect(() => {
+    const unsubSecurity = subscribeSecurity(() => setShift(getActiveShift()))
+    const unsubSales = subscribeSales(() => setRenderTick(t => t + 1))
+    const unsubRefunds = subscribeRefunds(() => setRenderTick(t => t + 1))
+    const unsubExpenses = subscribeExpenses(() => setRenderTick(t => t + 1))
+    const unsubSuppliers = subscribeSuppliers(() => setRenderTick(t => t + 1))
+    const unsubMovements = subscribeCashMovements(() => setRenderTick(t => t + 1))
+    return () => { unsubSecurity(); unsubSales(); unsubRefunds(); unsubExpenses(); unsubSuppliers(); unsubMovements() }
+  }, [])
 
-  const expectedCash = shift
-    ? (shift.openingFloatUsd ?? 0) + (shift.cashSalesUsd ?? 0) - (shift.cashRefundsUsd ?? 0) - (shift.cashExpensesUsd ?? 0)
-    : 0
+  const expectedCash = shift ? computeExpectedCash(shift) : 0
   const countedVal = parseFloat(countedCash)
   const diff = countedCash && !isNaN(countedVal) ? countedVal - expectedCash : 0
 
@@ -50,6 +63,22 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
     showToast("Shift closed")
   }
 
+  function handleOwnerDraw() {
+    if (!shift) return
+    const amount = parseFloat(drawerNote)
+    if (!amount || amount <= 0) { showToast("Enter a valid amount", "error"); return }
+    const result = createCashMovement({
+      type: "OwnerDraw",
+      amountUsd: amount,
+      reason: "Owner draw",
+      note: drawerNote,
+    })
+    if (result) {
+      setDrawerNote("")
+      showToast(`Owner draw $${amount.toFixed(2)} recorded`)
+    }
+  }
+
   return (
     <div>
       <button type="button" onClick={onToggle} className="flex w-full items-center justify-between px-4 py-2.5 text-[12px] font-bold hover:opacity-80"
@@ -59,6 +88,7 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
           <Landmark size={14} style={{ color: shift ? "var(--success)" : "var(--text-3)" }} />
           Cash Drawer
           {shift && <span className="text-[10px] opacity-50">{shift.shiftNumber}</span>}
+          {shift?.registerId && <span className="text-[10px] opacity-40">({shift.registerId})</span>}
         </span>
         <ChevronDown size={14} className={`transition ${expanded ? "rotate-180" : ""}`} style={{ color: "var(--text-3)" }} />
       </button>
@@ -112,6 +142,17 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
                 <button onClick={handleCloseShift}
                   className="flex items-center gap-1 rounded-lg px-3 text-[12px] font-bold text-white" style={{ background: "var(--ink)" }}>
                   <CircleDollarSign size={13} /> Close
+                </button>
+              </div>
+
+              {/* Owner Draw */}
+              <div className="flex gap-2 pt-1">
+                <input value={drawerNote} onChange={(e) => setDrawerNote(e.target.value)} placeholder="Owner draw amount"
+                  type="number" min="0" step="0.01"
+                  className="input flex-1" style={{ height: 30, fontSize: 11 }} />
+                <button onClick={handleOwnerDraw}
+                  className="flex items-center gap-1 rounded-lg px-3 text-[12px] font-bold text-white" style={{ background: "var(--amber)" }}>
+                  <HandCoins size={13} /> Draw
                 </button>
               </div>
             </div>

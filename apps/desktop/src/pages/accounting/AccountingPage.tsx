@@ -5,8 +5,11 @@ import { getSales, subscribeSales, getRefunds, subscribeRefunds } from "../../fe
 import { getExpenses, subscribeExpenses } from "../../features/pos/services/expense.service"
 import { getSupplierPayments, subscribeSuppliers } from "../../features/pos/services/supplier.service"
 import { getDailyCloses, subscribeDailyCloses } from "../../features/pos/services/dailyClose.service"
-import { userCan } from "../../features/pos/services/security.service"
+import { subscribeSecurity, userCan } from "../../features/pos/services/security.service"
 import { closeBusinessDay } from "../../features/pos/services/dailyClose.service"
+import { getSyncStatus, getUnsyncedCount, subscribeSync } from "../../features/pos/services/sync.service"
+import { subscribeCashMovements } from "../../features/pos/services/cashMovement.service"
+import { getRegisterCashTotals, getRegisterShiftSummaries } from "../../features/pos/services/shift.service"
 import { showToast } from "../../features/pos/services/toast.service"
 
 import Spinner from "../../components/ui/Spinner"
@@ -42,6 +45,7 @@ import ExpensesPanel from "./components/ExpensesPanel"
 import ExpenseFormPanel from "./components/ExpenseForm"
 import ExpenseMixPanel from "./components/ExpenseMixPanel"
 import HistoryPanel from "./components/HistoryPanel"
+import RegisterReconciliationPanel from "./components/RegisterReconciliationPanel"
 
 export default function AccountingPage() {
   const { t } = useI18n()
@@ -55,6 +59,9 @@ export default function AccountingPage() {
   const [dailyCloses, setDailyCloses] = useState<DailyClose[]>(getDailyCloses())
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
   const [closeNote, setCloseNote] = useState("")
+  const [overrideReason, setOverrideReason] = useState("")
+  const [cashOpsVersion, setCashOpsVersion] = useState(0)
+  const [syncStatus, setSyncStatus] = useState(getSyncStatus())
   const [activeWorkspace, setActiveWorkspace] =
     useState<AccountingWorkspace>("Close day")
   const canManageAccounting = userCan("accounting.manage")
@@ -68,12 +75,18 @@ export default function AccountingPage() {
     const unsubscribeSuppliers = subscribeSuppliers(() =>
       setSupplierPayments(getSupplierPayments())
     )
+    const unsubscribeSecurity = subscribeSecurity(() => setCashOpsVersion((value) => value + 1))
+    const unsubscribeCashMovements = subscribeCashMovements(() => setCashOpsVersion((value) => value + 1))
+    const unsubscribeSync = subscribeSync(() => setSyncStatus(getSyncStatus()))
     return () => {
       unsubscribeSales()
       unsubscribeRefunds()
       unsubscribeExpenses()
       unsubscribeDailyCloses()
       unsubscribeSuppliers()
+      unsubscribeSecurity()
+      unsubscribeCashMovements()
+      unsubscribeSync()
     }
   }, [])
 
@@ -88,6 +101,28 @@ export default function AccountingPage() {
   const todayClose = dailyCloses.find(
     (dailyClose) => dailyClose.dateKey === summary.dateKey
   )
+  const registerSummaries = useMemo(
+    () => getRegisterShiftSummaries(summary.dateKey),
+    [cashOpsVersion, dailyCloses, expenses, refunds, sales, supplierPayments, summary.dateKey]
+  )
+  const registerTotals = useMemo(
+    () => getRegisterCashTotals(summary.dateKey),
+    [cashOpsVersion, dailyCloses, expenses, refunds, sales, supplierPayments, summary.dateKey]
+  )
+  const closeWarnings = useMemo(() => {
+    const warnings: string[] = []
+    if (registerTotals.openShiftCount > 0) {
+      warnings.push(`${registerTotals.openShiftCount} register shift${registerTotals.openShiftCount === 1 ? " is" : "s are"} still open.`)
+    }
+    const closedVarianceCount = registerSummaries.filter((summary) => summary.status === "Closed" && summary.needsReview).length
+    if (closedVarianceCount > 0) {
+      warnings.push(`${closedVarianceCount} closed register shift${closedVarianceCount === 1 ? " needs" : "s need"} cash review.`)
+    }
+    if (syncStatus.failed > 0 || syncStatus.rejected > 0) {
+      warnings.push(`${syncStatus.failed + syncStatus.rejected} failed or rejected sync item${syncStatus.failed + syncStatus.rejected === 1 ? "" : "s"} need attention.`)
+    }
+    return warnings
+  }, [registerSummaries, registerTotals.openShiftCount, syncStatus.failed, syncStatus.rejected])
 
   const categoryLabels: Record<ExpenseCategory, string> = {
     Supplier: t("pos.accounting.category_supplier"),
@@ -114,6 +149,7 @@ export default function AccountingPage() {
 
   function handleCloseDay(note: string) {
     setCloseNote(note)
+    setOverrideReason("")
     setShowCloseConfirm(true)
   }
 
@@ -122,6 +158,13 @@ export default function AccountingPage() {
       showToast(t("pos.permission_required"), "error")
       return
     }
+    if (closeWarnings.length > 0 && !overrideReason.trim()) {
+      showToast("Enter an override reason before closing with warnings.", "error")
+      return
+    }
+    const resolvedNote = closeWarnings.length > 0
+      ? `${closeNote.trim()}${closeNote.trim() ? "\n\n" : ""}Override reason: ${overrideReason.trim()}`
+      : closeNote.trim()
     const close = closeBusinessDay({
       dateKey: summary.dateKey,
       grossSales: summary.grossSales,
@@ -135,9 +178,11 @@ export default function AccountingPage() {
       netProfit: summary.netProfit,
       cashIn: summary.cashIn,
       cashOut: summary.cashOut,
-      note: closeNote.trim(),
+      unsyncedCountAtClose: getUnsyncedCount(),
+      note: resolvedNote,
     })
     setShowCloseConfirm(false)
+    setOverrideReason("")
     showToast(t("pos.accounting.day_closed", { date: formatDateKey(close.dateKey) }))
   }
 
@@ -175,6 +220,7 @@ export default function AccountingPage() {
                 todayClose={!!todayClose}
                 onCloseDay={handleCloseDay}
                 canManageAccounting={canManageAccounting}
+                closeWarnings={closeWarnings}
               />
             ) : null}
 
@@ -212,7 +258,12 @@ export default function AccountingPage() {
             ) : null}
 
             {activeWorkspace === "History" || activeWorkspace === "Close day" ? (
-              <HistoryPanel dailyCloses={dailyCloses} maxItems={5} />
+              <>
+                {activeWorkspace === "Close day" ? (
+                  <RegisterReconciliationPanel summaries={registerSummaries} totals={registerTotals} />
+                ) : null}
+                <HistoryPanel dailyCloses={dailyCloses} maxItems={5} />
+              </>
             ) : null}
           </aside>
         </section>
@@ -229,6 +280,26 @@ export default function AccountingPage() {
             Close {summary.dateKey} with net profit of {formatCurrency(summary.netProfit)}?
             {todayClose ? " This day was already closed." : ""}
           </p>
+          {closeWarnings.length > 0 ? (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+              <p className="font-black">Manager override required</p>
+              <ul className="mt-2 list-disc space-y-1 ps-5">
+                {closeWarnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+              <label className="mt-3 block text-xs font-black uppercase tracking-wide">
+                Override reason
+                <textarea
+                  value={overrideReason}
+                  onChange={(event) => setOverrideReason(event.target.value)}
+                  rows={3}
+                  className="mt-1 w-full resize-none rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
+                  placeholder="Example: Register A remains open for late delivery handoff."
+                />
+              </label>
+            </div>
+          ) : null}
         </ConfirmDialog>
       </>
       )}

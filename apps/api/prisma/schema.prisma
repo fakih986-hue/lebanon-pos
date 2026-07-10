@@ -115,6 +115,8 @@ model Tenant {
   deliveryOrders      DeliveryOrder[]
   stockMovements      StockMovement[]
   cashMovements        CashMovement[]
+  devices              Device[]
+  pairingCodes         PairingCode[]
 }
 
 model StaffUser {
@@ -706,6 +708,37 @@ model SyncOperation {
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
   @@index([tenantId, entity, status])
+}
+
+model Device {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  deviceId    String
+  deviceName  String   @default("")
+  registerId  String   @default("")
+  status      String   @default("APPROVED")     // APPROVED | REVOKED
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  lastIp      String   @default("")
+
+  @@unique([tenantId, deviceId])
+  @@index([tenantId])
+}
+
+model PairingCode {
+  id        String    @id @default(uuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  code      String    @unique
+  deviceId  String?
+  deviceName String   @default("")
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([code])
 }
 
 model RateLimitEntry {

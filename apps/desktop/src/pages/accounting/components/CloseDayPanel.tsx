@@ -1,16 +1,18 @@
 import { useState } from "react"
-import { CheckCircle2, ClipboardList, MessageCircle, Printer } from "lucide-react"
+import { CheckCircle2, ClipboardList, CloudOff, MessageCircle, Printer } from "lucide-react"
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../../../features/pos/lib/currency"
 import { getSettings } from "../../../features/pos/services/settings.service"
 import { getLedgerTotals } from "../../../features/pos/services/customer.service"
 import { openWhatsApp, openWhatsAppShare, dailySummaryMessage } from "../../../features/pos/lib/whatsapp"
 import { formatDateKey, type AccountingSummary } from "../accounting.helpers"
+import { getUnsyncedCount } from "../../../features/pos/services/sync.service"
 
 type Props = {
   summary: AccountingSummary
   todayClose: boolean
   onCloseDay: (note: string) => void
   canManageAccounting: boolean
+  closeWarnings?: string[]
 }
 
 export default function CloseDayPanel({
@@ -18,10 +20,12 @@ export default function CloseDayPanel({
   todayClose,
   onCloseDay,
   canManageAccounting,
+  closeWarnings = [],
 }: Props) {
   const [closeNote, setCloseNote] = useState("")
   const [countedCash, setCountedCash] = useState("")
   const rate = getSettings().usdToLbpRate
+  const unsyncedCount = getUnsyncedCount()
   const lbp = (v: number) => formatLbpCurrency(usdToLbp(v, rate))
 
   return (
@@ -184,6 +188,31 @@ export default function CloseDayPanel({
             </div>
           )
         })()}
+
+        {unsyncedCount > 0 && (
+          <div className="mb-3 flex items-center gap-2 rounded-lg border px-4 py-3 text-[13px] font-bold"
+            role="alert"
+            style={{ borderColor: "var(--amber)", background: "var(--amber-soft)", color: "var(--amber-text)" }}>
+            <CloudOff size={16} />
+            <span>{unsyncedCount} unsynced operation{unsyncedCount > 1 ? "s" : ""} — close will record this count but data won't reach the cloud until synced.</span>
+          </div>
+        )}
+
+        {closeWarnings.length > 0 && (
+          <div className="mb-3 rounded-lg border px-4 py-3 text-[13px] font-bold"
+            role="alert"
+            style={{ borderColor: "var(--amber)", background: "var(--amber-soft)", color: "var(--amber-text)" }}>
+            <div className="mb-1 flex items-center gap-2">
+              <CloudOff size={16} />
+              Close review needed
+            </div>
+            <ul className="list-disc space-y-1 ps-5 font-semibold">
+              {closeWarnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <textarea
           value={closeNote}

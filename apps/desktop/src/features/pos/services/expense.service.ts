@@ -3,9 +3,10 @@ import {
   getCurrentUser,
   recordAuditEvent,
 } from "./security.service"
-import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite, getDeviceId } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
+import { getRegisterId } from "./settings.service"
 
 const EXPENSES_KEY = "lebanonpos.expenses.v1"
 const EXPENSES_EVENT = "lebanonpos-expenses-changed"
@@ -38,6 +39,8 @@ export type Expense = {
   recordedBy: string
   shiftId?: string
   shiftNumber?: string
+  registerId?: string
+  deviceId?: string
   createdAt: string
 }
 
@@ -93,6 +96,12 @@ export function createExpense(input: CreateExpenseInput) {
   assertCanWrite("create expense")
   const user = getCurrentUser()
   const shift = getActiveShift()
+
+  // Shift gate — cash-impacting expenses require an open shift
+  if (!shift) {
+    throw new Error("No open shift. Please open a shift before recording an expense.")
+  }
+
   const amount = Math.max(0, input.amount)
   const expense: Expense = {
     id: createId(),
@@ -104,8 +113,10 @@ export function createExpense(input: CreateExpenseInput) {
     invoiceNumber: cleanText(input.invoiceNumber),
     note: cleanText(input.note),
     recordedBy: user.name,
-    shiftId: shift?.id,
-    shiftNumber: shift?.shiftNumber,
+    shiftId: shift.id,
+    shiftNumber: shift.shiftNumber,
+    registerId: getRegisterId(),
+    deviceId: getDeviceId(),
     createdAt: new Date().toISOString(),
   }
 

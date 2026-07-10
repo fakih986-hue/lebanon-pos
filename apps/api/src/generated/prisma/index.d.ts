@@ -154,6 +154,16 @@ export type CashMovement = $Result.DefaultSelection<Prisma.$CashMovementPayload>
  */
 export type SyncOperation = $Result.DefaultSelection<Prisma.$SyncOperationPayload>
 /**
+ * Model Device
+ * 
+ */
+export type Device = $Result.DefaultSelection<Prisma.$DevicePayload>
+/**
+ * Model PairingCode
+ * 
+ */
+export type PairingCode = $Result.DefaultSelection<Prisma.$PairingCodePayload>
+/**
  * Model RateLimitEntry
  * 
  */
@@ -702,6 +712,26 @@ export class PrismaClient<
   get syncOperation(): Prisma.SyncOperationDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.device`: Exposes CRUD operations for the **Device** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Devices
+    * const devices = await prisma.device.findMany()
+    * ```
+    */
+  get device(): Prisma.DeviceDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.pairingCode`: Exposes CRUD operations for the **PairingCode** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more PairingCodes
+    * const pairingCodes = await prisma.pairingCode.findMany()
+    * ```
+    */
+  get pairingCode(): Prisma.PairingCodeDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.rateLimitEntry`: Exposes CRUD operations for the **RateLimitEntry** model.
     * Example usage:
     * ```ts
@@ -1189,6 +1219,8 @@ export namespace Prisma {
     DailyClose: 'DailyClose',
     CashMovement: 'CashMovement',
     SyncOperation: 'SyncOperation',
+    Device: 'Device',
+    PairingCode: 'PairingCode',
     RateLimitEntry: 'RateLimitEntry',
     StockMovement: 'StockMovement'
   };
@@ -1209,7 +1241,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "rateLimitEntry" | "stockMovement"
+      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3285,6 +3317,154 @@ export namespace Prisma {
           }
         }
       }
+      Device: {
+        payload: Prisma.$DevicePayload<ExtArgs>
+        fields: Prisma.DeviceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.DeviceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DevicePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.DeviceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DevicePayload>
+          }
+          findFirst: {
+            args: Prisma.DeviceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DevicePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.DeviceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DevicePayload>
+          }
+          findMany: {
+            args: Prisma.DeviceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DevicePayload>[]
+          }
+          create: {
+            args: Prisma.DeviceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DevicePayload>
+          }
+          createMany: {
+            args: Prisma.DeviceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.DeviceCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DevicePayload>[]
+          }
+          delete: {
+            args: Prisma.DeviceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DevicePayload>
+          }
+          update: {
+            args: Prisma.DeviceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DevicePayload>
+          }
+          deleteMany: {
+            args: Prisma.DeviceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.DeviceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.DeviceUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DevicePayload>[]
+          }
+          upsert: {
+            args: Prisma.DeviceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$DevicePayload>
+          }
+          aggregate: {
+            args: Prisma.DeviceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateDevice>
+          }
+          groupBy: {
+            args: Prisma.DeviceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<DeviceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.DeviceCountArgs<ExtArgs>
+            result: $Utils.Optional<DeviceCountAggregateOutputType> | number
+          }
+        }
+      }
+      PairingCode: {
+        payload: Prisma.$PairingCodePayload<ExtArgs>
+        fields: Prisma.PairingCodeFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.PairingCodeFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PairingCodePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.PairingCodeFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PairingCodePayload>
+          }
+          findFirst: {
+            args: Prisma.PairingCodeFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PairingCodePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.PairingCodeFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PairingCodePayload>
+          }
+          findMany: {
+            args: Prisma.PairingCodeFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PairingCodePayload>[]
+          }
+          create: {
+            args: Prisma.PairingCodeCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PairingCodePayload>
+          }
+          createMany: {
+            args: Prisma.PairingCodeCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.PairingCodeCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PairingCodePayload>[]
+          }
+          delete: {
+            args: Prisma.PairingCodeDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PairingCodePayload>
+          }
+          update: {
+            args: Prisma.PairingCodeUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PairingCodePayload>
+          }
+          deleteMany: {
+            args: Prisma.PairingCodeDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.PairingCodeUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.PairingCodeUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PairingCodePayload>[]
+          }
+          upsert: {
+            args: Prisma.PairingCodeUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$PairingCodePayload>
+          }
+          aggregate: {
+            args: Prisma.PairingCodeAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregatePairingCode>
+          }
+          groupBy: {
+            args: Prisma.PairingCodeGroupByArgs<ExtArgs>
+            result: $Utils.Optional<PairingCodeGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.PairingCodeCountArgs<ExtArgs>
+            result: $Utils.Optional<PairingCodeCountAggregateOutputType> | number
+          }
+        }
+      }
       RateLimitEntry: {
         payload: Prisma.$RateLimitEntryPayload<ExtArgs>
         fields: Prisma.RateLimitEntryFieldRefs
@@ -3557,6 +3737,8 @@ export namespace Prisma {
     dailyClose?: DailyCloseOmit
     cashMovement?: CashMovementOmit
     syncOperation?: SyncOperationOmit
+    device?: DeviceOmit
+    pairingCode?: PairingCodeOmit
     rateLimitEntry?: RateLimitEntryOmit
     stockMovement?: StockMovementOmit
   }
@@ -3661,6 +3843,8 @@ export namespace Prisma {
     deliveryOrders: number
     stockMovements: number
     cashMovements: number
+    devices: number
+    pairingCodes: number
   }
 
   export type TenantCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3686,6 +3870,8 @@ export namespace Prisma {
     deliveryOrders?: boolean | TenantCountOutputTypeCountDeliveryOrdersArgs
     stockMovements?: boolean | TenantCountOutputTypeCountStockMovementsArgs
     cashMovements?: boolean | TenantCountOutputTypeCountCashMovementsArgs
+    devices?: boolean | TenantCountOutputTypeCountDevicesArgs
+    pairingCodes?: boolean | TenantCountOutputTypeCountPairingCodesArgs
   }
 
   // Custom InputTypes
@@ -3851,6 +4037,20 @@ export namespace Prisma {
    */
   export type TenantCountOutputTypeCountCashMovementsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: CashMovementWhereInput
+  }
+
+  /**
+   * TenantCountOutputType without action
+   */
+  export type TenantCountOutputTypeCountDevicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DeviceWhereInput
+  }
+
+  /**
+   * TenantCountOutputType without action
+   */
+  export type TenantCountOutputTypeCountPairingCodesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PairingCodeWhereInput
   }
 
 
@@ -4606,6 +4806,8 @@ export namespace Prisma {
     deliveryOrders?: boolean | Tenant$deliveryOrdersArgs<ExtArgs>
     stockMovements?: boolean | Tenant$stockMovementsArgs<ExtArgs>
     cashMovements?: boolean | Tenant$cashMovementsArgs<ExtArgs>
+    devices?: boolean | Tenant$devicesArgs<ExtArgs>
+    pairingCodes?: boolean | Tenant$pairingCodesArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["tenant"]>
 
@@ -4709,6 +4911,8 @@ export namespace Prisma {
     deliveryOrders?: boolean | Tenant$deliveryOrdersArgs<ExtArgs>
     stockMovements?: boolean | Tenant$stockMovementsArgs<ExtArgs>
     cashMovements?: boolean | Tenant$cashMovementsArgs<ExtArgs>
+    devices?: boolean | Tenant$devicesArgs<ExtArgs>
+    pairingCodes?: boolean | Tenant$pairingCodesArgs<ExtArgs>
     _count?: boolean | TenantCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type TenantIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
@@ -4740,6 +4944,8 @@ export namespace Prisma {
       deliveryOrders: Prisma.$DeliveryOrderPayload<ExtArgs>[]
       stockMovements: Prisma.$StockMovementPayload<ExtArgs>[]
       cashMovements: Prisma.$CashMovementPayload<ExtArgs>[]
+      devices: Prisma.$DevicePayload<ExtArgs>[]
+      pairingCodes: Prisma.$PairingCodePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
@@ -5181,6 +5387,8 @@ export namespace Prisma {
     deliveryOrders<T extends Tenant$deliveryOrdersArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$deliveryOrdersArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DeliveryOrderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     stockMovements<T extends Tenant$stockMovementsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$stockMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     cashMovements<T extends Tenant$cashMovementsArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$cashMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CashMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    devices<T extends Tenant$devicesArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$devicesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    pairingCodes<T extends Tenant$pairingCodesArgs<ExtArgs> = {}>(args?: Subset<T, Tenant$pairingCodesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6164,6 +6372,54 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: CashMovementScalarFieldEnum | CashMovementScalarFieldEnum[]
+  }
+
+  /**
+   * Tenant.devices
+   */
+  export type Tenant$devicesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceInclude<ExtArgs> | null
+    where?: DeviceWhereInput
+    orderBy?: DeviceOrderByWithRelationInput | DeviceOrderByWithRelationInput[]
+    cursor?: DeviceWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: DeviceScalarFieldEnum | DeviceScalarFieldEnum[]
+  }
+
+  /**
+   * Tenant.pairingCodes
+   */
+  export type Tenant$pairingCodesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeInclude<ExtArgs> | null
+    where?: PairingCodeWhereInput
+    orderBy?: PairingCodeOrderByWithRelationInput | PairingCodeOrderByWithRelationInput[]
+    cursor?: PairingCodeWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: PairingCodeScalarFieldEnum | PairingCodeScalarFieldEnum[]
   }
 
   /**
@@ -39690,6 +39946,2213 @@ export namespace Prisma {
 
 
   /**
+   * Model Device
+   */
+
+  export type AggregateDevice = {
+    _count: DeviceCountAggregateOutputType | null
+    _min: DeviceMinAggregateOutputType | null
+    _max: DeviceMaxAggregateOutputType | null
+  }
+
+  export type DeviceMinAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    deviceId: string | null
+    deviceName: string | null
+    registerId: string | null
+    status: string | null
+    firstSeenAt: Date | null
+    lastSeenAt: Date | null
+    lastIp: string | null
+  }
+
+  export type DeviceMaxAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    deviceId: string | null
+    deviceName: string | null
+    registerId: string | null
+    status: string | null
+    firstSeenAt: Date | null
+    lastSeenAt: Date | null
+    lastIp: string | null
+  }
+
+  export type DeviceCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    deviceId: number
+    deviceName: number
+    registerId: number
+    status: number
+    firstSeenAt: number
+    lastSeenAt: number
+    lastIp: number
+    _all: number
+  }
+
+
+  export type DeviceMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    deviceId?: true
+    deviceName?: true
+    registerId?: true
+    status?: true
+    firstSeenAt?: true
+    lastSeenAt?: true
+    lastIp?: true
+  }
+
+  export type DeviceMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    deviceId?: true
+    deviceName?: true
+    registerId?: true
+    status?: true
+    firstSeenAt?: true
+    lastSeenAt?: true
+    lastIp?: true
+  }
+
+  export type DeviceCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    deviceId?: true
+    deviceName?: true
+    registerId?: true
+    status?: true
+    firstSeenAt?: true
+    lastSeenAt?: true
+    lastIp?: true
+    _all?: true
+  }
+
+  export type DeviceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Device to aggregate.
+     */
+    where?: DeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Devices to fetch.
+     */
+    orderBy?: DeviceOrderByWithRelationInput | DeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: DeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Devices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Devices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Devices
+    **/
+    _count?: true | DeviceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: DeviceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: DeviceMaxAggregateInputType
+  }
+
+  export type GetDeviceAggregateType<T extends DeviceAggregateArgs> = {
+        [P in keyof T & keyof AggregateDevice]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateDevice[P]>
+      : GetScalarType<T[P], AggregateDevice[P]>
+  }
+
+
+
+
+  export type DeviceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: DeviceWhereInput
+    orderBy?: DeviceOrderByWithAggregationInput | DeviceOrderByWithAggregationInput[]
+    by: DeviceScalarFieldEnum[] | DeviceScalarFieldEnum
+    having?: DeviceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: DeviceCountAggregateInputType | true
+    _min?: DeviceMinAggregateInputType
+    _max?: DeviceMaxAggregateInputType
+  }
+
+  export type DeviceGroupByOutputType = {
+    id: string
+    tenantId: string
+    deviceId: string
+    deviceName: string
+    registerId: string
+    status: string
+    firstSeenAt: Date
+    lastSeenAt: Date
+    lastIp: string
+    _count: DeviceCountAggregateOutputType | null
+    _min: DeviceMinAggregateOutputType | null
+    _max: DeviceMaxAggregateOutputType | null
+  }
+
+  type GetDeviceGroupByPayload<T extends DeviceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<DeviceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof DeviceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], DeviceGroupByOutputType[P]>
+            : GetScalarType<T[P], DeviceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type DeviceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
+    registerId?: boolean
+    status?: boolean
+    firstSeenAt?: boolean
+    lastSeenAt?: boolean
+    lastIp?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["device"]>
+
+  export type DeviceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
+    registerId?: boolean
+    status?: boolean
+    firstSeenAt?: boolean
+    lastSeenAt?: boolean
+    lastIp?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["device"]>
+
+  export type DeviceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
+    registerId?: boolean
+    status?: boolean
+    firstSeenAt?: boolean
+    lastSeenAt?: boolean
+    lastIp?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["device"]>
+
+  export type DeviceSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
+    registerId?: boolean
+    status?: boolean
+    firstSeenAt?: boolean
+    lastSeenAt?: boolean
+    lastIp?: boolean
+  }
+
+  export type DeviceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "deviceId" | "deviceName" | "registerId" | "status" | "firstSeenAt" | "lastSeenAt" | "lastIp", ExtArgs["result"]["device"]>
+  export type DeviceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }
+  export type DeviceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }
+  export type DeviceIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }
+
+  export type $DevicePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Device"
+    objects: {
+      tenant: Prisma.$TenantPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tenantId: string
+      deviceId: string
+      deviceName: string
+      registerId: string
+      status: string
+      firstSeenAt: Date
+      lastSeenAt: Date
+      lastIp: string
+    }, ExtArgs["result"]["device"]>
+    composites: {}
+  }
+
+  type DeviceGetPayload<S extends boolean | null | undefined | DeviceDefaultArgs> = $Result.GetResult<Prisma.$DevicePayload, S>
+
+  type DeviceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<DeviceFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: DeviceCountAggregateInputType | true
+    }
+
+  export interface DeviceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Device'], meta: { name: 'Device' } }
+    /**
+     * Find zero or one Device that matches the filter.
+     * @param {DeviceFindUniqueArgs} args - Arguments to find a Device
+     * @example
+     * // Get one Device
+     * const device = await prisma.device.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends DeviceFindUniqueArgs>(args: SelectSubset<T, DeviceFindUniqueArgs<ExtArgs>>): Prisma__DeviceClient<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one Device that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {DeviceFindUniqueOrThrowArgs} args - Arguments to find a Device
+     * @example
+     * // Get one Device
+     * const device = await prisma.device.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends DeviceFindUniqueOrThrowArgs>(args: SelectSubset<T, DeviceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__DeviceClient<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Device that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeviceFindFirstArgs} args - Arguments to find a Device
+     * @example
+     * // Get one Device
+     * const device = await prisma.device.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends DeviceFindFirstArgs>(args?: SelectSubset<T, DeviceFindFirstArgs<ExtArgs>>): Prisma__DeviceClient<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first Device that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeviceFindFirstOrThrowArgs} args - Arguments to find a Device
+     * @example
+     * // Get one Device
+     * const device = await prisma.device.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends DeviceFindFirstOrThrowArgs>(args?: SelectSubset<T, DeviceFindFirstOrThrowArgs<ExtArgs>>): Prisma__DeviceClient<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Devices that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeviceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Devices
+     * const devices = await prisma.device.findMany()
+     * 
+     * // Get first 10 Devices
+     * const devices = await prisma.device.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const deviceWithIdOnly = await prisma.device.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends DeviceFindManyArgs>(args?: SelectSubset<T, DeviceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a Device.
+     * @param {DeviceCreateArgs} args - Arguments to create a Device.
+     * @example
+     * // Create one Device
+     * const Device = await prisma.device.create({
+     *   data: {
+     *     // ... data to create a Device
+     *   }
+     * })
+     * 
+     */
+    create<T extends DeviceCreateArgs>(args: SelectSubset<T, DeviceCreateArgs<ExtArgs>>): Prisma__DeviceClient<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many Devices.
+     * @param {DeviceCreateManyArgs} args - Arguments to create many Devices.
+     * @example
+     * // Create many Devices
+     * const device = await prisma.device.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends DeviceCreateManyArgs>(args?: SelectSubset<T, DeviceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many Devices and returns the data saved in the database.
+     * @param {DeviceCreateManyAndReturnArgs} args - Arguments to create many Devices.
+     * @example
+     * // Create many Devices
+     * const device = await prisma.device.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many Devices and only return the `id`
+     * const deviceWithIdOnly = await prisma.device.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends DeviceCreateManyAndReturnArgs>(args?: SelectSubset<T, DeviceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a Device.
+     * @param {DeviceDeleteArgs} args - Arguments to delete one Device.
+     * @example
+     * // Delete one Device
+     * const Device = await prisma.device.delete({
+     *   where: {
+     *     // ... filter to delete one Device
+     *   }
+     * })
+     * 
+     */
+    delete<T extends DeviceDeleteArgs>(args: SelectSubset<T, DeviceDeleteArgs<ExtArgs>>): Prisma__DeviceClient<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one Device.
+     * @param {DeviceUpdateArgs} args - Arguments to update one Device.
+     * @example
+     * // Update one Device
+     * const device = await prisma.device.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends DeviceUpdateArgs>(args: SelectSubset<T, DeviceUpdateArgs<ExtArgs>>): Prisma__DeviceClient<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more Devices.
+     * @param {DeviceDeleteManyArgs} args - Arguments to filter Devices to delete.
+     * @example
+     * // Delete a few Devices
+     * const { count } = await prisma.device.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends DeviceDeleteManyArgs>(args?: SelectSubset<T, DeviceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Devices.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeviceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Devices
+     * const device = await prisma.device.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends DeviceUpdateManyArgs>(args: SelectSubset<T, DeviceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Devices and returns the data updated in the database.
+     * @param {DeviceUpdateManyAndReturnArgs} args - Arguments to update many Devices.
+     * @example
+     * // Update many Devices
+     * const device = await prisma.device.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more Devices and only return the `id`
+     * const deviceWithIdOnly = await prisma.device.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends DeviceUpdateManyAndReturnArgs>(args: SelectSubset<T, DeviceUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one Device.
+     * @param {DeviceUpsertArgs} args - Arguments to update or create a Device.
+     * @example
+     * // Update or create a Device
+     * const device = await prisma.device.upsert({
+     *   create: {
+     *     // ... data to create a Device
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Device we want to update
+     *   }
+     * })
+     */
+    upsert<T extends DeviceUpsertArgs>(args: SelectSubset<T, DeviceUpsertArgs<ExtArgs>>): Prisma__DeviceClient<$Result.GetResult<Prisma.$DevicePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of Devices.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeviceCountArgs} args - Arguments to filter Devices to count.
+     * @example
+     * // Count the number of Devices
+     * const count = await prisma.device.count({
+     *   where: {
+     *     // ... the filter for the Devices we want to count
+     *   }
+     * })
+    **/
+    count<T extends DeviceCountArgs>(
+      args?: Subset<T, DeviceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], DeviceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Device.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeviceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends DeviceAggregateArgs>(args: Subset<T, DeviceAggregateArgs>): Prisma.PrismaPromise<GetDeviceAggregateType<T>>
+
+    /**
+     * Group by Device.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {DeviceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends DeviceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: DeviceGroupByArgs['orderBy'] }
+        : { orderBy?: DeviceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, DeviceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetDeviceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Device model
+   */
+  readonly fields: DeviceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Device.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__DeviceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Device model
+   */
+  interface DeviceFieldRefs {
+    readonly id: FieldRef<"Device", 'String'>
+    readonly tenantId: FieldRef<"Device", 'String'>
+    readonly deviceId: FieldRef<"Device", 'String'>
+    readonly deviceName: FieldRef<"Device", 'String'>
+    readonly registerId: FieldRef<"Device", 'String'>
+    readonly status: FieldRef<"Device", 'String'>
+    readonly firstSeenAt: FieldRef<"Device", 'DateTime'>
+    readonly lastSeenAt: FieldRef<"Device", 'DateTime'>
+    readonly lastIp: FieldRef<"Device", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Device findUnique
+   */
+  export type DeviceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceInclude<ExtArgs> | null
+    /**
+     * Filter, which Device to fetch.
+     */
+    where: DeviceWhereUniqueInput
+  }
+
+  /**
+   * Device findUniqueOrThrow
+   */
+  export type DeviceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceInclude<ExtArgs> | null
+    /**
+     * Filter, which Device to fetch.
+     */
+    where: DeviceWhereUniqueInput
+  }
+
+  /**
+   * Device findFirst
+   */
+  export type DeviceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceInclude<ExtArgs> | null
+    /**
+     * Filter, which Device to fetch.
+     */
+    where?: DeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Devices to fetch.
+     */
+    orderBy?: DeviceOrderByWithRelationInput | DeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Devices.
+     */
+    cursor?: DeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Devices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Devices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Devices.
+     */
+    distinct?: DeviceScalarFieldEnum | DeviceScalarFieldEnum[]
+  }
+
+  /**
+   * Device findFirstOrThrow
+   */
+  export type DeviceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceInclude<ExtArgs> | null
+    /**
+     * Filter, which Device to fetch.
+     */
+    where?: DeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Devices to fetch.
+     */
+    orderBy?: DeviceOrderByWithRelationInput | DeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Devices.
+     */
+    cursor?: DeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Devices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Devices.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Devices.
+     */
+    distinct?: DeviceScalarFieldEnum | DeviceScalarFieldEnum[]
+  }
+
+  /**
+   * Device findMany
+   */
+  export type DeviceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceInclude<ExtArgs> | null
+    /**
+     * Filter, which Devices to fetch.
+     */
+    where?: DeviceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Devices to fetch.
+     */
+    orderBy?: DeviceOrderByWithRelationInput | DeviceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Devices.
+     */
+    cursor?: DeviceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Devices from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Devices.
+     */
+    skip?: number
+    distinct?: DeviceScalarFieldEnum | DeviceScalarFieldEnum[]
+  }
+
+  /**
+   * Device create
+   */
+  export type DeviceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Device.
+     */
+    data: XOR<DeviceCreateInput, DeviceUncheckedCreateInput>
+  }
+
+  /**
+   * Device createMany
+   */
+  export type DeviceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Devices.
+     */
+    data: DeviceCreateManyInput | DeviceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Device createManyAndReturn
+   */
+  export type DeviceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * The data used to create many Devices.
+     */
+    data: DeviceCreateManyInput | DeviceCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Device update
+   */
+  export type DeviceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Device.
+     */
+    data: XOR<DeviceUpdateInput, DeviceUncheckedUpdateInput>
+    /**
+     * Choose, which Device to update.
+     */
+    where: DeviceWhereUniqueInput
+  }
+
+  /**
+   * Device updateMany
+   */
+  export type DeviceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Devices.
+     */
+    data: XOR<DeviceUpdateManyMutationInput, DeviceUncheckedUpdateManyInput>
+    /**
+     * Filter which Devices to update
+     */
+    where?: DeviceWhereInput
+    /**
+     * Limit how many Devices to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * Device updateManyAndReturn
+   */
+  export type DeviceUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * The data used to update Devices.
+     */
+    data: XOR<DeviceUpdateManyMutationInput, DeviceUncheckedUpdateManyInput>
+    /**
+     * Filter which Devices to update
+     */
+    where?: DeviceWhereInput
+    /**
+     * Limit how many Devices to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * Device upsert
+   */
+  export type DeviceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Device to update in case it exists.
+     */
+    where: DeviceWhereUniqueInput
+    /**
+     * In case the Device found by the `where` argument doesn't exist, create a new Device with this data.
+     */
+    create: XOR<DeviceCreateInput, DeviceUncheckedCreateInput>
+    /**
+     * In case the Device was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<DeviceUpdateInput, DeviceUncheckedUpdateInput>
+  }
+
+  /**
+   * Device delete
+   */
+  export type DeviceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceInclude<ExtArgs> | null
+    /**
+     * Filter which Device to delete.
+     */
+    where: DeviceWhereUniqueInput
+  }
+
+  /**
+   * Device deleteMany
+   */
+  export type DeviceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Devices to delete
+     */
+    where?: DeviceWhereInput
+    /**
+     * Limit how many Devices to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * Device without action
+   */
+  export type DeviceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Device
+     */
+    select?: DeviceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the Device
+     */
+    omit?: DeviceOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: DeviceInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model PairingCode
+   */
+
+  export type AggregatePairingCode = {
+    _count: PairingCodeCountAggregateOutputType | null
+    _min: PairingCodeMinAggregateOutputType | null
+    _max: PairingCodeMaxAggregateOutputType | null
+  }
+
+  export type PairingCodeMinAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    code: string | null
+    deviceId: string | null
+    deviceName: string | null
+    expiresAt: Date | null
+    usedAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type PairingCodeMaxAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    code: string | null
+    deviceId: string | null
+    deviceName: string | null
+    expiresAt: Date | null
+    usedAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type PairingCodeCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    code: number
+    deviceId: number
+    deviceName: number
+    expiresAt: number
+    usedAt: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type PairingCodeMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    code?: true
+    deviceId?: true
+    deviceName?: true
+    expiresAt?: true
+    usedAt?: true
+    createdAt?: true
+  }
+
+  export type PairingCodeMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    code?: true
+    deviceId?: true
+    deviceName?: true
+    expiresAt?: true
+    usedAt?: true
+    createdAt?: true
+  }
+
+  export type PairingCodeCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    code?: true
+    deviceId?: true
+    deviceName?: true
+    expiresAt?: true
+    usedAt?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type PairingCodeAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PairingCode to aggregate.
+     */
+    where?: PairingCodeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PairingCodes to fetch.
+     */
+    orderBy?: PairingCodeOrderByWithRelationInput | PairingCodeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: PairingCodeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PairingCodes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PairingCodes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned PairingCodes
+    **/
+    _count?: true | PairingCodeCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: PairingCodeMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: PairingCodeMaxAggregateInputType
+  }
+
+  export type GetPairingCodeAggregateType<T extends PairingCodeAggregateArgs> = {
+        [P in keyof T & keyof AggregatePairingCode]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregatePairingCode[P]>
+      : GetScalarType<T[P], AggregatePairingCode[P]>
+  }
+
+
+
+
+  export type PairingCodeGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: PairingCodeWhereInput
+    orderBy?: PairingCodeOrderByWithAggregationInput | PairingCodeOrderByWithAggregationInput[]
+    by: PairingCodeScalarFieldEnum[] | PairingCodeScalarFieldEnum
+    having?: PairingCodeScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: PairingCodeCountAggregateInputType | true
+    _min?: PairingCodeMinAggregateInputType
+    _max?: PairingCodeMaxAggregateInputType
+  }
+
+  export type PairingCodeGroupByOutputType = {
+    id: string
+    tenantId: string
+    code: string
+    deviceId: string | null
+    deviceName: string
+    expiresAt: Date
+    usedAt: Date | null
+    createdAt: Date
+    _count: PairingCodeCountAggregateOutputType | null
+    _min: PairingCodeMinAggregateOutputType | null
+    _max: PairingCodeMaxAggregateOutputType | null
+  }
+
+  type GetPairingCodeGroupByPayload<T extends PairingCodeGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<PairingCodeGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof PairingCodeGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], PairingCodeGroupByOutputType[P]>
+            : GetScalarType<T[P], PairingCodeGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type PairingCodeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    code?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    createdAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["pairingCode"]>
+
+  export type PairingCodeSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    code?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    createdAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["pairingCode"]>
+
+  export type PairingCodeSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    code?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    createdAt?: boolean
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["pairingCode"]>
+
+  export type PairingCodeSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    code?: boolean
+    deviceId?: boolean
+    deviceName?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    createdAt?: boolean
+  }
+
+  export type PairingCodeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "code" | "deviceId" | "deviceName" | "expiresAt" | "usedAt" | "createdAt", ExtArgs["result"]["pairingCode"]>
+  export type PairingCodeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }
+  export type PairingCodeIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }
+  export type PairingCodeIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    tenant?: boolean | TenantDefaultArgs<ExtArgs>
+  }
+
+  export type $PairingCodePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "PairingCode"
+    objects: {
+      tenant: Prisma.$TenantPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tenantId: string
+      code: string
+      deviceId: string | null
+      deviceName: string
+      expiresAt: Date
+      usedAt: Date | null
+      createdAt: Date
+    }, ExtArgs["result"]["pairingCode"]>
+    composites: {}
+  }
+
+  type PairingCodeGetPayload<S extends boolean | null | undefined | PairingCodeDefaultArgs> = $Result.GetResult<Prisma.$PairingCodePayload, S>
+
+  type PairingCodeCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<PairingCodeFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: PairingCodeCountAggregateInputType | true
+    }
+
+  export interface PairingCodeDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['PairingCode'], meta: { name: 'PairingCode' } }
+    /**
+     * Find zero or one PairingCode that matches the filter.
+     * @param {PairingCodeFindUniqueArgs} args - Arguments to find a PairingCode
+     * @example
+     * // Get one PairingCode
+     * const pairingCode = await prisma.pairingCode.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends PairingCodeFindUniqueArgs>(args: SelectSubset<T, PairingCodeFindUniqueArgs<ExtArgs>>): Prisma__PairingCodeClient<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one PairingCode that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {PairingCodeFindUniqueOrThrowArgs} args - Arguments to find a PairingCode
+     * @example
+     * // Get one PairingCode
+     * const pairingCode = await prisma.pairingCode.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends PairingCodeFindUniqueOrThrowArgs>(args: SelectSubset<T, PairingCodeFindUniqueOrThrowArgs<ExtArgs>>): Prisma__PairingCodeClient<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PairingCode that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PairingCodeFindFirstArgs} args - Arguments to find a PairingCode
+     * @example
+     * // Get one PairingCode
+     * const pairingCode = await prisma.pairingCode.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends PairingCodeFindFirstArgs>(args?: SelectSubset<T, PairingCodeFindFirstArgs<ExtArgs>>): Prisma__PairingCodeClient<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first PairingCode that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PairingCodeFindFirstOrThrowArgs} args - Arguments to find a PairingCode
+     * @example
+     * // Get one PairingCode
+     * const pairingCode = await prisma.pairingCode.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends PairingCodeFindFirstOrThrowArgs>(args?: SelectSubset<T, PairingCodeFindFirstOrThrowArgs<ExtArgs>>): Prisma__PairingCodeClient<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more PairingCodes that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PairingCodeFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all PairingCodes
+     * const pairingCodes = await prisma.pairingCode.findMany()
+     * 
+     * // Get first 10 PairingCodes
+     * const pairingCodes = await prisma.pairingCode.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const pairingCodeWithIdOnly = await prisma.pairingCode.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends PairingCodeFindManyArgs>(args?: SelectSubset<T, PairingCodeFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a PairingCode.
+     * @param {PairingCodeCreateArgs} args - Arguments to create a PairingCode.
+     * @example
+     * // Create one PairingCode
+     * const PairingCode = await prisma.pairingCode.create({
+     *   data: {
+     *     // ... data to create a PairingCode
+     *   }
+     * })
+     * 
+     */
+    create<T extends PairingCodeCreateArgs>(args: SelectSubset<T, PairingCodeCreateArgs<ExtArgs>>): Prisma__PairingCodeClient<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many PairingCodes.
+     * @param {PairingCodeCreateManyArgs} args - Arguments to create many PairingCodes.
+     * @example
+     * // Create many PairingCodes
+     * const pairingCode = await prisma.pairingCode.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends PairingCodeCreateManyArgs>(args?: SelectSubset<T, PairingCodeCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many PairingCodes and returns the data saved in the database.
+     * @param {PairingCodeCreateManyAndReturnArgs} args - Arguments to create many PairingCodes.
+     * @example
+     * // Create many PairingCodes
+     * const pairingCode = await prisma.pairingCode.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many PairingCodes and only return the `id`
+     * const pairingCodeWithIdOnly = await prisma.pairingCode.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends PairingCodeCreateManyAndReturnArgs>(args?: SelectSubset<T, PairingCodeCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a PairingCode.
+     * @param {PairingCodeDeleteArgs} args - Arguments to delete one PairingCode.
+     * @example
+     * // Delete one PairingCode
+     * const PairingCode = await prisma.pairingCode.delete({
+     *   where: {
+     *     // ... filter to delete one PairingCode
+     *   }
+     * })
+     * 
+     */
+    delete<T extends PairingCodeDeleteArgs>(args: SelectSubset<T, PairingCodeDeleteArgs<ExtArgs>>): Prisma__PairingCodeClient<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one PairingCode.
+     * @param {PairingCodeUpdateArgs} args - Arguments to update one PairingCode.
+     * @example
+     * // Update one PairingCode
+     * const pairingCode = await prisma.pairingCode.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends PairingCodeUpdateArgs>(args: SelectSubset<T, PairingCodeUpdateArgs<ExtArgs>>): Prisma__PairingCodeClient<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more PairingCodes.
+     * @param {PairingCodeDeleteManyArgs} args - Arguments to filter PairingCodes to delete.
+     * @example
+     * // Delete a few PairingCodes
+     * const { count } = await prisma.pairingCode.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends PairingCodeDeleteManyArgs>(args?: SelectSubset<T, PairingCodeDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PairingCodes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PairingCodeUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many PairingCodes
+     * const pairingCode = await prisma.pairingCode.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends PairingCodeUpdateManyArgs>(args: SelectSubset<T, PairingCodeUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more PairingCodes and returns the data updated in the database.
+     * @param {PairingCodeUpdateManyAndReturnArgs} args - Arguments to update many PairingCodes.
+     * @example
+     * // Update many PairingCodes
+     * const pairingCode = await prisma.pairingCode.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more PairingCodes and only return the `id`
+     * const pairingCodeWithIdOnly = await prisma.pairingCode.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends PairingCodeUpdateManyAndReturnArgs>(args: SelectSubset<T, PairingCodeUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one PairingCode.
+     * @param {PairingCodeUpsertArgs} args - Arguments to update or create a PairingCode.
+     * @example
+     * // Update or create a PairingCode
+     * const pairingCode = await prisma.pairingCode.upsert({
+     *   create: {
+     *     // ... data to create a PairingCode
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the PairingCode we want to update
+     *   }
+     * })
+     */
+    upsert<T extends PairingCodeUpsertArgs>(args: SelectSubset<T, PairingCodeUpsertArgs<ExtArgs>>): Prisma__PairingCodeClient<$Result.GetResult<Prisma.$PairingCodePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of PairingCodes.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PairingCodeCountArgs} args - Arguments to filter PairingCodes to count.
+     * @example
+     * // Count the number of PairingCodes
+     * const count = await prisma.pairingCode.count({
+     *   where: {
+     *     // ... the filter for the PairingCodes we want to count
+     *   }
+     * })
+    **/
+    count<T extends PairingCodeCountArgs>(
+      args?: Subset<T, PairingCodeCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], PairingCodeCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a PairingCode.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PairingCodeAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends PairingCodeAggregateArgs>(args: Subset<T, PairingCodeAggregateArgs>): Prisma.PrismaPromise<GetPairingCodeAggregateType<T>>
+
+    /**
+     * Group by PairingCode.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {PairingCodeGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends PairingCodeGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: PairingCodeGroupByArgs['orderBy'] }
+        : { orderBy?: PairingCodeGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, PairingCodeGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetPairingCodeGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the PairingCode model
+   */
+  readonly fields: PairingCodeFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for PairingCode.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__PairingCodeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    tenant<T extends TenantDefaultArgs<ExtArgs> = {}>(args?: Subset<T, TenantDefaultArgs<ExtArgs>>): Prisma__TenantClient<$Result.GetResult<Prisma.$TenantPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the PairingCode model
+   */
+  interface PairingCodeFieldRefs {
+    readonly id: FieldRef<"PairingCode", 'String'>
+    readonly tenantId: FieldRef<"PairingCode", 'String'>
+    readonly code: FieldRef<"PairingCode", 'String'>
+    readonly deviceId: FieldRef<"PairingCode", 'String'>
+    readonly deviceName: FieldRef<"PairingCode", 'String'>
+    readonly expiresAt: FieldRef<"PairingCode", 'DateTime'>
+    readonly usedAt: FieldRef<"PairingCode", 'DateTime'>
+    readonly createdAt: FieldRef<"PairingCode", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * PairingCode findUnique
+   */
+  export type PairingCodeFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeInclude<ExtArgs> | null
+    /**
+     * Filter, which PairingCode to fetch.
+     */
+    where: PairingCodeWhereUniqueInput
+  }
+
+  /**
+   * PairingCode findUniqueOrThrow
+   */
+  export type PairingCodeFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeInclude<ExtArgs> | null
+    /**
+     * Filter, which PairingCode to fetch.
+     */
+    where: PairingCodeWhereUniqueInput
+  }
+
+  /**
+   * PairingCode findFirst
+   */
+  export type PairingCodeFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeInclude<ExtArgs> | null
+    /**
+     * Filter, which PairingCode to fetch.
+     */
+    where?: PairingCodeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PairingCodes to fetch.
+     */
+    orderBy?: PairingCodeOrderByWithRelationInput | PairingCodeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PairingCodes.
+     */
+    cursor?: PairingCodeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PairingCodes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PairingCodes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PairingCodes.
+     */
+    distinct?: PairingCodeScalarFieldEnum | PairingCodeScalarFieldEnum[]
+  }
+
+  /**
+   * PairingCode findFirstOrThrow
+   */
+  export type PairingCodeFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeInclude<ExtArgs> | null
+    /**
+     * Filter, which PairingCode to fetch.
+     */
+    where?: PairingCodeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PairingCodes to fetch.
+     */
+    orderBy?: PairingCodeOrderByWithRelationInput | PairingCodeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for PairingCodes.
+     */
+    cursor?: PairingCodeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PairingCodes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PairingCodes.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of PairingCodes.
+     */
+    distinct?: PairingCodeScalarFieldEnum | PairingCodeScalarFieldEnum[]
+  }
+
+  /**
+   * PairingCode findMany
+   */
+  export type PairingCodeFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeInclude<ExtArgs> | null
+    /**
+     * Filter, which PairingCodes to fetch.
+     */
+    where?: PairingCodeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of PairingCodes to fetch.
+     */
+    orderBy?: PairingCodeOrderByWithRelationInput | PairingCodeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing PairingCodes.
+     */
+    cursor?: PairingCodeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` PairingCodes from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` PairingCodes.
+     */
+    skip?: number
+    distinct?: PairingCodeScalarFieldEnum | PairingCodeScalarFieldEnum[]
+  }
+
+  /**
+   * PairingCode create
+   */
+  export type PairingCodeCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeInclude<ExtArgs> | null
+    /**
+     * The data needed to create a PairingCode.
+     */
+    data: XOR<PairingCodeCreateInput, PairingCodeUncheckedCreateInput>
+  }
+
+  /**
+   * PairingCode createMany
+   */
+  export type PairingCodeCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many PairingCodes.
+     */
+    data: PairingCodeCreateManyInput | PairingCodeCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * PairingCode createManyAndReturn
+   */
+  export type PairingCodeCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * The data used to create many PairingCodes.
+     */
+    data: PairingCodeCreateManyInput | PairingCodeCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PairingCode update
+   */
+  export type PairingCodeUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeInclude<ExtArgs> | null
+    /**
+     * The data needed to update a PairingCode.
+     */
+    data: XOR<PairingCodeUpdateInput, PairingCodeUncheckedUpdateInput>
+    /**
+     * Choose, which PairingCode to update.
+     */
+    where: PairingCodeWhereUniqueInput
+  }
+
+  /**
+   * PairingCode updateMany
+   */
+  export type PairingCodeUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update PairingCodes.
+     */
+    data: XOR<PairingCodeUpdateManyMutationInput, PairingCodeUncheckedUpdateManyInput>
+    /**
+     * Filter which PairingCodes to update
+     */
+    where?: PairingCodeWhereInput
+    /**
+     * Limit how many PairingCodes to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * PairingCode updateManyAndReturn
+   */
+  export type PairingCodeUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * The data used to update PairingCodes.
+     */
+    data: XOR<PairingCodeUpdateManyMutationInput, PairingCodeUncheckedUpdateManyInput>
+    /**
+     * Filter which PairingCodes to update
+     */
+    where?: PairingCodeWhereInput
+    /**
+     * Limit how many PairingCodes to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * PairingCode upsert
+   */
+  export type PairingCodeUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeInclude<ExtArgs> | null
+    /**
+     * The filter to search for the PairingCode to update in case it exists.
+     */
+    where: PairingCodeWhereUniqueInput
+    /**
+     * In case the PairingCode found by the `where` argument doesn't exist, create a new PairingCode with this data.
+     */
+    create: XOR<PairingCodeCreateInput, PairingCodeUncheckedCreateInput>
+    /**
+     * In case the PairingCode was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<PairingCodeUpdateInput, PairingCodeUncheckedUpdateInput>
+  }
+
+  /**
+   * PairingCode delete
+   */
+  export type PairingCodeDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeInclude<ExtArgs> | null
+    /**
+     * Filter which PairingCode to delete.
+     */
+    where: PairingCodeWhereUniqueInput
+  }
+
+  /**
+   * PairingCode deleteMany
+   */
+  export type PairingCodeDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which PairingCodes to delete
+     */
+    where?: PairingCodeWhereInput
+    /**
+     * Limit how many PairingCodes to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * PairingCode without action
+   */
+  export type PairingCodeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the PairingCode
+     */
+    select?: PairingCodeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the PairingCode
+     */
+    omit?: PairingCodeOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: PairingCodeInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model RateLimitEntry
    */
 
@@ -42442,6 +44905,35 @@ export namespace Prisma {
   export type SyncOperationScalarFieldEnum = (typeof SyncOperationScalarFieldEnum)[keyof typeof SyncOperationScalarFieldEnum]
 
 
+  export const DeviceScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    deviceId: 'deviceId',
+    deviceName: 'deviceName',
+    registerId: 'registerId',
+    status: 'status',
+    firstSeenAt: 'firstSeenAt',
+    lastSeenAt: 'lastSeenAt',
+    lastIp: 'lastIp'
+  };
+
+  export type DeviceScalarFieldEnum = (typeof DeviceScalarFieldEnum)[keyof typeof DeviceScalarFieldEnum]
+
+
+  export const PairingCodeScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    code: 'code',
+    deviceId: 'deviceId',
+    deviceName: 'deviceName',
+    expiresAt: 'expiresAt',
+    usedAt: 'usedAt',
+    createdAt: 'createdAt'
+  };
+
+  export type PairingCodeScalarFieldEnum = (typeof PairingCodeScalarFieldEnum)[keyof typeof PairingCodeScalarFieldEnum]
+
+
   export const RateLimitEntryScalarFieldEnum: {
     id: 'id',
     bucket: 'bucket',
@@ -42797,6 +45289,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderListRelationFilter
     stockMovements?: StockMovementListRelationFilter
     cashMovements?: CashMovementListRelationFilter
+    devices?: DeviceListRelationFilter
+    pairingCodes?: PairingCodeListRelationFilter
   }
 
   export type TenantOrderByWithRelationInput = {
@@ -42845,6 +45339,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderOrderByRelationAggregateInput
     stockMovements?: StockMovementOrderByRelationAggregateInput
     cashMovements?: CashMovementOrderByRelationAggregateInput
+    devices?: DeviceOrderByRelationAggregateInput
+    pairingCodes?: PairingCodeOrderByRelationAggregateInput
   }
 
   export type TenantWhereUniqueInput = Prisma.AtLeast<{
@@ -42896,6 +45392,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderListRelationFilter
     stockMovements?: StockMovementListRelationFilter
     cashMovements?: CashMovementListRelationFilter
+    devices?: DeviceListRelationFilter
+    pairingCodes?: PairingCodeListRelationFilter
   }, "id" | "subdomain">
 
   export type TenantOrderByWithAggregationInput = {
@@ -45743,6 +48241,152 @@ export namespace Prisma {
     error?: StringNullableWithAggregatesFilter<"SyncOperation"> | string | null
   }
 
+  export type DeviceWhereInput = {
+    AND?: DeviceWhereInput | DeviceWhereInput[]
+    OR?: DeviceWhereInput[]
+    NOT?: DeviceWhereInput | DeviceWhereInput[]
+    id?: StringFilter<"Device"> | string
+    tenantId?: StringFilter<"Device"> | string
+    deviceId?: StringFilter<"Device"> | string
+    deviceName?: StringFilter<"Device"> | string
+    registerId?: StringFilter<"Device"> | string
+    status?: StringFilter<"Device"> | string
+    firstSeenAt?: DateTimeFilter<"Device"> | Date | string
+    lastSeenAt?: DateTimeFilter<"Device"> | Date | string
+    lastIp?: StringFilter<"Device"> | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+  }
+
+  export type DeviceOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    deviceName?: SortOrder
+    registerId?: SortOrder
+    status?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    lastIp?: SortOrder
+    tenant?: TenantOrderByWithRelationInput
+  }
+
+  export type DeviceWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    tenantId_deviceId?: DeviceTenantIdDeviceIdCompoundUniqueInput
+    AND?: DeviceWhereInput | DeviceWhereInput[]
+    OR?: DeviceWhereInput[]
+    NOT?: DeviceWhereInput | DeviceWhereInput[]
+    tenantId?: StringFilter<"Device"> | string
+    deviceId?: StringFilter<"Device"> | string
+    deviceName?: StringFilter<"Device"> | string
+    registerId?: StringFilter<"Device"> | string
+    status?: StringFilter<"Device"> | string
+    firstSeenAt?: DateTimeFilter<"Device"> | Date | string
+    lastSeenAt?: DateTimeFilter<"Device"> | Date | string
+    lastIp?: StringFilter<"Device"> | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+  }, "id" | "tenantId_deviceId">
+
+  export type DeviceOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    deviceName?: SortOrder
+    registerId?: SortOrder
+    status?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    lastIp?: SortOrder
+    _count?: DeviceCountOrderByAggregateInput
+    _max?: DeviceMaxOrderByAggregateInput
+    _min?: DeviceMinOrderByAggregateInput
+  }
+
+  export type DeviceScalarWhereWithAggregatesInput = {
+    AND?: DeviceScalarWhereWithAggregatesInput | DeviceScalarWhereWithAggregatesInput[]
+    OR?: DeviceScalarWhereWithAggregatesInput[]
+    NOT?: DeviceScalarWhereWithAggregatesInput | DeviceScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"Device"> | string
+    tenantId?: StringWithAggregatesFilter<"Device"> | string
+    deviceId?: StringWithAggregatesFilter<"Device"> | string
+    deviceName?: StringWithAggregatesFilter<"Device"> | string
+    registerId?: StringWithAggregatesFilter<"Device"> | string
+    status?: StringWithAggregatesFilter<"Device"> | string
+    firstSeenAt?: DateTimeWithAggregatesFilter<"Device"> | Date | string
+    lastSeenAt?: DateTimeWithAggregatesFilter<"Device"> | Date | string
+    lastIp?: StringWithAggregatesFilter<"Device"> | string
+  }
+
+  export type PairingCodeWhereInput = {
+    AND?: PairingCodeWhereInput | PairingCodeWhereInput[]
+    OR?: PairingCodeWhereInput[]
+    NOT?: PairingCodeWhereInput | PairingCodeWhereInput[]
+    id?: StringFilter<"PairingCode"> | string
+    tenantId?: StringFilter<"PairingCode"> | string
+    code?: StringFilter<"PairingCode"> | string
+    deviceId?: StringNullableFilter<"PairingCode"> | string | null
+    deviceName?: StringFilter<"PairingCode"> | string
+    expiresAt?: DateTimeFilter<"PairingCode"> | Date | string
+    usedAt?: DateTimeNullableFilter<"PairingCode"> | Date | string | null
+    createdAt?: DateTimeFilter<"PairingCode"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+  }
+
+  export type PairingCodeOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    code?: SortOrder
+    deviceId?: SortOrderInput | SortOrder
+    deviceName?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    tenant?: TenantOrderByWithRelationInput
+  }
+
+  export type PairingCodeWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    code?: string
+    AND?: PairingCodeWhereInput | PairingCodeWhereInput[]
+    OR?: PairingCodeWhereInput[]
+    NOT?: PairingCodeWhereInput | PairingCodeWhereInput[]
+    tenantId?: StringFilter<"PairingCode"> | string
+    deviceId?: StringNullableFilter<"PairingCode"> | string | null
+    deviceName?: StringFilter<"PairingCode"> | string
+    expiresAt?: DateTimeFilter<"PairingCode"> | Date | string
+    usedAt?: DateTimeNullableFilter<"PairingCode"> | Date | string | null
+    createdAt?: DateTimeFilter<"PairingCode"> | Date | string
+    tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
+  }, "id" | "code">
+
+  export type PairingCodeOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    code?: SortOrder
+    deviceId?: SortOrderInput | SortOrder
+    deviceName?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: PairingCodeCountOrderByAggregateInput
+    _max?: PairingCodeMaxOrderByAggregateInput
+    _min?: PairingCodeMinOrderByAggregateInput
+  }
+
+  export type PairingCodeScalarWhereWithAggregatesInput = {
+    AND?: PairingCodeScalarWhereWithAggregatesInput | PairingCodeScalarWhereWithAggregatesInput[]
+    OR?: PairingCodeScalarWhereWithAggregatesInput[]
+    NOT?: PairingCodeScalarWhereWithAggregatesInput | PairingCodeScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"PairingCode"> | string
+    tenantId?: StringWithAggregatesFilter<"PairingCode"> | string
+    code?: StringWithAggregatesFilter<"PairingCode"> | string
+    deviceId?: StringNullableWithAggregatesFilter<"PairingCode"> | string | null
+    deviceName?: StringWithAggregatesFilter<"PairingCode"> | string
+    expiresAt?: DateTimeWithAggregatesFilter<"PairingCode"> | Date | string
+    usedAt?: DateTimeNullableWithAggregatesFilter<"PairingCode"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"PairingCode"> | Date | string
+  }
+
   export type RateLimitEntryWhereInput = {
     AND?: RateLimitEntryWhereInput | RateLimitEntryWhereInput[]
     OR?: RateLimitEntryWhereInput[]
@@ -45924,6 +48568,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateInput = {
@@ -45972,6 +48618,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUpdateInput = {
@@ -46020,6 +48668,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateInput = {
@@ -46068,6 +48718,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateManyInput = {
@@ -49274,6 +51926,165 @@ export namespace Prisma {
     error?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type DeviceCreateInput = {
+    id?: string
+    deviceId: string
+    deviceName?: string
+    registerId?: string
+    status?: string
+    firstSeenAt?: Date | string
+    lastSeenAt?: Date | string
+    lastIp?: string
+    tenant: TenantCreateNestedOneWithoutDevicesInput
+  }
+
+  export type DeviceUncheckedCreateInput = {
+    id?: string
+    tenantId: string
+    deviceId: string
+    deviceName?: string
+    registerId?: string
+    status?: string
+    firstSeenAt?: Date | string
+    lastSeenAt?: Date | string
+    lastIp?: string
+  }
+
+  export type DeviceUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    deviceName?: StringFieldUpdateOperationsInput | string
+    registerId?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastIp?: StringFieldUpdateOperationsInput | string
+    tenant?: TenantUpdateOneRequiredWithoutDevicesNestedInput
+  }
+
+  export type DeviceUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    deviceName?: StringFieldUpdateOperationsInput | string
+    registerId?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastIp?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type DeviceCreateManyInput = {
+    id?: string
+    tenantId: string
+    deviceId: string
+    deviceName?: string
+    registerId?: string
+    status?: string
+    firstSeenAt?: Date | string
+    lastSeenAt?: Date | string
+    lastIp?: string
+  }
+
+  export type DeviceUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    deviceName?: StringFieldUpdateOperationsInput | string
+    registerId?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastIp?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type DeviceUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    deviceName?: StringFieldUpdateOperationsInput | string
+    registerId?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastIp?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type PairingCodeCreateInput = {
+    id?: string
+    code: string
+    deviceId?: string | null
+    deviceName?: string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
+    createdAt?: Date | string
+    tenant: TenantCreateNestedOneWithoutPairingCodesInput
+  }
+
+  export type PairingCodeUncheckedCreateInput = {
+    id?: string
+    tenantId: string
+    code: string
+    deviceId?: string | null
+    deviceName?: string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type PairingCodeUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    tenant?: TenantUpdateOneRequiredWithoutPairingCodesNestedInput
+  }
+
+  export type PairingCodeUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PairingCodeCreateManyInput = {
+    id?: string
+    tenantId: string
+    code: string
+    deviceId?: string | null
+    deviceName?: string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type PairingCodeUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PairingCodeUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type RateLimitEntryCreateInput = {
     id?: string
     bucket: string
@@ -49602,6 +52413,18 @@ export namespace Prisma {
     none?: CashMovementWhereInput
   }
 
+  export type DeviceListRelationFilter = {
+    every?: DeviceWhereInput
+    some?: DeviceWhereInput
+    none?: DeviceWhereInput
+  }
+
+  export type PairingCodeListRelationFilter = {
+    every?: PairingCodeWhereInput
+    some?: PairingCodeWhereInput
+    none?: PairingCodeWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -49692,6 +52515,14 @@ export namespace Prisma {
   }
 
   export type CashMovementOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type DeviceOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type PairingCodeOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -52094,6 +54925,80 @@ export namespace Prisma {
     attempts?: SortOrder
   }
 
+  export type DeviceTenantIdDeviceIdCompoundUniqueInput = {
+    tenantId: string
+    deviceId: string
+  }
+
+  export type DeviceCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    deviceName?: SortOrder
+    registerId?: SortOrder
+    status?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    lastIp?: SortOrder
+  }
+
+  export type DeviceMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    deviceName?: SortOrder
+    registerId?: SortOrder
+    status?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    lastIp?: SortOrder
+  }
+
+  export type DeviceMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    deviceName?: SortOrder
+    registerId?: SortOrder
+    status?: SortOrder
+    firstSeenAt?: SortOrder
+    lastSeenAt?: SortOrder
+    lastIp?: SortOrder
+  }
+
+  export type PairingCodeCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    code?: SortOrder
+    deviceId?: SortOrder
+    deviceName?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type PairingCodeMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    code?: SortOrder
+    deviceId?: SortOrder
+    deviceName?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type PairingCodeMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    code?: SortOrder
+    deviceId?: SortOrder
+    deviceName?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
   export type RateLimitEntryBucketKeyCompoundUniqueInput = {
     bucket: string
     key: string
@@ -52339,6 +55244,20 @@ export namespace Prisma {
     connect?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
   }
 
+  export type DeviceCreateNestedManyWithoutTenantInput = {
+    create?: XOR<DeviceCreateWithoutTenantInput, DeviceUncheckedCreateWithoutTenantInput> | DeviceCreateWithoutTenantInput[] | DeviceUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: DeviceCreateOrConnectWithoutTenantInput | DeviceCreateOrConnectWithoutTenantInput[]
+    createMany?: DeviceCreateManyTenantInputEnvelope
+    connect?: DeviceWhereUniqueInput | DeviceWhereUniqueInput[]
+  }
+
+  export type PairingCodeCreateNestedManyWithoutTenantInput = {
+    create?: XOR<PairingCodeCreateWithoutTenantInput, PairingCodeUncheckedCreateWithoutTenantInput> | PairingCodeCreateWithoutTenantInput[] | PairingCodeUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PairingCodeCreateOrConnectWithoutTenantInput | PairingCodeCreateOrConnectWithoutTenantInput[]
+    createMany?: PairingCodeCreateManyTenantInputEnvelope
+    connect?: PairingCodeWhereUniqueInput | PairingCodeWhereUniqueInput[]
+  }
+
   export type StaffUserUncheckedCreateNestedManyWithoutTenantInput = {
     create?: XOR<StaffUserCreateWithoutTenantInput, StaffUserUncheckedCreateWithoutTenantInput> | StaffUserCreateWithoutTenantInput[] | StaffUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: StaffUserCreateOrConnectWithoutTenantInput | StaffUserCreateOrConnectWithoutTenantInput[]
@@ -52497,6 +55416,20 @@ export namespace Prisma {
     connectOrCreate?: CashMovementCreateOrConnectWithoutTenantInput | CashMovementCreateOrConnectWithoutTenantInput[]
     createMany?: CashMovementCreateManyTenantInputEnvelope
     connect?: CashMovementWhereUniqueInput | CashMovementWhereUniqueInput[]
+  }
+
+  export type DeviceUncheckedCreateNestedManyWithoutTenantInput = {
+    create?: XOR<DeviceCreateWithoutTenantInput, DeviceUncheckedCreateWithoutTenantInput> | DeviceCreateWithoutTenantInput[] | DeviceUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: DeviceCreateOrConnectWithoutTenantInput | DeviceCreateOrConnectWithoutTenantInput[]
+    createMany?: DeviceCreateManyTenantInputEnvelope
+    connect?: DeviceWhereUniqueInput | DeviceWhereUniqueInput[]
+  }
+
+  export type PairingCodeUncheckedCreateNestedManyWithoutTenantInput = {
+    create?: XOR<PairingCodeCreateWithoutTenantInput, PairingCodeUncheckedCreateWithoutTenantInput> | PairingCodeCreateWithoutTenantInput[] | PairingCodeUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PairingCodeCreateOrConnectWithoutTenantInput | PairingCodeCreateOrConnectWithoutTenantInput[]
+    createMany?: PairingCodeCreateManyTenantInputEnvelope
+    connect?: PairingCodeWhereUniqueInput | PairingCodeWhereUniqueInput[]
   }
 
   export type StringFieldUpdateOperationsInput = {
@@ -52841,6 +55774,34 @@ export namespace Prisma {
     deleteMany?: CashMovementScalarWhereInput | CashMovementScalarWhereInput[]
   }
 
+  export type DeviceUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<DeviceCreateWithoutTenantInput, DeviceUncheckedCreateWithoutTenantInput> | DeviceCreateWithoutTenantInput[] | DeviceUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: DeviceCreateOrConnectWithoutTenantInput | DeviceCreateOrConnectWithoutTenantInput[]
+    upsert?: DeviceUpsertWithWhereUniqueWithoutTenantInput | DeviceUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: DeviceCreateManyTenantInputEnvelope
+    set?: DeviceWhereUniqueInput | DeviceWhereUniqueInput[]
+    disconnect?: DeviceWhereUniqueInput | DeviceWhereUniqueInput[]
+    delete?: DeviceWhereUniqueInput | DeviceWhereUniqueInput[]
+    connect?: DeviceWhereUniqueInput | DeviceWhereUniqueInput[]
+    update?: DeviceUpdateWithWhereUniqueWithoutTenantInput | DeviceUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: DeviceUpdateManyWithWhereWithoutTenantInput | DeviceUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: DeviceScalarWhereInput | DeviceScalarWhereInput[]
+  }
+
+  export type PairingCodeUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<PairingCodeCreateWithoutTenantInput, PairingCodeUncheckedCreateWithoutTenantInput> | PairingCodeCreateWithoutTenantInput[] | PairingCodeUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PairingCodeCreateOrConnectWithoutTenantInput | PairingCodeCreateOrConnectWithoutTenantInput[]
+    upsert?: PairingCodeUpsertWithWhereUniqueWithoutTenantInput | PairingCodeUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: PairingCodeCreateManyTenantInputEnvelope
+    set?: PairingCodeWhereUniqueInput | PairingCodeWhereUniqueInput[]
+    disconnect?: PairingCodeWhereUniqueInput | PairingCodeWhereUniqueInput[]
+    delete?: PairingCodeWhereUniqueInput | PairingCodeWhereUniqueInput[]
+    connect?: PairingCodeWhereUniqueInput | PairingCodeWhereUniqueInput[]
+    update?: PairingCodeUpdateWithWhereUniqueWithoutTenantInput | PairingCodeUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: PairingCodeUpdateManyWithWhereWithoutTenantInput | PairingCodeUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: PairingCodeScalarWhereInput | PairingCodeScalarWhereInput[]
+  }
+
   export type StaffUserUncheckedUpdateManyWithoutTenantNestedInput = {
     create?: XOR<StaffUserCreateWithoutTenantInput, StaffUserUncheckedCreateWithoutTenantInput> | StaffUserCreateWithoutTenantInput[] | StaffUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: StaffUserCreateOrConnectWithoutTenantInput | StaffUserCreateOrConnectWithoutTenantInput[]
@@ -53157,6 +56118,34 @@ export namespace Prisma {
     update?: CashMovementUpdateWithWhereUniqueWithoutTenantInput | CashMovementUpdateWithWhereUniqueWithoutTenantInput[]
     updateMany?: CashMovementUpdateManyWithWhereWithoutTenantInput | CashMovementUpdateManyWithWhereWithoutTenantInput[]
     deleteMany?: CashMovementScalarWhereInput | CashMovementScalarWhereInput[]
+  }
+
+  export type DeviceUncheckedUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<DeviceCreateWithoutTenantInput, DeviceUncheckedCreateWithoutTenantInput> | DeviceCreateWithoutTenantInput[] | DeviceUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: DeviceCreateOrConnectWithoutTenantInput | DeviceCreateOrConnectWithoutTenantInput[]
+    upsert?: DeviceUpsertWithWhereUniqueWithoutTenantInput | DeviceUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: DeviceCreateManyTenantInputEnvelope
+    set?: DeviceWhereUniqueInput | DeviceWhereUniqueInput[]
+    disconnect?: DeviceWhereUniqueInput | DeviceWhereUniqueInput[]
+    delete?: DeviceWhereUniqueInput | DeviceWhereUniqueInput[]
+    connect?: DeviceWhereUniqueInput | DeviceWhereUniqueInput[]
+    update?: DeviceUpdateWithWhereUniqueWithoutTenantInput | DeviceUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: DeviceUpdateManyWithWhereWithoutTenantInput | DeviceUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: DeviceScalarWhereInput | DeviceScalarWhereInput[]
+  }
+
+  export type PairingCodeUncheckedUpdateManyWithoutTenantNestedInput = {
+    create?: XOR<PairingCodeCreateWithoutTenantInput, PairingCodeUncheckedCreateWithoutTenantInput> | PairingCodeCreateWithoutTenantInput[] | PairingCodeUncheckedCreateWithoutTenantInput[]
+    connectOrCreate?: PairingCodeCreateOrConnectWithoutTenantInput | PairingCodeCreateOrConnectWithoutTenantInput[]
+    upsert?: PairingCodeUpsertWithWhereUniqueWithoutTenantInput | PairingCodeUpsertWithWhereUniqueWithoutTenantInput[]
+    createMany?: PairingCodeCreateManyTenantInputEnvelope
+    set?: PairingCodeWhereUniqueInput | PairingCodeWhereUniqueInput[]
+    disconnect?: PairingCodeWhereUniqueInput | PairingCodeWhereUniqueInput[]
+    delete?: PairingCodeWhereUniqueInput | PairingCodeWhereUniqueInput[]
+    connect?: PairingCodeWhereUniqueInput | PairingCodeWhereUniqueInput[]
+    update?: PairingCodeUpdateWithWhereUniqueWithoutTenantInput | PairingCodeUpdateWithWhereUniqueWithoutTenantInput[]
+    updateMany?: PairingCodeUpdateManyWithWhereWithoutTenantInput | PairingCodeUpdateManyWithWhereWithoutTenantInput[]
+    deleteMany?: PairingCodeScalarWhereInput | PairingCodeScalarWhereInput[]
   }
 
   export type TenantCreateNestedOneWithoutUsersInput = {
@@ -54780,6 +57769,34 @@ export namespace Prisma {
     update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutSyncOperationsInput, TenantUpdateWithoutSyncOperationsInput>, TenantUncheckedUpdateWithoutSyncOperationsInput>
   }
 
+  export type TenantCreateNestedOneWithoutDevicesInput = {
+    create?: XOR<TenantCreateWithoutDevicesInput, TenantUncheckedCreateWithoutDevicesInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutDevicesInput
+    connect?: TenantWhereUniqueInput
+  }
+
+  export type TenantUpdateOneRequiredWithoutDevicesNestedInput = {
+    create?: XOR<TenantCreateWithoutDevicesInput, TenantUncheckedCreateWithoutDevicesInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutDevicesInput
+    upsert?: TenantUpsertWithoutDevicesInput
+    connect?: TenantWhereUniqueInput
+    update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutDevicesInput, TenantUpdateWithoutDevicesInput>, TenantUncheckedUpdateWithoutDevicesInput>
+  }
+
+  export type TenantCreateNestedOneWithoutPairingCodesInput = {
+    create?: XOR<TenantCreateWithoutPairingCodesInput, TenantUncheckedCreateWithoutPairingCodesInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutPairingCodesInput
+    connect?: TenantWhereUniqueInput
+  }
+
+  export type TenantUpdateOneRequiredWithoutPairingCodesNestedInput = {
+    create?: XOR<TenantCreateWithoutPairingCodesInput, TenantUncheckedCreateWithoutPairingCodesInput>
+    connectOrCreate?: TenantCreateOrConnectWithoutPairingCodesInput
+    upsert?: TenantUpsertWithoutPairingCodesInput
+    connect?: TenantWhereUniqueInput
+    update?: XOR<XOR<TenantUpdateToOneWithWhereWithoutPairingCodesInput, TenantUpdateWithoutPairingCodesInput>, TenantUncheckedUpdateWithoutPairingCodesInput>
+  }
+
   export type TenantCreateNestedOneWithoutStockMovementsInput = {
     create?: XOR<TenantCreateWithoutStockMovementsInput, TenantUncheckedCreateWithoutStockMovementsInput>
     connectOrCreate?: TenantCreateOrConnectWithoutStockMovementsInput
@@ -56292,6 +59309,68 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type DeviceCreateWithoutTenantInput = {
+    id?: string
+    deviceId: string
+    deviceName?: string
+    registerId?: string
+    status?: string
+    firstSeenAt?: Date | string
+    lastSeenAt?: Date | string
+    lastIp?: string
+  }
+
+  export type DeviceUncheckedCreateWithoutTenantInput = {
+    id?: string
+    deviceId: string
+    deviceName?: string
+    registerId?: string
+    status?: string
+    firstSeenAt?: Date | string
+    lastSeenAt?: Date | string
+    lastIp?: string
+  }
+
+  export type DeviceCreateOrConnectWithoutTenantInput = {
+    where: DeviceWhereUniqueInput
+    create: XOR<DeviceCreateWithoutTenantInput, DeviceUncheckedCreateWithoutTenantInput>
+  }
+
+  export type DeviceCreateManyTenantInputEnvelope = {
+    data: DeviceCreateManyTenantInput | DeviceCreateManyTenantInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type PairingCodeCreateWithoutTenantInput = {
+    id?: string
+    code: string
+    deviceId?: string | null
+    deviceName?: string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type PairingCodeUncheckedCreateWithoutTenantInput = {
+    id?: string
+    code: string
+    deviceId?: string | null
+    deviceName?: string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type PairingCodeCreateOrConnectWithoutTenantInput = {
+    where: PairingCodeWhereUniqueInput
+    create: XOR<PairingCodeCreateWithoutTenantInput, PairingCodeUncheckedCreateWithoutTenantInput>
+  }
+
+  export type PairingCodeCreateManyTenantInputEnvelope = {
+    data: PairingCodeCreateManyTenantInput | PairingCodeCreateManyTenantInput[]
+    skipDuplicates?: boolean
+  }
+
   export type StaffUserUpsertWithWhereUniqueWithoutTenantInput = {
     where: StaffUserWhereUniqueInput
     update: XOR<StaffUserUpdateWithoutTenantInput, StaffUserUncheckedUpdateWithoutTenantInput>
@@ -57129,6 +60208,67 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"CashMovement"> | Date | string
   }
 
+  export type DeviceUpsertWithWhereUniqueWithoutTenantInput = {
+    where: DeviceWhereUniqueInput
+    update: XOR<DeviceUpdateWithoutTenantInput, DeviceUncheckedUpdateWithoutTenantInput>
+    create: XOR<DeviceCreateWithoutTenantInput, DeviceUncheckedCreateWithoutTenantInput>
+  }
+
+  export type DeviceUpdateWithWhereUniqueWithoutTenantInput = {
+    where: DeviceWhereUniqueInput
+    data: XOR<DeviceUpdateWithoutTenantInput, DeviceUncheckedUpdateWithoutTenantInput>
+  }
+
+  export type DeviceUpdateManyWithWhereWithoutTenantInput = {
+    where: DeviceScalarWhereInput
+    data: XOR<DeviceUpdateManyMutationInput, DeviceUncheckedUpdateManyWithoutTenantInput>
+  }
+
+  export type DeviceScalarWhereInput = {
+    AND?: DeviceScalarWhereInput | DeviceScalarWhereInput[]
+    OR?: DeviceScalarWhereInput[]
+    NOT?: DeviceScalarWhereInput | DeviceScalarWhereInput[]
+    id?: StringFilter<"Device"> | string
+    tenantId?: StringFilter<"Device"> | string
+    deviceId?: StringFilter<"Device"> | string
+    deviceName?: StringFilter<"Device"> | string
+    registerId?: StringFilter<"Device"> | string
+    status?: StringFilter<"Device"> | string
+    firstSeenAt?: DateTimeFilter<"Device"> | Date | string
+    lastSeenAt?: DateTimeFilter<"Device"> | Date | string
+    lastIp?: StringFilter<"Device"> | string
+  }
+
+  export type PairingCodeUpsertWithWhereUniqueWithoutTenantInput = {
+    where: PairingCodeWhereUniqueInput
+    update: XOR<PairingCodeUpdateWithoutTenantInput, PairingCodeUncheckedUpdateWithoutTenantInput>
+    create: XOR<PairingCodeCreateWithoutTenantInput, PairingCodeUncheckedCreateWithoutTenantInput>
+  }
+
+  export type PairingCodeUpdateWithWhereUniqueWithoutTenantInput = {
+    where: PairingCodeWhereUniqueInput
+    data: XOR<PairingCodeUpdateWithoutTenantInput, PairingCodeUncheckedUpdateWithoutTenantInput>
+  }
+
+  export type PairingCodeUpdateManyWithWhereWithoutTenantInput = {
+    where: PairingCodeScalarWhereInput
+    data: XOR<PairingCodeUpdateManyMutationInput, PairingCodeUncheckedUpdateManyWithoutTenantInput>
+  }
+
+  export type PairingCodeScalarWhereInput = {
+    AND?: PairingCodeScalarWhereInput | PairingCodeScalarWhereInput[]
+    OR?: PairingCodeScalarWhereInput[]
+    NOT?: PairingCodeScalarWhereInput | PairingCodeScalarWhereInput[]
+    id?: StringFilter<"PairingCode"> | string
+    tenantId?: StringFilter<"PairingCode"> | string
+    code?: StringFilter<"PairingCode"> | string
+    deviceId?: StringNullableFilter<"PairingCode"> | string | null
+    deviceName?: StringFilter<"PairingCode"> | string
+    expiresAt?: DateTimeFilter<"PairingCode"> | Date | string
+    usedAt?: DateTimeNullableFilter<"PairingCode"> | Date | string | null
+    createdAt?: DateTimeFilter<"PairingCode"> | Date | string
+  }
+
   export type TenantCreateWithoutUsersInput = {
     id?: string
     name: string
@@ -57174,6 +60314,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutUsersInput = {
@@ -57221,6 +60363,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutUsersInput = {
@@ -57500,6 +60644,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutUsersInput = {
@@ -57547,6 +60693,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ShiftUpsertWithWhereUniqueWithoutOpenedByInput = {
@@ -57658,6 +60806,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSettingsInput = {
@@ -57705,6 +60855,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSettingsInput = {
@@ -57768,6 +60920,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSettingsInput = {
@@ -57815,6 +60969,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutProductsInput = {
@@ -57862,6 +61018,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutProductsInput = {
@@ -57909,6 +61067,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutProductsInput = {
@@ -58265,6 +61425,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutProductsInput = {
@@ -58312,6 +61474,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ProductUpsertWithoutVariantsInput = {
@@ -58527,6 +61691,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSalesInput = {
@@ -58574,6 +61740,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSalesInput = {
@@ -58746,6 +61914,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSalesInput = {
@@ -58793,6 +61963,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SaleItemUpsertWithWhereUniqueWithoutSaleInput = {
@@ -59148,6 +62320,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutRefundsInput = {
@@ -59195,6 +62369,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutRefundsInput = {
@@ -59343,6 +62519,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutRefundsInput = {
@@ -59390,6 +62568,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SaleUpsertWithoutRefundsInput = {
@@ -59615,6 +62795,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutCustomersInput = {
@@ -59662,6 +62844,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutCustomersInput = {
@@ -59855,6 +63039,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutCustomersInput = {
@@ -59902,6 +63088,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type DebtSaleUpsertWithWhereUniqueWithoutCustomerInput = {
@@ -59997,6 +63185,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDebtSalesInput = {
@@ -60044,6 +63234,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDebtSalesInput = {
@@ -60144,6 +63336,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDebtSalesInput = {
@@ -60191,6 +63385,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type CustomerUpsertWithoutDebtSalesInput = {
@@ -60281,6 +63477,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDebtPaymentsInput = {
@@ -60328,6 +63526,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDebtPaymentsInput = {
@@ -60428,6 +63628,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDebtPaymentsInput = {
@@ -60475,6 +63677,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type CustomerUpsertWithoutDebtPaymentsInput = {
@@ -60565,6 +63769,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSuppliersInput = {
@@ -60612,6 +63818,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSuppliersInput = {
@@ -60809,6 +64017,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSuppliersInput = {
@@ -60856,6 +64066,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type PurchaseOrderUpsertWithWhereUniqueWithoutSupplierInput = {
@@ -60951,6 +64163,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutPurchaseOrdersInput = {
@@ -60998,6 +64212,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutPurchaseOrdersInput = {
@@ -61126,6 +64342,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutPurchaseOrdersInput = {
@@ -61173,6 +64391,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SupplierUpsertWithoutPurchaseOrdersInput = {
@@ -61275,6 +64495,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutPurchaseOrderItemsInput = {
@@ -61322,6 +64544,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutPurchaseOrderItemsInput = {
@@ -61428,6 +64652,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutPurchaseOrderItemsInput = {
@@ -61475,6 +64701,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type PurchaseOrderUpsertWithoutItemsInput = {
@@ -61571,6 +64799,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSupplierPaymentsInput = {
@@ -61618,6 +64848,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSupplierPaymentsInput = {
@@ -61714,6 +64946,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSupplierPaymentsInput = {
@@ -61761,6 +64995,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type SupplierUpsertWithoutSupplierPaymentsInput = {
@@ -61847,6 +65083,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutShiftsInput = {
@@ -61894,6 +65132,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutShiftsInput = {
@@ -62043,6 +65283,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutShiftsInput = {
@@ -62090,6 +65332,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type StaffUserUpsertWithoutOpenedShiftsInput = {
@@ -62235,6 +65479,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutAuditEventsInput = {
@@ -62282,6 +65528,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutAuditEventsInput = {
@@ -62345,6 +65593,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutAuditEventsInput = {
@@ -62392,6 +65642,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutExpensesInput = {
@@ -62439,6 +65691,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutExpensesInput = {
@@ -62486,6 +65740,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutExpensesInput = {
@@ -62592,6 +65848,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutExpensesInput = {
@@ -62639,6 +65897,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type StaffUserUpsertWithoutExpensesInput = {
@@ -62735,6 +65995,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutInventoryBatchesInput = {
@@ -62782,6 +66044,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutInventoryBatchesInput = {
@@ -62944,6 +66208,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutInventoryBatchesInput = {
@@ -62991,6 +66257,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ProductUpsertWithoutBatchesInput = {
@@ -63149,6 +66417,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutStockAdjustmentsInput = {
@@ -63196,6 +66466,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutStockAdjustmentsInput = {
@@ -63325,6 +66597,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutStockAdjustmentsInput = {
@@ -63372,6 +66646,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ProductUpsertWithoutAdjustmentsInput = {
@@ -63491,6 +66767,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutStockCountsInput = {
@@ -63538,6 +66816,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutStockCountsInput = {
@@ -63635,6 +66915,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutStockCountsInput = {
@@ -63682,6 +66964,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type StockCountLineUpsertWithWhereUniqueWithoutSessionInput = {
@@ -63943,6 +67227,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDeliveryOrdersInput = {
@@ -63990,6 +67276,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDeliveryOrdersInput = {
@@ -64163,6 +67451,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDeliveryOrdersInput = {
@@ -64210,6 +67500,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type CustomerUpsertWithoutDeliveryOrdersInput = {
@@ -64515,6 +67807,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutDailyClosesInput = {
@@ -64562,6 +67856,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutDailyClosesInput = {
@@ -64625,6 +67921,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutDailyClosesInput = {
@@ -64672,6 +67970,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutCashMovementsInput = {
@@ -64719,6 +68019,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutCashMovementsInput = {
@@ -64766,6 +68068,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutCashMovementsInput = {
@@ -64829,6 +68133,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutCashMovementsInput = {
@@ -64876,6 +68182,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutSyncOperationsInput = {
@@ -64923,6 +68231,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutSyncOperationsInput = {
@@ -64970,6 +68280,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutSyncOperationsInput = {
@@ -65033,6 +68345,8 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutSyncOperationsInput = {
@@ -65080,6 +68394,432 @@ export namespace Prisma {
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantCreateWithoutDevicesInput = {
+    id?: string
+    name: string
+    subdomain: string
+    suspended?: boolean
+    cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: StaffUserCreateNestedManyWithoutTenantInput
+    products?: ProductCreateNestedManyWithoutTenantInput
+    sales?: SaleCreateNestedManyWithoutTenantInput
+    refunds?: SaleRefundCreateNestedManyWithoutTenantInput
+    customers?: CustomerCreateNestedManyWithoutTenantInput
+    debtSales?: DebtSaleCreateNestedManyWithoutTenantInput
+    debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
+    suppliers?: SupplierCreateNestedManyWithoutTenantInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
+    supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
+    shifts?: ShiftCreateNestedManyWithoutTenantInput
+    auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
+    settings?: AppSettingsCreateNestedOneWithoutTenantInput
+    expenses?: ExpenseCreateNestedManyWithoutTenantInput
+    inventoryBatches?: InventoryBatchCreateNestedManyWithoutTenantInput
+    stockAdjustments?: StockAdjustmentCreateNestedManyWithoutTenantInput
+    stockCounts?: StockCountSessionCreateNestedManyWithoutTenantInput
+    dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
+    syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantUncheckedCreateWithoutDevicesInput = {
+    id?: string
+    name: string
+    subdomain: string
+    suspended?: boolean
+    cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
+    products?: ProductUncheckedCreateNestedManyWithoutTenantInput
+    sales?: SaleUncheckedCreateNestedManyWithoutTenantInput
+    refunds?: SaleRefundUncheckedCreateNestedManyWithoutTenantInput
+    customers?: CustomerUncheckedCreateNestedManyWithoutTenantInput
+    debtSales?: DebtSaleUncheckedCreateNestedManyWithoutTenantInput
+    debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
+    suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
+    supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
+    shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
+    auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
+    settings?: AppSettingsUncheckedCreateNestedOneWithoutTenantInput
+    expenses?: ExpenseUncheckedCreateNestedManyWithoutTenantInput
+    inventoryBatches?: InventoryBatchUncheckedCreateNestedManyWithoutTenantInput
+    stockAdjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutTenantInput
+    stockCounts?: StockCountSessionUncheckedCreateNestedManyWithoutTenantInput
+    dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
+    syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantCreateOrConnectWithoutDevicesInput = {
+    where: TenantWhereUniqueInput
+    create: XOR<TenantCreateWithoutDevicesInput, TenantUncheckedCreateWithoutDevicesInput>
+  }
+
+  export type TenantUpsertWithoutDevicesInput = {
+    update: XOR<TenantUpdateWithoutDevicesInput, TenantUncheckedUpdateWithoutDevicesInput>
+    create: XOR<TenantCreateWithoutDevicesInput, TenantUncheckedCreateWithoutDevicesInput>
+    where?: TenantWhereInput
+  }
+
+  export type TenantUpdateToOneWithWhereWithoutDevicesInput = {
+    where?: TenantWhereInput
+    data: XOR<TenantUpdateWithoutDevicesInput, TenantUncheckedUpdateWithoutDevicesInput>
+  }
+
+  export type TenantUpdateWithoutDevicesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: StaffUserUpdateManyWithoutTenantNestedInput
+    products?: ProductUpdateManyWithoutTenantNestedInput
+    sales?: SaleUpdateManyWithoutTenantNestedInput
+    refunds?: SaleRefundUpdateManyWithoutTenantNestedInput
+    customers?: CustomerUpdateManyWithoutTenantNestedInput
+    debtSales?: DebtSaleUpdateManyWithoutTenantNestedInput
+    debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
+    suppliers?: SupplierUpdateManyWithoutTenantNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
+    supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
+    shifts?: ShiftUpdateManyWithoutTenantNestedInput
+    auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
+    settings?: AppSettingsUpdateOneWithoutTenantNestedInput
+    expenses?: ExpenseUpdateManyWithoutTenantNestedInput
+    inventoryBatches?: InventoryBatchUpdateManyWithoutTenantNestedInput
+    stockAdjustments?: StockAdjustmentUpdateManyWithoutTenantNestedInput
+    stockCounts?: StockCountSessionUpdateManyWithoutTenantNestedInput
+    dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
+    syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantUncheckedUpdateWithoutDevicesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
+    products?: ProductUncheckedUpdateManyWithoutTenantNestedInput
+    sales?: SaleUncheckedUpdateManyWithoutTenantNestedInput
+    refunds?: SaleRefundUncheckedUpdateManyWithoutTenantNestedInput
+    customers?: CustomerUncheckedUpdateManyWithoutTenantNestedInput
+    debtSales?: DebtSaleUncheckedUpdateManyWithoutTenantNestedInput
+    debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
+    supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
+    auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
+    settings?: AppSettingsUncheckedUpdateOneWithoutTenantNestedInput
+    expenses?: ExpenseUncheckedUpdateManyWithoutTenantNestedInput
+    inventoryBatches?: InventoryBatchUncheckedUpdateManyWithoutTenantNestedInput
+    stockAdjustments?: StockAdjustmentUncheckedUpdateManyWithoutTenantNestedInput
+    stockCounts?: StockCountSessionUncheckedUpdateManyWithoutTenantNestedInput
+    dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
+    syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantCreateWithoutPairingCodesInput = {
+    id?: string
+    name: string
+    subdomain: string
+    suspended?: boolean
+    cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: StaffUserCreateNestedManyWithoutTenantInput
+    products?: ProductCreateNestedManyWithoutTenantInput
+    sales?: SaleCreateNestedManyWithoutTenantInput
+    refunds?: SaleRefundCreateNestedManyWithoutTenantInput
+    customers?: CustomerCreateNestedManyWithoutTenantInput
+    debtSales?: DebtSaleCreateNestedManyWithoutTenantInput
+    debtPayments?: DebtPaymentCreateNestedManyWithoutTenantInput
+    suppliers?: SupplierCreateNestedManyWithoutTenantInput
+    purchaseOrders?: PurchaseOrderCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemCreateNestedManyWithoutTenantInput
+    supplierPayments?: SupplierPaymentCreateNestedManyWithoutTenantInput
+    shifts?: ShiftCreateNestedManyWithoutTenantInput
+    auditEvents?: AuditEventCreateNestedManyWithoutTenantInput
+    settings?: AppSettingsCreateNestedOneWithoutTenantInput
+    expenses?: ExpenseCreateNestedManyWithoutTenantInput
+    inventoryBatches?: InventoryBatchCreateNestedManyWithoutTenantInput
+    stockAdjustments?: StockAdjustmentCreateNestedManyWithoutTenantInput
+    stockCounts?: StockCountSessionCreateNestedManyWithoutTenantInput
+    dailyCloses?: DailyCloseCreateNestedManyWithoutTenantInput
+    syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
+    deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantUncheckedCreateWithoutPairingCodesInput = {
+    id?: string
+    name: string
+    subdomain: string
+    suspended?: boolean
+    cloudApiKey?: string
+    licenseStatus?: string
+    licenseReason?: string
+    licenseMessage?: string
+    suspendedAt?: Date | string | null
+    offlineGraceDays?: number
+    leaseExpiresAt?: Date | string | null
+    policyVersion?: number
+    planName?: string
+    trialStartDate?: Date | string | null
+    trialEndDate?: Date | string | null
+    subscriptionStart?: Date | string | null
+    subscriptionEnd?: Date | string | null
+    renewalDate?: Date | string | null
+    billingContact?: string
+    internalNotes?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    users?: StaffUserUncheckedCreateNestedManyWithoutTenantInput
+    products?: ProductUncheckedCreateNestedManyWithoutTenantInput
+    sales?: SaleUncheckedCreateNestedManyWithoutTenantInput
+    refunds?: SaleRefundUncheckedCreateNestedManyWithoutTenantInput
+    customers?: CustomerUncheckedCreateNestedManyWithoutTenantInput
+    debtSales?: DebtSaleUncheckedCreateNestedManyWithoutTenantInput
+    debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutTenantInput
+    suppliers?: SupplierUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutTenantInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedCreateNestedManyWithoutTenantInput
+    supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutTenantInput
+    shifts?: ShiftUncheckedCreateNestedManyWithoutTenantInput
+    auditEvents?: AuditEventUncheckedCreateNestedManyWithoutTenantInput
+    settings?: AppSettingsUncheckedCreateNestedOneWithoutTenantInput
+    expenses?: ExpenseUncheckedCreateNestedManyWithoutTenantInput
+    inventoryBatches?: InventoryBatchUncheckedCreateNestedManyWithoutTenantInput
+    stockAdjustments?: StockAdjustmentUncheckedCreateNestedManyWithoutTenantInput
+    stockCounts?: StockCountSessionUncheckedCreateNestedManyWithoutTenantInput
+    dailyCloses?: DailyCloseUncheckedCreateNestedManyWithoutTenantInput
+    syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
+    deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
+    stockMovements?: StockMovementUncheckedCreateNestedManyWithoutTenantInput
+    cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+  }
+
+  export type TenantCreateOrConnectWithoutPairingCodesInput = {
+    where: TenantWhereUniqueInput
+    create: XOR<TenantCreateWithoutPairingCodesInput, TenantUncheckedCreateWithoutPairingCodesInput>
+  }
+
+  export type TenantUpsertWithoutPairingCodesInput = {
+    update: XOR<TenantUpdateWithoutPairingCodesInput, TenantUncheckedUpdateWithoutPairingCodesInput>
+    create: XOR<TenantCreateWithoutPairingCodesInput, TenantUncheckedCreateWithoutPairingCodesInput>
+    where?: TenantWhereInput
+  }
+
+  export type TenantUpdateToOneWithWhereWithoutPairingCodesInput = {
+    where?: TenantWhereInput
+    data: XOR<TenantUpdateWithoutPairingCodesInput, TenantUncheckedUpdateWithoutPairingCodesInput>
+  }
+
+  export type TenantUpdateWithoutPairingCodesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: StaffUserUpdateManyWithoutTenantNestedInput
+    products?: ProductUpdateManyWithoutTenantNestedInput
+    sales?: SaleUpdateManyWithoutTenantNestedInput
+    refunds?: SaleRefundUpdateManyWithoutTenantNestedInput
+    customers?: CustomerUpdateManyWithoutTenantNestedInput
+    debtSales?: DebtSaleUpdateManyWithoutTenantNestedInput
+    debtPayments?: DebtPaymentUpdateManyWithoutTenantNestedInput
+    suppliers?: SupplierUpdateManyWithoutTenantNestedInput
+    purchaseOrders?: PurchaseOrderUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUpdateManyWithoutTenantNestedInput
+    supplierPayments?: SupplierPaymentUpdateManyWithoutTenantNestedInput
+    shifts?: ShiftUpdateManyWithoutTenantNestedInput
+    auditEvents?: AuditEventUpdateManyWithoutTenantNestedInput
+    settings?: AppSettingsUpdateOneWithoutTenantNestedInput
+    expenses?: ExpenseUpdateManyWithoutTenantNestedInput
+    inventoryBatches?: InventoryBatchUpdateManyWithoutTenantNestedInput
+    stockAdjustments?: StockAdjustmentUpdateManyWithoutTenantNestedInput
+    stockCounts?: StockCountSessionUpdateManyWithoutTenantNestedInput
+    dailyCloses?: DailyCloseUpdateManyWithoutTenantNestedInput
+    syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
+    deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+  }
+
+  export type TenantUncheckedUpdateWithoutPairingCodesInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    subdomain?: StringFieldUpdateOperationsInput | string
+    suspended?: BoolFieldUpdateOperationsInput | boolean
+    cloudApiKey?: StringFieldUpdateOperationsInput | string
+    licenseStatus?: StringFieldUpdateOperationsInput | string
+    licenseReason?: StringFieldUpdateOperationsInput | string
+    licenseMessage?: StringFieldUpdateOperationsInput | string
+    suspendedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    offlineGraceDays?: IntFieldUpdateOperationsInput | number
+    leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    policyVersion?: IntFieldUpdateOperationsInput | number
+    planName?: StringFieldUpdateOperationsInput | string
+    trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionStart?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    subscriptionEnd?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    renewalDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    billingContact?: StringFieldUpdateOperationsInput | string
+    internalNotes?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    users?: StaffUserUncheckedUpdateManyWithoutTenantNestedInput
+    products?: ProductUncheckedUpdateManyWithoutTenantNestedInput
+    sales?: SaleUncheckedUpdateManyWithoutTenantNestedInput
+    refunds?: SaleRefundUncheckedUpdateManyWithoutTenantNestedInput
+    customers?: CustomerUncheckedUpdateManyWithoutTenantNestedInput
+    debtSales?: DebtSaleUncheckedUpdateManyWithoutTenantNestedInput
+    debtPayments?: DebtPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    suppliers?: SupplierUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutTenantNestedInput
+    purchaseOrderItems?: PurchaseOrderItemUncheckedUpdateManyWithoutTenantNestedInput
+    supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutTenantNestedInput
+    shifts?: ShiftUncheckedUpdateManyWithoutTenantNestedInput
+    auditEvents?: AuditEventUncheckedUpdateManyWithoutTenantNestedInput
+    settings?: AppSettingsUncheckedUpdateOneWithoutTenantNestedInput
+    expenses?: ExpenseUncheckedUpdateManyWithoutTenantNestedInput
+    inventoryBatches?: InventoryBatchUncheckedUpdateManyWithoutTenantNestedInput
+    stockAdjustments?: StockAdjustmentUncheckedUpdateManyWithoutTenantNestedInput
+    stockCounts?: StockCountSessionUncheckedUpdateManyWithoutTenantNestedInput
+    dailyCloses?: DailyCloseUncheckedUpdateManyWithoutTenantNestedInput
+    syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
+    deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
+    stockMovements?: StockMovementUncheckedUpdateManyWithoutTenantNestedInput
+    cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantCreateWithoutStockMovementsInput = {
@@ -65127,6 +68867,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementCreateNestedManyWithoutTenantInput
+    devices?: DeviceCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeCreateNestedManyWithoutTenantInput
   }
 
   export type TenantUncheckedCreateWithoutStockMovementsInput = {
@@ -65174,6 +68916,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedCreateNestedManyWithoutTenantInput
     deliveryOrders?: DeliveryOrderUncheckedCreateNestedManyWithoutTenantInput
     cashMovements?: CashMovementUncheckedCreateNestedManyWithoutTenantInput
+    devices?: DeviceUncheckedCreateNestedManyWithoutTenantInput
+    pairingCodes?: PairingCodeUncheckedCreateNestedManyWithoutTenantInput
   }
 
   export type TenantCreateOrConnectWithoutStockMovementsInput = {
@@ -65303,6 +69047,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUpdateManyWithoutTenantNestedInput
   }
 
   export type TenantUncheckedUpdateWithoutStockMovementsInput = {
@@ -65350,6 +69096,8 @@ export namespace Prisma {
     syncOperations?: SyncOperationUncheckedUpdateManyWithoutTenantNestedInput
     deliveryOrders?: DeliveryOrderUncheckedUpdateManyWithoutTenantNestedInput
     cashMovements?: CashMovementUncheckedUpdateManyWithoutTenantNestedInput
+    devices?: DeviceUncheckedUpdateManyWithoutTenantNestedInput
+    pairingCodes?: PairingCodeUncheckedUpdateManyWithoutTenantNestedInput
   }
 
   export type ProductUpsertWithoutStockMovementsInput = {
@@ -65771,6 +69519,27 @@ export namespace Prisma {
     referenceId?: string | null
     recordedById?: string | null
     recordedByName: string
+    createdAt?: Date | string
+  }
+
+  export type DeviceCreateManyTenantInput = {
+    id?: string
+    deviceId: string
+    deviceName?: string
+    registerId?: string
+    status?: string
+    firstSeenAt?: Date | string
+    lastSeenAt?: Date | string
+    lastIp?: string
+  }
+
+  export type PairingCodeCreateManyTenantInput = {
+    id?: string
+    code: string
+    deviceId?: string | null
+    deviceName?: string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -66864,6 +70633,69 @@ export namespace Prisma {
     referenceId?: NullableStringFieldUpdateOperationsInput | string | null
     recordedById?: NullableStringFieldUpdateOperationsInput | string | null
     recordedByName?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type DeviceUpdateWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    deviceName?: StringFieldUpdateOperationsInput | string
+    registerId?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastIp?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type DeviceUncheckedUpdateWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    deviceName?: StringFieldUpdateOperationsInput | string
+    registerId?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastIp?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type DeviceUncheckedUpdateManyWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    deviceName?: StringFieldUpdateOperationsInput | string
+    registerId?: StringFieldUpdateOperationsInput | string
+    status?: StringFieldUpdateOperationsInput | string
+    firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    lastIp?: StringFieldUpdateOperationsInput | string
+  }
+
+  export type PairingCodeUpdateWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PairingCodeUncheckedUpdateWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type PairingCodeUncheckedUpdateManyWithoutTenantInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    code?: StringFieldUpdateOperationsInput | string
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceName?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

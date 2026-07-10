@@ -587,6 +587,29 @@ exports.Prisma.SyncOperationScalarFieldEnum = {
   error: 'error'
 };
 
+exports.Prisma.DeviceScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  deviceId: 'deviceId',
+  deviceName: 'deviceName',
+  registerId: 'registerId',
+  status: 'status',
+  firstSeenAt: 'firstSeenAt',
+  lastSeenAt: 'lastSeenAt',
+  lastIp: 'lastIp'
+};
+
+exports.Prisma.PairingCodeScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  code: 'code',
+  deviceId: 'deviceId',
+  deviceName: 'deviceName',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.RateLimitEntryScalarFieldEnum = {
   id: 'id',
   bucket: 'bucket',
@@ -725,6 +748,8 @@ exports.Prisma.ModelName = {
   DailyClose: 'DailyClose',
   CashMovement: 'CashMovement',
   SyncOperation: 'SyncOperation',
+  Device: 'Device',
+  PairingCode: 'PairingCode',
   RateLimitEntry: 'RateLimitEntry',
   StockMovement: 'StockMovement'
 };

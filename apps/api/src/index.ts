@@ -24,6 +24,7 @@ if (!ADMIN_PASSWORD) {
 }
 
 const PORT = parseInt(process.env.PORT || "3015", 10)
+const BIND_HOST = process.env.BIND_HOST || "127.0.0.1"
 
 async function main() {
   try {
@@ -46,10 +47,10 @@ async function main() {
     process.exit(1)
   })
 
-  server.listen(PORT, () => {
-    console.log(`Titan POS API running on port ${PORT}`)
+  server.listen(PORT, BIND_HOST, () => {
+    console.log(`Titan POS API running on ${BIND_HOST}:${PORT}`)
     scheduleSyncOperationPrune()
-    if (process.env.IS_LOCAL_SERVER === "true") {
+    if (["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")) {
       startCloudSyncBridge()
     }
   })

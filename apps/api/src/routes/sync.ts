@@ -47,6 +47,7 @@ const syncOperationSchema = z.object({
 })
 
 const syncPushSchema = z.object({
+  deviceId: z.string().optional(),
   operations: z.array(syncOperationSchema).max(100),
 })
 
@@ -102,6 +103,38 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
       json(res, { error: "Store is currently suspended. Contact support.", code: "LICENSE_BLOCKED" }, 403)
       return
     }
+  }
+
+  // ── Device approval check (local hub only) ──────────────────────────
+  const isLocalHub = ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
+  const deviceId = parsed.data.deviceId
+  if (isLocalHub && deviceId) {
+    const device = await prisma.device.findUnique({
+      where: { tenantId_deviceId: { tenantId, deviceId } },
+    })
+    if (!device || device.status !== "APPROVED") {
+      await prisma.auditEvent.create({
+        data: {
+          tenantId,
+          action: "sync.rejected.unapproved-device",
+          entity: "device",
+          summary: `Sync push rejected: device ${deviceId} is not approved`,
+          metadata: { deviceId },
+          userId: "system",
+          userName: "system",
+          userRole: "Admin",
+        },
+      })
+      json(res, { error: "This device is not approved to sync with this hub. Contact the hub owner to pair your device.", code: "DEVICE_NOT_APPROVED" }, 403)
+      return
+    }
+    await prisma.device.update({
+      where: { id: device!.id },
+      data: { lastSeenAt: new Date(), lastIp: req.socket?.remoteAddress || "" },
+    })
+  } else if (isLocalHub && !deviceId) {
+    json(res, { error: "deviceId is required for hub sync", code: "DEVICE_ID_REQUIRED" }, 400)
+    return
   }
 
   const results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string }> = []

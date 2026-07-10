@@ -47,6 +47,11 @@ export default function HistoryPanel({ dailyCloses, maxItems = 20 }: Props) {
                 <p className="mt-1 text-xs font-semibold text-zinc-500">
                   {dailyClose.closedBy}
                 </p>
+                <p className="mt-0.5 text-[11px] font-mono text-zinc-400">
+                  {dailyClose.registerId && <>Reg: {dailyClose.registerId}</>}
+                  {dailyClose.registerId && dailyClose.deviceId && <> · </>}
+                  {dailyClose.deviceId && <>Dev: {dailyClose.deviceId}</>}
+                </p>
               </div>
               <strong
                 style={{ color: dailyClose.netProfit >= 0 ? "var(--success)" : "var(--rose)" }}

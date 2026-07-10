@@ -341,6 +341,8 @@ function writeApiEnv(pgPassword: string): void {
     `JWT_SECRET="${jwt}"`,
     `PORT=3015`,
     `ADMIN_PASSWORD="${adminPass}"`,
+    // Default: bind localhost only. Set BIND_HOST=0.0.0.0 in hub mode for LAN access.
+    `BIND_HOST=127.0.0.1`,
     // LAN clients connect to the hub by IP, so allow any origin on the local network
     `CORS_ORIGINS=`,
     ``,
@@ -816,6 +818,34 @@ ipcMain.handle("get-local-ip", () => {
   return "localhost"
 })
 ipcMain.handle("get-app-version", () => app.getVersion())
+
+ipcMain.handle("get-bind-host", () => {
+  try {
+    const envText = fs.readFileSync(ENV_PATH, "utf-8")
+    const m = envText.match(/^BIND_HOST=(.*)$/m)
+    return m ? m[1].replace(/^"|"$/g, "") : "127.0.0.1"
+  } catch { return "127.0.0.1" }
+})
+
+ipcMain.handle("set-bind-host", async (_event, value: "0.0.0.0" | "127.0.0.1") => {
+  try {
+    const envText = fs.readFileSync(ENV_PATH, "utf-8")
+    const updated = envText.replace(/^BIND_HOST=.*$/m, `BIND_HOST=${value}`)
+    fs.writeFileSync(ENV_PATH, updated, { mode: 0o600 })
+
+    // Restart API with new bind host
+    if (apiProcess && !apiProcess.killed) {
+      apiProcess.kill("SIGTERM")
+      await sleep(2000)
+    }
+    apiRestartCount = 0
+    spawnApi()
+    const ok = await waitForApi()
+    return { ok, error: ok ? undefined : "API failed to restart with new bind host" }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Failed to set bind host" }
+  }
+})
 
 // Activation window → main window transition
 ipcMain.on("activation-done", () => {

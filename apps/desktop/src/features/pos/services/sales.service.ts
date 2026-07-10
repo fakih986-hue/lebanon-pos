@@ -10,8 +10,9 @@ import {
   getCurrentUser,
   recordAuditEvent,
 } from "./security.service"
-import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite, getDeviceId } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
+import { getRegisterId } from "./settings.service"
 
 const SALES_KEY = "lebanonpos.sales.v1"
 const REFUNDS_KEY = "lebanonpos.refunds.v1"
@@ -67,6 +68,8 @@ export type Sale = {
   cashier: string
   shiftId?: string
   shiftNumber?: string
+  registerId?: string
+  deviceId?: string
   status: "Completed" | "Debt" | "Voided"
   createdAt: string
 }
@@ -85,6 +88,8 @@ export type SaleRefund = {
   cashier: string
   shiftId?: string
   shiftNumber?: string
+  registerId?: string
+  deviceId?: string
   createdAt: string
 }
 
@@ -238,6 +243,12 @@ export function recordSale(input: RecordSaleInput) {
   )
   const currentUser = getCurrentUser()
   const activeShift = getActiveShift()
+
+  // Shift gate — every sale requires an open register shift
+  if (!activeShift) {
+    throw new Error("No open shift. Please open a shift before recording a sale.")
+  }
+
   const sale: Sale = {
     id: createId(),
     saleNumber: input.saleNumber,
@@ -254,8 +265,10 @@ export function recordSale(input: RecordSaleInput) {
     tender: input.tender,
     items: input.items,
     cashier: currentUser.name,
-    shiftId: activeShift?.id,
-    shiftNumber: activeShift?.shiftNumber,
+    shiftId: activeShift.id,
+    shiftNumber: activeShift.shiftNumber,
+    registerId: getRegisterId(),
+    deviceId: getDeviceId(),
     status: input.paymentMethod === "Debt" ? "Debt" : "Completed",
     createdAt: new Date().toISOString(),
   }
@@ -290,6 +303,13 @@ export function recordRefund(input: RecordRefundInput) {
   assertCanWrite("record refund")
   const currentUser = getCurrentUser()
   const activeShift = getActiveShift()
+
+  // Pilot policy: all refunds require an open shift.
+  // Future: non-cash refunds may be allowed without an open shift.
+  if (!activeShift) {
+    throw new Error("No open shift. Please open a shift before processing a refund.")
+  }
+
   const refund: SaleRefund = {
     id: createId(),
     refundNumber: `R-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`,
@@ -302,8 +322,10 @@ export function recordRefund(input: RecordRefundInput) {
     total: input.total,
     items: input.items,
     cashier: currentUser.name,
-    shiftId: activeShift?.id,
-    shiftNumber: activeShift?.shiftNumber,
+    shiftId: activeShift.id,
+    shiftNumber: activeShift.shiftNumber,
+    registerId: getRegisterId(),
+    deviceId: getDeviceId(),
     createdAt: new Date().toISOString(),
   }
 

@@ -15,13 +15,20 @@ import {
   clearStoreData,
   flushSyncQueue,
   getApiUrl,
+  getConnectionMode,
+  getDeviceId,
   getKnownStores,
+  getLocalApiUrl,
   pullFromServer,
   rememberStore,
   setApiUrl,
   setAuthToken,
+  setConnectionMode,
+  validateUrlForMode,
   type KnownStore,
 } from "../../features/pos/services/sync.service"
+import { pairDevice, registerHubDevice } from "../../features/pos/services/deviceRegistry.service"
+import type { ConnectionMode } from "../../features/pos/services/settings.service"
 import { updateUser } from "../../features/pos/services/security.service"
 import { showToast } from "../../features/pos/services/toast.service"
 
@@ -70,9 +77,11 @@ export default function LoginScreen() {
 
   // ── Connect-to-store (disaster recovery on a new/empty device) ──
   const [connectOpen, setConnectOpen] = useState(false)
+  const [cMode, setCMode] = useState<ConnectionMode>(getConnectionMode())
   const [cApiUrl, setCApiUrl] = useState(getApiUrl() ?? "https://lebanon-pos-production.up.railway.app")
   const [cSubdomain, setCSubdomain] = useState("")
   const [cPin, setCPin] = useState("")
+  const [cPairCode, setCPairCode] = useState("")
   const [cLoading, setCLoading] = useState(false)
   const [cError, setCError] = useState("")
   const knownStores = getKnownStores()
@@ -111,6 +120,8 @@ export default function LoginScreen() {
 
         setApiUrl(apiUrl)
         setAuthToken(auto.token)
+        // Register the hub device in the API database so sync access control works
+        await registerHubDevice("Hub").catch(() => {})
         setStatus("Syncing your store data…")
         await pullFromServer(true)
 
@@ -173,6 +184,8 @@ export default function LoginScreen() {
     const url = cApiUrl.trim().replace(/\/+$/, "")
     if (!url) { setCError("Enter the server URL"); return }
     if (!cPin.trim()) { setCError("Enter your PIN"); return }
+    const modeError = validateUrlForMode(url, cMode)
+    if (modeError) { setCError(modeError); return }
     setCLoading(true)
     setCError("")
     try {
@@ -212,7 +225,18 @@ export default function LoginScreen() {
         backupSnapshot[key] = localStorage.getItem(key)
       }
 
+      // For CONNECT_TO_HUB mode, pair with the hub before proceeding
+      if (cMode === "CONNECT_TO_HUB" && cPairCode.trim()) {
+        setStatus("Pairing with hub…")
+        try {
+          await pairDevice(cPairCode.trim(), getDeviceId())
+        } catch (pairErr) {
+          throw new Error(pairErr instanceof Error ? pairErr.message : "Pairing with hub failed")
+        }
+      }
+
       await clearStoreData()
+      setConnectionMode(cMode)
       setApiUrl(url)
       setAuthToken(data.token)
       rememberStore({
@@ -272,6 +296,7 @@ export default function LoginScreen() {
     setCApiUrl(store.apiUrl)
     setCSubdomain(store.subdomain)
     setCPin("")
+    setCPairCode("")
     setCError("")
     setConnectOpen(true)
   }
@@ -421,7 +446,7 @@ export default function LoginScreen() {
           {/* Disaster recovery: connect a new/empty device to the store */}
           <button
             type="button"
-            onClick={() => { setCSubdomain(""); setCPin(""); setConnectOpen(true); setCError("") }}
+            onClick={() => { setCSubdomain(""); setCPin(""); setCPairCode(""); setConnectOpen(true); setCError("") }}
             className="mt-3 flex w-full items-center justify-center gap-2 text-[12px] font-semibold transition hover:opacity-80"
             style={{ color: "var(--text-3)" }}
           >
@@ -445,13 +470,74 @@ export default function LoginScreen() {
               </div>
               <button onClick={() => setConnectOpen(false)} style={{ color: "var(--text-3)" }}><X size={18} /></button>
             </div>
-            <p className="text-[12px] mb-4" style={{ color: "var(--text-3)" }}>
-              Use this on a new or replacement device. Enter your store details from your Recovery Card, plus your PIN. All your data will download.
+            <p className="text-[12px] mb-3" style={{ color: "var(--text-3)" }}>
+              Use this on a new or replacement device. Select how your device connects, then enter the server details and your PIN. All your data will download.
             </p>
 
+            <div className="mb-4 space-y-1.5">
+              <p className="text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Connection mode</p>
+              {(["STORE_HUB", "CONNECT_TO_HUB", "DIRECT_RAILWAY"] as const).map((mode) => (
+                <label key={mode} className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 transition ${
+                  cMode === mode
+                    ? "border-emerald-300 bg-emerald-50"
+                    : "border-zinc-200 bg-zinc-50 hover:bg-zinc-100"
+                }`}>
+                  <input
+                    type="radio"
+                    name="cMode"
+                    value={mode}
+                    checked={cMode === mode}
+                    onChange={() => { setCMode(mode); setCError("") }}
+                    className="mt-0.5 h-3.5 w-3.5 accent-emerald-600 shrink-0"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold" style={{ color: "var(--text)" }}>
+                      {mode === "STORE_HUB" ? "Store Hub (runs the local API)" :
+                       mode === "CONNECT_TO_HUB" ? "Connect to a Hub on your LAN" :
+                       "Direct to Cloud (Railway)"}
+                    </p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
+                      {mode === "STORE_HUB" ? "For the device running the local server." :
+                       mode === "CONNECT_TO_HUB" ? "For devices connecting to a hub on the local network." :
+                       "For devices connecting directly to the Railway cloud."}
+                    </p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
             <label className="block mb-3">
-              <span className="block text-[12px] font-bold mb-1.5" style={{ color: "var(--text-2)" }}>Server URL</span>
-              <input value={cApiUrl} onChange={(e) => setCApiUrl(e.target.value)} placeholder="https://your-app.railway.app" className="input w-full" autoFocus />
+              <span className="block text-[12px] font-bold mb-1.5" style={{ color: "var(--text-2)" }}>
+                {cMode === "STORE_HUB" ? "Local API URL" :
+                 cMode === "CONNECT_TO_HUB" ? "Hub LAN URL" :
+                 "Cloud Server URL"}
+              </span>
+              <input
+                value={cApiUrl}
+                onChange={(e) => setCApiUrl(e.target.value)}
+                placeholder={
+                  cMode === "CONNECT_TO_HUB"
+                    ? "http://192.168.1.100:3015"
+                    : "https://your-app.railway.app"
+                }
+                className="input w-full"
+                autoFocus
+              />
+              {cMode === "CONNECT_TO_HUB" && (
+                <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>
+                  Enter the LAN address of your hub device (e.g., http://192.168.1.100:3015).
+                </p>
+              )}
+              {cMode === "STORE_HUB" && (
+                <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>
+                  The hub URL is <strong>http://localhost:3015</strong> by default.
+                </p>
+              )}
+              {cMode === "DIRECT_RAILWAY" && (
+                <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>
+                  Enter your Railway app URL (e.g., https://your-app.railway.app).
+                </p>
+              )}
             </label>
             <label className="block mb-3">
               <span className="block text-[12px] font-bold mb-1.5" style={{ color: "var(--text-2)" }}>Store subdomain <span style={{ color: "var(--text-3)" }}>(optional if single store)</span></span>
@@ -463,6 +549,18 @@ export default function LoginScreen() {
                 onKeyDown={(e) => { if (e.key === "Enter") handleConnect() }}
                 placeholder="••••" className="input w-full text-center text-xl font-bold tracking-widest" style={{ height: 50 }} />
             </label>
+
+            {cMode === "CONNECT_TO_HUB" && (
+              <label className="block mb-3">
+                <span className="block text-[12px] font-bold mb-1.5" style={{ color: "var(--text-2)" }}>Pairing Code</span>
+                <input value={cPairCode} onChange={(e) => setCPairCode(e.target.value.toUpperCase().slice(0, 6))}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleConnect() }}
+                  placeholder="ABC123" className="input w-full text-center text-xl font-bold tracking-widest" style={{ height: 50 }} />
+                <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>
+                  Enter the 6-character code shown in Settings → Device on the hub.
+                </p>
+              </label>
+            )}
 
             {cError && (
               <p className="rounded-lg px-3 py-2 text-[13px] font-semibold mb-3" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>{cError}</p>

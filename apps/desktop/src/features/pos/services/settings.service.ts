@@ -6,6 +6,8 @@ const SETTINGS_EVENT = "lebanonpos-settings-changed"
 import { put } from "./db"
 import { enqueueSyncOperation } from "./sync.service"
 
+export type ConnectionMode = "STORE_HUB" | "CONNECT_TO_HUB" | "DIRECT_RAILWAY"
+
 export type AppSettings = {
   storeName: string
   branchName: string
@@ -23,6 +25,8 @@ export type AppSettings = {
   assignMode: "manual" | "broadcast"
   assignTimeout: number
   defaultDriverId: string
+  registerId?: string
+  registerName?: string
 }
 
 export const defaultSettings: AppSettings = {
@@ -42,6 +46,7 @@ export const defaultSettings: AppSettings = {
   assignMode: "manual",
   assignTimeout: 5,
   defaultDriverId: "",
+  registerName: "Main Register",
 }
 
 
@@ -83,6 +88,14 @@ export function saveSettings(settings: AppSettings) {
     summary: "Business settings queued for sync.",
     payload: settings,
   })
+}
+
+export function getRegisterId(): string {
+  return getSettings().registerId ?? "REG-001"
+}
+
+export function getRegisterName(): string {
+  return getSettings().registerName ?? "Main Register"
 }
 
 export function subscribeSettings(callback: (settings: AppSettings) => void) {

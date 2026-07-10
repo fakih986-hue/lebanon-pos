@@ -65,13 +65,36 @@ export function saveCloudConfig(tenantId: string, apiKey: string): void {
   restartCloudSyncBridge()
 }
 
-/** Current cloud connection status for the Settings UI. */
-export function getCloudStatus(): { configured: boolean; running: boolean; tenantId?: string; lastPullAt?: string } {
+let _lastPushError: string | undefined
+let _lastPullError: string | undefined
+let _lastPushErrorAt: string | undefined
+let _lastPullErrorAt: string | undefined
+let _failedPushCount = 0
+let _failedPullCount = 0
+let _lastSuccessfulPushAt: string | undefined
+let _lastSuccessfulPullAt: string | undefined
+
+export function getCloudStatus(): {
+  configured: boolean
+  running: boolean
+  tenantId?: string
+  lastPullAt?: string
+  lastPushAt?: string
+  lastError?: string
+  lastErrorAt?: string
+  failedPushCount: number
+  failedPullCount: number
+} {
   return {
     configured: !!(CLOUD_API_URL && CLOUD_TENANT && CLOUD_API_KEY),
     running,
     tenantId:   CLOUD_TENANT,
     lastPullAt: readState().lastPullAt,
+    lastPushAt: _lastSuccessfulPushAt,
+    lastError:  _lastPushError || _lastPullError,
+    lastErrorAt: _lastPushErrorAt || _lastPullErrorAt,
+    failedPushCount: _failedPushCount,
+    failedPullCount: _failedPullCount,
   }
 }
 
@@ -212,7 +235,10 @@ async function pushToCloud(): Promise<void> {
 
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
-    throw new Error(`HTTP ${res.status}: ${text}`)
+    _lastPushError = `HTTP ${res.status}: ${text}`
+    _lastPushErrorAt = new Date().toISOString()
+    _failedPushCount++
+    throw new Error(_lastPushError)
   }
 
   const { results } = (await res.json()) as {
@@ -232,36 +258,45 @@ async function pushToCloud(): Promise<void> {
         })
       } else if (r.status === "rejected") {
         errCount++
+        _lastPushError = r.error ?? "Rejected by Railway"
+        _lastPushErrorAt = new Date().toISOString()
+        _failedPushCount++
         await prisma.syncOperation.updateMany({
           where: { id: r.id, tenantId },
           data:  {
             status:        "Rejected",
             attempts:      MAX_ATTEMPTS,
             lastAttemptAt: new Date(),
-            error:         r.error ?? "Rejected by Railway",
+            error:         _lastPushError,
           },
         })
       } else {
         errCount++
-        // Prisma doesn't allow `{ increment: 1 }` in updateMany — use raw increment workaround
         const current = await prisma.syncOperation.findFirst({
           where:  { id: r.id, tenantId },
           select: { attempts: true },
         })
         const newAttempts = (current?.attempts ?? 0) + 1
+        _lastPushError = r.error ?? "Unknown error from Railway"
+        _lastPushErrorAt = new Date().toISOString()
+        _failedPushCount++
         await prisma.syncOperation.updateMany({
           where: { id: r.id, tenantId },
           data:  {
             status:        newAttempts >= MAX_ATTEMPTS ? "Failed" : "Pending",
             attempts:      newAttempts,
             lastAttemptAt: new Date(),
-            error:         r.error ?? "Unknown error from Railway",
+            error:         _lastPushError,
           },
         })
       }
     })
   )
 
+  if (okCount > 0) {
+    _lastSuccessfulPushAt = new Date().toISOString()
+    _lastPushError = undefined
+  }
   console.log(`[cloud-sync] Push done — ✓ ${okCount} synced, ✗ ${errCount} failed`)
 }
 
@@ -297,7 +332,10 @@ async function pullFromCloud(): Promise<void> {
 
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
-    throw new Error(`HTTP ${res.status}: ${text}`)
+    _lastPullError = `HTTP ${res.status}: ${text}`
+    _lastPullErrorAt = new Date().toISOString()
+    _failedPullCount++
+    throw new Error(_lastPullError)
   }
 
   const data = (await res.json()) as PullResponse
@@ -321,6 +359,8 @@ async function pullFromCloud(): Promise<void> {
   // server-accurate), then pullStartedAt (hub's clock — least accurate).
   const serverTime = (data as any).serverTime ?? res.headers.get("Date") ?? pullStartedAt
   writeState({ lastPullAt: serverTime })
+  _lastSuccessfulPullAt = new Date().toISOString()
+  _lastPullError = undefined
   broadcastToTenant(tenantId, "sync:data-changed", {})
   console.log(`[cloud-sync] Pull done${since ? ` (since ${since})` : " (full)"}`)
 }
