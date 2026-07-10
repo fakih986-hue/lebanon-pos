@@ -21,6 +21,7 @@ import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 import prisma from "../lib/prisma.js"
 import { triggerFullPull, saveCloudConfig, getCloudStatus } from "../services/cloudSync.js"
+import { generateCloudApiKey } from "../lib/cloudKey.js"
 
 interface AuthPayload { userId: string; tenantId: string; role: string }
 type Req = IncomingMessage & { body?: unknown }
@@ -257,11 +258,24 @@ router.post("/discover", async (req: Req, res: Response) => {
       return
     }
 
+    // Tenants created before the cloudApiKey column was added (migration
+    // 20260604193053) were backfilled with an empty string, not a real key.
+    // Discovery is already PIN-authenticated, so it's a safe place to self-heal
+    // that once — otherwise activation silently forwards "" to /cloud-config,
+    // which rejects it with a generic "tenantId and apiKey are required" that
+    // gives the pilot user no way to know their store's key was never set.
+    let cloudApiKey = tenant.cloudApiKey
+    if (!cloudApiKey) {
+      cloudApiKey = generateCloudApiKey()
+      await prisma.tenant.update({ where: { id: tenant.id }, data: { cloudApiKey } })
+      console.log(`[setup] backfilled missing cloudApiKey for tenant ${tenant.id} (${tenant.subdomain})`)
+    }
+
     res.json({
       tenantId: tenant.id,
       tenantName: tenant.name,
       subdomain: tenant.subdomain,
-      cloudApiKey: tenant.cloudApiKey,
+      cloudApiKey,
     })
   } catch (err) {
     console.error("[setup] discover error:", err)
@@ -308,7 +322,7 @@ router.post("/cloud-config", async (req: Req, res: Response) => {
     return
   }
   if (!tenantId || !apiKey) {
-    res.status(400).json({ error: "tenantId and apiKey are required" })
+    res.status(400).json({ error: "tenantId and apiKey are required — re-run Store Setup, or check the store's API key under Cloud Sync settings." })
     return
   }
 

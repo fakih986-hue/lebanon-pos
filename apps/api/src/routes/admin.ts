@@ -1,11 +1,12 @@
 import { Router } from "express"
-import { timingSafeEqual, randomInt, randomBytes, createHash } from "crypto"
+import { timingSafeEqual, randomInt, createHash } from "crypto"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
 import type { ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
 import { signToken, requireAuth, json } from "../middleware/auth.js"
 import type { AuthRequest } from "../middleware/auth.js"
+import { generateCloudApiKey } from "../lib/cloudKey.js"
 
 const router = Router()
 
@@ -20,11 +21,6 @@ function requireAdmin(req: AuthRequest, res: ServerResponse, next: (err?: unknow
 /** Generate a random numeric PIN of the given length */
 function generateRandomPin(length = 6): string {
   return Array.from({ length }, () => randomInt(0, 10)).join("")
-}
-
-/** Generate a per-tenant cloud sync API key (64-char hex) */
-function generateCloudApiKey(): string {
-  return randomBytes(32).toString("hex")
 }
 
 const createTenantSchema = z.object({

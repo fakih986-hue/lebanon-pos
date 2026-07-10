@@ -658,6 +658,7 @@ async function connect(){
   try{
     const disc=await window.activationAPI.discover(sub,pin);
     if(!disc.ok) throw new Error(disc.error);
+    if(!disc.data.cloudApiKey) throw new Error('This store is missing its cloud API key. Ask the owner to regenerate it from the Owner Portal, then try again.');
     const pw=await window.activationAPI.getAdminPassword();
     const saved=await window.activationAPI.saveCloudConfig(disc.data.tenantId,disc.data.cloudApiKey,pw);
     if(!saved.ok) throw new Error(saved.error);
