@@ -585,24 +585,25 @@ export default function StaffPage() {
               ) : filteredUsers.map((user) => (
                 <article
                   key={user.id}
-                  className={`rounded-lg border p-4 ${
-                    user.id === activeUser.id
-                      ? "border-emerald-300 bg-emerald-50"
-                      : "border-zinc-200 bg-white"
-                  }`}
+                  className="rounded-lg border p-4 transition"
+                  style={user.id === activeUser.id
+                    ? { borderColor: "var(--brand-border)", background: "var(--brand-soft)", boxShadow: "inset 3px 0 0 var(--brand)" }
+                    : { borderColor: "var(--border)", background: "var(--surface)" }}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-bold text-zinc-950">{user.name}</h3>
-                      <p className="mt-1 text-sm text-zinc-500">{user.mobile}</p>
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[13px] font-bold"
+                        style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}
+                      >
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="truncate font-bold" style={{ color: "var(--text)" }}>{user.name}</h3>
+                        <p className="truncate text-sm" style={{ color: "var(--text-3)" }}>{user.mobile}</p>
+                      </div>
                     </div>
-                    <span
-                      className={`rounded-lg px-2 py-1 text-xs font-bold ${
-                        user.active
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-zinc-100 text-zinc-500"
-                      }`}
-                    >
+                    <span className={`chip shrink-0 ${user.active ? "chip-success" : "chip-neutral"}`}>
                       {user.active ? t("pos.staff.status_active") : t("pos.staff.status_disabled")}
                     </span>
                   </div>
@@ -624,14 +625,15 @@ export default function StaffPage() {
                     )}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-3 gap-2">
+                  <div className="mt-4 grid grid-cols-3 gap-1.5">
                     <button
                       type="button"
                       onClick={() => setCurrentUser(user.id)}
                       disabled={!user.active}
-                      className="flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:bg-zinc-200 disabled:text-zinc-400"
+                      className="flex h-8 items-center justify-center gap-1.5 rounded-lg border text-[11px] font-bold transition hover:opacity-80 disabled:opacity-40"
+                      style={{ background: "var(--surface-2)", borderColor: "var(--border-strong)", color: "var(--text)" }}
                     >
-                      <BadgeCheck size={16} />
+                      <BadgeCheck size={13} />
                       {t("pos.staff.use")}
                     </button>
                     <button
@@ -649,17 +651,19 @@ export default function StaffPage() {
                           },
                         })
                       }}
-                      className="flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+                      className="flex h-8 items-center justify-center gap-1.5 rounded-lg border text-[11px] font-bold transition hover:opacity-80"
+                      style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
                     >
-                      <LockKeyhole size={16} />
+                      <LockKeyhole size={13} />
                       {user.active ? t("pos.staff.disable") : t("pos.staff.enable")}
                     </button>
                     <button
                       type="button"
                       onClick={() => { setPinChangeUserId(user.id); setNewPin(""); setPinChangeError("") }}
-                      className="flex h-10 items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+                      className="flex h-8 items-center justify-center gap-1.5 rounded-lg border text-[11px] font-bold transition hover:opacity-80"
+                      style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}
                     >
-                      <KeyRound size={16} />
+                      <KeyRound size={13} />
                       {t("pos.staff.change_pin")}
                     </button>
                   </div>
