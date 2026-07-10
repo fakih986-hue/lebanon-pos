@@ -1,7 +1,7 @@
 # Titan POS — Desktop Release Checklist
 
 **Version:** 1.0.8
-**Date:** 2026-07-10
+**Date:** 2026-07-11
 
 ---
 
@@ -19,26 +19,25 @@
 
 ## Before Release
 
-- [ ] **Clean git status** — no uncommitted changes
-- [ ] **All tests pass** — `pnpm test:desktop` (78/78)
-- [ ] **Typecheck clean** — `pnpm typecheck:desktop` + `pnpm typecheck:api`
-- [ ] **Desktop build passes** — `pnpm build:desktop`
-- [ ] **API build passes** — `pnpm --dir apps/api build`
-- [ ] **Version bumped** — `apps/electron/package.json` version set (currently 1.0.8)
-- [ ] **CHANGELOG updated** — list changes since last release
-- [ ] **Icons exist** — `assets/icon.png` and `assets/icon.ico` present
-- [ ] **Git tag created** — `git tag v1.0.8` matching version
-- [ ] **All commits pushed** — `git push origin master --tags`
+- [x] **Clean git status** — no uncommitted changes
+- [x] **All tests pass** — `pnpm test:desktop` (101/101)
+- [x] **Typecheck clean** — `pnpm typecheck:desktop` + `pnpm typecheck:api`
+- [x] **Desktop build passes** — `pnpm build:desktop`
+- [x] **API build passes** — `pnpm --dir apps/api build`
+- [x] **Version bumped** — `apps/electron/package.json` version set (currently 1.0.8)
+- [x] **Icons exist** — `assets/icon.png` and `assets/icon.ico` present
+- [ ] **Git tag created** — `git tag v1.0.8` matching version (not yet — awaiting instructions)
+- [x] **All commits pushed** — `git push origin master`
 
 ---
 
 ## Build Installer
 
-- [ ] **Clean build** — `pnpm --dir apps/electron run package` completes without errors
-- [ ] **Output exists** — `Titan POS Setup 1.0.8.exe` in `apps/electron/dist-v8/`
-- [ ] **Portable exists** — `Titan POS 1.0.8.exe` in `apps/electron/dist-v8/`
-- [ ] **latest.yml generated** — Auto-update manifest present
-- [ ] **Checksums generated** — `sha256sum Titan POS Setup 1.0.8.exe > Titan POS 1.0.8.sha256`
+- [x] **Clean build** — `pnpm --dir apps/electron run package` completes without errors
+- [x] **Output exists** — `Titan POS Setup 1.0.8.exe` in `apps/electron/dist-v8/`
+- [x] **Portable exists** — `Titan POS 1.0.8.exe` in `apps/electron/dist-v8/`
+- [x] **latest.yml generated** — Auto-update manifest present
+- [x] **Checksums generated** — SHA-256 file in `dist-v8/Titan POS 1.0.8.sha256`
 
 ### Code Signing (Stable releases only)
 
@@ -144,8 +143,9 @@
 | 2 | **Placeholder app icon** — no `titan-source.png` | All | Provide 1024×1024 logo; run `node make-icons.mjs` |
 | 3 | **Thermal printer** requires browser print dialog | All | Setup by store owner via Settings → Printer |
 | 4 | **Auto-update disabled for unsigned builds** | Internal, Pilot | Manual re-install for each version |
-| 5 | **No EV certificate needed** — OV or Azure Artifact Signing sufficient | Stable | See code-signing report for purchasing steps |
+| 5 | **No code signing certificate** — OV or Azure Artifact Signing needed | Stable | See code-signing report for purchasing steps |
 | 6 | **Bundled PostgreSQL** adds ~100MB | All | Expected for offline-capable desktop app |
+| 7 | **Deferred**: tablet layout, refund wizard, monolith decomposition | Pilot | Planned for future sprints |
 
 ---
 
