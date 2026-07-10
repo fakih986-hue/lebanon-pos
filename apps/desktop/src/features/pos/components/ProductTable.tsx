@@ -259,7 +259,7 @@ export default function ProductTable({
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Link to="/products/new" className="btn-primary btn-md">
+          <Link to="/products/new" className="btn-default btn-md">
             <Plus size={17} />
             {t("pos.receive_products")}
           </Link>

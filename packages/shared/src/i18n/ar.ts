@@ -391,6 +391,7 @@ export const ar = {
   "pos.update": "تحديث",
   "pos.create": "إنشاء",
   "pos.confirm": "تأكيد",
+  "pos.customers": "العملاء",
   "pos.clear": "مسح",
   "pos.discard": "إلغاء",
   "pos.resume": "استئناف",

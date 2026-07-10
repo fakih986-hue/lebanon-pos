@@ -23,6 +23,7 @@ AGENTS.md
 *.tmp*
 apps/electron/dist-v6/
 apps/electron/dist-v7/
+apps/electron/dist-v8/
 apps/electron/assets/titan-source.png
 
 .env.*.local

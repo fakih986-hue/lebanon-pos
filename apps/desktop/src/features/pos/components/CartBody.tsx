@@ -138,14 +138,13 @@ export default function CartBody({
         <button
           type="button"
           onClick={onToggleSellAtCost}
-          className={`w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-[12px] font-bold transition ${
-            sellAtCost
-              ? "bg-amber-500/15 border border-amber-500/30 text-amber-400"
-              : "border text-[var(--text-3)] hover:text-[var(--text-2)]"
-          }`}
-          style={!sellAtCost ? { borderColor: "var(--border)" } : undefined}
+          className="w-full flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12px] font-bold transition"
+          aria-pressed={sellAtCost}
+          style={sellAtCost
+            ? { background: "var(--warning-soft)", borderColor: "var(--warning)", color: "var(--warning-text)" }
+            : { borderColor: "var(--border)", color: "var(--text-3)" }}
         >
-          <span className={`h-1.5 w-1.5 rounded-full ${sellAtCost ? "bg-amber-400" : "bg-[var(--text-3)]"}`} />
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: sellAtCost ? "var(--warning)" : "var(--text-3)" }} />
           {sellAtCost ? t("pos.sell_at_cost") + " — ON" : t("pos.sell_at_cost")}
         </button>
 

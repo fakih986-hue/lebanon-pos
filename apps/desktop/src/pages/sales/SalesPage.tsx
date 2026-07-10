@@ -502,9 +502,9 @@ export default function SalesPage() {
             <span>
               <span style={{ color: "var(--text)" }}>{filteredSales.length}</span> sales
               {" · "}
-              <span style={{ color: "var(--brand-text)" }}>{formatCurrency(filteredRevenue)}</span> revenue
+              <span className="tabular-nums font-bold" style={{ color: "var(--text)" }}>{formatCurrency(filteredRevenue)}</span> revenue
               {filteredProfit > 0 && (
-                <> · <span style={{ color: "var(--brand-text)" }}>{formatCurrency(filteredProfit)}</span> profit</>
+                <> · <span className="tabular-nums font-bold" style={{ color: "var(--success-text)" }}>{formatCurrency(filteredProfit)}</span> profit</>
               )}
             </span>
             {search && (

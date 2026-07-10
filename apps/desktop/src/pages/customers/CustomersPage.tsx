@@ -353,7 +353,7 @@ export default function CustomersPage() {
         </div>
         <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
           <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Collected</p>
-          <p className="mt-1 text-[22px] font-black tabular-nums" style={{ color: "var(--brand-text)" }}>{formatCurrency(totals.paidTotal)}</p>
+          <p className="mt-1 text-[22px] font-black tabular-nums" style={{ color: "var(--success-text)" }}>{formatCurrency(totals.paidTotal)}</p>
         </div>
       </section>
 

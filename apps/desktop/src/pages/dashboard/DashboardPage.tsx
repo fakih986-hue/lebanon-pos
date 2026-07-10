@@ -60,11 +60,11 @@ function TrendChart({ sales, range }: { sales: Sale[]; range: DateRange }) {
 
   return (
     <div>
-      <div className="flex items-stretch gap-[3px] h-36 mt-4">
+      <div className={`flex items-stretch gap-[3px] h-36 mt-4 ${data.length === 1 ? "justify-center" : ""}`}>
         {data.map((d, i) => {
           const pct = (d.total / max) * 100
           return (
-            <div key={i} className="flex-1 flex flex-col items-center justify-end gap-0.5 group relative">
+            <div key={i} className={`flex flex-col items-center justify-end gap-0.5 group relative ${data.length === 1 ? "w-32" : "flex-1"}`}>
               {/* Tooltip */}
               {d.total > 0 && (
                 <div

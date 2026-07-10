@@ -391,6 +391,7 @@ export const en = {
   "pos.update": "Update",
   "pos.create": "Create",
   "pos.confirm": "Confirm",
+  "pos.customers": "Customers",
   "pos.clear": "Clear",
   "pos.discard": "Discard",
   "pos.resume": "Resume",

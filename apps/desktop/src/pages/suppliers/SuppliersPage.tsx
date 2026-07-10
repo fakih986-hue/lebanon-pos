@@ -286,7 +286,7 @@ export default function SuppliersPage() {
             </div>
             <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
               <p className="text-sm font-medium text-zinc-500">Paid</p>
-              <p className="mt-2 text-2xl font-bold text-emerald-700">
+              <p className="mt-2 text-2xl font-bold tabular-nums" style={{ color: "var(--success-text)" }}>
                 {formatCurrency(totals.paidTotal)}
               </p>
             </div>

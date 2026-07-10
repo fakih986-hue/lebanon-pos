@@ -274,7 +274,9 @@ export default function QuickPOSMode({
       <div className="flex shrink-0 items-center gap-3 border-b px-4 py-2.5"
         style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
         <button type="button" onClick={onExit}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border transition hover:opacity-70"
+          aria-label="Exit Quick POS"
+          title="Exit Quick POS"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border transition hover:opacity-70"
           style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
           <ArrowLeft size={15} />
         </button>
@@ -400,15 +402,17 @@ export default function QuickPOSMode({
                       <p className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: "var(--text)" }}>{item.name}</p>
                       <div className="flex items-center gap-1 shrink-0">
                         <button type="button" onClick={() => onDecreaseQty(item.id)}
-                          className="flex h-6 w-6 items-center justify-center rounded-md"
-                          style={{ background: "var(--surface-2)", color: "var(--text-3)" }}>
-                          <Minus size={11} />
+                          aria-label={`Decrease ${item.name}`}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg transition active:scale-90"
+                          style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
+                          <Minus size={14} />
                         </button>
                         <span className="w-7 text-center text-[13px] font-black tabular-nums" style={{ color: "var(--text)" }}>{item.quantity}</span>
                         <button type="button" onClick={() => onIncreaseQty(item.id)}
-                          className="flex h-6 w-6 items-center justify-center rounded-md"
-                          style={{ background: "var(--surface-2)", color: "var(--text-3)" }}>
-                          <Plus size={11} />
+                          aria-label={`Increase ${item.name}`}
+                          className="flex h-9 w-9 items-center justify-center rounded-lg transition active:scale-90"
+                          style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
+                          <Plus size={14} />
                         </button>
                       </div>
                       <span className="w-16 shrink-0 text-right text-[13px] font-black tabular-nums" style={{ color: "var(--text)" }}>
@@ -446,14 +450,13 @@ export default function QuickPOSMode({
             <button
               type="button"
               onClick={onToggleSellAtCost}
-              className={`mx-4 flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-[12px] font-bold transition ${
-                sellAtCost
-                  ? "bg-amber-500/15 border border-amber-500/30 text-amber-400"
-                  : "border text-[var(--text-3)] hover:text-[var(--text-2)]"
-              }`}
-              style={!sellAtCost ? { borderColor: "var(--border)" } : undefined}
+              className="mx-4 flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12px] font-bold transition"
+              aria-pressed={sellAtCost}
+              style={sellAtCost
+                ? { background: "var(--warning-soft)", borderColor: "var(--warning)", color: "var(--warning-text)" }
+                : { borderColor: "var(--border)", color: "var(--text-3)" }}
             >
-              <span className={`h-1.5 w-1.5 rounded-full ${sellAtCost ? "bg-amber-400" : "bg-[var(--text-3)]"}`} />
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: sellAtCost ? "var(--warning)" : "var(--text-3)" }} />
               {sellAtCost ? t("pos.sell_at_cost") + " — ON" : t("pos.sell_at_cost")}
             </button>
           )}
