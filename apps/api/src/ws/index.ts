@@ -2,6 +2,7 @@ import { WebSocketServer, WebSocket } from "ws"
 import type { Server, IncomingMessage } from "node:http"
 import jwt from "jsonwebtoken"
 import type { AuthPayload } from "../middleware/auth.js"
+import { parseOriginList, stripTrailingSlash } from "../middleware/security.js"
 
 // Read lazily at use time — process.env may not be populated at module-load.
 function getJwtSecret(): string {
@@ -23,10 +24,7 @@ interface ClientInfo {
 const clients = new Map<WebSocket, ClientInfo>()
 
 function isOriginAllowed(origin: string | undefined): boolean {
-  const allowedOrigins = (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? "")
-    .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean)
+  const allowedOrigins = parseOriginList(process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN)
 
   // No origin = server-side / same-origin request — allow
   if (!origin) return true
@@ -35,7 +33,7 @@ function isOriginAllowed(origin: string | undefined): boolean {
   if (lanRegex.test(origin)) return true
   // No allowlist configured — deny all cross-origin WS connections
   if (allowedOrigins.length === 0) return false
-  return allowedOrigins.includes(origin)
+  return allowedOrigins.includes(stripTrailingSlash(origin))
 }
 
 export function setupWebSocket(server: Server) {

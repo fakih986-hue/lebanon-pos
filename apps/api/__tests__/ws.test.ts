@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterAll } from "vitest"
+import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest"
 
 // Must be set before app/ws imports
 process.env.JWT_SECRET = "test-secret"
@@ -136,4 +136,46 @@ describe("WebSocket", () => {
         done()
       })
     }))
+
+  describe("origin allowlist trailing-slash tolerance", () => {
+    afterEach(() => { process.env.CORS_ORIGINS = "http://localhost:5173" })
+
+    it("accepts a connecting Origin with a trailing slash when the allowlist has none", () =>
+      new Promise<void>((done, reject) => {
+        const ws = new WebSocket(`ws://localhost:${port}/ws`, {
+          headers: { Origin: "http://localhost:5173/" },
+        })
+        ws.on("unexpected-response", () => reject(new Error("connection rejected")))
+        ws.on("message", (raw: Buffer) => {
+          const msg = JSON.parse(raw.toString())
+          expect(msg.type).toBe("connected")
+          ws.close()
+          done()
+        })
+      }))
+
+    it("accepts a connecting Origin with no trailing slash when the allowlist has one", () =>
+      new Promise<void>((done, reject) => {
+        process.env.CORS_ORIGINS = "http://localhost:5173/"
+        const ws = new WebSocket(`ws://localhost:${port}/ws`, {
+          headers: { Origin: "http://localhost:5173" },
+        })
+        ws.on("unexpected-response", () => reject(new Error("connection rejected")))
+        ws.on("message", (raw: Buffer) => {
+          const msg = JSON.parse(raw.toString())
+          expect(msg.type).toBe("connected")
+          ws.close()
+          done()
+        })
+      }))
+
+    it("still rejects a genuinely disallowed origin", () =>
+      new Promise<void>((done) => {
+        const ws = new WebSocket(`ws://localhost:${port}/ws`, {
+          headers: { Origin: "https://evil.example.com" },
+        })
+        ws.on("unexpected-response", () => done())
+        ws.on("open", () => { throw new Error("should not have connected") })
+      }))
+  })
 })

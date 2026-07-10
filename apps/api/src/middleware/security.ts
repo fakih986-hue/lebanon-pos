@@ -47,10 +47,18 @@ function persistPrune() {
   }).catch(() => {})
 }
 
-function parseOriginList(value?: string) {
+// A trailing slash on an Origin header is never actually present (browsers never
+// send one), but it's an easy typo in a CORS_ORIGINS env var — normalize both the
+// configured allowlist and whatever origin is compared against it so a stray
+// trailing slash doesn't silently reject every request from that origin.
+export function stripTrailingSlash(url: string): string {
+  return url.endsWith("/") ? url.slice(0, -1) : url
+}
+
+export function parseOriginList(value?: string) {
   return (value ?? "")
     .split(",")
-    .map((origin) => origin.trim())
+    .map((origin) => stripTrailingSlash(origin.trim()))
     .filter(Boolean)
 }
 
@@ -86,7 +94,7 @@ export function getCorsOptions(): CorsOptions {
         return
       }
 
-      callback(null, allowedOrigins.includes(origin))
+      callback(null, allowedOrigins.includes(stripTrailingSlash(origin)))
     },
   }
 }
