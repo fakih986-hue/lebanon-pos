@@ -1,16 +1,25 @@
 import { Router } from "express"
-import type { IncomingMessage, ServerResponse } from "node:http"
+import type { ServerResponse } from "node:http"
 import https from "node:https"
 import prisma from "../lib/prisma.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 
 const router = Router()
 
-const HF_TOKEN = (process.env.HUGGINGFACE_TOKEN || "").trim()
-const HF_MODEL = process.env.HF_IMAGE_MODEL || "black-forest-labs/FLUX.1-schnell"
-const HF_PROVIDER = process.env.HF_IMAGE_PROVIDER || "hf-inference"
-const HF_HOST = "router.huggingface.co"
-const HF_PATH = `/${HF_PROVIDER}/models/${HF_MODEL}`
+// Pollinations.ai — free image generation (Flux). No monthly credit limit, unlike
+// Hugging Face's metered "Inference Providers" which this replaced. Anonymous access
+// works but shares a small, easily-congested global queue; a free token from
+// auth.pollinations.ai moves requests onto a much less contended tier and drops
+// the forced watermark.
+const IMG_HOST = "image.pollinations.ai"
+const IMG_MODEL = process.env.POLLINATIONS_MODEL || "flux"
+const IMG_SIZE = 640
+const POLLINATIONS_TOKEN = (process.env.POLLINATIONS_TOKEN || "").trim()
+
+// MyMemory — free, keyless translation. Product names typed in Arabic (or other
+// non-Latin scripts) confuse the image model, which was trained mostly on Latin-script
+// text — translate to English first so the model has something it understands.
+const TRANSLATE_HOST = "api.mymemory.translated.net"
 
 function generatePlaceholderSvg(productName: string): string {
   const encodedName = productName.replace(/[<>&"']/g, "").trim() || "Product"
@@ -26,28 +35,22 @@ function generatePlaceholderSvg(productName: string): string {
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`
 }
 
-function hfRequest(body: string): Promise<Buffer> {
+function httpGetBuffer(hostname: string, path: string, timeoutMs: number, headers: Record<string, string> = {}): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const req = https.request({
-      hostname: HF_HOST,
+      hostname,
       port: 443,
-      path: HF_PATH,
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${HF_TOKEN}`,
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(body).toString(),
-        "User-Agent": "lebanonpos/1.0",
-      },
-      timeout: 60000,
+      path,
+      method: "GET",
+      headers: { "User-Agent": "lebanonpos/1.0", ...headers },
+      timeout: timeoutMs,
     }, (res) => {
       const chunks: Buffer[] = []
       res.on("data", (c: Buffer) => chunks.push(c))
       res.on("end", () => {
         const buf = Buffer.concat(chunks)
         if (res.statusCode && res.statusCode >= 400) {
-          const errText = buf.toString("utf8").substring(0, 300)
-          reject(new Error(`HF API ${res.statusCode}: ${errText}`))
+          reject(new Error(`${res.statusCode}: ${buf.toString("utf8").substring(0, 200)}`))
           return
         }
         resolve(buf)
@@ -55,26 +58,69 @@ function hfRequest(body: string): Promise<Buffer> {
     })
     req.on("error", reject)
     req.on("timeout", () => { req.destroy(); reject(new Error("timeout")) })
-    req.write(body)
     req.end()
   })
 }
 
-async function generateImage(productName: string): Promise<{ image: string; generated: boolean }> {
-  if (!HF_TOKEN) {
-    return { image: generatePlaceholderSvg(productName), generated: false }
-  }
+// Most product names on a Lebanese POS are Arabic or French. French is Latin-script
+// and the model handles it fine; Arabic (or other non-Latin script) needs translating
+// first or the model generates something unrelated to the product.
+function isLatinScript(text: string): boolean {
+  const arabicChars = text.match(/[؀-ۿݐ-ݿ]/g) || []
+  return arabicChars.length < text.length * 0.3
+}
 
+async function translateToEnglish(text: string): Promise<string | null> {
   try {
-    const prompt = `Professional product photo of ${productName}, white background, studio lighting, high quality, e-commerce`
-    const body = JSON.stringify({ inputs: prompt })
-    const buffer = await hfRequest(body)
-    const base64 = buffer.toString("base64")
-    return { image: `data:image/jpeg;base64,${base64}`, generated: true }
+    const path = `/get?q=${encodeURIComponent(text)}&langpair=ar%7Cen`
+    const buffer = await httpGetBuffer(TRANSLATE_HOST, path, 8000)
+    const data = JSON.parse(buffer.toString("utf8"))
+    const translated = data?.responseData?.translatedText?.trim()
+    return translated && translated.toLowerCase() !== text.toLowerCase() ? translated : null
   } catch (err) {
-    console.error(`[images] HF error for "${productName}":`, (err as Error).message)
-    return { image: generatePlaceholderSvg(productName), generated: false }
+    console.error(`[images] translate error for "${text}":`, (err as Error).message)
+    return null
   }
+}
+
+function buildPrompt(productName: string, category?: string | null): string {
+  const subject = category ? `${productName}, category: ${category}` : productName
+  return `Professional e-commerce product photo of ${subject}, centered, isolated on a pure white background, soft studio lighting, photorealistic, high detail, no text, no logo, no watermark`
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function fetchGeneratedImage(prompt: string): Promise<Buffer> {
+  const seed = Math.floor(Math.random() * 1_000_000)
+  const path = `/prompt/${encodeURIComponent(prompt)}?width=${IMG_SIZE}&height=${IMG_SIZE}&model=${IMG_MODEL}&nologo=true&private=true&seed=${seed}`
+  const headers: Record<string, string> = POLLINATIONS_TOKEN ? { Authorization: `Bearer ${POLLINATIONS_TOKEN}` } : {}
+  return httpGetBuffer(IMG_HOST, path, 30000, headers)
+}
+
+// The anonymous tier shares a small global queue that occasionally reports "queue
+// full" under load — a short backoff before retrying gives it time to drain instead
+// of immediately re-hitting the same congestion.
+async function generateImage(productName: string, category?: string | null): Promise<{ image: string; generated: boolean }> {
+  const promptSubject = isLatinScript(productName)
+    ? productName
+    : (await translateToEnglish(productName)) || productName
+  const prompt = buildPrompt(promptSubject, category)
+
+  const maxAttempts = 3
+  const retryDelayMs = Number(process.env.IMAGE_RETRY_DELAY_MS ?? 4000)
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const buffer = await fetchGeneratedImage(prompt)
+      const base64 = buffer.toString("base64")
+      return { image: `data:image/jpeg;base64,${base64}`, generated: true }
+    } catch (err) {
+      console.error(`[images] generation error for "${productName}" (attempt ${attempt}/${maxAttempts}):`, (err as Error).message)
+      if (attempt < maxAttempts) await sleep(retryDelayMs * attempt)
+    }
+  }
+  return { image: generatePlaceholderSvg(productName), generated: false }
 }
 
 // Save a client-generated image for a single product
@@ -126,12 +172,12 @@ router.post("/save-all", requireAuth, async (req: AuthRequest, res: ServerRespon
 
 router.post("/generate", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const { name } = (req as any).body ?? {}
+    const { name, category } = (req as any).body ?? {}
     if (!name || typeof name !== "string") {
       json(res, { error: "Product name is required" }, 400)
       return
     }
-    const result = await generateImage(name)
+    const result = await generateImage(name, typeof category === "string" ? category : null)
     json(res, result)
   } catch (err) {
     console.error("Generate image error:", err)
@@ -145,13 +191,13 @@ router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: 
     const tenantId = req.auth!.tenantId
     const product = await prisma.product.findFirst({
       where: { id: productId, tenantId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, category: true },
     })
     if (!product) {
       json(res, { error: "Product not found" }, 404)
       return
     }
-    const { image, generated } = await generateImage(product.name)
+    const { image, generated } = await generateImage(product.name, product.category)
     await prisma.product.update({ where: { id: product.id }, data: { image } })
     json(res, { image, generated })
   } catch (err) {
@@ -177,7 +223,7 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
 
     const products = await prisma.product.findMany({
       where,
-      select: { id: true, name: true },
+      select: { id: true, name: true, category: true },
       orderBy: { name: "asc" },
     })
 
@@ -191,7 +237,7 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
 
     for (const product of products) {
       try {
-        const { image, generated } = await generateImage(product.name)
+        const { image, generated } = await generateImage(product.name, product.category)
         await prisma.product.update({ where: { id: product.id }, data: { image } })
         results.push({ id: product.id, name: product.name, image, generated, placeholder: !generated })
       } catch (err) {
@@ -203,7 +249,7 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
     const placeholderCount = results.filter(r => r.placeholder).length
     const errorCount = results.filter(r => r.error).length
     console.log(`[images] generate-all: ${generatedCount} AI, ${placeholderCount} placeholders, ${errorCount} errors (${products.length} total)`)
-    json(res, { generated: generatedCount, placeholders: placeholderCount, total: products.length, tokenMissing: !HF_TOKEN, products: results })
+    json(res, { generated: generatedCount, placeholders: placeholderCount, total: products.length, products: results })
   } catch (err) {
     console.error("Generate all images error:", err)
     json(res, { error: "Failed to generate images" }, 500)
@@ -275,7 +321,5 @@ router.get("/debug", requireAuth, async (req: AuthRequest, res: ServerResponse) 
     json(res, { error: "Failed to load debug info" }, 500)
   }
 })
-
-// /token endpoint removed — HuggingFace token must never be exposed to clients
 
 export default router

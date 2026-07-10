@@ -1,7 +1,53 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest"
+import { EventEmitter } from "node:events"
 import { startServer, stopServer, request } from "./helpers"
 import prisma from "../src/lib/prisma"
 import { signToken } from "../src/middleware/auth"
+
+// Image generation and translation both go through node:https — mock it so tests
+// never make real calls to Pollinations/MyMemory, and can force success/failure.
+const netState = vi.hoisted(() => ({
+  imageMode: "success" as "success" | "network-error" | "http-error",
+  translation: "Halloumi cheese",
+  lastImagePath: "",
+}))
+
+vi.mock("node:https", () => ({
+  default: {
+    request: (options: any, callback: (res: any) => void) => {
+      const req = new EventEmitter() as any
+      req.write = () => {}
+      req.end = () => {
+        queueMicrotask(() => {
+          const isTranslate = options.hostname === "api.mymemory.translated.net"
+          if (isTranslate) {
+            const res = new EventEmitter() as any
+            res.statusCode = 200
+            callback(res)
+            queueMicrotask(() => {
+              res.emit("data", Buffer.from(JSON.stringify({ responseData: { translatedText: netState.translation } })))
+              res.emit("end")
+            })
+            return
+          }
+          netState.lastImagePath = options.path
+          if (netState.imageMode === "network-error") {
+            req.emit("error", new Error("network down"))
+            return
+          }
+          const res = new EventEmitter() as any
+          res.statusCode = netState.imageMode === "http-error" ? 500 : 200
+          callback(res)
+          queueMicrotask(() => {
+            res.emit("data", Buffer.from("fake-image-bytes"))
+            res.emit("end")
+          })
+        })
+      }
+      return req
+    },
+  },
+}))
 
 vi.mock("../src/lib/prisma", () => {
   const model = () => ({
@@ -95,9 +141,44 @@ describe("POST /api/images/save-all", () => {
 })
 
 describe("POST /api/images/generate", () => {
-  beforeEach(() => { vi.clearAllMocks() })
+  beforeEach(() => {
+    netState.imageMode = "success"
+    netState.translation = "Halloumi cheese"
+    netState.lastImagePath = ""
+  })
 
-  it("generates a placeholder when no HF_TOKEN", async () => {
+  it("generates an AI image for a Latin-script name", async () => {
+    const res = await request("POST", "/api/images/generate", {
+      token,
+      body: { name: "Test Product" },
+    })
+    expect(res.status).toBe(200)
+    expect(res.body.generated).toBe(true)
+    expect(res.body.image).toContain("data:image/jpeg;base64,")
+    expect(netState.lastImagePath).toContain("Test%20Product")
+  })
+
+  it("includes category in the prompt when provided", async () => {
+    const res = await request("POST", "/api/images/generate", {
+      token,
+      body: { name: "Cola", category: "Beverages" },
+    })
+    expect(res.status).toBe(200)
+    expect(netState.lastImagePath).toContain("Beverages")
+  })
+
+  it("translates a non-Latin name before generating", async () => {
+    const res = await request("POST", "/api/images/generate", {
+      token,
+      body: { name: "جبنة حلوم" },
+    })
+    expect(res.status).toBe(200)
+    expect(res.body.generated).toBe(true)
+    expect(netState.lastImagePath).toContain(encodeURIComponent("Halloumi cheese"))
+  })
+
+  it("falls back to a placeholder when generation fails", async () => {
+    netState.imageMode = "http-error"
     const res = await request("POST", "/api/images/generate", {
       token,
       body: { name: "Test Product" },

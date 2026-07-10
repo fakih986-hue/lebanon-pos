@@ -591,7 +591,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       }
 
       showToast(`Generated ${data.generated} AI images, ${data.placeholders} placeholders (${data.total} products)`)
-      setGenImageStatus(`Generated ${data.generated} AI images${data.tokenMissing ? " — set HUGGINGFACE_TOKEN for real AI images" : ""}`)
+      setGenImageStatus(`Generated ${data.generated} AI images (${data.placeholders} placeholders, ${data.total} total)`)
     } catch (err) {
       showToast(`Image generation failed: ${(err as Error).message}`, "error")
       setGenImageStatus("Failed to generate images")

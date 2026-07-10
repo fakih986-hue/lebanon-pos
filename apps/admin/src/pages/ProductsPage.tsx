@@ -56,13 +56,11 @@ export function ProductsPage() {
     try {
       const body = { force, ...(tenantId ? { tenantId } : {}) }
       const hasBody = force || tenantId
-      const data = await api<{ generated: number; placeholders: number; total: number; tokenMissing?: boolean }>(
+      const data = await api<{ generated: number; placeholders: number; total: number }>(
         "/api/images/generate-all",
         { method: "POST", body: hasBody ? JSON.stringify(body) : undefined }
       )
-      if (data.tokenMissing) {
-        setGenStatus(t("products.images_token_missing") || "AI token not set — using placeholder images")
-      } else if (data.total === 0) {
+      if (data.total === 0) {
         setGenStatus(t("products.images_all_done") || "All products already have images")
       } else {
         setGenStatus(t("products.images_generated", { count: data.generated }) + ` (${data.placeholders} placeholders, ${data.total} total)`)
