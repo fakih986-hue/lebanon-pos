@@ -202,4 +202,14 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .reveal { transition: none; opacity: 1; transform: none; }
   .marquee-track, .animate-float, .shimmer-border { animation: none; }
+  .noise::after { opacity: 0.012; }
+}
+
+@media (max-width: 480px) {
+  h1.font-display { word-break: break-word; }
+  .text-outline { -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.06); }
+}
+
+@media (min-width: 768px) {
+  .text-outline { -webkit-text-stroke: 1px rgba(255, 255, 255, 0.08); }
 }

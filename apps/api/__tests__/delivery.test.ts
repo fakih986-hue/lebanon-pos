@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest"
+import { Prisma } from "../src/generated/prisma/index.js"
 import { startServer, stopServer, request } from "./helpers"
 import prisma from "../src/lib/prisma"
 import { signToken } from "../src/middleware/auth"
@@ -69,7 +70,7 @@ describe("POST /api/delivery/order", () => {
     })
     vi.mocked(prisma.deliveryOrder.count).mockResolvedValue(0)
     vi.mocked(prisma.product.findMany).mockResolvedValue([
-      { id: 1, name: "Cola", barcode: "123", price: 1.5, stock: 10 },
+      { id: 1, name: "Cola", barcode: "123", price: new Prisma.Decimal(1.5), stock: 10 },
     ] as any)
     vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
       deliveryFee: 2,
@@ -289,10 +290,10 @@ describe("PATCH /api/delivery/driver/orders/:id/status", () => {
       .mockResolvedValueOnce({
         id: "do1",
         tenantId: "t1",
-        total: 15,
-        deliveryFee: 2,
-        paidAmount: 20,
-        changeRequired: 0,
+        total: new Prisma.Decimal(15),
+        deliveryFee: new Prisma.Decimal(2),
+        paidAmount: new Prisma.Decimal(20),
+        changeRequired: new Prisma.Decimal(0),
         status: "OutForDelivery",
         driverId: "d1",
       })

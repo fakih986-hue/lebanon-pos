@@ -44,8 +44,8 @@ export function ThreeBackground() {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     const isMobile = window.matchMedia("(max-width: 768px)").matches
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, alpha: true })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1 : 2))
     renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.autoClear = false
 
@@ -246,12 +246,13 @@ export function ThreeBackground() {
           col *= 0.92 + 0.10 * sin(uTime * 0.5 + vUv.y * 2.4) + 0.06 * vUv.y;
 
           // the titan inside: molten light living in the engraved grooves.
-          // grooveMask picks the dark cuts of the shield, never the bright metal
-          float grooveMask = tex.a * (1.0 - smoothstep(0.06, 0.4, lum));
-          vec3 ember = vec3(1.0, 0.55, 0.18);
-          float innerLife = uHeart + uForge * 1.7;
+          // grooveMask picks the dark cuts of the shield, never the bright metal —
+          // tightened so the light stays confined to the cuts, crisp not bloomy
+          float grooveMask = tex.a * (1.0 - smoothstep(0.05, 0.22, lum));
+          vec3 ember = vec3(1.0, 0.5, 0.16);
+          float innerLife = uHeart + uForge * 0.85;
           // the fire rises from deeper cuts first (bottom-weighted while surging)
-          innerLife *= 0.8 + 0.5 * (1.0 - vUv.y) * uForge;
+          innerLife *= 0.85 + 0.35 * (1.0 - vUv.y) * uForge;
           col += ember * grooveMask * innerLife;
 
           // travelling specular sheen — a diagonal band of light crossing the metal,
@@ -329,7 +330,7 @@ export function ThreeBackground() {
           float ring2 = exp(-pow((d - r * 0.72) * 22.0, 2.0)) * 0.45;
           float fade = pow(1.0 - uWaveT, 1.7);
           vec3 col = vec3(1.0, 0.85, 0.5);
-          gl_FragColor = vec4(col, (ring + ring2) * fade * 0.4 * uOpacity);
+          gl_FragColor = vec4(col, (ring + ring2) * fade * 0.24 * uOpacity);
         }
       `,
     })
@@ -378,10 +379,14 @@ export function ThreeBackground() {
     })
 
     // a vast, barely-there shell around everything — the room you're standing in
-    const shellMat = new THREE.LineBasicMaterial({ color: 0x9a7b2e, transparent: true, opacity: 0.05 })
-    const shell = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(11, 1)), shellMat)
-    shell.position.set(0, 0, -6)
-    scene.add(shell)
+    // skipped on mobile to save GPU
+    let shell: THREE.LineSegments | null = null
+    if (!isMobile) {
+      const shellMat = new THREE.LineBasicMaterial({ color: 0x9a7b2e, transparent: true, opacity: 0.05 })
+      shell = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(11, 1)), shellMat)
+      shell.position.set(0, 0, -6)
+      scene.add(shell)
+    }
 
     // ── Layer 3: comet ──
     const TRAIL = 22
@@ -468,8 +473,7 @@ export function ThreeBackground() {
       dustUniforms.uTime.value = t
       emblemUniforms.uTime.value = t
 
-      shell.rotation.y = -t * 0.015
-      shell.rotation.x = t * 0.008
+      if (shell) { shell.rotation.y = -t * 0.015; shell.rotation.x = t * 0.008 }
 
       if (!lightsOn && t > 3.0) lightsOn = true // failsafe
       if (lightsOn && revealStart < 0) {
@@ -554,10 +558,10 @@ export function ThreeBackground() {
       core.position.x += (target.x - core.position.x) * 0.03
       core.position.y += (target.y + Math.sin(t * 0.5) * 0.18 - core.position.y) * 0.03
       const s = core.scale.x + (target.scale - core.scale.x) * 0.03
-      core.scale.setScalar(s * (1 + forge * 0.022)) // the thump
+      core.scale.setScalar(s * (1 + forge * 0.012)) // the thump
 
       emblemUniforms.uOpacity.value += (Math.min(1, target.opacity * 1.9) - emblemUniforms.uOpacity.value) * 0.04
-      haloMat.opacity = emblemUniforms.uOpacity.value * emblemUniforms.uReveal.value * (0.17 + forge * 0.2)
+      haloMat.opacity = emblemUniforms.uOpacity.value * emblemUniforms.uReveal.value * (0.17 + forge * 0.07)
 
       dust.rotation.y = t * 0.01
 
@@ -618,7 +622,7 @@ export function ThreeBackground() {
       dustGeo.dispose(); dustMat.dispose()
       skyMat.dispose()
       cometGeo.dispose(); cometMat.dispose()
-      shell.geometry.dispose(); shellMat.dispose()
+      if (shell) { shell.geometry.dispose(); (shell.material as THREE.Material).dispose() }
       emblem.geometry.dispose(); emblemMat.dispose()
       wave.geometry.dispose(); waveMat.dispose()
       sigilTexture.dispose(); haloTex.dispose(); glintTex.dispose()

@@ -67,10 +67,10 @@ export function Navbar() {
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
           >
-            <div className="w-4 flex flex-col gap-[5px]">
-              <span className={`h-[1.5px] bg-white rounded transition-transform duration-300 ${open ? "rotate-45 translate-y-[6.5px]" : ""}`} />
-              <span className={`h-[1.5px] bg-white rounded transition-opacity duration-300 ${open ? "opacity-0" : ""}`} />
-              <span className={`h-[1.5px] bg-white rounded transition-transform duration-300 ${open ? "-rotate-45 -translate-y-[6.5px]" : ""}`} />
+            <div className="w-4 flex flex-col gap-[4px]">
+              <span className={`h-[2px] bg-white rounded transition-transform duration-300 ${open ? "rotate-45 translate-y-[6px]" : ""}`} />
+              <span className={`h-[2px] bg-white rounded transition-opacity duration-300 ${open ? "opacity-0" : ""}`} />
+              <span className={`h-[2px] bg-white rounded transition-transform duration-300 ${open ? "-rotate-45 -translate-y-[6px]" : ""}`} />
             </div>
           </button>
         </nav>

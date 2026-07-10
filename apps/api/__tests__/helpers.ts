@@ -3,6 +3,7 @@ import { vi } from "vitest"
 vi.hoisted(() => {
   process.env.JWT_SECRET = "test-secret"
   process.env.IMAGE_RETRY_DELAY_MS = "0"
+  process.env.IS_LOCAL_SERVER = "false"
 })
 
 import http from "http"
