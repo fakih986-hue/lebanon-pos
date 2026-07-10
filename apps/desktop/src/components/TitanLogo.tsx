@@ -1,9 +1,12 @@
 /**
  * Titan POS — official logomark.
  *
- * Uses the brand image (gold circuit-helmet) served from /titan-logo.png.
- * The art is gold-on-black, so it's always shown on a rounded black plate
- * to stay crisp and consistent across light + dark themes.
+ * Uses the brand shield mark served from /titan-logo.png (regenerate via
+ * apps/electron/make-icons.mjs from the single source-of-truth asset). The
+ * art is a tight icon-only crop with real alpha transparency, so both
+ * "icon" and "full" render the same way — there's no separate wordmark band
+ * to crop out anymore. Shown on a rounded black plate for contrast across
+ * light + dark themes.
  *
  * Drop the image file at:  apps/desktop/public/titan-logo.png
  */
@@ -40,23 +43,13 @@ export default function TitanLogo({ size = 40, className, crop = "icon", plate =
       }}
       aria-label="TITAN"
     >
-      {crop === "icon" ? (
-        // Helmet only — scale up & shift to crop the TITAN text band at the bottom
-        <img
-          src={LOGO_SRC}
-          alt="TITAN"
-          draggable={false}
-          style={{ height: "128%", width: "auto", marginTop: "-1%", objectFit: "contain", userSelect: "none" }}
-        />
-      ) : (
-        // Whole logo including the wordmark
-        <img
-          src={LOGO_SRC}
-          alt="TITAN"
-          draggable={false}
-          style={{ width: "100%", height: "100%", objectFit: "contain", userSelect: "none" }}
-        />
-      )}
+      {/* Source is already a tight icon-only crop — "icon" and "full" both just contain-fit it */}
+      <img
+        src={LOGO_SRC}
+        alt="TITAN"
+        draggable={false}
+        style={{ width: crop === "icon" ? "82%" : "100%", height: crop === "icon" ? "82%" : "100%", objectFit: "contain", userSelect: "none" }}
+      />
     </div>
   )
 }

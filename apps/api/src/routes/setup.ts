@@ -222,7 +222,70 @@ router.post("/discover", async (req: Req, res: Response) => {
     return
   }
 
+  const isLocalHub = ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
+  const cloudApiUrl = process.env.CLOUD_API_URL?.replace(/\/+$/, "")
+
   try {
+    // A hub's local Postgres is only ever a partial mirror, populated by
+    // whatever's synced down so far — a brand-new (or not-yet-linked) hub
+    // has no tenant/admin rows at all, so a purely local subdomain+PIN lookup
+    // can never succeed for the "link this hub to my existing cloud store"
+    // flow this endpoint exists for. Hubs must ask the authoritative cloud
+    // to do the actual discovery, then mirror the result locally.
+    if (isLocalHub && cloudApiUrl) {
+      let cloudRes: globalThis.Response
+      try {
+        cloudRes = await fetch(`${cloudApiUrl}/api/setup/discover`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subdomain, pin }),
+          signal: AbortSignal.timeout(15_000),
+        })
+      } catch (err) {
+        console.error("[setup] cloud discover request failed:", (err as Error).message)
+        res.status(502).json({ error: "Could not reach the cloud server. Check your internet connection and try again." })
+        return
+      }
+
+      const cloudData = (await cloudRes.json().catch(() => ({}))) as {
+        tenantId?: string; tenantName?: string; subdomain?: string; cloudApiKey?: string; error?: string
+      }
+
+      if (!cloudRes.ok) {
+        res.status(cloudRes.status).json({ error: cloudData.error || "Discovery failed" })
+        return
+      }
+      if (!cloudData.tenantId || !cloudData.cloudApiKey) {
+        console.error("[setup] cloud discover returned an incomplete response:", cloudData)
+        res.status(502).json({ error: "The cloud server returned an unexpected response. Try again." })
+        return
+      }
+
+      // Mirror the tenant locally so it exists as an FK target before the
+      // first full pull runs — same placeholder pattern cloudSync.ts already
+      // uses when it meets an unfamiliar tenantId during a regular pull.
+      await prisma.tenant.upsert({
+        where: { id: cloudData.tenantId },
+        update: { cloudApiKey: cloudData.cloudApiKey },
+        create: {
+          id: cloudData.tenantId,
+          name: cloudData.tenantName || "Synced Store",
+          subdomain: cloudData.subdomain || subdomain.trim().toLowerCase(),
+          cloudApiKey: cloudData.cloudApiKey,
+        },
+      })
+
+      res.json({
+        tenantId: cloudData.tenantId,
+        tenantName: cloudData.tenantName,
+        subdomain: cloudData.subdomain,
+        cloudApiKey: cloudData.cloudApiKey,
+      })
+      return
+    }
+
+    // Not a hub (running directly against Railway, or a standalone non-hub
+    // deployment) — we ARE the authoritative record, so look up locally.
     const tenant = await prisma.tenant.findUnique({
       where: { subdomain: subdomain.trim().toLowerCase() },
       select: { id: true, name: true, subdomain: true, cloudApiKey: true, suspended: true },

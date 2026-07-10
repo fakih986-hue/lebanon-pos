@@ -48,6 +48,13 @@ const PG_BIN_DIR = IS_PACKAGED
 
 const ICON_PNG   = path.join(__dirname, "../assets/icon.png")
 const ICON_ICO   = path.join(__dirname, "../assets/icon.ico")
+
+// The real Titan shield mark, inlined as a data URI for the loading/activation
+// windows — those load via `data:text/html` URLs, where relative/file:// image
+// paths aren't reliably reachable, so the logo has to travel with the HTML.
+const TITAN_MARK_DATA_URI = fs.existsSync(ICON_PNG)
+  ? `data:image/png;base64,${fs.readFileSync(ICON_PNG).toString("base64")}`
+  : ""
 const API_URL    = "http://localhost:3015"
 
 // Pre-baked Railway URL written into the hub's .env so the cloud bridge knows
@@ -523,7 +530,7 @@ function setStatus(msg: string) {
 function showLoadingWindow() {
   loadWindow = new BrowserWindow({
     width: 400, height: 260, resizable: false, frame: false,
-    center: true, alwaysOnTop: true, backgroundColor: "#0f172a",
+    center: true, alwaysOnTop: true, backgroundColor: "#0b0e14",
     webPreferences: { nodeIntegration: false, contextIsolation: true },
   })
   loadWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`<!DOCTYPE html>
@@ -532,19 +539,20 @@ function showLoadingWindow() {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;
-background:#0f172a;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+background:#0b0e14;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 -webkit-app-region:drag;gap:16px;padding:24px}
-.logo{width:48px;height:48px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:14px;
-display:flex;align-items:center;justify-content:center;font-size:24px}
-.title{font-size:18px;font-weight:700}
-.status{font-size:12px;color:#94a3b8;text-align:center;min-height:18px}
-.bar{width:200px;height:3px;background:#1e293b;border-radius:99px;overflow:hidden}
-.bar-inner{width:35%;height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);
+.logo{width:56px;height:56px;background:#000;border:1px solid rgba(212,175,55,0.3);border-radius:16px;
+display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.5)}
+.logo img{width:78%;height:78%;object-fit:contain}
+.title{font-size:18px;font-weight:700;letter-spacing:0.04em}
+.status{font-size:12px;color:#8a8578;text-align:center;min-height:18px}
+.bar{width:200px;height:3px;background:#1c1913;border-radius:99px;overflow:hidden}
+.bar-inner{width:35%;height:100%;background:linear-gradient(90deg,#a4841f,#e9c766);
 border-radius:99px;animation:slide 1.2s ease-in-out infinite alternate}
 @keyframes slide{from{margin-left:-10%}to{margin-left:75%}}
 </style></head>
 <body>
-<div class="logo">🏪</div>
+<div class="logo"><img src="${TITAN_MARK_DATA_URI}" alt=""></div>
 <div class="title">Titan POS</div>
 <div class="status" id="s">${loadMsg}</div>
 <div class="bar"><div class="bar-inner"></div></div>
@@ -564,7 +572,7 @@ function showActivationWindow() {
   activationWindow = new BrowserWindow({
     width: 500, height: 680, resizable: false,
     center: true, title: "Titan POS — Connect to Cloud",
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#0b0e14",
     webPreferences: {
       preload: path.join(__dirname, "preload-activation.js"),
       nodeIntegration: false,
@@ -577,41 +585,42 @@ function showActivationWindow() {
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{margin:0;padding:24px;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-display:flex;flex-direction:column;min-height:100vh}
+body{margin:0;padding:24px;background:#0b0e14;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+display:flex;flex-direction:column;min-height:100vh;color:#e2e8f0}
 .header{display:flex;align-items:center;gap:12px;margin-bottom:4px}
-.header-icon{width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:12px;
-display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.header-text{font-size:20px;font-weight:800;color:#0f172a}
-.sub{font-size:13px;color:#64748b;margin-bottom:20px}
-.banner{background:#fef9c3;border:1px solid #eab308;border-radius:10px;padding:14px;margin-bottom:20px}
-.banner-title{font-size:12px;font-weight:700;color:#854d0e;margin-bottom:6px}
-.banner-pw{font-size:18px;font-weight:800;color:#0f172a;font-family:monospace;letter-spacing:1px;user-select:all}
-.banner-hint{font-size:11px;color:#a16207;margin-top:6px}
+.header-icon{width:44px;height:44px;background:#000;border:1px solid rgba(212,175,55,0.3);border-radius:13px;
+display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,0.5)}
+.header-icon img{width:78%;height:78%;object-fit:contain}
+.header-text{font-size:20px;font-weight:800;color:#f1ede4;letter-spacing:0.02em}
+.sub{font-size:13px;color:#8a8578;margin-bottom:20px}
+.banner{background:rgba(212,168,67,0.12);border:1px solid rgba(212,168,67,0.35);border-radius:10px;padding:14px;margin-bottom:20px}
+.banner-title{font-size:12px;font-weight:700;color:#e4bc5c;margin-bottom:6px}
+.banner-pw{font-size:18px;font-weight:800;color:#fff;font-family:monospace;letter-spacing:1px;user-select:all}
+.banner-hint{font-size:11px;color:#b89b56;margin-top:6px}
 .form{display:flex;flex-direction:column;flex:1}
 .field{margin-bottom:14px}
-.field-label{font-size:12px;font-weight:700;color:#334155;margin-bottom:5px}
-.input{width:100%;height:42px;padding:0 12px;border:1px solid #e2e8f0;border-radius:8px;background:white;
-font-size:13px;outline:none;transition:border-color .15s}
-.input:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.15)}
-.input-readonly{background:#f1f5f9;color:#64748b;font-family:monospace;font-size:12px}
-.btn{width:100%;height:46px;border:none;border-radius:10px;background:#0f172a;color:white;
+.field-label{font-size:12px;font-weight:700;color:#c9c4b8;margin-bottom:5px}
+.input{width:100%;height:42px;padding:0 12px;border:1px solid rgba(212,168,67,0.2);border-radius:8px;background:#12151c;
+color:#e2e8f0;font-size:13px;outline:none;transition:border-color .15s}
+.input:focus{border-color:#d4a843;box-shadow:0 0 0 3px rgba(212,168,67,.15)}
+.input-readonly{background:#0f1117;color:#8a8578;font-family:monospace;font-size:12px}
+.btn{width:100%;height:46px;border:none;border-radius:10px;background:linear-gradient(135deg,#e9c766,#a4841f);color:#140f04;
 font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s;margin-top:auto}
 .btn:hover{opacity:.9}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.err{display:none;margin-top:12px;padding:12px;border-radius:8px;background:#fef2f2;
-color:#991b1b;font-size:13px;font-weight:600}
-.hint{font-size:11px;color:#64748b;margin-top:4px;margin-bottom:0}
+.err{display:none;margin-top:12px;padding:12px;border-radius:8px;background:rgba(239,68,68,0.12);
+color:#fca5a5;font-size:13px;font-weight:600}
+.hint{font-size:11px;color:#8a8578;margin-top:4px;margin-bottom:0}
 .success{display:flex;flex-direction:column;align-items:center;justify-content:center;
 text-align:center;padding:40px 24px}
 .success-icon{font-size:48px;margin-bottom:12px}
-.success-title{font-size:18px;font-weight:700;color:#0f172a;margin-bottom:8px}
-.success-text{font-size:14px;color:#64748b;margin-bottom:24px}
-.store-name{font-size:16px;font-weight:700;color:#059669;margin-bottom:4px}
+.success-title{font-size:18px;font-weight:700;color:#f1ede4;margin-bottom:8px}
+.success-text{font-size:14px;color:#8a8578;margin-bottom:24px}
+.store-name{font-size:16px;font-weight:700;color:#4ade80;margin-bottom:4px}
 </style></head>
 <body>
 <div class="header">
-<div class="header-icon">🏪</div>
+<div class="header-icon"><img src="${TITAN_MARK_DATA_URI}" alt=""></div>
 <div class="header-text">Titan POS</div>
 </div>
 <p class="sub">Enter your store subdomain and admin PIN to connect to the cloud.</p>

@@ -10,6 +10,7 @@ vi.mock("../src/lib/prisma", () => {
     findMany: vi.fn(),
     update: vi.fn(),
     updateMany: vi.fn(),
+    upsert: vi.fn(),
   })
 
   const client = {
@@ -83,6 +84,84 @@ describe("POST /api/setup/discover", () => {
     expect(res.status).toBe(200)
     expect(res.body.cloudApiKey).toBe("existing-real-key-abc123")
     expect(vi.mocked(prisma.tenant.update)).not.toHaveBeenCalled()
+  })
+
+  it("proxies discovery entirely to the cloud when running as a hub, even with no local tenant row at all", async () => {
+    // No findUnique/findFirst mocks set up — a fresh hub's local DB has
+    // nothing for this tenant yet, and the hub path must never touch them.
+    vi.mocked(prisma.tenant.findUnique).mockReset()
+    vi.mocked(prisma.staffUser.findFirst).mockReset()
+    vi.mocked(prisma.tenant.upsert).mockClear().mockResolvedValue({} as any)
+
+    process.env.IS_LOCAL_SERVER = "true"
+    process.env.CLOUD_API_URL = "https://pos.titan-suite.net"
+    const realFetch = global.fetch
+    const fetchSpy = vi.spyOn(global, "fetch").mockImplementation(async (input, init) => {
+      // Only intercept the outbound call to the "cloud" — anything else (the
+      // test harness's own request to the local test server) uses the real fetch.
+      if (String(input).startsWith("https://pos.titan-suite.net")) {
+        return {
+          ok: true,
+          json: async () => ({ tenantId: "t4", tenantName: "Fakih Store", subdomain: "fakih", cloudApiKey: "real-cloud-key-from-railway" }),
+        } as Response
+      }
+      return realFetch(input as any, init)
+    })
+
+    try {
+      const res = await request("POST", "/api/setup/discover", {
+        body: { subdomain: "fakih", pin: PIN },
+      })
+
+      expect(res.status).toBe(200)
+      expect(res.body.tenantId).toBe("t4")
+      expect(res.body.cloudApiKey).toBe("real-cloud-key-from-railway")
+      // must have asked the cloud's own discover endpoint, not looked up locally
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "https://pos.titan-suite.net/api/setup/discover",
+        expect.objectContaining({ method: "POST" })
+      )
+      expect(vi.mocked(prisma.tenant.findUnique)).not.toHaveBeenCalled()
+      // and mirrored the authoritative tenant + key into the local copy
+      expect(vi.mocked(prisma.tenant.upsert)).toHaveBeenCalledWith({
+        where: { id: "t4" },
+        update: { cloudApiKey: "real-cloud-key-from-railway" },
+        create: { id: "t4", name: "Fakih Store", subdomain: "fakih", cloudApiKey: "real-cloud-key-from-railway" },
+      })
+    } finally {
+      fetchSpy.mockRestore()
+      process.env.IS_LOCAL_SERVER = "false"
+      delete process.env.CLOUD_API_URL
+    }
+  })
+
+  it("surfaces the cloud's error (e.g. wrong subdomain) unchanged when running as a hub", async () => {
+    process.env.IS_LOCAL_SERVER = "true"
+    process.env.CLOUD_API_URL = "https://pos.titan-suite.net"
+    const realFetch = global.fetch
+    const fetchSpy = vi.spyOn(global, "fetch").mockImplementation(async (input, init) => {
+      if (String(input).startsWith("https://pos.titan-suite.net")) {
+        return {
+          ok: false,
+          status: 404,
+          json: async () => ({ error: "Store not found. Check the subdomain." }),
+        } as Response
+      }
+      return realFetch(input as any, init)
+    })
+
+    try {
+      const res = await request("POST", "/api/setup/discover", {
+        body: { subdomain: "doesnotexist", pin: PIN },
+      })
+
+      expect(res.status).toBe(404)
+      expect(res.body.error).toBe("Store not found. Check the subdomain.")
+    } finally {
+      fetchSpy.mockRestore()
+      process.env.IS_LOCAL_SERVER = "false"
+      delete process.env.CLOUD_API_URL
+    }
   })
 
   it("returns 401 on an incorrect PIN without touching cloudApiKey", async () => {
