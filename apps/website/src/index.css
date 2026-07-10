@@ -1,0 +1,205 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --bg: #050403;
+  --gold: #d4af37;
+  --gold-bright: #e9c766;
+  --gold-deep: #8f6a14;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 75% 55% at 20% -12%, rgba(212, 175, 55, 0.07), transparent),
+    radial-gradient(ellipse 55% 40% at 88% 8%, rgba(143, 106, 20, 0.06), transparent);
+  background-attachment: fixed;
+  font-family: "Inter", system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+.font-display {
+  font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(212, 175, 55, 0.35);
+  color: #fff;
+}
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: #050403; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(233,199,102,.4), rgba(143,106,20,.4));
+  border-radius: 8px;
+  border: 2px solid #050403;
+}
+
+/* ── Surfaces ─────────────────────────────────────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.glass-hover {
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.glass-hover:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 40px -12px rgba(212, 175, 55, 0.35);
+}
+
+/* Animated gradient border — wrap content in .shimmer-border > .shimmer-inner */
+.shimmer-border {
+  position: relative;
+  border-radius: 1.25rem;
+  padding: 1px;
+  background: linear-gradient(120deg, rgba(233,199,102,.55), rgba(143,106,20,.18) 30%, rgba(255,255,255,.06) 50%, rgba(143,106,20,.18) 70%, rgba(233,199,102,.55));
+  background-size: 300% 300%;
+  animation: shimmer 6s linear infinite;
+}
+.shimmer-inner {
+  border-radius: calc(1.25rem - 1px);
+  background: #0b0906;
+}
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+/* ── Type ─────────────────────────────────────────────────── */
+.text-gradient {
+  background: linear-gradient(90deg, #f7e7b4, #e9c766 35%, #d4af37 65%, #9a7b2e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-outline {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.08);
+}
+
+/* ── Scroll reveal ────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  filter: blur(6px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), filter 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+/* Route transition */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-enter { animation: pageIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* ── Marquee ──────────────────────────────────────────────── */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
+}
+
+/* ── Float / pulse ────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-14px); }
+}
+.animate-float { animation: float 7s ease-in-out infinite; }
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.animate-pulse-glow { animation: pulseGlow 3.5s ease-in-out infinite; }
+
+/* ── Cinematic intro ──────────────────────────────────────── */
+@keyframes introLogo {
+  0% { opacity: 0; transform: scale(0.82); filter: blur(10px); }
+  55% { opacity: 1; transform: scale(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+@keyframes introLetters {
+  0% { opacity: 0; letter-spacing: 0.1em; }
+  100% { opacity: 1; letter-spacing: 0.55em; }
+}
+@keyframes introSweep {
+  0% { transform: translateX(-160%) skewX(-18deg); }
+  100% { transform: translateX(260%) skewX(-18deg); }
+}
+@keyframes introLift {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-100%); }
+}
+
+/* ── Kinetic type — words rise and pull into focus ────────── */
+.word-hidden { opacity: 0; }
+.word-rise {
+  display: inline-block;
+  animation: wordRise 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes wordRise {
+  0% { opacity: 0; transform: translateY(0.55em) rotate(2deg); filter: blur(8px); }
+  100% { opacity: 1; transform: translateY(0) rotate(0); filter: blur(0); }
+}
+
+/* Gradient-safe reveal for background-clip:text lines — single element, no
+   child filters (those break the clip), just a left-to-right wipe. */
+.line-wipe {
+  display: inline-block;
+  animation: lineWipe 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes lineWipe {
+  0% { opacity: 0; clip-path: inset(0 100% -20% 0); transform: translateY(0.25em); }
+  100% { opacity: 1; clip-path: inset(0 0% -20% 0); transform: translateY(0); }
+}
+
+/* ── Gold light sweep on hover ────────────────────────────── */
+.shine { position: relative; overflow: hidden; }
+.shine::after {
+  content: "";
+  position: absolute;
+  top: -10%;
+  height: 120%;
+  width: 55%;
+  left: -85%;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,0.05) 38%, rgba(233,199,102,0.16) 50%, transparent 62%);
+  transform: skewX(-20deg);
+  transition: left 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.shine:hover::after { left: 130%; }
+
+/* Noise film over everything — kills flat-gradient banding */
+.noise::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { transition: none; opacity: 1; transform: none; }
+  .marquee-track, .animate-float, .shimmer-border { animation: none; }
+}

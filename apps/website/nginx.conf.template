@@ -1,0 +1,26 @@
+server {
+    listen ${PORT};
+    root /usr/share/nginx/html;
+    include /etc/nginx/mime.types;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # Hashed build assets are immutable
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+
+    # Brand + screenshots change rarely
+    location ~ ^/(brand|screenshots)/ {
+        add_header Cache-Control "public, max-age=86400";
+        try_files $uri =404;
+    }
+
+    # SPA fallback
+    location / {
+        try_files $uri /index.html;
+    }
+}
