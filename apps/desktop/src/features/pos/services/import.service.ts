@@ -1,4 +1,5 @@
-import { createProduct, updateProduct, getProductsSync, normalizeBarcode } from "./product.service"
+import { createProduct, updateProduct, getProductsSync } from "./product.service"
+import { normalizeBarcode } from "../lib/pos.constants"
 import { createSupplier, getSuppliers } from "./supplier.service"
 import { addCustomer, getCustomers, cleanMobile } from "./customer.service"
 import { assertCanWrite } from "./sync.service"

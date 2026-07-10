@@ -49,7 +49,7 @@ async function main() {
     await prisma.appSettings.create({
       data: {
         tenantId: tenant.id,
-        storeName: 'Lebanon POS',
+        storeName: 'Titan POS',
         branchName: 'Main Branch',
         phone: '961-1-234567',
         address: 'Beirut, Lebanon',

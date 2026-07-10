@@ -26,7 +26,7 @@ export type AppSettings = {
 }
 
 export const defaultSettings: AppSettings = {
-  storeName: "Lebanon POS",
+  storeName: "Titan POS",
   branchName: "Main Branch",
   phone: "+961 70 000 000",
   address: "Beirut, Lebanon",

@@ -30,6 +30,7 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
     const f = parseFloat(floatInput)
     if (!f || f <= 0) { showToast("Enter a valid float amount", "error"); return }
     const s = openShift(f)
+    if (!s) return
     setShift(s)
     setFloatInput("")
     showToast(`${s.shiftNumber} opened with $${f.toFixed(2)}`)

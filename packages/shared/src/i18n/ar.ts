@@ -1114,7 +1114,7 @@ export const ar = {
   "admin.tenant_id": "معرف المستأجر (الإعدادات → Cloud)",
   "admin.api_key": "مفتاح Cloud API (الإعدادات → Cloud)",
   "admin.owner_portal": "بوابة المالك",
-  "admin.owner_subtitle": "Lebanon POS — إدارة جميع المتاجر",
+  "admin.owner_subtitle": "Titan POS — إدارة جميع المتاجر",
   "admin.master_password": "كلمة المرور الرئيسية",
   "admin.signing_in": "جاري تسجيل الدخول…",
   "admin.sign_in": "تسجيل الدخول",

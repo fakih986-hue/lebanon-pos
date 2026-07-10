@@ -34,6 +34,8 @@ type Props = {
   onSaveCategoryRename: () => void
 }
 
+const inputBase = "input"
+
 export default function ProductSetupForm({
   selectedProduct,
   setSelectedProductId,
@@ -109,28 +111,28 @@ export default function ProductSetupForm({
 
   return (
     <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="card p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--brand-soft)", color: "var(--brand-text)" }}>
             <Save size={21} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-zinc-950">
+            <h2 className="text-lg font-bold" style={{ color: "var(--text)" }}>
               {t("pos.setup.title")}
             </h2>
-            <p className="text-sm text-zinc-500">{t("pos.setup.desc")}</p>
+            <p className="text-sm" style={{ color: "var(--text-3)" }}>{t("pos.setup.desc")}</p>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <label className="block text-sm font-bold text-zinc-700 xl:col-span-2">
+          <label className="block text-sm font-bold xl:col-span-2" style={{ color: "var(--text-2)" }}>
             {t("pos.product")}
             <select
               value={selectedProduct?.id ?? ""}
               onChange={(event) =>
                 setSelectedProductId(Number(event.target.value))
               }
-              className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              className={inputBase}
             >
               {products.map((product) => (
                 <option key={product.id} value={product.id}>
@@ -140,75 +142,66 @@ export default function ProductSetupForm({
             </select>
           </label>
 
-          <label className="block text-sm font-bold text-zinc-700">
+          <label className="block text-sm font-bold" style={{ color: "var(--text-2)" }}>
             {t("pos.category")}
             <input
               value={productCategory}
               list="catalog-categories"
               onChange={(event) => setProductCategory(event.target.value)}
-              className={`mt-2 h-11 w-full rounded-lg border bg-zinc-50 px-3 outline-none focus:bg-white focus:ring-4 ${
-                formErrors.category
-                  ? "border-rose-300 focus:border-rose-400 focus:ring-rose-100"
-                  : "border-zinc-200 focus:border-emerald-400 focus:ring-emerald-100"
-              }`}
+              className={inputBase}
+              style={formErrors.category ? { borderColor: "var(--danger)", backgroundColor: "var(--danger-soft)" } : undefined}
             />
             {formErrors.category ? (
-              <p className="mt-1 text-xs font-medium text-rose-500">{formErrors.category}</p>
+              <p className="mt-1 text-xs font-medium" style={{ color: "var(--danger-text)" }}>{formErrors.category}</p>
             ) : null}
           </label>
 
-          <label className="block text-sm font-bold text-zinc-700">
+          <label className="block text-sm font-bold" style={{ color: "var(--text-2)" }}>
             {t("pos.setup.reorder_point")}
             <input
               type="number"
               min="0"
               value={reorderPoint}
               onChange={(event) => setReorderPoint(event.target.value)}
-              className={`mt-2 h-11 w-full rounded-lg border bg-zinc-50 px-3 outline-none focus:bg-white focus:ring-4 ${
-                formErrors.reorderPoint
-                  ? "border-rose-300 focus:border-rose-400 focus:ring-rose-100"
-                  : "border-zinc-200 focus:border-emerald-400 focus:ring-emerald-100"
-              }`}
+              className={inputBase}
+              style={formErrors.reorderPoint ? { borderColor: "var(--danger)", backgroundColor: "var(--danger-soft)" } : undefined}
             />
             {formErrors.reorderPoint ? (
-              <p className="mt-1 text-xs font-medium text-rose-500">{formErrors.reorderPoint}</p>
+              <p className="mt-1 text-xs font-medium" style={{ color: "var(--danger-text)" }}>{formErrors.reorderPoint}</p>
             ) : null}
           </label>
 
-          <label className="block text-sm font-bold text-zinc-700">
+          <label className="block text-sm font-bold" style={{ color: "var(--text-2)" }}>
             {t("pos.setup.buy_target")}
             <input
               type="number"
               min="0"
               value={reorderQuantity}
               onChange={(event) => setReorderQuantity(event.target.value)}
-              className={`mt-2 h-11 w-full rounded-lg border bg-zinc-50 px-3 outline-none focus:bg-white focus:ring-4 ${
-                formErrors.reorderQuantity
-                  ? "border-rose-300 focus:border-rose-400 focus:ring-rose-100"
-                  : "border-zinc-200 focus:border-emerald-400 focus:ring-emerald-100"
-              }`}
+              className={inputBase}
+              style={formErrors.reorderQuantity ? { borderColor: "var(--danger)", backgroundColor: "var(--danger-soft)" } : undefined}
             />
             {formErrors.reorderQuantity ? (
-              <p className="mt-1 text-xs font-medium text-rose-500">{formErrors.reorderQuantity}</p>
+              <p className="mt-1 text-xs font-medium" style={{ color: "var(--danger-text)" }}>{formErrors.reorderQuantity}</p>
             ) : null}
           </label>
 
-          <label className="block text-sm font-bold text-zinc-700">
+          <label className="block text-sm font-bold" style={{ color: "var(--text-2)" }}>
             {t("pos.setup.expiry_date")}
             <input
               type="date"
               value={expiryDate}
               onChange={(event) => setExpiryDate(event.target.value)}
-              className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              className={inputBase}
             />
           </label>
 
-          <label className="block text-sm font-bold text-zinc-700 xl:col-span-2">
+          <label className="block text-sm font-bold xl:col-span-2" style={{ color: "var(--text-2)" }}>
             {t("pos.supplier")}
             <select
               value={productSupplierId}
               onChange={(event) => setProductSupplierId(event.target.value)}
-              className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              className={inputBase}
             >
               <option value="">{t("pos.setup.no_supplier")}</option>
               {suppliers.map((supplier) => (
@@ -219,23 +212,24 @@ export default function ProductSetupForm({
             </select>
           </label>
 
-          <label className="block text-sm font-bold text-zinc-700 xl:col-span-3">
+          <label className="block text-sm font-bold xl:col-span-3" style={{ color: "var(--text-2)" }}>
             {t("pos.setup.extra_barcodes")}
             <textarea
               value={barcodeAliases}
               onChange={(event) => setBarcodeAliases(event.target.value)}
               placeholder={t("pos.setup.extra_barcodes_hint")}
               rows={2}
-              className="mt-2 w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              className="mt-2 w-full resize-none rounded-lg border px-3 py-2 outline-none input"
+              style={{ backgroundColor: "var(--surface-2)" }}
             />
           </label>
 
           {/* Image upload */}
           <div className="xl:col-span-2 flex items-center gap-3">
             {productImage ? (
-              <img src={productImage} alt="Product" className="h-14 w-14 rounded-lg object-cover border border-zinc-200 shrink-0" />
+              <img src={productImage} alt="Product" className="h-14 w-14 rounded-lg object-cover shrink-0" style={{ border: "1px solid var(--border)" }} />
             ) : (
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50 text-zinc-400">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border-2 border-dashed" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface-2)", color: "var(--text-3)" }}>
                 <ImagePlus size={22} />
               </div>
             )}
@@ -244,7 +238,7 @@ export default function ProductSetupForm({
                 type="button"
                 onClick={() => imageInputRef.current?.click()}
                 disabled={!selectedProduct}
-                className="flex h-8 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-40"
+                className="btn-default btn-sm"
               >
                 <ImagePlus size={14} />
                 {t("pos.setup.upload_image")}
@@ -253,7 +247,8 @@ export default function ProductSetupForm({
                 <button
                   type="button"
                   onClick={() => onImageChange("")}
-                  className="flex h-8 items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 text-xs font-bold text-rose-600 transition hover:bg-rose-100"
+                  className="btn-default btn-sm"
+                  style={{ borderColor: "var(--danger)", backgroundColor: "var(--danger-soft)", color: "var(--danger-text)" }}
                 >
                   <Trash2 size={14} />
                   {t("pos.setup.remove_image")}
@@ -273,11 +268,20 @@ export default function ProductSetupForm({
             type="button"
             onClick={onToggleFavorite}
             disabled={!selectedProduct}
-            className={`mt-7 flex h-11 items-center justify-center gap-2 rounded-lg border px-3 text-sm font-bold transition ${
-              selectedProduct?.favorite
-                ? "border-amber-200 bg-amber-50 text-amber-700"
-                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-            }`}
+            className="btn-md mt-7 flex h-11 items-center justify-center gap-2 rounded-lg border font-bold transition"
+            style={selectedProduct?.favorite
+              ? { borderColor: "var(--brand-border)", backgroundColor: "var(--brand-soft)", color: "var(--brand-text)" }
+              : { borderColor: "var(--border)", backgroundColor: "var(--surface)", color: "var(--text-2)" }}
+            onMouseEnter={(e) => {
+              if (selectedProduct?.favorite) return
+              e.currentTarget.style.backgroundColor = "var(--surface-hover)"
+              e.currentTarget.style.color = "var(--text)"
+            }}
+            onMouseLeave={(e) => {
+              if (selectedProduct?.favorite) return
+              e.currentTarget.style.backgroundColor = "var(--surface)"
+              e.currentTarget.style.color = "var(--text-2)"
+            }}
           >
             <Star
               size={17}
@@ -290,7 +294,7 @@ export default function ProductSetupForm({
             type="button"
             onClick={handleSave}
             disabled={!selectedProduct}
-            className="mt-7 flex h-11 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:bg-zinc-300"
+            className="btn-primary btn-md mt-7"
           >
             <Save size={17} />
             {t("pos.setup.save_setup")}
@@ -298,11 +302,11 @@ export default function ProductSetupForm({
         </div>
       </div>
 
-      <aside className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-bold text-zinc-950">
+      <aside className="card p-4">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text)" }}>
           {t("pos.setup.category_manager")}
         </h2>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm" style={{ color: "var(--text-3)" }}>
           {t("pos.setup.category_manager_desc")}
         </p>
 
@@ -310,7 +314,7 @@ export default function ProductSetupForm({
           <select
             value={categoryFrom}
             onChange={(event) => setCategoryFrom(event.target.value)}
-            className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+            className={inputBase}
           >
             <option value="">{t("pos.setup.choose_category")}</option>
             {categories
@@ -325,12 +329,12 @@ export default function ProductSetupForm({
               value={categoryTo}
               onChange={(event) => setCategoryTo(event.target.value)}
               placeholder={t("pos.setup.new_category_name")}
-              className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+              className={inputBase}
             />
             <button
               type="button"
               onClick={onSaveCategoryRename}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+              className="btn-primary btn-md w-full"
             >
               <Save size={17} />
               {t("pos.setup.rename_category")}

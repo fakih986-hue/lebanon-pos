@@ -262,7 +262,7 @@ export default function TenderPanel({
               <input
                 type="text"
                 value={customerSearch}
-                onChange={(e) => { setCustomerSearch(e.target.value); if (!selectedCustomerId) setCustomerSearch(e.target.value) }}
+                onChange={(e) => setCustomerSearch(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && filteredCustomers.length > 0) {
                     e.preventDefault()
@@ -276,7 +276,7 @@ export default function TenderPanel({
                 aria-label="Search customer by name or phone"
                 autoComplete="off"
               />
-              {!selectedCustomerId && filteredCustomers.length > 0 && (
+              {(!selectedCustomerId || customerSearch.trim()) && filteredCustomers.length > 0 && (
                 <div className="max-h-40 overflow-y-auto rounded-lg border" style={{ borderColor: "var(--border)" }}>
                   {filteredCustomers.slice(0, 10).map(c => (
                     <button key={c.id} type="button"
@@ -294,6 +294,7 @@ export default function TenderPanel({
                   ))}
                 </div>
               )}
+              {selectedCustomer && !customerSearch.trim() && (
               <div className="space-y-1">
                 <div className="flex justify-between text-[12px]" style={{ color: "var(--amber-text)" }}>
                   <span>{t("pos.current_balance")}</span>
@@ -314,7 +315,7 @@ export default function TenderPanel({
                     Sale blocked — customer would exceed {formatCurrency(selectedCustomer?.creditLimit ?? 0)} credit limit by {formatCurrency((selectedCustomer?.balance ?? 0) + total - (selectedCustomer?.creditLimit ?? 0))}
                   </p>
                 )}
-              </div>
+              </div>)}
             </>
           ) : (
             <Link to="/customers"

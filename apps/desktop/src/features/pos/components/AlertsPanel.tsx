@@ -50,19 +50,19 @@ export default function AlertsPanel({
   return (
     <>
       <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="card">
+          <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between" style={{ borderBottomColor: "var(--border)" }}>
             <div>
-              <h2 className="text-xl font-bold text-zinc-950">
+              <h2 className="text-xl font-bold" style={{ color: "var(--text)" }}>
                 {t("pos.alerts.stock_title")}
               </h2>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm" style={{ color: "var(--text-3)" }}>
                 {t("pos.alerts.stock_desc")}
               </p>
             </div>
             <Link
               to="/products/new"
-              className="flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
+              className="btn-primary btn-md"
             >
               <Truck size={16} />
               {t("pos.receive")}
@@ -73,23 +73,24 @@ export default function AlertsPanel({
             {reorderSuggestions.slice(0, 6).map((suggestion) => (
               <article
                 key={suggestion.product.id}
-                className="rounded-lg border border-zinc-200 p-3"
+                className="rounded-lg border p-3" style={{ borderColor: "var(--border)" }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="truncate font-bold text-zinc-950">
+                      <p className="truncate font-bold" style={{ color: "var(--text)" }}>
                         {suggestion.product.name}
                       </p>
                       {suggestion.product.favorite ? (
                         <Star
                           size={15}
-                          className="shrink-0 text-amber-500"
+                          className="shrink-0"
                           fill="currentColor"
+                          style={{ color: "var(--amber)" }}
                         />
                       ) : null}
                     </div>
-                    <p className="mt-1 text-xs font-semibold text-zinc-500">
+                    <p className="mt-1 text-xs font-semibold" style={{ color: "var(--text-3)" }}>
                       {suggestion.supplierName}
                     </p>
                     {suggestion.daysUntilStockout !== null && (
@@ -118,34 +119,34 @@ export default function AlertsPanel({
                 </div>
 
                 <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs font-bold">
-                  <div className="rounded-lg bg-zinc-50 p-2">
-                    <p className="text-zinc-500">{t("pos.alerts.stock_label")}</p>
-                    <p className="mt-1 text-zinc-950">
+                  <div className="rounded-lg p-2" style={{ backgroundColor: "var(--surface-2)" }}>
+                    <p style={{ color: "var(--text-3)" }}>{t("pos.alerts.stock_label")}</p>
+                    <p className="mt-1" style={{ color: "var(--text)" }}>
                       {formatNumber(suggestion.product.stock)}
                     </p>
                   </div>
-                  <div className="rounded-lg bg-zinc-50 p-2">
-                    <p className="text-zinc-500">{t("pos.alerts.sold_label")}</p>
-                    <p className="mt-1 text-zinc-950">
+                  <div className="rounded-lg p-2" style={{ backgroundColor: "var(--surface-2)" }}>
+                    <p style={{ color: "var(--text-3)" }}>{t("pos.alerts.sold_label")}</p>
+                    <p className="mt-1" style={{ color: "var(--text)" }}>
                       {formatNumber(suggestion.soldLast30Days)}
                     </p>
                   </div>
-                  <div className="rounded-lg bg-zinc-50 p-2">
-                    <p className="text-zinc-500">{t("pos.alerts.reorder_point_label")}</p>
-                    <p className="mt-1 text-zinc-950">
+                  <div className="rounded-lg p-2" style={{ backgroundColor: "var(--surface-2)" }}>
+                    <p style={{ color: "var(--text-3)" }}>{t("pos.alerts.reorder_point_label")}</p>
+                    <p className="mt-1" style={{ color: "var(--text)" }}>
                       {formatNumber(suggestion.reorderPoint)}
                     </p>
                   </div>
-                  <div className="rounded-lg bg-emerald-50 p-2">
-                    <p className="text-emerald-700">{t("pos.alerts.buy_label")}</p>
-                    <p className="mt-1 text-emerald-900">
+                  <div className="rounded-lg p-2" style={{ backgroundColor: "var(--success-soft)" }}>
+                    <p style={{ color: "var(--success-text)" }}>{t("pos.alerts.buy_label")}</p>
+                    <p className="mt-1" style={{ color: "var(--success)" }}>
                       {formatNumber(suggestion.suggestedQuantity)}
                     </p>
                   </div>
                 </div>
                 {onReceiveProduct && (
                   <button type="button" onClick={() => onReceiveProduct(suggestion.product.id)}
-                    className="mt-2 w-full text-[10px] font-bold px-2 py-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-500">
+                    className="btn-primary btn-md mt-2 w-full">
                     Receive Stock →
                   </button>
                 )}
@@ -153,7 +154,7 @@ export default function AlertsPanel({
             ))}
 
             {reorderSuggestions.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm font-medium text-zinc-500 lg:col-span-2">
+              <div className="rounded-lg border border-dashed p-8 text-center text-sm font-medium lg:col-span-2" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
                 {t("pos.alerts.no_reorder_alerts")}
               </div>
             ) : null}
@@ -161,16 +162,16 @@ export default function AlertsPanel({
         </div>
 
         <aside className="space-y-5">
-          <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+          <section className="card p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--info-soft)", color: "var(--info-text)" }}>
                 <Truck size={21} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-zinc-950">
+                <h2 className="text-lg font-bold" style={{ color: "var(--text)" }}>
                   {t("pos.alerts.supplier_reorder_title")}
                 </h2>
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm" style={{ color: "var(--text-3)" }}>
                   {t("pos.alerts.supplier_reorder_desc")}
                 </p>
               </div>
@@ -180,17 +181,17 @@ export default function AlertsPanel({
               {reorderGroups.slice(0, 4).map((group) => (
                 <div
                   key={group.supplierId ?? "unlinked"}
-                  className="rounded-lg border border-zinc-200 p-3"
+                  className="rounded-lg border p-3" style={{ borderColor: "var(--border)" }}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-bold text-zinc-950">
+                    <p className="font-bold" style={{ color: "var(--text)" }}>
                       {group.supplierName}
                     </p>
-                    <p className="text-sm font-bold text-zinc-700">
+                    <p className="text-sm font-bold" style={{ color: "var(--text-2)" }}>
                       {formatCurrency(group.totalCost)}
                     </p>
                   </div>
-                  <p className="mt-1 text-xs font-semibold text-zinc-500">
+                  <p className="mt-1 text-xs font-semibold" style={{ color: "var(--text-3)" }}>
                     {t("pos.alerts.items_units", {
                       items: formatNumber(group.items.length),
                       units: formatNumber(group.items.reduce((sum, item) => sum + item.suggestedQuantity, 0))
@@ -200,7 +201,7 @@ export default function AlertsPanel({
                     <button
                       type="button"
                       onClick={() => void copySupplierOrder(group)}
-                      className="flex h-9 items-center justify-center gap-2 rounded-lg border border-zinc-200 px-2 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50"
+                      className="btn-default btn-md"
                     >
                       <Copy size={14} />
                       {t("pos.copy")}
@@ -211,7 +212,7 @@ export default function AlertsPanel({
                       )}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex h-9 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-2 text-xs font-bold text-white transition hover:bg-emerald-500"
+                      className="btn-primary btn-md"
                     >
                       <MessageCircle size={14} />
                       {t("pos.whatsapp")}
@@ -221,7 +222,7 @@ export default function AlertsPanel({
               ))}
 
               {reorderGroups.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-zinc-300 p-4 text-sm font-medium text-zinc-500">
+                <div className="rounded-lg border border-dashed p-4 text-sm font-medium" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
                   {t("pos.alerts.no_supplier_reorder")}
                 </div>
               ) : null}
@@ -231,16 +232,16 @@ export default function AlertsPanel({
       </section>
 
       <section className="mt-5 grid gap-5 xl:grid-cols-3">
-        <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+        <section className="card p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-rose-100 text-rose-700">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--danger-soft)", color: "var(--danger-text)" }}>
               <CalendarClock size={21} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-zinc-950">
+              <h2 className="text-lg font-bold" style={{ color: "var(--text)" }}>
                 {t("pos.alerts.expiry_title")}
               </h2>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm" style={{ color: "var(--text-3)" }}>
                 {t("pos.alerts.expiry_desc")}
               </p>
             </div>
@@ -274,7 +275,7 @@ export default function AlertsPanel({
             ) : null}
             {onWriteOffProduct && (
               <button type="button" onClick={() => onWriteOffProduct(alert.product.id)}
-                className="mt-2 text-[10px] font-bold px-2 py-1 rounded border border-current opacity-60 hover:opacity-100">
+                className="btn-default btn-sm mt-2">
                 Write Off
               </button>
             )}
@@ -282,21 +283,21 @@ export default function AlertsPanel({
             ))}
 
             {expiryAlerts.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-zinc-300 p-5 text-center text-sm font-medium text-zinc-500">
+              <div className="rounded-lg border border-dashed p-5 text-center text-sm font-medium" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
                 {t("pos.alerts.no_expiry_alerts")}
               </div>
             ) : null}
           </div>
         </section>
 
-        <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+        <section className="card p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-100 text-zinc-700">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--surface-3)", color: "var(--text-2)" }}>
               <PackageX size={21} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-zinc-950">{t("pos.alerts.dead_stock_title")}</h2>
-              <p className="text-sm text-zinc-500">
+              <h2 className="text-lg font-bold" style={{ color: "var(--text)" }}>{t("pos.alerts.dead_stock_title")}</h2>
+              <p className="text-sm" style={{ color: "var(--text-3)" }}>
                 {t("pos.alerts.dead_stock_desc")}
               </p>
             </div>
@@ -306,20 +307,20 @@ export default function AlertsPanel({
             {deadStockItems.slice(0, 5).map((item) => (
               <div
                 key={item.product.id}
-                className="rounded-lg border border-zinc-200 p-3"
+                className="rounded-lg border p-3" style={{ borderColor: "var(--border)" }}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="font-bold text-zinc-950">{item.product.name}</p>
-                  <p className="font-bold text-zinc-700">
+                  <p className="font-bold" style={{ color: "var(--text)" }}>{item.product.name}</p>
+                  <p className="font-bold" style={{ color: "var(--text-2)" }}>
                     {formatNumber(item.product.stock)}
                   </p>
                 </div>
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm" style={{ color: "var(--text-3)" }}>
               {t("pos.alerts.value", { value: formatCurrency(item.product.stock * item.product.cost) })}
             </p>
             {onViewProduct && (
               <button type="button" onClick={() => onViewProduct(item.product.id)}
-                className="mt-2 text-[10px] font-bold px-2 py-1 rounded border border-zinc-300 text-zinc-600 hover:bg-zinc-100">
+                className="btn-default btn-sm mt-2">
                 View
               </button>
             )}
@@ -327,23 +328,23 @@ export default function AlertsPanel({
             ))}
 
             {deadStockItems.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-zinc-300 p-5 text-center text-sm font-medium text-zinc-500">
+              <div className="rounded-lg border border-dashed p-5 text-center text-sm font-medium" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
                 {t("pos.alerts.no_dead_stock")}
               </div>
             ) : null}
           </div>
         </section>
 
-        <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+        <section className="card p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--info-soft)", color: "var(--info-text)" }}>
               <Tag size={21} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-zinc-950">
+              <h2 className="text-lg font-bold" style={{ color: "var(--text)" }}>
                 {t("pos.alerts.promos_title")}
               </h2>
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm" style={{ color: "var(--text-3)" }}>
                 {t("pos.alerts.promos_desc")}
               </p>
             </div>
@@ -353,22 +354,22 @@ export default function AlertsPanel({
             {promoSuggestions.slice(0, 5).map((promo) => (
               <div
                 key={`${promo.reason}-${promo.product.id}`}
-                className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-violet-950"
+                className="rounded-lg border p-3" style={{ borderColor: "var(--info)", backgroundColor: "var(--info-soft)", color: "var(--info-text)" }}
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-bold">{promo.product.name}</p>
-                  <p className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-violet-800">
+                  <p className="rounded-lg px-2 py-1 text-xs font-bold" style={{ backgroundColor: "var(--surface)", color: "var(--info-text)" }}>
                     {promo.suggestedDiscountPercent}% off
                   </p>
                 </div>
-                <p className="mt-1 text-sm font-medium text-violet-800">
+                <p className="mt-1 text-sm font-medium" style={{ color: "var(--info-text)" }}>
                   {promo.reason} - {promo.detail}
                 </p>
               </div>
             ))}
 
             {promoSuggestions.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-zinc-300 p-5 text-center text-sm font-medium text-zinc-500">
+              <div className="rounded-lg border border-dashed p-5 text-center text-sm font-medium" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
                 {t("pos.alerts.no_promo_pressure")}
               </div>
             ) : null}

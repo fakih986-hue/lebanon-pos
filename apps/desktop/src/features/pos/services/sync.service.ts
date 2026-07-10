@@ -425,7 +425,7 @@ export type SyncEntity =
   | "sale" | "refund" | "product" | "customer" | "debt"
   | "expense" | "daily-close" | "supplier" | "purchase-order"
   | "supplier-payment" | "staff" | "shift" | "inventory" | "settings"
-  | "delivery-order" | "held-sale"
+  | "delivery-order" | "held-sale" | "cash-movement"
 
 export type SyncAction =
   | "create" | "update" | "delete" | "receive"

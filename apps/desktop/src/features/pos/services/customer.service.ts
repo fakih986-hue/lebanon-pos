@@ -159,7 +159,7 @@ function cleanText(value: string) {
   return value.trim().replace(/\s+/g, " ")
 }
 
-function cleanMobile(value: string) {
+export function cleanMobile(value: string) {
   return value.trim().replace(/[^\d+]/g, "")
 }
 
@@ -394,7 +394,7 @@ export function getCustomerLedger() {
 }
 
 /** Build a plain-text statement for a customer (for printing or WhatsApp). */
-export function buildCustomerStatement(customerId: string, storeName = "Lebanon POS"): string {
+export function buildCustomerStatement(customerId: string, storeName = "Titan POS"): string {
   const ledger = getCustomerLedger().find((c) => c.id === customerId)
   if (!ledger) return ""
   const activity = getCustomerActivity(customerId)

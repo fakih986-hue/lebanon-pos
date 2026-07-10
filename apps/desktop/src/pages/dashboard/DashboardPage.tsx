@@ -8,8 +8,7 @@ import { Link } from "react-router"
 
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import Spinner from "../../components/ui/Spinner"
-import { getCustomerLedger, getLedgerTotals, subscribeLedger, type CustomerLedger } from "../../features/pos/services/customer.service"
-import { getDailyCloses, subscribeDailyCloses, getLocalDateKey } from "../../features/pos/services/dailyClose.service"
+import { getLedgerTotals, subscribeLedger } from "../../features/pos/services/customer.service"
 import { getExpenses, subscribeExpenses, type Expense } from "../../features/pos/services/expense.service"
 import { getProducts, subscribeProducts } from "../../features/pos/services/product.service"
 import { getSales, getSalesMetrics, getTopProducts, getOperationalAlerts, subscribeSales, type Sale } from "../../features/pos/services/sales.service"
@@ -172,29 +171,22 @@ export default function DashboardPage() {
   const topProducts   = useMemo(() => getTopProducts(5), [sales])
   const topMax        = topProducts[0]?.total ?? 1
   const ledgerTotals  = useMemo(() => getLedgerTotals(), [ledgerVersion])
-  const customerLedger = useMemo(() => getCustomerLedger(), [ledgerVersion])
   const stockValue    = products.reduce((sum, p) => sum + p.cost * p.stock, 0)
   const recentSales   = rangeSales.slice(0, 8)
   const lowStockProducts = products.filter((p) => p.stock <= settings.lowStockThreshold).sort((a, b) => a.stock - b.stock).slice(0, 5)
-  const overLimitCustomers = customerLedger.filter((c) => c.overLimit).sort((a, b) => b.balance - a.balance).slice(0, 3)
-  const overdueCustomers   = customerLedger.filter((c) => c.overdue).sort((a, b) => b.balance - a.balance).slice(0, 3)
   const reorderSuggestions = useMemo(() => getReorderSuggestions(products), [products])
   const expiryAlerts       = useMemo(() => getExpiryAlerts(products, 30), [products])
   const deadStockItems     = useMemo(() => getDeadStockItems(products, 60).slice(0, 3), [products])
   const operationalAlerts  = useMemo(() => getOperationalAlerts(), [ledgerVersion])
-  const todayKey = getLocalDateKey()
-  const todayClosed = useMemo(() => getDailyCloses().some(c => c.dateKey === todayKey), [ledgerVersion])
-
   // Combined action queue sorted by money-at-risk (desc)
   const actionQueue = useMemo(() => {
     const items: Array<{ type: string; label: string; sub: string; value: number; link: string; color: string; bg: string }> = []
-    for (const c of overLimitCustomers) items.push({ type: "overlimit", label: c.name, sub: `${c.oldestUnpaidDays}d overdue`, value: c.balance, link: "/customers", color: "var(--rose)", bg: "var(--rose-soft)" })
-    for (const c of overdueCustomers) items.push({ type: "overdue", label: c.name, sub: `${c.oldestUnpaidDays}d overdue`, value: c.balance, link: "/customers", color: "var(--rose)", bg: "var(--rose-soft)" })
+    // Over-limit and overdue customers removed from action queue — handled in Customer Debt view
     for (const p of lowStockProducts) items.push({ type: "lowstock", label: p.name, sub: `${formatNumber(p.stock)} units left`, value: p.stock * p.cost, link: "/products", color: "var(--amber)", bg: "var(--amber-soft)" })
     for (const d of deadStockItems) items.push({ type: "deadstock", label: d.product.name, sub: `No sales in 60d`, value: d.product.stock * d.product.cost, link: "/products", color: "var(--amber)", bg: "var(--amber-soft)" })
     for (const a of operationalAlerts) items.push({ type: a.type, label: a.message, sub: a.action ?? "", value: 0, link: a.action === "retry-sync" ? "/settings" : "", color: a.type === "danger" ? "var(--rose)" : "var(--amber)", bg: a.type === "danger" ? "var(--rose-soft)" : "var(--amber-soft)" })
     return items.sort((a, b) => b.value - a.value).slice(0, 8)
-  }, [lowStockProducts, overLimitCustomers, overdueCustomers, deadStockItems, operationalAlerts])
+  }, [lowStockProducts, deadStockItems, operationalAlerts])
   const actionCount = actionQueue.length
 
   const rangeLabel: Record<DateRange, string> = {
@@ -257,7 +249,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ── KPI row ─────────────────────────────────────── */}
-        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
           {[
             {
               label: t("desktop.dashboard.net_paid"),
@@ -297,15 +289,7 @@ export default function DashboardPage() {
                 ? `${reorderSuggestions.filter((r) => r.suggestedQuantity > 0).length} to reorder`
                 : null,
             },
-            {
-              label: todayClosed ? "Day closed" : "Day open",
-              value: todayClosed ? formatCurrency(ledgerTotals.outstanding > 0 ? ledgerTotals.outstanding : 0) : "—",
-              sub: todayClosed ? "Ready for tomorrow" : "Close from Accounting",
-              icon: CheckCircle2,
-              bg: todayClosed ? "var(--success-soft)" : "var(--amber-soft)",
-              fg: todayClosed ? "var(--success)" : "var(--amber)",
-              alert: !todayClosed,
-            },
+            // Day close card removed — available in Reports → Daily Close
           ].map((card) => {
             const Icon = card.icon
             return (
@@ -511,7 +495,7 @@ export default function DashboardPage() {
                   return (
                     <Tag
                       key={`${item.type}-${i}`}
-                      to={item.link || undefined}
+                      to={item.link as any}
                       className="flex items-center justify-between rounded-xl px-3 py-2.5 transition hover:opacity-80 cursor-pointer"
                       style={{ background: item.bg, border: `1px solid ${item.color}20` }}
                       aria-label={`${item.label} — ${item.sub}`}
@@ -521,7 +505,7 @@ export default function DashboardPage() {
                         <p className="text-[10px]" style={{ color: item.color, opacity: 0.7 }}>{item.sub}</p>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg shrink-0" style={{ background: item.color, color: "#fff" }}>
-                        {item.type === "overlimit" ? "Over limit" : item.type === "overdue" ? "Overdue" : item.type === "lowstock" ? "Low" : item.type === "deadstock" ? "Dead" : item.type === "warning" ? "⚠" : "!"}
+                        {item.type === "lowstock" ? "Low" : item.type === "deadstock" ? "Dead" : "⚠"}
                       </span>
                     </Tag>
                   )

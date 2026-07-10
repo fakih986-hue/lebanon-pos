@@ -376,6 +376,7 @@ export default function StaffPage() {
 
   function handleOpenShift() {
     const shift = openShift(parseMoney(openingFloat))
+    if (!shift) return
 
     showToast(t("pos.staff.shift_opened", { shift: shift.shiftNumber }))
   }

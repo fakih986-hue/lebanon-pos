@@ -1,34 +1,60 @@
 # Titan POS — Desktop Release Checklist
 
-**Version:** 1.0.7
-**Date:** 2026-07-09
+**Version:** 1.0.8
+**Date:** 2026-07-10
+
+---
+
+## Release Channel Definitions
+
+| Channel | Signed? | Auto-update? | Distribution | Audience |
+|---------|---------|--------------|--------------|----------|
+| **Internal** | No | Disabled | Private link | Development team |
+| **Pilot** | Optional | Disabled | Private link | Pilot store owners |
+| **Stable** | **Required** | Enabled | GitHub Releases | All customers |
+
+**Rule:** Do NOT promote a build to Stable unless it is code-signed.
 
 ---
 
 ## Before Release
 
 - [ ] **Clean git status** — no uncommitted changes
-- [ ] **All tests pass** — `npx vitest run apps/desktop` (78/78)
-- [ ] **Typecheck clean** — `npx tsc -p apps/desktop/tsconfig.json --noEmit`
-- [ ] **Typecheck clean** — `npx tsc -p apps/api/tsconfig.json --noEmit`
-- [ ] **Desktop build passes** — `npx vite build apps/desktop`
-- [ ] **API build passes** — `npx tsc -p apps/api/tsconfig.json`
-- [ ] **Version bumped** — `apps/electron/package.json` version updated
+- [ ] **All tests pass** — `pnpm test:desktop` (78/78)
+- [ ] **Typecheck clean** — `pnpm typecheck:desktop` + `pnpm typecheck:api`
+- [ ] **Desktop build passes** — `pnpm build:desktop`
+- [ ] **API build passes** — `pnpm --dir apps/api build`
+- [ ] **Version bumped** — `apps/electron/package.json` version set (currently 1.0.8)
 - [ ] **CHANGELOG updated** — list changes since last release
 - [ ] **Icons exist** — `assets/icon.png` and `assets/icon.ico` present
-- [ ] **Git tag created** — `git tag v1.0.7` matching version
+- [ ] **Git tag created** — `git tag v1.0.8` matching version
 - [ ] **All commits pushed** — `git push origin master --tags`
+
+---
 
 ## Build Installer
 
-- [ ] **Clean build** — `pnpm electron:package` completes without errors
-- [ ] **Output exists** — `Titan POS Setup 1.0.7.exe` in `apps/electron/dist-v7/`
-- [ ] **Portable exists** — `Titan POS 1.0.7.exe` in `apps/electron/dist-v7/`
+- [ ] **Clean build** — `pnpm --dir apps/electron run package` completes without errors
+- [ ] **Output exists** — `Titan POS Setup 1.0.8.exe` in `apps/electron/dist-v8/`
+- [ ] **Portable exists** — `Titan POS 1.0.8.exe` in `apps/electron/dist-v8/`
 - [ ] **latest.yml generated** — Auto-update manifest present
+- [ ] **Checksums generated** — `sha256sum Titan POS Setup 1.0.8.exe > Titan POS 1.0.8.sha256`
 
-## Install Test (on clean Windows)
+### Code Signing (Stable releases only)
 
-- [ ] **Runs installer** — Double-click `Titan POS Setup 1.0.7.exe`
+- [ ] **Certificate available** — OV cert on USB token or Azure Artifact Signing configured
+- [ ] **Sign NSIS installer** — `signtool sign /fd SHA256 /a /tr http://timestamp.digicert.com /td SHA256 "Titan POS Setup 1.0.8.exe"`
+- [ ] **Sign portable EXE** — Same command for `Titan POS 1.0.8.exe`
+- [ ] **Verify signature** — `Get-AuthenticodeSignature "Titan POS Setup 1.0.8.exe"` shows `Status: Valid`
+- [ ] **Re-generate checksums** — After signing, checksums change; re-run sha256sum
+- [ ] **Re-package latest.yml** — If signed after initial build, update `latest.yml` SHA
+
+---
+
+## Install Test (on clean Windows VM)
+
+- [ ] **Runs installer** — Double-click `Titan POS Setup 1.0.8.exe`
+- [ ] **SmartScreen (unsigned only)** — Click "More info → Run anyway" (document this step)
 - [ ] **UAC prompt** — Windows asks for admin permission
 - [ ] **Custom directory** — Can change install path
 - [ ] **Desktop shortcut** — Created after install
@@ -40,7 +66,9 @@
 - [ ] **POS loads** — After setup, POS page opens
 - [ ] **System tray** — Tray icon visible; right-click menu works
 
-## Install Test — POS Functionality
+---
+
+## Install Test — POS Functionality (same for all channels)
 
 - [ ] **Login** — Staff PIN login works
 - [ ] **Scanner** — Barcode scan adds product to cart
@@ -54,6 +82,8 @@
 - [ ] **Offline** — Works without internet (local PostgreSQL)
 - [ ] **Sync** — Can connect to Railway if configured
 
+---
+
 ## Uninstall Test
 
 - [ ] **Uninstall via Windows** — Settings → Apps → Titan POS → Uninstall
@@ -61,7 +91,9 @@
 - [ ] **Desktop shortcut removed** — After uninstall
 - [ ] **Start Menu entry removed** — After uninstall
 - [ ] **Program Files folder removed** — After uninstall
-- [ ] **AppData folder** — `%AppData%/Titan POS/` may persist (contains database)
+- [ ] **AppData folder** — `%AppData%/Titan POS/` persists (contains database)
+
+---
 
 ## Upgrade Test (if replacing previous version)
 
@@ -70,18 +102,35 @@
 - [ ] **Settings preserved** — Exchange rate, store name, etc.
 - [ ] **Sync queue preserved** — Pending operations not lost
 
-## Publish Release
+---
 
-- [ ] **Upload to GitHub** — Attach `Titan POS Setup 1.0.7.exe` + `latest.yml` to release
-- [ ] **Release title** — "Titan POS v1.0.7"
-- [ ] **Release notes** — Paste CHANGELOG section
-- [ ] **Set as latest** — GitHub release marked as latest
-- [ ] **Auto-update check** — Older version detects update on startup
+## Publish Stable Release (signed only)
+
+- [ ] **GitHub release created** — Tag `v1.0.8`, title "Titan POS v1.0.8"
+- [ ] **Upload installer** — Attach `Titan POS Setup 1.0.8.exe`
+- [ ] **Upload portable** — Attach `Titan POS 1.0.8.exe`
+- [ ] **Upload checksums** — Attach `Titan POS 1.0.8.sha256`
+- [ ] **Upload latest.yml** — Attach `latest.yml` (or publish via electron-builder)
+- [ ] **Upload release notes** — Attach `RELEASE_NOTES-v1.0.8.md`
+- [ ] **Set as latest** — GitHub release marked as "Latest"
+- [ ] **Auto-update enabled** — `electron-updater` configured; `GH_TOKEN` set during build
+
+---
+
+## Pilot Distribution (unsigned allowed)
+
+- [ ] **Host installer** — Upload to private Google Drive / Dropbox folder
+- [ ] **Share link** — Send password-protected link to pilot store owners
+- [ ] **Include instructions** — SmartScreen bypass + support contact
+- [ ] **Collect feedback** — Document issues in GitHub Issues
+- [ ] **No auto-update** — Pilot builds do NOT auto-update
+
+---
 
 ## Post-Release
 
 - [ ] **Verify download** — Download link works
-- [ ] **Verify auto-update** — Installed app prompts to update
+- [ ] **Verify auto-update** — Installed app prompts to update (signed builds only)
 - [ ] **Monitor issues** — Check GitHub Issues / support channel
 - [ ] **Increment version** — Bump to next dev version for continued work
 
@@ -89,10 +138,30 @@
 
 ## Known Limitations at Release
 
-| # | Limitation |
-|---|-----------|
-| 1 | Windows SmartScreen warning due to unsigned EXE (until EV Code Signing Certificate obtained) |
-| 2 | Placeholder app icon (gradient square) — replace with professional Titan POS logo |
-| 3 | Thermal printer requires browser print dialog setup by store owner |
-| 4 | Auto-update requires GitHub PAT in GH_TOKEN env var during build |
-| 5 | Bundled PostgreSQL adds ~100MB to installer size |
+| # | Limitation | Channel Affected | Workaround |
+|---|-----------|-----------------|------------|
+| 1 | **Unsigned installer** — SmartScreen shows "Windows protected your PC" | All (until signed) | Click "More info → Run anyway" |
+| 2 | **Placeholder app icon** — no `titan-source.png` | All | Provide 1024×1024 logo; run `node make-icons.mjs` |
+| 3 | **Thermal printer** requires browser print dialog | All | Setup by store owner via Settings → Printer |
+| 4 | **Auto-update disabled for unsigned builds** | Internal, Pilot | Manual re-install for each version |
+| 5 | **No EV certificate needed** — OV or Azure Artifact Signing sufficient | Stable | See code-signing report for purchasing steps |
+| 6 | **Bundled PostgreSQL** adds ~100MB | All | Expected for offline-capable desktop app |
+
+---
+
+## SmartScreen Bypass Instructions (for pilot users)
+
+Include these instructions with every unsigned installer download:
+
+```
+Windows may show "Windows protected your PC" when you try to run Titan POS.
+This is normal — the installer hasn't been downloaded enough times yet
+to build SmartScreen reputation.
+
+To proceed:
+1. Click "More info" (blue text on the warning screen)
+2. Click "Run anyway" (button that appears)
+3. Confirm UAC prompt to install
+
+Once installed, the app will run without further warnings.
+```

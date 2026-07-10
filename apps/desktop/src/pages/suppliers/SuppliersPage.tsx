@@ -21,6 +21,7 @@ import { parseMoney } from "../../features/pos/lib/helpers"
 import {
   archiveSupplier,
   createSupplier,
+  deleteSupplier,
   getPurchaseOrders,
   getSupplierActivity,
   getSupplierLedger,

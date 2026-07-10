@@ -2,19 +2,11 @@ import { CheckCircle2, Eraser, MessageCircle, Printer } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency } from "../lib/currency"
 
-interface Sale {
-  number: string
-  total: number
-  totalLbp: number
-  customerName?: string
-  items?: any[]
-}
-
 interface Props {
-  sales: Sale[]
+  sales: { number: string; total: number; totalLbp: number; customerName?: string; items?: any[] }[]
   onNewSale: () => void
-  onPrintReceipt: (sale: Sale) => void
-  onWhatsApp?: (sale: Sale) => void
+  onPrintReceipt: (sale: any) => void
+  onWhatsApp?: (sale: any) => void
 }
 
 export default function LastSaleBanner({ sales, onNewSale, onPrintReceipt, onWhatsApp }: Props) {
@@ -57,7 +49,7 @@ export default function LastSaleBanner({ sales, onNewSale, onPrintReceipt, onWha
                 type="button"
                 onClick={() => onPrintReceipt(sale)}
                 className="flex h-6 items-center gap-1 rounded-md border px-2 text-[10px] font-bold transition hover:opacity-80"
-                style={{ borderColor: "var(--brand-border)", color: "var(--brand-text)", background: "white" }}
+                style={{ borderColor: "var(--brand-border)", color: "var(--brand-text)", background: "var(--surface)" }}
               >
                 <Printer size={10} />
               </button>
@@ -66,7 +58,7 @@ export default function LastSaleBanner({ sales, onNewSale, onPrintReceipt, onWha
                   type="button"
                   onClick={() => onWhatsApp(sale)}
                   className="flex h-6 items-center gap-1 rounded-md border px-2 text-[10px] font-bold transition hover:opacity-80"
-                  style={{ borderColor: "var(--border)", color: "#25D366", background: "white" }}
+                  style={{ borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface)" }}
                 >
                   <MessageCircle size={10} />
                 </button>

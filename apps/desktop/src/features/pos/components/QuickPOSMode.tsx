@@ -6,8 +6,11 @@ const MotionButton = motion.button as any
 const MotionP = motion.p as any
 import {
   ArrowLeft,
+  BadgePercent,
   Camera,
+  ChevronDown,
   Eraser,
+  MessageSquare,
   Minus,
   Plus,
   Scan,
@@ -24,6 +27,8 @@ import type { Product } from "../types/product"
 type CartItem = Product & { quantity: number }
 type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
 type CustomerLedger = { id: string; name: string; mobile: string; balance: number }
+
+type DiscountMode = "USD" | "Percent"
 
 type Props = {
   scanInputRef: RefObject<HTMLInputElement | null>
@@ -67,9 +72,21 @@ type Props = {
   cashTenderValid: boolean
   checkoutBlocked: boolean
   onCompleteSale: () => void
-  recentSales: { number: string; total: number; totalLbp: number; items: CartItem[] }[]
+  recentSales: { number: string; total: number; totalLbp: number; items: any[] }[]
   onPrintReceipt: (sale: any) => void
   onWhatsAppReceipt: (sale: any) => void
+  sellAtCost: boolean
+  onToggleSellAtCost: () => void
+  saleNote: string
+  onSaleNoteChange: (value: string) => void
+  discountMode: DiscountMode
+  discountValue: string
+  onDiscountModeChange: (mode: DiscountMode) => void
+  onDiscountValueChange: (value: string) => void
+  hasDiscount: boolean
+  canApplyDiscount: boolean
+  discountTotal: number
+  grossSubtotal: number
 }
 
 export default function QuickPOSMode({
@@ -85,12 +102,18 @@ export default function QuickPOSMode({
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, checkoutBlocked, onCompleteSale,
   recentSales, onPrintReceipt, onWhatsAppReceipt,
+  sellAtCost, onToggleSellAtCost,
+  saleNote, onSaleNoteChange,
+  discountMode, discountValue, onDiscountModeChange, onDiscountValueChange,
+  hasDiscount, canApplyDiscount, discountTotal, grossSubtotal,
 }: Props) {
   const { t, dir } = useI18n()
   const usdRef = useRef<HTMLInputElement>(null)
   const lbpRef = useRef<HTMLInputElement>(null)
   const reviewRef = useRef<HTMLElement>(null)
   const [showReview, setShowReview] = useState(false)
+  const [discountOpen, setDiscountOpen] = useState(false)
+  const [saleNoteOpen, setSaleNoteOpen] = useState(false)
   const hasInput = scanCode.trim().length > 0
 
   function handleBarcodeKey(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -405,8 +428,8 @@ export default function QuickPOSMode({
         </div>
 
         {/* ── Payment rail ────────────────────────────── */}
-        <div className="flex w-[300px] shrink-0 flex-col overflow-y-auto border-l"
-          style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+        <div className="flex shrink-0 flex-col overflow-y-auto border-l"
+          style={{ width: 585, borderColor: "var(--border)", background: "var(--surface)" }}>
 
           {/* Total */}
           <div className="border-b px-5 py-4" style={{ borderColor: "var(--border)" }}>
@@ -417,6 +440,135 @@ export default function QuickPOSMode({
             </MotionP>
             <p className="mt-1 text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>{formatLbpCurrency(totalLbp)}</p>
           </div>
+
+          {/* Sell at Cost toggle */}
+          {items.length > 0 && (
+            <button
+              type="button"
+              onClick={onToggleSellAtCost}
+              className={`mx-4 flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-[12px] font-bold transition ${
+                sellAtCost
+                  ? "bg-amber-500/15 border border-amber-500/30 text-amber-400"
+                  : "border text-[var(--text-3)] hover:text-[var(--text-2)]"
+              }`}
+              style={!sellAtCost ? { borderColor: "var(--border)" } : undefined}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${sellAtCost ? "bg-amber-400" : "bg-[var(--text-3)]"}`} />
+              {sellAtCost ? t("pos.sell_at_cost") + " — ON" : t("pos.sell_at_cost")}
+            </button>
+          )}
+
+          {/* Sale note + Discount — side by side */}
+          {items.length > 0 && (
+            <div className="flex gap-2 mx-4">
+              {/* Sale note */}
+              <div className="flex-1 rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                <button
+                  type="button"
+                  onClick={() => setSaleNoteOpen(!saleNoteOpen)}
+                  className="flex w-full items-center justify-between gap-3 px-3 py-2.5"
+                  style={{ background: "var(--surface-2)" }}
+                >
+                  <span className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: "var(--text-2)" }}>
+                    <MessageSquare size={14} />
+                    {t("pos.sale_note")}
+                  </span>
+                  {saleNote && (
+                    <span className="truncate text-[10px] max-w-[60px]" style={{ color: "var(--text-3)" }}>{saleNote}</span>
+                  )}
+                  <ChevronDown size={14} className={`shrink-0 transition ${saleNoteOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-3)" }} />
+                </button>
+                {saleNoteOpen && (
+                  <div className="px-3 pb-3 pt-2" style={{ background: "var(--surface)" }}>
+                    <input
+                      type="text"
+                      value={saleNote}
+                      onChange={(e) => onSaleNoteChange(e.target.value)}
+                      placeholder={t("pos.sale_note_placeholder")}
+                      maxLength={120}
+                      className="input w-full"
+                      style={{ height: 36, fontSize: 13 }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Discount */}
+              <div className="flex-1 rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
+                <button
+                  type="button"
+                  onClick={() => setDiscountOpen(!discountOpen)}
+                  className="flex w-full items-center justify-between gap-3 px-3 py-2.5"
+                  style={{ background: "var(--surface-2)" }}
+                >
+                  <span className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: "var(--text-2)" }}>
+                    <BadgePercent size={14} />
+                    {t("pos.discount")}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {hasDiscount && (
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}
+                      >
+                        -{formatCurrency(discountTotal)}
+                      </span>
+                    )}
+                    <ChevronDown size={14} className={`transition ${discountOpen ? "rotate-180" : ""}`} style={{ color: "var(--text-3)" }} />
+                  </div>
+                </button>
+                {discountOpen && (
+                  <div className="px-3 pb-3 pt-2" style={{ background: "var(--surface)" }}>
+                    {canApplyDiscount ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          {(["USD", "Percent"] as DiscountMode[]).map((mode) => (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => onDiscountModeChange(mode)}
+                              className={`h-8 rounded-lg border text-[12px] font-bold transition ${
+                                discountMode === mode
+                                  ? "border-[var(--text)] bg-[var(--text)] text-[var(--surface)]"
+                                  : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-2)]"
+                              }`}
+                            >
+                              {mode === "USD" ? t("pos.dollar_off") : t("pos.percent_off")}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number" min="0"
+                            max={discountMode === "Percent" ? 100 : undefined}
+                            step={discountMode === "Percent" ? 1 : 0.01}
+                            value={discountValue}
+                            onChange={(e) => onDiscountValueChange(e.target.value)}
+                            placeholder={discountMode === "Percent" ? "10" : "1.00"}
+                            className="input flex-1"
+                            style={{ height: 36, fontSize: 13 }}
+                          />
+                          {(discountMode === "Percent" ? [5, 10, 15] : [1, 5, 10]).map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              onClick={() => onDiscountValueChange(String(v))}
+                              className="h-9 rounded-lg border px-2.5 text-[11px] font-bold transition hover:opacity-80"
+                              style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-2)" }}
+                            >
+                              {discountMode === "Percent" ? `${v}%` : `$${v}`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[12px]" style={{ color: "var(--text-3)" }}>{t("pos.permission_required")}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <TenderPanel
             density="quick"

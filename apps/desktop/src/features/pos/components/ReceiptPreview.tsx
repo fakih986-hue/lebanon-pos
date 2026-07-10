@@ -1,5 +1,5 @@
-import { memo } from "react"
-import { Printer, ReceiptText, RotateCcw, X } from "lucide-react"
+import { memo, useState } from "react"
+import { ChevronDown, Printer, ReceiptText, RotateCcw, X } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
 
@@ -91,6 +91,7 @@ const ReceiptPreview = memo(function ReceiptPreview({
     Math.max(0, sale.total - refundedTotal),
     getRefundTotal(sale, refundDraftItems)
   )
+  const [showReturns, setShowReturns] = useState(false)
 
   return (
     <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -155,27 +156,27 @@ const ReceiptPreview = memo(function ReceiptPreview({
         </div>
 
         <div className="mt-4 overflow-hidden rounded-lg border border-zinc-200">
-          <div className="grid grid-cols-[minmax(0,1fr)_64px_90px] bg-zinc-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">
+          <div className="grid grid-cols-[1fr_auto_auto] gap-x-2 bg-zinc-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] text-zinc-500">
             <span>{t("pos.item_header")}</span>
-            <span className="text-end">{t("pos.qty_header")}</span>
-            <span className="text-end">{t("pos.total_header")}</span>
+            <span className="text-end" style={{ minWidth: 40 }}>{t("pos.qty_header")}</span>
+            <span className="text-end" style={{ minWidth: 70 }}>{t("pos.total_header")}</span>
           </div>
 
           {sale.items.map((item) => (
             <div
               key={`${sale.id}-${item.id}`}
-              className="grid grid-cols-[minmax(0,1fr)_64px_90px] border-t border-zinc-100 px-3 py-3 text-sm"
+              className="grid grid-cols-[1fr_auto_auto] gap-x-2 border-t border-zinc-100 px-3 py-2 text-sm"
             >
               <div className="min-w-0">
-                <p className="truncate font-bold text-zinc-950">{item.name}</p>
-                <p className="mt-1 truncate text-xs text-zinc-500">
-                  {item.barcode} - {formatCurrency(item.unitPrice)}
+                <p className="text-[13px] font-bold break-words" style={{ color: "var(--text)", wordBreak: "break-word" }}>{(item as any).name ?? (item as any).productName ?? "Product"}</p>
+                <p className="mt-0.5 text-[11px]" style={{ color: "var(--text-3)" }}>
+                  @{formatCurrency(item.unitPrice)}
                 </p>
               </div>
-              <span className="text-end font-semibold text-zinc-700">
+              <span className="text-end font-semibold self-center" style={{ color: "var(--text-2)", minWidth: 40 }}>
                 {formatNumber(item.quantity)}
               </span>
-              <span className="text-end font-bold text-zinc-950">
+              <span className="text-end font-bold self-center" style={{ color: "var(--text)", minWidth: 70 }}>
                 {formatCurrency(item.total)}
               </span>
             </div>
@@ -247,136 +248,110 @@ const ReceiptPreview = memo(function ReceiptPreview({
           </div>
         ) : null}
 
-        <div className="mt-4 rounded-lg p-3" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm font-bold text-white">
-              <RotateCcw size={17} />
+        {/* Return / Void actions */}
+        <div className="mt-4 flex gap-2">
+          {canRefund && hasRefundableItems && (
+            <button
+              type="button"
+              onClick={() => setShowReturns(!showReturns)}
+              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-[12px] font-bold transition"
+              style={{ background: "var(--rose-soft)", color: "var(--rose-text)", border: "1px solid rgba(239,68,68,0.2)" }}
+            >
+              <RotateCcw size={14} />
               {t("pos.returns")}
-            </div>
-            <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-rose-800 ring-1 ring-rose-200">
-              {getRefundMethod(sale)}
-            </span>
-          </div>
-
-          {saleRefunds.length > 0 ? (
-            <div className="mt-3 space-y-2">
-              {saleRefunds.map((refund) => (
-                <div
-                  key={refund.id}
-                  className="flex justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm ring-1 ring-rose-100"
-                >
-                  <span className="font-semibold text-zinc-700">
-                    {refund.refundNumber}
-                  </span>
-                  <strong className="text-rose-700">
-                    -{formatCurrency(refund.total)}
-                  </strong>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          {!canRefund ? (
-            <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-900 ring-1 ring-rose-100">
-              {t("pos.permission_required")}
-            </p>
-          ) : !hasRefundableItems ? (
-            <p className="mt-3 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-rose-900 ring-1 ring-rose-100">
-              {t("pos.fully_returned")}
-            </p>
-          ) : (
-            <div className="mt-3 space-y-3">
-              <div className="space-y-2">
-                {sale.items.map((item) => {
-                  const refundedQuantity = getRefundedQuantity(
-                    refunds,
-                    sale.id,
-                    item.id
-                  )
-                  const availableQuantity = getRefundableQuantity(
-                    sale,
-                    item,
-                    refunds
-                  )
-
-                  return (
-                    <div
-                      key={`return-${sale.id}-${item.id}`}
-                      className="grid grid-cols-[minmax(0,1fr)_86px] gap-3 rounded-lg bg-white p-3 ring-1 ring-rose-100"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate font-bold text-zinc-950">
-                          {item.name}
-                        </p>
-                        <p className="mt-1 text-xs font-semibold text-zinc-500">
-                          {t("pos.sold_returned", { n: formatNumber(item.quantity), n2: formatNumber(refundedQuantity) })}
-                        </p>
-                      </div>
-                      <label className="block text-xs font-bold text-rose-900">
-                        {t("pos.return_label")}
-                        <input
-                          type="number"
-                          min="0"
-                          max={availableQuantity}
-                          step="1"
-                          disabled={availableQuantity === 0}
-                          value={refundQuantities[String(item.id)] ?? ""}
-                          onChange={(event) =>
-                            onRefundQuantityChange(item.id, event.target.value)
-                          }
-                          className="mt-1 h-10 w-full rounded-lg border border-rose-200 bg-white px-2 text-end text-zinc-900 outline-none focus:border-rose-400 focus:ring-4 focus:ring-rose-100 disabled:bg-zinc-100 disabled:text-zinc-400"
-                        />
-                      </label>
-                    </div>
-                  )
-                })}
-              </div>
-
-              <input
-                value={refundReason}
-                onChange={(event) => onRefundReasonChange(event.target.value)}
-                placeholder={t("pos.return_reason")}
-                className="h-11 w-full rounded-lg border border-rose-200 bg-white px-3 text-sm font-medium outline-none focus:border-rose-400 focus:ring-4 focus:ring-rose-100"
-              />
-
-              <div className="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-sm ring-1 ring-rose-100">
-                <span className="font-semibold text-zinc-600">
-                  {t("pos.refund_amount")}
-                </span>
-                <strong className="text-rose-700">
-                  {formatCurrency(refundDraftTotal)}
-                </strong>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onRecordRefund(sale)}
-                disabled={refundDraftItems.length === 0}
-                aria-label={`Record refund of ${refundDraftItems.length} items for ${formatCurrency(refundDraftTotal)}`}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-rose-600 px-3 text-sm font-bold text-white transition hover:bg-rose-500 disabled:bg-zinc-200 disabled:text-zinc-400"
-              >
-                <RotateCcw size={16} />
-                {t("pos.record_return")}
-              </button>
-
-              <p className="text-sm font-semibold text-rose-900">
-                {refundStatus}
-              </p>
-            </div>
+              <ChevronDown size={12} className={`transition ${showReturns ? "rotate-180" : ""}`} />
+            </button>
           )}
-
           {sale && sale.status !== "Voided" && userCan("sales.void") && (
             <button
               type="button"
               onClick={() => onVoid(sale.id)}
-              aria-label={`Void sale ${sale.saleNumber}`}
-              className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-3 text-sm font-bold text-rose-600 transition hover:bg-rose-50"
+              className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border text-[12px] font-bold transition"
+              style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
             >
-              <X size={16} />
+              <X size={14} />
               {t("pos.void")}
             </button>
           )}
         </div>
+
+        {showReturns && (
+          <div className="mt-3 rounded-lg p-3" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <span className="text-[12px] font-bold" style={{ color: "var(--rose-text)" }}>{t("pos.returns")}</span>
+              <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "var(--surface)", color: "var(--text-3)" }}>
+                {getRefundMethod(sale)}
+              </span>
+            </div>
+
+            {saleRefunds.length > 0 ? (
+              <div className="space-y-1.5 mb-3">
+                {saleRefunds.map((refund) => (
+                  <div key={refund.id} className="flex justify-between gap-3 rounded-lg px-3 py-2 text-[12px]" style={{ background: "var(--surface)" }}>
+                    <span className="font-semibold" style={{ color: "var(--text-2)" }}>{refund.refundNumber}</span>
+                    <strong style={{ color: "var(--rose-text)" }}>-{formatCurrency(refund.total)}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {canRefund && hasRefundableItems && (
+              <div className="space-y-2">
+                {sale.items.map((item) => {
+                  const refundedQuantity = getRefundedQuantity(refunds, sale.id, item.id)
+                  const availableQuantity = getRefundableQuantity(sale, item, refunds)
+
+                  return (
+                    <div key={`return-${sale.id}-${item.id}`} className="grid grid-cols-[minmax(0,1fr)_72px] gap-2 rounded-lg px-3 py-2 text-[12px]" style={{ background: "var(--surface)" }}>
+                      <div className="min-w-0">
+                        <p className="truncate font-bold" style={{ color: "var(--text)" }}>{item.name}</p>
+                        <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
+                          {t("pos.sold_returned", { n: formatNumber(item.quantity), n2: formatNumber(refundedQuantity) })}
+                        </p>
+                      </div>
+                      <input
+                        type="number" min="0" max={availableQuantity} step="1"
+                        disabled={availableQuantity === 0}
+                        value={refundQuantities[String(item.id)] ?? ""}
+                        onChange={(event) => onRefundQuantityChange(item.id, event.target.value)}
+                        className="h-8 w-full rounded-lg border px-2 text-end text-[12px] font-bold outline-none"
+                        style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text)" }}
+                      />
+                    </div>
+                  )
+                })}
+
+                <input
+                  value={refundReason}
+                  onChange={(event) => onRefundReasonChange(event.target.value)}
+                  placeholder={t("pos.return_reason")}
+                  className="h-9 w-full rounded-lg border px-3 text-[12px] font-medium outline-none"
+                  style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text)" }}
+                />
+
+                <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-[12px]" style={{ background: "var(--surface)" }}>
+                  <span className="font-semibold" style={{ color: "var(--text-2)" }}>{t("pos.refund_amount")}</span>
+                  <strong style={{ color: "var(--rose-text)" }}>{formatCurrency(refundDraftTotal)}</strong>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => onRecordRefund(sale)}
+                  disabled={refundDraftItems.length === 0}
+                  className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-[12px] font-bold text-white transition"
+                  style={{ background: "var(--rose)" }}
+                >
+                  <RotateCcw size={13} />
+                  {t("pos.record_return")}
+                </button>
+
+                {refundStatus && (
+                  <p className="text-[12px] font-semibold" style={{ color: "var(--rose-text)" }}>{refundStatus}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </article>
   )

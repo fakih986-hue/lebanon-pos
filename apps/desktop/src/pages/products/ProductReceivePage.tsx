@@ -8,6 +8,7 @@ import {
 import { Link } from "react-router"
 import Spinner from "../../components/ui/Spinner"
 import { renderCode128Svg } from "../../features/pos/lib/barcode"
+import type { PurchasePaymentMethod } from "../../features/pos/services/supplier.service"
 import {
   createBarcodeDetector, createHtml5Qrcode, detectBarcodeFromImageFile,
   getCameraErrorMessage, getHtml5QrcodeFormatCodes, getLiveCameraIssue,

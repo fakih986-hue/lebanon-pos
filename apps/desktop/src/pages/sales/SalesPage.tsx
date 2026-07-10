@@ -117,10 +117,10 @@ function groupSalesByDay(sales: Sale[]) {
 }
 
 const PM_COLORS: Record<string, string> = {
-  Cash:   "chip-success",
-  Card:   "chip-info",
-  Wallet: "chip-neutral",
-  Debt:   "chip-warning",
+  Cash:   "chip-brand",
+  Card:   "chip-brand",
+  Wallet: "chip-brand",
+  Debt:   "chip-brand",
 }
 
 export default function SalesPage() {
@@ -272,7 +272,7 @@ export default function SalesPage() {
     const { sale, refundTotal, refundItems, refundReason } = pendingRefund
     const refund = recordRefund({ saleId: sale.id, saleNumber: sale.saleNumber, customerId: sale.customerId, customerName: sale.customerName, method: getRefundMethod(sale), reason: refundReason, total: refundTotal, items: refundItems })
     increaseProductStock(refundItems.map((i) => ({ productId: i.id, quantity: i.quantity })))
-    restoreInventoryBatches(refundItems.map((i) => ({ productId: i.id, productName: i.name, barcode: i.barcode, quantity: i.quantity, fallbackUnitCost: i.cost })))
+    restoreInventoryBatches(refundItems.map((i) => ({ productId: i.id, productName: i.name, barcode: i.barcode, quantity: i.quantity, fallbackUnitCost: i.cost ?? 0 })))
     if (sale.paymentMethod === "Debt" && sale.customerId) {
       recordDebtPayment({ customerId: sale.customerId, amount: refundTotal, method: "Refund Credit", reference: `${refund.refundNumber} return for ${sale.saleNumber}` })
     }
@@ -386,20 +386,20 @@ export default function SalesPage() {
                 Date Range
               </p>
               <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                {dateRangeOptions.map((o) => (
-                  <button
-                    key={o.key}
-                    type="button"
-                    onClick={() => setDateRange(o.key)}
-                    className="px-3 h-8 text-[12px] font-semibold transition"
-                    style={dateRange === o.key
-                      ? { background: "var(--text)", color: "var(--surface)" }
-                      : { color: "var(--text-2)" }
-                    }
-                  >
-                    {o.label}
-                  </button>
-                ))}
+                  {dateRangeOptions.map((o) => (
+                    <button
+                      key={o.key}
+                      type="button"
+                      onClick={() => setDateRange(o.key)}
+                      className="px-3 h-8 text-[12px] font-semibold transition"
+                      style={dateRange === o.key
+                        ? { background: "var(--brand)", color: "var(--brand-contrast)" }
+                        : { color: "var(--text-2)" }
+                      }
+                    >
+                      {o.label}
+                    </button>
+                  ))}
               </div>
             </div>
 
@@ -415,7 +415,7 @@ export default function SalesPage() {
                     onClick={() => setPaymentFilter(pm)}
                     className="h-8 rounded-lg border px-3 text-[12px] font-semibold transition"
                     style={paymentFilter === pm
-                      ? { background: "var(--text)", borderColor: "var(--text)", color: "var(--surface)" }
+                      ? { background: "var(--brand)", borderColor: "var(--brand)", color: "var(--brand-contrast)" }
                       : { borderColor: "var(--border)", color: "var(--text-2)" }
                     }
                   >
@@ -437,7 +437,7 @@ export default function SalesPage() {
                     onClick={() => setStatusFilter(s)}
                     className="h-8 rounded-lg border px-3 text-[12px] font-semibold transition"
                     style={statusFilter === s
-                      ? { background: "var(--text)", borderColor: "var(--text)", color: "var(--surface)" }
+                      ? { background: "var(--brand)", borderColor: "var(--brand)", color: "var(--brand-contrast)" }
                       : { borderColor: "var(--border)", color: "var(--text-2)" }
                     }
                   >
@@ -471,7 +471,7 @@ export default function SalesPage() {
                 onClick={() => setGroupByDay(!groupByDay)}
                 className="h-8 rounded-lg border px-3 text-[12px] font-semibold transition gap-2 flex items-center"
                 style={groupByDay
-                  ? { background: "var(--accent-soft)", borderColor: "var(--accent)", color: "var(--accent-text)" }
+                  ? { background: "var(--brand-soft)", borderColor: "var(--brand)", color: "var(--brand-text)" }
                   : { borderColor: "var(--border)", color: "var(--text-2)" }
                 }
               >

@@ -840,7 +840,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
                 className="px-3 py-1 text-[11px] font-semibold rounded-md capitalize"
                 style={{
                   background: lotFilter === s ? "var(--brand)" : "transparent",
-                  color: lotFilter === s ? "#fff" : "var(--text-2)",
+                  color: lotFilter === s ? "var(--brand-contrast)" : "var(--text-2)",
                 }}>
                 {s}
               </button>
@@ -1115,10 +1115,8 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
                   <td className="border-b px-4 py-3 font-mono text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{variant.barcode}</td>
                   <td className="border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
                     <button onClick={() => setDeleteVariantId(variant.id)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border transition hover:opacity-80"
                       style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
-                      onMouseEnter={(e) => { e.currentTarget.style.color = "var(--rose)"; e.currentTarget.style.borderColor = "var(--rose)" }}
-                      onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-3)"; e.currentTarget.style.borderColor = "var(--border)" }}
                       aria-label={`Remove ${variant.variantName}`}>
                       <X size={13} />
                     </button>
@@ -1181,7 +1179,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
               className="px-3 py-1.5 text-[11px] font-semibold rounded-md transition-colors"
               style={{
                 background: quickView === key ? "var(--brand)" : "transparent",
-                color: quickView === key ? "#fff" : "var(--text-2)",
+                color: quickView === key ? "var(--brand-contrast)" : "var(--text-2)",
               }}
             >
               {label}
@@ -1219,7 +1217,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       </div>
 
       {bulkEditOpen && (
-        <div className="card mb-4 p-4" style={{ borderLeft: "3px solid var(--blue)" }}>
+        <div className="card mb-4 p-4" style={{ borderLeft: "3px solid var(--brand)" }}>
           <h3 className="mb-3 text-[13px] font-bold" style={{ color: "var(--text)" }}>Bulk Price Edit</h3>
           <div className="flex flex-wrap gap-2">
             <select value={bulkEditCategory} onChange={(e) => setBulkEditCategory(e.target.value)} className="input h-9 text-[13px]">
@@ -1346,7 +1344,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
           categories={categories}
           onClose={() => setShowQuickCreate(false)}
           onCreated={() => {
-            setProducts(getProducts())
+            getProducts().then(setProducts)
             setBatchVersion(v => v + 1)
           }}
         />

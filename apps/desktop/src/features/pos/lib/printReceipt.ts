@@ -61,8 +61,8 @@ export function printSaleReceipt(
       (item) => `
         <tr>
           <td>
-            <strong>${escapeHtml(item.name)}</strong>
-            <span>${escapeHtml(item.barcode)}</span>
+            <strong>${escapeHtml((item as any).name ?? (item as any).productName ?? "Product")}</strong>
+            <span>${escapeHtml((item as any).barcode ?? "")}</span>
           </td>
           <td>${item.quantity}</td>
           <td>${formatCurrency(item.unitPrice)}</td>
@@ -106,7 +106,7 @@ export function printSaleReceipt(
             <p class="center muted">${escapeHtml(settings.branchName)}</p>
             <p class="center muted">${escapeHtml(settings.phone)}</p>
             <div class="rule"></div>
-          ` : `<h1>Lebanon POS</h1><div class="rule"></div>`}
+          ` : `<h1>Titan POS</h1><div class="rule"></div>`}
           <p class="center muted">${escapeHtml(sale.saleNumber ?? "")}</p>
           <p class="center muted">${sale.createdAt ? formatReceiptDate(sale.createdAt) : ""}</p>
           <div class="row"><span>Cashier</span><strong>${escapeHtml(
@@ -206,8 +206,8 @@ export function printLastSaleReceipt(lastSale: LastSaleSummary, settings: AppSet
       (item) => `
         <tr>
           <td>
-            <strong>${escapeHtml(item.name)}</strong><br />
-            <span>${escapeHtml(item.barcode)}</span>
+            <strong>${escapeHtml((item as any).name ?? (item as any).productName ?? "Product")}</strong><br />
+            <span>${escapeHtml((item as any).barcode ?? "")}</span>
           </td>
           <td>${item.quantity}</td>
           <td>${formatCurrency(item.price)}</td>

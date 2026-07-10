@@ -363,7 +363,7 @@ router.get("/diagnostics", async (req: Req, res: Response) => {
 
     res.json({
       timestamp: new Date().toISOString(),
-      app: "Lebanon POS API",
+      app: "Titan POS API",
       dbConnected,
       tenantCount,
       syncPending,

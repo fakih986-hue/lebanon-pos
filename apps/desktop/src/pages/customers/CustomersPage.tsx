@@ -337,40 +337,30 @@ export default function CustomersPage() {
         </div>
       ) : (
       <>
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-4">
-            <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-              <p className="text-sm font-medium text-zinc-500">Customers</p>
-              <p className="mt-2 text-2xl font-bold text-zinc-950">
-                {formatNumber(totals.customers)}
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-              <p className="text-sm font-medium text-zinc-500">Outstanding</p>
-              <p className="mt-2 text-2xl font-bold text-rose-700">
-                {formatCurrency(totals.outstanding)}
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-              <p className="text-sm font-medium text-zinc-500">Credit sales</p>
-              <p className="mt-2 text-2xl font-bold text-zinc-950">
-                {formatCurrency(totals.debtTotal)}
-              </p>
-            </div>
-
-            <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-              <p className="text-sm font-medium text-zinc-500">Collected</p>
-              <p className="mt-2 text-2xl font-bold" style={{ color: "var(--success)" }}>
-                {formatCurrency(totals.paidTotal)}
-              </p>
-            </div>
+      {/* KPI cards */}
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{t("pos.customers")}</p>
+          <p className="mt-1 text-[22px] font-black tabular-nums" style={{ color: "var(--text)" }}>{formatNumber(totals.customers)}</p>
+        </div>
+        <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Outstanding</p>
+          <p className="mt-1 text-[22px] font-black tabular-nums" style={{ color: "var(--rose-text)" }}>{formatCurrency(totals.outstanding)}</p>
+        </div>
+        <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Credit sales</p>
+          <p className="mt-1 text-[22px] font-black tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(totals.debtTotal)}</p>
+        </div>
+        <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Collected</p>
+          <p className="mt-1 text-[22px] font-black tabular-nums" style={{ color: "var(--brand-text)" }}>{formatCurrency(totals.paidTotal)}</p>
+        </div>
       </section>
 
       {/* Debt aging breakdown */}
       {totals.outstanding > 0 && (
-        <section className="mt-3 rounded-xl border p-4" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
-          <p className="text-[12px] font-bold uppercase tracking-wide mb-3" style={{ color: "var(--text-3)" }}>Outstanding by age</p>
+        <section className="mt-3 rounded-xl border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+          <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-3)" }}>Outstanding by age</p>
           <div className="grid grid-cols-4 gap-2">
             {[
               { label: "0–30 days", value: agingTotals.current, color: "var(--brand-text)", bg: "var(--brand-soft)", days: "0" },
@@ -379,672 +369,539 @@ export default function CustomersPage() {
               { label: "90+ days", value: agingTotals.days90, color: "var(--rose-text)", bg: "var(--rose-soft)", days: "90" },
             ].map((b) => (
               <button key={b.label} onClick={() => setAgingFilter(a => a === b.days ? "" : b.days)}
-                className={`rounded-lg p-3 text-left transition cursor-pointer ${agingFilter === b.days ? "ring-2 ring-zinc-400" : ""}`}
-                style={{ background: b.bg }}
+                className="rounded-lg p-2.5 text-left transition cursor-pointer"
+                style={{ background: b.bg, outline: agingFilter === b.days ? `2px solid ${b.color}` : undefined }}
                 aria-pressed={agingFilter === b.days}
                 aria-label={`Filter by ${b.label} debt`}>
-                <p className="text-[11px] font-semibold" style={{ color: b.color }}>{b.label}</p>
-                <p className="mt-1 text-[17px] font-bold tabular-nums" style={{ color: b.color }}>{formatCurrency(b.value)}</p>
+                <p className="text-[10px] font-semibold" style={{ color: b.color }}>{b.label}</p>
+                <p className="mt-0.5 text-[15px] font-bold tabular-nums" style={{ color: b.color }}>{formatCurrency(b.value)}</p>
               </button>
             ))}
           </div>
         </section>
       )}
 
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <WorkspaceTabs<CustomerPanel>
-          active={activePanel}
-          onChange={setActivePanel}
-          tabs={[
-            { label: "Ledger", count: filteredCustomers.length },
-            { label: "Pay debt", count: customers.filter((customer) => customer.balance > 0).length },
-          ]}
-        />
-
-        <button
-          type="button"
-          onClick={() => setActivePanel("Add customer")}
-          className="btn-primary btn-sm h-10 shrink-0 px-3"
-        >
-          + Add customer
-        </button>
-
-        <label className="relative w-full sm:w-64">
-          <span className="sr-only">Search customers</span>
-          <Search
-            size={16}
-            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-zinc-400"
+      {/* Toolbar */}
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <WorkspaceTabs<CustomerPanel>
+            active={activePanel}
+            onChange={setActivePanel}
+            tabs={[
+              { label: "Ledger", count: filteredCustomers.length },
+              { label: "Pay debt", count: customers.filter((customer) => customer.balance > 0).length },
+            ]}
           />
-          <input
-            ref={searchRef}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search name or mobile"
-            className="h-10 w-full rounded-lg border border-zinc-200 bg-white ps-9 pe-3 text-sm outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-          />
-        </label>
-        <button type="button" onClick={() => {
-          const csv = ["Name,Phone,Credit Limit,Debt Total,Paid Total,Balance,Oldest Unpaid Days,Overdue"].concat(
-            customers.map((c) => `"${c.name}","${c.mobile}",${c.creditLimit},${c.debtTotal},${c.paidTotal},${c.balance},${c.oldestUnpaidDays},${c.overdue}`)
-          ).join("\n")
-          const b = new Blob([csv], { type: "text/csv" })
-          const u = URL.createObjectURL(b)
-          const a = document.createElement("a"); a.href = u; a.download = `customers-${new Date().toISOString().slice(0,10)}.csv`; a.click()
-          URL.revokeObjectURL(u)
-        }}
-          className="flex h-10 items-center gap-1.5 rounded-lg border px-3 text-[12px] font-bold transition hover:opacity-80 shrink-0"
-          style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
-          <Download size={14} /> Export CSV
-        </button>
-      </div>
+          <label className="flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer shrink-0" style={{ color: "var(--text-3)" }}>
+            <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} className="h-3.5 w-3.5" />
+            Archived
+          </label>
+          {agingFilter && (
+            <button onClick={() => setAgingFilter("")} className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
+              {agingFilter === "0" ? "0–30d" : agingFilter === "30" ? "30–60d" : agingFilter === "60" ? "60–90d" : "90+d"} ✕
+            </button>
+          )}
+        </div>
 
-      {/* Archive toggle + filter info */}
-      <div className="mt-2 flex items-center gap-3">
-        <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer" style={{ color: "var(--text-2)" }}>
-          <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} />
-          Show archived
-        </label>
-        {agingFilter && (
-          <button onClick={() => setAgingFilter("")}
-            className="text-[11px] font-bold px-2 py-1 rounded"
-            style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
-            Filter: {agingFilter === "0" ? "0–30d" : agingFilter === "30" ? "30–60d" : agingFilter === "60" ? "60–90d" : "90+d"} ✕
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search */}
+          <label className="relative min-w-[160px] flex-1 sm:flex-none sm:w-52">
+            <Search size={13} className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-3)" }} />
+            <input
+              ref={searchRef}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search name or mobile"
+              className="input w-full ps-8"
+              style={{ height: 34 }}
+            />
+            {search && (
+              <button type="button" onClick={() => setSearch("")} className="absolute end-2 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100">
+                <X size={13} style={{ color: "var(--text-3)" }} />
+              </button>
+            )}
+          </label>
+
+          <button
+            type="button"
+            onClick={() => setActivePanel("Add customer")}
+            className="btn btn-default h-[34px] gap-1.5 px-2.5 text-[12px] font-bold"
+          >
+            <Plus size={14} />
+            Add
           </button>
-        )}
+
+          <button type="button" onClick={() => {
+            const csv = ["Name,Phone,Credit Limit,Debt Total,Paid Total,Balance,Oldest Unpaid Days,Overdue"].concat(
+              customers.map((c) => `"${c.name}","${c.mobile}",${c.creditLimit},${c.debtTotal},${c.paidTotal},${c.balance},${c.oldestUnpaidDays},${c.overdue}`)
+            ).join("\n")
+            const b = new Blob([csv], { type: "text/csv" })
+            const u = URL.createObjectURL(b)
+            const a = document.createElement("a"); a.href = u; a.download = `customers-${new Date().toISOString().slice(0,10)}.csv`; a.click()
+            URL.revokeObjectURL(u)
+          }}
+            className="btn btn-default h-[34px] gap-1.5 px-2.5 text-[12px] font-bold">
+            <Download size={14} /> Export
+          </button>
+        </div>
       </div>
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
-        <section className="min-w-0 space-y-5">
-          <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full border-separate border-spacing-0 text-sm">
-                <thead>
-                  <tr className="text-start text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
-                    <th className="border-b border-zinc-200 px-4 py-3 cursor-pointer hover:text-zinc-700" onClick={() => { setSortBy("name"); setSortDir(d => d === "asc" ? "desc" : "asc") }}>
-                      Customer {sortBy === "name" && (sortDir === "asc" ? "↑" : "↓")}
-                    </th>
-                    <th className="border-b border-zinc-200 px-4 py-3">
-                      Contact
-                    </th>
-                    <th className="border-b border-zinc-200 px-4 py-3 text-end">
-                      Debt
-                    </th>
-                    <th className="border-b border-zinc-200 px-4 py-3 text-end">
-                      Paid
-                    </th>
-                    <th className="border-b border-zinc-200 px-4 py-3 text-end cursor-pointer hover:text-zinc-700" onClick={() => { setSortBy("balance"); setSortDir("desc") }}>
-                      Balance {sortBy === "balance" ? "↓" : "↕"}
-                    </th>
-                    <th className="border-b border-zinc-200 px-4 py-3 cursor-pointer hover:text-zinc-700" onClick={() => { setSortBy("lastActivity"); setSortDir("desc") }}>
-                      Last activity {sortBy === "lastActivity" ? "↓" : "↕"}
-                    </th>
-                    <th className="border-b border-zinc-200 px-4 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
+      {/* Two-pane layout */}
+      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(320px,440px)_minmax(0,1fr)]">
+        {/* Left: Customer cards */}
+        <section className="min-w-0">
+          <div className="rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+            <div className="max-h-[70vh] space-y-1.5 overflow-y-auto p-2">
+              {filteredCustomers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <UsersRound size={28} style={{ color: "var(--text-3)" }} />
+                  <p className="mt-2 text-[13px] font-bold" style={{ color: "var(--text-2)" }}>No customers found</p>
+                </div>
+              ) : null}
 
-                <tbody>
-                  {filteredCustomers.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="px-4 py-12 text-center text-sm font-medium text-zinc-500"
-                      >
-                        No customers found
-                      </td>
-                    </tr>
-                  ) : null}
+              {filteredCustomers.map((customer) => {
+                const active = selectedCustomerId === customer.id
 
-                  {filteredCustomers.map((customer) => {
-                    const active = selectedCustomerId === customer.id
-
-                    return (
-                      <tr
-                        key={customer.id}
-                        onClick={() => {
-                          setSelectedCustomerId(customer.id)
-                          setActivePanel("Ledger")
-                          setPayment((currentPayment) => ({
-                            ...currentPayment,
-                            customerId: customer.id,
-                          }))
-                        }}
-                        className="t-row cursor-pointer transition"
-                        style={active ? { background: "var(--brand-soft)", boxShadow: "inset 3px 0 0 var(--brand)" } : undefined}
-                      >
-                        <td className="border-b border-zinc-100 px-4 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-zinc-950">{customer.name}</span>
-                            {customer.overdue && (
-                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>
-                                {customer.oldestUnpaidDays}d overdue
-                              </span>
-                            )}
-                            {customer.overLimit && (
-                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>
-                                over limit
-                              </span>
-                            )}
-                            {!customer.overLimit && customer.creditLimit > 0 && customer.balance > customer.creditLimit * 0.8 && (
-                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>
-                                near limit
-                              </span>
-                            )}
-                            {!customer.overdue && !customer.overLimit && customer.balance <= 0 && (
-                              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "var(--success-soft)", color: "var(--success-text)" }}>
-                                good
-                              </span>
-                            )}
-                          </div>
-                          {customer.notes ? (
-                            <div className="mt-1 max-w-64 truncate text-xs text-zinc-500">
-                              {customer.notes}
-                            </div>
-                          ) : null}
-                        </td>
-                        <td className="border-b border-zinc-100 px-4 py-2.5">
-                          <a
-                            href={`tel:${customer.mobile}`}
-                            className="inline-flex items-center gap-2 font-semibold text-zinc-700 hover:text-emerald-700"
-                          >
-                            <Phone size={15} />
-                            {customer.mobile}
-                          </a>
-                        </td>
-                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-semibold text-zinc-800">
-                          {formatCurrency(customer.debtTotal)}
-                        </td>
-                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-semibold" style={{ color: "var(--success)" }}>
-                          {formatCurrency(customer.paidTotal)}
-                        </td>
-                        <td className="border-b border-zinc-100 px-4 py-2.5 text-end font-bold text-rose-700">
-                          {formatCurrency(customer.balance)}
-                          {customer.balance > 0 && <div className="text-[10px] text-rose-400">{formatLbpCurrency(usdToLbp(customer.balance, getSettings().usdToLbpRate))}</div>}
-                          {customer.creditLimit > 0 && (
-                            <div className="mt-1 h-1 w-full rounded-full" style={{ background: "var(--surface-3)" }}>
-                              <div className="h-1 rounded-full transition-all" style={{
-                                width: `${Math.min(100, (customer.balance / customer.creditLimit) * 100)}%`,
-                                background: customer.overLimit ? "var(--rose)" : customer.balance > customer.creditLimit * 0.8 ? "var(--amber)" : "var(--brand)",
-                              }} />
-                            </div>
+                return (
+                  <article
+                    key={customer.id}
+                    className={`rounded-lg border transition cursor-pointer ${
+                      active
+                        ? "border-emerald-300 bg-emerald-50"
+                        : "border-zinc-200 bg-white hover:border-zinc-300"
+                    }`}
+                    onClick={() => {
+                      setSelectedCustomerId(customer.id)
+                      setActivePanel((p) => p === "Pay debt" ? "Pay debt" : "Ledger")
+                      setPayment((currentPayment) => ({
+                        ...currentPayment,
+                        customerId: customer.id,
+                      }))
+                    }}
+                  >
+                    <div className="px-3 py-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[13px] font-bold truncate" style={{ color: "var(--text)" }}>{customer.name}</span>
+                          {customer.overdue && (
+                            <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>
+                              {customer.oldestUnpaidDays}d
+                            </span>
                           )}
-                        </td>
-                        <td className="border-b border-zinc-100 px-4 py-2.5 text-zinc-500">
-                          {formatDate(customer.lastActivityAt)}
-                        </td>
-                        <td className="border-b border-zinc-100 px-4 py-2.5">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {customer.sellAtCost && (
-                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-600" style={{ background: "rgba(214,166,58,0.12)" }}>COST</span>
-                            )}
-                            {customer.isWholesale && (
-                              <span className="rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase text-emerald-700" style={{ background: "var(--brand-soft)" }}>WS</span>
-                            )}
-                            {customer.balance > 0 && customer.mobile && (
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  openWhatsApp(customer.mobile, debtReminderMessage({
-                                    storeName: getSettings().storeName,
-                                    customerName: customer.name,
-                                    balance: customer.balance,
-                                    oldestDays: customer.oldestUnpaidDays,
-                                  }))
-                                }}
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border transition"
-                                style={{ borderColor: "var(--border)", color: "#25D366" }}
-                                title="Send WhatsApp reminder"
-                                aria-label={`WhatsApp ${customer.name}`}
-                              >
-                                <MessageCircle size={15} />
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                openEdit(customer)
-                              }}
-                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-                              title="Edit customer"
-                              aria-label={`Edit ${customer.name}`}
-                            >
-                              <Pencil size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                if (customer.archived) {
-                                  restoreCustomer(customer.id)
-                                  showToast(`${customer.name} restored.`)
-                                } else {
-                                  archiveCustomer(customer.id)
-                                  showToast(`${customer.name} archived.`)
-                                }
-                                refreshLedger()
-                              }}
-                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-700"
-                              title={customer.archived ? "Restore customer" : "Archive customer"}
-                              aria-label={customer.archived ? `Restore ${customer.name}` : `Archive ${customer.name}`}
-                            >
-                              {customer.archived ? "↩" : "📦"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                const text = buildCustomerStatement(customer.id, getSettings().storeName)
-                                const blob = new Blob([text], { type: "text/plain" })
-                                const url = URL.createObjectURL(blob)
-                                const a = document.createElement("a")
-                                a.href = url
-                                a.download = `statement-${customer.name.replace(/\s+/g, "-")}.txt`
-                                a.click()
-                                URL.revokeObjectURL(url)
-                              }}
-                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700"
-                              title="Download statement"
-                              aria-label={`Download statement for ${customer.name}`}
-                            >
-                              <Download size={15} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                const text = buildCustomerStatement(customer.id, getSettings().storeName)
-                                const w = window.open("", "_blank", "width=420,height=600")
-                                if (w) { w.document.write(`<html><head><title>${customer.name}</title><style>body{font-family:monospace;white-space:pre;padding:20px;font-size:12px}</style></head><body>${text.replace(/\n/g,"<br>")}</body></html>`); w.document.close(); w.focus(); setTimeout(() => w.print(), 250) }
-                              }}
-                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:bg-zinc-50 hover:text-zinc-700"
-                              title="Print statement"
-                              aria-label={`Print statement for ${customer.name}`}
-                            >
-                              <Printer size={15} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                setDeleteCustomerId(customer.id)
-                              }}
-                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                              aria-label={`Delete ${customer.name}`}
-                            >
-                              <X size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                          {customer.overLimit && (
+                            <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>LIMIT</span>
+                          )}
+                          {customer.sellAtCost && (
+                            <span className="rounded px-1 py-0.5 text-[9px] font-bold uppercase shrink-0" style={{ background: "rgba(214,166,58,0.12)", color: "#D4A017" }}>COST</span>
+                          )}
+                          {customer.isWholesale && (
+                            <span className="rounded px-1 py-0.5 text-[9px] font-bold uppercase shrink-0" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>WS</span>
+                          )}
+                        </div>
+                        <span className="shrink-0 text-[15px] font-black tabular-nums" style={{ color: customer.balance > 0 ? "var(--rose-text)" : "var(--text)" }}>
+                          {formatCurrency(customer.balance)}
+                        </span>
+                      </div>
+
+                      <div className="mt-1 flex items-center gap-2 text-[11px]" style={{ color: "var(--text-3)" }}>
+                        {customer.mobile && (
+                          <a href={`tel:${customer.mobile}`} onClick={e => e.stopPropagation()} className="hover:underline">{customer.mobile}</a>
+                        )}
+                        {customer.mobile && customer.lastActivityAt && <span className="opacity-40">·</span>}
+                        {customer.lastActivityAt && <span>{formatDate(customer.lastActivityAt)}</span>}
+                      </div>
+
+                      {customer.notes && (
+                        <p className="mt-0.5 truncate text-[11px]" style={{ color: "var(--text-3)" }}>{customer.notes}</p>
+                      )}
+
+                      {customer.creditLimit > 0 && customer.balance > 0 && (
+                        <div className="mt-1.5 h-1 w-full rounded-full" style={{ background: "var(--surface-3)" }}>
+                          <div className="h-1 rounded-full transition-all" style={{
+                            width: `${Math.min(100, (customer.balance / customer.creditLimit) * 100)}%`,
+                            background: customer.overLimit ? "var(--rose)" : customer.balance > customer.creditLimit * 0.8 ? "var(--amber)" : "var(--brand)",
+                          }} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-1 px-3 pb-2.5">
+                      {customer.mobile && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            openWhatsApp(customer.mobile, debtReminderMessage({
+                              storeName: getSettings().storeName,
+                              customerName: customer.name,
+                              balance: customer.balance,
+                              oldestDays: customer.oldestUnpaidDays,
+                            }))
+                          }}
+                          className="flex h-7 flex-1 items-center justify-center gap-1 rounded-lg border text-[10px] font-bold transition"
+                          style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
+                        >
+                          <MessageCircle size={11} /> WhatsApp
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(event) => { event.stopPropagation(); openEdit(customer) }}
+                        className="flex h-7 flex-1 items-center justify-center gap-1 rounded-lg border text-[10px] font-bold transition"
+                        style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
+                      >
+                        <Pencil size={11} /> Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          if (customer.archived) { restoreCustomer(customer.id); showToast(`${customer.name} restored.`) }
+                          else { archiveCustomer(customer.id); showToast(`${customer.name} archived.`) }
+                          refreshLedger()
+                        }}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border text-[10px] font-bold transition"
+                        style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
+                        title={customer.archived ? "Restore" : "Archive"}
+                      >
+                        {customer.archived ? "↩" : "📦"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          const text = buildCustomerStatement(customer.id, getSettings().storeName)
+                          const blob = new Blob([text], { type: "text/plain" })
+                          const url = URL.createObjectURL(blob)
+                          const a = document.createElement("a")
+                          a.href = url
+                          a.download = `statement-${customer.name.replace(/\s+/g, "-")}.txt`
+                          a.click()
+                          URL.revokeObjectURL(url)
+                        }}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border text-[10px] font-bold transition"
+                        style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
+                        title="Download statement"
+                      >
+                        <Download size={11} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          const text = buildCustomerStatement(customer.id, getSettings().storeName)
+                          const w = window.open("", "_blank", "width=420,height=600")
+                          if (w) { w.document.write(`<html><head><title>${customer.name}</title><style>body{font-family:monospace;white-space:pre;padding:20px;font-size:12px}</style></head><body>${text.replace(/\n/g,"<br>")}</body></html>`); w.document.close(); w.focus(); setTimeout(() => w.print(), 250) }
+                        }}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border text-[10px] font-bold transition"
+                        style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
+                        title="Print statement"
+                      >
+                        <Printer size={11} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => { event.stopPropagation(); setDeleteCustomerId(customer.id) }}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg border text-[10px] font-bold transition"
+                        style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
+                        title="Delete"
+                      >
+                        <X size={11} />
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
             </div>
-          </section>
+          </div>
         </section>
 
-        <aside className="space-y-5">
-          {activePanel === "Add customer" ? (
-          <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
-                <UserPlus size={21} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-zinc-950">
-                  Add customer
-                </h2>
-                <p className="text-sm text-zinc-500">
-                  Name and mobile number are required.
-                </p>
-              </div>
-            </div>
+        {/* Right: Detail panel */}
+        <aside className="hidden xl:block">
+          <div className="sticky top-4 space-y-4">
 
-            <div className="mt-4 space-y-3">
-              <input
-                value={newCustomer.name}
-                onChange={(event) => {
-                  setNewCustomer((currentCustomer) => ({
-                    ...currentCustomer,
-                    name: event.target.value,
-                  }))
-                  if (formErrors.name) {
-                    setFormErrors((currentErrors) => ({ ...currentErrors, name: undefined }))
-                  }
-                }}
-                placeholder="Customer name"
-                className={`h-11 w-full rounded-lg border bg-zinc-50 px-3 outline-none focus:bg-white focus:ring-4 ${
-                  formErrors.name
-                    ? "border-rose-300 focus:border-rose-400 focus:ring-rose-100"
-                    : "border-zinc-200 focus:border-emerald-400 focus:ring-emerald-100"
-                }`}
-              />
-              {formErrors.name ? (
-                <p className="mt-1 text-xs font-medium text-rose-500">{formErrors.name}</p>
-              ) : null}
-              <input
-                value={newCustomer.mobile}
-                onChange={(event) => {
-                  setNewCustomer((currentCustomer) => ({
-                    ...currentCustomer,
-                    mobile: event.target.value,
-                  }))
-                  if (formErrors.mobile) {
-                    setFormErrors((currentErrors) => ({ ...currentErrors, mobile: undefined }))
-                  }
-                }}
-                placeholder="Mobile number"
-                className={`h-11 w-full rounded-lg border bg-zinc-50 px-3 outline-none focus:bg-white focus:ring-4 ${
-                  formErrors.mobile
-                    ? "border-rose-300 focus:border-rose-400 focus:ring-rose-100"
-                    : "border-zinc-200 focus:border-emerald-400 focus:ring-emerald-100"
-                }`}
-              />
-              {formErrors.mobile ? (
-                <p className="mt-1 text-xs font-medium text-rose-500">{formErrors.mobile}</p>
-              ) : null}
-              <input
-                type="number"
-                min="0"
-                value={newCustomer.creditLimit}
-                onChange={(event) =>
-                  setNewCustomer((currentCustomer) => ({
-                    ...currentCustomer,
-                    creditLimit: normalizeNumber(event.target.value),
-                  }))
-                }
-                placeholder="Credit limit"
-                className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              />
-              <textarea
-                value={newCustomer.notes}
-                onChange={(event) =>
-                  setNewCustomer((currentCustomer) => ({
-                    ...currentCustomer,
-                    notes: event.target.value,
-                  }))
-                }
-                placeholder="Notes"
-                rows={3}
-                className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              />
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={newCustomer.isWholesale}
-                  onChange={(e) => setNewCustomer((c) => ({ ...c, isWholesale: e.target.checked }))}
-                  className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="text-sm font-medium text-zinc-700">Wholesale prices by default</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={newCustomer.sellAtCost}
-                  onChange={(e) => setNewCustomer((c) => ({ ...c, sellAtCost: e.target.checked }))}
-                  className="h-4 w-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500"
-                />
-                <span className="text-sm font-medium text-zinc-700">Sell at cost by default</span>
-              </label>
-              <button
-                type="button"
-                onClick={handleAddCustomer}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800"
-              >
-                <Plus size={17} />
-                Add Customer
-              </button>
-            </div>
-          </section>
-          ) : null}
-
-          {activePanel === "Pay debt" ? (
-          <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-                <HandCoins size={21} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-zinc-950">
-                  Pay debt
-                </h2>
-                <p className="text-sm text-zinc-500">
-                  Record a later payment against an account.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              <select
-                value={payment.customerId || selectedCustomerId}
-                onChange={(event) => {
-                  setSelectedCustomerId(event.target.value)
-                  setPayment((currentPayment) => ({
-                    ...currentPayment,
-                    customerId: event.target.value,
-                  }))
-                }}
-                className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              >
-                <option value="">Choose customer</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name} - {formatCurrency(customer.balance)}
-                  </option>
-                ))}
-              </select>
-
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={payment.amount}
-                onChange={(event) =>
-                  setPayment((currentPayment) => ({
-                    ...currentPayment,
-                    amount: normalizeNumber(event.target.value),
-                  }))
-                }
-                placeholder="Payment amount"
-                className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              />
-
-              <div className="grid grid-cols-3 gap-2">
-                {paymentMethods.map((method) => {
-                  const Icon = method.icon
-                  const active = payment.method === method.label
-
-                  return (
-                    <button
-                      key={method.label}
-                      type="button"
-                      onClick={() =>
-                        setPayment((currentPayment) => ({
-                          ...currentPayment,
-                          method: method.label,
-                        }))
-                      }
-                      aria-pressed={active}
-                      className={`flex h-11 items-center justify-center gap-2 rounded-lg border text-sm font-bold transition ${
-                        active
-                          ? "border-emerald-600 bg-emerald-50 text-emerald-800"
-                          : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
-                      }`}
-                    >
-                      <Icon size={16} />
-                      {method.label}
-                    </button>
-                  )
-                })}
-              </div>
-
-              <input
-                value={payment.reference}
-                onChange={(event) =>
-                  setPayment((currentPayment) => ({
-                    ...currentPayment,
-                    reference: event.target.value,
-                  }))
-                }
-                placeholder="Reference or note"
-                className="h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-              />
-
-              <button
-                type="button"
-                onClick={handleRecordPayment}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-bold text-white transition hover:bg-emerald-500"
-              >
-                <HandCoins size={17} />
-                Record Payment
-              </button>
-            </div>
-          </section>
-          ) : null}
-
-          {activePanel === "Ledger" ? (
-          <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
-                <UsersRound size={21} />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-zinc-950">Ledger</h2>
-                <p className="text-sm text-zinc-500">Customer payments and debt activity.</p>
-              </div>
-            </div>
-
-            {selectedCustomer ? (
-              <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-                <div className="flex items-center justify-between gap-3">
+            {/* Add customer panel */}
+            {activePanel === "Add customer" && (
+              <section className="rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
+                    <UserPlus size={18} />
+                  </div>
                   <div>
-                    <p className="font-bold text-zinc-950">
-                      {selectedCustomer.name}
-                    </p>
-                    <p className="text-sm text-zinc-500">
-                      {selectedCustomer.mobile}
-                    </p>
-                  </div>
-                  <div className="text-end">
-                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-zinc-500">
-                      Balance
-                    </p>
-                    <p className="text-lg font-bold tabular-nums" style={{ color: selectedCustomer.balance > 0 ? "var(--danger-text)" : "var(--text)" }}>
-                      {formatCurrency(selectedCustomer.balance)}
-                    </p>
+                    <h2 className="text-[15px] font-bold" style={{ color: "var(--text)" }}>Add customer</h2>
+                    <p className="text-[11px]" style={{ color: "var(--text-3)" }}>Name and mobile are required.</p>
                   </div>
                 </div>
 
-                {/* Credit-limit usage — fills toward danger */}
-                {selectedCustomer.creditLimit > 0 && (
-                  <div className="mt-3">
-                    <div className="mb-1 flex items-center justify-between text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
-                      <span>Credit limit</span>
-                      <span className="tabular-nums">
-                        {formatCurrency(selectedCustomer.balance)} / {formatCurrency(selectedCustomer.creditLimit)}
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: "var(--surface-3)" }}>
-                      {(() => {
-                        const pct = Math.min(100, (selectedCustomer.balance / selectedCustomer.creditLimit) * 100)
-                        const color = pct >= 100 ? "var(--danger)" : pct >= 75 ? "var(--warning)" : "var(--success)"
-                        return (
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${Math.max(pct, 2)}%`, background: color }}
-                            role="progressbar"
-                            aria-valuenow={Math.round(pct)}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                            aria-label="Credit limit used"
-                          />
-                        )
-                      })()}
-                    </div>
-                  </div>
-                )}
-
-                {/* Promise-to-pay note — quick inline commitment tracking */}
-                <div className="mt-3">
-                  <label className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
-                    <CalendarClock size={12} />
-                    Promise to pay / note
+                <div className="space-y-2.5">
+                  <input value={newCustomer.name} onChange={(event) => { setNewCustomer((c) => ({ ...c, name: event.target.value })); if (formErrors.name) setFormErrors((e) => ({ ...e, name: undefined })) }}
+                    placeholder="Customer name"
+                    className={`input w-full h-9 text-[13px] ${formErrors.name ? "border-rose-300" : ""}`}
+                  />
+                  {formErrors.name && <p className="text-[11px] font-medium" style={{ color: "var(--rose-text)" }}>{formErrors.name}</p>}
+                  <input value={newCustomer.mobile} onChange={(event) => { setNewCustomer((c) => ({ ...c, mobile: event.target.value })); if (formErrors.mobile) setFormErrors((e) => ({ ...e, mobile: undefined })) }}
+                    placeholder="Mobile number"
+                    className={`input w-full h-9 text-[13px] ${formErrors.mobile ? "border-rose-300" : ""}`}
+                  />
+                  {formErrors.mobile && <p className="text-[11px] font-medium" style={{ color: "var(--rose-text)" }}>{formErrors.mobile}</p>}
+                  <input type="number" min="0" value={newCustomer.creditLimit} onChange={(event) => setNewCustomer((c) => ({ ...c, creditLimit: normalizeNumber(event.target.value) }))}
+                    placeholder="Credit limit" className="input w-full h-9 text-[13px]"
+                  />
+                  <textarea value={newCustomer.notes} onChange={(event) => setNewCustomer((c) => ({ ...c, notes: event.target.value }))}
+                    placeholder="Notes" rows={2} className="input w-full resize-none text-[13px]" style={{ minHeight: 60 }}
+                  />
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-[12px] font-medium" style={{ color: "var(--text-2)" }}>
+                    <input type="checkbox" checked={newCustomer.isWholesale} onChange={(e) => setNewCustomer((c) => ({ ...c, isWholesale: e.target.checked }))} className="h-3.5 w-3.5" />
+                    Wholesale prices by default
                   </label>
-                  <div className="flex gap-1.5">
-                    <input
-                      key={selectedCustomer.id}
-                      defaultValue={selectedCustomer.notes}
-                      placeholder="e.g. will pay Friday"
-                      maxLength={160}
-                      className="input h-9 min-w-0 flex-1 text-[12px]"
-                      onKeyDown={(e) => {
-                        if (e.key !== "Enter") return
-                        const value = (e.target as HTMLInputElement).value.trim()
-                        updateCustomer(selectedCustomer.id, { notes: value })
-                        showToast("Note saved.")
-                      }}
-                    />
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-[12px] font-medium" style={{ color: "var(--text-2)" }}>
+                    <input type="checkbox" checked={newCustomer.sellAtCost} onChange={(e) => setNewCustomer((c) => ({ ...c, sellAtCost: e.target.checked }))} className="h-3.5 w-3.5" />
+                    Sell at cost by default
+                  </label>
+                  <button type="button" onClick={handleAddCustomer}
+                    className="btn h-9 w-full gap-1.5 text-[12px] font-bold"
+                    style={{ background: "var(--text)", color: "var(--surface)" }}>
+                    <Plus size={14} /> Add Customer
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {/* Pay debt panel */}
+            {activePanel === "Pay debt" && (
+              <section className="rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>
+                    <HandCoins size={18} />
                   </div>
-                  <p className="mt-1 text-[10px]" style={{ color: "var(--text-3)" }}>Enter to save</p>
+                  <div>
+                    <h2 className="text-[15px] font-bold" style={{ color: "var(--text)" }}>Pay debt</h2>
+                    <p className="text-[11px]" style={{ color: "var(--text-3)" }}>Record a payment against an account.</p>
+                  </div>
                 </div>
-              </div>
-            ) : null}
 
-            <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">
-              {selectedActivity.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm font-medium text-zinc-500">
-                  No activity yet
+                <div className="space-y-2.5">
+                  <select value={payment.customerId || selectedCustomerId} onChange={(event) => { setSelectedCustomerId(event.target.value); setPayment((p) => ({ ...p, customerId: event.target.value })) }}
+                    className="input w-full h-9 text-[13px]"
+                  >
+                    <option value="">Choose customer</option>
+                    {customers.map((c) => (<option key={c.id} value={c.id}>{c.name} — {formatCurrency(c.balance)}</option>))}
+                  </select>
+
+                  <input type="number" min="0" step="0.01" value={payment.amount} onChange={(event) => setPayment((p) => ({ ...p, amount: normalizeNumber(event.target.value) }))}
+                    placeholder="Payment amount" className="input w-full h-9 text-[13px]"
+                  />
+
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {paymentMethods.map((method) => {
+                      const Icon = method.icon
+                      const active = payment.method === method.label
+                      return (
+                        <button key={method.label} type="button" onClick={() => setPayment((p) => ({ ...p, method: method.label }))}
+                          aria-pressed={active}
+                          className="h-9 rounded-lg border text-[11px] font-bold transition"
+                          style={active ? { background: "var(--brand-soft)", borderColor: "var(--brand)", color: "var(--brand-text)" } : { borderColor: "var(--border)", color: "var(--text-3)" }}>
+                          <Icon size={13} className="inline me-1" />{method.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <input value={payment.reference} onChange={(event) => setPayment((p) => ({ ...p, reference: event.target.value }))}
+                    placeholder="Reference or note" className="input w-full h-9 text-[13px]"
+                  />
+
+                  <button type="button" onClick={handleRecordPayment}
+                    className="btn h-9 w-full gap-1.5 text-[12px] font-bold"
+                    style={{ background: "var(--brand)", color: "#fff" }}>
+                    <HandCoins size={14} /> Record Payment
+                  </button>
                 </div>
-              ) : null}
+              </section>
+            )}
 
-              {selectedActivity.map((activity) => (
-                <div
-                  key={`${activity.type}-${activity.id}`}
-                  className="rounded-lg border border-zinc-200 p-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-2">
-                      {activity.type === "Sale" ? (
-                        <ReceiptText
-                          size={17}
-                          className="mt-0.5 text-rose-600"
-                        />
-                      ) : (
-                        <HandCoins
-                          size={17}
-                          className="mt-0.5 text-emerald-600"
-                        />
-                      )}
-                      <div>
-                        <p className="font-bold text-zinc-950">
-                          {activity.title}
-                        </p>
-                        <p className="text-sm text-zinc-500">
-                          {activity.detail}
-                        </p>
+            {/* Ledger panel */}
+            {activePanel === "Ledger" && (
+              <section className="rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+                {/* Header with summary */}
+                <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
+                  <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Ledger</p>
+                  {selectedCustomer && (
+                    <div className="flex items-center gap-3 text-[11px] tabular-nums">
+                      <span style={{ color: "var(--text-3)" }}>Charged <strong style={{ color: "var(--text)" }}>{formatCurrency(selectedCustomer.debtTotal)}</strong></span>
+                      <span style={{ color: "var(--text-3)" }}>Paid <strong style={{ color: "var(--text)" }}>{formatCurrency(selectedCustomer.paidTotal)}</strong></span>
+                    </div>
+                  )}
+                </div>
+
+                {selectedCustomer ? (
+                  <>
+                    {/* Customer info + balance + actions */}
+                    <div className="border-b p-4" style={{ borderColor: "var(--border)" }}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[15px] font-bold truncate" style={{ color: "var(--text)" }}>{selectedCustomer.name}</p>
+                            {selectedCustomer.overdue && (
+                              <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>{selectedCustomer.oldestUnpaidDays}d</span>
+                            )}
+                            {selectedCustomer.overLimit && (
+                              <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>LIMIT</span>
+                            )}
+                            {selectedCustomer.sellAtCost && (
+                              <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "rgba(214,166,58,0.12)", color: "#D4A017" }}>COST</span>
+                            )}
+                            {selectedCustomer.isWholesale && (
+                              <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>WS</span>
+                            )}
+                          </div>
+                          {selectedCustomer.mobile && (
+                            <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>{selectedCustomer.mobile}</p>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Balance</p>
+                          <p className="text-[22px] font-black tabular-nums leading-none mt-0.5" style={{ color: selectedCustomer.balance > 0 ? "var(--rose-text)" : "var(--text)" }}>
+                            {formatCurrency(selectedCustomer.balance)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Quick action buttons */}
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {selectedCustomer.mobile && (
+                          <button type="button" onClick={(e) => { e.stopPropagation(); openWhatsApp(selectedCustomer.mobile, debtReminderMessage({ storeName: getSettings().storeName, customerName: selectedCustomer.name, balance: selectedCustomer.balance, oldestDays: selectedCustomer.oldestUnpaidDays })) }}
+                            className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
+                            style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}>
+                            <MessageCircle size={11} /> WhatsApp
+                          </button>
+                        )}
+                        {selectedCustomer.mobile && (
+                          <a href={`tel:${selectedCustomer.mobile}`} onClick={e => e.stopPropagation()}
+                            className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
+                            style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}>
+                            <Phone size={11} /> Call
+                          </a>
+                        )}
+                        <button type="button" onClick={() => openEdit(selectedCustomer)}
+                          className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
+                          style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}>
+                          <Pencil size={11} /> Edit
+                        </button>
+                        <button type="button" onClick={() => { const text = buildCustomerStatement(selectedCustomer.id, getSettings().storeName); const blob = new Blob([text], { type: "text/plain" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `statement-${selectedCustomer.name.replace(/\s+/g, "-")}.txt`; a.click(); URL.revokeObjectURL(url) }}
+                          className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
+                          style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}>
+                          <Download size={11} /> Statement
+                        </button>
+                        <button type="button" onClick={() => { const text = buildCustomerStatement(selectedCustomer.id, getSettings().storeName); const w = window.open("", "_blank", "width=420,height=600"); if (w) { w.document.write(`<html><head><title>${selectedCustomer.name}</title><style>body{font-family:monospace;white-space:pre;padding:20px;font-size:12px}</style></head><body>${text.replace(/\n/g,"<br>")}</body></html>`); w.document.close(); w.focus(); setTimeout(() => w.print(), 250) } }}
+                          className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
+                          style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}>
+                          <Printer size={11} /> Print
+                        </button>
                       </div>
                     </div>
-                    <p
-                      className="font-bold"
-                      style={{ color: activity.type === "Sale" ? "var(--rose)" : "var(--success)" }}
-                    >
-                      {activity.type === "Sale" ? "+" : "-"}
-                      {formatCurrency(activity.amount)}
-                    </p>
+
+                    <div className="p-4 space-y-4">
+                      {/* Aging breakdown — stacked bar */}
+                      <div>
+                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Aging</p>
+                        {(() => {
+                          const { current, days30, days60, days90 } = selectedCustomer.aging
+                          const total = current + days30 + days60 + days90
+                          const pct = (v: number) => total > 0 ? (v / total) * 100 : 0
+                          const fmt = (v: number) => formatCurrency(v)
+                          return (
+                            <>
+                              <div className="flex h-5 w-full overflow-hidden rounded-md" style={{ background: "var(--surface-3)" }}>
+                                {current > 0 && <div style={{ width: `${pct(current)}%`, background: "var(--success)" }} title={`Current: ${fmt(current)}`} />}
+                                {days30 > 0 && <div style={{ width: `${pct(days30)}%`, background: "#eab308" }} title={`30d: ${fmt(days30)}`} />}
+                                {days60 > 0 && <div style={{ width: `${pct(days60)}%`, background: "#f97316" }} title={`60d: ${fmt(days60)}`} />}
+                                {days90 > 0 && <div style={{ width: `${pct(days90)}%`, background: "var(--rose)" }} title={`90d+: ${fmt(days90)}`} />}
+                              </div>
+                              <div className="mt-1.5 grid grid-cols-4 gap-1 text-[10px] tabular-nums" style={{ color: "var(--text-3)" }}>
+                                <span>Current <strong style={{ color: "var(--text)" }}>{fmt(current)}</strong></span>
+                                <span>1–30d <strong style={{ color: "var(--text)" }}>{fmt(days30)}</strong></span>
+                                <span>31–60d <strong style={{ color: "var(--text)" }}>{fmt(days60)}</strong></span>
+                                <span>60d+ <strong style={{ color: "var(--text)" }}>{fmt(days90)}</strong></span>
+                              </div>
+                            </>
+                          )
+                        })()}
+                      </div>
+
+                      {/* Credit-limit usage */}
+                      {selectedCustomer.creditLimit > 0 && (
+                        <div>
+                          <div className="mb-1 flex items-center justify-between text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
+                            <span>Credit limit</span>
+                            <span className="tabular-nums">{formatCurrency(selectedCustomer.balance)} / {formatCurrency(selectedCustomer.creditLimit)}</span>
+                          </div>
+                          <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: "var(--surface-3)" }}>
+                            {(() => {
+                              const pct = Math.min(100, (selectedCustomer.balance / selectedCustomer.creditLimit) * 100)
+                              const color = pct >= 100 ? "var(--danger)" : pct >= 75 ? "var(--warning)" : "var(--success)"
+                              return <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.max(pct, 2)}%`, background: color }} role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100} aria-label="Credit limit used" />
+                            })()}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Promise-to-pay note */}
+                      <div>
+                        <label className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
+                          <CalendarClock size={12} />
+                          Promise to pay / note
+                        </label>
+                        <input key={selectedCustomer.id} defaultValue={selectedCustomer.notes} placeholder="e.g. will pay Friday" maxLength={160}
+                          className="input h-9 w-full text-[12px]" onKeyDown={(e) => { if (e.key !== "Enter") return; const value = (e.target as HTMLInputElement).value.trim(); updateCustomer(selectedCustomer.id, { notes: value }); showToast("Note saved.") }} />
+                        <p className="mt-1 text-[10px]" style={{ color: "var(--text-3)" }}>Enter to save</p>
+                      </div>
+                    </div>
+
+                    {/* Activity timeline */}
+                    <div className="border-t p-4" style={{ borderColor: "var(--border)" }}>
+                      <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Activity</p>
+                      <div className="max-h-72 space-y-1.5 overflow-y-auto">
+                        {selectedActivity.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-8 text-center">
+                            <ReceiptText size={24} style={{ color: "var(--text-3)" }} />
+                            <p className="mt-2 text-[12px] font-medium" style={{ color: "var(--text-3)" }}>No activity yet</p>
+                          </div>
+                        ) : selectedActivity.map((activity) => (
+                          <div key={`${activity.type}-${activity.id}`}
+                            className="flex items-start gap-3 rounded-lg p-2.5 transition hover:bg-zinc-50"
+                            style={{ borderColor: "var(--border)" }}>
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+                              style={{ background: activity.type === "Sale" ? "var(--rose-soft)" : "var(--brand-soft)" }}>
+                              {activity.type === "Sale" ? <ReceiptText size={13} style={{ color: "var(--rose-text)" }} /> : <HandCoins size={13} style={{ color: "var(--brand-text)" }} />}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-[12px] font-bold truncate" style={{ color: "var(--text)" }}>{activity.title}</p>
+                                <span className="shrink-0 text-[13px] font-black tabular-nums" style={{ color: activity.type === "Sale" ? "var(--rose-text)" : "var(--success)" }}>
+                                  {activity.type === "Sale" ? "+" : "-"}{formatCurrency(activity.amount)}
+                                </span>
+                              </div>
+                              <p className="text-[11px]" style={{ color: "var(--text-3)" }}>{activity.detail}</p>
+                              <p className="mt-0.5 flex items-center gap-1 text-[10px]" style={{ color: "var(--text-3)" }}>
+                                <CalendarClock size={10} /> {formatDate(activity.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-14 text-center">
+                    <UsersRound size={32} style={{ color: "var(--text-3)" }} />
+                    <p className="mt-3 text-[13px] font-bold" style={{ color: "var(--text-2)" }}>Select a customer</p>
+                    <p className="mt-1 text-[11px]" style={{ color: "var(--text-3)" }}>Choose a customer from the list to view their ledger.</p>
                   </div>
-                  <p className="mt-2 flex items-center gap-1 text-xs font-medium text-zinc-500">
-                    <CalendarClock size={13} />
-                    {formatDate(activity.createdAt)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-          ) : null}
+                )}
+              </section>
+            )}
+          </div>
         </aside>
       </div>
       <ConfirmDialog

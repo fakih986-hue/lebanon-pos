@@ -1,5 +1,5 @@
 import { useI18n } from "@lebanonpos/shared"
-import { BadgePercent, Eraser, PauseCircle, PlayCircle, ShoppingCart, X } from "lucide-react"
+import { Eraser, PauseCircle, PlayCircle, ShoppingCart, X } from "lucide-react"
 
 import CartBody from "./CartBody"
 import CartRailWidgets from "./CartRailWidgets"
@@ -71,6 +71,7 @@ interface Props {
   onCartOpen?: () => void
   sellAtCost: boolean
   onToggleSellAtCost: () => void
+  quickMode?: boolean
 }
 
 export default function CartPanel({
@@ -124,11 +125,14 @@ export default function CartPanel({
   canApplyDiscount,
   sellAtCost,
   onToggleSellAtCost,
+  quickMode,
 }: Props) {
   const { t } = useI18n()
 
   return (
-    <aside className="pos-cart-rail hidden w-[392px] shrink-0 flex-col border-l lg:flex xl:w-[440px]">
+    <aside
+      className={`pos-cart-rail flex-col border-l ${quickMode ? "flex" : "hidden shrink-0 w-[392px] lg:flex xl:w-[440px]"}`}
+      style={quickMode ? { flex: "1.5 1 0%", minWidth: 0 } : undefined}>
       <div className="pos-cart-header shrink-0 px-4 py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
@@ -158,7 +162,7 @@ export default function CartPanel({
         </div>
 
         {items.length > 0 && (
-          <div className="mt-4 grid grid-cols-3 gap-2">
+          <div className="mt-4 grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={onHold}
@@ -175,21 +179,11 @@ export default function CartPanel({
               <Eraser size={14} />
               {t("pos.clean")}
             </button>
-            <button
-              type="button"
-              className="btn btn-ghost h-9 text-[12px]"
-              style={{ color: "var(--brand-text)", borderColor: "var(--brand-border)" }}
-              aria-label="Scroll down to apply discount"
-              title="Scroll down to apply discount"
-            >
-              <BadgePercent size={14} />
-              Discount
-            </button>
           </div>
         )}
       </div>
 
-      <CartRailWidgets />
+      {items.length === 0 && <CartRailWidgets />}
 
       {/* Held sales pills — always visible above cart items */}
       {heldSales.length > 0 && (
@@ -251,9 +245,6 @@ export default function CartPanel({
         onSetPrice={onSetPrice}
         saleNote={saleNote}
         onSaleNoteChange={onSaleNoteChange}
-        heldSales={heldSales}
-        onResumeHeld={onResumeHeld}
-        onDiscardHeld={onDiscardHeld}
         vatRate={vatRate}
         customers={customers}
         selectedCustomerId={selectedCustomerId}

@@ -1,6 +1,6 @@
 {
   "name": "lebanon-pos",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Titan POS — Local Server Desktop App",
   "main": "dist/main.js",
   "scripts": {
@@ -22,7 +22,7 @@
     "productName": "Titan POS",
     "copyright": "Copyright © 2026 Titan Powerful Systems",
     "directories": {
-      "output": "dist-v7"
+      "output": "dist-v8"
     },
     "files": [
       "dist/**/*",

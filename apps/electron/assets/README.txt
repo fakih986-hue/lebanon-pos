@@ -1,14 +1,20 @@
-Icon files required in this directory:
+Titan POS — App Icon Assets
 
-  icon.png  — 256x256 PNG — used for the system tray at runtime
-  icon.ico  — Windows ICO (multi-size: 16, 32, 48, 256) — used by electron-builder for the installer and taskbar
+Required files:
+  titan-source.png  1024x1024 PNG  — source artwork (provide your Titan logo)
+  icon.png          1024x1024 PNG  — generated from source (tray + macOS)
+  icon.ico          Windows ICO     — generated from source (installer + taskbar)
 
-How to generate:
-  1. Design a 256x256 PNG icon (or use any image editor)
-  2. Save as icon.png in this directory
-  3. Convert to ICO using https://convertio.co/png-ico/ or ImageMagick:
-       magick icon.png -define icon:auto-resize=256,128,64,48,32,16 icon.ico
-  4. Place icon.ico in this directory
+How to generate production icons:
+  1. Create or obtain a 1024x1024 square PNG of the Titan POS logo
+     (transparent or black background, white/gold text + icon mark)
+  2. Save it as titan-source.png in this directory
+  3. Install helpers (one-time):  pnpm add -D sharp png-to-ico
+  4. Run:                        node make-icons.mjs
+  5. Outputs:
+       assets/icon.png           (1024x1024 PNG — tray icon, macOS)
+       assets/icon.ico           (multires ICO — installer, taskbar, window)
+       apps/desktop/public/titan-logo.png  (512x512 PNG — in-app logo)
 
-Until real icons are added, the tray will use an empty (invisible) icon — the app
-still works but the tray entry may be hard to see.
+Until a professional Titan POS logo is provided, the current placeholder
+icons will be used. The tray will use an empty (invisible) fallback icon.

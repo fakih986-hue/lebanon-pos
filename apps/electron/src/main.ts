@@ -1,5 +1,5 @@
 /**
- * Lebanon POS — Electron Main Process
+ * Titan POS — Electron Main Process
  *
  * Full offline-first lifecycle — zero setup for store owners:
  *   1. Single-instance lock
@@ -108,7 +108,7 @@ app.whenReady().then(async () => {
   } catch (err: unknown) {
     closeLoadingWindow()
     dialog.showErrorBox(
-      "Lebanon POS — Startup Error",
+      "Titan POS — Startup Error",
       (err instanceof Error ? err.message : String(err)) + "\n\nContact support if this persists."
     )
     await stopPostgres()
@@ -355,7 +355,7 @@ function writeApiEnv(pgPassword: string): void {
   // Show admin password once on first run
   if (firstRun) {
   dialog.showMessageBox({
-    type: "info", title: "Lebanon POS — Setup Complete",
+    type: "info", title: "Titan POS — Setup Complete",
     message: "Your admin portal password:",
     detail:  `${adminPass}\n\nYou can view or reset it anytime from the tray icon.`,
     buttons: ["Got it"],
@@ -478,7 +478,7 @@ function spawnApi(): void {
   apiProcess.on("exit", (code) => {
     if (isQuitting || code === 0) return
     if (apiRestartCount >= API_MAX_RESTARTS) {
-      dialog.showErrorBox("Lebanon POS", `Server crashed ${API_MAX_RESTARTS} times (code ${code}). Please restart the app.`)
+      dialog.showErrorBox("Titan POS", `Server crashed ${API_MAX_RESTARTS} times (code ${code}). Please restart the app.`)
       app.quit()
       return
     }
@@ -561,7 +561,7 @@ function showActivationWindow() {
 
   activationWindow = new BrowserWindow({
     width: 500, height: 680, resizable: false,
-    center: true, title: "Lebanon POS — Connect to Cloud",
+    center: true, title: "Titan POS — Connect to Cloud",
     backgroundColor: "#f8fafc",
     webPreferences: {
       preload: path.join(__dirname, "preload-activation.js"),
@@ -610,7 +610,7 @@ text-align:center;padding:40px 24px}
 <body>
 <div class="header">
 <div class="header-icon">🏪</div>
-<div class="header-text">Lebanon POS</div>
+<div class="header-text">Titan POS</div>
 </div>
 <p class="sub">Enter your store subdomain and admin PIN to connect to the cloud.</p>
 
@@ -707,7 +707,7 @@ function createTray() {
   const iconPath = fs.existsSync(ICON_ICO) ? ICON_ICO : ICON_PNG
   const icon = nativeImage.createFromPath(iconPath)
   tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon)
-  tray.setToolTip("Lebanon POS")
+  tray.setToolTip("Titan POS")
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: "Open POS", click: () => { mainWindow?.show(); mainWindow?.focus() } },
     { type: "separator" },
@@ -743,7 +743,7 @@ function createTray() {
     { type: "separator" },
     { label: "Check for Updates", click: () => autoUpdater.checkForUpdates().catch(() => {}) },
     { type: "separator" },
-    { label: "Quit Lebanon POS", click: () => { isQuitting = true; app.quit() } },
+    { label: "Quit Titan POS", click: () => { isQuitting = true; app.quit() } },
   ]))
   tray.on("double-click", () => { mainWindow?.show(); mainWindow?.focus() })
 }
@@ -756,7 +756,7 @@ function setupAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = true
   autoUpdater.on("update-available", info => {
     dialog.showMessageBox({ type: "info", title: "Update Available",
-      message: `Lebanon POS v${info.version} is available and will install when you quit.`,
+      message: `Titan POS v${info.version} is available and will install when you quit.`,
       buttons: ["OK"] })
   })
   autoUpdater.on("error", e => console.error("[updater]", e.message))

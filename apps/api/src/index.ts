@@ -47,7 +47,7 @@ async function main() {
   })
 
   server.listen(PORT, () => {
-    console.log(`Lebanon POS API running on port ${PORT}`)
+    console.log(`Titan POS API running on port ${PORT}`)
     scheduleSyncOperationPrune()
     if (process.env.IS_LOCAL_SERVER === "true") {
       startCloudSyncBridge()

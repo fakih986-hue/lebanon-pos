@@ -46,7 +46,10 @@ import { restoreIndexedDBToLocal } from "../../features/pos/services/storage.ser
 import { showToast } from "../../features/pos/services/toast.service"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
-type SettingsWorkspace = "Business" | "Cloud sync" | "Security" | "Backup" | "Delivery"
+import { checkForUpdates, fetchReleaseManifest, clearUpdateCache } from "../../features/pos/services/update.service"
+import { compareVersions, formatVersion, type UpdateStatus, type ReleaseManifest } from "../../features/pos/lib/version"
+
+type SettingsWorkspace = "Business" | "Cloud sync" | "Security" | "Backup" | "Delivery" | "About"
 
 // Pre-baked Railway URL (shown read-only in Cloud sync). Overridable for dev.
 const CLOUD_URL_DISPLAY =
@@ -109,6 +112,30 @@ export default function SettingsPage() {
   const [activeWorkspace, setActiveWorkspace] =
     useState<SettingsWorkspace>("Business")
   const [drivers, setDrivers] = useState<Array<{ id: string; name: string }>>([])
+
+  // ── Update awareness ──
+  const [installedVersion, setInstalledVersion] = useState<string | null>(null)
+  const [updateStatus, setUpdateStatus] = useState<{ status: UpdateStatus; manifest: ReleaseManifest | null }>({ status: "unable-to-check", manifest: null })
+  const [updateChecking, setUpdateChecking] = useState(false)
+
+  useEffect(() => {
+    const api = (window as { electronAPI?: { getAppVersion?: () => Promise<string> } }).electronAPI
+    if (api?.getAppVersion) {
+      api.getAppVersion().then(setInstalledVersion).catch(() => setInstalledVersion(null))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!installedVersion) return
+    setUpdateChecking(true)
+    checkForUpdates(installedVersion).then((result) => {
+      setUpdateStatus(result)
+      setUpdateChecking(false)
+    }).catch(() => {
+      setUpdateStatus({ status: "unable-to-check", manifest: null })
+      setUpdateChecking(false)
+    })
+  }, [installedVersion])
 
   useEffect(() => {
     setIsLoading(false)
@@ -413,6 +440,7 @@ export default function SettingsPage() {
           { label: "Cloud sync", count: syncStatus.pending + syncStatus.failed },
           { label: "Security" },
           { label: "Backup" },
+          { label: "About" },
         ]}
       />
 
@@ -766,6 +794,119 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+        ) : null}
+
+        {activeWorkspace === "About" ? (
+        <section className="rounded-xl border bg-white p-5 shadow-sm" style={{ borderColor: "var(--border)" }}>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg" style={{ background: "var(--brand-soft)" }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--brand)" }}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-lg font-bold" style={{ color: "var(--text)" }}>About Titan POS</h2>
+              <p className="text-sm" style={{ color: "var(--text-3)" }}>Installed version and update status</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {/* Installed version */}
+            <div className="flex items-center justify-between rounded-lg border p-3.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+              <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>Installed version</span>
+              <span className="text-sm font-bold font-mono" style={{ color: "var(--text)" }}>
+                {installedVersion ? `v${formatVersion(installedVersion)}` : "—"}
+              </span>
+            </div>
+
+            {/* Latest available */}
+            <div className="flex items-center justify-between rounded-lg border p-3.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+              <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>Latest available</span>
+              <span className="text-sm font-bold font-mono" style={{ color: "var(--text)" }}>
+                {updateStatus.manifest ? `v${formatVersion(updateStatus.manifest.version)}` : "—"}
+              </span>
+            </div>
+
+            {/* Update status */}
+            <div className="flex items-center justify-between rounded-lg border p-3.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+              <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>Status</span>
+              <span className="text-sm font-bold">
+                {updateChecking ? (
+                  <span style={{ color: "var(--text-3)" }}>Checking...</span>
+                ) : updateStatus.status === "up-to-date" ? (
+                  <span style={{ color: "var(--success)" }}>Up to date</span>
+                ) : updateStatus.status === "update-available" ? (
+                  <span style={{ color: "var(--info)" }}>Update available</span>
+                ) : updateStatus.status === "update-required" ? (
+                  <span style={{ color: "var(--rose)" }}>Update required</span>
+                ) : (
+                  <span style={{ color: "var(--text-3)" }}>Unable to check</span>
+                )}
+              </span>
+            </div>
+
+            {/* Channel */}
+            {updateStatus.manifest && (
+              <div className="flex items-center justify-between rounded-lg border p-3.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+                <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>Channel</span>
+                <span className="text-sm font-bold capitalize" style={{ color: "var(--text)" }}>
+                  {updateStatus.manifest.channel}
+                </span>
+              </div>
+            )}
+
+            {/* Release notes */}
+            {updateStatus.manifest?.releaseNotes && (
+              <details className="rounded-lg border" style={{ borderColor: "var(--border)" }}>
+                <summary className="cursor-pointer px-3.5 py-2.5 text-sm font-bold" style={{ color: "var(--text)" }}>
+                  Release notes
+                </summary>
+                <div className="border-t px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-2)", borderColor: "var(--border)" }}>
+                  {updateStatus.manifest.releaseNotes}
+                </div>
+              </details>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex gap-2 pt-1">
+              {(updateStatus.status === "update-available" || updateStatus.status === "update-required") && updateStatus.manifest?.downloadUrl && (
+                <a
+                  href={updateStatus.manifest.downloadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg text-sm font-bold text-white transition hover:opacity-90"
+                  style={{ background: "var(--brand)" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Download update
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  clearUpdateCache()
+                  if (installedVersion) {
+                    setUpdateChecking(true)
+                    checkForUpdates(installedVersion).then(setUpdateStatus).finally(() => setUpdateChecking(false))
+                  }
+                }}
+                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border text-sm font-bold transition hover:opacity-80"
+                style={{ borderColor: "var(--border)", color: "var(--text-2)" }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                Check again
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-lg border p-3" style={{ borderColor: "var(--border-soft)", background: "var(--surface-3)" }}>
+            <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-3)" }}>
+              Titan POS v{installedVersion ? formatVersion(installedVersion) : "—"} · {updateStatus.manifest?.channel ?? "—"} channel
+            </p>
           </div>
         </section>
         ) : null}

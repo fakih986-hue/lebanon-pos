@@ -243,9 +243,6 @@ export default function CartDrawer({
               onSetPrice={onSetPrice}
               saleNote={saleNote}
               onSaleNoteChange={onSaleNoteChange}
-              heldSales={heldSales}
-              onResumeHeld={onResumeHeld}
-              onDiscardHeld={onDiscardHeld}
               vatRate={vatRate}
               customers={customers}
               selectedCustomerId={selectedCustomerId}

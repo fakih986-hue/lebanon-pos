@@ -102,7 +102,7 @@ export default function POSPage() {
   const [recentSales, setRecentSales] = useState<LastSaleSummary[]>(() => {
     try {
       const stored = localStorage.getItem("lebanonpos.recent-sales.v1")
-      return stored ? JSON.parse(stored) : []
+      return stored ? (JSON.parse(stored) as LastSaleSummary[]).slice(0, 2) : []
     } catch { return [] }
   })
   const [isCartOpen, setIsCartOpen] = useState(false)
@@ -633,7 +633,7 @@ export default function POSPage() {
         customerBalanceAfter, items,
       }
       setLastSale(saleRecord)
-      setRecentSales((prev) => [saleRecord, ...prev].slice(0, 3))
+      setRecentSales((prev) => [saleRecord, ...prev].slice(0, 2))
       clearCart()
       resetTender()
       resetDiscount()
@@ -683,7 +683,7 @@ export default function POSPage() {
                   saleNumber: s.number,
                   total: s.total,
                   totalLbp: s.totalLbp,
-                  items: s.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                  items: (s.items ?? []).map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
                   footer: settings.receiptFooter,
                 }))
               }}
@@ -731,7 +731,7 @@ export default function POSPage() {
                 cashStillDueUsd={cashStillDueUsd}
                 cashTenderValid={cashTenderValid}
                 checkoutBlocked={checkoutBlocked}
-          onCompleteSale={handleReview}
+          onCompleteSale={completeSale}
                 recentSales={recentSales}
                 onPrintReceipt={(s) => printLastSaleReceipt(s, settings)}
                 onWhatsAppReceipt={(s) => {
@@ -740,10 +740,22 @@ export default function POSPage() {
                     saleNumber: s.number,
                     total: s.total,
                     totalLbp: s.totalLbp,
-                    items: s.items.map((i) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+                  items: (s.items ?? []).map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
                     footer: settings.receiptFooter,
                   }))
                 }}
+                sellAtCost={sellAtCost}
+                onToggleSellAtCost={toggleSellAtCost}
+                saleNote={saleNote}
+                onSaleNoteChange={setSaleNote}
+                discountMode={discountMode}
+                discountValue={discountValue}
+                onDiscountModeChange={setDiscountMode}
+                onDiscountValueChange={setDiscountValue}
+                hasDiscount={hasDiscount}
+                canApplyDiscount={canApplyDiscount}
+                discountTotal={discountTotal}
+                grossSubtotal={grossSubtotal}
               />
             ) : (
               <>
@@ -778,7 +790,7 @@ export default function POSPage() {
                 <FavoritesBar
                   products={products}
                   selectedCategory={selectedCategory}
-                  onAddToCart={addProductToSale}
+                  onAddToCart={(p) => addProductToSale(p, "favorites")}
                 />
 
                 <div
@@ -873,6 +885,7 @@ export default function POSPage() {
 
         {/* ── Right: Persistent cart rail (desktop only) ── */}
         <CartPanel
+          quickMode={quickMode}
           items={items}
           onIncreaseQty={increaseQuantity}
           onDecreaseQty={decreaseQuantity}
@@ -902,7 +915,7 @@ export default function POSPage() {
           onDiscountValueChange={setDiscountValue}
           onHold={holdCurrentSale}
           onClean={cleanSale}
-          onCompleteSale={completeSale}
+          onCompleteSale={handleReview}
           itemCount={itemCount}
           grossSubtotal={grossSubtotal}
           discountTotal={discountTotal}
@@ -1028,6 +1041,28 @@ export default function POSPage() {
                    paymentMethod === "Cash" && !cashTenderValid ? `Insufficient payment — still due ${formatCurrency(cashStillDueUsd)}` :
                    paymentMethod === "Debt" && !selectedCustomer ? "Select a customer for debt sale." :
                    creditLimitExceeded ? `Credit limit exceeded` : "Cannot complete sale."}
+                </div>
+              )}
+              {items.length > 0 && (
+                <div className="max-h-[35vh] overflow-y-auto divide-y -mx-5 -mt-3 mb-3" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+                  {items.map((item, i) => (
+                    <div key={item.id} className="flex items-center gap-3 px-5 py-2.5"
+                      style={{ background: i % 2 === 0 ? "var(--surface)" : "var(--surface-2)" }}>
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-black"
+                        style={{ background: "var(--surface-3)", color: "var(--text-3)" }}>
+                        {item.quantity}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: "var(--text)" }}>
+                        {item.name}
+                      </span>
+                      <span className="shrink-0 text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
+                        @{formatCurrency(item.price)}
+                      </span>
+                      <span className="shrink-0 w-16 text-right text-[14px] font-black tabular-nums" style={{ color: "var(--text)" }}>
+                        {formatCurrency(item.price * item.quantity)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
               <div className="flex items-end justify-between">
