@@ -21,6 +21,13 @@ const POLLINATIONS_TOKEN = (process.env.POLLINATIONS_TOKEN || "").trim()
 // text — translate to English first so the model has something it understands.
 const TRANSLATE_HOST = "api.mymemory.translated.net"
 
+// Open Food Facts — free, keyless, crowdsourced barcode database with real
+// manufacturer product photos. Tried before AI generation: an AI approximation of
+// "Nutella" is a cosmetic aid for a cashier who already knows the product, but a
+// customer paying for delivery sight-unseen deserves the real packaging photo when
+// one is available.
+const CATALOG_HOST = "world.openfoodfacts.org"
+
 function generatePlaceholderSvg(productName: string): string {
   const encodedName = productName.replace(/[<>&"']/g, "").trim() || "Product"
   const hue = (productName.length * 31 + productName.charCodeAt(0) * 7) % 360
@@ -62,6 +69,32 @@ function httpGetBuffer(hostname: string, path: string, timeoutMs: number, header
   })
 }
 
+function httpGetBufferFromUrl(url: string, timeoutMs: number): Promise<Buffer> {
+  const parsed = new URL(url)
+  return httpGetBuffer(parsed.hostname, parsed.pathname + parsed.search, timeoutMs)
+}
+
+// Only real GTIN/UPC/EAN barcodes are worth a catalog lookup — internal SKUs or
+// other non-standard codes stored in the same field would just waste a round-trip.
+function looksLikeBarcode(value: string): boolean {
+  return /^\d{6,14}$/.test(value.trim())
+}
+
+async function lookupCatalogImage(barcode: string): Promise<Buffer | null> {
+  if (!looksLikeBarcode(barcode)) return null
+  try {
+    const path = `/api/v2/product/${encodeURIComponent(barcode.trim())}.json?fields=image_front_url`
+    const buffer = await httpGetBuffer(CATALOG_HOST, path, 8000)
+    const data = JSON.parse(buffer.toString("utf8"))
+    const imageUrl = data?.status === 1 ? data?.product?.image_front_url : null
+    if (!imageUrl) return null
+    return await httpGetBufferFromUrl(imageUrl, 15000)
+  } catch (err) {
+    console.error(`[images] catalog lookup error for barcode "${barcode}":`, (err as Error).message)
+    return null
+  }
+}
+
 // Most product names on a Lebanese POS are Arabic or French. French is Latin-script
 // and the model handles it fine; Arabic (or other non-Latin script) needs translating
 // first or the model generates something unrelated to the product.
@@ -99,10 +132,20 @@ async function fetchGeneratedImage(prompt: string): Promise<Buffer> {
   return httpGetBuffer(IMG_HOST, path, 30000, headers)
 }
 
+type ImageSource = "catalog" | "ai" | "placeholder"
+type GeneratedImage = { image: string; generated: boolean; source: ImageSource }
+
 // The anonymous tier shares a small global queue that occasionally reports "queue
 // full" under load — a short backoff before retrying gives it time to drain instead
 // of immediately re-hitting the same congestion.
-async function generateImage(productName: string, category?: string | null): Promise<{ image: string; generated: boolean }> {
+async function generateImage(productName: string, category?: string | null, barcode?: string | null): Promise<GeneratedImage> {
+  if (barcode) {
+    const catalogBuffer = await lookupCatalogImage(barcode)
+    if (catalogBuffer) {
+      return { image: `data:image/jpeg;base64,${catalogBuffer.toString("base64")}`, generated: true, source: "catalog" }
+    }
+  }
+
   const promptSubject = isLatinScript(productName)
     ? productName
     : (await translateToEnglish(productName)) || productName
@@ -114,13 +157,13 @@ async function generateImage(productName: string, category?: string | null): Pro
     try {
       const buffer = await fetchGeneratedImage(prompt)
       const base64 = buffer.toString("base64")
-      return { image: `data:image/jpeg;base64,${base64}`, generated: true }
+      return { image: `data:image/jpeg;base64,${base64}`, generated: true, source: "ai" }
     } catch (err) {
       console.error(`[images] generation error for "${productName}" (attempt ${attempt}/${maxAttempts}):`, (err as Error).message)
       if (attempt < maxAttempts) await sleep(retryDelayMs * attempt)
     }
   }
-  return { image: generatePlaceholderSvg(productName), generated: false }
+  return { image: generatePlaceholderSvg(productName), generated: false, source: "placeholder" }
 }
 
 // Save a client-generated image for a single product
@@ -172,12 +215,16 @@ router.post("/save-all", requireAuth, async (req: AuthRequest, res: ServerRespon
 
 router.post("/generate", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const { name, category } = (req as any).body ?? {}
+    const { name, category, barcode } = (req as any).body ?? {}
     if (!name || typeof name !== "string") {
       json(res, { error: "Product name is required" }, 400)
       return
     }
-    const result = await generateImage(name, typeof category === "string" ? category : null)
+    const result = await generateImage(
+      name,
+      typeof category === "string" ? category : null,
+      typeof barcode === "string" ? barcode : null
+    )
     json(res, result)
   } catch (err) {
     console.error("Generate image error:", err)
@@ -191,15 +238,15 @@ router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: 
     const tenantId = req.auth!.tenantId
     const product = await prisma.product.findFirst({
       where: { id: productId, tenantId },
-      select: { id: true, name: true, category: true },
+      select: { id: true, name: true, category: true, barcode: true },
     })
     if (!product) {
       json(res, { error: "Product not found" }, 404)
       return
     }
-    const { image, generated } = await generateImage(product.name, product.category)
+    const { image, generated, source } = await generateImage(product.name, product.category, product.barcode)
     await prisma.product.update({ where: { id: product.id }, data: { image } })
-    json(res, { image, generated })
+    json(res, { image, generated, source })
   } catch (err) {
     console.error("Generate product image error:", err)
     json(res, { error: "Failed to generate product image" }, 500)
@@ -223,33 +270,34 @@ router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerRe
 
     const products = await prisma.product.findMany({
       where,
-      select: { id: true, name: true, category: true },
+      select: { id: true, name: true, category: true, barcode: true },
       orderBy: { name: "asc" },
     })
 
     if (products.length === 0) {
-      json(res, { generated: 0, placeholders: 0, total: 0, products: [] })
+      json(res, { generated: 0, placeholders: 0, catalogMatches: 0, total: 0, products: [] })
       return
     }
 
-    type Result = { id: number; name: string; generated: boolean; placeholder: boolean; image?: string; error?: string }
+    type Result = { id: number; name: string; generated: boolean; placeholder: boolean; source?: ImageSource; image?: string; error?: string }
     const results: Result[] = []
 
     for (const product of products) {
       try {
-        const { image, generated } = await generateImage(product.name, product.category)
+        const { image, generated, source } = await generateImage(product.name, product.category, product.barcode)
         await prisma.product.update({ where: { id: product.id }, data: { image } })
-        results.push({ id: product.id, name: product.name, image, generated, placeholder: !generated })
+        results.push({ id: product.id, name: product.name, image, generated, source, placeholder: !generated })
       } catch (err) {
         results.push({ id: product.id, name: product.name, generated: false, placeholder: false, error: (err as Error).message })
       }
     }
 
     const generatedCount = results.filter(r => r.generated).length
+    const catalogCount = results.filter(r => r.source === "catalog").length
     const placeholderCount = results.filter(r => r.placeholder).length
     const errorCount = results.filter(r => r.error).length
-    console.log(`[images] generate-all: ${generatedCount} AI, ${placeholderCount} placeholders, ${errorCount} errors (${products.length} total)`)
-    json(res, { generated: generatedCount, placeholders: placeholderCount, total: products.length, products: results })
+    console.log(`[images] generate-all: ${catalogCount} catalog, ${generatedCount - catalogCount} AI, ${placeholderCount} placeholders, ${errorCount} errors (${products.length} total)`)
+    json(res, { generated: generatedCount, placeholders: placeholderCount, catalogMatches: catalogCount, total: products.length, products: results })
   } catch (err) {
     console.error("Generate all images error:", err)
     json(res, { error: "Failed to generate images" }, 500)

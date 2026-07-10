@@ -4,12 +4,15 @@ import { startServer, stopServer, request } from "./helpers"
 import prisma from "../src/lib/prisma"
 import { signToken } from "../src/middleware/auth"
 
-// Image generation and translation both go through node:https — mock it so tests
-// never make real calls to Pollinations/MyMemory, and can force success/failure.
+// Image generation, translation, and catalog lookup all go through node:https —
+// mock it so tests never make real calls to Pollinations/MyMemory/Open Food Facts,
+// and can force each one's success/failure independently.
 const netState = vi.hoisted(() => ({
   imageMode: "success" as "success" | "network-error" | "http-error",
   translation: "Halloumi cheese",
+  catalogMode: "miss" as "hit" | "miss",
   lastImagePath: "",
+  lastCatalogPath: "",
 }))
 
 vi.mock("node:https", () => ({
@@ -19,13 +22,36 @@ vi.mock("node:https", () => ({
       req.write = () => {}
       req.end = () => {
         queueMicrotask(() => {
-          const isTranslate = options.hostname === "api.mymemory.translated.net"
-          if (isTranslate) {
+          if (options.hostname === "api.mymemory.translated.net") {
             const res = new EventEmitter() as any
             res.statusCode = 200
             callback(res)
             queueMicrotask(() => {
               res.emit("data", Buffer.from(JSON.stringify({ responseData: { translatedText: netState.translation } })))
+              res.emit("end")
+            })
+            return
+          }
+          if (options.hostname === "world.openfoodfacts.org") {
+            netState.lastCatalogPath = options.path
+            const res = new EventEmitter() as any
+            res.statusCode = 200
+            callback(res)
+            queueMicrotask(() => {
+              const body = netState.catalogMode === "hit"
+                ? { status: 1, product: { image_front_url: "https://images.openfoodfacts.org/fake.jpg" } }
+                : { status: 0 }
+              res.emit("data", Buffer.from(JSON.stringify(body)))
+              res.emit("end")
+            })
+            return
+          }
+          if (options.hostname === "images.openfoodfacts.org") {
+            const res = new EventEmitter() as any
+            res.statusCode = 200
+            callback(res)
+            queueMicrotask(() => {
+              res.emit("data", Buffer.from("fake-catalog-image-bytes"))
               res.emit("end")
             })
             return
@@ -144,7 +170,9 @@ describe("POST /api/images/generate", () => {
   beforeEach(() => {
     netState.imageMode = "success"
     netState.translation = "Halloumi cheese"
+    netState.catalogMode = "miss"
     netState.lastImagePath = ""
+    netState.lastCatalogPath = ""
   })
 
   it("generates an AI image for a Latin-script name", async () => {
@@ -154,8 +182,42 @@ describe("POST /api/images/generate", () => {
     })
     expect(res.status).toBe(200)
     expect(res.body.generated).toBe(true)
+    expect(res.body.source).toBe("ai")
     expect(res.body.image).toContain("data:image/jpeg;base64,")
     expect(netState.lastImagePath).toContain("Test%20Product")
+  })
+
+  it("uses the real catalog photo when the barcode matches, skipping AI generation", async () => {
+    netState.catalogMode = "hit"
+    const res = await request("POST", "/api/images/generate", {
+      token,
+      body: { name: "Nutella 400g", barcode: "3017620422003" },
+    })
+    expect(res.status).toBe(200)
+    expect(res.body.generated).toBe(true)
+    expect(res.body.source).toBe("catalog")
+    expect(netState.lastCatalogPath).toContain("3017620422003")
+    expect(netState.lastImagePath).toBe("") // AI generation never called
+  })
+
+  it("falls through to AI generation when the barcode has no catalog match", async () => {
+    netState.catalogMode = "miss"
+    const res = await request("POST", "/api/images/generate", {
+      token,
+      body: { name: "Local Bakery Item", barcode: "9999999999999" },
+    })
+    expect(res.status).toBe(200)
+    expect(res.body.source).toBe("ai")
+  })
+
+  it("skips the catalog lookup for a non-barcode-shaped value", async () => {
+    const res = await request("POST", "/api/images/generate", {
+      token,
+      body: { name: "Test Product", barcode: "SKU-ABC-123" },
+    })
+    expect(res.status).toBe(200)
+    expect(res.body.source).toBe("ai")
+    expect(netState.lastCatalogPath).toBe("") // never even attempted
   })
 
   it("includes category in the prompt when provided", async () => {
