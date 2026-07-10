@@ -3,13 +3,13 @@ import { useLocation } from "react-router"
 import * as THREE from "three"
 
 /**
- * The Midnight Gold sky — a layered WebGL scene behind all content:
+ * The Midnight Gold sky â€” a layered WebGL scene behind all content:
  *
  *  0. Nebula sky: fullscreen fragment shader, domain-warped fbm noise drifting
  *     like gold silk smoke through black. Scroll shifts it; time stirs it.
  *  1. Dust field: soft round bokeh motes (custom point shader) that twinkle on
  *     individual phases and drift, in gold / champagne / bronze.
- *  2. The emblem: the full-res logo lit live by a shader — a specular sheen
+ *  2. The emblem: the full-res logo lit live by a shader â€” a specular sheen
  *     travels across the metal, glints flare off the bevels, ambient light
  *     breathes over it. Product-shot lighting, not effects.
  *  3. Comets: a rare gold streak crossing the sky every ~10s.
@@ -25,12 +25,25 @@ export function ThreeBackground() {
 
   useEffect(() => {
     const t = targetRef.current
+    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches
     if (location.pathname === "/") {
-      t.x = 4.2; t.y = 0.5; t.scale = 0.92; t.opacity = 0.5
+      if (isMobile) {
+        t.x = 0.9; t.y = 1.35; t.scale = 0.74; t.opacity = 0.46
+      } else {
+        t.x = 4.2; t.y = 0.5; t.scale = 0.92; t.opacity = 0.5
+      }
     } else if (location.pathname === "/pos" || location.pathname === "/payroll") {
-      t.x = 4.6; t.y = 2.2; t.scale = 0.65; t.opacity = 0.32
+      if (isMobile) {
+        t.x = 1.45; t.y = 2.0; t.scale = 0.48; t.opacity = 0.28
+      } else {
+        t.x = 4.6; t.y = 2.2; t.scale = 0.65; t.opacity = 0.32
+      }
     } else {
-      t.x = -4.8; t.y = 2.4; t.scale = 0.55; t.opacity = 0.25
+      if (isMobile) {
+        t.x = -0.9; t.y = 2.15; t.scale = 0.44; t.opacity = 0.22
+      } else {
+        t.x = -4.8; t.y = 2.4; t.scale = 0.55; t.opacity = 0.25
+      }
     }
     // navigation dips the emblem out, glides it, and re-lights it with a sweep
     if (firstRouteRef.current) firstRouteRef.current = false
@@ -49,7 +62,7 @@ export function ThreeBackground() {
     renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.autoClear = false
 
-    // ── Layer 0: nebula sky (own scene, orthographic fullscreen quad) ──
+    // â”€â”€ Layer 0: nebula sky (own scene, orthographic fullscreen quad) â”€â”€
     const skyScene = new THREE.Scene()
     const skyCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
     const skyUniforms = {
@@ -122,12 +135,12 @@ export function ThreeBackground() {
     })
     skyScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), skyMat))
 
-    // ── Main scene ──
+    // â”€â”€ Main scene â”€â”€
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100)
     camera.position.z = 9
 
-    // ── Layer 1: bokeh dust ──
+    // â”€â”€ Layer 1: bokeh dust â”€â”€
     const COUNT = isMobile ? 900 : 2600
     const positions = new Float32Array(COUNT * 3)
     const colors = new Float32Array(COUNT * 3)
@@ -194,9 +207,9 @@ export function ThreeBackground() {
     const dust = new THREE.Points(dustGeo, dustMat)
     scene.add(dust)
 
-    // ── Layer 2: the emblem — beauty-shot lighting on the real logo ──
+    // â”€â”€ Layer 2: the emblem â€” beauty-shot lighting on the real logo â”€â”€
     const core = new THREE.Group()
-    core.position.set(4.2, 0.5, 0)
+    core.position.set(targetRef.current.x, targetRef.current.y, 0)
     scene.add(core)
 
     const EMBLEM_SIZE = 5.4
@@ -246,7 +259,7 @@ export function ThreeBackground() {
           col *= 0.92 + 0.10 * sin(uTime * 0.5 + vUv.y * 2.4) + 0.06 * vUv.y;
 
           // the titan inside: molten light living in the engraved grooves.
-          // grooveMask picks the dark cuts of the shield, never the bright metal —
+          // grooveMask picks the dark cuts of the shield, never the bright metal â€”
           // tightened so the light stays confined to the cuts, crisp not bloomy
           float grooveMask = tex.a * (1.0 - smoothstep(0.05, 0.22, lum));
           vec3 ember = vec3(1.0, 0.5, 0.16);
@@ -255,7 +268,7 @@ export function ThreeBackground() {
           innerLife *= 0.85 + 0.35 * (1.0 - vUv.y) * uForge;
           col += ember * grooveMask * innerLife;
 
-          // travelling specular sheen — a diagonal band of light crossing the metal,
+          // travelling specular sheen â€” a diagonal band of light crossing the metal,
           // strongest where the metal is already bright (specular response)
           vec2 dir = normalize(vec2(0.82, -0.57));
           float proj = dot(vUv, dir);
@@ -278,7 +291,7 @@ export function ThreeBackground() {
     emblem.renderOrder = 2
     core.add(emblem)
 
-    // soft radial halo behind the emblem — melts it into the dark
+    // soft radial halo behind the emblem â€” melts it into the dark
     const haloCv = document.createElement("canvas")
     haloCv.width = haloCv.height = 128
     const hctx = haloCv.getContext("2d")
@@ -291,13 +304,13 @@ export function ThreeBackground() {
       hctx.fillRect(0, 0, 128, 128)
     }
     const haloTex = new THREE.CanvasTexture(haloCv)
-    const haloMat = new THREE.SpriteMaterial({ map: haloTex, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false })
+    const haloMat = new THREE.SpriteMaterial({ map: haloTex, transparent: true, opacity: isMobile ? 0.22 : 0.16, blending: THREE.AdditiveBlending, depthWrite: false })
     const halo = new THREE.Sprite(haloMat)
-    halo.scale.setScalar(9)
+    halo.scale.setScalar(isMobile ? 7.2 : 9)
     halo.renderOrder = 1
     core.add(halo)
 
-    // shockwave — a golden ring that rolls out when the titan surges
+    // shockwave â€” a golden ring that rolls out when the titan surges
     const waveUniforms = {
       uWaveT: { value: -1 }, // -1 idle, 0..1 expanding
       uOpacity: { value: 1 },
@@ -339,7 +352,7 @@ export function ThreeBackground() {
     wave.renderOrder = 1
     core.add(wave)
 
-    // glints — star flares that spark off the bevels as the sheen passes them
+    // glints â€” star flares that spark off the bevels as the sheen passes them
     const glintCv = document.createElement("canvas")
     glintCv.width = glintCv.height = 96
     const gctx = glintCv.getContext("2d")
@@ -378,7 +391,7 @@ export function ThreeBackground() {
       return s
     })
 
-    // a vast, barely-there shell around everything — the room you're standing in
+    // a vast, barely-there shell around everything â€” the room you're standing in
     // skipped on mobile to save GPU
     let shell: THREE.LineSegments | null = null
     if (!isMobile) {
@@ -388,7 +401,7 @@ export function ThreeBackground() {
       scene.add(shell)
     }
 
-    // ── Layer 3: comet ──
+    // â”€â”€ Layer 3: comet â”€â”€
     const TRAIL = 22
     const cometPositions = new Float32Array(TRAIL * 3)
     const cometColors = new Float32Array(TRAIL * 3)
@@ -416,7 +429,7 @@ export function ThreeBackground() {
       trail: [] as THREE.Vector3[],
     }
 
-    // ── Input ──
+    // â”€â”€ Input â”€â”€
     let mouseX = 0, mouseY = 0, scrollY = window.scrollY
     const onMouse = (e: MouseEvent) => {
       mouseX = (e.clientX / window.innerWidth - 0.5) * 2
@@ -438,7 +451,7 @@ export function ThreeBackground() {
     const onVisibility = () => { hidden = document.hidden }
     document.addEventListener("visibilitychange", onVisibility)
 
-    // ── Emblem lighting timeline ──
+    // â”€â”€ Emblem lighting timeline â”€â”€
     let reformSeen = targetRef.current.reform
     let reformStart = -1
     let revealStart = -1
@@ -511,7 +524,7 @@ export function ThreeBackground() {
         emblemUniforms.uSweepT.value = st <= 1 ? st : -1
       }
 
-      // ── the titan's pulse ──
+      // â”€â”€ the titan's pulse â”€â”€
       // resting heartbeat, a slow lub-dub living in the engraved grooves
       const beat = (t % 3.4) / 3.4
       const lub = Math.exp(-Math.pow((beat - 0.1) * 13, 2))

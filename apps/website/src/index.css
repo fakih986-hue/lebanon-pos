@@ -39,7 +39,7 @@ body {
   border: 2px solid #050403;
 }
 
-/* ── Surfaces ─────────────────────────────────────────────── */
+/* â”€â”€ Surfaces â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .glass {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -47,6 +47,14 @@ body {
   -webkit-backdrop-filter: blur(18px);
 }
 
+
+.mobile-menu-panel {
+  background: linear-gradient(180deg, rgba(12, 10, 7, 0.97), rgba(5, 4, 3, 0.95));
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  box-shadow: 0 24px 80px -28px rgba(0, 0, 0, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
 .glass-hover {
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -56,7 +64,7 @@ body {
   box-shadow: 0 0 40px -12px rgba(212, 175, 55, 0.35);
 }
 
-/* Animated gradient border — wrap content in .shimmer-border > .shimmer-inner */
+/* Animated gradient border â€” wrap content in .shimmer-border > .shimmer-inner */
 .shimmer-border {
   position: relative;
   border-radius: 1.25rem;
@@ -74,7 +82,7 @@ body {
   100% { background-position: 300% 50%; }
 }
 
-/* ── Type ─────────────────────────────────────────────────── */
+/* â”€â”€ Type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .text-gradient {
   background: linear-gradient(90deg, #f7e7b4, #e9c766 35%, #d4af37 65%, #9a7b2e);
   -webkit-background-clip: text;
@@ -87,7 +95,7 @@ body {
   -webkit-text-stroke: 1px rgba(255, 255, 255, 0.08);
 }
 
-/* ── Scroll reveal ────────────────────────────────────────── */
+/* â”€â”€ Scroll reveal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .reveal {
   opacity: 0;
   transform: translateY(32px);
@@ -107,7 +115,7 @@ body {
 }
 .page-enter { animation: pageIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
-/* ── Marquee ──────────────────────────────────────────────── */
+/* â”€â”€ Marquee â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
@@ -118,7 +126,7 @@ body {
   animation: marquee 30s linear infinite;
 }
 
-/* ── Float / pulse ────────────────────────────────────────── */
+/* â”€â”€ Float / pulse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-14px); }
@@ -131,7 +139,7 @@ body {
 }
 .animate-pulse-glow { animation: pulseGlow 3.5s ease-in-out infinite; }
 
-/* ── Cinematic intro ──────────────────────────────────────── */
+/* â”€â”€ Cinematic intro â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @keyframes introLogo {
   0% { opacity: 0; transform: scale(0.82); filter: blur(10px); }
   55% { opacity: 1; transform: scale(1.02); filter: blur(0); }
@@ -150,7 +158,7 @@ body {
   100% { transform: translateY(-100%); }
 }
 
-/* ── Kinetic type — words rise and pull into focus ────────── */
+/* â”€â”€ Kinetic type â€” words rise and pull into focus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .word-hidden { opacity: 0; }
 .word-rise {
   display: inline-block;
@@ -161,7 +169,7 @@ body {
   100% { opacity: 1; transform: translateY(0) rotate(0); filter: blur(0); }
 }
 
-/* Gradient-safe reveal for background-clip:text lines — single element, no
+/* Gradient-safe reveal for background-clip:text lines â€” single element, no
    child filters (those break the clip), just a left-to-right wipe. */
 .line-wipe {
   display: inline-block;
@@ -172,7 +180,7 @@ body {
   100% { opacity: 1; clip-path: inset(0 0% -20% 0); transform: translateY(0); }
 }
 
-/* ── Gold light sweep on hover ────────────────────────────── */
+/* â”€â”€ Gold light sweep on hover â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .shine { position: relative; overflow: hidden; }
 .shine::after {
   content: "";
@@ -188,7 +196,7 @@ body {
 }
 .shine:hover::after { left: 130%; }
 
-/* Noise film over everything — kills flat-gradient banding */
+/* Noise film over everything â€” kills flat-gradient banding */
 .noise::after {
   content: "";
   position: fixed;
@@ -203,6 +211,12 @@ body {
   .reveal { transition: none; opacity: 1; transform: none; }
   .marquee-track, .animate-float, .shimmer-border { animation: none; }
   .noise::after { opacity: 0.012; }
+}
+
+@media (max-width: 640px) {
+  body { background-attachment: scroll; }
+  .noise::after { opacity: 0.016; }
+  .glass { background: rgba(255, 255, 255, 0.055); }
 }
 
 @media (max-width: 480px) {

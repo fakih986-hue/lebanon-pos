@@ -20,8 +20,8 @@ function KineticLine({ words, gradient = false, baseDelay = 0 }: { words: string
     return () => { window.removeEventListener("titan:intro-done", onDone); clearTimeout(fallback) }
   }, [])
 
-  // Gradient lines must animate as one element — child transforms/filters break
-  // background-clip:text — so they get a wipe reveal instead of per-word rise.
+  // Gradient lines must animate as one element â€” child transforms/filters break
+  // background-clip:text â€” so they get a wipe reveal instead of per-word rise.
   if (gradient) {
     return (
       <span
@@ -37,7 +37,7 @@ function KineticLine({ words, gradient = false, baseDelay = 0 }: { words: string
     <span>
       {words.split(" ").map((w, i) => (
         <span key={i} className={go ? "word-rise" : "word-hidden"} style={{ animationDelay: `${baseDelay + i * 90}ms` }}>
-          {w}{" "}
+          {w}{"Â "}
         </span>
       ))}
     </span>
@@ -54,7 +54,7 @@ const PRODUCTS = [
     to: "/pos",
     tag: "Retail & Hospitality",
     name: "Titan POS",
-    desc: "Offline-first checkout, inventory, customers, debts, suppliers, and delivery — one desktop platform that keeps selling even when the internet doesn't.",
+    desc: "Offline-first checkout, inventory, customers, debts, suppliers, and delivery â€” one desktop platform that keeps selling even when the internet doesn't.",
     accent: "from-[#e9c766] to-[#a4841f]",
     glow: "group-hover:shadow-[0_0_60px_-15px_rgba(212,175,55,0.4)]",
   },
@@ -62,14 +62,14 @@ const PRODUCTS = [
     to: "/payroll",
     tag: "People Operations",
     name: "Titan HR & Payroll",
-    desc: "A Lebanon-first HR operating system — employees, attendance, leave, documents, assets, and an accountant-verified payroll engine in one workspace.",
+    desc: "A Lebanon-first HR operating system â€” employees, attendance, leave, documents, assets, and an accountant-verified payroll engine in one workspace.",
     accent: "from-[#d4af37] to-[#7a5c10]",
     glow: "group-hover:shadow-[0_0_60px_-15px_rgba(212,175,55,0.35)]",
   },
 ]
 
 const PILLARS = [
-  { n: "01", title: "Built to actually run", desc: "Not demos, not prototypes — platforms that are live today, handling real sales and real payroll runs for real businesses." },
+  { n: "01", title: "Built to actually run", desc: "Not demos, not prototypes â€” platforms that are live today, handling real sales and real payroll runs for real businesses." },
   { n: "02", title: "Offline is a feature", desc: "Titan POS runs entirely on the local machine. Bad connection? Sales keep ringing up. The cloud catches up the moment you're back." },
   { n: "03", title: "Trust over shortcuts", desc: "Payroll, money, and inventory don't get to be 'roughly right'. Every number traces to a rule, every change to a person." },
 ]
@@ -77,8 +77,8 @@ const PILLARS = [
 export default function HomePage() {
   return (
     <div>
-      {/* ── Hero ── */}
-      <section className="relative min-h-[100svh] flex items-center px-5 sm:px-8 pt-28 pb-16">
+      {/* â”€â”€ Hero â”€â”€ */}
+      <section className="relative min-h-[92svh] md:min-h-[100svh] flex items-start md:items-center px-4 sm:px-8 pt-24 sm:pt-28 pb-12 sm:pb-16 overflow-hidden">
         <div className="max-w-6xl mx-auto w-full">
           <Reveal>
             <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#e9c766] bg-[#d4af37]/[0.08] border border-[#d4af37]/25 rounded-full px-4 py-2 mb-8">
@@ -87,29 +87,29 @@ export default function HomePage() {
             </span>
           </Reveal>
 
-          <h1 className="font-display font-bold tracking-tight leading-[1.1] sm:leading-[0.95] text-[clamp(2.8rem,9vw,7rem)]">
+          <h1 className="font-display font-bold tracking-tight leading-[1.08] sm:leading-[0.95] text-[clamp(2.18rem,11vw,4.5rem)] md:text-[clamp(3.8rem,9vw,7rem)] max-w-[11ch] sm:max-w-none">
             <KineticLine words="Run the business." />
             <br />
             <KineticLine words="We run the software." gradient baseDelay={320} />
           </h1>
 
           <Reveal delay={220}>
-            <p className="mt-8 text-lg sm:text-xl text-slate-400 max-w-xl leading-relaxed">
-              Titan builds the systems that keep a business moving — point of sale on the floor,
+            <p className="mt-6 sm:mt-8 text-base sm:text-xl text-slate-400 max-w-xl leading-relaxed">
+              Titan builds the systems that keep a business moving â€” point of sale on the floor,
               HR & payroll behind the scenes. Commercial-grade, Lebanon-first.
             </p>
           </Reveal>
 
           <Reveal delay={340}>
-            <div className="mt-12 flex items-center gap-4 flex-wrap">
+            <div className="mt-9 sm:mt-12 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <Magnetic>
-                <Link to="/pos" className="inline-flex items-center gap-2 px-7 py-3.5 shine rounded-2xl bg-gradient-to-r from-[#e9c766] to-[#a4841f] text-[#0b0803] font-semibold text-sm shadow-[0_8px_40px_-8px_rgba(212,175,55,0.45)] hover:shadow-[0_8px_50px_-6px_rgba(212,175,55,0.6)] transition-shadow">
+                <Link to="/pos" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-7 py-3.5 shine rounded-2xl bg-gradient-to-r from-[#e9c766] to-[#a4841f] text-[#0b0803] font-semibold text-sm shadow-[0_8px_40px_-8px_rgba(212,175,55,0.45)] hover:shadow-[0_8px_50px_-6px_rgba(212,175,55,0.6)] transition-shadow">
                   Explore Titan POS
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </Link>
               </Magnetic>
               <Magnetic>
-                <Link to="/payroll" className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl glass glass-hover font-semibold text-sm">
+                <Link to="/payroll" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-7 py-3.5 rounded-2xl glass glass-hover font-semibold text-sm">
                   Explore Titan HR
                 </Link>
               </Magnetic>
@@ -119,13 +119,13 @@ export default function HomePage() {
         </div>
 
         {/* Scroll hint */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-slate-600">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden sm:flex flex-col items-center gap-2 text-slate-600">
           <span className="text-[10px] uppercase tracking-[0.3em]">Scroll</span>
           <div className="w-[1px] h-10 bg-gradient-to-b from-slate-600 to-transparent" />
         </div>
       </section>
 
-      {/* ── Marquee ── */}
+      {/* â”€â”€ Marquee â”€â”€ */}
       <section className="py-6 border-y border-white/[0.05] overflow-hidden">
         <div className="marquee-track">
           {[...MARQUEE, ...MARQUEE].map((item, i) => (
@@ -137,7 +137,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Products ── */}
+      {/* â”€â”€ Products â”€â”€ */}
       <section className="px-5 sm:px-8 py-28">
         <div className="max-w-6xl mx-auto">
           <Reveal>
@@ -166,14 +166,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Showcase: real screens, editorial layout ── */}
+      {/* â”€â”€ Showcase: real screens, editorial layout â”€â”€ */}
       <section className="px-5 sm:px-8 pb-28">
         <div className="max-w-6xl mx-auto space-y-24">
           {[
             {
               eyebrow: "Titan POS",
               title: "The register, live.",
-              desc: "Barcode-first checkout with dual-currency totals (USD + LBP), favorites, quick sale, and a cart that keeps moving even when the internet doesn't. This is the screen a cashier lives in all day — built to be fast at hour nine, not just minute one.",
+              desc: "Barcode-first checkout with dual-currency totals (USD + LBP), favorites, quick sale, and a cart that keeps moving even when the internet doesn't. This is the screen a cashier lives in all day â€” built to be fast at hour nine, not just minute one.",
               img: "/screenshots/pos-checkout.png",
               url: "pos.titan-suite.net",
               to: "/pos",
@@ -183,9 +183,9 @@ export default function HomePage() {
             {
               eyebrow: "Titan HR",
               title: "Payroll with receipts.",
-              desc: "Every payroll run traces back to verified statutory rules — and when a rule isn't legally verified yet, the platform says so out loud instead of guessing. 90 runs on record, every number explainable.",
+              desc: "Every payroll run traces back to verified statutory rules â€” and when a rule isn't legally verified yet, the platform says so out loud instead of guessing. 90 runs on record, every number explainable.",
               img: "/screenshots/hr-payroll.png",
-              url: "titan-hr — payroll",
+              url: "titan-hr â€” payroll",
               to: "/payroll",
               cta: "Explore Titan HR",
               flip: true,
@@ -220,7 +220,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Stats ── */}
+      {/* â”€â”€ Stats â”€â”€ */}
       <section className="px-5 sm:px-8 pb-28">
         <div className="max-w-6xl mx-auto">
           <div className="shimmer-border">
@@ -243,7 +243,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Pillars ── */}
+      {/* â”€â”€ Pillars â”€â”€ */}
       <section className="px-5 sm:px-8 pb-28">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-3 gap-6">
@@ -260,14 +260,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── CTA ── */}
+      {/* â”€â”€ CTA â”€â”€ */}
       <section className="px-5 sm:px-8 pb-10">
         <div className="max-w-4xl mx-auto text-center">
           <Reveal>
             <h2 className="font-display text-3xl sm:text-5xl font-bold tracking-tight">
               See it <span className="text-gradient">running live.</span>
             </h2>
-            <p className="mt-5 text-slate-400 max-w-lg mx-auto">Get a walkthrough of Titan POS or Titan HR against a real setup — not a slide deck.</p>
+            <p className="mt-5 text-slate-400 max-w-lg mx-auto">Get a walkthrough of Titan POS or Titan HR against a real setup â€” not a slide deck.</p>
             <Magnetic className="mt-10">
               <Link to="/contact" className="inline-flex items-center gap-2 px-8 py-4 shine rounded-2xl bg-gradient-to-r from-[#e9c766] to-[#a4841f] text-[#0b0803] font-semibold shadow-[0_8px_40px_-8px_rgba(212,175,55,0.45)]">
                 Request a demo

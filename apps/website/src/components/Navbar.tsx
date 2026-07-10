@@ -34,8 +34,8 @@ export function Navbar() {
       </div>
 
       {/* Floating pill nav */}
-      <header className="fixed top-4 inset-x-0 z-50 px-4">
-        <nav className="max-w-3xl mx-auto glass rounded-2xl h-14 pl-4 pr-2 flex items-center justify-between shadow-[0_8px_40px_-12px_rgba(0,0,0,0.6)]">
+      <header className="fixed top-3 sm:top-4 inset-x-0 z-[70] px-3 sm:px-4">
+        <nav className="max-w-3xl mx-auto glass rounded-2xl h-14 pl-4 pr-2 flex items-center justify-between shadow-[0_8px_40px_-12px_rgba(0,0,0,0.6)] max-md:bg-[#080705]/90 max-md:border-[#d4af37]/20 max-md:shadow-[0_18px_60px_-18px_rgba(0,0,0,0.95)]">
           <Link to="/" onClick={() => setOpen(false)}>
             <Logo size={32} />
           </Link>
@@ -66,6 +66,7 @@ export function Navbar() {
             className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/[0.05] transition-colors"
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
+            aria-expanded={open}
           >
             <div className="w-4 flex flex-col gap-[4px]">
               <span className={`h-[2px] bg-white rounded transition-transform duration-300 ${open ? "rotate-45 translate-y-[6px]" : ""}`} />
@@ -76,14 +77,14 @@ export function Navbar() {
         </nav>
 
         {open && (
-          <div className="md:hidden max-w-3xl mx-auto mt-2 glass rounded-2xl px-3 py-3 flex flex-col gap-1">
+          <div className="mobile-menu-panel md:hidden max-w-3xl mx-auto mt-2 rounded-2xl px-3 py-3 flex flex-col gap-1">
             {[...LINKS, { to: "/contact", label: "Contact" }].map((l) => (
               <NavLink
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
                 className={({ isActive }) =>
-                  `px-4 py-3 rounded-xl text-sm font-medium ${isActive ? "text-white bg-white/[0.08]" : "text-slate-300"}`
+                  `px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${isActive ? "text-white bg-[#d4af37]/15 border border-[#d4af37]/20" : "text-slate-200 hover:text-white hover:bg-white/[0.06]"}`
                 }
               >
                 {l.label}
