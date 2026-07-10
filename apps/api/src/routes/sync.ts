@@ -642,7 +642,11 @@ async function processOperation(
         })))
         const { saleId: _s, ...prismaTender } = data.tender ?? {}
         const hasTender = Object.keys(prismaTender).length > 0
-        const { items: _i, tender: _t, ...saleData } = data
+        // registerId/deviceId are client-side attribution metadata for this
+        // sale's shift — the Sale model has no columns for them (that
+        // attribution already lives on Shift/DailyClose, keyed by shiftId).
+        // Forwarding them to prisma.sale.create() throws "Unknown argument".
+        const { items: _i, tender: _t, registerId: _r, deviceId: _d, ...saleData } = data
 
         if (!saleData.id || prismaItems.length === 0) {
           throw new Error("Sale sync requires an id and at least one item")

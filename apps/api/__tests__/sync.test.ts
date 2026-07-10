@@ -247,6 +247,29 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     })
   })
 
+  it("strips registerId/deviceId from the sale payload — Sale has no such columns", async () => {
+    mockNewSale()
+    vi.mocked(prisma.sale.create).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{
+          id: "op-reg",
+          entity: "sale",
+          action: "create",
+          payload: { ...salePayload, id: "sale-reg", saleNumber: "S-REG", registerId: "REG-001", deviceId: "DEV-ABC" },
+        }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+    const createArgs = vi.mocked(prisma.sale.create).mock.calls[0][0] as any
+    expect(createArgs.data).not.toHaveProperty("registerId")
+    expect(createArgs.data).not.toHaveProperty("deviceId")
+  })
+
   it("does not double-decrement stock on duplicate sale push", async () => {
     mockNewSale()
     // Simulate existing sale (second push with same ID)
