@@ -465,11 +465,12 @@ export default function CustomersPage() {
                 return (
                   <article
                     key={customer.id}
-                    className={`rounded-lg border transition cursor-pointer ${
-                      active
-                        ? "border-emerald-300 bg-emerald-50"
-                        : "border-zinc-200 bg-white hover:border-zinc-300"
-                    }`}
+                    role="button"
+                    aria-pressed={active}
+                    className="rounded-lg border transition cursor-pointer"
+                    style={active
+                      ? { borderColor: "var(--brand-border)", background: "var(--brand-soft)", boxShadow: "inset 3px 0 0 var(--brand)" }
+                      : { borderColor: "var(--border)", background: "var(--surface)" }}
                     onClick={() => {
                       setSelectedCustomerId(customer.id)
                       setActivePanel((p) => p === "Pay debt" ? "Pay debt" : "Ledger")
@@ -492,10 +493,10 @@ export default function CustomersPage() {
                             <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>LIMIT</span>
                           )}
                           {customer.sellAtCost && (
-                            <span className="rounded px-1 py-0.5 text-[9px] font-bold uppercase shrink-0" style={{ background: "rgba(214,166,58,0.12)", color: "#D4A017" }}>COST</span>
+                            <span className="rounded px-1 py-0.5 text-[9px] font-bold uppercase shrink-0" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>COST</span>
                           )}
                           {customer.isWholesale && (
-                            <span className="rounded px-1 py-0.5 text-[9px] font-bold uppercase shrink-0" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>WS</span>
+                            <span className="rounded border px-1 py-0.5 text-[9px] font-bold uppercase shrink-0" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>WS</span>
                           )}
                         </div>
                         <span className="shrink-0 text-[15px] font-black tabular-nums" style={{ color: customer.balance > 0 ? "var(--rose-text)" : "var(--text)" }}>
@@ -519,96 +520,12 @@ export default function CustomersPage() {
                         <div className="mt-1.5 h-1 w-full rounded-full" style={{ background: "var(--surface-3)" }}>
                           <div className="h-1 rounded-full transition-all" style={{
                             width: `${Math.min(100, (customer.balance / customer.creditLimit) * 100)}%`,
-                            background: customer.overLimit ? "var(--rose)" : customer.balance > customer.creditLimit * 0.8 ? "var(--amber)" : "var(--brand)",
+                            background: customer.overLimit ? "var(--danger)" : customer.balance > customer.creditLimit * 0.8 ? "var(--warning)" : "var(--success)",
                           }} />
                         </div>
                       )}
                     </div>
 
-                    <div className="flex gap-1 px-3 pb-2.5">
-                      {customer.mobile && (
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            openWhatsApp(customer.mobile, debtReminderMessage({
-                              storeName: getSettings().storeName,
-                              customerName: customer.name,
-                              balance: customer.balance,
-                              oldestDays: customer.oldestUnpaidDays,
-                            }))
-                          }}
-                          className="flex h-7 flex-1 items-center justify-center gap-1 rounded-lg border text-[10px] font-bold transition"
-                          style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
-                        >
-                          <MessageCircle size={11} /> WhatsApp
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={(event) => { event.stopPropagation(); openEdit(customer) }}
-                        className="flex h-7 flex-1 items-center justify-center gap-1 rounded-lg border text-[10px] font-bold transition"
-                        style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
-                      >
-                        <Pencil size={11} /> Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          if (customer.archived) { restoreCustomer(customer.id); showToast(`${customer.name} restored.`) }
-                          else { archiveCustomer(customer.id); showToast(`${customer.name} archived.`) }
-                          refreshLedger()
-                        }}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border text-[10px] font-bold transition"
-                        style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
-                        title={customer.archived ? "Restore" : "Archive"}
-                      >
-                        {customer.archived ? "↩" : "📦"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          const text = buildCustomerStatement(customer.id, getSettings().storeName)
-                          const blob = new Blob([text], { type: "text/plain" })
-                          const url = URL.createObjectURL(blob)
-                          const a = document.createElement("a")
-                          a.href = url
-                          a.download = `statement-${customer.name.replace(/\s+/g, "-")}.txt`
-                          a.click()
-                          URL.revokeObjectURL(url)
-                        }}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border text-[10px] font-bold transition"
-                        style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
-                        title="Download statement"
-                      >
-                        <Download size={11} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          const text = buildCustomerStatement(customer.id, getSettings().storeName)
-                          const w = window.open("", "_blank", "width=420,height=600")
-                          if (w) { w.document.write(`<html><head><title>${customer.name}</title><style>body{font-family:monospace;white-space:pre;padding:20px;font-size:12px}</style></head><body>${text.replace(/\n/g,"<br>")}</body></html>`); w.document.close(); w.focus(); setTimeout(() => w.print(), 250) }
-                        }}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border text-[10px] font-bold transition"
-                        style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
-                        title="Print statement"
-                      >
-                        <Printer size={11} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(event) => { event.stopPropagation(); setDeleteCustomerId(customer.id) }}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border text-[10px] font-bold transition"
-                        style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
-                        title="Delete"
-                      >
-                        <X size={11} />
-                      </button>
-                    </div>
                   </article>
                 )
               })}
@@ -749,7 +666,7 @@ export default function CustomersPage() {
                               <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>LIMIT</span>
                             )}
                             {selectedCustomer.sellAtCost && (
-                              <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "rgba(214,166,58,0.12)", color: "#D4A017" }}>COST</span>
+                              <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>COST</span>
                             )}
                             {selectedCustomer.isWholesale && (
                               <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>WS</span>
@@ -772,31 +689,48 @@ export default function CustomersPage() {
                         {selectedCustomer.mobile && (
                           <button type="button" onClick={(e) => { e.stopPropagation(); openWhatsApp(selectedCustomer.mobile, debtReminderMessage({ storeName: getSettings().storeName, customerName: selectedCustomer.name, balance: selectedCustomer.balance, oldestDays: selectedCustomer.oldestUnpaidDays })) }}
                             className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                            style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}>
-                            <MessageCircle size={11} /> WhatsApp
+                            style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
+                            <MessageCircle size={11} style={{ color: "#25D366" }} /> WhatsApp
                           </button>
                         )}
                         {selectedCustomer.mobile && (
                           <a href={`tel:${selectedCustomer.mobile}`} onClick={e => e.stopPropagation()}
                             className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                            style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}>
+                            style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
                             <Phone size={11} /> Call
                           </a>
                         )}
                         <button type="button" onClick={() => openEdit(selectedCustomer)}
                           className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                          style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}>
+                          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
                           <Pencil size={11} /> Edit
                         </button>
                         <button type="button" onClick={() => { const text = buildCustomerStatement(selectedCustomer.id, getSettings().storeName); const blob = new Blob([text], { type: "text/plain" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `statement-${selectedCustomer.name.replace(/\s+/g, "-")}.txt`; a.click(); URL.revokeObjectURL(url) }}
                           className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                          style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}>
+                          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
                           <Download size={11} /> Statement
                         </button>
                         <button type="button" onClick={() => { const text = buildCustomerStatement(selectedCustomer.id, getSettings().storeName); const w = window.open("", "_blank", "width=420,height=600"); if (w) { w.document.write(`<html><head><title>${selectedCustomer.name}</title><style>body{font-family:monospace;white-space:pre;padding:20px;font-size:12px}</style></head><body>${text.replace(/\n/g,"<br>")}</body></html>`); w.document.close(); w.focus(); setTimeout(() => w.print(), 250) } }}
                           className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                          style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}>
+                          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
                           <Printer size={11} /> Print
+                        </button>
+                        <button type="button"
+                          onClick={() => {
+                            if (selectedCustomer.archived) { restoreCustomer(selectedCustomer.id); showToast(`${selectedCustomer.name} restored.`) }
+                            else { archiveCustomer(selectedCustomer.id); showToast(`${selectedCustomer.name} archived.`) }
+                            refreshLedger()
+                          }}
+                          className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
+                          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
+                          {selectedCustomer.archived ? "Restore" : "Archive"}
+                        </button>
+                        <button type="button"
+                          onClick={() => setDeleteCustomerId(selectedCustomer.id)}
+                          aria-label={`Delete ${selectedCustomer.name}`}
+                          className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
+                          style={{ background: "var(--danger-soft)", borderColor: "var(--danger)", color: "var(--danger-text)" }}>
+                          <X size={11} /> Delete
                         </button>
                       </div>
                     </div>
@@ -814,7 +748,7 @@ export default function CustomersPage() {
                             <>
                               <div className="flex h-5 w-full overflow-hidden rounded-md" style={{ background: "var(--surface-3)" }}>
                                 {current > 0 && <div style={{ width: `${pct(current)}%`, background: "var(--success)" }} title={`Current: ${fmt(current)}`} />}
-                                {days30 > 0 && <div style={{ width: `${pct(days30)}%`, background: "#eab308" }} title={`30d: ${fmt(days30)}`} />}
+                                {days30 > 0 && <div style={{ width: `${pct(days30)}%`, background: "var(--warning)" }} title={`30d: ${fmt(days30)}`} />}
                                 {days60 > 0 && <div style={{ width: `${pct(days60)}%`, background: "#f97316" }} title={`60d: ${fmt(days60)}`} />}
                                 {days90 > 0 && <div style={{ width: `${pct(days90)}%`, background: "var(--rose)" }} title={`90d+: ${fmt(days90)}`} />}
                               </div>
