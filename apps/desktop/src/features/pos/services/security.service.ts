@@ -415,7 +415,6 @@ export async function unlockWithPin(pin: string) {
             apiUser.lastVerifiedPinVersion = serverPinVersion
             apiUser.pinChanged = true
             writeCollection(USERS_KEY, users)
-            console.log("[unlockWithPin] API verified, SHA-256 cached for", apiUser.name)
             apiVerified = true
           } else {
             // User exists on server but not cached locally yet —
@@ -436,7 +435,6 @@ export async function unlockWithPin(pin: string) {
             writeCollection(USERS_KEY, users)
             apiUser = newUser
             apiVerified = true
-            console.log("[unlockWithPin] API verified, created local cache for", newUser.name)
           }
         }
         // If we got 200 but no user.id, still consider the server
@@ -491,7 +489,7 @@ export async function unlockWithPin(pin: string) {
     (staffUser) =>
       staffUser.active && (staffUser.pin === pinHash || staffUser.pin === cleanPin)
   )
-  console.log("[unlockWithPin] local matches:", matches.length, matches.map((u) => u.name))
+  console.log("[unlockWithPin] local matches:", matches.length, "users")
 
   // ── Check pinVersion: if PIN was reset on server since last online
   //     login, the old PIN is no longer valid even offline.
@@ -500,7 +498,7 @@ export async function unlockWithPin(pin: string) {
     const lv = u.lastVerifiedPinVersion ?? 1
     const ok = pv === lv
     if (!ok) {
-      console.log("[unlockWithPin] pinVersion mismatch for", u.name, "server:", pv, "lastVerified:", lv, "— denying offline login")
+      return false
     }
     return ok
   })

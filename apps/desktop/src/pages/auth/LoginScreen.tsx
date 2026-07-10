@@ -141,9 +141,7 @@ export default function LoginScreen() {
 
   async function handleUnlock() {
     try {
-      console.log("[LoginScreen] handleUnlock called, pin length:", pin.length)
       const user = await unlockWithPin(pin)
-      console.log("[LoginScreen] unlockWithPin result:", user?.name ?? "null")
       if (!user) {
         setPin("")
         setShake(true)
