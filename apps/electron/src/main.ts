@@ -52,7 +52,7 @@ const API_URL    = "http://localhost:3015"
 
 // Pre-baked Railway URL written into the hub's .env so the cloud bridge knows
 // where to sync. Tenant ID + per-tenant key are entered later in Settings → Cloud.
-const CLOUD_API_URL = process.env.LBPOS_CLOUD_URL || "https://lebanon-pos-production.up.railway.app"
+const CLOUD_API_URL = process.env.LBPOS_CLOUD_URL || "https://pos.titan-suite.net"
 const HEALTH_URL = `${API_URL}/api/health`
 const ENV_PATH   = path.join(USER_DATA, ".env")
 const PG_DATA    = path.join(USER_DATA, "pgdata")

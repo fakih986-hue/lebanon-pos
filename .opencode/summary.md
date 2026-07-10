@@ -13,7 +13,7 @@
 - **Phase 1 & 2** — Security PIN hashing, dead code cleanup, strict TypeScript, ErrorBoundary, loading states, tests, ConfirmDialog, delete/void functions, session auto-lock, page decomposition, printing, form validation, IndexedDB migration.
 - **API Backend** — Express 5 + TypeScript at `apps/api/`. Full Prisma schema (22 models). JWT auth, `POST /api/sync/push`, `GET /api/sync/pull`. Dockerfile builds and deploys to Railway.
 - **Sync** — `sync.service.ts` with `setupBackgroundSync()` (30s push / 120s pull). Dual-write to IndexedDB + localStorage. All entity handlers implemented server-side.
-- **Railway deployed** — API live at `https://lebanon-pos-production.up.railway.app`. PostgreSQL plugin active. Health check at `/api/health` returns `{"status":"ok"}`. Sync working between desktop and cloud.
+- **Railway deployed** — API live at `https://pos.titan-suite.net`. PostgreSQL plugin active. Health check at `/api/health` returns `{"status":"ok"}`. Sync working between desktop and cloud.
 - **Dockerfile fixed** — Uses `npm install` (not pnpm). `CMD node dist/index.js`. Prisma client generated at build time.
 - **Migrations committed** to git — `prisma/migrations/` tracked. `prisma migrate deploy` runs on startup via `setup.ts`.
 - **`.js` extensions** added to all relative imports in source (Node16 moduleResolution requires them for ESM).
@@ -51,7 +51,7 @@
 2. Continue polish on any remaining UI inconsistencies.
 
 ## Critical Context
-- API URL: `https://lebanon-pos-production.up.railway.app`
+- API URL: `https://pos.titan-suite.net`
 - Desktop dev server: `http://localhost:5174`
 - Vite 7.3.3 + `@vitejs/plugin-react@4` (compatible pair, avoids rolldown bug).
 - `setup.ts` runs `prisma migrate deploy` then `tsx prisma/seed.ts` before starting Express app.

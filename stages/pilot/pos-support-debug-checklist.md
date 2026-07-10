@@ -113,7 +113,7 @@ railway service logs -s lebanon-pos
 railway service redeploy -s lebanon-pos -y
 
 # Check if Railway API is live
-curl https://lebanon-pos-production.up.railway.app/api/setup/diagnostics
+curl https://pos.titan-suite.net/api/setup/diagnostics
 ```
 
 ---

@@ -12,7 +12,7 @@ import { contextBridge, ipcRenderer } from "electron"
 contextBridge.exposeInMainWorld("__LBPOS_API_URL__", "http://localhost:3015")
 contextBridge.exposeInMainWorld(
   "__LBPOS_CLOUD_URL__",
-  process.env.CLOUD_API_URL || "https://lebanon-pos-production.up.railway.app"
+  process.env.CLOUD_API_URL || "https://pos.titan-suite.net"
 )
 
 contextBridge.exposeInMainWorld("electronAPI", {

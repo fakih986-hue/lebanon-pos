@@ -74,7 +74,7 @@ type SettingsWorkspace = "Business" | "Cloud sync" | "Security" | "Backup" | "De
 // Pre-baked Railway URL (shown read-only in Cloud sync). Overridable for dev.
 const CLOUD_URL_DISPLAY =
   (typeof window !== "undefined" && (window as { __LBPOS_CLOUD_URL__?: string }).__LBPOS_CLOUD_URL__) ||
-  "https://lebanon-pos-production.up.railway.app"
+  "https://pos.titan-suite.net"
 
 function normalizeNumber(value: string) {
   const parsedValue = Number(value)

@@ -78,7 +78,7 @@ export default function LoginScreen() {
   // ── Connect-to-store (disaster recovery on a new/empty device) ──
   const [connectOpen, setConnectOpen] = useState(false)
   const [cMode, setCMode] = useState<ConnectionMode>(getConnectionMode())
-  const [cApiUrl, setCApiUrl] = useState(getApiUrl() ?? "https://lebanon-pos-production.up.railway.app")
+  const [cApiUrl, setCApiUrl] = useState(getApiUrl() ?? "https://pos.titan-suite.net")
   const [cSubdomain, setCSubdomain] = useState("")
   const [cPin, setCPin] = useState("")
   const [cPairCode, setCPairCode] = useState("")

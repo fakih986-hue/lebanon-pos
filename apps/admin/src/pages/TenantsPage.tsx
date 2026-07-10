@@ -148,7 +148,7 @@ export function TenantsPage() {
           <div className="max-w-xs mx-auto space-y-3 mb-6">
             <div className="bg-slate-50 dark:bg-white/[0.04] rounded-xl p-4 border border-slate-200 dark:border-white/[0.06]">
               <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: "var(--text-muted)" }}>{t("admin.server_url")}</p>
-              <p className="text-sm font-bold font-mono" style={{ color: "var(--text-primary)" }}>https://lebanon-pos-production.up.railway.app</p>
+              <p className="text-sm font-bold font-mono" style={{ color: "var(--text-primary)" }}>https://pos.titan-suite.net</p>
             </div>
             <div className="bg-slate-50 dark:bg-white/[0.04] rounded-xl p-4 border border-slate-200 dark:border-white/[0.06] flex items-center justify-between gap-2">
               <div className="text-start">

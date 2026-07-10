@@ -39,7 +39,7 @@ npx prisma db seed   # creates 3 tenants: fakih, newstore, bendo2
 
 ## 3. Admin Login / Setup
 
-1. Open `https://lebanon-pos-production.up.railway.app/admin/login`
+1. Open `https://pos.titan-suite.net/admin/login`
 2. Log in with admin credentials (password set in `ADMIN_PASSWORD_HASH`)
 3. Enter your tenant subdomain (e.g. `bendo2`) and staff PIN
 4. The admin dashboard shows tenant management, products, customers, sales, reports
