@@ -48,12 +48,18 @@ const PG_BIN_DIR = IS_PACKAGED
 
 const ICON_PNG   = path.join(__dirname, "../assets/icon.png")
 const ICON_ICO   = path.join(__dirname, "../assets/icon.ico")
+const ICON_EMBED_PNG = path.join(__dirname, "../assets/icon-embed.png")
 
 // The real Titan shield mark, inlined as a data URI for the loading/activation
 // windows — those load via `data:text/html` URLs, where relative/file:// image
 // paths aren't reliably reachable, so the logo has to travel with the HTML.
-const TITAN_MARK_DATA_URI = fs.existsSync(ICON_PNG)
-  ? `data:image/png;base64,${fs.readFileSync(ICON_PNG).toString("base64")}`
+// IMPORTANT: use the small icon-embed.png (256², ~85KB), not the full 1024²
+// icon.png (~1.7MB → ~2.3MB base64, further inflated by encodeURIComponent) —
+// embedding the full-size icon here made Chromium visibly stall parsing the
+// multi-megabyte data: URL before it could paint anything, showing as a
+// several-second black window on every first-run activation screen.
+const TITAN_MARK_DATA_URI = fs.existsSync(ICON_EMBED_PNG)
+  ? `data:image/png;base64,${fs.readFileSync(ICON_EMBED_PNG).toString("base64")}`
   : ""
 const API_URL    = "http://localhost:3015"
 

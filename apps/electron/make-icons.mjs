@@ -13,6 +13,13 @@
  *
  * Produces:  assets/icon.png  (1024²)  and  assets/icon.ico  (multi-size)
  * Also copies a 512² PNG to the desktop web app:  apps/desktop/public/titan-logo.png
+ * Also produces assets/icon-embed.png (256², transparent) — a small copy for
+ * inlining as a base64 data URI in the loading/activation windows. Those load
+ * via `data:text/html` URLs, so the logo has to travel inside the HTML string
+ * itself; embedding the full 1024² icon.png (1.7MB → ~2.3MB base64, further
+ * inflated by encodeURIComponent) made Chromium visibly stall on parsing the
+ * URL before it could paint anything — a multi-second black-window delay on
+ * every first-run activation screen. Use this small copy for that instead.
  */
 import { fileURLToPath } from "node:url"
 import path from "node:path"
@@ -48,6 +55,11 @@ const pngBuffers = await Promise.all(
 const icoBuffer = await pngToIco(pngBuffers)
 fs.writeFileSync(path.join(assets, "icon.ico"), icoBuffer)
 console.log("✓ assets/icon.ico (" + sizes.join(", ") + ")")
+
+// Small transparent copy for inlining as a base64 data URI (loading/activation windows)
+await sharp(SRC).resize(256, 256, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  .png({ compressionLevel: 9 }).toFile(path.join(assets, "icon-embed.png"))
+console.log("✓ assets/icon-embed.png (256², transparent, for data-URI embedding)")
 
 // Web app logo used by the in-app TitanLogo component
 if (fs.existsSync(publicDir)) {
