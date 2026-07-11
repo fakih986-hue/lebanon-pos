@@ -91,6 +91,7 @@ function getDaysUntil(dateValue: string) {
 
 export function getReorderSuggestions(products: Product[]) {
   return products
+    .filter((product) => !product.archived)
     .map<ReorderSuggestion>((product) => {
       const soldLast30Days = getSalesVelocity(product.id)
       const averageDailySales = soldLast30Days / LOOKBACK_DAYS
@@ -214,7 +215,13 @@ export function getExpiryAlerts(products: Product[], horizonDays = 30) {
 }
 
 export function getDeadStockItems(products: Product[], days = 60) {
+  // Archived products are already decided against — flagging them as "dead
+  // stock" (a signal to promote/discount to move it) doesn't apply once
+  // you've stopped selling something on purpose. Same reasoning as
+  // getReorderSuggestions; unlike getExpiryAlerts, where surfacing expiring
+  // archived stock is still useful (you still need to know to dispose of it).
   return products
+    .filter((product) => !product.archived)
     .map<DeadStockItem>((product) => ({
       product,
       soldLast60Days: getSoldSince(product.id, days),

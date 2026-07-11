@@ -363,8 +363,14 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     (suggestion) => suggestion.suggestedQuantity > 0
   )
 
-  const totalStock = products.reduce((sum, product) => sum + product.stock, 0)
-  const totalValue = products.reduce(
+  // Archived products are no longer for sale — excluding them here matches
+  // getLowStockProducts/getNoBarcodeProducts/getReorderSuggestions, which
+  // already filter archived internally. Without this, an archived product's
+  // stock/value kept inflating the "Total Stock"/"Total Value" KPI cards
+  // even though it's excluded from the Active tab and count right below.
+  const activeProducts = products.filter((product) => !product.archived)
+  const totalStock = activeProducts.reduce((sum, product) => sum + product.stock, 0)
+  const totalValue = activeProducts.reduce(
     (sum, product) => sum + product.stock * product.cost,
     0
   )
@@ -801,7 +807,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       </div>
 
       <KpiCards
-        totalProducts={products.length}
+        totalProducts={activeProducts.length}
         totalStock={totalStock}
         totalValue={totalValue}
         urgentReorderCount={urgentReorders.length}

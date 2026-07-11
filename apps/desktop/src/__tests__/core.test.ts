@@ -421,6 +421,34 @@ describe("product.service — duplicate barcode detection", () => {
   })
 })
 
+describe("stock.service — archived products excluded from reorder/dead-stock suggestions", () => {
+  it("getReorderSuggestions never suggests reordering an archived product", async () => {
+    window.localStorage.clear()
+    const { getReorderSuggestions } = await import("../features/pos/services/stock.service")
+    const products = [
+      { id: 1, name: "Active Low Stock", price: 5, cost: 3, stock: 1, reorderPoint: 10, category: "Test", archived: false },
+      { id: 2, name: "Archived Low Stock", price: 5, cost: 3, stock: 0, reorderPoint: 10, category: "Test", archived: true },
+    ] as any
+    const suggestions = getReorderSuggestions(products)
+    const ids = suggestions.map((s) => s.product.id)
+    expect(ids).toContain(1)
+    expect(ids).not.toContain(2) // archived — no longer for sale, shouldn't be suggested for reorder
+  })
+
+  it("getDeadStockItems never flags an archived product as needing a promo push", async () => {
+    window.localStorage.clear()
+    const { getDeadStockItems } = await import("../features/pos/services/stock.service")
+    const products = [
+      { id: 1, name: "Active Dead Stock", price: 5, cost: 3, stock: 20, category: "Test", archived: false },
+      { id: 2, name: "Archived Dead Stock", price: 5, cost: 3, stock: 20, category: "Test", archived: true },
+    ] as any
+    const items = getDeadStockItems(products)
+    const ids = items.map((i) => i.product.id)
+    expect(ids).toContain(1)
+    expect(ids).not.toContain(2) // archived — not actively merchandised, shouldn't be suggested for a promo
+  })
+})
+
 describe("customer.service — license enforcement", () => {
   it("addCustomer respects the license-suspension guard, like every other customer/debt mutation", async () => {
     window.localStorage.clear()
