@@ -2,6 +2,7 @@
 
 **Date:** 2026-07-11
 **Update (same day, follow-up pass):** user ran a sequence fix directly via Railway's dashboard Query tool. Re-verified below (Section 1b) — **the symptom is unchanged**. Product creation still fails identically.
+**Update 2 (same day, root cause found):** the sequence was never the actual problem. Root cause identified and fixed in code — see Section 1c.
 
 ---
 
@@ -68,6 +69,33 @@ Reproduced with a fresh, timestamp-random barcode as the final check of this cle
 - The `last_value` you saw *after* running `setval(...)`
 
 With those four numbers I can tell you precisely whether the fix was applied correctly, and if it was, that would point strongly toward possibility #3 above (a real code-level bug, not a sequence drift) — which would justify revisiting the product-creation code path, per your instruction to only touch code if creation still fails after the fix.
+
+---
+
+## 1c. Root cause found: client sends its own local id into the cloud `create` payload
+
+**Confirmed by code inspection, per your instruction — not guessed:**
+
+- [`apps/desktop/src/features/pos/services/product.service.ts:427`](../../apps/desktop/src/features/pos/services/product.service.ts#L427) — `createProduct()` computes `const nextId = currentProducts.reduce((max, p) => Math.max(max, p.id), 0) + 1`, a purely **local, hub-scoped** id derived from the hub's own product list. This id is assigned to the new product object, and that whole object (including this local `id`) is queued via `enqueueSyncOperation({ entity: "product", action: "create", payload: product })` (line 449).
+- [`apps/api/src/routes/sync.ts`](../../apps/api/src/routes/sync.ts) — before this fix, the `case "product"` → `action === "create"` branch did `const data = { ...item, tenantId }` and passed `data` straight into `db.product.upsert({ create: data })` / `db.product.create({ data })`, **including the client's local `id` field verbatim.**
+
+**Why this explains both symptoms:**
+- An explicit `id` in a Postgres `INSERT` is written as-is and **never calls `nextval()`** on the sequence — so it can collide with any existing row that happens to already own that id, independent of the sequence's state.
+- This is also *why your sequence fix had no effect*: resetting the sequence only changes what id gets assigned when no explicit id is given. The client was always supplying its own id, so the sequence was never consulted in the first place.
+
+**Fix applied (code only, no schema/pricing/tax/stock changes):** in `apps/api/src/routes/sync.ts`, the `create` action for `entity: "product"` now destructures the local `id` out of the client payload and discards it before building the row to insert, so the cloud database's own sequence always assigns the real id:
+```ts
+const { id: _localId, ...rest } = item as Record<string, unknown>
+const data = { ...rest, tenantId } as Record<string, unknown>
+```
+The `update`/`delete` actions were untouched — they legitimately need the id to target an existing row and don't create new ones.
+
+**Verification performed:**
+- `npx tsc --noEmit` in `apps/api` — clean, no type errors.
+- `npx vitest run __tests__/sync.test.ts` — **35/35 passed**, including the existing product create/update/archive coverage.
+- **Not yet re-tested against the live Railway API** — the fix hasn't been deployed yet, so pushing a create request at the current production deployment would still hit the old (buggy) code and isn't a meaningful test. Live verification requires a deploy first.
+
+**Not done, pending your decision:** push to GitHub / deploy to Railway. This report's earlier instruction set said not to deploy; this fix directly addresses the one thing blocking product creation in production, so deploying it is the natural next step, but I'm holding off until you confirm.
 
 ---
 

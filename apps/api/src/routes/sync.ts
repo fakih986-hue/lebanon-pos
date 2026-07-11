@@ -596,7 +596,15 @@ async function processOperation(
       } else if (action === "create") {
         const items = Array.isArray(payload) ? payload : [payload]
         for (const item of items) {
-          const data = { ...item, tenantId } as Record<string, unknown>
+          // The client assigns its own local, hub-scoped id (used to key the
+          // product locally before it's ever synced). That id is meaningless
+          // to the cloud DB and must never be forwarded on create — the
+          // cloud's own sequence has to own new ids, or an explicit id here
+          // collides with an unrelated existing row (and, since an explicit
+          // id in an INSERT never calls nextval(), no sequence fix can
+          // prevent that collision).
+          const { id: _localId, ...rest } = item as Record<string, unknown>
+          const data = { ...rest, tenantId } as Record<string, unknown>
           const barcode = data.barcode as string
           if (barcode) {
             await db.product.upsert({
