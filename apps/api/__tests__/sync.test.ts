@@ -11,6 +11,7 @@ vi.mock("../src/lib/prisma", () => {
     create: vi.fn(),
     upsert: vi.fn().mockResolvedValue({}),
     update: vi.fn(),
+    updateMany: vi.fn().mockResolvedValue({ count: 1 }),
     deleteMany: vi.fn(),
     count: vi.fn(),
   })
@@ -345,8 +346,14 @@ describe("POST /api/sync/push — sale stock integrity", () => {
   it.each([
     ["customer", "customer"],
     ["supplier", "supplier"],
-  ])("accepts archived on %s payload — %s model now has that column", async (entity, model) => {
-    vi.mocked((prisma as any)[model].upsert).mockResolvedValue({})
+  ])("accepts a partial archived-only payload on %s update — %s model now has that column", async (entity, model) => {
+    // Archive/restore send only {id, archived} — a combined upsert requires
+    // the full create+update shape even though only update runs, so this
+    // partial payload always threw "Argument name is missing" (same defect
+    // class as the earlier product fix; found live against production
+    // during the 1.0.20 rollout). Update now goes through updateMany, a real
+    // partial patch, not upsert.
+    vi.mocked((prisma as any)[model].updateMany).mockResolvedValue({ count: 1 })
 
     const res = await request("POST", "/api/sync/push", {
       token,
@@ -362,8 +369,9 @@ describe("POST /api/sync/push — sale stock integrity", () => {
 
     expect(res.status).toBe(200)
     expect(res.body.results[0].status).toBe("ok")
-    const upsertArgs = vi.mocked((prisma as any)[model].upsert).mock.calls.at(-1)?.[0] as any
-    expect(upsertArgs.update.archived).toBe(true)
+    const updateArgs = vi.mocked((prisma as any)[model].updateMany).mock.calls.at(-1)?.[0] as any
+    expect(updateArgs.data.archived).toBe(true)
+    expect(updateArgs.data).not.toHaveProperty("id") // id is the where-key, not part of the patch
   })
 
   it("does not double-decrement stock on duplicate sale push", async () => {

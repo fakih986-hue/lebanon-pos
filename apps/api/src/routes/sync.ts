@@ -822,24 +822,42 @@ async function processOperation(
       break
     }
     case "customer": {
-      if (action === "create" || action === "update") {
+      if (action === "create") {
         await db.customer.upsert({
           where: { id: payload?.id as string },
           create: { ...payload, tenantId } as any,
           update: { ...payload } as any,
         })
+      } else if (action === "update") {
+        // Partial patches (e.g. archiveCustomer/restoreCustomer send only
+        // {id, archived}) can't go through upsert — Prisma validates the
+        // create AND update shapes up front even though only update runs,
+        // so a partial payload always threw "Argument name is missing".
+        // Same defect class already fixed for "product"; found here via a
+        // live round-trip check against production during the 1.0.20
+        // rollout, not caught by the earlier sync-stress harness because
+        // its customer/supplier tests didn't happen to exercise archive.
+        const { id, ...patch } = (payload ?? {}) as Record<string, unknown>
+        if (id !== undefined) {
+          await db.customer.updateMany({ where: { tenantId, id: id as string }, data: patch as any })
+        }
       } else if (action === "delete") {
         await db.customer.deleteMany({ where: { tenantId, id: payload?.id as string } })
       }
       break
     }
     case "supplier": {
-      if (action === "create" || action === "update") {
+      if (action === "create") {
         await db.supplier.upsert({
           where: { id: payload?.id as string },
           create: { ...payload, tenantId } as any,
           update: { ...payload } as any,
         })
+      } else if (action === "update") {
+        const { id, ...patch } = (payload ?? {}) as Record<string, unknown>
+        if (id !== undefined) {
+          await db.supplier.updateMany({ where: { tenantId, id: id as string }, data: patch as any })
+        }
       } else if (action === "delete") {
         await db.supplier.deleteMany({ where: { tenantId, id: payload?.id as string } })
       }
