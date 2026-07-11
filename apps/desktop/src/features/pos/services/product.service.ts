@@ -723,20 +723,19 @@ export function mergeCategories(from: string, to: string): CleanupResult {
 /** Detect products with duplicate barcodes */
 export function detectDuplicateBarcodes() {
   const products = getProductsSync()
-  const seen = new Map<string, number>()
-  const duplicates: Array<{ id: number; name: string; barcode: string }> = []
+  const groups = new Map<string, Array<{ id: number; name: string; barcode: string }>>()
   for (const p of products) {
     if (!p.barcode) continue
-    const existing = seen.get(p.barcode)
-    if (existing !== undefined) {
-      const first = products[existing]
-      if (first) duplicates.push({ id: first.id, name: first.name, barcode: p.barcode })
-      duplicates.push({ id: p.id, name: p.name, barcode: p.barcode })
-    } else {
-      seen.set(p.barcode, products.indexOf(p))
-    }
+    const group = groups.get(p.barcode)
+    if (group) group.push({ id: p.id, name: p.name, barcode: p.barcode })
+    else groups.set(p.barcode, [{ id: p.id, name: p.name, barcode: p.barcode }])
   }
-  return duplicates
+  // Each product in a duplicated barcode group is listed exactly once —
+  // previously the first product in a 3+-way duplicate was re-pushed on every
+  // additional match (once per subsequent duplicate found), inflating the
+  // displayed "Dupes (N)" count without affecting the actual highlight/filter
+  // (which used a Set of barcodes, naturally immune to the duplication).
+  return [...groups.values()].filter((group) => group.length > 1).flat()
 }
 
 /** Detect products missing required fields */

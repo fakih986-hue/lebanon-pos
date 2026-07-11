@@ -402,6 +402,25 @@ describe("supplier.service — types and safety", () => {
   })
 })
 
+describe("product.service — duplicate barcode detection", () => {
+  it("lists each product in a 3-way duplicate barcode group exactly once, not inflated", async () => {
+    window.localStorage.clear()
+    window.localStorage.setItem("lebanonpos.products.v1", JSON.stringify([
+      { id: 1, name: "Dup A", price: 1, cost: 1, stock: 1, barcode: "DUP-1", category: "Test" },
+      { id: 2, name: "Dup B", price: 1, cost: 1, stock: 1, barcode: "DUP-1", category: "Test" },
+      { id: 3, name: "Dup C", price: 1, cost: 1, stock: 1, barcode: "DUP-1", category: "Test" },
+      { id: 4, name: "Unique", price: 1, cost: 1, stock: 1, barcode: "UNIQUE-1", category: "Test" },
+    ]))
+    const { detectDuplicateBarcodes } = await import("../features/pos/services/product.service")
+    const dupes = detectDuplicateBarcodes()
+    // Previously: the first match (id 1) was re-pushed on every subsequent
+    // duplicate found (once for B, once for C), making this list length 4
+    // instead of 3 — inflating the "Dupes (N)" counter past the real count.
+    expect(dupes.length).toBe(3)
+    expect(dupes.map((d) => d.id).sort()).toEqual([1, 2, 3])
+  })
+})
+
 describe("customer.service — license enforcement", () => {
   it("addCustomer respects the license-suspension guard, like every other customer/debt mutation", async () => {
     window.localStorage.clear()
