@@ -1,6 +1,7 @@
 # Titan POS 1.0.20 — Rollout Cleanup Report
 
 **Date:** 2026-07-11
+**Update (same day, follow-up pass):** user ran a sequence fix directly via Railway's dashboard Query tool. Re-verified below (Section 1b) — **the symptom is unchanged**. Product creation still fails identically.
 
 ---
 
@@ -38,6 +39,38 @@ Reproduced with a fresh, timestamp-random barcode as the final check of this cle
 
 ---
 
+## 1b. Follow-up — after the user ran the sequence fix directly via Railway's dashboard
+
+**Current product state (confirmed via the app's own full-pull API, which does not filter archived products — so this is a complete count, not a partial view):**
+- Total products: **21**
+- ID range: **52 to 72** (contiguous, no gaps, no hidden higher-numbered archived products)
+
+**Re-tested product creation twice, through the normal public API, each with a brand-new timestamp-random barcode:**
+```json
+{
+  "results": [{
+    "status": "error",
+    "error": "Invalid `prisma.product.upsert()` invocation:\n\nUnique constraint failed on the fields: (`id`)"
+  }]
+}
+```
+**Result: FAIL, identical to before the fix.** Ran twice to rule out a one-off caching/connection-pool fluke — both attempts failed the same way.
+
+**This means one of the following is true, and I can't distinguish which without seeing the exact values you got from the Query tool:**
+1. The `setval()` was run against a different sequence name than the one actually attached to `Product.id` (e.g., a typo, or Prisma names it differently than `Product_id_seq` in this schema).
+2. The `setval()` ran successfully but the value used for `MAX(id)` was computed against a different table/scope than production actually has (e.g., if it was accidentally run against a different environment).
+3. The diagnosis is incomplete — this may not purely be a `Product.id` sequence issue after all, and the "Unique constraint failed on the fields: (`id`)" error is masking something else (e.g., a different unique index also involving `id` in a composite way, or an issue specific to how this app's Prisma client resolves the upsert into raw SQL).
+
+**To make progress, it would help a lot if you could share (from the Railway Query tool, no need to re-run anything unless useful):**
+- The exact output of `SELECT pg_get_serial_sequence('"Product"', 'id');` (the real sequence name)
+- The `last_value` / `is_called` you saw on that sequence *before* your fix
+- The `MAX(id)` value you used
+- The `last_value` you saw *after* running `setval(...)`
+
+With those four numbers I can tell you precisely whether the fix was applied correctly, and if it was, that would point strongly toward possibility #3 above (a real code-level bug, not a sequence drift) — which would justify revisiting the product-creation code path, per your instruction to only touch code if creation still fails after the fix.
+
+---
+
 ## 2. Product API create test evidence
 
 Re-ran the exact same test as earlier in the rollout, through the normal public API (not raw DB), with a brand-new timestamp-random barcode:
@@ -52,6 +85,8 @@ Re-ran the exact same test as earlier in the rollout, through the normal public 
 ```
 
 **Result: FAIL (unchanged from before this cleanup pass)** — expected, since the underlying sequence was never actually touched (see Section 1).
+
+**Update:** re-ran this same test again after the user applied a sequence fix via Railway's dashboard Query tool. **Still FAIL, identical error.** See Section 1b for the full follow-up findings and open questions.
 
 ---
 
@@ -93,7 +128,8 @@ Re-ran the exact same test as earlier in the rollout, through the normal public 
 | Railway health | ✅ `{"status":"ok"}` |
 | Local hub health | ✅ `{"status":"ok"}` |
 | Sync queue clean | ✅ no failed/rejected items introduced by this pass |
-| Product create API test | ❌ FAIL (unchanged — see Section 1/2) |
+| Product create API test | ❌ FAIL — still failing identically even after user's sequence fix via Railway Query tool (see Section 1b) |
+| Product archive/delete of test product | N/A — no test product was ever successfully created to archive/delete |
 | Test cashier login (Railway) | ✅ PASS |
 | Test cashier reached local hub | ✅ PASS (via incremental pull; see Section 3 caveat about the separate full-pull endpoint) |
 | No `tenantId and apiKey are required` | ✅ confirmed — `discover` still returns a real key for `fakih` |
@@ -104,7 +140,7 @@ Re-ran the exact same test as earlier in the rollout, through the normal public 
 
 ## 6. Remaining limitations
 
-1. **Product ID sequence still behind `MAX(id)` on Railway — unfixed.** Product creation via the normal app flow will continue to fail until the sequence is corrected (see Section 1 for the exact SQL and the safest way to run it).
+1. **Product creation still fails even after the user ran the recommended sequence fix via Railway's dashboard Query tool.** Product ID range observed post-fix: 21 products, IDs 52–72, contiguous, no gaps. Two independent re-tests through the normal API both failed with the identical `Unique constraint failed on the fields: (id)` error. This means either the fix targeted the wrong sequence/table/environment, or the original diagnosis (pure sequence drift) was incomplete and there's a real code-level issue in the product upsert path. See Section 1b for the exact follow-up questions needed to tell which. **No code was changed** — per instructions, a code change is only warranted once the DB-side fix is confirmed to have been applied correctly and the symptom still persists.
 2. **Two orphaned old-test Postgres instances still running** on this machine (ports 5432/5433, ~390MB RAM) — could not be terminated due to an OS permission barrier; needs manual cleanup with elevated privileges if desired.
 3. **`/api/sync/pull/full/staff` appears inconsistent** with the regular incremental pull for the same tenant/entity — noticed as a side effect of testing the cashier sync, not investigated further, potentially worth a dedicated look later.
 4. Everything else confirmed clean and healthy — this rollout otherwise stands as complete and stable.
