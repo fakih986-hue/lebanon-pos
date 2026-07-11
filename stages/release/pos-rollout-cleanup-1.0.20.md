@@ -2,7 +2,8 @@
 
 **Date:** 2026-07-11
 **Update (same day, follow-up pass):** user ran a sequence fix directly via Railway's dashboard Query tool. Re-verified below (Section 1b) — **the symptom is unchanged**. Product creation still fails identically.
-**Update 2 (same day, root cause found):** the sequence was never the actual problem. Root cause identified and fixed in code — see Section 1c.
+**Update 2 (same day, code bug found and fixed):** a real code bug was found and fixed (client-forwarded id) — see Section 1c.
+**Update 3 (same day, deployed and re-tested):** the fix was pushed and deployed to Railway, confirmed running (commit `cd716e4`). Product creation still fails with the identical error even with the client-id bug fixed — see Section 1d. **The sequence itself is still behind `MAX(id)` in production; the earlier Query-tool fix did not take effect.**
 
 ---
 
@@ -95,7 +96,49 @@ The `update`/`delete` actions were untouched — they legitimately need the id t
 - `npx vitest run __tests__/sync.test.ts` — **35/35 passed**, including the existing product create/update/archive coverage.
 - **Not yet re-tested against the live Railway API** — the fix hasn't been deployed yet, so pushing a create request at the current production deployment would still hit the old (buggy) code and isn't a meaningful test. Live verification requires a deploy first.
 
-**Not done, pending your decision:** push to GitHub / deploy to Railway. This report's earlier instruction set said not to deploy; this fix directly addresses the one thing blocking product creation in production, so deploying it is the natural next step, but I'm holding off until you confirm.
+---
+
+## 1d. Deployed and re-tested — sequence is still the real blocker
+
+**Push:** `cd716e4` pushed to `origin/master` (`4a8ae68..cd716e4`).
+
+**Deploy:** Railway auto-deployed from the push. Confirmed via `railway status --json`: the active `lebanon-pos` service deployment's `commitHash` is `cd716e4362390f6ffec781334e47169151e1ad5c`, status `RUNNING`/`SUCCESS`, no manual redeploy needed.
+
+**Migrations:** none required and none run — this commit touches only `apps/api/src/routes/sync.ts`, no schema changes.
+
+**Railway health:** `GET /api/health` → `{"status":"ok"}`.
+
+**Product creation test — run twice against the live deployed fix:**
+1. Sent a create payload with a deliberately fake client-local `id: 999999` (reproducing the exact real-world bug scenario) → **still failed**, identical error.
+2. Sent a create payload with **no `id` field at all** → **still failed**, identical error:
+   ```json
+   { "status": "error", "error": "Unique constraint failed on the fields: (`id`)" }
+   ```
+
+**This is conclusive.** Since the deployed code now strips any client-supplied `id` before insert (confirmed running via commit hash match) and the payload with no `id` at all *still* fails the same way, the failure cannot be coming from the client anymore — it can only be Postgres's own `nextval()` producing a value that collides with an existing row. **The `Product_id_seq` sequence on Railway's production database is still behind `MAX(id)`.** The `setval()` you ran earlier via the Query tool did not take effect (wrong sequence name, wrong table/schema, or possibly run against a different database/branch than what `pos.titan-suite.net` actually points to).
+
+**Current product state, re-confirmed:** 21 products, ids 52–72, contiguous, no gaps — unchanged from before.
+
+**The client-id bug was real and is now fixed** (confirmed by code, tests, and this deploy) — it's a genuine defensive fix and should stay. But it was not, by itself, sufficient to unblock production, because the sequence problem is independent and still present.
+
+**To actually fix this now, please re-run in Railway's dashboard Query tool and share the exact output of each line:**
+```sql
+SELECT pg_get_serial_sequence('"Product"', 'id');
+-- copy the exact name this returns, then:
+SELECT last_value, is_called FROM "Product_id_seq";  -- use the real name from above if different
+SELECT MAX(id) FROM "Product";
+SELECT setval('"Product_id_seq"', (SELECT COALESCE(MAX(id), 0) FROM "Product"));  -- use the real name from above
+SELECT last_value FROM "Product_id_seq";  -- confirm it moved
+```
+With the real sequence name and before/after `last_value` in hand, I can confirm whether it actually took hold this time before you or I re-test product creation again.
+
+**Cleanup/archive of test product:** not applicable — no test product was ever successfully created, in this pass or any prior one, so there's nothing to archive or delete.
+
+**Sync queue:** clean — no operation succeeded to leave a stray record, and no other sync activity was introduced by this test.
+
+**No pricing/tax/stock logic changed:** confirmed — the entire diff for this pass is limited to destructuring `id` out of the create payload in `sync.ts`; see the diff in the commit `cd716e4` (10 lines changed, all inside the `product`/`create` branch, all comments + the one destructuring line).
+
+**Release manifest / GitHub release / installer:** none touched, none published, none rebuilt — this is a server-side-only fix, no desktop packaging required.
 
 ---
 
