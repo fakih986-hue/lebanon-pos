@@ -173,6 +173,8 @@ exports.Prisma.AppSettingsScalarFieldEnum = {
   usdToLbpRate: 'usdToLbpRate',
   receiptFooter: 'receiptFooter',
   lowStockThreshold: 'lowStockThreshold',
+  profitPercent1: 'profitPercent1',
+  profitPercent2: 'profitPercent2',
   deliveryFee: 'deliveryFee',
   whatsAppAdmin: 'whatsAppAdmin',
   whatsAppDriverEnabled: 'whatsAppDriverEnabled',
@@ -296,6 +298,7 @@ exports.Prisma.CustomerScalarFieldEnum = {
   isWholesale: 'isWholesale',
   sellAtCost: 'sellAtCost',
   notes: 'notes',
+  archived: 'archived',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -330,6 +333,7 @@ exports.Prisma.SupplierScalarFieldEnum = {
   contact: 'contact',
   address: 'address',
   notes: 'notes',
+  archived: 'archived',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -552,6 +556,7 @@ exports.Prisma.DailyCloseScalarFieldEnum = {
   cashOut: 'cashOut',
   note: 'note',
   closedBy: 'closedBy',
+  unsyncedCountAtClose: 'unsyncedCountAtClose',
   createdAt: 'createdAt'
 };
 

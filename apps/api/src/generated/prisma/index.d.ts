@@ -7771,6 +7771,8 @@ export namespace Prisma {
     vatRate: Decimal | null
     usdToLbpRate: Decimal | null
     lowStockThreshold: number | null
+    profitPercent1: Decimal | null
+    profitPercent2: Decimal | null
     deliveryFee: Decimal | null
     assignTimeout: number | null
   }
@@ -7779,6 +7781,8 @@ export namespace Prisma {
     vatRate: Decimal | null
     usdToLbpRate: Decimal | null
     lowStockThreshold: number | null
+    profitPercent1: Decimal | null
+    profitPercent2: Decimal | null
     deliveryFee: Decimal | null
     assignTimeout: number | null
   }
@@ -7794,6 +7798,8 @@ export namespace Prisma {
     usdToLbpRate: Decimal | null
     receiptFooter: string | null
     lowStockThreshold: number | null
+    profitPercent1: Decimal | null
+    profitPercent2: Decimal | null
     deliveryFee: Decimal | null
     whatsAppAdmin: string | null
     whatsAppDriverEnabled: boolean | null
@@ -7813,6 +7819,8 @@ export namespace Prisma {
     usdToLbpRate: Decimal | null
     receiptFooter: string | null
     lowStockThreshold: number | null
+    profitPercent1: Decimal | null
+    profitPercent2: Decimal | null
     deliveryFee: Decimal | null
     whatsAppAdmin: string | null
     whatsAppDriverEnabled: boolean | null
@@ -7832,6 +7840,8 @@ export namespace Prisma {
     usdToLbpRate: number
     receiptFooter: number
     lowStockThreshold: number
+    profitPercent1: number
+    profitPercent2: number
     deliveryFee: number
     whatsAppAdmin: number
     whatsAppDriverEnabled: number
@@ -7846,6 +7856,8 @@ export namespace Prisma {
     vatRate?: true
     usdToLbpRate?: true
     lowStockThreshold?: true
+    profitPercent1?: true
+    profitPercent2?: true
     deliveryFee?: true
     assignTimeout?: true
   }
@@ -7854,6 +7866,8 @@ export namespace Prisma {
     vatRate?: true
     usdToLbpRate?: true
     lowStockThreshold?: true
+    profitPercent1?: true
+    profitPercent2?: true
     deliveryFee?: true
     assignTimeout?: true
   }
@@ -7869,6 +7883,8 @@ export namespace Prisma {
     usdToLbpRate?: true
     receiptFooter?: true
     lowStockThreshold?: true
+    profitPercent1?: true
+    profitPercent2?: true
     deliveryFee?: true
     whatsAppAdmin?: true
     whatsAppDriverEnabled?: true
@@ -7888,6 +7904,8 @@ export namespace Prisma {
     usdToLbpRate?: true
     receiptFooter?: true
     lowStockThreshold?: true
+    profitPercent1?: true
+    profitPercent2?: true
     deliveryFee?: true
     whatsAppAdmin?: true
     whatsAppDriverEnabled?: true
@@ -7907,6 +7925,8 @@ export namespace Prisma {
     usdToLbpRate?: true
     receiptFooter?: true
     lowStockThreshold?: true
+    profitPercent1?: true
+    profitPercent2?: true
     deliveryFee?: true
     whatsAppAdmin?: true
     whatsAppDriverEnabled?: true
@@ -8013,6 +8033,8 @@ export namespace Prisma {
     usdToLbpRate: Decimal
     receiptFooter: string
     lowStockThreshold: number
+    profitPercent1: Decimal
+    profitPercent2: Decimal
     deliveryFee: Decimal
     whatsAppAdmin: string
     whatsAppDriverEnabled: boolean
@@ -8051,6 +8073,8 @@ export namespace Prisma {
     usdToLbpRate?: boolean
     receiptFooter?: boolean
     lowStockThreshold?: boolean
+    profitPercent1?: boolean
+    profitPercent2?: boolean
     deliveryFee?: boolean
     whatsAppAdmin?: boolean
     whatsAppDriverEnabled?: boolean
@@ -8071,6 +8095,8 @@ export namespace Prisma {
     usdToLbpRate?: boolean
     receiptFooter?: boolean
     lowStockThreshold?: boolean
+    profitPercent1?: boolean
+    profitPercent2?: boolean
     deliveryFee?: boolean
     whatsAppAdmin?: boolean
     whatsAppDriverEnabled?: boolean
@@ -8091,6 +8117,8 @@ export namespace Prisma {
     usdToLbpRate?: boolean
     receiptFooter?: boolean
     lowStockThreshold?: boolean
+    profitPercent1?: boolean
+    profitPercent2?: boolean
     deliveryFee?: boolean
     whatsAppAdmin?: boolean
     whatsAppDriverEnabled?: boolean
@@ -8111,6 +8139,8 @@ export namespace Prisma {
     usdToLbpRate?: boolean
     receiptFooter?: boolean
     lowStockThreshold?: boolean
+    profitPercent1?: boolean
+    profitPercent2?: boolean
     deliveryFee?: boolean
     whatsAppAdmin?: boolean
     whatsAppDriverEnabled?: boolean
@@ -8119,7 +8149,7 @@ export namespace Prisma {
     defaultDriverId?: boolean
   }
 
-  export type AppSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "storeName" | "branchName" | "phone" | "address" | "vatRate" | "usdToLbpRate" | "receiptFooter" | "lowStockThreshold" | "deliveryFee" | "whatsAppAdmin" | "whatsAppDriverEnabled" | "assignMode" | "assignTimeout" | "defaultDriverId", ExtArgs["result"]["appSettings"]>
+  export type AppSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "storeName" | "branchName" | "phone" | "address" | "vatRate" | "usdToLbpRate" | "receiptFooter" | "lowStockThreshold" | "profitPercent1" | "profitPercent2" | "deliveryFee" | "whatsAppAdmin" | "whatsAppDriverEnabled" | "assignMode" | "assignTimeout" | "defaultDriverId", ExtArgs["result"]["appSettings"]>
   export type AppSettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -8146,6 +8176,8 @@ export namespace Prisma {
       usdToLbpRate: Prisma.Decimal
       receiptFooter: string
       lowStockThreshold: number
+      profitPercent1: Prisma.Decimal
+      profitPercent2: Prisma.Decimal
       deliveryFee: Prisma.Decimal
       whatsAppAdmin: string
       whatsAppDriverEnabled: boolean
@@ -8586,6 +8618,8 @@ export namespace Prisma {
     readonly usdToLbpRate: FieldRef<"AppSettings", 'Decimal'>
     readonly receiptFooter: FieldRef<"AppSettings", 'String'>
     readonly lowStockThreshold: FieldRef<"AppSettings", 'Int'>
+    readonly profitPercent1: FieldRef<"AppSettings", 'Decimal'>
+    readonly profitPercent2: FieldRef<"AppSettings", 'Decimal'>
     readonly deliveryFee: FieldRef<"AppSettings", 'Decimal'>
     readonly whatsAppAdmin: FieldRef<"AppSettings", 'String'>
     readonly whatsAppDriverEnabled: FieldRef<"AppSettings", 'Boolean'>
@@ -16717,6 +16751,7 @@ export namespace Prisma {
     isWholesale: boolean | null
     sellAtCost: boolean | null
     notes: string | null
+    archived: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -16731,6 +16766,7 @@ export namespace Prisma {
     isWholesale: boolean | null
     sellAtCost: boolean | null
     notes: string | null
+    archived: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -16745,6 +16781,7 @@ export namespace Prisma {
     isWholesale: number
     sellAtCost: number
     notes: number
+    archived: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -16769,6 +16806,7 @@ export namespace Prisma {
     isWholesale?: true
     sellAtCost?: true
     notes?: true
+    archived?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -16783,6 +16821,7 @@ export namespace Prisma {
     isWholesale?: true
     sellAtCost?: true
     notes?: true
+    archived?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -16797,6 +16836,7 @@ export namespace Prisma {
     isWholesale?: true
     sellAtCost?: true
     notes?: true
+    archived?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -16898,6 +16938,7 @@ export namespace Prisma {
     isWholesale: boolean
     sellAtCost: boolean
     notes: string
+    archived: boolean
     createdAt: Date
     updatedAt: Date
     _count: CustomerCountAggregateOutputType | null
@@ -16931,6 +16972,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -16950,6 +16992,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -16965,6 +17008,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -16980,11 +17024,12 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type CustomerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "pin" | "creditLimit" | "isWholesale" | "sellAtCost" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
+  export type CustomerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "pin" | "creditLimit" | "isWholesale" | "sellAtCost" | "notes" | "archived" | "createdAt" | "updatedAt", ExtArgs["result"]["customer"]>
   export type CustomerInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     debtSales?: boolean | Customer$debtSalesArgs<ExtArgs>
@@ -17017,6 +17062,7 @@ export namespace Prisma {
       isWholesale: boolean
       sellAtCost: boolean
       notes: string
+      archived: boolean
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["customer"]>
@@ -17455,6 +17501,7 @@ export namespace Prisma {
     readonly isWholesale: FieldRef<"Customer", 'Boolean'>
     readonly sellAtCost: FieldRef<"Customer", 'Boolean'>
     readonly notes: FieldRef<"Customer", 'String'>
+    readonly archived: FieldRef<"Customer", 'Boolean'>
     readonly createdAt: FieldRef<"Customer", 'DateTime'>
     readonly updatedAt: FieldRef<"Customer", 'DateTime'>
   }
@@ -20251,6 +20298,7 @@ export namespace Prisma {
     contact: string | null
     address: string | null
     notes: string | null
+    archived: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -20263,6 +20311,7 @@ export namespace Prisma {
     contact: string | null
     address: string | null
     notes: string | null
+    archived: boolean | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -20275,6 +20324,7 @@ export namespace Prisma {
     contact: number
     address: number
     notes: number
+    archived: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -20289,6 +20339,7 @@ export namespace Prisma {
     contact?: true
     address?: true
     notes?: true
+    archived?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -20301,6 +20352,7 @@ export namespace Prisma {
     contact?: true
     address?: true
     notes?: true
+    archived?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -20313,6 +20365,7 @@ export namespace Prisma {
     contact?: true
     address?: true
     notes?: true
+    archived?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -20398,6 +20451,7 @@ export namespace Prisma {
     contact: string
     address: string
     notes: string
+    archived: boolean
     createdAt: Date
     updatedAt: Date
     _count: SupplierCountAggregateOutputType | null
@@ -20427,6 +20481,7 @@ export namespace Prisma {
     contact?: boolean
     address?: boolean
     notes?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -20444,6 +20499,7 @@ export namespace Prisma {
     contact?: boolean
     address?: boolean
     notes?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -20457,6 +20513,7 @@ export namespace Prisma {
     contact?: boolean
     address?: boolean
     notes?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -20470,11 +20527,12 @@ export namespace Prisma {
     contact?: boolean
     address?: boolean
     notes?: boolean
+    archived?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type SupplierOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "contact" | "address" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["supplier"]>
+  export type SupplierOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "contact" | "address" | "notes" | "archived" | "createdAt" | "updatedAt", ExtArgs["result"]["supplier"]>
   export type SupplierInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     purchaseOrders?: boolean | Supplier$purchaseOrdersArgs<ExtArgs>
@@ -20505,6 +20563,7 @@ export namespace Prisma {
       contact: string
       address: string
       notes: string
+      archived: boolean
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["supplier"]>
@@ -20941,6 +21000,7 @@ export namespace Prisma {
     readonly contact: FieldRef<"Supplier", 'String'>
     readonly address: FieldRef<"Supplier", 'String'>
     readonly notes: FieldRef<"Supplier", 'String'>
+    readonly archived: FieldRef<"Supplier", 'Boolean'>
     readonly createdAt: FieldRef<"Supplier", 'DateTime'>
     readonly updatedAt: FieldRef<"Supplier", 'DateTime'>
   }
@@ -36293,6 +36353,7 @@ export namespace Prisma {
     netProfit: Decimal | null
     cashIn: Decimal | null
     cashOut: Decimal | null
+    unsyncedCountAtClose: number | null
   }
 
   export type DailyCloseSumAggregateOutputType = {
@@ -36307,6 +36368,7 @@ export namespace Prisma {
     netProfit: Decimal | null
     cashIn: Decimal | null
     cashOut: Decimal | null
+    unsyncedCountAtClose: number | null
   }
 
   export type DailyCloseMinAggregateOutputType = {
@@ -36326,6 +36388,7 @@ export namespace Prisma {
     cashOut: Decimal | null
     note: string | null
     closedBy: string | null
+    unsyncedCountAtClose: number | null
     createdAt: Date | null
   }
 
@@ -36346,6 +36409,7 @@ export namespace Prisma {
     cashOut: Decimal | null
     note: string | null
     closedBy: string | null
+    unsyncedCountAtClose: number | null
     createdAt: Date | null
   }
 
@@ -36366,6 +36430,7 @@ export namespace Prisma {
     cashOut: number
     note: number
     closedBy: number
+    unsyncedCountAtClose: number
     createdAt: number
     _all: number
   }
@@ -36383,6 +36448,7 @@ export namespace Prisma {
     netProfit?: true
     cashIn?: true
     cashOut?: true
+    unsyncedCountAtClose?: true
   }
 
   export type DailyCloseSumAggregateInputType = {
@@ -36397,6 +36463,7 @@ export namespace Prisma {
     netProfit?: true
     cashIn?: true
     cashOut?: true
+    unsyncedCountAtClose?: true
   }
 
   export type DailyCloseMinAggregateInputType = {
@@ -36416,6 +36483,7 @@ export namespace Prisma {
     cashOut?: true
     note?: true
     closedBy?: true
+    unsyncedCountAtClose?: true
     createdAt?: true
   }
 
@@ -36436,6 +36504,7 @@ export namespace Prisma {
     cashOut?: true
     note?: true
     closedBy?: true
+    unsyncedCountAtClose?: true
     createdAt?: true
   }
 
@@ -36456,6 +36525,7 @@ export namespace Prisma {
     cashOut?: true
     note?: true
     closedBy?: true
+    unsyncedCountAtClose?: true
     createdAt?: true
     _all?: true
   }
@@ -36563,6 +36633,7 @@ export namespace Prisma {
     cashOut: Decimal
     note: string
     closedBy: string
+    unsyncedCountAtClose: number | null
     createdAt: Date
     _count: DailyCloseCountAggregateOutputType | null
     _avg: DailyCloseAvgAggregateOutputType | null
@@ -36602,6 +36673,7 @@ export namespace Prisma {
     cashOut?: boolean
     note?: boolean
     closedBy?: boolean
+    unsyncedCountAtClose?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["dailyClose"]>
@@ -36623,6 +36695,7 @@ export namespace Prisma {
     cashOut?: boolean
     note?: boolean
     closedBy?: boolean
+    unsyncedCountAtClose?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["dailyClose"]>
@@ -36644,6 +36717,7 @@ export namespace Prisma {
     cashOut?: boolean
     note?: boolean
     closedBy?: boolean
+    unsyncedCountAtClose?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["dailyClose"]>
@@ -36665,10 +36739,11 @@ export namespace Prisma {
     cashOut?: boolean
     note?: boolean
     closedBy?: boolean
+    unsyncedCountAtClose?: boolean
     createdAt?: boolean
   }
 
-  export type DailyCloseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "dateKey" | "grossSales" | "refunds" | "netSales" | "costOfGoods" | "returnedCost" | "grossMargin" | "expenses" | "supplierPayments" | "netProfit" | "cashIn" | "cashOut" | "note" | "closedBy" | "createdAt", ExtArgs["result"]["dailyClose"]>
+  export type DailyCloseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "dateKey" | "grossSales" | "refunds" | "netSales" | "costOfGoods" | "returnedCost" | "grossMargin" | "expenses" | "supplierPayments" | "netProfit" | "cashIn" | "cashOut" | "note" | "closedBy" | "unsyncedCountAtClose" | "createdAt", ExtArgs["result"]["dailyClose"]>
   export type DailyCloseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -36701,6 +36776,7 @@ export namespace Prisma {
       cashOut: Prisma.Decimal
       note: string
       closedBy: string
+      unsyncedCountAtClose: number | null
       createdAt: Date
     }, ExtArgs["result"]["dailyClose"]>
     composites: {}
@@ -37142,6 +37218,7 @@ export namespace Prisma {
     readonly cashOut: FieldRef<"DailyClose", 'Decimal'>
     readonly note: FieldRef<"DailyClose", 'String'>
     readonly closedBy: FieldRef<"DailyClose", 'String'>
+    readonly unsyncedCountAtClose: FieldRef<"DailyClose", 'Int'>
     readonly createdAt: FieldRef<"DailyClose", 'DateTime'>
   }
     
@@ -44413,6 +44490,8 @@ export namespace Prisma {
     usdToLbpRate: 'usdToLbpRate',
     receiptFooter: 'receiptFooter',
     lowStockThreshold: 'lowStockThreshold',
+    profitPercent1: 'profitPercent1',
+    profitPercent2: 'profitPercent2',
     deliveryFee: 'deliveryFee',
     whatsAppAdmin: 'whatsAppAdmin',
     whatsAppDriverEnabled: 'whatsAppDriverEnabled',
@@ -44557,6 +44636,7 @@ export namespace Prisma {
     isWholesale: 'isWholesale',
     sellAtCost: 'sellAtCost',
     notes: 'notes',
+    archived: 'archived',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -44600,6 +44680,7 @@ export namespace Prisma {
     contact: 'contact',
     address: 'address',
     notes: 'notes',
+    archived: 'archived',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -44861,6 +44942,7 @@ export namespace Prisma {
     cashOut: 'cashOut',
     note: 'note',
     closedBy: 'closedBy',
+    unsyncedCountAtClose: 'unsyncedCountAtClose',
     createdAt: 'createdAt'
   };
 
@@ -45578,6 +45660,8 @@ export namespace Prisma {
     usdToLbpRate?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFilter<"AppSettings"> | string
     lowStockThreshold?: IntFilter<"AppSettings"> | number
+    profitPercent1?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
+    profitPercent2?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     deliveryFee?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFilter<"AppSettings"> | string
     whatsAppDriverEnabled?: BoolFilter<"AppSettings"> | boolean
@@ -45598,6 +45682,8 @@ export namespace Prisma {
     usdToLbpRate?: SortOrder
     receiptFooter?: SortOrder
     lowStockThreshold?: SortOrder
+    profitPercent1?: SortOrder
+    profitPercent2?: SortOrder
     deliveryFee?: SortOrder
     whatsAppAdmin?: SortOrder
     whatsAppDriverEnabled?: SortOrder
@@ -45621,6 +45707,8 @@ export namespace Prisma {
     usdToLbpRate?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFilter<"AppSettings"> | string
     lowStockThreshold?: IntFilter<"AppSettings"> | number
+    profitPercent1?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
+    profitPercent2?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     deliveryFee?: DecimalFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFilter<"AppSettings"> | string
     whatsAppDriverEnabled?: BoolFilter<"AppSettings"> | boolean
@@ -45641,6 +45729,8 @@ export namespace Prisma {
     usdToLbpRate?: SortOrder
     receiptFooter?: SortOrder
     lowStockThreshold?: SortOrder
+    profitPercent1?: SortOrder
+    profitPercent2?: SortOrder
     deliveryFee?: SortOrder
     whatsAppAdmin?: SortOrder
     whatsAppDriverEnabled?: SortOrder
@@ -45668,6 +45758,8 @@ export namespace Prisma {
     usdToLbpRate?: DecimalWithAggregatesFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringWithAggregatesFilter<"AppSettings"> | string
     lowStockThreshold?: IntWithAggregatesFilter<"AppSettings"> | number
+    profitPercent1?: DecimalWithAggregatesFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
+    profitPercent2?: DecimalWithAggregatesFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     deliveryFee?: DecimalWithAggregatesFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringWithAggregatesFilter<"AppSettings"> | string
     whatsAppDriverEnabled?: BoolWithAggregatesFilter<"AppSettings"> | boolean
@@ -46352,6 +46444,7 @@ export namespace Prisma {
     isWholesale?: BoolFilter<"Customer"> | boolean
     sellAtCost?: BoolFilter<"Customer"> | boolean
     notes?: StringFilter<"Customer"> | string
+    archived?: BoolFilter<"Customer"> | boolean
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -46370,6 +46463,7 @@ export namespace Prisma {
     isWholesale?: SortOrder
     sellAtCost?: SortOrder
     notes?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
@@ -46392,6 +46486,7 @@ export namespace Prisma {
     isWholesale?: BoolFilter<"Customer"> | boolean
     sellAtCost?: BoolFilter<"Customer"> | boolean
     notes?: StringFilter<"Customer"> | string
+    archived?: BoolFilter<"Customer"> | boolean
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -46410,6 +46505,7 @@ export namespace Prisma {
     isWholesale?: SortOrder
     sellAtCost?: SortOrder
     notes?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: CustomerCountOrderByAggregateInput
@@ -46432,6 +46528,7 @@ export namespace Prisma {
     isWholesale?: BoolWithAggregatesFilter<"Customer"> | boolean
     sellAtCost?: BoolWithAggregatesFilter<"Customer"> | boolean
     notes?: StringWithAggregatesFilter<"Customer"> | string
+    archived?: BoolWithAggregatesFilter<"Customer"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Customer"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Customer"> | Date | string
   }
@@ -46597,6 +46694,7 @@ export namespace Prisma {
     contact?: StringFilter<"Supplier"> | string
     address?: StringFilter<"Supplier"> | string
     notes?: StringFilter<"Supplier"> | string
+    archived?: BoolFilter<"Supplier"> | boolean
     createdAt?: DateTimeFilter<"Supplier"> | Date | string
     updatedAt?: DateTimeFilter<"Supplier"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -46613,6 +46711,7 @@ export namespace Prisma {
     contact?: SortOrder
     address?: SortOrder
     notes?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
@@ -46633,6 +46732,7 @@ export namespace Prisma {
     contact?: StringFilter<"Supplier"> | string
     address?: StringFilter<"Supplier"> | string
     notes?: StringFilter<"Supplier"> | string
+    archived?: BoolFilter<"Supplier"> | boolean
     createdAt?: DateTimeFilter<"Supplier"> | Date | string
     updatedAt?: DateTimeFilter<"Supplier"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -46649,6 +46749,7 @@ export namespace Prisma {
     contact?: SortOrder
     address?: SortOrder
     notes?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: SupplierCountOrderByAggregateInput
@@ -46667,6 +46768,7 @@ export namespace Prisma {
     contact?: StringWithAggregatesFilter<"Supplier"> | string
     address?: StringWithAggregatesFilter<"Supplier"> | string
     notes?: StringWithAggregatesFilter<"Supplier"> | string
+    archived?: BoolWithAggregatesFilter<"Supplier"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Supplier"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Supplier"> | Date | string
   }
@@ -47949,6 +48051,7 @@ export namespace Prisma {
     cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
     closedBy?: StringFilter<"DailyClose"> | string
+    unsyncedCountAtClose?: IntNullableFilter<"DailyClose"> | number | null
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }
@@ -47970,6 +48073,7 @@ export namespace Prisma {
     cashOut?: SortOrder
     note?: SortOrder
     closedBy?: SortOrder
+    unsyncedCountAtClose?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
   }
@@ -47995,6 +48099,7 @@ export namespace Prisma {
     cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
     closedBy?: StringFilter<"DailyClose"> | string
+    unsyncedCountAtClose?: IntNullableFilter<"DailyClose"> | number | null
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }, "id" | "tenantId_dateKey">
@@ -48016,6 +48121,7 @@ export namespace Prisma {
     cashOut?: SortOrder
     note?: SortOrder
     closedBy?: SortOrder
+    unsyncedCountAtClose?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: DailyCloseCountOrderByAggregateInput
     _avg?: DailyCloseAvgOrderByAggregateInput
@@ -48044,6 +48150,7 @@ export namespace Prisma {
     cashOut?: DecimalWithAggregatesFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringWithAggregatesFilter<"DailyClose"> | string
     closedBy?: StringWithAggregatesFilter<"DailyClose"> | string
+    unsyncedCountAtClose?: IntNullableWithAggregatesFilter<"DailyClose"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"DailyClose"> | Date | string
   }
 
@@ -48934,6 +49041,8 @@ export namespace Prisma {
     usdToLbpRate: Decimal | DecimalJsLike | number | string
     receiptFooter: string
     lowStockThreshold: number
+    profitPercent1?: Decimal | DecimalJsLike | number | string
+    profitPercent2?: Decimal | DecimalJsLike | number | string
     deliveryFee?: Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: string
     whatsAppDriverEnabled?: boolean
@@ -48954,6 +49063,8 @@ export namespace Prisma {
     usdToLbpRate: Decimal | DecimalJsLike | number | string
     receiptFooter: string
     lowStockThreshold: number
+    profitPercent1?: Decimal | DecimalJsLike | number | string
+    profitPercent2?: Decimal | DecimalJsLike | number | string
     deliveryFee?: Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: string
     whatsAppDriverEnabled?: boolean
@@ -48972,6 +49083,8 @@ export namespace Prisma {
     usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    profitPercent1?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitPercent2?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -48992,6 +49105,8 @@ export namespace Prisma {
     usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    profitPercent1?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitPercent2?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -49011,6 +49126,8 @@ export namespace Prisma {
     usdToLbpRate: Decimal | DecimalJsLike | number | string
     receiptFooter: string
     lowStockThreshold: number
+    profitPercent1?: Decimal | DecimalJsLike | number | string
+    profitPercent2?: Decimal | DecimalJsLike | number | string
     deliveryFee?: Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: string
     whatsAppDriverEnabled?: boolean
@@ -49029,6 +49146,8 @@ export namespace Prisma {
     usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    profitPercent1?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitPercent2?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -49048,6 +49167,8 @@ export namespace Prisma {
     usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    profitPercent1?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitPercent2?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -49825,6 +49946,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutCustomersInput
@@ -49843,6 +49965,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     debtSales?: DebtSaleUncheckedCreateNestedManyWithoutCustomerInput
@@ -49859,6 +49982,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutCustomersNestedInput
@@ -49877,6 +50001,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     debtSales?: DebtSaleUncheckedUpdateManyWithoutCustomerNestedInput
@@ -49894,6 +50019,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -49907,6 +50033,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -49921,6 +50048,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -50082,6 +50210,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSuppliersInput
@@ -50098,6 +50227,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutSupplierInput
@@ -50112,6 +50242,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSuppliersNestedInput
@@ -50128,6 +50259,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutSupplierNestedInput
@@ -50143,6 +50275,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -50154,6 +50287,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -50166,6 +50300,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -51581,6 +51716,7 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    unsyncedCountAtClose?: number | null
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutDailyClosesInput
   }
@@ -51602,6 +51738,7 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    unsyncedCountAtClose?: number | null
     createdAt?: Date | string
   }
 
@@ -51621,6 +51758,7 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutDailyClosesNestedInput
   }
@@ -51642,6 +51780,7 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -51662,6 +51801,7 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    unsyncedCountAtClose?: number | null
     createdAt?: Date | string
   }
 
@@ -51681,6 +51821,7 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -51701,6 +51842,7 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -52788,6 +52930,8 @@ export namespace Prisma {
     usdToLbpRate?: SortOrder
     receiptFooter?: SortOrder
     lowStockThreshold?: SortOrder
+    profitPercent1?: SortOrder
+    profitPercent2?: SortOrder
     deliveryFee?: SortOrder
     whatsAppAdmin?: SortOrder
     whatsAppDriverEnabled?: SortOrder
@@ -52800,6 +52944,8 @@ export namespace Prisma {
     vatRate?: SortOrder
     usdToLbpRate?: SortOrder
     lowStockThreshold?: SortOrder
+    profitPercent1?: SortOrder
+    profitPercent2?: SortOrder
     deliveryFee?: SortOrder
     assignTimeout?: SortOrder
   }
@@ -52815,6 +52961,8 @@ export namespace Prisma {
     usdToLbpRate?: SortOrder
     receiptFooter?: SortOrder
     lowStockThreshold?: SortOrder
+    profitPercent1?: SortOrder
+    profitPercent2?: SortOrder
     deliveryFee?: SortOrder
     whatsAppAdmin?: SortOrder
     whatsAppDriverEnabled?: SortOrder
@@ -52834,6 +52982,8 @@ export namespace Prisma {
     usdToLbpRate?: SortOrder
     receiptFooter?: SortOrder
     lowStockThreshold?: SortOrder
+    profitPercent1?: SortOrder
+    profitPercent2?: SortOrder
     deliveryFee?: SortOrder
     whatsAppAdmin?: SortOrder
     whatsAppDriverEnabled?: SortOrder
@@ -52846,6 +52996,8 @@ export namespace Prisma {
     vatRate?: SortOrder
     usdToLbpRate?: SortOrder
     lowStockThreshold?: SortOrder
+    profitPercent1?: SortOrder
+    profitPercent2?: SortOrder
     deliveryFee?: SortOrder
     assignTimeout?: SortOrder
   }
@@ -53532,6 +53684,7 @@ export namespace Prisma {
     isWholesale?: SortOrder
     sellAtCost?: SortOrder
     notes?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -53550,6 +53703,7 @@ export namespace Prisma {
     isWholesale?: SortOrder
     sellAtCost?: SortOrder
     notes?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -53564,6 +53718,7 @@ export namespace Prisma {
     isWholesale?: SortOrder
     sellAtCost?: SortOrder
     notes?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -53678,6 +53833,7 @@ export namespace Prisma {
     contact?: SortOrder
     address?: SortOrder
     notes?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -53690,6 +53846,7 @@ export namespace Prisma {
     contact?: SortOrder
     address?: SortOrder
     notes?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -53702,6 +53859,7 @@ export namespace Prisma {
     contact?: SortOrder
     address?: SortOrder
     notes?: SortOrder
+    archived?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -54744,6 +54902,7 @@ export namespace Prisma {
     cashOut?: SortOrder
     note?: SortOrder
     closedBy?: SortOrder
+    unsyncedCountAtClose?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -54759,6 +54918,7 @@ export namespace Prisma {
     netProfit?: SortOrder
     cashIn?: SortOrder
     cashOut?: SortOrder
+    unsyncedCountAtClose?: SortOrder
   }
 
   export type DailyCloseMaxOrderByAggregateInput = {
@@ -54778,6 +54938,7 @@ export namespace Prisma {
     cashOut?: SortOrder
     note?: SortOrder
     closedBy?: SortOrder
+    unsyncedCountAtClose?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -54798,6 +54959,7 @@ export namespace Prisma {
     cashOut?: SortOrder
     note?: SortOrder
     closedBy?: SortOrder
+    unsyncedCountAtClose?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -54813,6 +54975,7 @@ export namespace Prisma {
     netProfit?: SortOrder
     cashIn?: SortOrder
     cashOut?: SortOrder
+    unsyncedCountAtClose?: SortOrder
   }
 
   export type CashMovementCountOrderByAggregateInput = {
@@ -58537,6 +58700,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     debtSales?: DebtSaleCreateNestedManyWithoutCustomerInput
@@ -58553,6 +58717,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     debtSales?: DebtSaleUncheckedCreateNestedManyWithoutCustomerInput
@@ -58637,6 +58802,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     purchaseOrders?: PurchaseOrderCreateNestedManyWithoutSupplierInput
@@ -58651,6 +58817,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutSupplierInput
@@ -58884,6 +59051,8 @@ export namespace Prisma {
     usdToLbpRate: Decimal | DecimalJsLike | number | string
     receiptFooter: string
     lowStockThreshold: number
+    profitPercent1?: Decimal | DecimalJsLike | number | string
+    profitPercent2?: Decimal | DecimalJsLike | number | string
     deliveryFee?: Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: string
     whatsAppDriverEnabled?: boolean
@@ -58902,6 +59071,8 @@ export namespace Prisma {
     usdToLbpRate: Decimal | DecimalJsLike | number | string
     receiptFooter: string
     lowStockThreshold: number
+    profitPercent1?: Decimal | DecimalJsLike | number | string
+    profitPercent2?: Decimal | DecimalJsLike | number | string
     deliveryFee?: Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: string
     whatsAppDriverEnabled?: boolean
@@ -59095,6 +59266,7 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    unsyncedCountAtClose?: number | null
     createdAt?: Date | string
   }
 
@@ -59114,6 +59286,7 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    unsyncedCountAtClose?: number | null
     createdAt?: Date | string
   }
 
@@ -59559,6 +59732,7 @@ export namespace Prisma {
     isWholesale?: BoolFilter<"Customer"> | boolean
     sellAtCost?: BoolFilter<"Customer"> | boolean
     notes?: StringFilter<"Customer"> | string
+    archived?: BoolFilter<"Customer"> | boolean
     createdAt?: DateTimeFilter<"Customer"> | Date | string
     updatedAt?: DateTimeFilter<"Customer"> | Date | string
   }
@@ -59650,6 +59824,7 @@ export namespace Prisma {
     contact?: StringFilter<"Supplier"> | string
     address?: StringFilter<"Supplier"> | string
     notes?: StringFilter<"Supplier"> | string
+    archived?: BoolFilter<"Supplier"> | boolean
     createdAt?: DateTimeFilter<"Supplier"> | Date | string
     updatedAt?: DateTimeFilter<"Supplier"> | Date | string
   }
@@ -59852,6 +60027,8 @@ export namespace Prisma {
     usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    profitPercent1?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitPercent2?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -59870,6 +60047,8 @@ export namespace Prisma {
     usdToLbpRate?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     receiptFooter?: StringFieldUpdateOperationsInput | string
     lowStockThreshold?: IntFieldUpdateOperationsInput | number
+    profitPercent1?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    profitPercent2?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     deliveryFee?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     whatsAppAdmin?: StringFieldUpdateOperationsInput | string
     whatsAppDriverEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -60055,6 +60234,7 @@ export namespace Prisma {
     cashOut?: DecimalFilter<"DailyClose"> | Decimal | DecimalJsLike | number | string
     note?: StringFilter<"DailyClose"> | string
     closedBy?: StringFilter<"DailyClose"> | string
+    unsyncedCountAtClose?: IntNullableFilter<"DailyClose"> | number | null
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
   }
 
@@ -63252,6 +63432,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutCustomersInput
@@ -63269,6 +63450,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     debtPayments?: DebtPaymentUncheckedCreateNestedManyWithoutCustomerInput
@@ -63409,6 +63591,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutCustomersNestedInput
@@ -63426,6 +63609,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     debtPayments?: DebtPaymentUncheckedUpdateManyWithoutCustomerNestedInput
@@ -63544,6 +63728,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutCustomersInput
@@ -63561,6 +63746,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     debtSales?: DebtSaleUncheckedCreateNestedManyWithoutCustomerInput
@@ -63701,6 +63887,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutCustomersNestedInput
@@ -63718,6 +63905,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     debtSales?: DebtSaleUncheckedUpdateManyWithoutCustomerNestedInput
@@ -64228,6 +64416,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSuppliersInput
@@ -64243,6 +64432,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     supplierPayments?: SupplierPaymentUncheckedCreateNestedManyWithoutSupplierInput
@@ -64413,6 +64603,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSuppliersNestedInput
@@ -64428,6 +64619,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     supplierPayments?: SupplierPaymentUncheckedUpdateManyWithoutSupplierNestedInput
@@ -64864,6 +65056,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSuppliersInput
@@ -64879,6 +65072,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutSupplierInput
@@ -65017,6 +65211,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSuppliersNestedInput
@@ -65032,6 +65227,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutSupplierNestedInput
@@ -66126,6 +66322,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSuppliersInput
@@ -66141,6 +66338,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     purchaseOrders?: PurchaseOrderUncheckedCreateNestedManyWithoutSupplierInput
@@ -66351,6 +66549,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSuppliersNestedInput
@@ -66366,6 +66565,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutSupplierNestedInput
@@ -67294,6 +67494,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     tenant: TenantCreateNestedOneWithoutCustomersInput
@@ -67311,6 +67512,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
     debtSales?: DebtSaleUncheckedCreateNestedManyWithoutCustomerInput
@@ -67524,6 +67726,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutCustomersNestedInput
@@ -67541,6 +67744,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     debtSales?: DebtSaleUncheckedUpdateManyWithoutCustomerNestedInput
@@ -69260,6 +69464,7 @@ export namespace Prisma {
     isWholesale?: boolean
     sellAtCost?: boolean
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -69291,6 +69496,7 @@ export namespace Prisma {
     contact?: string
     address?: string
     notes?: string
+    archived?: boolean
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -69449,6 +69655,7 @@ export namespace Prisma {
     cashOut?: Decimal | DecimalJsLike | number | string
     note?: string
     closedBy: string
+    unsyncedCountAtClose?: number | null
     createdAt?: Date | string
   }
 
@@ -69814,6 +70021,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     debtSales?: DebtSaleUpdateManyWithoutCustomerNestedInput
@@ -69830,6 +70038,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     debtSales?: DebtSaleUncheckedUpdateManyWithoutCustomerNestedInput
@@ -69846,6 +70055,7 @@ export namespace Prisma {
     isWholesale?: BoolFieldUpdateOperationsInput | boolean
     sellAtCost?: BoolFieldUpdateOperationsInput | boolean
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -69917,6 +70127,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     purchaseOrders?: PurchaseOrderUpdateManyWithoutSupplierNestedInput
@@ -69931,6 +70142,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     purchaseOrders?: PurchaseOrderUncheckedUpdateManyWithoutSupplierNestedInput
@@ -69945,6 +70157,7 @@ export namespace Prisma {
     contact?: StringFieldUpdateOperationsInput | string
     address?: StringFieldUpdateOperationsInput | string
     notes?: StringFieldUpdateOperationsInput | string
+    archived?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -70383,6 +70596,7 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -70402,6 +70616,7 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -70421,6 +70636,7 @@ export namespace Prisma {
     cashOut?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     note?: StringFieldUpdateOperationsInput | string
     closedBy?: StringFieldUpdateOperationsInput | string
+    unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

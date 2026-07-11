@@ -156,6 +156,8 @@ model AppSettings {
   usdToLbpRate     Decimal @db.Decimal(18, 4)
   receiptFooter    String
   lowStockThreshold Int
+  profitPercent1   Decimal @default(25) @db.Decimal(6, 2)
+  profitPercent2   Decimal @default(35) @db.Decimal(6, 2)
   deliveryFee      Decimal @default(2.0) @db.Decimal(18, 4)
   whatsAppAdmin    String  @default("")
   whatsAppDriverEnabled Boolean @default(false)
@@ -315,6 +317,7 @@ model Customer {
   isWholesale  Boolean  @default(false)
   sellAtCost   Boolean  @default(false)
   notes       String   @default("")
+  archived    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -367,6 +370,7 @@ model Supplier {
   contact   String   @default("")
   address   String   @default("")
   notes     String   @default("")
+  archived  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -663,6 +667,7 @@ model DailyClose {
   cashOut         Decimal   @default(0) @db.Decimal(18, 4)
   note            String   @default("")
   closedBy        String
+  unsyncedCountAtClose Int?
   createdAt       DateTime @default(now())
 
   @@unique([tenantId, dateKey])

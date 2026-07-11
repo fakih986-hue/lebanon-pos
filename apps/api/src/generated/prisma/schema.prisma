@@ -156,6 +156,8 @@ model AppSettings {
   usdToLbpRate          Decimal @db.Decimal(18, 4)
   receiptFooter         String
   lowStockThreshold     Int
+  profitPercent1        Decimal @default(25) @db.Decimal(6, 2)
+  profitPercent2        Decimal @default(35) @db.Decimal(6, 2)
   deliveryFee           Decimal @default(2.0) @db.Decimal(18, 4)
   whatsAppAdmin         String  @default("")
   whatsAppDriverEnabled Boolean @default(false)
@@ -315,6 +317,7 @@ model Customer {
   isWholesale Boolean  @default(false)
   sellAtCost  Boolean  @default(false)
   notes       String   @default("")
+  archived    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -367,6 +370,7 @@ model Supplier {
   contact   String   @default("")
   address   String   @default("")
   notes     String   @default("")
+  archived  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -646,24 +650,25 @@ model DeliveryOrderItem {
 }
 
 model DailyClose {
-  id               String   @id @default(uuid())
-  tenantId         String
-  tenant           Tenant   @relation(fields: [tenantId], references: [id])
-  dateKey          String
-  grossSales       Decimal  @db.Decimal(18, 4)
-  refunds          Decimal  @default(0) @db.Decimal(18, 4)
-  netSales         Decimal  @db.Decimal(18, 4)
-  costOfGoods      Decimal  @default(0) @db.Decimal(18, 4)
-  returnedCost     Decimal  @default(0) @db.Decimal(18, 4)
-  grossMargin      Decimal  @default(0) @db.Decimal(18, 4)
-  expenses         Decimal  @default(0) @db.Decimal(18, 4)
-  supplierPayments Decimal? @db.Decimal(18, 4)
-  netProfit        Decimal  @default(0) @db.Decimal(18, 4)
-  cashIn           Decimal  @default(0) @db.Decimal(18, 4)
-  cashOut          Decimal  @default(0) @db.Decimal(18, 4)
-  note             String   @default("")
-  closedBy         String
-  createdAt        DateTime @default(now())
+  id                   String   @id @default(uuid())
+  tenantId             String
+  tenant               Tenant   @relation(fields: [tenantId], references: [id])
+  dateKey              String
+  grossSales           Decimal  @db.Decimal(18, 4)
+  refunds              Decimal  @default(0) @db.Decimal(18, 4)
+  netSales             Decimal  @db.Decimal(18, 4)
+  costOfGoods          Decimal  @default(0) @db.Decimal(18, 4)
+  returnedCost         Decimal  @default(0) @db.Decimal(18, 4)
+  grossMargin          Decimal  @default(0) @db.Decimal(18, 4)
+  expenses             Decimal  @default(0) @db.Decimal(18, 4)
+  supplierPayments     Decimal? @db.Decimal(18, 4)
+  netProfit            Decimal  @default(0) @db.Decimal(18, 4)
+  cashIn               Decimal  @default(0) @db.Decimal(18, 4)
+  cashOut              Decimal  @default(0) @db.Decimal(18, 4)
+  note                 String   @default("")
+  closedBy             String
+  unsyncedCountAtClose Int?
+  createdAt            DateTime @default(now())
 
   @@unique([tenantId, dateKey])
 }

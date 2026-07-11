@@ -1014,7 +1014,12 @@ async function processOperation(
     }
     case "settings": {
       if (action === "create" || action === "update") {
-        const data = Array.isArray(payload) ? payload[0] ?? {} : payload ?? {}
+        const raw = Array.isArray(payload) ? payload[0] ?? {} : payload ?? {}
+        // registerName is per-device (which register this terminal identifies
+        // as), not a tenant-wide setting — AppSettings has no column for it,
+        // and syncing it would let one device's register name stomp on the
+        // shared settings row. registerId is already stripped globally above.
+        const { registerName: _rn, ...data } = raw as Record<string, unknown>
         await db.appSettings.upsert({
           where: { tenantId },
           create: { ...data, tenantId } as any,

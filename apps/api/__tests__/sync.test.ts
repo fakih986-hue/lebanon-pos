@@ -298,6 +298,74 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     expect(upsertArgs.create).not.toHaveProperty("deviceId")
   })
 
+  it("strips registerName from settings payload (device-local, no AppSettings column) but keeps profitPercent1/2 (real, persisted columns)", async () => {
+    vi.mocked(prisma.appSettings.upsert).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{
+          id: "op-settings",
+          entity: "settings",
+          action: "update",
+          payload: { storeName: "Fakih Store", vatRate: 0.11, profitPercent1: 25, profitPercent2: 35, registerName: "Front Counter" },
+        }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+    const upsertArgs = vi.mocked(prisma.appSettings.upsert).mock.calls.at(-1)?.[0] as any
+    expect(upsertArgs.update).not.toHaveProperty("registerName")
+    expect(upsertArgs.update.profitPercent1).toBe(25)
+    expect(upsertArgs.update.profitPercent2).toBe(35)
+  })
+
+  it("accepts unsyncedCountAtClose on daily-close payload — DailyClose now has that column", async () => {
+    vi.mocked(prisma.dailyClose.upsert).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{
+          id: "op-dc",
+          entity: "daily-close",
+          action: "close",
+          payload: { id: "dc-1", dateKey: "2026-07-11", grossSales: 100, netSales: 100, closedBy: "Admin", unsyncedCountAtClose: 3 },
+        }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+    const upsertArgs = vi.mocked(prisma.dailyClose.upsert).mock.calls.at(-1)?.[0] as any
+    expect(upsertArgs.create.unsyncedCountAtClose).toBe(3)
+  })
+
+  it.each([
+    ["customer", "customer"],
+    ["supplier", "supplier"],
+  ])("accepts archived on %s payload — %s model now has that column", async (entity, model) => {
+    vi.mocked((prisma as any)[model].upsert).mockResolvedValue({})
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{
+          id: `op-archive-${entity}`,
+          entity,
+          action: "update",
+          payload: { id: `${entity}-1`, archived: true },
+        }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+    const upsertArgs = vi.mocked((prisma as any)[model].upsert).mock.calls.at(-1)?.[0] as any
+    expect(upsertArgs.update.archived).toBe(true)
+  })
+
   it("does not double-decrement stock on duplicate sale push", async () => {
     mockNewSale()
     // Simulate existing sale (second push with same ID)
