@@ -534,6 +534,22 @@ async function processOperation(
     return pid || 0
   }
 
+  // registerId/deviceId are client-side attribution metadata the desktop app
+  // attaches to sale/shift/expense/cash-movement/daily-close/purchase-order/
+  // supplier-payment payloads — none of those Prisma models have columns for
+  // them (that shift attribution already lives on Shift/DailyClose, keyed by
+  // shiftId), so forwarding them into any prisma.<model>.create()/update()
+  // throws "Unknown argument". Strip them once here instead of per-case below.
+  const stripClientMeta = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(stripClientMeta)
+    if (value && typeof value === "object") {
+      const { registerId: _reg, deviceId: _dev, ...rest } = value as Record<string, unknown>
+      return rest
+    }
+    return value
+  }
+  payload = stripClientMeta(payload) as Record<string, unknown> | undefined
+
   // Record a stock movement for the audit trail (ledger-based stock)
   const recordMovement = async (productId: number, type: string, quantity: number, reference: string, note = "") => {
     if (!productId || productId <= 0) return
@@ -642,11 +658,7 @@ async function processOperation(
         })))
         const { saleId: _s, ...prismaTender } = data.tender ?? {}
         const hasTender = Object.keys(prismaTender).length > 0
-        // registerId/deviceId are client-side attribution metadata for this
-        // sale's shift — the Sale model has no columns for them (that
-        // attribution already lives on Shift/DailyClose, keyed by shiftId).
-        // Forwarding them to prisma.sale.create() throws "Unknown argument".
-        const { items: _i, tender: _t, registerId: _r, deviceId: _d, ...saleData } = data
+        const { items: _i, tender: _t, ...saleData } = data
 
         if (!saleData.id || prismaItems.length === 0) {
           throw new Error("Sale sync requires an id and at least one item")

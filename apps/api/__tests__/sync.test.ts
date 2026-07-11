@@ -39,6 +39,7 @@ vi.mock("../src/lib/prisma", () => {
     stockCountSession: { ...model() },
     stockCountLine: model(),
     dailyClose: model(),
+    cashMovement: model(),
     deliveryOrder: model(),
     syncOperation: model(),
     $connect: vi.fn(),
@@ -268,6 +269,33 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     const createArgs = vi.mocked(prisma.sale.create).mock.calls[0][0] as any
     expect(createArgs.data).not.toHaveProperty("registerId")
     expect(createArgs.data).not.toHaveProperty("deviceId")
+  })
+
+  it.each([
+    ["shift", "open", "shift", { id: "shift-x", shiftNumber: "SHIFT-X" }],
+    ["expense", "create", "expense", { id: "exp-x", expenseNumber: "EXP-X", vendor: "v", category: "c", amount: 5, paymentMethod: "Cash", recordedBy: "Admin" }],
+    ["cash-movement", "create", "cashMovement", { id: "cm-x", type: "CashIn", amountUsd: 5, reason: "r", recordedByName: "Admin" }],
+    ["daily-close", "close", "dailyClose", { id: "dc-x", dateKey: "2026-07-11", grossSales: 5, netSales: 5, closedBy: "Admin" }],
+    ["purchase-order", "create", "purchaseOrder", { id: "po-x", poNumber: "PO-X", supplierId: "sup1", supplierName: "s", total: 5, createdBy: "Admin" }],
+    ["supplier-payment", "create", "supplierPayment", { id: "sp-x", supplierId: "sup1", supplierName: "s", amount: 5, method: "Cash", recordedBy: "Admin" }],
+  ])("strips registerId/deviceId from %s payload — %s model has no such columns", async (entity, action, model, basePayload) => {
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{
+          id: `op-${entity}`,
+          entity,
+          action,
+          payload: { ...basePayload, registerId: "REG-001", deviceId: "DEV-ABC" },
+        }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+    const upsertArgs = vi.mocked((prisma as any)[model].upsert).mock.calls.at(-1)?.[0] as any
+    expect(upsertArgs.create).not.toHaveProperty("registerId")
+    expect(upsertArgs.create).not.toHaveProperty("deviceId")
   })
 
   it("does not double-decrement stock on duplicate sale push", async () => {
