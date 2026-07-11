@@ -225,6 +225,12 @@ export default function LoginScreen() {
         backupSnapshot[key] = localStorage.getItem(key)
       }
 
+      // Store the newly-entered hub URL before pairing — pairDevice() resolves
+      // its target via getApiUrl() (reads localStorage), so pairing before
+      // this point would hit whatever URL was previously stored, not the hub
+      // address just typed in here.
+      setApiUrl(url)
+
       // For CONNECT_TO_HUB mode, pair with the hub before proceeding
       if (cMode === "CONNECT_TO_HUB" && cPairCode.trim()) {
         setStatus("Pairing with hub…")
@@ -237,7 +243,6 @@ export default function LoginScreen() {
 
       await clearStoreData()
       setConnectionMode(cMode)
-      setApiUrl(url)
       setAuthToken(data.token)
       rememberStore({
         name: data.user?.tenantName ?? cSubdomain.trim() ?? "Store",

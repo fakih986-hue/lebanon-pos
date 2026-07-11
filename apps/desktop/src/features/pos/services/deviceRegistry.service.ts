@@ -43,13 +43,22 @@ export async function generatePairingCode(): Promise<PairingCodeResult> {
 
 export async function pairDevice(code: string, deviceId: string, deviceName?: string): Promise<{ ok: true; deviceId: string }> {
   const apiUrl = getApiUrl()
-  const res = await fetch(`${apiUrl}/api/device/pair`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, deviceId, deviceName: deviceName ?? "" }),
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error ?? "Pairing failed")
+  let res: Response
+  try {
+    res = await fetch(`${apiUrl}/api/device/pair`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, deviceId, deviceName: deviceName ?? "" }),
+    })
+  } catch {
+    throw new Error(`Can't reach ${apiUrl}. Check the hub's LAN URL and that both devices are on the same network.`)
+  }
+  const raw = await res.text()
+  let data: any = null
+  try { data = raw ? JSON.parse(raw) : null } catch {
+    throw new Error(`Hub returned an unexpected response (HTTP ${res.status}) — check the LAN URL points at the hub's API port, not a different server.`)
+  }
+  if (!res.ok) throw new Error(data?.error ?? "Pairing failed")
   localStorage.setItem(AUTO_APPROVED_KEY, deviceId)
   return data
 }

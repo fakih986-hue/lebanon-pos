@@ -1089,7 +1089,11 @@ async function pullFullEntity(apiUrl: string, token: string, entityPath: string,
       headers: { Authorization: `Bearer ${token}` },
     })
     if (!res.ok) throw new Error(`Pull ${entityPath} failed: ${res.status}`)
-    const page = await res.json()
+    const raw = await res.text()
+    let page: any
+    try { page = raw ? JSON.parse(raw) : {} } catch {
+      throw new Error(`Pull ${entityPath} failed: server at ${apiUrl} returned a non-JSON response (check the URL points at the API port, not a different server)`)
+    }
     const arr = Array.isArray(page.items) ? page.items : []
     all.push(...arr)
     if (!page.hasMore) break
