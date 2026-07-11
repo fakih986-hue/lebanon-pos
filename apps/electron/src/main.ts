@@ -854,10 +854,21 @@ ipcMain.handle("set-bind-host", async (_event, value: "0.0.0.0" | "127.0.0.1") =
     // here previously raced graceful shutdown (closing DB connections, etc.);
     // if the old process was still holding port 3015 when the new one tried
     // to listen, it hit EADDRINUSE and crashed, tripping the 3-strikes dialog.
+    //
+    // IMPORTANT: spawnApi() attaches its own persistent "exit" listener that
+    // treats any non-zero, non-quitting exit code as a crash and schedules
+    // ITS OWN restart. A deliberate SIGTERM here doesn't always exit with
+    // code 0 (graceful shutdown can be slower than the OS's kill timeout), so
+    // that listener would fire in parallel with our own restart below — two
+    // independent spawnApi() calls both trying to bind the same port, each
+    // failing the other with EADDRINUSE, racing through all 3 restart
+    // attempts and tripping the "crashed 3 times" dialog. Strip that listener
+    // from the OLD process first — this restart is intentional, not a crash.
     if (apiProcess && !apiProcess.killed) {
       const exited = new Promise<void>((resolve) => {
         apiProcess!.once("exit", () => resolve())
       })
+      apiProcess.removeAllListeners("exit")
       apiProcess.kill("SIGTERM")
       await Promise.race([exited, sleep(10_000)])
     }
