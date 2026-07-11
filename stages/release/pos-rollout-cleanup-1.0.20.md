@@ -276,3 +276,23 @@ Locally, `Stop-Process -Force` was run against 4 old orphaned process IDs (5920,
 ## 9. Confirmation: no release manifest published
 
 Confirmed. No GitHub release was created, no `latest.yml`/update manifest was touched, and no deploy was triggered during this cleanup pass — there was no code change to deploy in the first place, since the one attempted change (the diagnostic route) was fully reverted before reaching git.
+
+---
+
+## 10. Follow-up sprint — POS-RELEASE-4: installer rebuild (2026-07-11)
+
+Discovered while preparing the final 1.0.20 release go/no-go: `Titan POS Setup 1.0.20.exe` was built **before** `cd716e4`, so the installer bundled the old, unfixed local sync handler. Since `apps/api/bundle` is packaged directly into the app and that same `sync.ts` route also serves the local hub's own LAN sync endpoint (not just Railway), any hub installed from that exact 1.0.20 artifact would still carry the product-id bug locally.
+
+**Version bumped to 1.0.21** (not re-tagged 1.0.20) — the original 1.0.20 artifact was confirmed installed on the real hub during this rollout, so per the "if there's any chance it was distributed, bump the version" rule, ambiguity had to be avoided.
+
+**Full verification, all green:** API/desktop/electron typecheck clean, 141/141 API tests + 106/106 desktop tests pass, bundled fix confirmed present in both `apps/api/bundle/index.cjs` and the packaged app's `resources/api/index.cjs`.
+
+**Isolated smoke test (full detail in `apps/electron/RELEASE_NOTES-v1.0.21.md`):** since the real hub occupies the app's hardcoded local ports/Postgres path, the user gracefully closed it via its tray icon (confirmed clean `pg_ctl` shutdown), and the new 1.0.21 portable build was launched with an isolated `--user-data-dir`. Confirmed: local API starts, version reports 1.0.21, local tenant/admin setup works, login works, and — critically — local hub product creation now correctly ignores a fake client-local id and assigns its own real id via its own sequence, proving the fix works in the packaged bundle itself, not just on Railway.
+
+**New checksums:**
+| File | SHA-256 |
+|------|---------|
+| `Titan POS Setup 1.0.21.exe` | `710d65f051a357c6247984572a47eefb58166018f2f2b8b28ddb93000a15b216` |
+| `Titan POS 1.0.21.exe` (portable) | `bb58bf059ac01a0f1c26a89c5042bd041be2dfa5eb3e996bff4cda72e233af17` |
+
+**Not published/deployed this pass:** no GitHub release, no manifest update, no Railway redeploy (server side was already deployed and verified separately). Pilot install is the recommended next step now that the installer actually contains the complete fix.
