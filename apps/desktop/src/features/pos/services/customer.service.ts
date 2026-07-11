@@ -238,6 +238,7 @@ export function deleteCustomer(customerId: string) {
 }
 
 export function addCustomer(input: CreateCustomerInput) {
+  assertCanWrite("create customer")
   const customers = getCustomers()
   const customer: Customer = {
     id: createId(),

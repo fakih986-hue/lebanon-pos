@@ -402,6 +402,18 @@ describe("supplier.service — types and safety", () => {
   })
 })
 
+describe("customer.service — license enforcement", () => {
+  it("addCustomer respects the license-suspension guard, like every other customer/debt mutation", async () => {
+    window.localStorage.clear()
+    window.localStorage.setItem("lebanonpos.license.v1", JSON.stringify({
+      status: "read_only", reason: "", message: "Store is read-only", suspendedAt: null,
+      offlineGraceDays: 7, leaseExpiresAt: null, policyVersion: 1, checkedAt: new Date().toISOString(),
+    }))
+    const { addCustomer } = await import("../features/pos/services/customer.service")
+    expect(() => addCustomer({ name: "Blocked Customer", mobile: "70000000", creditLimit: 0, notes: "" })).toThrow()
+  })
+})
+
 describe("inventory — write-off and reconciliation", () => {
   it("writeOffStock function is exported", async () => {
     const { writeOffStock } = await import("../features/pos/services/product.service")
