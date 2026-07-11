@@ -368,6 +368,38 @@ describe("supplier.service — types and safety", () => {
     expect(typeof mod.recordPurchaseOrder).toBe("function")
     expect(typeof mod.getSupplierLedger).toBe("function")
   })
+
+  it("receiveAndRecord's Draft→Received PO transition is actually queued for sync, not just written locally", async () => {
+    window.localStorage.clear()
+    // initialUsers is intentionally empty (real staff come from the server,
+    // not a hardcoded seed) — recordPurchaseOrder needs a logged-in user, so
+    // seed one directly, matching how the real app would have one post-login.
+    window.localStorage.setItem("lebanonpos.users.v1", JSON.stringify([
+      { id: "u-test-1", name: "Test Admin", mobile: "0", pin: "x", role: "Admin", active: true, createdAt: new Date().toISOString(), pinChanged: false },
+    ]))
+    window.localStorage.setItem("lebanonpos.current-user.v1", "u-test-1")
+
+    const { receiveAndRecord, getPurchaseOrders } = await import("../features/pos/services/supplier.service")
+    const { getSyncQueue } = await import("../features/pos/services/sync.service")
+
+    await receiveAndRecord(
+      [{ name: "Stress Widget", barcode: "PO-SYNC-TEST-1", category: "Test", quantity: 5, cost: 2, price: 4 }],
+      { supplierId: "sup-test-1", supplierName: "Test Supplier", paymentMethod: "On Account" }
+    )
+
+    const orders = getPurchaseOrders()
+    const po = orders.find((o) => o.supplierName === "Test Supplier")
+    expect(po?.status).toBe("Received") // local state transitioned correctly
+
+    // The bug: writePurchaseOrders() only persists to local storage — it never
+    // enqueues a sync operation, so the server never learned the PO left Draft.
+    const queue = getSyncQueue()
+    const poSyncOps = queue.filter((op) => op.entity === "purchase-order")
+    expect(poSyncOps.length).toBeGreaterThanOrEqual(2) // one "create" (Draft) + one "update" (Received)
+    const receivedUpdate = poSyncOps.find((op) => op.action === "update" && (op.payload as any)?.status === "Received")
+    expect(receivedUpdate).toBeDefined()
+    expect((receivedUpdate?.payload as any)?.id).toBe(po?.id)
+  })
 })
 
 describe("inventory — write-off and reconciliation", () => {

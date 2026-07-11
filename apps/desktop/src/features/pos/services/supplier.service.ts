@@ -637,6 +637,15 @@ export async function receiveAndRecord(
         createdPo.status = "Received"
         createdPo.receivedAt = new Date().toISOString()
         writePurchaseOrders(orders)
+        // writePurchaseOrders() only writes local storage — it does not sync.
+        // Without this, the server never learns the PO left Draft, so its
+        // status stays permanently out of sync with every device that pulls it.
+        enqueueSyncOperation({
+          entity: "purchase-order",
+          action: "update",
+          summary: `${createdPo.poNumber} marked Received.`,
+          payload: createdPo,
+        })
       }
     } catch { /* PO creation failure is non-fatal */ }
   }
