@@ -4,6 +4,7 @@
 **Update (same day, follow-up pass):** user ran a sequence fix directly via Railway's dashboard Query tool. Re-verified below (Section 1b) — **the symptom is unchanged**. Product creation still fails identically.
 **Update 2 (same day, code bug found and fixed):** a real code bug was found and fixed (client-forwarded id) — see Section 1c.
 **Update 3 (same day, deployed and re-tested):** the fix was pushed and deployed to Railway, confirmed running (commit `cd716e4`). Product creation still fails with the identical error even with the client-id bug fixed — see Section 1d. **The sequence itself is still behind `MAX(id)` in production; the earlier Query-tool fix did not take effect.**
+**Update 4 (same day, RESOLVED):** user re-ran the sequence fix correctly via Railway's Query tool, confirmed `last_value = 73, is_called = false`. Retested product creation live — **PASS**. New product created with id `73` as expected, archived cleanly, both Railway and the local hub remain healthy. See Section 1e. **Product creation is now fully working end-to-end.**
 
 ---
 
@@ -142,6 +143,37 @@ With the real sequence name and before/after `last_value` in hand, I can confirm
 
 ---
 
+## 1e. RESOLVED — sequence fix confirmed correctly applied, product creation now works
+
+**DB fix confirmed by the user, run against the correct Postgres service backing `pos.titan-suite.net`:**
+```
+last_value = 73
+is_called  = false
+```
+This matches the expected value exactly (`MAX(id)` was `72`, so the next assigned id should be `73`).
+
+**Live retest — product creation via the normal sync API:**
+- Logged in as `fakih` tenant, pushed `entity: "product", action: "create"` with a fresh barcode and **no explicit `id` field** (the real client's normal payload shape).
+- Result: `{"status": "ok"}` — **creation succeeded.**
+- Pulled the product back via the full-product-pull endpoint: the new product's assigned `id` is **73** — confirms both the sequence fix and the client-id-stripping code fix are working together correctly.
+
+**Cleanup:** archived the test product (id 73) via a normal `action: "update"` sync operation (`{id: 73, archived: true}`) — the same path the app itself uses for archiving. Re-pulled and confirmed `archived: true`. No hard delete was needed or used; history is preserved, consistent with how the app treats all product removals.
+
+**Final health checks:**
+| Check | Result |
+|---|---|
+| Railway health | ✅ `{"status":"ok"}` |
+| Local hub health | ✅ `{"status":"ok"}` |
+| Product creation (fresh, no explicit id) | ✅ PASS — assigned id 73 |
+| Test product archived | ✅ PASS |
+| Sync queue | ✅ clean — no failed/rejected operations introduced |
+| Product pricing/tax/stock logic | ✅ unchanged — no code touched this pass, only DB-side sequence fix |
+| Deploy / manifest / GitHub release / installer | **None performed this pass** — no code change was needed, since creation now succeeds |
+
+**Status: Product ID sequence issue is now fully resolved.** Both root causes (client forwarding its own local id, and the cloud sequence being behind `MAX(id)`) have been fixed and verified independently and together. This closes out the last open item from the 1.0.20 rollout cleanup.
+
+---
+
 ## 2. Product API create test evidence
 
 Re-ran the exact same test as earlier in the rollout, through the normal public API (not raw DB), with a brand-new timestamp-random barcode:
@@ -199,8 +231,8 @@ Re-ran the exact same test as earlier in the rollout, through the normal public 
 | Railway health | ✅ `{"status":"ok"}` |
 | Local hub health | ✅ `{"status":"ok"}` |
 | Sync queue clean | ✅ no failed/rejected items introduced by this pass |
-| Product create API test | ❌ FAIL — still failing identically even after user's sequence fix via Railway Query tool (see Section 1b) |
-| Product archive/delete of test product | N/A — no test product was ever successfully created to archive/delete |
+| Product create API test | ✅ PASS (final, after both the code fix and the correctly-applied sequence fix — see Section 1e). New product assigned id 73. |
+| Product archive/delete of test product | ✅ PASS — test product (id 73) archived via normal update sync, confirmed |
 | Test cashier login (Railway) | ✅ PASS |
 | Test cashier reached local hub | ✅ PASS (via incremental pull; see Section 3 caveat about the separate full-pull endpoint) |
 | No `tenantId and apiKey are required` | ✅ confirmed — `discover` still returns a real key for `fakih` |
@@ -211,22 +243,31 @@ Re-ran the exact same test as earlier in the rollout, through the normal public 
 
 ## 6. Remaining limitations
 
-1. **Product creation still fails even after the user ran the recommended sequence fix via Railway's dashboard Query tool.** Product ID range observed post-fix: 21 products, IDs 52–72, contiguous, no gaps. Two independent re-tests through the normal API both failed with the identical `Unique constraint failed on the fields: (id)` error. This means either the fix targeted the wrong sequence/table/environment, or the original diagnosis (pure sequence drift) was incomplete and there's a real code-level issue in the product upsert path. See Section 1b for the exact follow-up questions needed to tell which. **No code was changed** — per instructions, a code change is only warranted once the DB-side fix is confirmed to have been applied correctly and the symptom still persists.
+1. ~~Product creation fails~~ — **RESOLVED.** Root cause was two independent issues, both now fixed: (a) the desktop client forwarded its own hub-local id into the cloud create payload, fixed in code (`cd716e4`, deployed); (b) Railway's `Product_id_seq` was genuinely behind `MAX(id)`, fixed via the dashboard Query tool (confirmed `last_value=73, is_called=false`). Live retest confirms product creation now works end-to-end (Section 1e).
 2. **Two orphaned old-test Postgres instances still running** on this machine (ports 5432/5433, ~390MB RAM) — could not be terminated due to an OS permission barrier; needs manual cleanup with elevated privileges if desired.
 3. **`/api/sync/pull/full/staff` appears inconsistent** with the regular incremental pull for the same tenant/entity — noticed as a side effect of testing the cashier sync, not investigated further, potentially worth a dedicated look later.
-4. Everything else confirmed clean and healthy — this rollout otherwise stands as complete and stable.
+4. Everything else confirmed clean and healthy — **this rollout is now fully complete and stable**, with no open blockers.
 
 ---
 
 ## 7. Exact files changed
 
-**None, in the final state.** A temporary file (`apps/api/src/routes/_diag-temp.ts`) and a temporary two-line edit to `apps/api/src/app.ts` were created during the (abandoned) diagnostic-endpoint attempt in Section 1, but both were deleted/reverted before any commit, build, or deploy. `git status` confirms the working tree is clean except the pre-existing, untouched `apps/api/public/founder.jpg`.
+**One file, in the final state:** `apps/api/src/routes/sync.ts` — 10 lines changed inside the `case "product"` → `action === "create"` branch, stripping the client's local `id` before insert (commit `cd716e4`, pushed and deployed). No other application code was changed.
+
+A temporary file (`apps/api/src/routes/_diag-temp.ts`) and a temporary two-line edit to `apps/api/src/app.ts` were created during the (abandoned) diagnostic-endpoint attempt in Section 1, but both were deleted/reverted before any commit, build, or deploy.
 
 ---
 
 ## 8. Exact DB actions run
 
-**None successfully executed against Railway's database directly.** All verification in this report (Sections 2, 3, 5) was performed exclusively through the application's own public HTTP API (`/api/auth/login`, `/api/sync/push`, `/api/sync/pull`, `/api/setup/discover`) — no raw SQL was ever run against production. The intended fix SQL (`SELECT setval(...)`) is documented in Section 1 but was never executed, since no safe connection path was available.
+**None executed by me directly against Railway's database.** All application-level verification in this report was performed exclusively through the public HTTP API (`/api/auth/login`, `/api/sync/push`, `/api/sync/pull`, `/api/sync/pull/full/:entity`, `/api/setup/discover`) — no raw SQL was ever run against production from this environment.
+
+**The actual sequence fix was run by the user directly**, via Railway's dashboard Query tool, against the Postgres service backing `pos.titan-suite.net`:
+```sql
+SELECT setval(pg_get_serial_sequence('public."Product"', 'id'),
+  GREATEST(COALESCE((SELECT MAX(id) FROM public."Product"), 0) + 1, 1), false);
+```
+Confirmed result: `last_value = 73, is_called = false` — matches the expected value exactly (`MAX(id)` was 72).
 
 Locally, `Stop-Process -Force` was run against 4 old orphaned process IDs (5920, 5940, 4620, 4436) and their children — all failed with Access Denied; no processes were actually terminated by this action.
 
