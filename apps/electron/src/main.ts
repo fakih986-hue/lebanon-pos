@@ -301,8 +301,13 @@ async function stopPostgres(): Promise<void> {
 
   // Try graceful shutdown via pg_ctl first
   try {
-    const pgCtlExe = (name: string) => path.join(USER_DATA, "assets", "pg", "bin", `${name}.exe`)
-    execSync(`"${pgCtlExe("pg_ctl")}" -D "${PG_DATA}" stop -m fast -w -t 10`, { stdio: "pipe", timeout: 15000 })
+    // Was pointing at USER_DATA/assets/pg/bin — the bundled binaries actually
+    // live under PG_BIN_DIR (resourcesPath/pg/bin when packaged), matching
+    // where initdb/postgres are already resolved via pgExe() above. That
+    // meant this path never existed, so shutdown always fell through to the
+    // SIGTERM/taskkill fallbacks below — functional, but not the intended
+    // clean `pg_ctl -m fast` stop.
+    execSync(`"${pgExe("pg_ctl")}" -D "${PG_DATA}" stop -m fast -w -t 10`, { stdio: "pipe", timeout: 15000 })
     console.log("[pg] stopped gracefully via pg_ctl")
     return
   } catch {
