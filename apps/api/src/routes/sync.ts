@@ -570,7 +570,30 @@ async function processOperation(
 
   switch (entity) {
     case "product": {
-      if (action === "create" || action === "update") {
+      if (action === "update") {
+        // Updates (including archive/restore, which send only {id, archived})
+        // are partial patches keyed by the product's own id — not full
+        // objects. A barcode-keyed upsert requires every NOT NULL column to
+        // be present in both its create AND update branches (Prisma
+        // validates both shapes up front, even though only one runs), so a
+        // partial payload always threw "Argument name is missing" here,
+        // regardless of whether a matching row existed. Use a real partial
+        // update instead whenever the client already knows the product's id.
+        const items = Array.isArray(payload) ? payload : [payload]
+        for (const item of items) {
+          const data = { ...item, tenantId } as Record<string, unknown>
+          const { id, tenantId: _t, ...patch } = data
+          if (id !== undefined) {
+            await db.product.updateMany({ where: { tenantId, id: id as number }, data: patch as any })
+          } else if (data.barcode) {
+            await db.product.upsert({
+              where: { tenantId_barcode: { tenantId, barcode: data.barcode as string } },
+              create: data as any,
+              update: data as any,
+            })
+          }
+        }
+      } else if (action === "create") {
         const items = Array.isArray(payload) ? payload : [payload]
         for (const item of items) {
           const data = { ...item, tenantId } as Record<string, unknown>
