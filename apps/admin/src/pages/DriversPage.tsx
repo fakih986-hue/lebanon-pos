@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { api } from "../app/api"
 import { useI18n } from "@lebanonpos/shared"
 
-type Driver = { id: string; name: string; mobile: string; active: boolean; createdAt: string }
+type Driver = { id: string; name: string; mobile: string; code: string; active: boolean; createdAt: string }
 
 export function DriversPage() {
   const { t } = useI18n()
@@ -62,7 +62,7 @@ export function DriversPage() {
   }
 
   function startEdit(d: Driver) {
-    setEditingId(d.id); setName(d.name); setMobile(d.mobile); setPin(""); setShowForm(true)
+    setEditingId(d.id); setName(d.name); setMobile(d.mobile); setCode(d.code); setPin(""); setShowForm(true)
   }
 
   return (

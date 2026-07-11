@@ -20,8 +20,8 @@ function KineticLine({ words, gradient = false, baseDelay = 0 }: { words: string
     return () => { window.removeEventListener("titan:intro-done", onDone); clearTimeout(fallback) }
   }, [])
 
-  // Gradient lines must animate as one element â€” child transforms/filters break
-  // background-clip:text â€” so they get a wipe reveal instead of per-word rise.
+  // Gradient lines must animate as one element — child transforms/filters break
+  // background-clip:text — so they get a wipe reveal instead of per-word rise.
   if (gradient) {
     return (
       <span
@@ -37,7 +37,7 @@ function KineticLine({ words, gradient = false, baseDelay = 0 }: { words: string
     <span>
       {words.split(" ").map((w, i) => (
         <span key={i} className={go ? "word-rise" : "word-hidden"} style={{ animationDelay: `${baseDelay + i * 90}ms` }}>
-          {w}{"Â "}
+          {w}{" "}
         </span>
       ))}
     </span>
@@ -54,7 +54,7 @@ const PRODUCTS = [
     to: "/pos",
     tag: "Retail & Hospitality",
     name: "Titan POS",
-    desc: "Offline-first checkout, inventory, customers, debts, suppliers, and delivery â€” one desktop platform that keeps selling even when the internet doesn't.",
+    desc: "Offline-first checkout, inventory, customers, debts, suppliers, and delivery — one desktop platform that keeps selling even when the internet doesn't.",
     accent: "from-[#e9c766] to-[#a4841f]",
     glow: "group-hover:shadow-[0_0_60px_-15px_rgba(212,175,55,0.4)]",
   },
@@ -62,14 +62,14 @@ const PRODUCTS = [
     to: "/payroll",
     tag: "People Operations",
     name: "Titan HR & Payroll",
-    desc: "A Lebanon-first HR operating system â€” employees, attendance, leave, documents, assets, and an accountant-verified payroll engine in one workspace.",
+    desc: "A Lebanon-first HR operating system — employees, attendance, leave, documents, assets, and an accountant-verified payroll engine in one workspace.",
     accent: "from-[#d4af37] to-[#7a5c10]",
     glow: "group-hover:shadow-[0_0_60px_-15px_rgba(212,175,55,0.35)]",
   },
 ]
 
 const PILLARS = [
-  { n: "01", title: "Built to actually run", desc: "Not demos, not prototypes â€” platforms that are live today, handling real sales and real payroll runs for real businesses." },
+  { n: "01", title: "Built to actually run", desc: "Not demos, not prototypes — platforms that are live today, handling real sales and real payroll runs for real businesses." },
   { n: "02", title: "Offline is a feature", desc: "Titan POS runs entirely on the local machine. Bad connection? Sales keep ringing up. The cloud catches up the moment you're back." },
   { n: "03", title: "Trust over shortcuts", desc: "Payroll, money, and inventory don't get to be 'roughly right'. Every number traces to a rule, every change to a person." },
 ]
@@ -95,7 +95,7 @@ export default function HomePage() {
 
           <Reveal delay={220}>
             <p className="mt-6 sm:mt-8 text-base sm:text-xl text-slate-400 max-w-xl leading-relaxed">
-              Titan builds the systems that keep a business moving â€” point of sale on the floor,
+              Titan builds the systems that keep a business moving — point of sale on the floor,
               HR & payroll behind the scenes. Commercial-grade, Lebanon-first.
             </p>
           </Reveal>
@@ -173,7 +173,7 @@ export default function HomePage() {
             {
               eyebrow: "Titan POS",
               title: "The register, live.",
-              desc: "Barcode-first checkout with dual-currency totals (USD + LBP), favorites, quick sale, and a cart that keeps moving even when the internet doesn't. This is the screen a cashier lives in all day â€” built to be fast at hour nine, not just minute one.",
+              desc: "Barcode-first checkout with dual-currency totals (USD + LBP), favorites, quick sale, and a cart that keeps moving even when the internet doesn't. This is the screen a cashier lives in all day — built to be fast at hour nine, not just minute one.",
               img: "/screenshots/pos-checkout.png",
               url: "pos.titan-suite.net",
               to: "/pos",
@@ -183,9 +183,9 @@ export default function HomePage() {
             {
               eyebrow: "Titan HR",
               title: "Payroll with receipts.",
-              desc: "Every payroll run traces back to verified statutory rules â€” and when a rule isn't legally verified yet, the platform says so out loud instead of guessing. 90 runs on record, every number explainable.",
+              desc: "Every payroll run traces back to verified statutory rules — and when a rule isn't legally verified yet, the platform says so out loud instead of guessing. 90 runs on record, every number explainable.",
               img: "/screenshots/hr-payroll.png",
-              url: "titan-hr â€” payroll",
+              url: "titan-hr — payroll",
               to: "/payroll",
               cta: "Explore Titan HR",
               flip: true,
@@ -267,7 +267,7 @@ export default function HomePage() {
             <h2 className="font-display text-3xl sm:text-5xl font-bold tracking-tight">
               See it <span className="text-gradient">running live.</span>
             </h2>
-            <p className="mt-5 text-slate-400 max-w-lg mx-auto">Get a walkthrough of Titan POS or Titan HR against a real setup â€” not a slide deck.</p>
+            <p className="mt-5 text-slate-400 max-w-lg mx-auto">Get a walkthrough of Titan POS or Titan HR against a real setup — not a slide deck.</p>
             <Magnetic className="mt-10">
               <Link to="/contact" className="inline-flex items-center gap-2 px-8 py-4 shine rounded-2xl bg-gradient-to-r from-[#e9c766] to-[#a4841f] text-[#0b0803] font-semibold shadow-[0_8px_40px_-8px_rgba(212,175,55,0.45)]">
                 Request a demo
