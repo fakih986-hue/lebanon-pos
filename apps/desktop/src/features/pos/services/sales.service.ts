@@ -64,6 +64,11 @@ export type Sale = {
   profit: number
   soldAtCost?: boolean
   tender?: SaleTender
+  /** Rounded LBP total actually payable in cash (nearest 5,000 LBP banknote),
+   *  when it differs from the exact totalLbp — the cash-rounding disclosure
+   *  shown at checkout. Persisted so reprints/CSV exports can still show it;
+   *  previously only ever existed in the live checkout screen's local state. */
+  payableLbp?: number
   items: SaleItem[]
   cashier: string
   shiftId?: string
@@ -104,6 +109,7 @@ export type RecordSaleInput = {
   total: number
   soldAtCost?: boolean
   tender?: SaleTender
+  payableLbp?: number
   items: SaleItem[]
 }
 
@@ -263,6 +269,7 @@ export function recordSale(input: RecordSaleInput) {
     profit: input.subtotal - cost,
     soldAtCost: input.soldAtCost,
     tender: input.tender,
+    payableLbp: input.payableLbp,
     items: input.items,
     cashier: currentUser.name,
     shiftId: activeShift.id,

@@ -153,10 +153,10 @@ export function printSaleReceipt(
             totalLbp
           )}</strong></div>
           ${
-            (sale as any).payableLbp && (sale as any).payableLbp !== totalLbp
+            sale.payableLbp && sale.payableLbp !== totalLbp
               ? `
-                <div class="row" style="font-size: 11px; color: #856404;"><span>Cash rounding</span><strong>+${formatLbpCurrency((sale as any).payableLbp - totalLbp)}</strong></div>
-                <div class="row total"><span>Cash payable</span><span>${formatLbpCurrency((sale as any).payableLbp)}</span></div>
+                <div class="row" style="font-size: 11px; color: #856404;"><span>Cash rounding</span><strong>+${formatLbpCurrency(sale.payableLbp - totalLbp)}</strong></div>
+                <div class="row total"><span>Cash payable</span><span>${formatLbpCurrency(sale.payableLbp)}</span></div>
               `
               : ""
           }

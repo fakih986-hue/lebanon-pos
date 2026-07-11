@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react"
 
-import { formatCurrency } from "../../features/pos/lib/currency"
+import { formatCurrency, usdToLbp } from "../../features/pos/lib/currency"
 import { getSettings } from "../../features/pos/services/settings.service"
 import {
   getPaymentMix,
@@ -38,6 +38,7 @@ import {
   getRefundMethod,
   getRefundTotal,
   getRefundableQuantity,
+  getSaleExchangeRate,
   getSaleRefunds,
   parseReturnQuantity,
 } from "../../features/pos/lib/salesHelpers"
@@ -75,7 +76,7 @@ function exportSalesCsv(sales: Sale[]) {
   const rate = s.usdToLbpRate
   const header = ["Sale #", "Date", "Payment", "Customer", "Cashier", "Items", "Subtotal", "Discount", "Tax", "Total", "Total (LBP)", "Cash Payable (LBP)", "Profit", "Profit (LBP)", "Status"]
   const rows = sales.map((s) => {
-    const payableLbp = (s as any).payableLbp as number | undefined
+    const payableLbp = s.payableLbp
     return [
       s.saleNumber ?? "",
       s.createdAt ? new Date(s.createdAt).toLocaleString() : "",
@@ -661,7 +662,16 @@ function SaleRow({ sale, selected, refunds, onSelect, onView, onPrint }: {
   onSelect: () => void; onView: () => void; onPrint: () => void
 }) {
   const saleRefunds = refunds.filter((r) => r.saleId === sale.id)
-  const hasRounding = (sale as any).payableLbp && (sale as any).payableLbp !== (sale as any).totalLbp
+  // totalLbp isn't a Sale field — it must be computed the same way the
+  // checkout screen and receipt do, using the sale's OWN historical exchange
+  // rate (tender.exchangeRate), not today's rate, since it may have changed
+  // since the sale. Previously compared against sale.totalLbp directly,
+  // which was always undefined, so this was really just Boolean(payableLbp)
+  // — true for every cash sale that had a payableLbp, even ones with no
+  // actual rounding.
+  const saleExchangeRate = getSaleExchangeRate(sale, getSettings().usdToLbpRate)
+  const saleTotalLbp = usdToLbp(sale.total, saleExchangeRate)
+  const hasRounding = Boolean(sale.payableLbp) && sale.payableLbp !== saleTotalLbp
   return (
     <button
       type="button"

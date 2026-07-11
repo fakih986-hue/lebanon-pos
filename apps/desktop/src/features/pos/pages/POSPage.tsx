@@ -601,7 +601,9 @@ export default function POSPage() {
       const saleResult = recordSale({
         saleNumber, paymentMethod,
         customerId: selectedCustomer?.id, customerName: selectedCustomer?.name,
-        subtotal, discountTotal, tax, total, soldAtCost: sellAtCost, tender, items: saleItems,
+        subtotal, discountTotal, tax, total, soldAtCost: sellAtCost, tender,
+        payableLbp: paymentMethod === "Cash" ? payableLbp : undefined,
+        items: saleItems,
       })
       recordedSaleId = saleResult.id
 

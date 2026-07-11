@@ -225,6 +225,7 @@ model Sale {
   cashierId     String?
   shiftId       String?
   shiftNumber   String?
+  payableLbp    Decimal?         @db.Decimal(18, 4)
   status        SaleStatus       @default(Completed)
   createdAt     DateTime         @default(now())
 

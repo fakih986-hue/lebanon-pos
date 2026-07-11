@@ -228,6 +228,7 @@ exports.Prisma.SaleScalarFieldEnum = {
   cashierId: 'cashierId',
   shiftId: 'shiftId',
   shiftNumber: 'shiftNumber',
+  payableLbp: 'payableLbp',
   status: 'status',
   createdAt: 'createdAt'
 };

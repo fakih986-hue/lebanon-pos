@@ -176,6 +176,25 @@ describe("A. Device pairing / access control", () => {
   })
 })
 
+describe("Sale.payableLbp persists through a real sync push", () => {
+  it("a Cash sale's rounded LBP payable amount actually persists on the Sale row, not just the live checkout screen", async () => {
+    const saleId = randomUUID()
+    const res = await pushOne(adminToken, CLIENT_A_DEVICE_ID, "sale", "create", {
+      // Deliberately NOT prefixed "STRESS-" — that prefix is used as a count
+      // filter by the "hub + client A + client B" test above, and this sale
+      // would otherwise inflate that count.
+      id: saleId, saleNumber: "PAYABLE-LBP-TEST-1", paymentMethod: "Cash",
+      subtotal: 5, tax: 0, total: 5, cost: 3, cashier: "Stress Admin",
+      payableLbp: 450000, // e.g. rounded up to the nearest 5,000 LBP banknote
+      items: [{ id: productId, name: "Stress Test Widget", barcode: "x", quantity: 1, unitPrice: 5, total: 5, cost: 3 }],
+    })
+    expect(res.body.results[0].status).toBe("ok")
+
+    const sale = await prisma.sale.findUnique({ where: { id: saleId }, select: { payableLbp: true } })
+    expect(Number(sale!.payableLbp)).toBe(450000)
+  })
+})
+
 // ─── B/C. Concurrent sales + stock ──────────────────────────────────────────
 
 describe("B/C. Concurrent sales and stock", () => {

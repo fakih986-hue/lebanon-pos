@@ -10591,6 +10591,7 @@ export namespace Prisma {
     total: Decimal | null
     cost: Decimal | null
     profit: Decimal | null
+    payableLbp: Decimal | null
   }
 
   export type SaleSumAggregateOutputType = {
@@ -10600,6 +10601,7 @@ export namespace Prisma {
     total: Decimal | null
     cost: Decimal | null
     profit: Decimal | null
+    payableLbp: Decimal | null
   }
 
   export type SaleMinAggregateOutputType = {
@@ -10620,6 +10622,7 @@ export namespace Prisma {
     cashierId: string | null
     shiftId: string | null
     shiftNumber: string | null
+    payableLbp: Decimal | null
     status: $Enums.SaleStatus | null
     createdAt: Date | null
   }
@@ -10642,6 +10645,7 @@ export namespace Prisma {
     cashierId: string | null
     shiftId: string | null
     shiftNumber: string | null
+    payableLbp: Decimal | null
     status: $Enums.SaleStatus | null
     createdAt: Date | null
   }
@@ -10664,6 +10668,7 @@ export namespace Prisma {
     cashierId: number
     shiftId: number
     shiftNumber: number
+    payableLbp: number
     status: number
     createdAt: number
     _all: number
@@ -10677,6 +10682,7 @@ export namespace Prisma {
     total?: true
     cost?: true
     profit?: true
+    payableLbp?: true
   }
 
   export type SaleSumAggregateInputType = {
@@ -10686,6 +10692,7 @@ export namespace Prisma {
     total?: true
     cost?: true
     profit?: true
+    payableLbp?: true
   }
 
   export type SaleMinAggregateInputType = {
@@ -10706,6 +10713,7 @@ export namespace Prisma {
     cashierId?: true
     shiftId?: true
     shiftNumber?: true
+    payableLbp?: true
     status?: true
     createdAt?: true
   }
@@ -10728,6 +10736,7 @@ export namespace Prisma {
     cashierId?: true
     shiftId?: true
     shiftNumber?: true
+    payableLbp?: true
     status?: true
     createdAt?: true
   }
@@ -10750,6 +10759,7 @@ export namespace Prisma {
     cashierId?: true
     shiftId?: true
     shiftNumber?: true
+    payableLbp?: true
     status?: true
     createdAt?: true
     _all?: true
@@ -10859,6 +10869,7 @@ export namespace Prisma {
     cashierId: string | null
     shiftId: string | null
     shiftNumber: string | null
+    payableLbp: Decimal | null
     status: $Enums.SaleStatus
     createdAt: Date
     _count: SaleCountAggregateOutputType | null
@@ -10900,6 +10911,7 @@ export namespace Prisma {
     cashierId?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
+    payableLbp?: boolean
     status?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -10927,6 +10939,7 @@ export namespace Prisma {
     cashierId?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
+    payableLbp?: boolean
     status?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -10950,6 +10963,7 @@ export namespace Prisma {
     cashierId?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
+    payableLbp?: boolean
     status?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
@@ -10973,11 +10987,12 @@ export namespace Prisma {
     cashierId?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
+    payableLbp?: boolean
     status?: boolean
     createdAt?: boolean
   }
 
-  export type SaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "saleNumber" | "paymentMethod" | "customerId" | "customerName" | "subtotal" | "discountTotal" | "tax" | "total" | "cost" | "profit" | "soldAtCost" | "cashier" | "cashierId" | "shiftId" | "shiftNumber" | "status" | "createdAt", ExtArgs["result"]["sale"]>
+  export type SaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "saleNumber" | "paymentMethod" | "customerId" | "customerName" | "subtotal" | "discountTotal" | "tax" | "total" | "cost" | "profit" | "soldAtCost" | "cashier" | "cashierId" | "shiftId" | "shiftNumber" | "payableLbp" | "status" | "createdAt", ExtArgs["result"]["sale"]>
   export type SaleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     items?: boolean | Sale$itemsArgs<ExtArgs>
@@ -11018,6 +11033,7 @@ export namespace Prisma {
       cashierId: string | null
       shiftId: string | null
       shiftNumber: string | null
+      payableLbp: Prisma.Decimal | null
       status: $Enums.SaleStatus
       createdAt: Date
     }, ExtArgs["result"]["sale"]>
@@ -11464,6 +11480,7 @@ export namespace Prisma {
     readonly cashierId: FieldRef<"Sale", 'String'>
     readonly shiftId: FieldRef<"Sale", 'String'>
     readonly shiftNumber: FieldRef<"Sale", 'String'>
+    readonly payableLbp: FieldRef<"Sale", 'Decimal'>
     readonly status: FieldRef<"Sale", 'SaleStatus'>
     readonly createdAt: FieldRef<"Sale", 'DateTime'>
   }
@@ -44551,6 +44568,7 @@ export namespace Prisma {
     cashierId: 'cashierId',
     shiftId: 'shiftId',
     shiftNumber: 'shiftNumber',
+    payableLbp: 'payableLbp',
     status: 'status',
     createdAt: 'createdAt'
   };
@@ -45960,6 +45978,7 @@ export namespace Prisma {
     cashierId?: StringNullableFilter<"Sale"> | string | null
     shiftId?: StringNullableFilter<"Sale"> | string | null
     shiftNumber?: StringNullableFilter<"Sale"> | string | null
+    payableLbp?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFilter<"Sale"> | $Enums.SaleStatus
     createdAt?: DateTimeFilter<"Sale"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -45986,6 +46005,7 @@ export namespace Prisma {
     cashierId?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
+    payableLbp?: SortOrderInput | SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
@@ -46016,6 +46036,7 @@ export namespace Prisma {
     cashierId?: StringNullableFilter<"Sale"> | string | null
     shiftId?: StringNullableFilter<"Sale"> | string | null
     shiftNumber?: StringNullableFilter<"Sale"> | string | null
+    payableLbp?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFilter<"Sale"> | $Enums.SaleStatus
     createdAt?: DateTimeFilter<"Sale"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
@@ -46042,6 +46063,7 @@ export namespace Prisma {
     cashierId?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
+    payableLbp?: SortOrderInput | SortOrder
     status?: SortOrder
     createdAt?: SortOrder
     _count?: SaleCountOrderByAggregateInput
@@ -46072,6 +46094,7 @@ export namespace Prisma {
     cashierId?: StringNullableWithAggregatesFilter<"Sale"> | string | null
     shiftId?: StringNullableWithAggregatesFilter<"Sale"> | string | null
     shiftNumber?: StringNullableWithAggregatesFilter<"Sale"> | string | null
+    payableLbp?: DecimalNullableWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusWithAggregatesFilter<"Sale"> | $Enums.SaleStatus
     createdAt?: DateTimeWithAggregatesFilter<"Sale"> | Date | string
   }
@@ -49398,6 +49421,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSalesInput
@@ -49424,6 +49448,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
     items?: SaleItemUncheckedCreateNestedManyWithoutSaleInput
@@ -49448,6 +49473,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSalesNestedInput
@@ -49474,6 +49500,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: SaleItemUncheckedUpdateManyWithoutSaleNestedInput
@@ -49499,6 +49526,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
   }
@@ -49520,6 +49548,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -49542,6 +49571,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -53313,6 +53343,7 @@ export namespace Prisma {
     cashierId?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
+    payableLbp?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
   }
@@ -53324,6 +53355,7 @@ export namespace Prisma {
     total?: SortOrder
     cost?: SortOrder
     profit?: SortOrder
+    payableLbp?: SortOrder
   }
 
   export type SaleMaxOrderByAggregateInput = {
@@ -53344,6 +53376,7 @@ export namespace Prisma {
     cashierId?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
+    payableLbp?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
   }
@@ -53366,6 +53399,7 @@ export namespace Prisma {
     cashierId?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
+    payableLbp?: SortOrder
     status?: SortOrder
     createdAt?: SortOrder
   }
@@ -53377,6 +53411,7 @@ export namespace Prisma {
     total?: SortOrder
     cost?: SortOrder
     profit?: SortOrder
+    payableLbp?: SortOrder
   }
 
   export type EnumSalePaymentMethodWithAggregatesFilter<$PrismaModel = never> = {
@@ -58604,6 +58639,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
     items?: SaleItemCreateNestedManyWithoutSaleInput
@@ -58628,6 +58664,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
     items?: SaleItemUncheckedCreateNestedManyWithoutSaleInput
@@ -59662,6 +59699,7 @@ export namespace Prisma {
     cashierId?: StringNullableFilter<"Sale"> | string | null
     shiftId?: StringNullableFilter<"Sale"> | string | null
     shiftNumber?: StringNullableFilter<"Sale"> | string | null
+    payableLbp?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFilter<"Sale"> | $Enums.SaleStatus
     createdAt?: DateTimeFilter<"Sale"> | Date | string
   }
@@ -62248,6 +62286,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSalesInput
@@ -62273,6 +62312,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
     refunds?: SaleRefundUncheckedCreateNestedManyWithoutSaleInput
@@ -62312,6 +62352,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSalesNestedInput
@@ -62337,6 +62378,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refunds?: SaleRefundUncheckedUpdateManyWithoutSaleNestedInput
@@ -62360,6 +62402,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSalesInput
@@ -62385,6 +62428,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
     items?: SaleItemUncheckedCreateNestedManyWithoutSaleInput
@@ -62424,6 +62468,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSalesNestedInput
@@ -62449,6 +62494,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: SaleItemUncheckedUpdateManyWithoutSaleNestedInput
@@ -62575,6 +62621,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSalesInput
@@ -62600,6 +62647,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
     items?: SaleItemUncheckedCreateNestedManyWithoutSaleInput
@@ -62780,6 +62828,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSalesNestedInput
@@ -62805,6 +62854,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: SaleItemUncheckedUpdateManyWithoutSaleNestedInput
@@ -69434,6 +69484,7 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
     createdAt?: Date | string
   }
@@ -69907,6 +69958,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: SaleItemUpdateManyWithoutSaleNestedInput
@@ -69931,6 +69983,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: SaleItemUncheckedUpdateManyWithoutSaleNestedInput
@@ -69955,6 +70008,7 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
