@@ -843,10 +843,17 @@ ipcMain.handle("set-bind-host", async (_event, value: "0.0.0.0" | "127.0.0.1") =
     const updated = envText.replace(/^BIND_HOST=.*$/m, `BIND_HOST=${value}`)
     fs.writeFileSync(ENV_PATH, updated, { mode: 0o600 })
 
-    // Restart API with new bind host
+    // Restart API with new bind host. Wait for the OLD process to actually
+    // exit (release the port) before spawning the new one — a fixed sleep
+    // here previously raced graceful shutdown (closing DB connections, etc.);
+    // if the old process was still holding port 3015 when the new one tried
+    // to listen, it hit EADDRINUSE and crashed, tripping the 3-strikes dialog.
     if (apiProcess && !apiProcess.killed) {
+      const exited = new Promise<void>((resolve) => {
+        apiProcess!.once("exit", () => resolve())
+      })
       apiProcess.kill("SIGTERM")
-      await sleep(2000)
+      await Promise.race([exited, sleep(10_000)])
     }
     apiRestartCount = 0
     spawnApi()
