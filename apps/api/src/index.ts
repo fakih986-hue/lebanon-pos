@@ -7,7 +7,7 @@ import "./setup.js"
 import { createServer } from "node:http"
 import app from "./app.js"
 import { setupWebSocket } from "./ws/index.js"
-import { startCloudSyncBridge } from "./services/cloudSync.js"
+import { startCloudSyncBridge, backfillProductSyncIds } from "./services/cloudSync.js"
 import prisma from "./lib/prisma.js"
 
 // Must be set before any route handler runs
@@ -52,6 +52,14 @@ async function main() {
     scheduleSyncOperationPrune()
     if (["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")) {
       startCloudSyncBridge()
+    } else {
+      // Cloud instance (Railway) is the single authority for Product.syncId.
+      // Backfill any legacy products lacking one; hubs adopt these via pull.
+      // Guarded to !IS_LOCAL_SERVER so a hub never generates its own syncIds
+      // for existing products (which would diverge from cloud's).
+      backfillProductSyncIds().catch((err) =>
+        console.error("[sync-identity] backfill error:", err)
+      )
     }
   })
 

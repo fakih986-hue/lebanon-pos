@@ -185,6 +185,7 @@ exports.Prisma.AppSettingsScalarFieldEnum = {
 
 exports.Prisma.ProductScalarFieldEnum = {
   id: 'id',
+  syncId: 'syncId',
   tenantId: 'tenantId',
   parentId: 'parentId',
   isParent: 'isParent',

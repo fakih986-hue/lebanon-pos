@@ -168,6 +168,13 @@ model AppSettings {
 
 model Product {
   id              Int       @id @default(autoincrement())
+  // Stable cross-system sync identity (see packages/types Product.syncId).
+  // Numeric `id` stays the local/internal PK + FK target; `syncId` is the
+  // globally stable identity matched across hub/client/cloud. Nullable during
+  // the transition (legacy rows backfilled cloud-authoritatively); unique per
+  // tenant. Nullable-unique is safe in Postgres — NULLs are treated as
+  // distinct, so many not-yet-backfilled rows coexist without collision.
+  syncId          String?
   tenantId        String
   tenant          Tenant    @relation(fields: [tenantId], references: [id])
   parentId        Int?
@@ -201,6 +208,7 @@ model Product {
   stockMovements  StockMovement[]
 
   @@unique([tenantId, barcode])
+  @@unique([tenantId, syncId])
   @@index([tenantId, category])
   @@index([tenantId, name])
   @@index([tenantId, parentId])

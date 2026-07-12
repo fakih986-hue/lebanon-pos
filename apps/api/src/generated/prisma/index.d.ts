@@ -9076,6 +9076,7 @@ export namespace Prisma {
 
   export type ProductMinAggregateOutputType = {
     id: number | null
+    syncId: string | null
     tenantId: string | null
     parentId: number | null
     isParent: boolean | null
@@ -9102,6 +9103,7 @@ export namespace Prisma {
 
   export type ProductMaxAggregateOutputType = {
     id: number | null
+    syncId: string | null
     tenantId: string | null
     parentId: number | null
     isParent: boolean | null
@@ -9128,6 +9130,7 @@ export namespace Prisma {
 
   export type ProductCountAggregateOutputType = {
     id: number
+    syncId: number
     tenantId: number
     parentId: number
     isParent: number
@@ -9179,6 +9182,7 @@ export namespace Prisma {
 
   export type ProductMinAggregateInputType = {
     id?: true
+    syncId?: true
     tenantId?: true
     parentId?: true
     isParent?: true
@@ -9205,6 +9209,7 @@ export namespace Prisma {
 
   export type ProductMaxAggregateInputType = {
     id?: true
+    syncId?: true
     tenantId?: true
     parentId?: true
     isParent?: true
@@ -9231,6 +9236,7 @@ export namespace Prisma {
 
   export type ProductCountAggregateInputType = {
     id?: true
+    syncId?: true
     tenantId?: true
     parentId?: true
     isParent?: true
@@ -9345,6 +9351,7 @@ export namespace Prisma {
 
   export type ProductGroupByOutputType = {
     id: number
+    syncId: string | null
     tenantId: string
     parentId: number | null
     isParent: boolean
@@ -9391,6 +9398,7 @@ export namespace Prisma {
 
   export type ProductSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    syncId?: boolean
     tenantId?: boolean
     parentId?: boolean
     isParent?: boolean
@@ -9426,6 +9434,7 @@ export namespace Prisma {
 
   export type ProductSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    syncId?: boolean
     tenantId?: boolean
     parentId?: boolean
     isParent?: boolean
@@ -9455,6 +9464,7 @@ export namespace Prisma {
 
   export type ProductSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
+    syncId?: boolean
     tenantId?: boolean
     parentId?: boolean
     isParent?: boolean
@@ -9484,6 +9494,7 @@ export namespace Prisma {
 
   export type ProductSelectScalar = {
     id?: boolean
+    syncId?: boolean
     tenantId?: boolean
     parentId?: boolean
     isParent?: boolean
@@ -9509,7 +9520,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "wholesalePrice" | "cost" | "stock" | "barcode" | "barcodeAliases" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "archived" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "syncId" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "wholesalePrice" | "cost" | "stock" | "barcode" | "barcodeAliases" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "archived" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
   export type ProductInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     parent?: boolean | Product$parentArgs<ExtArgs>
@@ -9542,6 +9553,7 @@ export namespace Prisma {
     }
     scalars: $Extensions.GetPayloadResult<{
       id: number
+      syncId: string | null
       tenantId: string
       parentId: number | null
       isParent: boolean
@@ -9996,6 +10008,7 @@ export namespace Prisma {
    */
   interface ProductFieldRefs {
     readonly id: FieldRef<"Product", 'Int'>
+    readonly syncId: FieldRef<"Product", 'String'>
     readonly tenantId: FieldRef<"Product", 'String'>
     readonly parentId: FieldRef<"Product", 'Int'>
     readonly isParent: FieldRef<"Product", 'Boolean'>
@@ -44522,6 +44535,7 @@ export namespace Prisma {
 
   export const ProductScalarFieldEnum: {
     id: 'id',
+    syncId: 'syncId',
     tenantId: 'tenantId',
     parentId: 'parentId',
     isParent: 'isParent',
@@ -45791,6 +45805,7 @@ export namespace Prisma {
     OR?: ProductWhereInput[]
     NOT?: ProductWhereInput | ProductWhereInput[]
     id?: IntFilter<"Product"> | number
+    syncId?: StringNullableFilter<"Product"> | string | null
     tenantId?: StringFilter<"Product"> | string
     parentId?: IntNullableFilter<"Product"> | number | null
     isParent?: BoolFilter<"Product"> | boolean
@@ -45825,6 +45840,7 @@ export namespace Prisma {
 
   export type ProductOrderByWithRelationInput = {
     id?: SortOrder
+    syncId?: SortOrderInput | SortOrder
     tenantId?: SortOrder
     parentId?: SortOrderInput | SortOrder
     isParent?: SortOrder
@@ -45860,9 +45876,11 @@ export namespace Prisma {
   export type ProductWhereUniqueInput = Prisma.AtLeast<{
     id?: number
     tenantId_barcode?: ProductTenantIdBarcodeCompoundUniqueInput
+    tenantId_syncId?: ProductTenantIdSyncIdCompoundUniqueInput
     AND?: ProductWhereInput | ProductWhereInput[]
     OR?: ProductWhereInput[]
     NOT?: ProductWhereInput | ProductWhereInput[]
+    syncId?: StringNullableFilter<"Product"> | string | null
     tenantId?: StringFilter<"Product"> | string
     parentId?: IntNullableFilter<"Product"> | number | null
     isParent?: BoolFilter<"Product"> | boolean
@@ -45893,10 +45911,11 @@ export namespace Prisma {
     adjustments?: StockAdjustmentListRelationFilter
     stockCountLines?: StockCountLineListRelationFilter
     stockMovements?: StockMovementListRelationFilter
-  }, "id" | "tenantId_barcode">
+  }, "id" | "tenantId_barcode" | "tenantId_syncId">
 
   export type ProductOrderByWithAggregationInput = {
     id?: SortOrder
+    syncId?: SortOrderInput | SortOrder
     tenantId?: SortOrder
     parentId?: SortOrderInput | SortOrder
     isParent?: SortOrder
@@ -45932,6 +45951,7 @@ export namespace Prisma {
     OR?: ProductScalarWhereWithAggregatesInput[]
     NOT?: ProductScalarWhereWithAggregatesInput | ProductScalarWhereWithAggregatesInput[]
     id?: IntWithAggregatesFilter<"Product"> | number
+    syncId?: StringNullableWithAggregatesFilter<"Product"> | string | null
     tenantId?: StringWithAggregatesFilter<"Product"> | string
     parentId?: IntNullableWithAggregatesFilter<"Product"> | number | null
     isParent?: BoolWithAggregatesFilter<"Product"> | boolean
@@ -49201,6 +49221,7 @@ export namespace Prisma {
   }
 
   export type ProductCreateInput = {
+    syncId?: string | null
     isParent?: boolean
     variantName?: string | null
     name: string
@@ -49233,6 +49254,7 @@ export namespace Prisma {
 
   export type ProductUncheckedCreateInput = {
     id?: number
+    syncId?: string | null
     tenantId: string
     parentId?: number | null
     isParent?: boolean
@@ -49264,6 +49286,7 @@ export namespace Prisma {
   }
 
   export type ProductUpdateInput = {
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -49296,6 +49319,7 @@ export namespace Prisma {
 
   export type ProductUncheckedUpdateInput = {
     id?: IntFieldUpdateOperationsInput | number
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     tenantId?: StringFieldUpdateOperationsInput | string
     parentId?: NullableIntFieldUpdateOperationsInput | number | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
@@ -49328,6 +49352,7 @@ export namespace Prisma {
 
   export type ProductCreateManyInput = {
     id?: number
+    syncId?: string | null
     tenantId: string
     parentId?: number | null
     isParent?: boolean
@@ -49354,6 +49379,7 @@ export namespace Prisma {
   }
 
   export type ProductUpdateManyMutationInput = {
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -49379,6 +49405,7 @@ export namespace Prisma {
 
   export type ProductUncheckedUpdateManyInput = {
     id?: IntFieldUpdateOperationsInput | number
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     tenantId?: StringFieldUpdateOperationsInput | string
     parentId?: NullableIntFieldUpdateOperationsInput | number | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
@@ -53048,17 +53075,6 @@ export namespace Prisma {
     _max?: NestedDecimalFilter<$PrismaModel>
   }
 
-  export type IntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
-  }
-
   export type StringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -53072,6 +53088,17 @@ export namespace Prisma {
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     mode?: QueryMode
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type DecimalNullableFilter<$PrismaModel = never> = {
@@ -53124,8 +53151,14 @@ export namespace Prisma {
     barcode: string
   }
 
+  export type ProductTenantIdSyncIdCompoundUniqueInput = {
+    tenantId: string
+    syncId: string
+  }
+
   export type ProductCountOrderByAggregateInput = {
     id?: SortOrder
+    syncId?: SortOrder
     tenantId?: SortOrder
     parentId?: SortOrder
     isParent?: SortOrder
@@ -53164,6 +53197,7 @@ export namespace Prisma {
 
   export type ProductMaxOrderByAggregateInput = {
     id?: SortOrder
+    syncId?: SortOrder
     tenantId?: SortOrder
     parentId?: SortOrder
     isParent?: SortOrder
@@ -53190,6 +53224,7 @@ export namespace Prisma {
 
   export type ProductMinOrderByAggregateInput = {
     id?: SortOrder
+    syncId?: SortOrder
     tenantId?: SortOrder
     parentId?: SortOrder
     isParent?: SortOrder
@@ -53225,22 +53260,6 @@ export namespace Prisma {
     reorderQuantity?: SortOrder
   }
 
-  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedFloatNullableFilter<$PrismaModel>
-    _sum?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedIntNullableFilter<$PrismaModel>
-    _max?: NestedIntNullableFilter<$PrismaModel>
-  }
-
   export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -53257,6 +53276,22 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -58235,6 +58270,23 @@ export namespace Prisma {
     not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
   }
 
+  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    lt?: string | StringFieldRefInput<$PrismaModel>
+    lte?: string | StringFieldRefInput<$PrismaModel>
+    gt?: string | StringFieldRefInput<$PrismaModel>
+    gte?: string | StringFieldRefInput<$PrismaModel>
+    contains?: string | StringFieldRefInput<$PrismaModel>
+    startsWith?: string | StringFieldRefInput<$PrismaModel>
+    endsWith?: string | StringFieldRefInput<$PrismaModel>
+    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedStringNullableFilter<$PrismaModel>
+    _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
   export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel> | null
     in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
@@ -58260,23 +58312,6 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatNullableFilter<$PrismaModel> | number | null
-  }
-
-  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    lt?: string | StringFieldRefInput<$PrismaModel>
-    lte?: string | StringFieldRefInput<$PrismaModel>
-    gt?: string | StringFieldRefInput<$PrismaModel>
-    gte?: string | StringFieldRefInput<$PrismaModel>
-    contains?: string | StringFieldRefInput<$PrismaModel>
-    startsWith?: string | StringFieldRefInput<$PrismaModel>
-    endsWith?: string | StringFieldRefInput<$PrismaModel>
-    not?: NestedStringNullableWithAggregatesFilter<$PrismaModel> | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedStringNullableFilter<$PrismaModel>
-    _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
   export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -58552,6 +58587,7 @@ export namespace Prisma {
   }
 
   export type ProductCreateWithoutTenantInput = {
+    syncId?: string | null
     isParent?: boolean
     variantName?: string | null
     name: string
@@ -58583,6 +58619,7 @@ export namespace Prisma {
 
   export type ProductUncheckedCreateWithoutTenantInput = {
     id?: number
+    syncId?: string | null
     parentId?: number | null
     isParent?: boolean
     variantName?: string | null
@@ -59637,6 +59674,7 @@ export namespace Prisma {
     OR?: ProductScalarWhereInput[]
     NOT?: ProductScalarWhereInput | ProductScalarWhereInput[]
     id?: IntFilter<"Product"> | number
+    syncId?: StringNullableFilter<"Product"> | string | null
     tenantId?: StringFilter<"Product"> | string
     parentId?: IntNullableFilter<"Product"> | number | null
     isParent?: BoolFilter<"Product"> | boolean
@@ -61295,6 +61333,7 @@ export namespace Prisma {
   }
 
   export type ProductCreateWithoutVariantsInput = {
+    syncId?: string | null
     isParent?: boolean
     variantName?: string | null
     name: string
@@ -61326,6 +61365,7 @@ export namespace Prisma {
 
   export type ProductUncheckedCreateWithoutVariantsInput = {
     id?: number
+    syncId?: string | null
     tenantId: string
     parentId?: number | null
     isParent?: boolean
@@ -61361,6 +61401,7 @@ export namespace Prisma {
   }
 
   export type ProductCreateWithoutParentInput = {
+    syncId?: string | null
     isParent?: boolean
     variantName?: string | null
     name: string
@@ -61392,6 +61433,7 @@ export namespace Prisma {
 
   export type ProductUncheckedCreateWithoutParentInput = {
     id?: number
+    syncId?: string | null
     tenantId: string
     isParent?: boolean
     variantName?: string | null
@@ -61708,6 +61750,7 @@ export namespace Prisma {
   }
 
   export type ProductUpdateWithoutVariantsInput = {
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -61739,6 +61782,7 @@ export namespace Prisma {
 
   export type ProductUncheckedUpdateWithoutVariantsInput = {
     id?: IntFieldUpdateOperationsInput | number
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     tenantId?: StringFieldUpdateOperationsInput | string
     parentId?: NullableIntFieldUpdateOperationsInput | number | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
@@ -66300,6 +66344,7 @@ export namespace Prisma {
   }
 
   export type ProductCreateWithoutBatchesInput = {
+    syncId?: string | null
     isParent?: boolean
     variantName?: string | null
     name: string
@@ -66331,6 +66376,7 @@ export namespace Prisma {
 
   export type ProductUncheckedCreateWithoutBatchesInput = {
     id?: number
+    syncId?: string | null
     tenantId: string
     parentId?: number | null
     isParent?: boolean
@@ -66521,6 +66567,7 @@ export namespace Prisma {
   }
 
   export type ProductUpdateWithoutBatchesInput = {
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -66552,6 +66599,7 @@ export namespace Prisma {
 
   export type ProductUncheckedUpdateWithoutBatchesInput = {
     id?: IntFieldUpdateOperationsInput | number
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     tenantId?: StringFieldUpdateOperationsInput | string
     parentId?: NullableIntFieldUpdateOperationsInput | number | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
@@ -66726,6 +66774,7 @@ export namespace Prisma {
   }
 
   export type ProductCreateWithoutAdjustmentsInput = {
+    syncId?: string | null
     isParent?: boolean
     variantName?: string | null
     name: string
@@ -66757,6 +66806,7 @@ export namespace Prisma {
 
   export type ProductUncheckedCreateWithoutAdjustmentsInput = {
     id?: number
+    syncId?: string | null
     tenantId: string
     parentId?: number | null
     isParent?: boolean
@@ -66912,6 +66962,7 @@ export namespace Prisma {
   }
 
   export type ProductUpdateWithoutAdjustmentsInput = {
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -66943,6 +66994,7 @@ export namespace Prisma {
 
   export type ProductUncheckedUpdateWithoutAdjustmentsInput = {
     id?: IntFieldUpdateOperationsInput | number
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     tenantId?: StringFieldUpdateOperationsInput | string
     parentId?: NullableIntFieldUpdateOperationsInput | number | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
@@ -67262,6 +67314,7 @@ export namespace Prisma {
   }
 
   export type ProductCreateWithoutStockCountLinesInput = {
+    syncId?: string | null
     isParent?: boolean
     variantName?: string | null
     name: string
@@ -67293,6 +67346,7 @@ export namespace Prisma {
 
   export type ProductUncheckedCreateWithoutStockCountLinesInput = {
     id?: number
+    syncId?: string | null
     tenantId: string
     parentId?: number | null
     isParent?: boolean
@@ -67372,6 +67426,7 @@ export namespace Prisma {
   }
 
   export type ProductUpdateWithoutStockCountLinesInput = {
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -67403,6 +67458,7 @@ export namespace Prisma {
 
   export type ProductUncheckedUpdateWithoutStockCountLinesInput = {
     id?: IntFieldUpdateOperationsInput | number
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     tenantId?: StringFieldUpdateOperationsInput | string
     parentId?: NullableIntFieldUpdateOperationsInput | number | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
@@ -69180,6 +69236,7 @@ export namespace Prisma {
   }
 
   export type ProductCreateWithoutStockMovementsInput = {
+    syncId?: string | null
     isParent?: boolean
     variantName?: string | null
     name: string
@@ -69211,6 +69268,7 @@ export namespace Prisma {
 
   export type ProductUncheckedCreateWithoutStockMovementsInput = {
     id?: number
+    syncId?: string | null
     tenantId: string
     parentId?: number | null
     isParent?: boolean
@@ -69366,6 +69424,7 @@ export namespace Prisma {
   }
 
   export type ProductUpdateWithoutStockMovementsInput = {
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -69397,6 +69456,7 @@ export namespace Prisma {
 
   export type ProductUncheckedUpdateWithoutStockMovementsInput = {
     id?: IntFieldUpdateOperationsInput | number
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     tenantId?: StringFieldUpdateOperationsInput | string
     parentId?: NullableIntFieldUpdateOperationsInput | number | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
@@ -69443,6 +69503,7 @@ export namespace Prisma {
 
   export type ProductCreateManyTenantInput = {
     id?: number
+    syncId?: string | null
     parentId?: number | null
     isParent?: boolean
     variantName?: string | null
@@ -69855,6 +69916,7 @@ export namespace Prisma {
   }
 
   export type ProductUpdateWithoutTenantInput = {
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -69886,6 +69948,7 @@ export namespace Prisma {
 
   export type ProductUncheckedUpdateWithoutTenantInput = {
     id?: IntFieldUpdateOperationsInput | number
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     parentId?: NullableIntFieldUpdateOperationsInput | number | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -69917,6 +69980,7 @@ export namespace Prisma {
 
   export type ProductUncheckedUpdateManyWithoutTenantInput = {
     id?: IntFieldUpdateOperationsInput | number
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     parentId?: NullableIntFieldUpdateOperationsInput | number | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -71321,6 +71385,7 @@ export namespace Prisma {
 
   export type ProductCreateManyParentInput = {
     id?: number
+    syncId?: string | null
     tenantId: string
     isParent?: boolean
     variantName?: string | null
@@ -71404,6 +71469,7 @@ export namespace Prisma {
   }
 
   export type ProductUpdateWithoutParentInput = {
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
     name?: StringFieldUpdateOperationsInput | string
@@ -71435,6 +71501,7 @@ export namespace Prisma {
 
   export type ProductUncheckedUpdateWithoutParentInput = {
     id?: IntFieldUpdateOperationsInput | number
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     tenantId?: StringFieldUpdateOperationsInput | string
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -71466,6 +71533,7 @@ export namespace Prisma {
 
   export type ProductUncheckedUpdateManyWithoutParentInput = {
     id?: IntFieldUpdateOperationsInput | number
+    syncId?: NullableStringFieldUpdateOperationsInput | string | null
     tenantId?: StringFieldUpdateOperationsInput | string
     isParent?: BoolFieldUpdateOperationsInput | boolean
     variantName?: NullableStringFieldUpdateOperationsInput | string | null

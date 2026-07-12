@@ -619,6 +619,116 @@ describe("POST /api/sync/push — live activity feed", () => {
   })
 })
 
+describe("POST /api/sync/push — product sync identity (POS-SYNC-IDENTITY-1)", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it("create with syncId persists syncId and never forwards the client's numeric id", async () => {
+    vi.mocked(prisma.product.findFirst).mockResolvedValue(null) // no syncId match, no barcode match
+    vi.mocked(prisma.product.create).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-si-1", entity: "product", action: "create", payload: {
+        id: 5, syncId: "sync-new-1", name: "SyncCola", barcode: "SIBC1", price: 1, cost: 1, stock: 3, category: "Test",
+      } }] },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+    const call = vi.mocked(prisma.product.create).mock.calls[0][0]
+    expect(call.data.syncId).toBe("sync-new-1")
+    expect(call.data.id).toBeUndefined()
+  })
+
+  it("create with an existing barcode adopts the existing row — no duplicate product", async () => {
+    vi.mocked(prisma.product.findFirst)
+      .mockResolvedValueOnce(null)                              // syncId lookup → none
+      .mockResolvedValueOnce({ id: 42, syncId: null } as any)  // barcode lookup → found
+    vi.mocked(prisma.product.update).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-si-2", entity: "product", action: "create", payload: {
+        id: 9, syncId: "sync-incoming-2", name: "DupCola", barcode: "SIBC-DUP", price: 1, cost: 1, stock: 0, category: "Test",
+      } }] },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+    // Adopted the existing barcode-matched row; did NOT create a duplicate
+    expect(vi.mocked(prisma.product.create)).not.toHaveBeenCalled()
+    const upd = vi.mocked(prisma.product.update).mock.calls[0][0]
+    expect(upd.where).toEqual({ id: 42 })
+    expect(upd.data.syncId).toBe("sync-incoming-2") // existing row had null → adopts incoming
+  })
+
+  it("update matches by syncId (not numeric id) when syncId is present", async () => {
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-si-3", entity: "product", action: "update", payload: {
+        id: 5, syncId: "sync-x", archived: true,
+      } }] },
+    })
+
+    expect(res.status).toBe(200)
+    const call = vi.mocked(prisma.product.updateMany).mock.calls[0][0]
+    expect(call.where).toEqual({ tenantId: "t1", syncId: "sync-x" })
+    expect(call.data).toMatchObject({ archived: true })
+    // matched by syncId (count 1) → no second id-based update
+    expect(vi.mocked(prisma.product.updateMany).mock.calls.length).toBe(1)
+  })
+
+  it("update falls back to numeric id when syncId matches nothing (legacy/transition)", async () => {
+    vi.mocked(prisma.product.updateMany)
+      .mockResolvedValueOnce({ count: 0 } as any)   // syncId → no row
+      .mockResolvedValueOnce({ count: 1 } as any)   // id fallback → matched
+
+    await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-si-4", entity: "product", action: "update", payload: {
+        id: 7, syncId: "sync-missing", archived: true,
+      } }] },
+    })
+
+    const calls = vi.mocked(prisma.product.updateMany).mock.calls
+    expect(calls[0][0].where).toEqual({ tenantId: "t1", syncId: "sync-missing" })
+    expect(calls[1][0].where).toEqual({ tenantId: "t1", id: 7 })
+  })
+
+  it("delete/archive matches by syncId first", async () => {
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+
+    await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-si-5", entity: "product", action: "delete", payload: {
+        id: 5, syncId: "sync-del",
+      } }] },
+    })
+
+    const call = vi.mocked(prisma.product.updateMany).mock.calls[0][0]
+    expect(call.where).toEqual({ tenantId: "t1", syncId: "sync-del" })
+    expect(call.data).toEqual({ archived: true })
+  })
+
+  it("legacy create WITHOUT syncId is still accepted (old clients during transition)", async () => {
+    vi.mocked(prisma.product.findFirst).mockResolvedValue(null) // barcode lookup → none
+    vi.mocked(prisma.product.create).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-si-6", entity: "product", action: "create", payload: {
+        id: 3, name: "LegacyCola", barcode: "SIBC-LEGACY", price: 1, cost: 1, stock: 0, category: "Test",
+      } }] },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+    expect(vi.mocked(prisma.product.create)).toHaveBeenCalled()
+  })
+})
+
 describe("POST /api/sync/push — product delete cascading", () => {
   beforeEach(() => { vi.clearAllMocks() })
 

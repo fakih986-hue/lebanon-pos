@@ -90,6 +90,9 @@ export type InventoryBatch = {
   id: string
   batchNumber: string
   productId: number
+  /** Cross-system product identity carried in the sync payload (stripped
+   *  server-side; not persisted as an InventoryBatch column). */
+  productSyncId?: string
   productName: string
   barcode: string
   initialQuantity: number
@@ -106,6 +109,9 @@ export type InventoryBatch = {
 
 export type ReceiveBatchInput = {
   productId: number
+  /** Stable cross-system product identity, so the batch links to the right
+   *  product on cloud even when the numeric productId differs there. */
+  productSyncId?: string
   productName: string
   barcode: string
   quantity: number
@@ -205,6 +211,7 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[]) {
       id: createId("batch"),
       batchNumber: entry.purchaseOrderNumber || createBatchNumber(),
       productId: entry.productId,
+      productSyncId: entry.productSyncId,
       productName: entry.productName,
       barcode: entry.barcode,
       initialQuantity: entry.quantity,

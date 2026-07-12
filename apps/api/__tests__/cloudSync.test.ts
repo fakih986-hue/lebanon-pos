@@ -83,7 +83,8 @@ vi.mock("../src/lib/prisma", () => {
 })
 
 // Mock node:crypto (used internally but not critical)
-vi.mock("node:crypto", () => ({ default: {} }))
+let __uuidCounter = 0
+vi.mock("node:crypto", () => ({ default: {}, randomUUID: () => `test-uuid-${++__uuidCounter}` }))
 
 // Now import the module under test
 import * as cloudSync from "../src/services/cloudSync"
@@ -319,6 +320,58 @@ describe("cloudSync", () => {
       expect(call.update).toMatchObject({ name: "loreal", barcode: "LOREAL-1", price: 2, stock: 8 })
 
       vi.unstubAllGlobals()
+    })
+  })
+
+  describe("product pull — syncId matching + backfill (POS-SYNC-IDENTITY-1)", () => {
+    it("matches the local row by syncId (not numeric id) and never writes the incoming numeric id", async () => {
+      vi.mocked(prisma.tenant.findUnique).mockResolvedValue({
+        id: "test-tenant-1", name: "Test Store", subdomain: "test",
+      } as any)
+      // Local row found by stable syncId; its local id (5) differs from cloud's (88)
+      vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)
+      vi.mocked(prisma.product.update).mockResolvedValue({} as any)
+
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => null },
+        json: () => Promise.resolve({
+          products: [{ id: 88, syncId: "STABLE-1", name: "loreal", barcode: "LOREAL-1", price: 2, stock: 8, tenantId: "test-tenant-1" }],
+          customers: [], users: [], suppliers: [], sales: [], refunds: [],
+          debtSales: [], debtPayments: [], purchaseOrders: [], supplierPayments: [],
+          shifts: [], expenses: [], batches: [], adjustments: [], stockCounts: [],
+          dailyCloses: [], deliveryOrders: [], settings: [], deletions: [],
+        }),
+        text: () => Promise.resolve(""),
+      }))
+
+      await expect(cloudSync.triggerFullPull()).resolves.toBeUndefined()
+
+      // Looked up by syncId
+      const firstFind = vi.mocked(prisma.product.findFirst).mock.calls[0][0]
+      expect(firstFind.where).toEqual({ tenantId: "test-tenant-1", syncId: "STABLE-1" })
+      // Updated the LOCAL id (5), never the incoming cloud id (88)
+      const upd = vi.mocked(prisma.product.update).mock.calls[0][0]
+      expect(upd.where).toEqual({ id: 5 })
+      expect(upd.data).not.toHaveProperty("id")
+
+      vi.unstubAllGlobals()
+    })
+
+    it("backfillProductSyncIds assigns a syncId to every product lacking one (cloud-authoritative)", async () => {
+      vi.mocked(prisma.product.findMany).mockResolvedValue([{ id: 1 }, { id: 2 }] as any)
+      vi.mocked(prisma.product.update).mockResolvedValue({} as any)
+
+      await cloudSync.backfillProductSyncIds()
+
+      const calls = vi.mocked(prisma.product.update).mock.calls
+      expect(calls.length).toBe(2)
+      for (const c of calls) {
+        expect(typeof c[0].data.syncId).toBe("string")
+        expect((c[0].data.syncId as string).length).toBeGreaterThan(0)
+      }
+      // only touched rows missing a syncId
+      expect(vi.mocked(prisma.product.findMany).mock.calls[0][0]).toMatchObject({ where: { syncId: null } })
     })
   })
 

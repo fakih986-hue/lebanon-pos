@@ -4,7 +4,7 @@ import { receiveInventoryBatches, type ReceiveBatchInput } from "./inventoryBatc
 import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
 import { recordAuditEvent } from "./security.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
-import { canUseStorage } from "../lib/storage"
+import { canUseStorage, createId } from "../lib/storage"
 
 const STORAGE_KEY = "lebanonpos.products.v1"
 const PRODUCT_EVENT = "lebanonpos-products-changed"
@@ -246,6 +246,7 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
 
       batchInputs.push({
         productId: updatedProduct.id,
+        productSyncId: updatedProduct.syncId ?? undefined,
         productName: updatedProduct.name,
         barcode: updatedProduct.barcode,
         quantity: entry.stock,
@@ -261,6 +262,7 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
 
     const product: Product = {
       id: nextId,
+      syncId: createId(),
       name,
       price: entry.price,
       cost: entry.cost,
@@ -279,6 +281,7 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
     nextProducts.push(product)
     batchInputs.push({
       productId: product.id,
+      productSyncId: product.syncId ?? undefined,
       productName: product.name,
       barcode: product.barcode,
       quantity: entry.stock,
@@ -427,6 +430,10 @@ export function createProduct(input: {
   const nextId = currentProducts.reduce((max, p) => Math.max(max, p.id), 0) + 1
   const product: Product = {
     id: nextId,
+    // Stable cross-system sync identity, generated once here at creation. The
+    // numeric `id` above is local-only; `syncId` is what matches this product
+    // across hub/clients/cloud regardless of each database's own numeric id.
+    syncId: createId(),
     name: normalizeName(input.name),
     price: input.price,
     cost: input.cost,
@@ -453,6 +460,7 @@ export function createProduct(input: {
   if (input.stock > 0) {
     receiveInventoryBatches([{
       productId: product.id,
+      productSyncId: product.syncId ?? undefined,
       productName: product.name,
       barcode: product.barcode ?? "",
       quantity: input.stock,
@@ -474,12 +482,15 @@ export function archiveProduct(productId: number) {
     idsToArchive.includes(p.id) ? { ...p, archived: true } : p
   )
   writeProducts(nextProducts)
+  const archiveSyncById = new Map(nextProducts.map(p => [p.id, p.syncId]))
   idsToArchive.forEach(id => {
     enqueueSyncOperation({
       entity: "product",
       action: "update",
       summary: `Product ${id} archived.`,
-      payload: { id, archived: true },
+      // Include syncId so the update matches the correct row cross-system
+      // (numeric id differs between hub and cloud for hub-created products).
+      payload: { id, syncId: archiveSyncById.get(id), archived: true },
     })
   })
   recordAuditEvent({
@@ -499,12 +510,13 @@ export function restoreProduct(productId: number) {
     idsToRestore.includes(p.id) ? { ...p, archived: false } : p
   )
   writeProducts(nextProducts)
+  const restoreSyncById = new Map(nextProducts.map(p => [p.id, p.syncId]))
   idsToRestore.forEach(id => {
     enqueueSyncOperation({
       entity: "product",
       action: "update",
       summary: `Product ${id} restored.`,
-      payload: { id, archived: false },
+      payload: { id, syncId: restoreSyncById.get(id), archived: false },
     })
   })
   recordAuditEvent({
@@ -521,13 +533,14 @@ export function deleteProduct(productId: number) {
   if (!product) return
 
   const idsToDelete = [productId, ...products.filter(p => p.parentId === productId).map(p => p.id)]
+  const deleteSyncById = new Map(products.map(p => [p.id, p.syncId]))
   writeProducts(products.filter((item) => !idsToDelete.includes(item.id)))
   idsToDelete.forEach(id => {
     enqueueSyncOperation({
       entity: "product",
       action: "delete",
       summary: `Product ${id} deleted.`,
-      payload: { id },
+      payload: { id, syncId: deleteSyncById.get(id) },
     })
   })
 }

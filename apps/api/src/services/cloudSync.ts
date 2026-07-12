@@ -20,6 +20,7 @@
 
 import fs   from "node:fs"
 import path from "node:path"
+import { randomUUID } from "node:crypto"
 import { fileURLToPath } from "node:url"
 import prisma from "../lib/prisma.js"
 import { broadcastToTenant } from "../ws/index.js"
@@ -63,6 +64,36 @@ export function saveCloudConfig(tenantId: string, apiKey: string): void {
   fs.mkdirSync(DATA_DIR, { recursive: true })
   fs.writeFileSync(CONFIG_FILE, JSON.stringify({ tenantId, apiKey }, null, 2), { mode: 0o600 })
   restartCloudSyncBridge()
+}
+
+/**
+ * Cloud-authoritative backfill of Product.syncId (POS-SYNC-IDENTITY-1).
+ *
+ * MUST run only on the authoritative cloud instance (Railway), never on a hub —
+ * the caller in index.ts guards this on IS_LOCAL_SERVER being unset. The whole
+ * point of cloud-authoritative backfill is that syncId is assigned in exactly
+ * ONE place; hubs then adopt the cloud's value via pull reconciliation. If a
+ * hub generated its own syncIds for existing products, hub and cloud would
+ * disagree on identity — re-creating the divergence this feature removes.
+ *
+ * Idempotent: only touches rows where syncId IS NULL, so it is safe to run on
+ * every boot. Each product gets a fresh UUID; because this is the single
+ * authority, a random UUID is sufficient (no cross-database determinism needed).
+ */
+export async function backfillProductSyncIds(): Promise<void> {
+  try {
+    const missing = await prisma.product.findMany({
+      where: { syncId: null },
+      select: { id: true },
+    })
+    if (missing.length === 0) return
+    for (const p of missing) {
+      await prisma.product.update({ where: { id: p.id }, data: { syncId: randomUUID() } })
+    }
+    console.log(`[sync-identity] Backfilled syncId for ${missing.length} product(s) (cloud-authoritative).`)
+  } catch (err) {
+    console.error("[sync-identity] Product syncId backfill failed:", (err as Error).message)
+  }
 }
 
 let _lastPushError: string | undefined
@@ -568,41 +599,63 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<s
   // Products
   for (const p of data.products ?? []) {
     await run("product", async () => {
-      const productId = Number((p as any).id)
-      if (Number.isFinite(productId) && productId > 0) {
-        const existingById = await prisma.product.findFirst({
-          where: { tenantId, id: productId },
+      // The incoming numeric id is Railway's local PK — it is NEVER adopted
+      // locally (that would rewrite this hub's own PK and orphan child FKs).
+      // Match order: syncId (the stable cross-system identity) → local numeric
+      // id (only meaningful for already-aligned rows, e.g. products originally
+      // pulled from cloud) → barcode (legacy fallback for pre-syncId rows).
+      // Whatever match we find, we adopt the incoming syncId onto the local
+      // row so this hub converges on the cloud's authoritative identity.
+      const incomingSyncId = (p as any).syncId as string | null | undefined
+      const { id: _incomingId, tenantId: _t, ...patch } = p as Record<string, unknown>
+
+      // 1. Match by stable syncId
+      if (incomingSyncId) {
+        const bySync = await prisma.product.findFirst({
+          where: { tenantId, syncId: incomingSyncId },
           select: { id: true },
         })
-        if (existingById) {
-          await prisma.product.update({ where: { id: productId }, data: p as any })
+        if (bySync) {
+          await prisma.product.update({ where: { id: bySync.id }, data: patch as any })
           return
         }
       }
 
+      // 2. Match by local numeric id (aligned rows: pulled-from-cloud products)
+      const productId = Number(_incomingId)
+      if (Number.isFinite(productId) && productId > 0) {
+        const existingById = await prisma.product.findFirst({
+          where: { tenantId, id: productId },
+          select: { id: true, syncId: true },
+        })
+        if (existingById) {
+          // Only adopt syncId here if this local row doesn't already carry a
+          // DIFFERENT one (guards the nullable-unique constraint and avoids
+          // silently re-identifying a row).
+          const data = (existingById.syncId && incomingSyncId && existingById.syncId !== incomingSyncId)
+            ? { ...patch, syncId: existingById.syncId }
+            : patch
+          await prisma.product.update({ where: { id: productId }, data: data as any })
+          return
+        }
+      }
+
+      // 3. Legacy fallback: match by barcode. Never adopt the incoming numeric
+      //    id (would rewrite this hub's PK). syncId IS adopted so the row gains
+      //    its stable identity going forward.
       const barcode = (p as any).barcode
       if (barcode) {
-        // This branch only runs when no local row matched by id — meaning
-        // this hub created the product locally (its own sequence assigned
-        // some id) BEFORE it was ever pushed to Railway, so Railway's copy
-        // of the same product (matched here by barcode) has a DIFFERENT id.
-        // The update payload must never include that incoming id: doing so
-        // would silently rewrite the existing local row's own primary key
-        // mid-flight, orphaning any local FK already pointing at the old id
-        // (SaleItem.productId, InventoryBatch.productId, StockAdjustment.
-        // productId, etc. created against this row before this reconcile
-        // ran). The two databases keeping different ids for this one
-        // mirrored row is the safe outcome here — not ideal, but far safer
-        // than corrupting local references.
-        const { id: _incomingId, tenantId: _t, ...patchWithoutId } = p as Record<string, unknown>
         await prisma.product.upsert({
           where:  { tenantId_barcode: { tenantId, barcode } },
           create: { ...p, tenantId } as any,
-          update: patchWithoutId as any,
+          update: patch as any,
         })
         return
       }
 
+      // 4. No match by any key — a genuinely new product from cloud. Create it
+      //    (cloud's numeric id flows in here as a fresh insert; that's fine —
+      //    it's a new local row, not an overwrite of an existing PK).
       await prisma.product.create({ data: { ...p, tenantId } as any })
     })
   }

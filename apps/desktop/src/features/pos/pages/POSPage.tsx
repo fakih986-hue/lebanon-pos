@@ -615,7 +615,7 @@ export default function POSPage() {
         const allocatedCost = allocations.reduce((sum, a) => sum + a.unitCost * a.quantity, 0)
         const unitCost = allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost
         return {
-          id: item.id, name: item.name, barcode: item.barcode, cost: unitCost,
+          id: item.id, productSyncId: item.syncId, name: item.name, barcode: item.barcode, cost: unitCost,
           quantity: item.quantity, unitPrice: item.price,
           total: item.price * item.quantity, batchAllocations: allocations,
         }

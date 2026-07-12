@@ -1,8 +1,12 @@
 import { Router } from "express"
 import type { ServerResponse } from "node:http"
 import bcrypt from "bcryptjs"
+import { randomUUID } from "node:crypto"
 import { z } from "zod"
 import prisma from "../lib/prisma.js"
+
+/** True only on the authoritative cloud instance (Railway), false on hubs. */
+const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
 import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
@@ -582,6 +586,18 @@ async function processOperation(
   // Helper: resolve a product ID from cross-device sync. The phone may use a
   // different local ID than the hub. Falls back to barcode lookup.
   const resolveProductId = async (idOrProduct: any): Promise<number> => {
+    // Cross-system product resolution for child records (sale items, batches,
+    // adjustments, count lines). Match order mirrors the product handler:
+    // productSyncId (stable cross-DB identity) → numeric id (local/aligned) →
+    // barcode (legacy fallback). A child payload created on a hub carries a
+    // hub-local productId that is meaningless on cloud, so productSyncId is the
+    // only reliable cross-system link — but we always return THIS database's
+    // own numeric id for the local FK.
+    const syncId = idOrProduct?.productSyncId ?? idOrProduct?.syncId
+    if (syncId) {
+      const bySync = await db.product.findFirst({ where: { tenantId, syncId: String(syncId) }, select: { id: true } })
+      if (bySync) return bySync.id
+    }
     let pid = Number(idOrProduct.productId ?? idOrProduct.id ?? idOrProduct)
     if (pid > 0) {
       const exists = await db.product.findFirst({ where: { tenantId, id: pid }, select: { id: true } })
@@ -631,66 +647,86 @@ async function processOperation(
 
   switch (entity) {
     case "product": {
+      // Identity model (POS-SYNC-IDENTITY-1): products are matched ACROSS
+      // databases by the stable `syncId`, NEVER by the numeric `id` (which is
+      // each database's own local PK and legitimately differs hub vs cloud).
+      // Match order everywhere: syncId → numeric id (legacy/aligned rows) →
+      // barcode (legacy fallback). The incoming numeric id is never written
+      // as an identity key (it would rewrite a local PK).
       if (action === "update") {
-        // Updates (including archive/restore, which send only {id, archived})
-        // are partial patches keyed by the product's own id — not full
-        // objects. A barcode-keyed upsert requires every NOT NULL column to
-        // be present in both its create AND update branches (Prisma
-        // validates both shapes up front, even though only one runs), so a
-        // partial payload always threw "Argument name is missing" here,
-        // regardless of whether a matching row existed. Use a real partial
-        // update instead whenever the client already knows the product's id.
+        // Partial patches (archive/restore send {id?, syncId?, archived}).
         const items = Array.isArray(payload) ? payload : [payload]
         for (const item of items) {
-          const data = { ...item, tenantId } as Record<string, unknown>
-          const { id, tenantId: _t, ...patch } = data
+          const { id, syncId, tenantId: _t, ...patch } = { ...item } as Record<string, unknown>
+          if (syncId) {
+            const r = await db.product.updateMany({ where: { tenantId, syncId: syncId as string }, data: patch as any })
+            if (r.count > 0) continue
+            // syncId given but no local row yet — fall through to legacy match
+          }
           if (id !== undefined) {
             await db.product.updateMany({ where: { tenantId, id: id as number }, data: patch as any })
-          } else if (data.barcode) {
-            await db.product.upsert({
-              where: { tenantId_barcode: { tenantId, barcode: data.barcode as string } },
-              create: data as any,
-              update: data as any,
-            })
+          } else if (patch.barcode) {
+            await db.product.updateMany({ where: { tenantId, barcode: patch.barcode as string }, data: patch as any })
           }
         }
       } else if (action === "create") {
         const items = Array.isArray(payload) ? payload : [payload]
         for (const item of items) {
-          // The client assigns its own local, hub-scoped id (used to key the
-          // product locally before it's ever synced). That id is meaningless
-          // to the cloud DB and must never be forwarded on create — the
-          // cloud's own sequence has to own new ids, or an explicit id here
-          // collides with an unrelated existing row (and, since an explicit
-          // id in an INSERT never calls nextval(), no sequence fix can
-          // prevent that collision).
+          // The client's numeric id is local-only and must never be forwarded
+          // (an explicit id in an INSERT bypasses the sequence and collides).
           const { id: _localId, ...rest } = item as Record<string, unknown>
-          const data = { ...rest, tenantId } as Record<string, unknown>
-          const barcode = data.barcode as string
-          if (barcode) {
-            await db.product.upsert({
-              where: { tenantId_barcode: { tenantId, barcode } },
-              create: data as any,
-              update: data as any,
-            })
-          } else {
-            await db.product.create({ data: data as any })
+          let syncId = (rest.syncId as string | null | undefined) || undefined
+          const barcode = (rest.barcode as string | null | undefined) || undefined
+
+          // 1. Already known by syncId → treat as an update, never a duplicate.
+          if (syncId) {
+            const bySync = await db.product.findFirst({ where: { tenantId, syncId }, select: { id: true } })
+            if (bySync) {
+              const { syncId: _s, ...patch } = rest as Record<string, unknown>
+              await db.product.updateMany({ where: { tenantId, syncId }, data: patch as any })
+              continue
+            }
           }
+
+          // 2. Barcode collision rule: a product with this barcode already
+          //    exists → it's the SAME logical product. Adopt that row (do not
+          //    create a duplicate). Keep its existing syncId if it has one;
+          //    otherwise assign the incoming/generated one.
+          if (barcode) {
+            const byBarcode = await db.product.findFirst({ where: { tenantId, barcode }, select: { id: true, syncId: true } })
+            if (byBarcode) {
+              const finalSyncId = byBarcode.syncId ?? syncId ?? (IS_CLOUD ? randomUUID() : undefined)
+              const { id: _i, syncId: _s, ...patch } = rest as Record<string, unknown>
+              await db.product.update({
+                where: { id: byBarcode.id },
+                data: { ...patch, ...(finalSyncId ? { syncId: finalSyncId } : {}) } as any,
+              })
+              continue
+            }
+          }
+
+          // 3. Genuinely new product. On the authoritative cloud, mint a syncId
+          //    if the (legacy) client didn't send one. On a hub, leave it null
+          //    — the row adopts the cloud's syncId on the next pull.
+          if (!syncId && IS_CLOUD) syncId = randomUUID()
+          const data = { ...rest, tenantId } as Record<string, unknown>
+          if (syncId) data.syncId = syncId; else delete data.syncId
+          await db.product.create({ data: data as any })
         }
       } else if (action === "delete") {
         // Silently convert product.delete to archive — preserve history
+        const syncId = (payload as any)?.syncId as string | undefined
         const payloadId = (payload as any)?.id
         const payloadBarcode = (payload as any)?.barcode
-        if (payloadId) {
-          await db.product.updateMany({
-            where: { tenantId, id: payloadId as number },
-            data: { archived: true } as any,
-          })
-        } else if (payloadBarcode) {
-          await db.product.updateMany({
-            where: { tenantId, barcode: payloadBarcode as string },
-            data: { archived: true } as any,
-          })
+        let done = false
+        if (syncId) {
+          const r = await db.product.updateMany({ where: { tenantId, syncId }, data: { archived: true } as any })
+          done = r.count > 0
+        }
+        if (!done && payloadId) {
+          await db.product.updateMany({ where: { tenantId, id: payloadId as number }, data: { archived: true } as any })
+        } else if (!done && payloadBarcode) {
+          await db.product.updateMany({ where: { tenantId, barcode: payloadBarcode as string }, data: { archived: true } as any })
         }
         // Never cascade delete — inventory batches, stock movements, and count lines remain intact
       }
@@ -1041,23 +1077,15 @@ async function processOperation(
       if (action === "receive") {
         const items = Array.isArray(payload) ? payload : [payload]
         for (const item of items) {
-          // Resolve product ID by barcode for cross-device sync
-          let productId = Number(item?.productId ?? item?.id)
-          if (productId) {
-            const exists = await db.product.findFirst({ where: { tenantId, id: productId }, select: { id: true } })
-            if (!exists) productId = 0 // trigger barcode fallback
-          }
-          if ((!productId || isNaN(productId)) && item?.barcode) {
-            const product = await db.product.findFirst({
-              where: { tenantId, barcode: item.barcode },
-              select: { id: true },
-            })
-            if (product) productId = product.id
-          }
-          const { id: batchId, ...batchData } = { ...item, productId }
+          // Resolve the local numeric productId via the shared resolver
+          // (productSyncId → numeric id → barcode). productSyncId is a
+          // cross-system hint only — it is NOT an InventoryBatch column, so it
+          // must be stripped from the persisted row.
+          const productId = await resolveProductId(item)
+          const { id: batchId, productSyncId: _ps, ...batchData } = { ...item, productId } as Record<string, unknown>
           await db.inventoryBatch.upsert({
             where: { id: batchId as string },
-            update: batchData,
+            update: batchData as any,
             create: { ...batchData, id: batchId, tenantId } as any,
           })
           // Record the stock movement (quantity is the net change)
@@ -1076,13 +1104,18 @@ async function processOperation(
           })
         }
       } else if (action === "adjust") {
+        const adj = payload as any
+        // Resolve the local numeric productId (productSyncId → id → barcode),
+        // and strip productSyncId — it is a cross-system hint, not a column.
+        const resolvedPid = await resolveProductId(adj)
+        const { productSyncId: _ps, ...adjData } = adj as Record<string, unknown>
+        const persisted = { ...adjData, ...(resolvedPid > 0 ? { productId: resolvedPid } : {}) }
         await db.stockAdjustment.upsert({
           where: { id: payload?.id as string },
-          update: payload as any,
-          create: { ...payload, tenantId } as any,
+          update: persisted as any,
+          create: { ...persisted, tenantId } as any,
         })
-        const adj = payload as any
-        await recordMovement(Number(adj.productId ?? adj.id), "Adjustment", Number(adj.quantityChange ?? 0), adj.id as string, adj.reason ?? "")
+        await recordMovement(resolvedPid || Number(adj.productId ?? adj.id), "Adjustment", Number(adj.quantityChange ?? 0), adj.id as string, adj.reason ?? "")
       } else if (action === "count") {
         const data = payload as any
         const { lines: _l, ...sessionData } = data
