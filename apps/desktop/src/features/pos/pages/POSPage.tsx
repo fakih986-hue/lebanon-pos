@@ -561,14 +561,17 @@ export default function POSPage() {
   const completeSale = useCallback(async function completeSale() {
     if (checkoutBlocked || isValidatingStock) return
 
-    // Preflight: a connected device's local product/batch cache can be
-    // stale (another register already sold the item since the last pull).
-    // Ask the hub — the source of truth in CONNECT_TO_HUB mode — whether
-    // the cart is still actually fulfillable BEFORE any local write happens.
-    // Without this, checkout would complete locally and only fail much
-    // later at sync time with an unrecoverable "insufficient stock in
-    // batch" rejection — too late for the cashier to do anything about it.
-    if (getConnectionMode() === "CONNECT_TO_HUB") {
+    // Preflight: this device's local product/batch cache can be stale even
+    // on the hub itself — another connected device's sale (or the hub's own
+    // background cloud-bridge pull) can change real stock/batch data before
+    // this screen's own cache catches up, since the renderer's view is its
+    // own cached copy, not a live query. Originally this only ran for
+    // CONNECT_TO_HUB, on the assumption the hub is always self-consistent —
+    // live testing (POS-SYNC-TORTURE-1 follow-up) showed that assumption
+    // was incomplete: the hub's own checkout hit the identical stale-cart
+    // race. Runs for both modes now; for STORE_HUB this is a same-machine
+    // round trip to its own local API, not a real network hop.
+    if (getConnectionMode() === "CONNECT_TO_HUB" || getConnectionMode() === "STORE_HUB") {
       setIsValidatingStock(true)
       setScannerStatus("Verifying stock with hub…")
       try {

@@ -785,11 +785,54 @@ async function processOperation(
         // Decrement product stock
         await decrementProductStock(db, tenantId, prismaItems.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
         // Atomic batch decrement — updateMany with quantityRemaining >= quantity is atomic
-        for (const item of data.items ?? []) {
+        const touchedBatchIds = new Set<string>()
+        const rawItems = data.items ?? []
+        for (let i = 0; i < rawItems.length; i++) {
+          const item = rawItems[i]
+          const resolvedProductId = prismaItems[i]?.productId
           for (const allocation of item.batchAllocations ?? []) {
-            if (!allocation.batchId || allocation.batchId === "legacy-stock") continue
             const quantity = Number(allocation.quantity ?? 0)
             if (quantity <= 0) continue
+
+            if (!allocation.batchId || allocation.batchId === "legacy-stock") {
+              // The client's local batch cache didn't think any real batch
+              // covered this quantity. Trusting that blindly is how stock
+              // silently diverged from batch tracking in the past: the
+              // aggregate decrement above always runs regardless, but a
+              // skipped "legacy-stock" allocation never touches a real
+              // batch — so if the client's cache was simply stale (not
+              // genuinely out of batch-tracked stock), the two numbers
+              // permanently drift apart. The server has authoritative batch
+              // data, so it gets a real chance here to consume from actual
+              // open batches (FEFO) before conceding the shortfall is truly
+              // untracked/legacy stock.
+              let remaining = quantity
+              if (resolvedProductId) {
+                const openBatches = await db.inventoryBatch.findMany({
+                  where: { tenantId, productId: resolvedProductId, status: "Open", quantityRemaining: { gt: 0 } },
+                  orderBy: [{ expiryDate: "asc" }, { receivedAt: "asc" }],
+                  select: { id: true, quantityRemaining: true },
+                })
+                for (const batch of openBatches) {
+                  if (remaining <= 0) break
+                  const take = Math.min(remaining, Number(batch.quantityRemaining))
+                  if (take <= 0) continue
+                  const result = await db.inventoryBatch.updateMany({
+                    where: { id: batch.id, tenantId, quantityRemaining: { gte: take } },
+                    data: { quantityRemaining: { decrement: take } },
+                  })
+                  if (result.count > 0) {
+                    remaining -= take
+                    touchedBatchIds.add(batch.id)
+                  }
+                }
+              }
+              // Whatever's left (remaining > 0) is genuinely untracked
+              // legacy stock — no real batch exists to decrement, matching
+              // the prior behavior for that portion.
+              continue
+            }
+
             const result = await db.inventoryBatch.updateMany({
               where: { id: allocation.batchId, tenantId, quantityRemaining: { gte: quantity } },
               data: { quantityRemaining: { decrement: quantity } },
@@ -797,18 +840,16 @@ async function processOperation(
             if (result.count === 0) {
               throw new Error(`Insufficient stock in batch ${allocation.batchId}`)
             }
+            touchedBatchIds.add(allocation.batchId)
           }
         }
-        // Update status for any batches that were exhausted
-        for (const item of data.items ?? []) {
-          for (const allocation of item.batchAllocations ?? []) {
-            if (!allocation.batchId || allocation.batchId === "legacy-stock") continue
-            if (Number(allocation.quantity ?? 0) <= 0) continue
-            await db.inventoryBatch.updateMany({
-              where: { id: allocation.batchId, tenantId, quantityRemaining: { lte: 0 } },
-              data: { status: "Consumed" },
-            })
-          }
+        // Update status for any batches that were exhausted (both
+        // client-specified and server-side FEFO-fallback-consumed ones)
+        for (const batchId of touchedBatchIds) {
+          await db.inventoryBatch.updateMany({
+            where: { id: batchId, tenantId, quantityRemaining: { lte: 0 } },
+            data: { status: "Consumed" },
+          })
         }
         // Record stock movements for audit trail
         for (const item of prismaItems) {

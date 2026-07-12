@@ -304,6 +304,54 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     ],
   }
 
+  it("consumes a real open batch server-side instead of silently skipping when the client falls back to legacy-stock", async () => {
+    // Reproduces the exact live bug found in POS-SYNC-TORTURE-1's follow-up:
+    // product 63's aggregate stock drifted to 0 while its real batch still
+    // had 21 units remaining, because the client's stale local batch cache
+    // fell back to "legacy-stock" (never touching the real batch) while the
+    // aggregate decrement still ran. The server must now try to consume
+    // from a real open batch before conceding the shortfall is truly
+    // untracked legacy stock.
+    mockNewSale()
+    vi.mocked(prisma.inventoryBatch.findMany).mockResolvedValue([
+      { id: "batch-real-1", quantityRemaining: 21 },
+    ] as any)
+    vi.mocked(prisma.inventoryBatch.updateMany).mockResolvedValue({ count: 1 } as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{
+          id: "op-legacy-fallback",
+          entity: "sale",
+          action: "create",
+          payload: {
+            ...salePayload,
+            id: "sale-legacy-fallback",
+            saleNumber: "S-LEGACY-1",
+            items: [
+              { id: 1, name: "Cola", barcode: "111", quantity: 2, unitPrice: 5, total: 10, cost: 3,
+                batchAllocations: [{ batchId: "legacy-stock", quantity: 2 }] },
+            ],
+          },
+        }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+
+    // The server must have looked for real open batches for this product...
+    expect(vi.mocked(prisma.inventoryBatch.findMany)).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ productId: 1, status: "Open" }) })
+    )
+    // ...and consumed from the real batch instead of silently skipping it.
+    expect(vi.mocked(prisma.inventoryBatch.updateMany)).toHaveBeenCalledWith({
+      where: { id: "batch-real-1", tenantId: "t1", quantityRemaining: { gte: 2 } },
+      data: { quantityRemaining: { decrement: 2 } },
+    })
+  })
+
   it("decrements stock for each item on new sale", async () => {
     mockNewSale()
 

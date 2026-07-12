@@ -2,6 +2,7 @@
 
 **Date:** 2026-07-12
 **Sprint:** POS-SYNC-TORTURE-1 (following POS-HUB-STOCK-1)
+**Update (same day, post-1.0.25 install):** live use of the real hub surfaced a second, more serious systemic bug — see Section 20. Fixed, tested, and deployed.
 
 ---
 
@@ -238,3 +239,25 @@ This is the exact same defect *class* as the original product/customer combined-
 1. Commit and deploy the server-side fix now (Railway — this is exactly the kind of "server-side sync fix found during testing, deploy after tests" the task anticipated).
 2. Once deployed, this pass's overall verdict for the **server/hub layer** is a clean PASS — device pairing, product/stock sync, sale concurrency (the critical scenario), refund/void idempotency, customer/debt, supplier/PO, and settings isolation all behave correctly under real, direct testing against the live hub and Railway.
 3. Before any broader rollout, get a real two-device live UI test done with a fresh installer build (Limitation 2) — that's the one meaningful gap between "the server is provably correct" and "the whole system is provably correct end to end."
+
+---
+
+## 20. Post-1.0.25 live discovery — legacy-stock fallback silently diverges aggregate stock from batch tracking
+
+**Found how:** after installing 1.0.25 on the real hub (STORE_HUB mode), real live use surfaced 3 rejected sales, all failing with `"Insufficient stock in batch batch-bc6b08db-..."`, stuck at `attempts: 5` (never retrying, by existing design).
+
+**Investigation:** the batch in question (`batch-bc6b08db-...`, product 63 "3ilke") actually had **21 units genuinely remaining** — but the product's own aggregate `stock` field showed **0**. Checking every batch-tracked product in the store found this wasn't isolated: **7 of 8 batch-tracked products had drift between aggregate stock and their batch sum, in mixed directions** (some higher, some lower) — a pre-existing, longstanding data-integrity gap, not something introduced by any fix this session.
+
+**Root cause:** `consumeInventoryBatches()` (client-side, `apps/desktop/src/features/pos/services/inventoryBatch.service.ts`) computes available batch quantity from its **own local cache**. When that cache underestimates a batch's real server-side remaining quantity, the shortfall is allocated to a synthetic `"legacy-stock"` bucket. The server's sale-create handler (`apps/api/src/routes/sync.ts`) always ran `decrementProductStock()` (the aggregate) regardless, but explicitly **skipped** decrementing any real batch for `"legacy-stock"` allocations — trusting the client's claim that no real batch covered that quantity. Whenever the client's cache was simply stale (not genuinely out of tracked stock), this silently drained the aggregate while leaving the real batch's `quantityRemaining` completely untouched, permanently diverging the two numbers. Also confirmed this is **not** what caused the original three rejections — those three sales directly targeted the real batch ID (not `legacy-stock`) and were correctly rejected for exceeding what was available in it *at that moment*; the aggregate-vs-batch drift is a separate, longer-running effect from other historical sales that *did* fall back to `legacy-stock`.
+
+**Fix** (`apps/api/src/routes/sync.ts`, sale-create handler): when a client sends a `"legacy-stock"` (or missing) batch allocation, the server now first tries to consume from **real open batches** for that product, FEFO-ordered (earliest expiry, then earliest received), atomically, the same way it already does for explicit batch IDs. Only whatever quantity still can't be covered by any real open batch falls through as genuinely untracked legacy stock, matching the old behavior for that portion only. This makes the server authoritative for batch consumption instead of blindly trusting client-side math that can be stale.
+
+**Also extended:** the stock preflight from POS-HUB-STOCK-1 was scoped to `CONNECT_TO_HUB` only, on the assumption the hub is always self-consistent with its own database. This incident showed that assumption incomplete — the hub's own renderer process caches product/batch data too, and can lag behind its own database if another connected device (or the background cloud bridge) changes stock first. The preflight (`validateStockWithHub()` before `completeSale()`'s local writes) now also runs for `STORE_HUB` mode — a same-machine round trip to its own local API, not a real network hop, so the added latency is minimal.
+
+**Data correction:** product 63 ("3ilke") reconciled to `stock: 21`, matching its batch — this was the one actively blocking a real sale and had an unambiguous correct direction. The other 6 products with drift (`succarinee`, `hair spray`, `mayonaiise`, `safasf`, `aaasssdddd`, and `3ilke z8ire`) were **deliberately left untouched** — their drift direction is mixed (some show *more* aggregate stock than their batches, which could reflect legitimate untracked stock or a past manual stock-count correction, not necessarily an error) and correcting them via code risks getting it wrong. Recommended path: a real physical stock count using the app's existing Stock Count feature, which is the correct mechanism to reconcile this kind of drift, not a blanket code-driven overwrite.
+
+**Verified:** new test in `apps/api/__tests__/sync.test.ts` (`"consumes a real open batch server-side instead of silently skipping when the client falls back to legacy-stock"`) — proves the server now looks up and consumes from a real open batch when given a `legacy-stock` allocation, instead of silently skipping it. 160 API tests + 111 desktop tests all passing, `tsc --noEmit` clean on api/desktop.
+
+**Deployed:** yes — this is a genuine server-side sync fix, deployed to Railway per the standing rule.
+
+**Still stuck in the local queue, safe to clear:** the original 3 rejected sale sync operations remain at `attempts: 5` (by design, never auto-retrying) — they were legitimate rejections for the conditions at the time, and can now be safely dismissed from the local queue via the app's own Sync Status panel ("Retry item" is not needed since the underlying data is already correct; the safe action is to clear/dismiss them). This queue lives entirely in the client's local storage, not server-side, so it can't be cleared remotely.
