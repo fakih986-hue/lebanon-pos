@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { productHasBarcode, productMatchesSearch, getLowStockProducts, getNoBarcodeProducts, sortProducts, filterByStockStatus, filterByCategory, filterBySupplier, validateReceiveRow, parseSpreadsheetPaste } from "../features/pos/services/product.service"
 import { getLocalDateKey } from "../features/pos/services/dailyClose.service"
 import { userCan, rolePermissions, type StaffUser, type Permission } from "../features/pos/services/security.service"
@@ -636,5 +636,76 @@ describe("shift.service - register reconciliation", () => {
     expect(totals.ownerDraws).toBe(25)
     expect(totals.cashSales).toBe(120)
     expect(totals.cashSupplierPayments).toBe(20)
+  })
+})
+
+describe("sync.service — validateStockWithHub (multi-device stock preflight)", () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    window.localStorage.setItem("lebanonpos.api-url", "http://192.168.1.50:3015")
+    window.localStorage.setItem("lebanonpos.auth-token", "test-token")
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it("returns ok:true when the hub confirms enough stock", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ ok: true, insufficientItems: [] }),
+    }))
+    const { validateStockWithHub } = await import("../features/pos/services/sync.service")
+
+    const result = await validateStockWithHub([{ productId: 1, quantity: 2 }])
+    expect(result).toEqual({ ok: true })
+  })
+
+  it("returns ok:false with details when the hub reports insufficient stock", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        ok: false,
+        insufficientItems: [{ productId: 68, name: "loreal", available: 0, requested: 1 }],
+      }),
+    }))
+    const { validateStockWithHub } = await import("../features/pos/services/sync.service")
+
+    const result = await validateStockWithHub([{ productId: 68, quantity: 1 }])
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.reason).toBe("insufficient")
+      expect(result.insufficientItems).toEqual([{ productId: 68, name: "loreal", available: 0, requested: 1 }])
+    }
+  })
+
+  it("treats a network failure as unreachable, not as a pass — never allows a stale/unverified sale to slip through", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network error")))
+    const { validateStockWithHub } = await import("../features/pos/services/sync.service")
+
+    const result = await validateStockWithHub([{ productId: 1, quantity: 1 }])
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe("unreachable")
+  })
+
+  it("treats a non-OK HTTP response as unreachable, not as a pass", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500 }))
+    const { validateStockWithHub } = await import("../features/pos/services/sync.service")
+
+    const result = await validateStockWithHub([{ productId: 1, quantity: 1 }])
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe("unreachable")
+  })
+
+  it("returns unreachable when there's no api url / token configured, without ever calling fetch", async () => {
+    window.localStorage.clear()
+    const fetchSpy = vi.fn()
+    vi.stubGlobal("fetch", fetchSpy)
+    const { validateStockWithHub } = await import("../features/pos/services/sync.service")
+
+    const result = await validateStockWithHub([{ productId: 1, quantity: 1 }])
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe("unreachable")
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 })

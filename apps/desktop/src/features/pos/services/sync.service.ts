@@ -1056,6 +1056,42 @@ export async function pullFromServer(full = false) {
   }
 }
 
+export type StockValidationResult =
+  | { ok: true }
+  | { ok: false; reason: "unreachable" | "insufficient"; insufficientItems?: Array<{ productId: number; name: string; available: number; requested: number }> }
+
+/**
+ * Preflight stock check against the server's LIVE data, immediately before
+ * completing a stock-changing sale. Exists to close the race where a
+ * connected device's local product/batch cache is stale (another register
+ * already sold the item), which previously let checkout complete locally
+ * and only fail much later at sync time with an unrecoverable "insufficient
+ * stock in batch" rejection. Read-only — does not reserve stock, so the
+ * final server-side decrement on push remains the authoritative backstop.
+ */
+export async function validateStockWithHub(
+  items: Array<{ productId: number; quantity: number }>
+): Promise<StockValidationResult> {
+  const apiUrl = getApiUrl()
+  const token = getAuthToken()
+  if (!apiUrl || !token) return { ok: false, reason: "unreachable" }
+
+  try {
+    const res = await fetch(`${apiUrl}/api/sync/validate-stock`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ items }),
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) return { ok: false, reason: "unreachable" }
+    const data = await res.json()
+    if (data.ok) return { ok: true }
+    return { ok: false, reason: "insufficient", insufficientItems: data.insufficientItems }
+  } catch {
+    return { ok: false, reason: "unreachable" }
+  }
+}
+
 // Map PULL_TARGETS keys to API entity paths for per-entity full pull
 const FULL_PULL_ENTITY_MAP: Record<string, string> = {
   products: "products",

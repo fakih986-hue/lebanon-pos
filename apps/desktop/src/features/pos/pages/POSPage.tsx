@@ -53,6 +53,7 @@ import {
 import { recordDebtSale } from "../services/customer.service"
 import { recordAuditEvent, userCan } from "../services/security.service"
 import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
+import { getConnectionMode, pullFromServer, validateStockWithHub } from "../services/sync.service"
 
 import type { Product } from "../types/product"
 import { usePosData } from "../hooks/usePosData"
@@ -271,8 +272,10 @@ export default function POSPage() {
       selectedCustomer.creditLimit > 0 &&
       selectedCustomer.balance + total > selectedCustomer.creditLimit
   )
+  const [isValidatingStock, setIsValidatingStock] = useState(false)
   const checkoutBlocked =
     items.length === 0 ||
+    isValidatingStock ||
     (paymentMethod === "Cash" && !cashTenderValid) ||
     (paymentMethod === "Debt" && (!selectedCustomer || creditLimitExceeded))
 
@@ -555,8 +558,38 @@ export default function POSPage() {
     setShowReview(true)
   }
 
-  const completeSale = useCallback(function completeSale() {
-    if (checkoutBlocked) return
+  const completeSale = useCallback(async function completeSale() {
+    if (checkoutBlocked || isValidatingStock) return
+
+    // Preflight: a connected device's local product/batch cache can be
+    // stale (another register already sold the item since the last pull).
+    // Ask the hub — the source of truth in CONNECT_TO_HUB mode — whether
+    // the cart is still actually fulfillable BEFORE any local write happens.
+    // Without this, checkout would complete locally and only fail much
+    // later at sync time with an unrecoverable "insufficient stock in
+    // batch" rejection — too late for the cashier to do anything about it.
+    if (getConnectionMode() === "CONNECT_TO_HUB") {
+      setIsValidatingStock(true)
+      setScannerStatus("Verifying stock with hub…")
+      try {
+        const validation = await validateStockWithHub(
+          items.map((item) => ({ productId: item.id, quantity: item.quantity }))
+        )
+        if (!validation.ok) {
+          if (validation.reason === "unreachable") {
+            setScannerStatus("⚠️ Cannot verify stock — hub unreachable. Sale blocked to prevent stock conflicts.")
+          } else {
+            const names = validation.insufficientItems?.map((i) => i.name).join(", ") ?? "one or more items"
+            setScannerStatus(`⚠️ Stock changed on another register. Refresh cart. (${names})`)
+          }
+          playErrorBuzz()
+          pullFromServer().catch(() => {}) // refresh so the cart/grid reflects real numbers
+          return
+        }
+      } finally {
+        setIsValidatingStock(false)
+      }
+    }
 
     const saleNumber = `S-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`
 
@@ -667,7 +700,7 @@ export default function POSPage() {
       }
       setScannerStatus(`Checkout failed. Cart preserved, try again.`)
     }
-  }, [checkoutBlocked, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal])
+  }, [checkoutBlocked, isValidatingStock, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal])
 
   return (
     <main className="pos-workspace relative min-h-0 flex-1 overflow-hidden">

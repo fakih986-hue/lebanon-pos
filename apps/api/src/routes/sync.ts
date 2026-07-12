@@ -250,6 +250,56 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
   json(res, { results })
 })
 
+// ─── POST /api/sync/validate-stock ───────────────────────────────────────────
+// Preflight check for connected clients (CONNECT_TO_HUB mode): asks the hub
+// whether a cart's requested quantities are actually available RIGHT NOW,
+// against live product.stock — not whatever the client's local cache last
+// pulled. Exists specifically to close the race where two devices both see
+// "10 in stock" locally, one sells it all, and the other's stale cart would
+// otherwise complete a checkout the hub can never actually honor. Read-only:
+// does not reserve or lock anything, so a sale can still theoretically race
+// between this check and the real push — the atomic server-side decrement in
+// the "sale"/"create" handler above remains the ultimate backstop.
+const validateStockSchema = z.object({
+  items: z.array(z.object({
+    productId: z.number(),
+    quantity: z.number(),
+  })).min(1),
+})
+
+router.post("/validate-stock", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+  const tenantId = req.auth!.tenantId
+  const parsed = validateStockSchema.safeParse(req.body)
+  if (!parsed.success) {
+    json(res, { error: "Invalid request", details: parsed.error.flatten() }, 400)
+    return
+  }
+
+  const { items } = parsed.data
+  const productIds = [...new Set(items.map((i) => i.productId))]
+  const products = await prisma.product.findMany({
+    where: { tenantId, id: { in: productIds } },
+    select: { id: true, name: true, stock: true, archived: true },
+  })
+  const byId = new Map(products.map((p) => [p.id, p]))
+
+  const insufficientItems: Array<{ productId: number; name: string; available: number; requested: number }> = []
+  for (const item of items) {
+    const product = byId.get(item.productId)
+    const available = product ? Number(product.stock) : 0
+    if (!product || product.archived || available < item.quantity) {
+      insufficientItems.push({
+        productId: item.productId,
+        name: product?.name ?? `Product #${item.productId}`,
+        available: product && !product.archived ? available : 0,
+        requested: item.quantity,
+      })
+    }
+  }
+
+  json(res, { ok: insufficientItems.length === 0, insufficientItems })
+})
+
 router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
   const tenantId = req.auth!.tenantId

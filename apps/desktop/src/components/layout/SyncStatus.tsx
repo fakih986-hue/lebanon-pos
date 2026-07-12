@@ -21,6 +21,18 @@ function parseInsufficientStockProduct(error: string): string | null {
   return m ? m[1] : null
 }
 
+/**
+ * True for any server-side stock-race rejection — the aggregate check
+ * ("Insufficient stock for X") or the batch-level check ("Insufficient
+ * stock in batch Y"). The batch-level version doesn't carry a product
+ * name, but should still surface as a clear, sticky alert with a re-pull —
+ * this should now be rare after the checkout preflight, but remains the
+ * backstop for the residual race window between preflight and push.
+ */
+function isInsufficientStockError(error: string): boolean {
+  return /Insufficient stock/i.test(error)
+}
+
 export default function SyncStatus() {
   const { t } = useI18n()
   const [status, setStatus] = useState<RegisterSyncStatus>(getSyncStatus())
@@ -47,11 +59,13 @@ export default function SyncStatus() {
       // Re-pull immediately so this device's own view self-corrects instead
       // of silently diverging from the server/other devices, and keep the
       // alert up until dismissed — a 6s toast is too easy to miss mid-rush.
-      const productName = op.entity === "sale" ? parseInsufficientStockProduct(error) : null
-      if (productName) {
+      const isStockRace = op.entity === "sale" && isInsufficientStockError(error)
+      if (isStockRace) {
+        const productName = parseInsufficientStockProduct(error)
+        const subject = productName ? `"${productName}"` : "the affected item(s)"
         setToast({
           entity: op.entity,
-          error: `This sale went through here, but could NOT be saved to the server — stock ran out (someone else may have sold this item first). Verify remaining stock for "${productName}" and flag this transaction for a manager to reconcile.`,
+          error: `This sale went through here, but could NOT be saved to the server — stock ran out (someone else may have sold this item first). Verify remaining stock for ${subject} and flag this transaction for a manager to reconcile.`,
           sticky: true,
         })
         pullFromServer().catch(() => {})

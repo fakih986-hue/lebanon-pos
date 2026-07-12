@@ -105,6 +105,78 @@ describe("POST /api/sync/push", () => {
   })
 })
 
+describe("POST /api/sync/validate-stock", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it("returns ok:true when every item has enough stock", async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      { id: 1, name: "Cola", stock: 10, archived: false },
+      { id: 2, name: "Chips", stock: 5, archived: false },
+    ] as any)
+
+    const res = await request("POST", "/api/sync/validate-stock", {
+      token,
+      body: { items: [{ productId: 1, quantity: 2 }, { productId: 2, quantity: 5 }] },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+    expect(res.body.insufficientItems).toEqual([])
+  })
+
+  it("returns ok:false with details when a product ran out on the hub", async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      { id: 1, name: "Cola", stock: 0, archived: false },
+    ] as any)
+
+    const res = await request("POST", "/api/sync/validate-stock", {
+      token,
+      body: { items: [{ productId: 1, quantity: 3 }] },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(false)
+    expect(res.body.insufficientItems).toEqual([
+      { productId: 1, name: "Cola", available: 0, requested: 3 },
+    ])
+  })
+
+  it("treats a product missing locally (e.g. deleted) as unavailable", async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([] as any)
+
+    const res = await request("POST", "/api/sync/validate-stock", {
+      token,
+      body: { items: [{ productId: 999, quantity: 1 }] },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(false)
+    expect(res.body.insufficientItems[0]).toMatchObject({ productId: 999, available: 0, requested: 1 })
+  })
+
+  it("treats an archived product as unavailable even if stock is nonzero", async () => {
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      { id: 1, name: "Discontinued Item", stock: 20, archived: true },
+    ] as any)
+
+    const res = await request("POST", "/api/sync/validate-stock", {
+      token,
+      body: { items: [{ productId: 1, quantity: 1 }] },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(false)
+  })
+
+  it("returns 400 for a malformed body", async () => {
+    const res = await request("POST", "/api/sync/validate-stock", {
+      token,
+      body: { items: "not-an-array" },
+    })
+    expect(res.status).toBe(400)
+  })
+})
+
 describe("GET /api/sync/pull", () => {
   function mockAllEmpty() {
     const empty: unknown[] = []
