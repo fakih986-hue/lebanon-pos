@@ -81,7 +81,27 @@ Full suite: **168 API tests + 111 desktop tests passing**; `tsc --noEmit` clean 
 
 ## 5. Live verification
 
-_Performed post-deploy against the real `fakih` tenant on Railway — see section 5b (appended after deploy)._
+Deployed to Railway as commit `5677ff0` (confirmed via `commitHash` match). Startup logs confirmed the migration and backfill ran on the cloud instance:
+```
+Applying migration `20260712180000_add_product_sync_id` … All migrations have been successfully applied.
+[sync-identity] Backfilled syncId for 72 product(s) (cloud-authoritative).
+```
+
+**Live results against the real `fakih` tenant (7/7 PASS):**
+
+| Check | Result |
+|---|---|
+| Backfill covered every product | ✅ 0/39 missing a syncId |
+| Create preserves the hub-chosen syncId; cloud assigns its OWN numeric id | ✅ sent `{id: 999999, syncId: LIVE-SYNC-…}` → cloud kept syncId, assigned id `91` (bogus 999999 ignored) |
+| Update/archive by syncId alone (no numeric id) hits the correct row | ✅ price update matched by syncId → row id 91 |
+| Barcode collision on create adopts existing row — no duplicate | ✅ same barcode + different syncId → still 1 product |
+| Product without a barcode syncs | ✅ matched by syncId, `barcode: null` |
+| Barcode edit via syncId updates in place — no duplicate | ✅ barcode changed, still 1 row |
+| Child (sale item) resolves by productSyncId even with a bogus numeric id | ✅ sent `productId: 777777, productSyncId: …` → correct product's stock decremented 5→4 |
+
+All live-test products were archived by syncId afterward (which itself re-confirmed archive-by-syncId); store returned to 23 active products; Railway health `{"status":"ok"}`.
+
+**Scope note:** this verifies the full cloud-side identity behavior and the exact payload shape a syncId-aware hub emits (pushed directly to Railway). The *installed* hub is still on 1.0.26 (pre-syncId) and continues to work via the backward-compatible legacy fallback; a hub installer rebuild (§7) is required for hubs to emit syncId themselves. The deployed cloud is fully backward-compatible with the current hub in the meantime.
 
 ---
 
