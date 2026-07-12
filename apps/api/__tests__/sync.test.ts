@@ -52,6 +52,13 @@ vi.mock("../src/lib/prisma", () => {
   return { default: mock }
 })
 
+vi.mock("../src/ws/index", () => ({
+  broadcastToTenant: vi.fn(),
+  broadcastToUser: vi.fn(),
+}))
+
+import { broadcastToTenant } from "../src/ws/index"
+
 const token = signToken({ userId: "u1", tenantId: "t1", role: "Admin" })
 
 beforeAll(startServer)
@@ -413,6 +420,82 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     expect(res.body.results[0].error).toContain("Insufficient stock")
     // updateMany IS called (it's the atomic check itself), but returns count 0
     expect(vi.mocked(prisma.product.updateMany).mock.calls.length).toBe(1)
+  })
+})
+
+describe("POST /api/sync/push — live activity feed", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  function mockNewSale() {
+    vi.mocked(prisma.sale.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      { id: 1, stock: 10, name: "Cola" } as any,
+    ])
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.sale.create).mockResolvedValue({} as any)
+  }
+
+  const salePayload = {
+    id: "sale-activity-1",
+    saleNumber: "S-ACT-1",
+    paymentMethod: "Cash",
+    subtotal: 10,
+    tax: 0,
+    total: 10,
+    cost: 6,
+    profit: 4,
+    cashier: "Ahmad",
+    items: [
+      { id: 1, name: "Coca-Cola", barcode: "111", quantity: 2, unitPrice: 5, total: 10, cost: 3 },
+    ],
+  }
+
+  it("broadcasts a friendly activity summary for a successful sale, including the sender's deviceId", async () => {
+    mockNewSale()
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        deviceId: "register-2",
+        operations: [{ id: "op-activity-1", entity: "sale", action: "create", payload: salePayload }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+
+    const activityCall = vi.mocked(broadcastToTenant).mock.calls.find(c => c[1] === "sync:activity")
+    expect(activityCall).toBeTruthy()
+    expect(activityCall![0]).toBe("t1")
+    expect(activityCall![2].deviceId).toBe("register-2")
+    expect(activityCall![2].activities).toEqual([
+      { entity: "sale", action: "create", summary: "Ahmad sold 2x Coca-Cola" },
+    ])
+
+    // The existing raw data-changed signal must still fire too
+    const dataChangedCall = vi.mocked(broadcastToTenant).mock.calls.find(c => c[1] === "sync:data-changed")
+    expect(dataChangedCall).toBeTruthy()
+  })
+
+  it("does not broadcast an activity for uninteresting entities (e.g. settings)", async () => {
+    vi.mocked(prisma.appSettings.upsert).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        operations: [{ id: "op-activity-2", entity: "settings", action: "update", payload: { storeName: "New Name" } }],
+      },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+
+    const activityCall = vi.mocked(broadcastToTenant).mock.calls.find(c => c[1] === "sync:activity")
+    expect(activityCall).toBeUndefined()
+
+    // data-changed still fires — only the friendly activity feed is selective
+    const dataChangedCall = vi.mocked(broadcastToTenant).mock.calls.find(c => c[1] === "sync:data-changed")
+    expect(dataChangedCall).toBeTruthy()
   })
 })
 

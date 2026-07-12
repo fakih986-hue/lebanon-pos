@@ -107,7 +107,22 @@ export function restartCloudSyncBridge(): void {
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
-interface SyncState { lastPullAt?: string }
+interface SyncState {
+  lastPullAt?: string
+  /** Sorted, comma-joined labels of entities that failed on the most recent
+   *  pull attempt — used to detect the same failure repeating so a single
+   *  permanently-broken record (e.g. a historical debt sale referencing a
+   *  hard-deleted customer) can't wedge the cursor forever. */
+  lastFailedEntitiesSignature?: string
+  consecutiveIdenticalFailures?: number
+}
+
+/** After this many consecutive pulls failing on the EXACT same set of
+ *  entities, force-advance the cursor rather than block indefinitely — a
+ *  transient issue (e.g. a customer that just hasn't synced down yet) only
+ *  needs a few retries; a genuinely poisoned record needs a human, not an
+ *  infinite retry loop that also blocks every other entity from progressing. */
+const MAX_IDENTICAL_PULL_FAILURES = 5
 
 function readState(): SyncState {
   try {
@@ -321,7 +336,9 @@ function fixDecimalObjects(value: unknown): unknown {
 
 // ─── Pull: Railway changes → local PostgreSQL ────────────────────────────────
 
-async function pullFromCloud(): Promise<void> {
+// Exported for tests only — exercises one incremental pull cycle directly,
+// without triggerFullPull's deliberate cursor-reset-first behavior.
+export async function pullFromCloud(): Promise<void> {
   const tenantId = CLOUD_TENANT!
   const state    = readState()
   const since    = state.lastPullAt
@@ -353,7 +370,46 @@ async function pullFromCloud(): Promise<void> {
     (data as any)[key]?.forEach((item: any) => { if (item) delete item.updatedAt })
   }
 
-  await upsertPulledData(tenantId, data)
+  const failed = await upsertPulledData(tenantId, data)
+
+  if (failed.length > 0) {
+    const signature = [...failed].sort().join(",")
+    const isSameFailureAsLastTime = state.lastFailedEntitiesSignature === signature
+    const consecutiveFailures = isSameFailureAsLastTime ? (state.consecutiveIdenticalFailures ?? 0) + 1 : 1
+
+    if (consecutiveFailures >= MAX_IDENTICAL_PULL_FAILURES) {
+      // The same entities have failed to upsert this many pulls in a row —
+      // this isn't a transient "hasn't synced down yet" gap anymore, it's a
+      // genuinely poisoned record (e.g. a historical row referencing a
+      // hard-deleted parent). Blocking the cursor forever would also freeze
+      // every OTHER entity's sync, which is worse than losing this one
+      // record — so force-advance past it and log loudly for support to
+      // investigate, instead of wedging the whole hub indefinitely.
+      console.error(`[cloud-sync] Pull failed on the same entities ${consecutiveFailures} pulls in a row (${signature}) — forcing the cursor forward to avoid blocking all other sync. These specific records will NOT be retried automatically; needs manual investigation.`)
+      // lastFailedEntitiesSignature/consecutiveIdenticalFailures are cleared
+      // implicitly below — the unconditional writeState({lastPullAt}) after
+      // this block replaces the whole state object, not merges it.
+      _lastPullError = `Gave up retrying persistent failure — entities not synced: ${failed.join(", ")}`
+      _lastPullErrorAt = new Date().toISOString()
+      _failedPullCount++
+      broadcastToTenant(tenantId, "sync:data-changed", {})
+      // Fall through to advance the cursor below, same as a clean pull.
+    } else {
+      // Do NOT advance the cursor — an incremental pull only asks for records
+      // created/updated after lastPullAt, so advancing it here would mean the
+      // entities that just failed to upsert (e.g. staff/settings on a fresh
+      // hub's first pull) are never fetched again on the next cycle. Leaving
+      // the cursor where it was makes the next pull re-request the same
+      // window, giving the failed entities another chance.
+      writeState({ ...state, lastFailedEntitiesSignature: signature, consecutiveIdenticalFailures: consecutiveFailures })
+      _lastPullError = `Partial pull failure — entities not synced: ${failed.join(", ")}`
+      _lastPullErrorAt = new Date().toISOString()
+      _failedPullCount++
+      broadcastToTenant(tenantId, "sync:data-changed", {})
+      console.error(`[cloud-sync] Pull incomplete${since ? ` (since ${since})` : " (full)"} — cursor NOT advanced (attempt ${consecutiveFailures}/${MAX_IDENTICAL_PULL_FAILURES}). Failed: ${failed.join(", ")}`)
+      throw new Error(_lastPullError)
+    }
+  }
 
   // Prefer JSON serverTime (new API), fall back to HTTP Date header (always
   // server-accurate), then pullStartedAt (hub's clock — least accurate).
@@ -367,12 +423,22 @@ async function pullFromCloud(): Promise<void> {
 
 // ─── Upsert all pulled entities into local PostgreSQL ────────────────────────
 
-async function upsertPulledData(tenantId: string, data: PullResponse): Promise<void> {
+/**
+ * Upserts every entity from a pull response into the local database.
+ * Returns the list of entity labels that failed to upsert (empty = fully
+ * successful). The caller uses this to decide whether it's safe to advance
+ * the pull cursor — a partial failure must NOT advance it, or the failed
+ * records would never be re-fetched (the next incremental pull only asks
+ * for records created/updated after the cursor).
+ */
+async function upsertPulledData(tenantId: string, data: PullResponse): Promise<string[]> {
+  const failed: string[] = []
   // Helper: run one upsert, log errors to file + stderr without stopping other entities
   const run = async (label: string, fn: () => Promise<unknown>) => {
     try {
       await fn()
     } catch (err) {
+      failed.push(label)
       const msg = `[cloud-sync] upsert ${label}: ${(err as Error).message}`
       console.error(msg)
       try { fs.appendFileSync(path.join(DATA_DIR, "sync-error.log"), `${new Date().toISOString()} ${msg}\n${(err as Error).stack ?? ""}\n`) } catch {}
@@ -725,6 +791,18 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<v
   for (const order of data.deliveryOrders ?? []) {
     const { items, ...orderData } = order as any
     await run("deliveryOrder", async () => {
+      // customerId is nullable — customerName/customerPhone/address are the
+      // denormalized fallback for display. If the referenced customer isn't
+      // present locally (deleted upstream, or simply hasn't synced down in
+      // this batch), drop the FK rather than fail the whole upsert — the
+      // order itself is still valid and displayable without the link.
+      if (orderData.customerId) {
+        const customerExists = await prisma.customer.findUnique({
+          where: { id: orderData.customerId },
+          select: { id: true },
+        })
+        if (!customerExists) orderData.customerId = null
+      }
       await prisma.deliveryOrder.upsert({
         where:  { id: orderData.id },
         create: { ...orderData, tenantId } as any,
@@ -740,6 +818,8 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<v
   }
 
   // auditEvents — intentionally skipped: generated server-side, read-only
+
+  return failed
 }
 
 // ─── HTTP helper ─────────────────────────────────────────────────────────────

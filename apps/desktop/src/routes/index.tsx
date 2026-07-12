@@ -10,6 +10,7 @@ import Topbar from "../components/layout/Topbar"
 import AccessDenied from "../components/security/AccessDenied"
 import ErrorBoundary from "../components/ErrorBoundary"
 import ToastContainer from "../components/ui/Toast"
+import ActivityFeed from "../components/ui/ActivityFeed"
 
 import POSPage from "../features/pos/pages/POSPage"
 import { useToastStore } from "../features/pos/services/toast.service"
@@ -143,6 +144,7 @@ function Shell({ children }: { children: ReactNode }) {
 
       <BottomNav />
       <ToastContainer toasts={toasts} onDismiss={dismiss} position={location.pathname === "/" ? "bottom-center" : "top-end"} />
+      <ActivityFeed />
 
       <AnimatePresence>
         {showIntro && <TitanIntro key="intro" onDone={() => setShowIntro(false)} />}

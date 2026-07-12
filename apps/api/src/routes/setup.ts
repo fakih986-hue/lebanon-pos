@@ -60,6 +60,25 @@ function safeEqual(a: string, b: string): boolean {
   return ab.length === bb.length && timingSafeEqual(ab, bb)
 }
 
+/**
+ * A hub is only considered properly bootstrapped once the minimum data a
+ * working POS needs actually exists locally — not just the tenant row
+ * (which gets created as an FK placeholder before the real pull even runs).
+ * Returns the list of missing pieces; empty = fully bootstrapped.
+ */
+async function verifyBootstrap(tenantId: string): Promise<string[]> {
+  const missing: string[] = []
+  const [tenant, settings, activeStaffCount] = await Promise.all([
+    prisma.tenant.findUnique({ where: { id: tenantId }, select: { id: true } }),
+    prisma.appSettings.findUnique({ where: { tenantId }, select: { tenantId: true } }),
+    prisma.staffUser.count({ where: { tenantId, active: true } }),
+  ])
+  if (!tenant) missing.push("tenant")
+  if (!settings) missing.push("settings")
+  if (activeStaffCount === 0) missing.push("staff")
+  return missing
+}
+
 /** Accept X-Cloud-Key header OR a valid JWT (Bearer token) */
 async function requireCloudKeyOrJwt(req: Req, res: Response): Promise<boolean> {
   const expectedKey = process.env.CLOUD_API_KEY
@@ -103,22 +122,27 @@ router.get("/check", async (_req: Req, res: Response) => {
   try {
     await prisma.$queryRaw`SELECT 1`
     const tenantCount = await prisma.tenant.count()
-    const adminCount  = tenantCount > 0
-      ? await prisma.staffUser.count({ where: { role: "Admin", active: true } })
-      : 0
+    const [adminCount, settingsCount] = tenantCount > 0
+      ? await Promise.all([
+          prisma.staffUser.count({ where: { role: "Admin", active: true } }),
+          prisma.appSettings.count(),
+        ])
+      : [0, 0]
 
     res.json({
-      dbConnected:   true,
-      tenantExists:  tenantCount > 0,
-      adminExists:   adminCount  > 0,
+      dbConnected:    true,
+      tenantExists:   tenantCount > 0,
+      adminExists:    adminCount  > 0,
+      settingsExists: settingsCount > 0,
       tenantCount,
     })
   } catch (err) {
     console.error("[setup] /check error:", err)
     res.status(503).json({
-      dbConnected:  false,
-      tenantExists: false,
-      adminExists:  false,
+      dbConnected:    false,
+      tenantExists:   false,
+      adminExists:    false,
+      settingsExists: false,
     })
   }
 })
@@ -138,6 +162,44 @@ router.post("/pull-from-cloud", async (req: Req, res: Response) => {
     console.error("[setup] pull-from-cloud error:", err)
     res.status(500).json({ error: "Pull from cloud failed" })
   }
+})
+
+// ─── POST /api/setup/force-full-pull ─────────────────────────────────────────
+// Hub-only (localhost), no credentials needed — the hub already has its own
+// cloud config on disk. Resets the pull cursor and re-pulls everything from
+// Railway, then re-verifies bootstrap completeness. Exists as a repair tool:
+// if a hub ever ends up "configured" but missing staff/settings (e.g. from a
+// partial first pull), this lets it self-heal without retyping the tenant
+// subdomain/PIN, via the tray icon or Settings → Cloud.
+
+router.post("/force-full-pull", async (req: Req, res: Response) => {
+  if (!isLocalRequest(req)) {
+    res.status(403).json({ error: "Only available on the hub machine" })
+    return
+  }
+
+  const { tenantId } = getCloudStatus()
+  if (!tenantId) {
+    res.status(409).json({ error: "Cloud sync is not configured on this hub yet." })
+    return
+  }
+
+  try {
+    await triggerFullPull()
+  } catch (err) {
+    res.status(502).json({ error: `Full pull failed: ${(err as Error).message}` })
+    return
+  }
+
+  const missing = await verifyBootstrap(tenantId)
+  if (missing.length > 0) {
+    res.status(502).json({
+      error: `Full pull completed but is still missing: ${missing.join(", ")}. Check internet and try again.`,
+    })
+    return
+  }
+
+  res.json({ ok: true, message: "Full pull completed and verified." })
 })
 
 // ─── GET /api/setup/tenant-info ──────────────────────────────────────────────
@@ -390,7 +452,8 @@ router.post("/cloud-config", async (req: Req, res: Response) => {
   }
 
   try {
-    saveCloudConfig(tenantId.trim(), apiKey.trim())
+    const trimmedTenantId = tenantId.trim()
+    saveCloudConfig(trimmedTenantId, apiKey.trim())
     // Give the restarted bridge a moment, then force a full pull
     let pullError: string | null = null
     try {
@@ -399,6 +462,21 @@ router.post("/cloud-config", async (req: Req, res: Response) => {
       pullError = (err as Error).message
       console.error("[cloud-config] bridge pull failed:", pullError)
     }
+
+    // The pull can report success (HTTP-wise) while still leaving the hub
+    // half-activated — e.g. a partial upsert failure that got caught and
+    // logged per-entity. A hub is not allowed to open into that state, so
+    // bootstrap completeness is verified explicitly before this is treated
+    // as a real success — this is what the activation window checks to
+    // decide whether it can advance to the POS login screen at all.
+    if (!pullError) {
+      const missing = await verifyBootstrap(trimmedTenantId)
+      if (missing.length > 0) {
+        pullError = `Setup could not download required data (${missing.join(", ")}). Check internet and try again.`
+        console.error(`[cloud-config] bootstrap incomplete after pull — missing: ${missing.join(", ")}`)
+      }
+    }
+
     res.json({ ok: true, pullError, ...getCloudStatus() })
   } catch (err) {
     console.error("[setup] cloud-config error:", err)

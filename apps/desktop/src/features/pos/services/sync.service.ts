@@ -1441,6 +1441,14 @@ function connectSyncWebSocket() {
             pullFromServer().catch((e) => console.error("[ws-sync] pull failed:", e))
           }
         }
+        if (msg.type === "sync:activity") {
+          // Live cross-device activity feed — skip entries this device
+          // itself generated (seeing "you sold X" right after checkout is
+          // noise, not signal).
+          if (msg.data?.deviceId !== getDeviceId() && Array.isArray(msg.data?.activities)) {
+            window.dispatchEvent(new CustomEvent("sync:activity-feed", { detail: msg.data.activities }))
+          }
+        }
       } catch { /* ignore parse errors */ }
     }
 

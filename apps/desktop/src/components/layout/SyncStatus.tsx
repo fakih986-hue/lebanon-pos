@@ -13,7 +13,13 @@ import {
   type SyncStatus as RegisterSyncStatus,
 } from "../../features/pos/services/sync.service"
 
-type RejectedToast = { entity: string; error: string }
+type RejectedToast = { entity: string; error: string; sticky?: boolean }
+
+/** Extracts the product name from the server's "Insufficient stock" error, if present. */
+function parseInsufficientStockProduct(error: string): string | null {
+  const m = error.match(/Insufficient stock for "([^"]+)"/)
+  return m ? m[1] : null
+}
 
 export default function SyncStatus() {
   const { t } = useI18n()
@@ -31,9 +37,28 @@ export default function SyncStatus() {
   useEffect(() => {
     function onRejected(e: Event) {
       const op = (e as CustomEvent).detail
-      setToast({ entity: op.entity, error: op.error ?? "Sync rejected" })
+      const error = op.error ?? "Sync rejected"
       clearTimeout(toastTimer.current)
-      toastTimer.current = window.setTimeout(() => setToast(null), 6000)
+
+      // A rejected "sale" (e.g. insufficient stock — most likely when selling
+      // out the last unit(s) while a stale local stock count let checkout
+      // proceed) means the server's stock never actually decremented, even
+      // though this device already applied the decrement optimistically.
+      // Re-pull immediately so this device's own view self-corrects instead
+      // of silently diverging from the server/other devices, and keep the
+      // alert up until dismissed — a 6s toast is too easy to miss mid-rush.
+      const productName = op.entity === "sale" ? parseInsufficientStockProduct(error) : null
+      if (productName) {
+        setToast({
+          entity: op.entity,
+          error: `This sale went through here, but could NOT be saved to the server — stock ran out (someone else may have sold this item first). Verify remaining stock for "${productName}" and flag this transaction for a manager to reconcile.`,
+          sticky: true,
+        })
+        pullFromServer().catch(() => {})
+      } else {
+        setToast({ entity: op.entity, error })
+        toastTimer.current = window.setTimeout(() => setToast(null), 6000)
+      }
       setStatus(getSyncStatus())
     }
     window.addEventListener("sync:operation-rejected", onRejected)

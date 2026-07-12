@@ -161,6 +161,155 @@ describe("cloudSync", () => {
     })
   })
 
+  describe("triggerFullPull — cursor behavior on partial failure", () => {
+    const basePullResponse = {
+      products: [], customers: [], users: [], suppliers: [], sales: [], refunds: [],
+      debtSales: [], debtPayments: [], purchaseOrders: [], supplierPayments: [],
+      shifts: [], expenses: [], batches: [], adjustments: [], stockCounts: [],
+      dailyCloses: [], deliveryOrders: [], settings: [], deletions: [],
+    }
+
+    it("does NOT advance lastPullAt when an entity upsert fails (incremental pull)", async () => {
+      // Seed an existing cursor via a clean pull first, matching a hub that's
+      // already been running for a while (not a fresh triggerFullPull reset).
+      vi.mocked(prisma.tenant.findUnique).mockResolvedValue({
+        id: "test-tenant-1", name: "Test Store", subdomain: "test",
+      } as any)
+      vi.mocked(prisma.staffUser.upsert).mockResolvedValue({} as any)
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => "Sat, 11 Jul 2026 12:00:00 GMT" },
+        json: () => Promise.resolve(basePullResponse),
+        text: () => Promise.resolve(""),
+      }))
+      await cloudSync.pullFromCloud()
+      const before = cloudSync.getCloudStatus().lastPullAt
+      expect(before).toBeTruthy()
+      vi.unstubAllGlobals()
+
+      // Now an incremental pull returns a staff record whose upsert fails —
+      // simulates the real-world bug: tenant/products sync fine but a staff
+      // record fails, and the cursor must not move past it.
+      vi.mocked(prisma.staffUser.upsert).mockRejectedValue(new Error("DB constraint violation"))
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => "Sat, 11 Jul 2026 12:00:30 GMT" },
+        json: () => Promise.resolve({
+          ...basePullResponse,
+          users: [{ id: "staff-1", name: "test", role: "Admin", pin: "hash", active: true }],
+        }),
+        text: () => Promise.resolve(""),
+      }))
+
+      await expect(cloudSync.pullFromCloud()).rejects.toThrow(/Partial pull failure/)
+
+      const after = cloudSync.getCloudStatus().lastPullAt
+      expect(after).toBe(before) // cursor unchanged despite tenant/products succeeding
+
+      vi.unstubAllGlobals()
+    })
+
+    it("force-advances the cursor after repeated identical failures (self-heal from a poisoned record)", async () => {
+      vi.mocked(prisma.tenant.findUnique).mockResolvedValue({
+        id: "test-tenant-1", name: "Test Store", subdomain: "test",
+      } as any)
+      // Seed a starting cursor with a clean pull
+      vi.mocked(prisma.staffUser.upsert).mockResolvedValue({} as any)
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => "Sat, 11 Jul 2026 10:00:00 GMT" },
+        json: () => Promise.resolve(basePullResponse),
+        text: () => Promise.resolve(""),
+      }))
+      await cloudSync.pullFromCloud()
+      const seedCursor = cloudSync.getCloudStatus().lastPullAt
+      vi.unstubAllGlobals()
+
+      // Same poisoned record fails identically on every retry
+      vi.mocked(prisma.staffUser.upsert).mockRejectedValue(new Error("Foreign key constraint violated"))
+      const poisonedResponse = {
+        ...basePullResponse,
+        users: [{ id: "poisoned-staff", name: "ghost", role: "Cashier", pin: "hash", active: true }],
+      }
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => "Sat, 11 Jul 2026 10:05:00 GMT" },
+        json: () => Promise.resolve(poisonedResponse),
+        text: () => Promise.resolve(""),
+      }))
+
+      // First 4 attempts: cursor stays put, error thrown each time
+      for (let i = 0; i < 4; i++) {
+        await expect(cloudSync.pullFromCloud()).rejects.toThrow()
+        expect(cloudSync.getCloudStatus().lastPullAt).toBe(seedCursor)
+      }
+
+      // 5th identical failure: self-heals — advances the cursor instead of
+      // blocking forever, since every OTHER entity is otherwise stuck too.
+      await expect(cloudSync.pullFromCloud()).resolves.toBeUndefined()
+      expect(cloudSync.getCloudStatus().lastPullAt).not.toBe(seedCursor)
+
+      vi.unstubAllGlobals()
+    })
+
+    it("advances lastPullAt when every entity upserts cleanly", async () => {
+      vi.mocked(prisma.tenant.findUnique).mockResolvedValue({
+        id: "test-tenant-1", name: "Test Store", subdomain: "test",
+      } as any)
+      vi.mocked(prisma.staffUser.upsert).mockResolvedValue({} as any)
+
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => "Sat, 12 Jul 2026 00:00:00 GMT" },
+        json: () => Promise.resolve({
+          ...basePullResponse,
+          users: [{ id: "staff-1", name: "test", role: "Admin", pin: "hash", active: true }],
+        }),
+        text: () => Promise.resolve(""),
+      }))
+
+      await expect(cloudSync.pullFromCloud()).resolves.toBeUndefined()
+
+      expect(cloudSync.getCloudStatus().lastPullAt).toBeTruthy()
+
+      vi.unstubAllGlobals()
+    })
+  })
+
+  describe("deliveryOrder pull — dangling customerId", () => {
+    it("drops the customerId FK instead of failing when the referenced customer doesn't exist locally", async () => {
+      vi.mocked(prisma.tenant.findUnique).mockResolvedValue({
+        id: "test-tenant-1", name: "Test Store", subdomain: "test",
+      } as any)
+      vi.mocked(prisma.customer.findUnique).mockResolvedValue(null) // customer not found locally
+      vi.mocked((prisma as any).deliveryOrder.upsert).mockResolvedValue({} as any)
+
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => "Sat, 12 Jul 2026 00:00:00 GMT" },
+        json: () => Promise.resolve({
+          products: [], customers: [], users: [], suppliers: [], sales: [], refunds: [],
+          debtSales: [], debtPayments: [], purchaseOrders: [], supplierPayments: [],
+          shifts: [], expenses: [], batches: [], adjustments: [], stockCounts: [],
+          dailyCloses: [], settings: [], deletions: [],
+          deliveryOrders: [{
+            id: "do-1", orderNumber: "D-1", status: "Pending",
+            customerId: "dangling-customer-id", customerName: "Guest", customerPhone: "70000000",
+            address: "Somewhere", itemsTotal: 10, deliveryFee: 0, total: 10,
+          }],
+        }),
+        text: () => Promise.resolve(""),
+      }))
+
+      await expect(cloudSync.triggerFullPull()).resolves.toBeUndefined()
+
+      const call = vi.mocked((prisma as any).deliveryOrder.upsert).mock.calls[0][0]
+      expect(call.create.customerId).toBeNull()
+
+      vi.unstubAllGlobals()
+    })
+  })
+
   describe("saveCloudConfig", () => {
     it("persists config and restarts bridge", async () => {
       vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ results: [] }) }))

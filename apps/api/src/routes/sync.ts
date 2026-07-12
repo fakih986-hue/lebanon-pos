@@ -138,6 +138,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
   }
 
   const results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string }> = []
+  const activities: Array<{ entity: string; action: string; summary: string }> = []
 
   for (const op of operations) {
     try {
@@ -190,6 +191,8 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
       })
 
       results.push({ id: op.id, status: "ok" })
+      const summary = buildActivitySummary(op.entity, op.action, op.payload)
+      if (summary) activities.push({ entity: op.entity, action: op.action, summary })
     } catch (err) {
       const errorMessage = (err as Error).message
 
@@ -234,6 +237,14 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
   // Notify all connected devices in this tenant that data has changed
   if (results.some((r) => r.status === "ok")) {
     try { broadcastToTenant(tenantId, "sync:data-changed", {}) } catch { /* no-op */ }
+    // Live activity feed — friendly, human-readable summaries of what just
+    // happened, broadcast alongside the raw data-changed signal so other
+    // devices can show "X sold Y" instantly instead of just silently
+    // re-pulling. Includes the sender's deviceId so a device can filter out
+    // its own actions (seeing "you sold X" right after doing it is noise).
+    if (activities.length > 0) {
+      try { broadcastToTenant(tenantId, "sync:activity", { activities, deviceId: deviceId ?? null, at: new Date().toISOString() }) } catch { /* no-op */ }
+    }
   }
 
   json(res, { results })
@@ -1170,6 +1181,48 @@ function validateSyncOperation(op: SyncOperationInput) {
       throw new Error("Sale sync requires an id and at least one item")
     }
   }
+}
+
+/**
+ * Builds a friendly, human-readable description of a successful sync
+ * operation for the live cross-device activity feed. Returns null for
+ * entities/actions that aren't interesting to surface (e.g. settings,
+ * staff PIN changes) — the feed should only show genuinely notable
+ * store activity, not every internal sync detail.
+ */
+function buildActivitySummary(entity: string, action: string, payload: unknown): string | null {
+  const p = (payload ?? {}) as Record<string, unknown>
+
+  if (entity === "sale" && action === "create") {
+    const cashier = typeof p.cashier === "string" && p.cashier ? p.cashier : "Someone"
+    const items = Array.isArray(p.items) ? p.items : []
+    const itemDesc = items.length === 1
+      ? `${(items[0] as any).quantity ?? ""}x ${(items[0] as any).name ?? "item"}`.trim()
+      : `${items.length} item${items.length === 1 ? "" : "s"}`
+    return `${cashier} sold ${itemDesc || "an item"}`
+  }
+  if (entity === "sale" && action === "void") {
+    const saleNumber = typeof p.saleNumber === "string" ? p.saleNumber : undefined
+    return `A sale was voided${saleNumber ? ` (${saleNumber})` : ""}`
+  }
+  if (entity === "refund" && action === "create") {
+    const customerName = typeof p.customerName === "string" && p.customerName ? ` for ${p.customerName}` : ""
+    return `A refund was processed${customerName}`
+  }
+  if (entity === "product" && action === "create") {
+    const name = typeof p.name === "string" ? p.name : undefined
+    return name ? `"${name}" was added as a new product` : null
+  }
+  if (entity === "debt" && action === "payment") {
+    const customerName = typeof p.customerName === "string" && p.customerName ? ` from ${p.customerName}` : ""
+    return `A debt payment was recorded${customerName}`
+  }
+  if (entity === "inventory" && action === "receive") {
+    const batchNumber = typeof p.batchNumber === "string" ? p.batchNumber : undefined
+    return `Stock was received${batchNumber ? ` (batch ${batchNumber})` : ""}`
+  }
+
+  return null
 }
 
 async function hashStaffPayload(payload?: Record<string, unknown>) {

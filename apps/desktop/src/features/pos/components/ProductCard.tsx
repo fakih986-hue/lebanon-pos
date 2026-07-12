@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Plus, Star, X, ZoomIn } from "lucide-react"
+import { Plus, Star } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../lib/currency"
@@ -64,19 +64,20 @@ const ProductCard = memo(function ProductCard({
     : product.price
 
   const [justAdded, setJustAdded] = useState(false)
-  const [imageZoom, setImageZoom] = useState(false)
   const [addCount,  setAddCount]  = useState(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  // Premium rule: stock only speaks when it needs attention.
-  // Healthy stock stays silent — the card breathes, low/out shout.
+  // Premium rule: stock only speaks when it needs attention, or once the
+  // cashier has actually selected the item (added it to the cart) — healthy,
+  // unselected stock stays silent so the grid stays calm.
+  const selected = cartQuantity > 0
   const stockLabel = outOfStock
     ? t("pos.out_of_stock")
-    : lowStock
+    : lowStock || selected
     ? `${product.stock} left`
     : null
 
-  const stockColor = outOfStock ? "var(--rose)" : "var(--warning)"
+  const stockColor = outOfStock ? "var(--rose)" : lowStock ? "var(--warning)" : "var(--text-3)"
 
   const handleClick = useCallback(() => {
     if (outOfStock) return
@@ -115,24 +116,12 @@ const ProductCard = memo(function ProductCard({
           <div className="flex items-start gap-2">
             {/* Image / Initial */}
             {product.image ? (
-              <div className="relative shrink-0">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="h-8 w-8 rounded-md object-cover"
-                  style={{ border: `1px solid var(--border)` }}
-                />
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => { e.stopPropagation(); setImageZoom(true) }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setImageZoom(true) } }}
-                  className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-md opacity-0 transition group-hover:opacity-100"
-                  style={{ background: "rgba(0,0,0,0.45)" }}
-                >
-                  <ZoomIn size={10} className="text-white" />
-                </span>
-              </div>
+              <img
+                src={product.image}
+                alt={product.name}
+                className="h-8 w-8 shrink-0 rounded-md object-cover"
+                style={{ border: `1px solid var(--border)` }}
+              />
             ) : (
               <span
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[12px] font-bold"
@@ -232,33 +221,6 @@ const ProductCard = memo(function ProductCard({
           </button>
         )}
       </MotionArticle>
-
-      {/* Image zoom modal */}
-      {imageZoom && product.image && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-8"
-          style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)" }}
-          onClick={() => setImageZoom(false)}
-        >
-          <button
-            type="button"
-            onClick={() => setImageZoom(false)}
-            aria-label="Close zoom"
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-          >
-            <X size={20} />
-          </button>
-          <img
-            src={product.image}
-            alt={product.name}
-            className="max-h-[80vh] max-w-[80vw] rounded-xl object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
-          <p className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-lg bg-black/60 px-4 py-2 text-sm font-bold text-white">
-            {product.name}
-          </p>
-        </div>
-      )}
     </>
   )
 })

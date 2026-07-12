@@ -763,6 +763,28 @@ function createTray() {
         }
       },
     },
+    {
+      label: "Force Full Cloud Pull", click: async () => {
+        const { response } = await dialog.showMessageBox({
+          type: "question", title: "Force Full Cloud Pull",
+          message: "Re-download all data from the cloud store now? Use this if staff, products, or settings seem missing after setup.",
+          buttons: ["Cancel", "Pull Now"],
+        })
+        if (response !== 1) return
+        try {
+          const res = await fetch(`${API_URL}/api/setup/force-full-pull`, { method: "POST" })
+          const data = await res.json() as { ok?: boolean; error?: string; message?: string }
+          if (res.ok && data.ok) {
+            dialog.showMessageBox({ type: "info", title: "Full Cloud Pull",
+              message: data.message ?? "Full pull completed and verified.", buttons: ["OK"] })
+          } else {
+            dialog.showErrorBox("Full Cloud Pull Failed", data.error ?? `Request failed (HTTP ${res.status})`)
+          }
+        } catch (err) {
+          dialog.showErrorBox("Full Cloud Pull Failed", err instanceof Error ? err.message : "Could not reach the local server.")
+        }
+      },
+    },
     { type: "separator" },
     { label: "Check for Updates", click: () => autoUpdater.checkForUpdates().catch(() => {}) },
     { type: "separator" },

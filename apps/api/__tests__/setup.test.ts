@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest"
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest"
 import { createHash } from "node:crypto"
 import { startServer, stopServer, request } from "./helpers"
 import prisma from "../src/lib/prisma"
+import * as cloudSync from "../src/services/cloudSync"
 
 vi.mock("../src/lib/prisma", () => {
   const model = () => ({
@@ -11,17 +12,28 @@ vi.mock("../src/lib/prisma", () => {
     update: vi.fn(),
     updateMany: vi.fn(),
     upsert: vi.fn(),
+    count: vi.fn(),
   })
 
   const client = {
     tenant: model(),
     staffUser: model(),
+    appSettings: model(),
     $connect: vi.fn(),
     $disconnect: vi.fn(),
+    $queryRaw: vi.fn(),
   }
 
   return { default: client }
 })
+
+vi.mock("../src/services/cloudSync", () => ({
+  triggerFullPull: vi.fn(),
+  saveCloudConfig: vi.fn(),
+  getCloudStatus: vi.fn(() => ({
+    configured: true, running: true, tenantId: "t1", failedPushCount: 0, failedPullCount: 0,
+  })),
+}))
 
 const PIN = "1234"
 const PIN_HASH = createHash("sha256").update(PIN).digest("base64")
@@ -201,5 +213,98 @@ describe("POST /api/setup/cloud-config", () => {
     if (res.status === 400) {
       expect(res.body.error).toMatch(/tenantId and apiKey are required/)
     }
+  })
+
+  describe("bootstrap verification after a successful pull", () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+      process.env.ADMIN_PASSWORD = "test-admin-pw"
+      vi.mocked(cloudSync.getCloudStatus).mockReturnValue({
+        configured: true, running: true, tenantId: "t1", failedPushCount: 0, failedPullCount: 0,
+      } as any)
+    })
+
+    it("reports a clear pullError when the pull succeeds but staff/settings are still missing", async () => {
+      vi.mocked(cloudSync.triggerFullPull).mockResolvedValue(undefined)
+      // Hub is not properly bootstrapped: tenant exists but no settings, no active staff
+      vi.mocked(prisma.tenant.findUnique).mockResolvedValue({ id: "t1" } as any)
+      vi.mocked(prisma.appSettings.findUnique).mockResolvedValue(null)
+      vi.mocked(prisma.staffUser.count).mockResolvedValue(0)
+
+      const res = await request("POST", "/api/setup/cloud-config", {
+        body: { tenantId: "t1", apiKey: "real-key", adminPassword: "test-admin-pw" },
+      })
+
+      expect(res.status).toBe(200)
+      expect(res.body.pullError).toMatch(/Setup could not download required data/)
+      expect(res.body.pullError).toMatch(/settings/)
+      expect(res.body.pullError).toMatch(/staff/)
+    })
+
+    it("reports no pullError when the pull succeeds and bootstrap is complete", async () => {
+      vi.mocked(cloudSync.triggerFullPull).mockResolvedValue(undefined)
+      vi.mocked(prisma.tenant.findUnique).mockResolvedValue({ id: "t1" } as any)
+      vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({ tenantId: "t1" } as any)
+      vi.mocked(prisma.staffUser.count).mockResolvedValue(1)
+
+      const res = await request("POST", "/api/setup/cloud-config", {
+        body: { tenantId: "t1", apiKey: "real-key", adminPassword: "test-admin-pw" },
+      })
+
+      expect(res.status).toBe(200)
+      expect(res.body.pullError).toBeNull()
+    })
+  })
+})
+
+describe("POST /api/setup/force-full-pull", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(cloudSync.getCloudStatus).mockReturnValue({
+      configured: true, running: true, tenantId: "t1", failedPushCount: 0, failedPullCount: 0,
+    } as any)
+  })
+
+  it("returns 409 when cloud sync isn't configured yet", async () => {
+    vi.mocked(cloudSync.getCloudStatus).mockReturnValue({
+      configured: false, running: false, failedPushCount: 0, failedPullCount: 0,
+    } as any)
+
+    const res = await request("POST", "/api/setup/force-full-pull")
+
+    expect(res.status).toBe(409)
+  })
+
+  it("succeeds when the full pull completes and bootstrap verifies clean", async () => {
+    vi.mocked(cloudSync.triggerFullPull).mockResolvedValue(undefined)
+    vi.mocked(prisma.tenant.findUnique).mockResolvedValue({ id: "t1" } as any)
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({ tenantId: "t1" } as any)
+    vi.mocked(prisma.staffUser.count).mockResolvedValue(1)
+
+    const res = await request("POST", "/api/setup/force-full-pull")
+
+    expect(res.status).toBe(200)
+    expect(res.body.ok).toBe(true)
+  })
+
+  it("reports a clear error when the pull still leaves staff missing", async () => {
+    vi.mocked(cloudSync.triggerFullPull).mockResolvedValue(undefined)
+    vi.mocked(prisma.tenant.findUnique).mockResolvedValue({ id: "t1" } as any)
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({ tenantId: "t1" } as any)
+    vi.mocked(prisma.staffUser.count).mockResolvedValue(0)
+
+    const res = await request("POST", "/api/setup/force-full-pull")
+
+    expect(res.status).toBe(502)
+    expect(res.body.error).toMatch(/staff/)
+  })
+
+  it("reports a clear error when the pull itself fails", async () => {
+    vi.mocked(cloudSync.triggerFullPull).mockRejectedValue(new Error("Network error"))
+
+    const res = await request("POST", "/api/setup/force-full-pull")
+
+    expect(res.status).toBe(502)
+    expect(res.body.error).toMatch(/Full pull failed/)
   })
 })
