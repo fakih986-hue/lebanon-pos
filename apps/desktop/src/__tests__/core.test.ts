@@ -709,3 +709,98 @@ describe("sync.service — validateStockWithHub (multi-device stock preflight)",
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 })
+
+describe("sync.service — commitSaleToHub (server-authoritative write-through)", () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    window.localStorage.setItem("lebanonpos.api-url", "http://192.168.1.50:3015")
+    window.localStorage.setItem("lebanonpos.auth-token", "test-token")
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  const sale = { id: "sale-wt-1", saleNumber: "S-1", items: [{ id: 1, quantity: 1 }] }
+
+  it("returns committed when the hub confirms the sale", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true, json: () => Promise.resolve({ results: [{ id: "wt-sale-wt-1", status: "ok" }] }),
+    }))
+    const { commitSaleToHub } = await import("../features/pos/services/sync.service")
+    expect(await commitSaleToHub(sale)).toEqual({ status: "committed" })
+  })
+
+  it("returns rejected (no retry) when the hub rejects for insufficient stock", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true, json: () => Promise.resolve({ results: [{ id: "wt-sale-wt-1", status: "rejected", error: "Insufficient stock for \"X\"" }] }),
+    })
+    vi.stubGlobal("fetch", fetchSpy)
+    const { commitSaleToHub } = await import("../features/pos/services/sync.service")
+    const r = await commitSaleToHub(sale)
+    expect(r.status).toBe("rejected")
+    // rejected is definitive → only one push attempt, no retry
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it("returns unreachable after retries when network fails AND the sale did not commit", async () => {
+    // every push throws; the sale-committed confirm returns committed:false
+    const fetchSpy = vi.fn().mockImplementation((url) => {
+      if (String(url).includes("/sale-committed/")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ committed: false }) })
+      }
+      return Promise.reject(new Error("network"))
+    })
+    vi.stubGlobal("fetch", fetchSpy)
+    const { commitSaleToHub } = await import("../features/pos/services/sync.service")
+    expect((await commitSaleToHub(sale)).status).toBe("unreachable")
+  })
+
+  it("LOST-ACK: returns committed (never double-sells) when push times out but the sale actually committed", async () => {
+    // push times out (rejects), but the confirm endpoint says it DID commit
+    const fetchSpy = vi.fn().mockImplementation((url) => {
+      if (String(url).includes("/sale-committed/")) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ committed: true }) })
+      }
+      return Promise.reject(new Error("timeout"))
+    })
+    vi.stubGlobal("fetch", fetchSpy)
+    const { commitSaleToHub } = await import("../features/pos/services/sync.service")
+    expect((await commitSaleToHub(sale)).status).toBe("committed")
+  })
+
+  it("returns unreachable without calling fetch when no api url/token", async () => {
+    window.localStorage.clear()
+    const fetchSpy = vi.fn()
+    vi.stubGlobal("fetch", fetchSpy)
+    const { commitSaleToHub } = await import("../features/pos/services/sync.service")
+    expect((await commitSaleToHub(sale)).status).toBe("unreachable")
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe("inventoryBatch.service — consumeInventoryBatches dryRun", () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    window.localStorage.setItem("lebanonpos.users.v1", JSON.stringify([
+      { id: "u1", name: "A", mobile: "0", pin: "x", role: "Admin", active: true, createdAt: new Date().toISOString(), pinChanged: false },
+    ]))
+    window.localStorage.setItem("lebanonpos.current-user.v1", "u1")
+    window.localStorage.setItem("lebanonpos.inventory-batches.v1", JSON.stringify([
+      { id: "b1", batchNumber: "L1", productId: 1, productName: "X", barcode: "X1", initialQuantity: 10, quantityRemaining: 10, unitCost: 1, unitPrice: 2, receivedAt: new Date().toISOString(), status: "Open" },
+    ]))
+  })
+
+  it("computes an allocation plan WITHOUT mutating batches or enqueuing", async () => {
+    const { consumeInventoryBatches } = await import("../features/pos/services/inventoryBatch.service")
+    const { getSyncQueue } = await import("../features/pos/services/sync.service")
+    const alloc = consumeInventoryBatches(
+      [{ productId: 1, productName: "X", barcode: "X1", quantity: 3, fallbackUnitCost: 1 }],
+      { dryRun: true },
+    )
+    // allocation returned
+    expect(alloc.get(1)?.[0]?.quantity).toBe(3)
+    // batch NOT mutated on disk
+    const batches = JSON.parse(window.localStorage.getItem("lebanonpos.inventory-batches.v1")!)
+    expect(batches[0].quantityRemaining).toBe(10)
+    // nothing enqueued
+    expect(getSyncQueue().filter((o: any) => o.entity === "inventory").length).toBe(0)
+  })
+})

@@ -254,7 +254,10 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[]) {
   return batches
 }
 
-export function consumeInventoryBatches(items: ConsumeBatchInput[]) {
+export function consumeInventoryBatches(
+  items: ConsumeBatchInput[],
+  opts?: { dryRun?: boolean; skipSync?: boolean },
+) {
   const batches = getInventoryBatches()
   const allocationsByProduct = new Map<number, BatchAllocation[]>()
 
@@ -300,6 +303,15 @@ export function consumeInventoryBatches(items: ConsumeBatchInput[]) {
     }
   })
 
+  // Dry run: compute the allocation plan only (used by the write-through
+  // path to build the sale payload BEFORE the hub commits). The in-memory
+  // quantityRemaining mutations above are on a throwaway snapshot from
+  // getInventoryBatches() and are never persisted — no write, no enqueue,
+  // no movement ledger entry.
+  if (opts?.dryRun) {
+    return allocationsByProduct
+  }
+
   writeBatches(batches)
 
   const changedBatches = batches.filter((batch) =>
@@ -307,7 +319,10 @@ export function consumeInventoryBatches(items: ConsumeBatchInput[]) {
       allocations.some((allocation) => allocation.batchId === batch.id)
     )
   )
-  if (changedBatches.length > 0) {
+  // skipSync: local batch state is updated for immediate display, but no sync
+  // op is enqueued — the hub already committed the authoritative batch
+  // decrement during the write-through sale commit.
+  if (changedBatches.length > 0 && !opts?.skipSync) {
     enqueueSyncOperation({
       entity: "inventory",
       action: "update",

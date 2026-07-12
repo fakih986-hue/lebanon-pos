@@ -304,6 +304,23 @@ router.post("/validate-stock", requireCloudOrJwtAuth, async (req: AuthRequest, r
   json(res, { ok: insufficientItems.length === 0, insufficientItems })
 })
 
+// ─── GET /api/sync/sale-committed/:saleId ────────────────────────────────────
+// Idempotency confirm-before-re-ring for server-authoritative checkout. When a
+// connected client's write-through commit times out (the hub may have committed
+// the sale but the response was lost), the client calls this BEFORE letting the
+// cashier re-ring — so a committed-but-unacked sale is finalized rather than
+// duplicated. Returns whether a non-voided sale with this id exists on the hub.
+router.get("/sale-committed/:saleId", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+  const tenantId = req.auth!.tenantId
+  const saleId = ((req as any).params?.saleId as string) || ""
+  if (!saleId) { json(res, { error: "saleId required" }, 400); return }
+  const sale = await prisma.sale.findFirst({
+    where: { id: saleId, tenantId, status: { not: "Voided" } },
+    select: { id: true },
+  })
+  json(res, { committed: !!sale })
+})
+
 router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
   const tenantId = req.auth!.tenantId

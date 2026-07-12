@@ -24,9 +24,9 @@ function statusToBanner(s: SyncStatus, mode: ConnectionMode): Banner | null {
     }
     if (!s.online) {
       return {
-        level: "warning",
+        level: "error",
         icon: CloudOff,
-        message: "Hub unreachable — sales are saved locally",
+        message: "Not connected to hub — stock sales are paused until it reconnects",
       }
     }
     if (s.failed > 0 || s.rejected > 0) {

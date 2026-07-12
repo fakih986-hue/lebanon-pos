@@ -241,22 +241,24 @@ export function getRefundsForSale(saleId: string) {
   return getRefunds().filter((refund) => refund.saleId === saleId)
 }
 
-export function recordSale(input: RecordSaleInput) {
+/**
+ * Pure constructor — builds the canonical Sale object WITHOUT persisting it.
+ * Used both by recordSale (local-first path) and by the server-authoritative
+ * write-through path, which must have the exact sale object (with its
+ * client-generated id) to send to the hub BEFORE anything is written locally.
+ * Does not touch tender/tax math — it copies the already-computed input values.
+ */
+export function buildSale(input: RecordSaleInput, id: string): Sale {
   assertCanWrite("record sale")
-  const cost = input.items.reduce(
-    (sum, item) => sum + item.cost * item.quantity,
-    0
-  )
+  const cost = input.items.reduce((sum, item) => sum + item.cost * item.quantity, 0)
   const currentUser = getCurrentUser()
   const activeShift = getActiveShift()
-
   // Shift gate — every sale requires an open register shift
   if (!activeShift) {
     throw new Error("No open shift. Please open a shift before recording a sale.")
   }
-
-  const sale: Sale = {
-    id: createId(),
+  return {
+    id,
     saleNumber: input.saleNumber,
     paymentMethod: input.paymentMethod,
     customerId: input.customerId,
@@ -279,14 +281,17 @@ export function recordSale(input: RecordSaleInput) {
     status: input.paymentMethod === "Debt" ? "Debt" : "Completed",
     createdAt: new Date().toISOString(),
   }
+}
 
+/** Persist a built sale locally (+ audit). Enqueues a sync op unless skipSync
+ *  — the write-through path passes skipSync because the hub already committed
+ *  the sale authoritatively, so re-enqueuing it would be redundant. */
+function persistSaleRecord(sale: Sale, opts?: { skipSync?: boolean }) {
   writeSales([sale, ...getSales()])
   recordAuditEvent({
     action: "sale.complete",
     entity: "sale",
-    summary: `${sale.saleNumber} completed by ${sale.cashier} for $${sale.total.toFixed(
-      2
-    )}.`,
+    summary: `${sale.saleNumber} completed by ${sale.cashier} for $${sale.total.toFixed(2)}.`,
     metadata: {
       saleId: sale.id,
       paymentMethod: sale.paymentMethod,
@@ -296,13 +301,28 @@ export function recordSale(input: RecordSaleInput) {
       shiftNumber: sale.shiftNumber,
     },
   })
-  enqueueSyncOperation({
-    entity: "sale",
-    action: "create",
-    summary: `${sale.saleNumber} sale queued for sync.`,
-    payload: sale,
-  })
+  if (!opts?.skipSync) {
+    enqueueSyncOperation({
+      entity: "sale",
+      action: "create",
+      summary: `${sale.saleNumber} sale queued for sync.`,
+      payload: sale,
+    })
+  }
+}
 
+export function recordSale(input: RecordSaleInput, opts?: { id?: string; skipSync?: boolean }) {
+  const sale = buildSale(input, opts?.id ?? createId())
+  persistSaleRecord(sale, opts)
+  return sale
+}
+
+/** Finalize a sale the hub has already committed (server-authoritative
+ *  write-through): persist it locally for receipt/history WITHOUT re-enqueuing.
+ *  The hub owns the authoritative stock/batch decrement; the next pull
+ *  reconciles local stock. */
+export function finalizeCommittedSale(sale: Sale) {
+  persistSaleRecord(sale, { skipSync: true })
   return sale
 }
 

@@ -1092,6 +1092,79 @@ export async function validateStockWithHub(
   }
 }
 
+// ── Server-authoritative (write-through) stock checkout ──────────────────────
+// For CONNECT_TO_HUB satellite tills, a stock-decrementing sale must be
+// committed by the hub (single authority, atomic decrement) BEFORE it is
+// finalized locally — so a sale can never complete against stale local stock.
+
+export type SaleCommitResult =
+  | { status: "committed" }
+  | { status: "rejected"; error: string }
+  | { status: "unreachable" }
+
+// Transient-retry window: a brief network blip should not stop a sale. Short
+// timeout + one retry keeps a healthy-LAN commit imperceptible while a genuine
+// blip usually recovers within the window. Total worst case before the
+// confirm-before-give-up check ≈ 2 × COMMIT_TIMEOUT_MS.
+const COMMIT_TIMEOUT_MS = 1200
+const COMMIT_MAX_ATTEMPTS = 2
+
+/** Asks the hub whether a sale id has already committed (idempotency check). */
+async function saleCommittedOnHub(saleId: string): Promise<boolean | null> {
+  const apiUrl = getApiUrl(); const token = getAuthToken()
+  if (!apiUrl || !token) return null
+  try {
+    const res = await fetch(`${apiUrl}/api/sync/sale-committed/${encodeURIComponent(saleId)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(COMMIT_TIMEOUT_MS),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data?.committed === true
+  } catch { return null }
+}
+
+/**
+ * Write-through commit of a stock-decrementing sale to the hub. The sale MUST
+ * carry a client-generated UUID (`sale.id`) so the hub's commit is idempotent:
+ * a retry of the same id never double-decrements. On a lost response after the
+ * retry window, we CONFIRM whether the sale actually committed before conceding
+ * — so a committed-but-unacked sale is reported as committed (finalize it),
+ * never duplicated.
+ */
+export async function commitSaleToHub(sale: { id: string } & Record<string, unknown>): Promise<SaleCommitResult> {
+  const apiUrl = getApiUrl()
+  const token = getAuthToken()
+  if (!apiUrl || !token) return { status: "unreachable" }
+
+  const op = { id: `wt-${sale.id}`, entity: "sale", action: "create", payload: sale }
+  const body = JSON.stringify({ deviceId: getDeviceId(), operations: [op] })
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+
+  for (let attempt = 1; attempt <= COMMIT_MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(`${apiUrl}/api/sync/push`, {
+        method: "POST", headers, body, signal: AbortSignal.timeout(COMMIT_TIMEOUT_MS),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const r = data?.results?.[0]
+        if (r?.status === "ok") { invalidateHealthCache(); return { status: "committed" } }
+        // "rejected" is a definitive business decision (insufficient stock) —
+        // do not retry it.
+        if (r?.status === "rejected") return { status: "rejected", error: r.error ?? "Rejected by hub" }
+        // "error" (transient server error) or non-OK HTTP → fall through, retry
+      }
+    } catch { /* timeout / network drop → retry */ }
+  }
+
+  // Retries exhausted. The hub may have committed but the ACK was lost — confirm
+  // before giving up, so the cashier never re-rings a sale that already went in.
+  const committed = await saleCommittedOnHub(sale.id)
+  if (committed === true) { invalidateHealthCache(); return { status: "committed" } }
+  return { status: "unreachable" }
+}
+
 // Map PULL_TARGETS keys to API entity paths for per-entity full pull
 const FULL_PULL_ENTITY_MAP: Record<string, string> = {
   products: "products",

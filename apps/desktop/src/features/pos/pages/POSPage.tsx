@@ -44,7 +44,7 @@ import {
   toggleProductFavorite,
 } from "../services/product.service"
 import { decreaseProductStock, increaseProductStock } from "../services/product.service"
-import { recordSale, voidSale, type SaleTender } from "../services/sales.service"
+import { recordSale, buildSale, finalizeCommittedSale, voidSale, type SaleTender } from "../services/sales.service"
 import {
   holdSale,
   removeHeldSale,
@@ -53,7 +53,8 @@ import {
 import { recordDebtSale } from "../services/customer.service"
 import { recordAuditEvent, userCan } from "../services/security.service"
 import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
-import { getConnectionMode, pullFromServer, validateStockWithHub } from "../services/sync.service"
+import { getConnectionMode, pullFromServer, validateStockWithHub, commitSaleToHub } from "../services/sync.service"
+import { createId } from "../lib/storage"
 
 import type { Product } from "../types/product"
 import { usePosData } from "../hooks/usePosData"
@@ -561,56 +562,35 @@ export default function POSPage() {
   const completeSale = useCallback(async function completeSale() {
     if (checkoutBlocked || isValidatingStock) return
 
-    // Preflight: this device's local product/batch cache can be stale even
-    // on the hub itself — another connected device's sale (or the hub's own
-    // background cloud-bridge pull) can change real stock/batch data before
-    // this screen's own cache catches up, since the renderer's view is its
-    // own cached copy, not a live query. Originally this only ran for
-    // CONNECT_TO_HUB, on the assumption the hub is always self-consistent —
-    // live testing (POS-SYNC-TORTURE-1 follow-up) showed that assumption
-    // was incomplete: the hub's own checkout hit the identical stale-cart
-    // race. Runs for both modes now; for STORE_HUB this is a same-machine
-    // round trip to its own local API, not a real network hop.
-    if (getConnectionMode() === "CONNECT_TO_HUB" || getConnectionMode() === "STORE_HUB") {
-      setIsValidatingStock(true)
-      setScannerStatus("Verifying stock with hub…")
-      try {
-        const validation = await validateStockWithHub(
-          items.map((item) => ({ productId: item.id, quantity: item.quantity }))
-        )
-        if (!validation.ok) {
-          if (validation.reason === "unreachable") {
-            setScannerStatus("⚠️ Cannot verify stock — hub unreachable. Sale blocked to prevent stock conflicts.")
-          } else {
-            const names = validation.insufficientItems?.map((i) => i.name).join(", ") ?? "one or more items"
-            setScannerStatus(`⚠️ Stock changed on another register. Refresh cart. (${names})`)
-          }
-          playErrorBuzz()
-          pullFromServer().catch(() => {}) // refresh so the cart/grid reflects real numbers
-          return
-        }
-      } finally {
-        setIsValidatingStock(false)
-      }
-    }
+    const mode = getConnectionMode()
+    // Every product in this system is stock-tracked, so a sale with items is
+    // stock-decrementing. Pure debt payments / non-stock ops don't reach here.
+    const stockDecrementing = items.length > 0
+    // CONNECT_TO_HUB stock sales are server-authoritative (write-through): the
+    // hub commits the sale + stock decrement atomically BEFORE we finalize
+    // locally, so a satellite till can never oversell against stale local
+    // stock. STORE_HUB stays local-authoritative (it IS the DB).
+    const writeThrough = mode === "CONNECT_TO_HUB" && stockDecrementing
 
     const saleNumber = `S-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`
+    const saleId = createId() // client-generated UUID → hub commit is idempotent
+
+    const cartInputs = items.map((item) => ({
+      productId: item.id, productName: item.name, barcode: item.barcode,
+      quantity: item.quantity, fallbackUnitCost: item.cost,
+    }))
 
     let batchesConsumed = false
     let recordedSaleId: string | undefined
     let stockDecreased = false
 
     try {
-      const batchAllocations = consumeInventoryBatches(
-        items.map((item) => ({
-          productId: item.id, productName: item.name, barcode: item.barcode,
-          quantity: item.quantity, fallbackUnitCost: item.cost,
-        }))
-      )
-      batchesConsumed = true
-
+      // Build the canonical sale payload FIRST, via a dry-run batch allocation
+      // that writes/enqueues nothing — so no local state changes before we
+      // know the sale is actually allowed.
+      const dryAlloc = consumeInventoryBatches(cartInputs, { dryRun: true })
       const saleItems = items.map((item) => {
-        const allocations = batchAllocations.get(item.id) ?? []
+        const allocations = dryAlloc.get(item.id) ?? []
         const allocatedQuantity = allocations.reduce((sum, a) => sum + a.quantity, 0)
         const allocatedCost = allocations.reduce((sum, a) => sum + a.unitCost * a.quantity, 0)
         const unitCost = allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost
@@ -633,15 +613,57 @@ export default function POSPage() {
       const customerBalanceBefore = selectedCustomer?.balance ?? 0
       const customerBalanceAfter =
         paymentMethod === "Debt" ? customerBalanceBefore + total : undefined
-
-      const saleResult = recordSale({
+      const saleInput = {
         saleNumber, paymentMethod,
         customerId: selectedCustomer?.id, customerName: selectedCustomer?.name,
         subtotal, discountTotal, tax, total, soldAtCost: sellAtCost, tender,
         payableLbp: paymentMethod === "Cash" ? payableLbp : undefined,
         items: saleItems,
-      })
-      recordedSaleId = saleResult.id
+      }
+      const sale = buildSale(saleInput, saleId) // throws if no open shift
+
+      // ── Gate ──────────────────────────────────────────────────────────
+      if (mode === "STORE_HUB" && stockDecrementing) {
+        // Hub validates against its own live stock before its local finalize.
+        setIsValidatingStock(true); setScannerStatus("Verifying stock…")
+        let v
+        try { v = await validateStockWithHub(items.map((i) => ({ productId: i.id, quantity: i.quantity }))) }
+        finally { setIsValidatingStock(false) }
+        if (!v.ok) {
+          setScannerStatus(v.reason === "unreachable"
+            ? "⚠️ Cannot verify stock — sale blocked."
+            : `⚠️ Stock changed on another register. Refresh cart. (${v.insufficientItems?.map((i) => i.name).join(", ") ?? "item"})`)
+          playErrorBuzz(); pullFromServer().catch(() => {}); return
+        }
+      } else if (writeThrough) {
+        // Server-authoritative: hub commits sale + stock atomically first.
+        setIsValidatingStock(true); setScannerStatus("Completing sale on hub…")
+        let result
+        try { result = await commitSaleToHub(sale) }
+        finally { setIsValidatingStock(false) }
+        if (result.status === "rejected") {
+          setScannerStatus(/Insufficient stock/i.test(result.error)
+            ? "⚠️ Stock changed on another register — sale not completed. Refresh cart."
+            : `⚠️ Sale not completed: ${result.error}`)
+          playErrorBuzz(); pullFromServer().catch(() => {}); return
+        }
+        if (result.status === "unreachable") {
+          setScannerStatus("⚠️ Cannot reach hub — sale not completed. Try again.")
+          playErrorBuzz(); return
+        }
+        // committed → fall through to local finalize (enqueues suppressed)
+      }
+
+      // ── Local finalize ────────────────────────────────────────────────
+      // When the hub already committed (write-through), suppress enqueues —
+      // the hub owns the authoritative stock/batch decrement; local writes
+      // here are for immediate receipt/display and are reconciled by pull.
+      consumeInventoryBatches(cartInputs, { skipSync: writeThrough })
+      batchesConsumed = true
+
+      if (writeThrough) finalizeCommittedSale(sale)
+      else recordSale(saleInput, { id: saleId })
+      recordedSaleId = saleId
 
       if (discountTotal > 0) {
         recordAuditEvent({
@@ -681,6 +703,8 @@ export default function POSPage() {
       setSaleNote("")
       setIsCartOpen(false)
       setScannerStatus("Sale completed. Scanner ready for the next sale.")
+      // Reconcile local stock/batches with the hub's authoritative numbers.
+      if (writeThrough) pullFromServer().catch(() => {})
     } catch (err) {
       // Reverse completed steps — cart is preserved so user can retry
       if (recordedSaleId) {
@@ -703,7 +727,7 @@ export default function POSPage() {
       }
       setScannerStatus(`Checkout failed. Cart preserved, try again.`)
     }
-  }, [checkoutBlocked, isValidatingStock, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal])
+  }, [checkoutBlocked, isValidatingStock, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal, sellAtCost, payableLbp, payableUsd])
 
   return (
     <main className="pos-workspace relative min-h-0 flex-1 overflow-hidden">

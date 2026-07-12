@@ -177,6 +177,27 @@ describe("POST /api/sync/validate-stock", () => {
   })
 })
 
+describe("GET /api/sync/sale-committed/:saleId (write-through idempotency check)", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it("returns committed:true when a non-voided sale with that id exists", async () => {
+    vi.mocked(prisma.sale.findFirst).mockResolvedValue({ id: "sale-x" } as any)
+    const res = await request("GET", "/api/sync/sale-committed/sale-x", { token })
+    expect(res.status).toBe(200)
+    expect(res.body.committed).toBe(true)
+    // scoped to tenant + not voided
+    const where = vi.mocked(prisma.sale.findFirst).mock.calls[0][0].where
+    expect(where).toMatchObject({ id: "sale-x", tenantId: "t1", status: { not: "Voided" } })
+  })
+
+  it("returns committed:false when no such sale exists", async () => {
+    vi.mocked(prisma.sale.findFirst).mockResolvedValue(null)
+    const res = await request("GET", "/api/sync/sale-committed/nope", { token })
+    expect(res.status).toBe(200)
+    expect(res.body.committed).toBe(false)
+  })
+})
+
 describe("GET /api/sync/pull", () => {
   function mockAllEmpty() {
     const empty: unknown[] = []
