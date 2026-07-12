@@ -276,6 +276,52 @@ describe("cloudSync", () => {
     })
   })
 
+  describe("product pull — barcode-fallback must never clobber a local row's own id", () => {
+    it("does NOT include the incoming (mismatched) id when updating a locally-created product matched by barcode", async () => {
+      // Simulates: this hub created "loreal" locally BEFORE ever syncing it to
+      // Railway (its own sequence assigned id 5). Railway later assigns its
+      // own id (79) to the same product once pushed up. On the next pull,
+      // this hub sees Railway's copy (id: 79) and must reconcile it against
+      // its OWN existing local row (id: 5) — found by barcode, since the ids
+      // don't match. The local row's own id must never be overwritten by the
+      // incoming one — that would silently rewrite a live primary key,
+      // orphaning any local FK (SaleItem, InventoryBatch, etc.) that already
+      // points at id 5.
+      vi.mocked(prisma.tenant.findUnique).mockResolvedValue({
+        id: "test-tenant-1", name: "Test Store", subdomain: "test",
+      } as any)
+      // No local row exists with id 79 (Railway's id) — this hub's copy is id 5
+      vi.mocked(prisma.product.findFirst).mockResolvedValue(null)
+      vi.mocked(prisma.product.upsert).mockResolvedValue({} as any)
+
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => null },
+        json: () => Promise.resolve({
+          products: [{ id: 79, name: "loreal", barcode: "LOREAL-1", price: 2, stock: 8, tenantId: "test-tenant-1" }],
+          customers: [], users: [], suppliers: [], sales: [], refunds: [],
+          debtSales: [], debtPayments: [], purchaseOrders: [], supplierPayments: [],
+          shifts: [], expenses: [], batches: [], adjustments: [], stockCounts: [],
+          dailyCloses: [], deliveryOrders: [], settings: [], deletions: [],
+        }),
+        text: () => Promise.resolve(""),
+      }))
+
+      await expect(cloudSync.triggerFullPull()).resolves.toBeUndefined()
+
+      const call = vi.mocked(prisma.product.upsert).mock.calls[0][0]
+      expect(call.where).toEqual({ tenantId_barcode: { tenantId: "test-tenant-1", barcode: "LOREAL-1" } })
+      // The critical assertion: the UPDATE branch (what runs when the local
+      // row is matched by barcode) must not carry the incoming id at all.
+      expect(call.update).not.toHaveProperty("id")
+      expect(call.update).not.toHaveProperty("tenantId")
+      // Every other field should still flow through normally.
+      expect(call.update).toMatchObject({ name: "loreal", barcode: "LOREAL-1", price: 2, stock: 8 })
+
+      vi.unstubAllGlobals()
+    })
+  })
+
   describe("deliveryOrder pull — dangling customerId", () => {
     it("drops the customerId FK instead of failing when the referenced customer doesn't exist locally", async () => {
       vi.mocked(prisma.tenant.findUnique).mockResolvedValue({

@@ -582,10 +582,23 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<s
 
       const barcode = (p as any).barcode
       if (barcode) {
+        // This branch only runs when no local row matched by id — meaning
+        // this hub created the product locally (its own sequence assigned
+        // some id) BEFORE it was ever pushed to Railway, so Railway's copy
+        // of the same product (matched here by barcode) has a DIFFERENT id.
+        // The update payload must never include that incoming id: doing so
+        // would silently rewrite the existing local row's own primary key
+        // mid-flight, orphaning any local FK already pointing at the old id
+        // (SaleItem.productId, InventoryBatch.productId, StockAdjustment.
+        // productId, etc. created against this row before this reconcile
+        // ran). The two databases keeping different ids for this one
+        // mirrored row is the safe outcome here — not ideal, but far safer
+        // than corrupting local references.
+        const { id: _incomingId, tenantId: _t, ...patchWithoutId } = p as Record<string, unknown>
         await prisma.product.upsert({
           where:  { tenantId_barcode: { tenantId, barcode } },
           create: { ...p, tenantId } as any,
-          update: p as any,
+          update: patchWithoutId as any,
         })
         return
       }
