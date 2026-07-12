@@ -1340,10 +1340,21 @@ async function _pullFromServer(full = false) {
 
 }
 
+// Re-fetch a safety margin of history on every incremental pull. Without this,
+// a change whose server updatedAt lands just before the stored cursor (clock
+// skew between hub and this device, or a cursor set from a different clock)
+// is never re-requested — it gets permanently stranded, so the local UI shows
+// stale stock/archived state forever. Re-pulling the last few minutes is cheap
+// (the by-id merge is idempotent) and self-heals recent stranded changes.
+const PULL_OVERLAP_MS = 3 * 60 * 1000
+
 async function _incrementalPull(apiUrl: string, token: string): Promise<void> {
   const lastSync = readLastSyncedAt()
-  const url = lastSync
-    ? `${apiUrl}/api/sync/pull?since=${encodeURIComponent(lastSync)}`
+  const sinceParam = lastSync
+    ? new Date(Math.max(0, Date.parse(lastSync) - PULL_OVERLAP_MS)).toISOString()
+    : undefined
+  const url = sinceParam
+    ? `${apiUrl}/api/sync/pull?since=${encodeURIComponent(sinceParam)}`
     : `${apiUrl}/api/sync/pull`
 
   const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
@@ -1491,6 +1502,19 @@ export function setupBackgroundSync() {
   stopBackgroundSync()
   // Connect WebSocket for instant push notifications
   connectSyncWebSocket()
+  // Authoritative reconcile on startup/login. Incremental pulls can strand a
+  // change (archive, stock/batch update) if its server timestamp lands just
+  // before the stored cursor — that stale row then never self-corrects on a
+  // reload, because reload also resumes from the same cursor with incremental
+  // pulls. A one-time full pull on startup replaces the local cache with the
+  // server's authoritative set, so relaunching the app always clears stale
+  // stock/archived state. Runs after flushing pending local work so nothing
+  // unsynced is clobbered.
+  if (isBrowserOnline() && getApiUrl() && getAuthToken() && !isSuspended()) {
+    flushSyncQueue()
+      .then(() => pullFromServer(true))
+      .catch((e) => console.error("[sync] startup reconcile failed:", e))
+  }
   // Immediately check tenant status on startup
   checkTenantStatus().catch((e) => console.error("[sync] tenant status check failed:", e))
   bgStatusInterval = window.setInterval(() => {

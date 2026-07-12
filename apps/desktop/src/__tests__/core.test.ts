@@ -804,3 +804,18 @@ describe("inventoryBatch.service — consumeInventoryBatches dryRun", () => {
     expect(getSyncQueue().filter((o: any) => o.entity === "inventory").length).toBe(0)
   })
 })
+
+describe("product.service — getSellableProducts (archived excluded from POS)", () => {
+  it("excludes archived products (they must never appear sellable in POS)", async () => {
+    const { getSellableProducts } = await import("../features/pos/services/product.service")
+    const list = [
+      { id: 1, name: "Active", stock: 5, archived: false } as any,
+      { id: 2, name: "Discontinued", stock: 4, archived: true } as any, // archived WITH stock — the exact bug case
+      { id: 3, name: "NoFlag", stock: 2 } as any,
+    ]
+    const sellable = getSellableProducts(list)
+    expect(sellable.map((p) => p.id)).toEqual([1, 3])
+    // the archived-with-leftover-stock item is gone
+    expect(sellable.find((p) => p.id === 2)).toBeUndefined()
+  })
+})

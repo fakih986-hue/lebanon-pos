@@ -160,6 +160,13 @@ export async function getProducts(): Promise<Product[]> {
   return getProductsSync()
 }
 
+/** Products eligible to sell in POS — excludes archived (discontinued) items.
+ *  Management/inventory views use the unfiltered accessors and still see
+ *  archived products (to restore/report them). */
+export function getSellableProducts(list: Product[]): Product[] {
+  return list.filter((p) => !p.archived)
+}
+
 export function subscribeProducts(callback: (products: Product[]) => void) {
   if (!canUseStorage()) {
     return () => undefined

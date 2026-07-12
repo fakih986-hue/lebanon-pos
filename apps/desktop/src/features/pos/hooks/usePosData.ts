@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { getProducts, subscribeProducts } from "../services/product.service"
+import { getProducts, subscribeProducts, getSellableProducts } from "../services/product.service"
 import { getHeldSales, subscribeHeldSales } from "../services/heldSale.service"
 import {
   getCustomerLedger,
@@ -24,10 +24,18 @@ export function usePosData() {
   useEffect(() => {
     let active = true
 
+    // Archived products are discontinued — they must never appear in the POS
+    // sellable grid / scan lookup / category tabs. (The products-management
+    // views use the unfiltered accessor directly and still see archived ones,
+    // e.g. to restore them.) Filtering here is what actually hides an archived
+    // product from checkout; without it an archived item with leftover stock
+    // shows as sellable and only fails at the hub stock check.
+    const activeOnly = getSellableProducts
+
     getProducts()
       .then((data) => {
         if (active) {
-          setProducts(data)
+          setProducts(activeOnly(data))
           setIsLoading(false)
         }
       })
@@ -36,7 +44,7 @@ export function usePosData() {
       })
 
     const unsubscribe = subscribeProducts((data) => {
-      if (active) setProducts(data)
+      if (active) setProducts(activeOnly(data))
     })
     const unsubscribeHeldSales = subscribeHeldSales((data) => {
       if (active) setHeldSales(data)

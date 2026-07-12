@@ -102,7 +102,11 @@ export default function SyncStatus() {
   async function handleSyncNow() {
     retryFailedSync()
     await flushSyncQueue()
-    await pullFromServer()
+    // Full (authoritative) pull, not incremental — this is the manual
+    // "force everything correct" button, so it must be able to clear any
+    // stale/stranded local row (archived product still showing, stock not
+    // reflecting) that an incremental cursor would skip.
+    await pullFromServer(true)
     setStatus(getSyncStatus())
   }
 
