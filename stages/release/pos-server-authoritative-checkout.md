@@ -59,7 +59,12 @@ Totals: **170 API + 117 desktop tests passing**; `tsc --noEmit` clean on api + d
 
 ## 5b. Live verification
 
-_Appended after deploy._
+Deployed to Railway as `b58bb06` (confirmed via `commitHash`); health `{"status":"ok"}`.
+
+- **New endpoint live:** `GET /api/sync/sale-committed/definitely-not-a-real-sale-id` → `200 {"committed":false}`. The idempotency confirm-before-re-ring path is available server-side.
+- **Underlying atomic + idempotent sale commit** (the authoritative decrement the write-through relies on) was already live-verified in POS-HUB-STOCK-1 and POS-SYNC-TORTURE-1 (two concurrent last-unit sales → exactly one commits, the other rejects, stock never negative).
+
+**Server pieces are verified live.** The full client write-through behavior (block-on-reject, block-on-unreachable, finalize-on-confirm, lost-ACK no-double-sell) is exercised by the 8 automated tests and requires the hub installer rebuild (1.0.28) to observe end-to-end on the actual CONNECT_TO_HUB device UI — recommended as the immediate next step, together with a live two-device drill (two clients race the final unit; one commits, one is blocked *before* any local sale).
 
 ## 6. Scope notes / follow-ups
 
