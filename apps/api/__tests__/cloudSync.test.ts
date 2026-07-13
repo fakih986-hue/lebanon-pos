@@ -527,6 +527,57 @@ describe("cloudSync", () => {
     })
   })
 
+  describe("background loop resilience (bridge-stall regression)", () => {
+    const basePull = {
+      products: [], customers: [], users: [], suppliers: [], sales: [], refunds: [],
+      debtSales: [], debtPayments: [], purchaseOrders: [], supplierPayments: [],
+      shifts: [], expenses: [], batches: [], adjustments: [], stockCounts: [],
+      dailyCloses: [], deliveryOrders: [], settings: [], deletions: [],
+    }
+
+    it("does NOT permanently stop the background loop when a scheduled tick overlaps a triggerFullPull", async () => {
+      vi.useFakeTimers()
+      vi.mocked(prisma.tenant.findUnique).mockResolvedValue({ id: "test-tenant-1", name: "T", subdomain: "t" } as any)
+      vi.mocked(prisma.syncOperation.count).mockResolvedValue(0) // pushToCloud: nothing pending
+
+      let pullCount = 0
+      let releaseHang: () => void = () => {}
+      let hangNextPull = false
+      vi.stubGlobal("fetch", vi.fn().mockImplementation(async (url: string) => {
+        if (String(url).includes("/api/sync/pull")) {
+          pullCount++
+          if (hangNextPull) { hangNextPull = false; await new Promise<void>(r => { releaseHang = r }) }
+        }
+        return { ok: true, headers: { get: () => "Sat, 12 Jul 2026 00:00:00 GMT" }, json: async () => basePull, text: async () => "" }
+      }))
+
+      // Start the bridge: first tick runs a normal push+pull and schedules the next tick.
+      cloudSync.startCloudSyncBridge()
+      await vi.advanceTimersByTimeAsync(6000) // let a couple of clean cycles run + reschedule
+      expect(pullCount).toBeGreaterThan(0)
+
+      // Now a full pull (device connect / restore) holds _syncRunning by hanging its pull.
+      hangNextPull = true
+      const tfp = cloudSync.triggerFullPull()
+      await Promise.resolve()
+      // Scheduled background ticks fire WHILE the full pull holds the lock — the old
+      // code would early-return without rescheduling, killing the timer chain here.
+      await vi.advanceTimersByTimeAsync(15000)
+      releaseHang()      // full pull completes, _syncRunning released
+      await tfp
+      await vi.advanceTimersByTimeAsync(1000)
+
+      const before = pullCount
+      // The loop must still be alive and keep pulling after the overlap.
+      await vi.advanceTimersByTimeAsync(20000)
+      expect(pullCount).toBeGreaterThan(before)
+
+      cloudSync.stopCloudSyncBridge()
+      vi.useRealTimers()
+      vi.unstubAllGlobals()
+    })
+  })
+
   describe("saveCloudConfig", () => {
     it("persists config and restarts bridge", async () => {
       vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ results: [] }) }))

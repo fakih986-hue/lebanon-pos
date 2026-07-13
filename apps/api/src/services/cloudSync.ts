@@ -263,19 +263,27 @@ export function stopCloudSyncBridge(): void {
 // ─── Sequential sync loop: push → pull → wait → repeat ────────────────────
 
 async function syncLoop(): Promise<void> {
-  if (_syncRunning) return  // already in progress, skip
-  _syncRunning = true
-  try {
-    await pushToCloud()
-  } catch (err) {
-    console.error("[cloud-sync] Push error:", (err as Error).message)
-  }
-  try {
-    await pullFromCloud()
-  } catch (err) {
-    console.error("[cloud-sync] Pull error:", (err as Error).message)
-  } finally {
-    _syncRunning = false
+  // Only do work if no other sync is in progress (a triggerFullPull/restore, or
+  // a previous still-running tick). CRITICAL: we must ALWAYS reschedule the next
+  // tick below, even when we skip the work — otherwise a single skipped tick
+  // (e.g. one that fires while triggerFullPull holds _syncRunning) would break
+  // the self-perpetuating setTimeout chain and permanently stop the background
+  // bridge until the app restarts, with running=true and no error to show for
+  // it. Skipping work is fine; skipping the reschedule is not.
+  if (!_syncRunning) {
+    _syncRunning = true
+    try {
+      await pushToCloud()
+    } catch (err) {
+      console.error("[cloud-sync] Push error:", (err as Error).message)
+    }
+    try {
+      await pullFromCloud()
+    } catch (err) {
+      console.error("[cloud-sync] Pull error:", (err as Error).message)
+    } finally {
+      _syncRunning = false
+    }
   }
   if (running) {
     syncTimer = setTimeout(syncLoop, PUSH_INTERVAL_MS)
