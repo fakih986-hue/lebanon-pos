@@ -35,6 +35,38 @@ const BATCH_SIZE        = 100
 const MAX_ATTEMPTS      = 5
 const FETCH_TIMEOUT_MS  = 20_000
 
+/**
+ * POS-SYNC-AUTHORITY-1 — single-hub inventory ownership.
+ *
+ * The store hub is authoritative for live inventory. Railway is a cloud
+ * mirror/backup/dashboard, NOT the authority for in-store stock. So a normal
+ * background cloud pull must never overwrite hub-owned inventory quantities
+ * (Product.stock, InventoryBatch.quantityRemaining/status) on rows that already
+ * exist locally — otherwise a stale cloud snapshot (e.g. cloud hasn't yet
+ * received a just-completed hub sale) can "resurrect" sold stock.
+ *
+ * Ownership rules enforced here:
+ *   • New products/batches that don't exist locally ARE created from cloud
+ *     (first bootstrap / a genuinely new item added elsewhere) — creating can't
+ *     resurrect anything.
+ *   • Existing products: cloud may still update metadata (name, price, barcode,
+ *     category, archived, …) but NOT `stock` during a normal pull.
+ *   • Existing batches: cloud does NOT touch quantityRemaining/status during a
+ *     normal pull (the whole update is skipped — the only mutable fields are
+ *     inventory-owned).
+ *   • Only an explicit force-restore (triggerFullPull) may overwrite existing
+ *     inventory from cloud, and even then only when there are no pending/failed
+ *     local stock operations (restoring over un-pushed local stock changes would
+ *     discard the hub's own newer truth).
+ *
+ * Single-hub assumption: all in-store stock mutations happen at THIS hub. If a
+ * second hub or a cloud-side dashboard edit ever needs to change stock, that
+ * legitimately-cloud-originated change will NOT reach this hub under these rules
+ * — that requires the revision/mutation model in POS-SYNC-AUTHORITY-2. See
+ * stages/sync/inventory-ownership.md.
+ */
+const STOCK_RELATED_ENTITIES = new Set(["sale", "refund", "inventory", "product"])
+
 // Persist lastPullAt next to the compiled output so it survives redeploys
 const __dirname    = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR     = path.resolve(__dirname, "../../data")
@@ -196,7 +228,10 @@ export async function triggerFullPull(): Promise<void> {
   writeState(state)
   _syncRunning = true
   try {
-    await pullFromCloud()
+    // Explicit operator-initiated restore — the ONLY path allowed to overwrite
+    // existing hub inventory from cloud (still gated on no pending local stock
+    // ops inside pullFromCloud).
+    await pullFromCloud({ isRestore: true })
   } finally {
     _syncRunning = false
   }
@@ -369,11 +404,30 @@ function fixDecimalObjects(value: unknown): unknown {
 
 // Exported for tests only — exercises one incremental pull cycle directly,
 // without triggerFullPull's deliberate cursor-reset-first behavior.
-export async function pullFromCloud(): Promise<void> {
+export async function pullFromCloud(opts: { isRestore?: boolean } = {}): Promise<void> {
   const tenantId = CLOUD_TENANT!
   const state    = readState()
   const since    = state.lastPullAt
   const pullStartedAt = new Date().toISOString()
+
+  // POS-SYNC-AUTHORITY-1: only an explicit restore may overwrite existing hub
+  // inventory — and even then, never while local stock changes are still
+  // pending/failed to push (that would discard the hub's own newer truth).
+  let applyInventoryToExisting = false
+  if (opts.isRestore) {
+    const pendingStockOps = await prisma.syncOperation.count({
+      where: {
+        tenantId,
+        status:  { in: ["Pending", "Failed"] },
+        entity:  { in: [...STOCK_RELATED_ENTITIES] },
+      },
+    })
+    if (pendingStockOps > 0) {
+      console.warn(`[cloud-sync] Restore requested but ${pendingStockOps} local stock op(s) pending/failed — NOT applying cloud inventory to existing rows (hub is authoritative; would discard un-pushed local stock).`)
+    } else {
+      applyInventoryToExisting = true
+    }
+  }
 
   const query = since ? `?since=${encodeURIComponent(since)}` : ""
   const res   = await fetchCloud(`/api/sync/pull${query}`)
@@ -401,7 +455,7 @@ export async function pullFromCloud(): Promise<void> {
     (data as any)[key]?.forEach((item: any) => { if (item) delete item.updatedAt })
   }
 
-  const failed = await upsertPulledData(tenantId, data)
+  const failed = await upsertPulledData(tenantId, data, { applyInventoryToExisting })
 
   if (failed.length > 0) {
     const signature = [...failed].sort().join(",")
@@ -462,8 +516,29 @@ export async function pullFromCloud(): Promise<void> {
  * records would never be re-fetched (the next incremental pull only asks
  * for records created/updated after the cursor).
  */
-async function upsertPulledData(tenantId: string, data: PullResponse): Promise<string[]> {
+async function upsertPulledData(
+  tenantId: string,
+  data: PullResponse,
+  opts: { applyInventoryToExisting: boolean } = { applyInventoryToExisting: false },
+): Promise<string[]> {
   const failed: string[] = []
+  const applyInventoryToExisting = opts.applyInventoryToExisting
+  // POS-SYNC-AUTHORITY-1: on a normal pull the hub owns inventory quantities.
+  // Strip `stock` from an update patch for an EXISTING product so cloud can't
+  // overwrite hub stock; metadata fields still flow. Skipped fully for existing
+  // batches (their only mutable fields are inventory-owned). Counters feed one
+  // summary log line so it's visible when the guard is doing work.
+  let skippedProductStockCount = 0
+  let skippedBatchCount = 0
+  const productMetadataPatch = (patch: Record<string, unknown>): Record<string, unknown> => {
+    if (applyInventoryToExisting) return patch
+    if (Object.prototype.hasOwnProperty.call(patch, "stock")) {
+      const { stock: _stock, ...rest } = patch
+      skippedProductStockCount++
+      return rest
+    }
+    return patch
+  }
   // Helper: run one upsert, log errors to file + stderr without stopping other entities
   const run = async (label: string, fn: () => Promise<unknown>) => {
     try {
@@ -616,7 +691,7 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<s
           select: { id: true },
         })
         if (bySync) {
-          await prisma.product.update({ where: { id: bySync.id }, data: patch as any })
+          await prisma.product.update({ where: { id: bySync.id }, data: productMetadataPatch(patch) as any })
           return
         }
       }
@@ -635,7 +710,7 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<s
           const data = (existingById.syncId && incomingSyncId && existingById.syncId !== incomingSyncId)
             ? { ...patch, syncId: existingById.syncId }
             : patch
-          await prisma.product.update({ where: { id: productId }, data: data as any })
+          await prisma.product.update({ where: { id: productId }, data: productMetadataPatch(data) as any })
           return
         }
       }
@@ -648,7 +723,7 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<s
         await prisma.product.upsert({
           where:  { tenantId_barcode: { tenantId, barcode } },
           create: { ...p, tenantId } as any,
-          update: patch as any,
+          update: productMetadataPatch(patch) as any,
         })
         return
       }
@@ -802,15 +877,25 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<s
     )
   }
 
-  // Inventory batches
+  // Inventory batches — hub-authoritative. A new batch (not present locally) is
+  // created from cloud; an EXISTING batch is NOT updated from cloud on a normal
+  // pull, because its only mutable fields (quantityRemaining, status) are
+  // hub-owned and a stale cloud copy would resurrect consumed stock. Only an
+  // explicit restore (applyInventoryToExisting) may overwrite.
   for (const b of data.batches ?? []) {
-    await run("inventoryBatch", () =>
-      prisma.inventoryBatch.upsert({
-        where:  { id: (b as any).id },
-        create: { ...b, tenantId } as any,
-        update: b as any,
-      })
-    )
+    await run("inventoryBatch", async () => {
+      const id = (b as any).id
+      const existing = await prisma.inventoryBatch.findUnique({ where: { id }, select: { id: true } })
+      if (!existing) {
+        await prisma.inventoryBatch.create({ data: { ...b, tenantId } as any })
+        return
+      }
+      if (!applyInventoryToExisting) {
+        skippedBatchCount++
+        return
+      }
+      await prisma.inventoryBatch.update({ where: { id }, data: b as any })
+    })
   }
 
   // Stock adjustments
@@ -884,6 +969,10 @@ async function upsertPulledData(tenantId: string, data: PullResponse): Promise<s
   }
 
   // auditEvents — intentionally skipped: generated server-side, read-only
+
+  if (skippedProductStockCount > 0 || skippedBatchCount > 0) {
+    console.log(`[cloud-sync] Hub-authoritative inventory: ignored cloud stock on ${skippedProductStockCount} existing product(s) and skipped ${skippedBatchCount} existing batch update(s) (POS-SYNC-AUTHORITY-1).`)
+  }
 
   return failed
 }

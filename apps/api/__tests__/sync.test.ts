@@ -295,6 +295,21 @@ describe("GET /api/sync/pull", () => {
     expect(saleWhere.OR).toBeUndefined()
   })
 
+  it("filters batches by receivedAt OR updatedAt so consumed batches propagate (POS-SYNC-AUTHORITY-1)", async () => {
+    mockAllEmpty()
+    await request("GET", "/api/sync/pull?since=2026-01-01T00:00:00Z", { token })
+
+    const batchCall = vi.mocked(prisma.inventoryBatch.findMany).mock.calls[0][0]
+    const batchWhere = batchCall?.where as any
+    // A batch consumed by a sale bumps updatedAt but NOT receivedAt — the old
+    // receivedAt-only filter missed it, stranding stale stock on other devices.
+    expect(batchWhere.OR).toBeDefined()
+    expect(batchWhere.OR[0].receivedAt).toBeDefined()
+    expect(batchWhere.OR[1].updatedAt).toBeDefined()
+    // And order by updatedAt so the most-recently-changed batches come first.
+    expect((batchCall as any).orderBy).toMatchObject({ updatedAt: "desc" })
+  })
+
 describe("POST /api/sync/push — sale stock integrity", () => {
   beforeEach(() => { vi.clearAllMocks() })
 

@@ -455,6 +455,7 @@ exports.Prisma.InventoryBatchScalarFieldEnum = {
   supplierName: 'supplierName',
   purchaseOrderNumber: 'purchaseOrderNumber',
   receivedAt: 'receivedAt',
+  updatedAt: 'updatedAt',
   status: 'status'
 };
 

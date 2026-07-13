@@ -538,10 +538,15 @@ model InventoryBatch {
   supplierName        String?
   purchaseOrderNumber String?
   receivedAt          DateTime             @default(now())
+  // POS-SYNC-AUTHORITY-1: mutation timestamp so incremental sync surfaces
+  // quantityRemaining/status changes (a sale consuming a batch). receivedAt is
+  // set once and never changes, so it alone can't drive incremental pull.
+  updatedAt           DateTime             @updatedAt
   status              InventoryBatchStatus @default(Open)
 
   @@index([tenantId, productId])
   @@index([tenantId, status])
+  @@index([tenantId, updatedAt])
 }
 
 model StockAdjustment {

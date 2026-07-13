@@ -409,6 +409,110 @@ describe("cloudSync", () => {
     })
   })
 
+  describe("hub-authoritative inventory (POS-SYNC-AUTHORITY-1)", () => {
+    const empty = {
+      products: [], customers: [], users: [], suppliers: [], sales: [], refunds: [],
+      debtSales: [], debtPayments: [], purchaseOrders: [], supplierPayments: [],
+      shifts: [], expenses: [], batches: [], adjustments: [], stockCounts: [],
+      dailyCloses: [], deliveryOrders: [], settings: [], deletions: [],
+    }
+    const stubPull = (body: Record<string, unknown>) =>
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+        ok: true,
+        headers: { get: () => "Mon, 13 Jul 2026 12:00:00 GMT" },
+        json: () => Promise.resolve({ ...empty, ...body }),
+        text: () => Promise.resolve(""),
+      }))
+
+    beforeEach(() => {
+      vi.mocked(prisma.tenant.findUnique).mockResolvedValue({
+        id: "test-tenant-1", name: "Test Store", subdomain: "test",
+      } as any)
+    })
+
+    it("NORMAL pull: does NOT apply cloud stock to an existing product (matched by syncId)", async () => {
+      vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)
+      vi.mocked(prisma.product.update).mockResolvedValue({} as any)
+      stubPull({ products: [{ id: 88, syncId: "STABLE-1", name: "cola", barcode: "C1", price: 2, stock: 20, tenantId: "test-tenant-1" }] })
+
+      await cloudSync.pullFromCloud() // normal background pull (not a restore)
+
+      const upd = vi.mocked(prisma.product.update).mock.calls[0][0]
+      expect(upd.where).toEqual({ id: 5 })
+      // stock is hub-owned — must be stripped from the update patch
+      expect(upd.data).not.toHaveProperty("stock")
+      // metadata still flows
+      expect(upd.data).toMatchObject({ name: "cola", price: 2 })
+      vi.unstubAllGlobals()
+    })
+
+    it("NORMAL pull: skips updating an EXISTING batch (hub owns quantityRemaining/status)", async () => {
+      vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue({ id: "b1" } as any)
+      vi.mocked(prisma.inventoryBatch.update).mockResolvedValue({} as any)
+      vi.mocked(prisma.inventoryBatch.create).mockResolvedValue({} as any)
+      stubPull({ batches: [{ id: "b1", productId: 5, quantityRemaining: 20, status: "Open", tenantId: "test-tenant-1" }] })
+
+      await cloudSync.pullFromCloud()
+
+      expect(vi.mocked(prisma.inventoryBatch.update)).not.toHaveBeenCalled()
+      expect(vi.mocked(prisma.inventoryBatch.create)).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
+    it("NORMAL pull: still CREATES a new batch that doesn't exist locally (bootstrap of a new item)", async () => {
+      vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue(null)
+      vi.mocked(prisma.inventoryBatch.create).mockResolvedValue({} as any)
+      vi.mocked(prisma.inventoryBatch.update).mockResolvedValue({} as any)
+      stubPull({ batches: [{ id: "new-b", productId: 9, quantityRemaining: 12, status: "Open", tenantId: "test-tenant-1" }] })
+
+      await cloudSync.pullFromCloud()
+
+      expect(vi.mocked(prisma.inventoryBatch.create)).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(prisma.inventoryBatch.update)).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
+    it("EXPLICIT restore: DOES apply cloud stock/batch when no local stock ops are pending", async () => {
+      vi.mocked(prisma.syncOperation.count).mockResolvedValue(0) // no pending stock ops
+      vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)
+      vi.mocked(prisma.product.update).mockResolvedValue({} as any)
+      vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue({ id: "b1" } as any)
+      vi.mocked(prisma.inventoryBatch.update).mockResolvedValue({} as any)
+      stubPull({
+        products: [{ id: 88, syncId: "STABLE-1", name: "cola", barcode: "C1", price: 2, stock: 20, tenantId: "test-tenant-1" }],
+        batches:  [{ id: "b1", productId: 5, quantityRemaining: 20, status: "Open", tenantId: "test-tenant-1" }],
+      })
+
+      await cloudSync.triggerFullPull() // explicit operator restore
+
+      expect(vi.mocked(prisma.product.update).mock.calls[0][0].data).toHaveProperty("stock", 20)
+      expect(vi.mocked(prisma.inventoryBatch.update)).toHaveBeenCalledTimes(1)
+      vi.unstubAllGlobals()
+    })
+
+    it("EXPLICIT restore is BLOCKED from overwriting inventory while local stock ops are pending", async () => {
+      vi.mocked(prisma.syncOperation.count).mockResolvedValue(3) // pending local stock ops
+      vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)
+      vi.mocked(prisma.product.update).mockResolvedValue({} as any)
+      vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue({ id: "b1" } as any)
+      vi.mocked(prisma.inventoryBatch.update).mockResolvedValue({} as any)
+      stubPull({
+        products: [{ id: 88, syncId: "STABLE-1", name: "cola", barcode: "C1", price: 2, stock: 20, tenantId: "test-tenant-1" }],
+        batches:  [{ id: "b1", productId: 5, quantityRemaining: 20, status: "Open", tenantId: "test-tenant-1" }],
+      })
+
+      await cloudSync.triggerFullPull()
+
+      // stock stripped, existing batch left untouched — un-pushed local truth wins
+      expect(vi.mocked(prisma.product.update).mock.calls[0][0].data).not.toHaveProperty("stock")
+      expect(vi.mocked(prisma.inventoryBatch.update)).not.toHaveBeenCalled()
+      // the guard queried pending stock ops with the right entity filter
+      const countArg = vi.mocked(prisma.syncOperation.count).mock.calls[0][0] as any
+      expect(countArg.where.entity.in).toEqual(expect.arrayContaining(["sale", "refund", "inventory", "product"]))
+      vi.unstubAllGlobals()
+    })
+  })
+
   describe("saveCloudConfig", () => {
     it("persists config and restarts bridge", async () => {
       vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, headers: { get: () => null }, json: () => Promise.resolve({ results: [] }) }))

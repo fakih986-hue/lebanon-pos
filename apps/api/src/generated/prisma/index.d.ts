@@ -28900,6 +28900,7 @@ export namespace Prisma {
     supplierName: string | null
     purchaseOrderNumber: string | null
     receivedAt: Date | null
+    updatedAt: Date | null
     status: $Enums.InventoryBatchStatus | null
   }
 
@@ -28919,6 +28920,7 @@ export namespace Prisma {
     supplierName: string | null
     purchaseOrderNumber: string | null
     receivedAt: Date | null
+    updatedAt: Date | null
     status: $Enums.InventoryBatchStatus | null
   }
 
@@ -28938,6 +28940,7 @@ export namespace Prisma {
     supplierName: number
     purchaseOrderNumber: number
     receivedAt: number
+    updatedAt: number
     status: number
     _all: number
   }
@@ -28975,6 +28978,7 @@ export namespace Prisma {
     supplierName?: true
     purchaseOrderNumber?: true
     receivedAt?: true
+    updatedAt?: true
     status?: true
   }
 
@@ -28994,6 +28998,7 @@ export namespace Prisma {
     supplierName?: true
     purchaseOrderNumber?: true
     receivedAt?: true
+    updatedAt?: true
     status?: true
   }
 
@@ -29013,6 +29018,7 @@ export namespace Prisma {
     supplierName?: true
     purchaseOrderNumber?: true
     receivedAt?: true
+    updatedAt?: true
     status?: true
     _all?: true
   }
@@ -29119,6 +29125,7 @@ export namespace Prisma {
     supplierName: string | null
     purchaseOrderNumber: string | null
     receivedAt: Date
+    updatedAt: Date
     status: $Enums.InventoryBatchStatus
     _count: InventoryBatchCountAggregateOutputType | null
     _avg: InventoryBatchAvgAggregateOutputType | null
@@ -29157,6 +29164,7 @@ export namespace Prisma {
     supplierName?: boolean
     purchaseOrderNumber?: boolean
     receivedAt?: boolean
+    updatedAt?: boolean
     status?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -29179,6 +29187,7 @@ export namespace Prisma {
     supplierName?: boolean
     purchaseOrderNumber?: boolean
     receivedAt?: boolean
+    updatedAt?: boolean
     status?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -29201,6 +29210,7 @@ export namespace Prisma {
     supplierName?: boolean
     purchaseOrderNumber?: boolean
     receivedAt?: boolean
+    updatedAt?: boolean
     status?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -29223,10 +29233,11 @@ export namespace Prisma {
     supplierName?: boolean
     purchaseOrderNumber?: boolean
     receivedAt?: boolean
+    updatedAt?: boolean
     status?: boolean
   }
 
-  export type InventoryBatchOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "batchNumber" | "productId" | "productName" | "barcode" | "initialQuantity" | "quantityRemaining" | "unitCost" | "unitPrice" | "expiryDate" | "supplierId" | "supplierName" | "purchaseOrderNumber" | "receivedAt" | "status", ExtArgs["result"]["inventoryBatch"]>
+  export type InventoryBatchOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "batchNumber" | "productId" | "productName" | "barcode" | "initialQuantity" | "quantityRemaining" | "unitCost" | "unitPrice" | "expiryDate" | "supplierId" | "supplierName" | "purchaseOrderNumber" | "receivedAt" | "updatedAt" | "status", ExtArgs["result"]["inventoryBatch"]>
   export type InventoryBatchInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -29266,6 +29277,7 @@ export namespace Prisma {
       supplierName: string | null
       purchaseOrderNumber: string | null
       receivedAt: Date
+      updatedAt: Date
       status: $Enums.InventoryBatchStatus
     }, ExtArgs["result"]["inventoryBatch"]>
     composites: {}
@@ -29708,6 +29720,7 @@ export namespace Prisma {
     readonly supplierName: FieldRef<"InventoryBatch", 'String'>
     readonly purchaseOrderNumber: FieldRef<"InventoryBatch", 'String'>
     readonly receivedAt: FieldRef<"InventoryBatch", 'DateTime'>
+    readonly updatedAt: FieldRef<"InventoryBatch", 'DateTime'>
     readonly status: FieldRef<"InventoryBatch", 'InventoryBatchStatus'>
   }
     
@@ -44853,6 +44866,7 @@ export namespace Prisma {
     supplierName: 'supplierName',
     purchaseOrderNumber: 'purchaseOrderNumber',
     receivedAt: 'receivedAt',
+    updatedAt: 'updatedAt',
     status: 'status'
   };
 
@@ -47454,6 +47468,7 @@ export namespace Prisma {
     supplierName?: StringNullableFilter<"InventoryBatch"> | string | null
     purchaseOrderNumber?: StringNullableFilter<"InventoryBatch"> | string | null
     receivedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
+    updatedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
     status?: EnumInventoryBatchStatusFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
@@ -47476,6 +47491,7 @@ export namespace Prisma {
     supplierName?: SortOrderInput | SortOrder
     purchaseOrderNumber?: SortOrderInput | SortOrder
     receivedAt?: SortOrder
+    updatedAt?: SortOrder
     status?: SortOrder
     tenant?: TenantOrderByWithRelationInput
     product?: ProductOrderByWithRelationInput
@@ -47501,6 +47517,7 @@ export namespace Prisma {
     supplierName?: StringNullableFilter<"InventoryBatch"> | string | null
     purchaseOrderNumber?: StringNullableFilter<"InventoryBatch"> | string | null
     receivedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
+    updatedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
     status?: EnumInventoryBatchStatusFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
@@ -47523,6 +47540,7 @@ export namespace Prisma {
     supplierName?: SortOrderInput | SortOrder
     purchaseOrderNumber?: SortOrderInput | SortOrder
     receivedAt?: SortOrder
+    updatedAt?: SortOrder
     status?: SortOrder
     _count?: InventoryBatchCountOrderByAggregateInput
     _avg?: InventoryBatchAvgOrderByAggregateInput
@@ -47550,6 +47568,7 @@ export namespace Prisma {
     supplierName?: StringNullableWithAggregatesFilter<"InventoryBatch"> | string | null
     purchaseOrderNumber?: StringNullableWithAggregatesFilter<"InventoryBatch"> | string | null
     receivedAt?: DateTimeWithAggregatesFilter<"InventoryBatch"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"InventoryBatch"> | Date | string
     status?: EnumInventoryBatchStatusWithAggregatesFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
   }
 
@@ -51060,6 +51079,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
     tenant: TenantCreateNestedOneWithoutInventoryBatchesInput
     product: ProductCreateNestedOneWithoutBatchesInput
@@ -51082,6 +51102,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
   }
 
@@ -51098,6 +51119,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     tenant?: TenantUpdateOneRequiredWithoutInventoryBatchesNestedInput
     product?: ProductUpdateOneRequiredWithoutBatchesNestedInput
@@ -51120,6 +51142,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
   }
 
@@ -51139,6 +51162,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
   }
 
@@ -51155,6 +51179,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
   }
 
@@ -51174,6 +51199,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
   }
 
@@ -54459,6 +54485,7 @@ export namespace Prisma {
     supplierName?: SortOrder
     purchaseOrderNumber?: SortOrder
     receivedAt?: SortOrder
+    updatedAt?: SortOrder
     status?: SortOrder
   }
 
@@ -54486,6 +54513,7 @@ export namespace Prisma {
     supplierName?: SortOrder
     purchaseOrderNumber?: SortOrder
     receivedAt?: SortOrder
+    updatedAt?: SortOrder
     status?: SortOrder
   }
 
@@ -54505,6 +54533,7 @@ export namespace Prisma {
     supplierName?: SortOrder
     purchaseOrderNumber?: SortOrder
     receivedAt?: SortOrder
+    updatedAt?: SortOrder
     status?: SortOrder
   }
 
@@ -59215,6 +59244,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
     product: ProductCreateNestedOneWithoutBatchesInput
     supplier?: SupplierCreateNestedOneWithoutInventoryBatchesInput
@@ -59235,6 +59265,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
   }
 
@@ -60204,6 +60235,7 @@ export namespace Prisma {
     supplierName?: StringNullableFilter<"InventoryBatch"> | string | null
     purchaseOrderNumber?: StringNullableFilter<"InventoryBatch"> | string | null
     receivedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
+    updatedAt?: DateTimeFilter<"InventoryBatch"> | Date | string
     status?: EnumInventoryBatchStatusFilter<"InventoryBatch"> | $Enums.InventoryBatchStatus
   }
 
@@ -61486,6 +61518,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
     tenant: TenantCreateNestedOneWithoutInventoryBatchesInput
     supplier?: SupplierCreateNestedOneWithoutInventoryBatchesInput
@@ -61506,6 +61539,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
   }
 
@@ -64210,6 +64244,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
     tenant: TenantCreateNestedOneWithoutInventoryBatchesInput
     product: ProductCreateNestedOneWithoutBatchesInput
@@ -64230,6 +64265,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
   }
 
@@ -69721,6 +69757,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
   }
 
@@ -70574,6 +70611,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     product?: ProductUpdateOneRequiredWithoutBatchesNestedInput
     supplier?: SupplierUpdateOneWithoutInventoryBatchesNestedInput
@@ -70594,6 +70632,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
   }
 
@@ -70612,6 +70651,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
   }
 
@@ -71425,6 +71465,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
   }
 
@@ -71571,6 +71612,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     tenant?: TenantUpdateOneRequiredWithoutInventoryBatchesNestedInput
     supplier?: SupplierUpdateOneWithoutInventoryBatchesNestedInput
@@ -71591,6 +71633,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
   }
 
@@ -71609,6 +71652,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
   }
 
@@ -72136,6 +72180,7 @@ export namespace Prisma {
     supplierName?: string | null
     purchaseOrderNumber?: string | null
     receivedAt?: Date | string
+    updatedAt?: Date | string
     status?: $Enums.InventoryBatchStatus
   }
 
@@ -72253,6 +72298,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
     tenant?: TenantUpdateOneRequiredWithoutInventoryBatchesNestedInput
     product?: ProductUpdateOneRequiredWithoutBatchesNestedInput
@@ -72273,6 +72319,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
   }
 
@@ -72291,6 +72338,7 @@ export namespace Prisma {
     supplierName?: NullableStringFieldUpdateOperationsInput | string | null
     purchaseOrderNumber?: NullableStringFieldUpdateOperationsInput | string | null
     receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     status?: EnumInventoryBatchStatusFieldUpdateOperationsInput | $Enums.InventoryBatchStatus
   }
 

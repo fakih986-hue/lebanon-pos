@@ -337,6 +337,13 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
   const updatedFilter = sinceDate
     ? { OR: [{ createdAt: { gte: sinceDate } }, { updatedAt: { gte: sinceDate } }] }
     : {}
+  // InventoryBatch has no createdAt — it uses receivedAt (set once) plus
+  // updatedAt (bumped on every quantityRemaining/status change). Filter on
+  // BOTH so a batch consumed by a sale is surfaced to other devices, not just
+  // freshly-received batches (POS-SYNC-AUTHORITY-1).
+  const batchUpdatedFilter = sinceDate
+    ? { OR: [{ receivedAt: { gte: sinceDate } }, { updatedAt: { gte: sinceDate } }] }
+    : {}
 
   const [
     products, sales, refunds, customers, debtSales, debtPayments,
@@ -408,8 +415,8 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
       take: sinceDate ? 1000 : undefined,
     }),
     prisma.inventoryBatch.findMany({
-      where: { tenantId, ...(createdFilter ? { receivedAt: createdFilter } : {}) },
-      orderBy: { receivedAt: "desc" },
+      where: { tenantId, ...(sinceDate ? batchUpdatedFilter : {}) },
+      orderBy: { updatedAt: "desc" },
       take: sinceDate ? 1000 : undefined,
     }),
     prisma.stockAdjustment.findMany({
