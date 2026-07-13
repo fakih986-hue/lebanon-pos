@@ -886,15 +886,23 @@ async function upsertPulledData(
     await run("inventoryBatch", async () => {
       const id = (b as any).id
       const existing = await prisma.inventoryBatch.findUnique({ where: { id }, select: { id: true } })
-      if (!existing) {
+      if (existing) {
+        if (!applyInventoryToExisting) { skippedBatchCount++; return }
+        await prisma.inventoryBatch.update({ where: { id }, data: b as any })
+        return
+      }
+      // Not present locally — create it (bootstrap / genuinely new item). Guard
+      // the check-then-create against a concurrent insert of the same id (the
+      // old code used an atomic upsert): if the row raced in, fall back to the
+      // existing-row policy instead of failing the whole pull. Re-throw any
+      // other error (e.g. a real FK violation) so it still surfaces.
+      try {
         await prisma.inventoryBatch.create({ data: { ...b, tenantId } as any })
-        return
+      } catch (err) {
+        if ((err as { code?: string })?.code !== "P2002") throw err
+        if (applyInventoryToExisting) await prisma.inventoryBatch.update({ where: { id }, data: b as any })
+        else skippedBatchCount++
       }
-      if (!applyInventoryToExisting) {
-        skippedBatchCount++
-        return
-      }
-      await prisma.inventoryBatch.update({ where: { id }, data: b as any })
     })
   }
 

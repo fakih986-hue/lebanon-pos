@@ -472,6 +472,20 @@ describe("cloudSync", () => {
       vi.unstubAllGlobals()
     })
 
+    it("NORMAL pull: a check-then-create race (P2002) falls back to the existing-row skip, not a failure", async () => {
+      // findUnique says missing, but create races into a unique-constraint
+      // violation (row inserted concurrently). Must NOT surface as a pull
+      // failure — falls back to the normal-pull skip.
+      vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue(null)
+      vi.mocked(prisma.inventoryBatch.create).mockRejectedValue(Object.assign(new Error("Unique constraint failed"), { code: "P2002" }))
+      vi.mocked(prisma.inventoryBatch.update).mockResolvedValue({} as any)
+      stubPull({ batches: [{ id: "raced", productId: 5, quantityRemaining: 20, status: "Open", tenantId: "test-tenant-1" }] })
+
+      await expect(cloudSync.pullFromCloud()).resolves.toBeUndefined() // no throw, cursor advances
+      expect(vi.mocked(prisma.inventoryBatch.update)).not.toHaveBeenCalled() // normal pull → skip, don't overwrite
+      vi.unstubAllGlobals()
+    })
+
     it("EXPLICIT restore: DOES apply cloud stock/batch when no local stock ops are pending", async () => {
       vi.mocked(prisma.syncOperation.count).mockResolvedValue(0) // no pending stock ops
       vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)
