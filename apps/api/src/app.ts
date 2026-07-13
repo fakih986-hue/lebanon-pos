@@ -23,6 +23,7 @@ import deliveryRoutes from "./routes/delivery.js"
 import imageRoutes from "./routes/image.js"
 import adminRoutes from "./routes/admin.js"
 import reportsRoutes from "./routes/reports.js"
+import inventoryRoutes from "./routes/inventory.js"
 import releasesRoutes from "./routes/releases.js"
 import deviceRoutes from "./routes/device.js"
 import { errorHandler } from "./middleware/errorHandler.js"
@@ -60,6 +61,7 @@ app.use("/api/images", rateLimit({ windowMs: 60_000, max: 60, bucket: "images" }
 app.use("/api/admin/login", rateLimit({ windowMs: 60_000, max: 5, bucket: "admin-login" }))
 app.use("/api/admin", rateLimit({ windowMs: 60_000, max: 60, bucket: "admin" }))
 app.use("/api/reports", rateLimit({ windowMs: 60_000, max: 60, bucket: "reports" }))
+app.use("/api/inventory", rateLimit({ windowMs: 60_000, max: 60, bucket: "inventory" }))
 app.use("/api/delivery", rateLimit({ windowMs: 60_000, max: 120, bucket: "delivery" }))
 app.use("/api/health", rateLimit({ windowMs: 60_000, max: 30, bucket: "health" }))
 
@@ -71,6 +73,7 @@ app.use("/api/delivery", deliveryRoutes)
 app.use("/api/images", imageRoutes)
 app.use("/api/admin", adminRoutes)
 app.use("/api/reports", reportsRoutes)
+app.use("/api/inventory", inventoryRoutes)
 app.use("/api/releases", releasesRoutes)
 app.use("/api", deviceRoutes)
 

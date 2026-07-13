@@ -5,6 +5,7 @@ import { ImagePlus, Plus, Download, SlidersHorizontal, X, Search, Filter, ArrowU
 import KpiCards from "../../features/pos/components/KpiCards"
 import AlertsPanel from "../../features/pos/components/AlertsPanel"
 import StockControlPanel from "../../features/pos/components/StockControlPanel"
+import LedgerReconciliationPanel from "../../features/pos/components/LedgerReconciliationPanel"
 import ProductSetupForm from "../../features/pos/components/ProductSetupForm"
 import ProductTable from "../../features/pos/components/ProductTable"
 import ProductQuickCreate from "../../features/pos/components/ProductQuickCreate"
@@ -1024,6 +1025,8 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
           </div>
         ) : null}
       </section>
+      {/* POS-SYNC-AUTHORITY-2C-1: ledger-aware reconciliation (aggregate vs batches vs ledger) */}
+      <LedgerReconciliationPanel />
       </>
       ) : null}
 
