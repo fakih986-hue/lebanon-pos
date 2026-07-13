@@ -75,3 +75,15 @@ Data cleanup (not code): archived leftover test-artifact products (SI No Barcode
 ## 12. Railway deploy?
 
 **No.** No server-side code changed this sprint — every fix is client-side. Railway stays on `b58bb06`.
+
+---
+
+## 13. Follow-up incident — "sold stock reappears" (succarinee)
+
+**Symptom:** hub sold succarinee "fully" → showed 0 → then reverted to 20; sold units reappeared.
+
+**Diagnosis (from live data):** succarinee's aggregate was 20 but **all its batches were `Consumed` (0 remaining)** — over-stated drift. There was **no sale record** for the attempt and stock was unchanged at 20 on both hub and cloud → the sale had been **rejected server-side** (the batch behind the drifted aggregate was empty, so batch consumption failed and the transaction rolled back), while the hub had already shown optimistic "success / 0 left." So nothing was lost or double-counted — the DB stayed internally consistent; the confusing part was the optimistic-then-reverted UX. This is the deferred over-stated drift finally biting.
+
+**Fixes:**
+1. **Data (done, live):** with the user confirming batches are the truth, reconciled every **batch-tracked** product's aggregate down to its open-batch total — succarinee/cerave/loreal/hostage → 0, evian 41→31, safasf 40→39, aaasssdddd 24→23. Non-batch-tracked products (asfafasfa, Sakkooo — no batch records at all) were **left untouched** (their aggregate is the only stock record; zeroing would wipe real untracked stock). Bridges to cloud + pulls to clients automatically.
+2. **Code (hardening):** extended server-authoritative write-through to **STORE_HUB** (commits to its own localhost API — instant, same-machine, always reachable — before finalizing). This eliminates the "optimistic success then silent revert" class: if a commit can't succeed (empty batch behind a drifted aggregate, genuinely out of stock), the sale is **not recorded** and the cashier sees a clear failure instead of a false success that later reverts. Uses the identical already-working push/deviceId path as existing hub sync (verified), so it adds no risk to the primary till. Requires a new installer (1.0.30). Still no Railway change.

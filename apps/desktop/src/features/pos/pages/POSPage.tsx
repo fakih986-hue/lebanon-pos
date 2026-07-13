@@ -53,7 +53,7 @@ import {
 import { recordDebtSale } from "../services/customer.service"
 import { recordAuditEvent, userCan } from "../services/security.service"
 import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
-import { getConnectionMode, pullFromServer, validateStockWithHub, commitSaleToHub } from "../services/sync.service"
+import { getConnectionMode, pullFromServer, commitSaleToHub } from "../services/sync.service"
 import { createId } from "../lib/storage"
 
 import type { Product } from "../types/product"
@@ -566,11 +566,15 @@ export default function POSPage() {
     // Every product in this system is stock-tracked, so a sale with items is
     // stock-decrementing. Pure debt payments / non-stock ops don't reach here.
     const stockDecrementing = items.length > 0
-    // CONNECT_TO_HUB stock sales are server-authoritative (write-through): the
-    // hub commits the sale + stock decrement atomically BEFORE we finalize
-    // locally, so a satellite till can never oversell against stale local
-    // stock. STORE_HUB stays local-authoritative (it IS the DB).
-    const writeThrough = mode === "CONNECT_TO_HUB" && stockDecrementing
+    // Server-authoritative (write-through) for BOTH hub and connected clients:
+    // the sale + stock/batch decrement is committed by the server BEFORE the
+    // sale is finalized locally, so the till can never show "success / 0 left"
+    // and then silently revert when the commit fails (e.g. the batch behind a
+    // drifted aggregate is empty). For STORE_HUB the server is its own
+    // localhost API — same-machine, instant, always reachable — so this is the
+    // atomic-local-commit the hub authority is meant to have, with no false
+    // success. For CONNECT_TO_HUB it's the LAN hub.
+    const writeThrough = (mode === "CONNECT_TO_HUB" || mode === "STORE_HUB") && stockDecrementing
 
     const saleNumber = `S-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`
     const saleId = createId() // client-generated UUID → hub commit is idempotent
@@ -622,33 +626,30 @@ export default function POSPage() {
       }
       const sale = buildSale(saleInput, saleId) // throws if no open shift
 
-      // ── Gate ──────────────────────────────────────────────────────────
-      if (mode === "STORE_HUB" && stockDecrementing) {
-        // Hub validates against its own live stock before its local finalize.
-        setIsValidatingStock(true); setScannerStatus("Verifying stock…")
-        let v
-        try { v = await validateStockWithHub(items.map((i) => ({ productId: i.id, quantity: i.quantity }))) }
-        finally { setIsValidatingStock(false) }
-        if (!v.ok) {
-          setScannerStatus(v.reason === "unreachable"
-            ? "⚠️ Cannot verify stock — sale blocked."
-            : `⚠️ Stock changed on another register. Refresh cart. (${v.insufficientItems?.map((i) => i.name).join(", ") ?? "item"})`)
-          playErrorBuzz(); pullFromServer().catch(() => {}); return
-        }
-      } else if (writeThrough) {
-        // Server-authoritative: hub commits sale + stock atomically first.
-        setIsValidatingStock(true); setScannerStatus("Completing sale on hub…")
+      // ── Gate: server-authoritative commit (both STORE_HUB and CONNECT_TO_HUB) ──
+      // The server commits the sale + stock/batch decrement atomically and we
+      // only finalize locally on confirm. This is what prevents the "shows
+      // success / 0 left, then stock reappears" bug: if the commit fails (e.g.
+      // the batch behind a drifted aggregate is empty), the sale is NOT
+      // recorded and the cashier sees a clear failure instead of a false
+      // success that later reverts. For STORE_HUB the target is localhost
+      // (instant, same-machine); for CONNECT_TO_HUB it's the LAN hub.
+      if (writeThrough) {
+        setIsValidatingStock(true)
+        setScannerStatus(mode === "STORE_HUB" ? "Completing sale…" : "Completing sale on hub…")
         let result
         try { result = await commitSaleToHub(sale) }
         finally { setIsValidatingStock(false) }
         if (result.status === "rejected") {
           setScannerStatus(/Insufficient stock/i.test(result.error)
-            ? "⚠️ Stock changed on another register — sale not completed. Refresh cart."
+            ? "⚠️ Out of stock — sale not completed. Refresh cart."
             : `⚠️ Sale not completed: ${result.error}`)
           playErrorBuzz(); pullFromServer().catch(() => {}); return
         }
         if (result.status === "unreachable") {
-          setScannerStatus("⚠️ Cannot reach hub — sale not completed. Try again.")
+          setScannerStatus(mode === "STORE_HUB"
+            ? "⚠️ Local server not responding — sale not completed. Try again."
+            : "⚠️ Cannot reach hub — sale not completed. Try again.")
           playErrorBuzz(); return
         }
         // committed → fall through to local finalize (enqueues suppressed)
