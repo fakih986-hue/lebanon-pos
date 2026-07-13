@@ -43334,6 +43334,10 @@ export namespace Prisma {
     balance: number | null
     reference: string | null
     note: string | null
+    batchId: string | null
+    deviceId: string | null
+    userId: string | null
+    userName: string | null
     createdAt: Date | null
   }
 
@@ -43346,6 +43350,10 @@ export namespace Prisma {
     balance: number | null
     reference: string | null
     note: string | null
+    batchId: string | null
+    deviceId: string | null
+    userId: string | null
+    userName: string | null
     createdAt: Date | null
   }
 
@@ -43358,6 +43366,10 @@ export namespace Prisma {
     balance: number
     reference: number
     note: number
+    batchId: number
+    deviceId: number
+    userId: number
+    userName: number
     createdAt: number
     _all: number
   }
@@ -43384,6 +43396,10 @@ export namespace Prisma {
     balance?: true
     reference?: true
     note?: true
+    batchId?: true
+    deviceId?: true
+    userId?: true
+    userName?: true
     createdAt?: true
   }
 
@@ -43396,6 +43412,10 @@ export namespace Prisma {
     balance?: true
     reference?: true
     note?: true
+    batchId?: true
+    deviceId?: true
+    userId?: true
+    userName?: true
     createdAt?: true
   }
 
@@ -43408,6 +43428,10 @@ export namespace Prisma {
     balance?: true
     reference?: true
     note?: true
+    batchId?: true
+    deviceId?: true
+    userId?: true
+    userName?: true
     createdAt?: true
     _all?: true
   }
@@ -43507,6 +43531,10 @@ export namespace Prisma {
     balance: number
     reference: string
     note: string
+    batchId: string | null
+    deviceId: string | null
+    userId: string | null
+    userName: string | null
     createdAt: Date
     _count: StockMovementCountAggregateOutputType | null
     _avg: StockMovementAvgAggregateOutputType | null
@@ -43538,6 +43566,10 @@ export namespace Prisma {
     balance?: boolean
     reference?: boolean
     note?: boolean
+    batchId?: boolean
+    deviceId?: boolean
+    userId?: boolean
+    userName?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -43552,6 +43584,10 @@ export namespace Prisma {
     balance?: boolean
     reference?: boolean
     note?: boolean
+    batchId?: boolean
+    deviceId?: boolean
+    userId?: boolean
+    userName?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -43566,6 +43602,10 @@ export namespace Prisma {
     balance?: boolean
     reference?: boolean
     note?: boolean
+    batchId?: boolean
+    deviceId?: boolean
+    userId?: boolean
+    userName?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -43580,10 +43620,14 @@ export namespace Prisma {
     balance?: boolean
     reference?: boolean
     note?: boolean
+    batchId?: boolean
+    deviceId?: boolean
+    userId?: boolean
+    userName?: boolean
     createdAt?: boolean
   }
 
-  export type StockMovementOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "productId" | "type" | "quantity" | "balance" | "reference" | "note" | "createdAt", ExtArgs["result"]["stockMovement"]>
+  export type StockMovementOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "productId" | "type" | "quantity" | "balance" | "reference" | "note" | "batchId" | "deviceId" | "userId" | "userName" | "createdAt", ExtArgs["result"]["stockMovement"]>
   export type StockMovementInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     product?: boolean | ProductDefaultArgs<ExtArgs>
@@ -43612,6 +43656,10 @@ export namespace Prisma {
       balance: number
       reference: string
       note: string
+      batchId: string | null
+      deviceId: string | null
+      userId: string | null
+      userName: string | null
       createdAt: Date
     }, ExtArgs["result"]["stockMovement"]>
     composites: {}
@@ -44046,6 +44094,10 @@ export namespace Prisma {
     readonly balance: FieldRef<"StockMovement", 'Float'>
     readonly reference: FieldRef<"StockMovement", 'String'>
     readonly note: FieldRef<"StockMovement", 'String'>
+    readonly batchId: FieldRef<"StockMovement", 'String'>
+    readonly deviceId: FieldRef<"StockMovement", 'String'>
+    readonly userId: FieldRef<"StockMovement", 'String'>
+    readonly userName: FieldRef<"StockMovement", 'String'>
     readonly createdAt: FieldRef<"StockMovement", 'DateTime'>
   }
     
@@ -45082,6 +45134,10 @@ export namespace Prisma {
     balance: 'balance',
     reference: 'reference',
     note: 'note',
+    batchId: 'batchId',
+    deviceId: 'deviceId',
+    userId: 'userId',
+    userName: 'userName',
     createdAt: 'createdAt'
   };
 
@@ -48623,6 +48679,10 @@ export namespace Prisma {
     balance?: FloatFilter<"StockMovement"> | number
     reference?: StringFilter<"StockMovement"> | string
     note?: StringFilter<"StockMovement"> | string
+    batchId?: StringNullableFilter<"StockMovement"> | string | null
+    deviceId?: StringNullableFilter<"StockMovement"> | string | null
+    userId?: StringNullableFilter<"StockMovement"> | string | null
+    userName?: StringNullableFilter<"StockMovement"> | string | null
     createdAt?: DateTimeFilter<"StockMovement"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
@@ -48637,6 +48697,10 @@ export namespace Prisma {
     balance?: SortOrder
     reference?: SortOrder
     note?: SortOrder
+    batchId?: SortOrderInput | SortOrder
+    deviceId?: SortOrderInput | SortOrder
+    userId?: SortOrderInput | SortOrder
+    userName?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
     product?: ProductOrderByWithRelationInput
@@ -48654,6 +48718,10 @@ export namespace Prisma {
     balance?: FloatFilter<"StockMovement"> | number
     reference?: StringFilter<"StockMovement"> | string
     note?: StringFilter<"StockMovement"> | string
+    batchId?: StringNullableFilter<"StockMovement"> | string | null
+    deviceId?: StringNullableFilter<"StockMovement"> | string | null
+    userId?: StringNullableFilter<"StockMovement"> | string | null
+    userName?: StringNullableFilter<"StockMovement"> | string | null
     createdAt?: DateTimeFilter<"StockMovement"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
@@ -48668,6 +48736,10 @@ export namespace Prisma {
     balance?: SortOrder
     reference?: SortOrder
     note?: SortOrder
+    batchId?: SortOrderInput | SortOrder
+    deviceId?: SortOrderInput | SortOrder
+    userId?: SortOrderInput | SortOrder
+    userName?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: StockMovementCountOrderByAggregateInput
     _avg?: StockMovementAvgOrderByAggregateInput
@@ -48688,6 +48760,10 @@ export namespace Prisma {
     balance?: FloatWithAggregatesFilter<"StockMovement"> | number
     reference?: StringWithAggregatesFilter<"StockMovement"> | string
     note?: StringWithAggregatesFilter<"StockMovement"> | string
+    batchId?: StringNullableWithAggregatesFilter<"StockMovement"> | string | null
+    deviceId?: StringNullableWithAggregatesFilter<"StockMovement"> | string | null
+    userId?: StringNullableWithAggregatesFilter<"StockMovement"> | string | null
+    userName?: StringNullableWithAggregatesFilter<"StockMovement"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"StockMovement"> | Date | string
   }
 
@@ -52373,6 +52449,10 @@ export namespace Prisma {
     balance: number
     reference: string
     note?: string
+    batchId?: string | null
+    deviceId?: string | null
+    userId?: string | null
+    userName?: string | null
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutStockMovementsInput
     product: ProductCreateNestedOneWithoutStockMovementsInput
@@ -52387,6 +52467,10 @@ export namespace Prisma {
     balance: number
     reference: string
     note?: string
+    batchId?: string | null
+    deviceId?: string | null
+    userId?: string | null
+    userName?: string | null
     createdAt?: Date | string
   }
 
@@ -52397,6 +52481,10 @@ export namespace Prisma {
     balance?: FloatFieldUpdateOperationsInput | number
     reference?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutStockMovementsNestedInput
     product?: ProductUpdateOneRequiredWithoutStockMovementsNestedInput
@@ -52411,6 +52499,10 @@ export namespace Prisma {
     balance?: FloatFieldUpdateOperationsInput | number
     reference?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -52423,6 +52515,10 @@ export namespace Prisma {
     balance: number
     reference: string
     note?: string
+    batchId?: string | null
+    deviceId?: string | null
+    userId?: string | null
+    userName?: string | null
     createdAt?: Date | string
   }
 
@@ -52433,6 +52529,10 @@ export namespace Prisma {
     balance?: FloatFieldUpdateOperationsInput | number
     reference?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -52445,6 +52545,10 @@ export namespace Prisma {
     balance?: FloatFieldUpdateOperationsInput | number
     reference?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -55307,6 +55411,10 @@ export namespace Prisma {
     balance?: SortOrder
     reference?: SortOrder
     note?: SortOrder
+    batchId?: SortOrder
+    deviceId?: SortOrder
+    userId?: SortOrder
+    userName?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -55325,6 +55433,10 @@ export namespace Prisma {
     balance?: SortOrder
     reference?: SortOrder
     note?: SortOrder
+    batchId?: SortOrder
+    deviceId?: SortOrder
+    userId?: SortOrder
+    userName?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -55337,6 +55449,10 @@ export namespace Prisma {
     balance?: SortOrder
     reference?: SortOrder
     note?: SortOrder
+    batchId?: SortOrder
+    deviceId?: SortOrder
+    userId?: SortOrder
+    userName?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -59520,6 +59636,10 @@ export namespace Prisma {
     balance: number
     reference: string
     note?: string
+    batchId?: string | null
+    deviceId?: string | null
+    userId?: string | null
+    userName?: string | null
     createdAt?: Date | string
     product: ProductCreateNestedOneWithoutStockMovementsInput
   }
@@ -59532,6 +59652,10 @@ export namespace Prisma {
     balance: number
     reference: string
     note?: string
+    batchId?: string | null
+    deviceId?: string | null
+    userId?: string | null
+    userName?: string | null
     createdAt?: Date | string
   }
 
@@ -60457,6 +60581,10 @@ export namespace Prisma {
     balance?: FloatFilter<"StockMovement"> | number
     reference?: StringFilter<"StockMovement"> | string
     note?: StringFilter<"StockMovement"> | string
+    batchId?: StringNullableFilter<"StockMovement"> | string | null
+    deviceId?: StringNullableFilter<"StockMovement"> | string | null
+    userId?: StringNullableFilter<"StockMovement"> | string | null
+    userName?: StringNullableFilter<"StockMovement"> | string | null
     createdAt?: DateTimeFilter<"StockMovement"> | Date | string
   }
 
@@ -61638,6 +61766,10 @@ export namespace Prisma {
     balance: number
     reference: string
     note?: string
+    batchId?: string | null
+    deviceId?: string | null
+    userId?: string | null
+    userName?: string | null
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutStockMovementsInput
   }
@@ -61650,6 +61782,10 @@ export namespace Prisma {
     balance: number
     reference: string
     note?: string
+    batchId?: string | null
+    deviceId?: string | null
+    userId?: string | null
+    userName?: string | null
     createdAt?: Date | string
   }
 
@@ -69859,6 +69995,10 @@ export namespace Prisma {
     balance: number
     reference: string
     note?: string
+    batchId?: string | null
+    deviceId?: string | null
+    userId?: string | null
+    userName?: string | null
     createdAt?: Date | string
   }
 
@@ -70936,6 +71076,10 @@ export namespace Prisma {
     balance?: FloatFieldUpdateOperationsInput | number
     reference?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     product?: ProductUpdateOneRequiredWithoutStockMovementsNestedInput
   }
@@ -70948,6 +71092,10 @@ export namespace Prisma {
     balance?: FloatFieldUpdateOperationsInput | number
     reference?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -70959,6 +71107,10 @@ export namespace Prisma {
     balance?: FloatFieldUpdateOperationsInput | number
     reference?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -71506,6 +71658,10 @@ export namespace Prisma {
     balance: number
     reference: string
     note?: string
+    batchId?: string | null
+    deviceId?: string | null
+    userId?: string | null
+    userName?: string | null
     createdAt?: Date | string
   }
 
@@ -71750,6 +71906,10 @@ export namespace Prisma {
     balance?: FloatFieldUpdateOperationsInput | number
     reference?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutStockMovementsNestedInput
   }
@@ -71762,6 +71922,10 @@ export namespace Prisma {
     balance?: FloatFieldUpdateOperationsInput | number
     reference?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -71773,6 +71937,10 @@ export namespace Prisma {
     balance?: FloatFieldUpdateOperationsInput | number
     reference?: StringFieldUpdateOperationsInput | string
     note?: StringFieldUpdateOperationsInput | string
+    batchId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    userName?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

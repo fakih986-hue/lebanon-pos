@@ -23,6 +23,7 @@ import path from "node:path"
 import { randomUUID } from "node:crypto"
 import { fileURLToPath } from "node:url"
 import prisma from "../lib/prisma.js"
+import { recordStockMovementOnce } from "../lib/ledger.js"
 import { broadcastToTenant } from "../ws/index.js"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -739,7 +740,20 @@ async function upsertPulledData(
       // 4. No match by any key — a genuinely new product from cloud. Create it
       //    (cloud's numeric id flows in here as a fresh insert; that's fine —
       //    it's a new local row, not an overwrite of an existing PK).
-      await prisma.product.create({ data: { ...p, tenantId } as any })
+      const created = await prisma.product.create({ data: { ...p, tenantId } as any })
+      // POS-SYNC-AUTHORITY-2A (record-only): opening-balance movement for stock
+      // imported from cloud on bootstrap/restore, so the ledger's sum matches
+      // Product.stock from t0. Idempotent by opening:<id> (safe on re-import).
+      const openStock = Number((created as any)?.stock ?? 0)
+      if (openStock !== 0) {
+        await recordStockMovementOnce(prisma, tenantId, {
+          productId: (created as any).id,
+          type: "Opening",
+          quantity: openStock,
+          reference: `opening:${(created as any).syncId ?? (created as any).id}`,
+          note: "Opening stock (cloud bootstrap/import)",
+        })
+      }
     })
   }
 

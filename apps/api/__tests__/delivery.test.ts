@@ -24,6 +24,7 @@ vi.mock("../src/lib/prisma", () => {
     deliveryOrderItem: model(),
     staffUser: model(),
     product: model(),
+    stockMovement: model(),
     appSettings: { findUnique: vi.fn(), upsert: vi.fn() },
     tenant: { findUnique: vi.fn(), count: vi.fn().mockResolvedValue(1) },
     customer: { findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
@@ -142,6 +143,28 @@ describe("PATCH /api/delivery/orders/:id", () => {
       body: { status: "Confirmed" },
     })
     expect(res.status).toBe(200)
+  })
+
+  it("emits a stock-ledger movement when a delivery decrements stock (POS-SYNC-AUTHORITY-2A)", async () => {
+    vi.mocked(prisma.deliveryOrder.findFirst).mockResolvedValue({ id: "do1", status: "Pending" } as any)
+    vi.mocked(prisma.deliveryOrder.updateMany).mockResolvedValue({ count: 1 })
+    vi.mocked(prisma.deliveryOrder.findUnique).mockResolvedValue({
+      id: "do1", status: "OutForDelivery", driverId: null,
+      items: [{ productId: 1, productName: "Cola", quantity: 2 }],
+    } as any)
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+
+    const res = await request("PATCH", "/api/delivery/orders/do1", {
+      token: adminToken,
+      body: { status: "OutForDelivery" },
+    })
+    expect(res.status).toBe(200)
+    // Stock still decremented (record-only) AND a delivery movement is logged.
+    expect(vi.mocked(prisma.product.updateMany)).toHaveBeenCalledWith(expect.objectContaining({ data: { stock: { decrement: 2 }, updatedAt: expect.any(Date) } }))
+    const moves = vi.mocked((prisma as any).stockMovement.create).mock.calls.map((c: any) => c[0].data)
+    const m = moves.find((x: any) => x.reference === "delivery:do1")
+    expect(m).toBeTruthy()
+    expect(m).toMatchObject({ productId: 1, type: "Sale", quantity: -2 })
   })
 })
 

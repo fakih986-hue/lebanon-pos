@@ -777,13 +777,20 @@ model StockMovement {
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
   productId Int
   product   Product  @relation(fields: [productId], references: [id])
-  type      String // Receive | Sale | Refund | Adjustment | WriteOff
+  type      String // Receive | Sale | Refund | Adjustment | WriteOff | Opening
   quantity  Float
-  balance   Float // running balance after this movement
-  reference String // sale ID, batch ID, adjustment ID, etc.
+  balance   Float // advisory running balance after this movement (truth = sum(quantity))
+  reference String // sale ID, batch ID, adjustment ID, opening:<x>, delivery:<orderId>, etc.
   note      String   @default("")
+  // POS-SYNC-AUTHORITY-2A — additive source/attribution + batch link (all nullable, record-only)
+  batchId   String?
+  deviceId  String?
+  userId    String?
+  userName  String?
   createdAt DateTime @default(now())
 
   @@index([tenantId, productId])
   @@index([tenantId, createdAt])
+  // Non-unique lookup/idempotency index (unique constraint deliberately deferred)
+  @@index([tenantId, reference, type, productId])
 }

@@ -310,6 +310,64 @@ describe("GET /api/sync/pull", () => {
     expect((batchCall as any).orderBy).toMatchObject({ updatedAt: "desc" })
   })
 
+describe("POST /api/sync/push — stock ledger record-only (POS-SYNC-AUTHORITY-2A)", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it("logs a Refund movement (+qty, ref=refundId) without changing the restore", async () => {
+    vi.mocked(prisma.saleRefund.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.saleRefund.upsert).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.product.findMany).mockResolvedValue([])
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-led-ref", entity: "refund", action: "create", payload: {
+        id: "ref-led-1", refundNumber: "R-LED", saleId: "sale-x", saleNumber: "S-x", method: "Cash", reason: "t", total: 5, cashier: "Amy",
+        items: [{ id: 1, name: "Cola", barcode: "111", quantity: 2, unitPrice: 5, total: 10, cost: 3 }],
+      } }] },
+    })
+    expect(res.status).toBe(200)
+    // Record-only: the stock restore (increment) still happens.
+    expect(vi.mocked(prisma.product.updateMany)).toHaveBeenCalledWith(expect.objectContaining({ data: { stock: { increment: 2 }, updatedAt: expect.any(Date) } }))
+    const moves = vi.mocked((prisma as any).stockMovement.create).mock.calls.map((c: any) => c[0].data)
+    const refMove = moves.find((m: any) => m.type === "Refund" && m.reference === "ref-led-1")
+    expect(refMove).toBeTruthy()
+    expect(refMove.quantity).toBe(2)
+    expect(refMove.userName).toBe("Amy")
+  })
+
+  it("logs an Opening movement when a product is created with initial stock", async () => {
+    vi.mocked(prisma.product.findFirst).mockResolvedValue(null) // no syncId/barcode match → create
+    vi.mocked(prisma.product.create).mockResolvedValue({ id: 99, stock: 7, syncId: "sync-new" } as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-led-open", entity: "product", action: "create", payload: {
+        syncId: "sync-new", name: "New Item", barcode: "NB1", price: 1, cost: 0.5, category: "x", stock: 7,
+      } }] },
+    })
+    expect(res.status).toBe(200)
+    const moves = vi.mocked((prisma as any).stockMovement.create).mock.calls.map((c: any) => c[0].data)
+    const opening = moves.find((m: any) => m.type === "Opening")
+    expect(opening).toBeTruthy()
+    expect(opening).toMatchObject({ productId: 99, quantity: 7, reference: "opening:sync-new" })
+  })
+
+  it("does NOT log an Opening movement when a product is created with zero stock", async () => {
+    vi.mocked(prisma.product.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.product.create).mockResolvedValue({ id: 100, stock: 0, syncId: "sync-zero" } as any)
+
+    await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-led-zero", entity: "product", action: "create", payload: {
+        syncId: "sync-zero", name: "Zero Item", barcode: "NB2", price: 1, cost: 0.5, category: "x", stock: 0,
+      } }] },
+    })
+    const moves = vi.mocked((prisma as any).stockMovement.create).mock.calls.map((c: any) => c[0].data)
+    expect(moves.find((m: any) => m.type === "Opening")).toBeFalsy()
+  })
+})
+
 describe("POST /api/sync/push — sale stock integrity", () => {
   beforeEach(() => { vi.clearAllMocks() })
 
@@ -410,6 +468,31 @@ describe("POST /api/sync/push — sale stock integrity", () => {
       where: { tenantId: "t1", id: 2 },
       data: { stock: { decrement: 3 } },
     })
+  })
+
+  it("records a Sale stock movement (record-only) without changing the stock decrement (POS-SYNC-AUTHORITY-2A)", async () => {
+    mockNewSale()
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: {
+        deviceId: "DEV-XYZ",
+        operations: [{ id: "op-ledger-sale", entity: "sale", action: "create", payload: { ...salePayload, id: "sale-ledger", saleNumber: "S-LEDGER" } }],
+      },
+    })
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("ok")
+
+    // Record-only: the real stock decrement still happens exactly as before.
+    expect(vi.mocked(prisma.product.updateMany).mock.calls.length).toBe(2)
+    expect(vi.mocked(prisma.product.updateMany).mock.calls[0][0]).toMatchObject({ data: { stock: { decrement: 2 } } })
+
+    // New: a signed Sale movement is logged per item, referencing the sale id,
+    // with source attribution threaded (deviceId from push, cashier as userName).
+    const movements = vi.mocked((prisma as any).stockMovement.create).mock.calls.map((c: any) => c[0].data)
+    const saleMoves = movements.filter((m: any) => m.type === "Sale" && m.reference === "sale-ledger")
+    expect(saleMoves.length).toBe(2)
+    expect(saleMoves.map((m: any) => m.quantity).sort((a: number, b: number) => a - b)).toEqual([-3, -2])
+    expect(saleMoves[0]).toMatchObject({ deviceId: "DEV-XYZ", userId: "u1", userName: "John" })
   })
 
   it("strips registerId/deviceId from the sale payload — Sale has no such columns", async () => {

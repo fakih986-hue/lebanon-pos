@@ -635,6 +635,10 @@ exports.Prisma.StockMovementScalarFieldEnum = {
   balance: 'balance',
   reference: 'reference',
   note: 'note',
+  batchId: 'batchId',
+  deviceId: 'deviceId',
+  userId: 'userId',
+  userName: 'userName',
   createdAt: 'createdAt'
 };
 

@@ -8,6 +8,7 @@ import { z } from "zod"
 import prisma from "../lib/prisma.js"
 import { Prisma } from "../generated/prisma/index.js"
 import { decrementProductStock, increaseProductStock } from "../lib/inventory.js"
+import { recordStockMovement } from "../lib/ledger.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 import { broadcastToTenant, broadcastToUser, getConnectedDrivers } from "../ws/index.js"
 
@@ -534,8 +535,15 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerRes
       if (updateResult.count > 0 && updated && updated.items.length > 0) {
         if (body.status === "Confirmed" || body.status === "OutForDelivery") {
           await decrementProductStock(tx, tenantId, updated.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+          // POS-SYNC-AUTHORITY-2A (record-only): mirror the delivery stock-out into the ledger.
+          for (const i of updated.items) {
+            await recordStockMovement(tx, tenantId, { productId: i.productId, type: "Sale", quantity: -Number(i.quantity), reference: `delivery:${updated.id}`, note: `Delivery ${body.status}`, userId: req.auth?.userId ?? null })
+          }
         } else if (body.status === "Cancelled") {
           await increaseProductStock(tx, tenantId, updated.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+          for (const i of updated.items) {
+            await recordStockMovement(tx, tenantId, { productId: i.productId, type: "Refund", quantity: Number(i.quantity), reference: `delivery-revert:${updated.id}`, note: "Delivery cancelled", userId: req.auth?.userId ?? null })
+          }
         }
       }
 
@@ -677,6 +685,10 @@ router.patch("/driver/orders/:id/status", requireAuth, requireDriver, async (req
       if (updateResult.count > 0 && result && result.items.length > 0) {
         if (newStatus === "OutForDelivery") {
           await decrementProductStock(tx, order.tenantId, result.items.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+          // POS-SYNC-AUTHORITY-2A (record-only): mirror the delivery stock-out (driver transition).
+          for (const i of result.items) {
+            await recordStockMovement(tx, order.tenantId, { productId: i.productId, type: "Sale", quantity: -Number(i.quantity), reference: `delivery:${orderId}`, note: "Delivery OutForDelivery (driver)" })
+          }
         }
       }
 

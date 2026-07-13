@@ -9,6 +9,7 @@ import prisma from "../lib/prisma.js"
 const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
+import { recordStockMovement, recordStockMovementOnce } from "../lib/ledger.js"
 import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
 import { broadcastToTenant } from "../ws/index.js"
@@ -167,7 +168,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
       }
 
       await prisma.$transaction(async (tx) => {
-        await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma)
+        await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, { deviceId: deviceId ?? null, userId: req.auth!.userId })
 
         // Mark as Pending so the cloud sync bridge picks it up and pushes to Railway.
         // (The phone already has it synced — this is for the hub→Railway direction.)
@@ -605,7 +606,9 @@ async function processOperation(
   entity: string,
   action: string,
   payload?: Record<string, unknown>,
-  db: typeof prisma = prisma
+  db: typeof prisma = prisma,
+  // POS-SYNC-AUTHORITY-2A — source attribution for the stock ledger (record-only).
+  source: { deviceId?: string | null; userId?: string | null } = {}
 ) {
   // Helper: resolve a product ID from cross-device sync. The phone may use a
   // different local ID than the hub. Falls back to barcode lookup.
@@ -651,23 +654,18 @@ async function processOperation(
   }
   payload = stripClientMeta(payload) as Record<string, unknown> | undefined
 
-  // Record a stock movement for the audit trail (ledger-based stock)
-  const recordMovement = async (productId: number, type: string, quantity: number, reference: string, note = "") => {
-    if (!productId || productId <= 0) return
-    const stockMovement = (db as any).stockMovement
-    if (!stockMovement) return
-    // Calculate running balance
-    const lastMovement = await stockMovement.findFirst({
-      where: { tenantId, productId },
-      orderBy: { createdAt: "desc" },
-      select: { balance: true },
+  // Record a stock movement for the audit trail (POS-SYNC-AUTHORITY-2A ledger,
+  // RECORD-ONLY — does not change any stock outcome). Delegates to the shared
+  // writer, threading source attribution (deviceId/userId from the push request,
+  // userName from the payload's cashier when present).
+  const cashier = (payload as any)?.cashier as string | undefined
+  const recordMovement = (productId: number, type: string, quantity: number, reference: string, note = "") =>
+    recordStockMovement(db, tenantId, {
+      productId, type, quantity, reference, note,
+      deviceId: source.deviceId ?? null,
+      userId: source.userId ?? null,
+      userName: cashier ?? null,
     })
-    const prevBalance = lastMovement?.balance ?? 0
-    const balance = prevBalance + quantity
-    await stockMovement.create({
-      data: { tenantId, productId, type, quantity, balance, reference, note },
-    })
-  }
 
   switch (entity) {
     case "product": {
@@ -735,7 +733,23 @@ async function processOperation(
           if (!syncId && IS_CLOUD) syncId = randomUUID()
           const data = { ...rest, tenantId } as Record<string, unknown>
           if (syncId) data.syncId = syncId; else delete data.syncId
-          await db.product.create({ data: data as any })
+          const created = await db.product.create({ data: data as any })
+          // POS-SYNC-AUTHORITY-2A (record-only): opening-balance movement for a
+          // new product created with non-zero initial stock, so the ledger's
+          // sum matches Product.stock from t0. Idempotent by opening:<id>.
+          const openStock = Number((created as any)?.stock ?? 0)
+          if (openStock !== 0) {
+            await recordStockMovementOnce(db, tenantId, {
+              productId: (created as any).id,
+              type: "Opening",
+              quantity: openStock,
+              reference: `opening:${(created as any).syncId ?? (created as any).id}`,
+              note: "Opening stock (product created)",
+              deviceId: source.deviceId ?? null,
+              userId: source.userId ?? null,
+              userName: cashier ?? null,
+            })
+          }
         }
       } else if (action === "delete") {
         // Silently convert product.delete to archive — preserve history
