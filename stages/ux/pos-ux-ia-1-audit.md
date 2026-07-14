@@ -133,7 +133,17 @@ Key moves vs current:
 
 **IA-1A — low-risk rename / group / confirm / role-hide** (no logic, no permission changes): quick wins #1–#6 and #9. Pure label/grouping + added confirm dialogs + non-privilege-changing hides. Ship first; each is independently revertible.
 
-**IA-1B — structural moves** (needs approval): split Products→Stock control into **Adjust & Count** + **Reconciliation**; split **Settings** into sub-pages incl. a **Danger zone**; resolve shift-access for Managers (R2); decide Receiving placement. Coordinated but still no money/stock/sync logic change.
+**IA-1B — structural moves** (needs approval): split Products→Stock control into **Adjust & Count** + **Reconciliation**; split **Settings** into sub-pages incl. a **Danger zone**; **resolve shift-access for Managers (R2 — decided, see below)**; decide Receiving placement. Coordinated but still no money/stock/sync logic change.
+
+---
+
+## Review decisions (2026-07-14)
+
+- **IA-1A:** implemented (commit `c938806`) — label renames, batches terminology, confirms on Delivery-cancel + Driver-deactivate, Settings Danger zone with confirms.
+- **R2 (shift access) — DECIDED:** *Managers* open/close shifts. Action: surface shift Open/Close on a screen Managers can reach (honoring the existing `shifts.manage` grant); cashiers unchanged (still cannot); no cashier-facing change. → part of **IA-1B**.
+- **R1 (staff management) — DECIDED:** keep staff management **Admin-only**. Action: correct the Staff page's on-screen permission matrix to match real `rolePermissions` (Manager has `shifts.manage`, delivery, inventory, etc. but **not** `staff.manage`/`settings.manage`); relabel so Admin-only is clear. → low-risk display fix, can go in IA-1A-style follow-up or with IA-1B.
+- **S1 (backup admin-gate/secret-redaction):** still deferred (grouping+confirm shipped in IA-1A; the admin-gate/redaction is a separate approval).
+- Remaining IA-1B items (Products/Settings splits, Receiving placement, delete-gating) still need explicit go before implementation.
 
 **IA-1C — optional visual polish** (last, only if wanted): consistent iconography, group headers, empty states, spacing — explicitly out of scope for this sprint beyond noting it.
 
