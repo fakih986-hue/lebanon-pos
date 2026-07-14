@@ -203,14 +203,10 @@ const router = createBrowserRouter([
   },
 
   {
+    // POS-UX-IA-2B.5: stock ops now live at /stock. Keep the old deep link
+    // working by redirecting it to the Stock & Batches workspace.
     path: "/products/count",
-    element: (
-      <Shell>
-        <RequirePermission permission="inventory.manage">
-          <ProductsPage initialTab="Control" />
-        </RequirePermission>
-      </Shell>
-    ),
+    element: <Navigate to="/stock" replace />,
   },
 
   {

@@ -4,9 +4,6 @@ import type { Product } from "../../features/pos/types/product"
 import { ImagePlus, Plus, Download, SlidersHorizontal, X, Filter, ArrowUpDown } from "lucide-react"
 import KpiCards from "../../features/pos/components/KpiCards"
 import AlertsPanel from "../../features/pos/components/AlertsPanel"
-import BatchesPanel from "../../features/pos/components/BatchesPanel"
-import StockControlPanel from "../../features/pos/components/StockControlPanel"
-import LedgerReconciliationPanel from "../../features/pos/components/LedgerReconciliationPanel"
 import ProductSetupForm from "../../features/pos/components/ProductSetupForm"
 import ProductTable from "../../features/pos/components/ProductTable"
 import ProductQuickCreate from "../../features/pos/components/ProductQuickCreate"
@@ -17,7 +14,6 @@ import { getApiUrl, getAuthToken } from "../../features/pos/services/sync.servic
 
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import { subscribeInventoryBatches } from "../../features/pos/services/inventoryBatch.service"
-import { useStockControl } from "../../features/pos/hooks/useStockControl"
 import {
   createProduct,
   deleteProduct,
@@ -49,7 +45,12 @@ import {
 } from "../../features/pos/services/stock.service"
 import { showToast } from "../../features/pos/services/toast.service"
 import { useI18n } from "@lebanonpos/shared"
-type ProductWorkspaceView = "Catalog" | "Categories" | "Alerts" | "Control" | "Lots" | "Setup"
+// POS-UX-IA-2B.5: Products is catalog-focused. Stock quantities, batches,
+// counts, and reconciliation moved to the dedicated /stock workspace.
+// "Control"/"Lots" remain as legacy deep-link values that fall back to Catalog
+// (and /products/count redirects to /stock at the route level).
+type ProductWorkspaceView = "Catalog" | "Categories" | "Alerts" | "Setup"
+type ProductInitialTab = ProductWorkspaceView | "Control" | "Lots"
 
 function normalizeNumber(value: string) {
   const parsedValue = Number(value)
@@ -72,7 +73,12 @@ function parseBarcodeAliases(value: string, primaryBarcode?: string) {
   )
 }
 
-export default function ProductsPage({ initialTab }: { initialTab?: ProductWorkspaceView } = {}) {
+export default function ProductsPage({ initialTab }: { initialTab?: ProductInitialTab } = {}) {
+  // Legacy stock deep links (Control/Lots) safely fall back to Catalog.
+  const safeInitialTab: ProductWorkspaceView =
+    initialTab === "Control" || initialTab === "Lots" || !initialTab
+      ? "Catalog"
+      : initialTab
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [suppliers, setSuppliers] =
@@ -94,7 +100,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   const [generatingImages, setGeneratingImages] = useState(false)
   const [genImageStatus, setGenImageStatus] = useState<string | null>(null)
   const [activeProductView, setActiveProductView] =
-    useState<ProductWorkspaceView>(initialTab ?? "Catalog")
+    useState<ProductWorkspaceView>(safeInitialTab)
   const [batchVersion, setBatchVersion] = useState(0)
   const [deleteProductId, setDeleteProductId] = useState<number | null>(null)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
@@ -209,10 +215,6 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   const duplicateBarcodes = useMemo(() => detectDuplicateBarcodes(), [products])
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? products[0]
-  // POS-UX-IA-2B.2: Stock tools (adjust / count / reconciliation) state + logic
-  // live in a portable hook — the future /stock route boundary. Still mounted
-  // here inside ProductsPage; behavior unchanged.
-  const stock = useStockControl(products, selectedProduct)
   const reorderSuggestions = useMemo(
     () => getReorderSuggestions(products),
     [products, batchVersion]
@@ -261,16 +263,6 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     {
       label: "Alerts",
       count: reorderSuggestions.length + expiryAlerts.length,
-    },
-    {
-      value: "Control",
-      label: "Stock tools",
-      count: stock.activeStockCount ? 1 : stock.recentAdjustments.length,
-    },
-    {
-      value: "Lots",
-      label: "Batches",
-      count: stock.openBatches.length,
     },
     {
       value: "Setup",
@@ -597,10 +589,16 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
         tabs={productViews}
       />
 
-      {/* POS-UX-IA-2B.4: Batches/Lots table now uses the shared BatchesPanel
-          (same component the /stock workspace mounts). Same label, badge,
-          search/filter, empty state — behavior unchanged. */}
-      {activeProductView === "Lots" ? <BatchesPanel /> : null}
+      {/* POS-UX-IA-2B.5: Products is catalog-focused; stock ops moved to /stock. */}
+      <div className="card mt-4 flex flex-wrap items-center justify-between gap-3 p-4 text-[12px]"
+        style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>
+        <span>
+          For <span className="font-semibold">quantities, batches, stock counts, and reconciliation</span>, use{" "}
+          <span className="font-bold" style={{ color: "var(--text)" }}>Stock &amp; Batches</span>.
+        </span>
+        <button type="button" onClick={() => { window.location.href = "/stock" }}
+          className="btn btn-default btn-sm">Open Stock &amp; Batches</button>
+      </div>
 
       {activeProductView === "Alerts" ? (
       <AlertsPanel
@@ -611,112 +609,12 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
         promoSuggestions={promoSuggestions}
         buildSupplierOrderMessage={buildSupplierOrderMessage}
         copySupplierOrder={copySupplierOrder}
-        onWriteOffProduct={(id) => { stock.setAdjustmentProductId(id); stock.setAdjustmentMode("Remove"); setActiveProductView("Control") }}
-        onViewProduct={(id) => { setSelectedProductId(id); setActiveProductView("Lots") }}
-        onReceiveProduct={(id) => { window.location.href = "/products/new" }}
+        onWriteOffProduct={() => { window.location.href = "/stock" }}
+        onViewProduct={() => { window.location.href = "/stock" }}
+        onReceiveProduct={() => { window.location.href = "/products/new" }}
       />
       ) : null}
 
-      {activeProductView === "Control" ? (
-      <>
-      {/* POS-UX-IA-2A: signpost explaining what lives in this view (labels only) */}
-      <div className="card mb-4 p-4 text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>
-        <span className="font-bold" style={{ color: "var(--text)" }}>Stock tools</span> — everything for correcting and auditing stock in one place:
-        <span className="font-semibold"> Adjust stock</span> (add/remove with a reason),
-        <span className="font-semibold"> Stock count</span> (physical recount),
-        <span className="font-semibold"> Reconciliation</span> (aggregate vs batches vs ledger, with safe repair — below), and
-        <span className="font-semibold"> Recent movements</span>. To add new stock, use <span className="font-semibold">Receive stock</span> in the sidebar.
-        {" "}Prefer a dedicated screen? Open <span className="font-semibold">Stock &amp; Batches</span> in the sidebar.
-      </div>
-      <StockControlPanel
-        products={products}
-        adjustmentProduct={stock.adjustmentProduct}
-        adjustmentProductId={stock.adjustmentProductId}
-        onAdjustmentProductIdChange={stock.setAdjustmentProductId}
-        adjustmentMode={stock.adjustmentMode}
-        onAdjustmentModeChange={stock.setAdjustmentMode}
-        adjustmentQuantity={stock.adjustmentQuantity}
-        onAdjustmentQuantityChange={stock.setAdjustmentQuantity}
-        adjustmentReason={stock.adjustmentReason}
-        onAdjustmentReasonChange={stock.setAdjustmentReason}
-        adjustmentBatchId={stock.adjustmentBatchId}
-        onAdjustmentBatchIdChange={stock.setAdjustmentBatchId}
-        adjustmentNote={stock.adjustmentNote}
-        onAdjustmentNoteChange={stock.setAdjustmentNote}
-        selectedProductBatches={stock.selectedProductBatches}
-        recentAdjustments={stock.recentAdjustments}
-        activeStockCount={stock.activeStockCount}
-        countProductId={stock.countProductId}
-        onCountProductIdChange={stock.setCountProductId}
-        countedQuantity={stock.countedQuantity}
-        onCountedQuantityChange={stock.setCountedQuantity}
-        countSearch={stock.countSearch}
-        onCountSearchChange={stock.setCountSearch}
-        countLines={stock.countLines}
-        onSaveStockAdjustment={stock.saveStockAdjustment}
-        onBeginStockCount={stock.beginStockCount}
-        onSaveCountLine={stock.saveCountLine}
-        onPostStockCount={stock.postStockCount}
-      />
-      {/* Reconciliation section */}
-      <section className="card mt-5 overflow-hidden">
-        <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "var(--border)" }}>
-          <div>
-            <h2 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Inventory Reconciliation</h2>
-            <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>
-              Detect stock vs batch mismatches, orphan batches, and data integrity issues.
-            </p>
-          </div>
-          <button onClick={stock.runReconScan}
-            className="btn btn-default btn-sm" disabled={stock.reconLoading}>
-            {stock.reconLoading ? "Scanning..." : stock.reconIssues.length > 0 ? `Refresh` : "Run Scan"}
-          </button>
-        </div>
-
-        {stock.reconIssues.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-0 text-[13px]">
-              <thead>
-                <tr>
-                  {["Product","Issue","Detail","Suggested Action"].map(h => (
-                    <th key={h} className="border-b px-4 py-3 text-start text-[10px] font-bold uppercase tracking-[0.14em]"
-                      style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {stock.reconIssues.map((issue, i) => (
-                  <tr key={i} className="t-row">
-                    <td className="border-b px-4 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>
-                      {issue.productName}
-                    </td>
-                    <td className="border-b px-4 py-3">
-                      <span className="chip text-[10px] px-2 py-0.5 rounded font-bold" style={{
-                        background: issue.severity === "error" ? "var(--danger-soft)" : "var(--warning-soft)",
-                        color: issue.severity === "error" ? "var(--danger-text)" : "var(--warning-text)",
-                      }}>{issue.type.replace(/_/g, " ")}</span>
-                    </td>
-                    <td className="border-b px-4 py-3 text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>
-                      {issue.detail}
-                    </td>
-                    <td className="border-b px-4 py-3 text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
-                      {issue.suggestedAction}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : stock.reconIssues.length === 0 && !stock.reconLoading ? (
-          <div className="px-5 py-12 text-center text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
-            Click 'Run Scan' to check inventory integrity.
-          </div>
-        ) : null}
-      </section>
-      {/* POS-SYNC-AUTHORITY-2C-1: ledger-aware reconciliation (aggregate vs batches vs ledger) */}
-      <LedgerReconciliationPanel />
-      </>
-      ) : null}
 
       {activeProductView === "Setup" ? (
       <>
