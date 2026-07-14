@@ -1,6 +1,6 @@
 {
   "name": "lebanon-pos",
-  "version": "1.0.35",
+  "version": "1.0.36",
   "description": "Titan POS — Local Server Desktop App",
   "main": "dist/main.js",
   "scripts": {
