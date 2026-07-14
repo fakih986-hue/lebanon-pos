@@ -313,7 +313,10 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
       summary: `${newlyCreated.length} receiving line${
         newlyCreated.length === 1 ? "" : "s"
       } queued for sync.`,
-      payload: newlyCreated,
+      // POS-SYNC-RECEIVE-1: create the product at stock 0; the inventory/receive
+      // op below adds the received quantity server-side (authoritative). The local
+      // cache keeps the real stock (set above) for immediate display.
+      payload: newlyCreated.map((p) => ({ ...p, stock: 0 })),
     })
   }
 
@@ -321,15 +324,16 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
     (p) => currentProducts.find((c) => c.id === p.id && JSON.stringify(c) !== JSON.stringify(p))
   )
   for (const mod of modifiedExisting) {
+    // POS-SYNC-RECEIVE-1: metadata-only update (price/cost/reorder/supplier/
+    // expiry). The received quantity is applied by the inventory/receive handler,
+    // NOT here — no `stock`, no `_stockUpdate` marker. The server strips stock
+    // from every product.update unconditionally.
+    const { stock: _stock, ...meta } = mod
     enqueueSyncOperation({
       entity: "product",
       action: "update",
-      summary: `${mod.name} stock updated.`,
-      // POS-SYNC-HARDEN-2: receiving an existing product legitimately raises its
-      // aggregate via this update. Mark it so the server's stock-write guard
-      // permits the stock change here while stripping stock from every other
-      // (generic/edit) product update.
-      payload: { ...mod, _stockUpdate: true },
+      summary: `${mod.name} details updated.`,
+      payload: meta,
     })
   }
 

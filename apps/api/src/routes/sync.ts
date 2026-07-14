@@ -679,17 +679,16 @@ async function processOperation(
         // Partial patches (archive/restore send {id?, syncId?, archived}).
         const items = Array.isArray(payload) ? payload : [payload]
         for (const item of items) {
-          // POS-SYNC-HARDEN-2: a GENERIC product update must never change stock.
-          // Strip `stock` from the patch; real stock changes go only through the
-          // approved stock operations (sale/refund/void/receive/adjustment/count/
-          // reconciliation-repair). The ONE exception is receiving an existing
-          // product, which legitimately raises the aggregate and marks its update
-          // with `_stockUpdate` — for that we re-attach stock. The `_stockUpdate`
-          // marker is a transient protocol flag, never persisted.
-          const { id, syncId, tenantId: _t, _stockUpdate, stock: _stock, ...patch } = { ...item } as Record<string, unknown>
-          if (_stockUpdate) {
-            if (_stock !== undefined) (patch as Record<string, unknown>).stock = _stock
-          } else if (_stock !== undefined) {
+          // POS-SYNC-HARDEN-2 + RECEIVE-1: a product.update NEVER changes stock.
+          // `stock` is stripped from the patch unconditionally — every real stock
+          // change goes through an approved stock op (sale/refund/void/receive/
+          // adjustment/count/reconciliation-repair). Receiving now raises the
+          // aggregate in the inventory/receive handler itself, so there is no
+          // longer any trusted-marker exception here.
+          // `_stockUpdate` is a now-defunct transition marker — discard it so it
+          // is never persisted (and never trusted). `stock` is always stripped.
+          const { id, syncId, tenantId: _t, _stockUpdate: _defunct, stock: _stock, ...patch } = { ...item } as Record<string, unknown>
+          if (_stock !== undefined) {
             console.warn(`[sync] product.update: ignored a 'stock' field (server-side guard) for product ${syncId ?? id ?? patch.barcode ?? "?"} — stock only changes via approved stock operations.`)
           }
           if (syncId) {
@@ -1133,13 +1132,28 @@ async function processOperation(
           // must be stripped from the persisted row.
           const productId = await resolveProductId(item)
           const { id: batchId, productSyncId: _ps, ...batchData } = { ...item, productId } as Record<string, unknown>
-          await db.inventoryBatch.upsert({
-            where: { id: batchId as string },
-            update: batchData as any,
-            create: { ...batchData, id: batchId, tenantId } as any,
-          })
-          // Record the stock movement (quantity is the net change)
-          await recordMovement(productId, "Receive", Number(item.quantityRemaining ?? item.initialQuantity ?? 0), batchId as string, `Batch ${item.batchNumber ?? ""}`)
+          const qty = Number((item as any).quantityRemaining ?? (item as any).initialQuantity ?? 0)
+          // POS-SYNC-RECEIVE-1: the receive handler is authoritative for the
+          // aggregate. The batch id (client-generated, stable) is the idempotency
+          // anchor: increment Product.stock + record the Receive movement ONLY on
+          // first creation of the batch. A retry (batch already exists) updates
+          // metadata only and never re-increments. Stock is no longer carried by
+          // product.create/product.update in the receive flow.
+          const existingBatch = await db.inventoryBatch.findUnique({ where: { id: batchId as string }, select: { id: true } })
+          if (!existingBatch) {
+            await db.inventoryBatch.create({ data: { ...batchData, id: batchId, tenantId } as any })
+            if (productId > 0 && qty !== 0) {
+              await db.product.updateMany({ where: { tenantId, id: productId }, data: { stock: { increment: qty }, updatedAt: new Date() } as any })
+            }
+            await recordStockMovementOnce(db, tenantId, {
+              productId, type: "Receive", quantity: qty, reference: batchId as string,
+              note: `Batch ${(item as any).batchNumber ?? ""}`,
+              deviceId: source.deviceId ?? null, userId: source.userId ?? null, userName: cashier ?? null,
+            })
+          } else {
+            // Metadata correction for an already-received batch — NEVER re-increment stock.
+            await db.inventoryBatch.update({ where: { id: batchId as string }, data: batchData as any })
+          }
         }
       } else if (action === "update") {
         const items = Array.isArray(payload) ? payload : [payload]
