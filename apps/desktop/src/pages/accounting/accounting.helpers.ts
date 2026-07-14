@@ -35,7 +35,7 @@ export type AccountingSummary = {
   cashNet: number
 }
 
-export type AccountingWorkspace = "Close day" | "Expenses" | "Cash flow" | "History"
+export type AccountingWorkspace = "Close day" | "Expenses" | "Cash flow" | "History" | "Shift"
 
 export const expenseCategories: ExpenseCategory[] = [
   "Supplier", "Rent", "Utilities", "Payroll", "Delivery", "Maintenance", "Other",

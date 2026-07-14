@@ -46,6 +46,7 @@ import ExpenseFormPanel from "./components/ExpenseForm"
 import ExpenseMixPanel from "./components/ExpenseMixPanel"
 import HistoryPanel from "./components/HistoryPanel"
 import RegisterReconciliationPanel from "./components/RegisterReconciliationPanel"
+import ShiftControlPanel from "../../features/pos/components/ShiftControlPanel"
 
 export default function AccountingPage() {
   const { t } = useI18n()
@@ -65,6 +66,7 @@ export default function AccountingPage() {
   const [activeWorkspace, setActiveWorkspace] =
     useState<AccountingWorkspace>("Close day")
   const canManageAccounting = userCan("accounting.manage")
+  const canManageShifts = userCan("shifts.manage")
 
   useEffect(() => {
     setIsLoading(false)
@@ -209,6 +211,8 @@ export default function AccountingPage() {
             { label: "Expenses", count: todayExpenses.length },
             { label: "Cash flow" },
             { label: "History", count: dailyCloses.length },
+            // POS-UX-IA-1B: shift Open/Close in a Manager-reachable daily-ops context (gated by shifts.manage)
+            ...(canManageShifts ? [{ label: "Shift" as const }] : []),
           ]}
         />
 
@@ -239,6 +243,8 @@ export default function AccountingPage() {
                 paymentMethodLabels={paymentMethodLabels}
               />
             ) : null}
+
+            {activeWorkspace === "Shift" ? <ShiftControlPanel /> : null}
           </div>
 
           <aside className="space-y-5">

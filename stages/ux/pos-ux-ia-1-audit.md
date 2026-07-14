@@ -140,8 +140,8 @@ Key moves vs current:
 ## Review decisions (2026-07-14)
 
 - **IA-1A:** implemented (commit `c938806`) — label renames, batches terminology, confirms on Delivery-cancel + Driver-deactivate, Settings Danger zone with confirms.
-- **R2 (shift access) — DECIDED:** *Managers* open/close shifts. Action: surface shift Open/Close on a screen Managers can reach (honoring the existing `shifts.manage` grant); cashiers unchanged (still cannot); no cashier-facing change. → part of **IA-1B**.
-- **R1 (staff management) — DECIDED:** keep staff management **Admin-only**. Action: correct the Staff page's on-screen permission matrix to match real `rolePermissions` (Manager has `shifts.manage`, delivery, inventory, etc. but **not** `staff.manage`/`settings.manage`); relabel so Admin-only is clear. → low-risk display fix, can go in IA-1A-style follow-up or with IA-1B.
+- **R2 (shift access) — DONE (IA-1B):** shift Open/Close now lives on the **Accounting page** as a **"Shift" tab**, gated by `shifts.manage` (Managers + Admins reach it; cashiers can't reach Accounting at all). New `ShiftControlPanel` reuses the existing shift-service functions (single source of truth) — open with float, close with counted cash + expected-cash breakdown + confirm. The Staff page's shift tab is left untouched for Admins. No cashier-facing change.
+- **R1 (staff matrix) — VERIFIED already correct (no change needed):** the Staff page's permission matrix (per-user chips *and* the reference panel) is **data-driven from `rolePermissions`**, so it already shows Manager with shifts/inventory/accounting/delivery and **without** `staff.manage`/`settings.manage`. The audit's "misleading matrix" note was an explorer misread. No second/hardcoded matrix exists (the only other role reference is a login badge colour). Staff management stays Admin-only, as decided.
 - **S1 (backup admin-gate/secret-redaction):** still deferred (grouping+confirm shipped in IA-1A; the admin-gate/redaction is a separate approval).
 - Remaining IA-1B items (Products/Settings splits, Receiving placement, delete-gating) still need explicit go before implementation.
 
