@@ -11,8 +11,10 @@ vi.mock("../src/lib/prisma", () => {
   })
   const mock: any = {
     product: model(), inventoryBatch: model(), stockMovement: model(),
+    stockAdjustment: model(), auditEvent: model(),
     tenant: { findUnique: vi.fn().mockResolvedValue({ licenseStatus: "active", suspendedAt: null }) },
     $connect: vi.fn(), $disconnect: vi.fn(),
+    $transaction: vi.fn((fn: any) => fn(mock)),
   }
   return { default: mock }
 })
@@ -114,5 +116,76 @@ describe("POST /api/inventory/ledger/initialize", () => {
     // exactly one opening movement created (for product 2), quantity 5
     expect(vi.mocked(prisma.stockMovement.create).mock.calls.length).toBe(1)
     expect(vi.mocked(prisma.stockMovement.create).mock.calls[0][0].data).toMatchObject({ productId: 2, type: "Opening", quantity: 5, reference: "opening:s2" })
+  })
+})
+
+describe("POST /api/inventory/reconciliation/repair (2C-2 narrow repair)", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  // $transaction runs the callback with the same mock client
+  function txMock() { vi.mocked((prisma as any).$transaction).mockImplementation((fn: any) => fn(prisma)) }
+
+  function seedProduct(stock: number, batchCount = 1, openTotal = 0) {
+    txMock()
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 7, name: "succ", barcode: "b7", stock, cost: 2 } as any)
+    vi.mocked(prisma.inventoryBatch.count).mockResolvedValue(batchCount as any)
+    vi.mocked(prisma.inventoryBatch.aggregate).mockResolvedValue({ _sum: { quantityRemaining: openTotal } } as any)
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.stockAdjustment.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.stockMovement.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.stockMovement.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.auditEvent.create).mockResolvedValue({} as any)
+  }
+
+  it("403 for cashiers", async () => {
+    const res = await request("POST", "/api/inventory/reconciliation/repair", { token: cashier, body: { productId: 7, reason: "x" } })
+    expect(res.status).toBe(403)
+  })
+
+  it("rejects a missing reason", async () => {
+    const res = await request("POST", "/api/inventory/reconciliation/repair", { token: admin, body: { productId: 7 } })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/reason/i)
+  })
+
+  it("lowers aggregate to open-batch total, records adjustment + movement + audit, does NOT touch batches", async () => {
+    seedProduct(20, 1, 0) // aggregate 20, has batches, open total 0 → repair to 0
+    const res = await request("POST", "/api/inventory/reconciliation/repair", { token: manager, body: { productId: 7, reason: "batches are truth" } })
+    expect(res.status).toBe(200)
+    expect(res.body).toMatchObject({ ok: true, aggregateBefore: 20, batchTotal: 0, aggregateAfter: 0, delta: -20 })
+    // stock set to batch total via guarded updateMany
+    expect(vi.mocked(prisma.product.updateMany)).toHaveBeenCalledWith(expect.objectContaining({ where: { tenantId: "t1", id: 7, stock: 20 }, data: { stock: 0, updatedAt: expect.any(Date) } }))
+    // adjustment + movement + audit recorded
+    expect(vi.mocked(prisma.stockAdjustment.create)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(prisma.stockAdjustment.create).mock.calls[0][0].data).toMatchObject({ productId: 7, quantityBefore: 20, quantityChange: -20, quantityAfter: 0 })
+    expect(vi.mocked(prisma.stockMovement.create).mock.calls[0][0].data).toMatchObject({ productId: 7, type: "Adjustment", quantity: -20 })
+    expect(vi.mocked(prisma.auditEvent.create)).toHaveBeenCalledTimes(1)
+    // NEVER writes batches
+    expect(vi.mocked(prisma.inventoryBatch.update)).not.toHaveBeenCalled()
+    expect(vi.mocked(prisma.inventoryBatch.updateMany)).not.toHaveBeenCalled()
+  })
+
+  it("rejects when aggregate <= batch total (no downward mismatch) — also covers a safe second click", async () => {
+    seedProduct(10, 1, 10) // aggregate 10 == batch total 10 → nothing to repair
+    const res = await request("POST", "/api/inventory/reconciliation/repair", { token: admin, body: { productId: 7, reason: "again" } })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/no downward mismatch/i)
+    expect(vi.mocked(prisma.product.updateMany)).not.toHaveBeenCalled()
+    expect(vi.mocked(prisma.stockAdjustment.create)).not.toHaveBeenCalled()
+  })
+
+  it("refuses a product with no batch records (would wipe untracked stock)", async () => {
+    seedProduct(20, 0, 0) // no batches
+    const res = await request("POST", "/api/inventory/reconciliation/repair", { token: admin, body: { productId: 7, reason: "no" } })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/no batch records/i)
+    expect(vi.mocked(prisma.product.updateMany)).not.toHaveBeenCalled()
+  })
+
+  it("404 when the product does not exist", async () => {
+    txMock()
+    vi.mocked(prisma.product.findFirst).mockResolvedValue(null)
+    const res = await request("POST", "/api/inventory/reconciliation/repair", { token: admin, body: { productId: 999, reason: "x" } })
+    expect(res.status).toBe(404)
   })
 })

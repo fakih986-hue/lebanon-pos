@@ -43,6 +43,11 @@ export default function LedgerReconciliationPanel() {
   const [initializing, setInitializing] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // 2C-2 repair modal state
+  const [repairTarget, setRepairTarget] = useState<Row | null>(null)
+  const [repairReason, setRepairReason] = useState("")
+  const [repairing, setRepairing] = useState(false)
+  const [repairError, setRepairError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     const apiUrl = getApiUrl(), token = getAuthToken()
@@ -77,6 +82,35 @@ export default function LedgerReconciliationPanel() {
       setError(`Initialize failed: ${(e as Error).message}`)
     } finally {
       setInitializing(false)
+    }
+  }
+
+  // Repair is offered ONLY when the aggregate is strictly above the open-batch
+  // total for a batch-tracked product (the one safe, narrow direction).
+  const canRepair = (r: Row) => r.hasBatches && r.diffAB > 0.001
+
+  const doRepair = async () => {
+    if (!repairTarget) return
+    const reason = repairReason.trim()
+    if (!reason) { setRepairError("A reason is required."); return }
+    const apiUrl = getApiUrl(), token = getAuthToken()
+    if (!apiUrl || !token) { setRepairError("Not connected to a hub."); return }
+    setRepairing(true); setRepairError(null)
+    try {
+      const res = await fetch(`${apiUrl}/api/inventory/reconciliation/repair`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ productId: repairTarget.productId, reason }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`)
+      setStatus(`Repaired "${repairTarget.name}": stock ${body.aggregateBefore} → ${body.aggregateAfter} (adjustment ${body.adjustmentId?.slice(0, 8)}).`)
+      setRepairTarget(null); setRepairReason("")
+      await load()
+    } catch (e) {
+      setRepairError((e as Error).message)
+    } finally {
+      setRepairing(false)
     }
   }
 
@@ -116,7 +150,7 @@ export default function LedgerReconciliationPanel() {
           <table className="min-w-full border-separate border-spacing-0 text-[13px]">
             <thead>
               <tr>
-                {["Product", "Aggregate", "Open batches", "Ledger", "Diff (agg−batch)", "Severity", "Suggested action"].map(h => (
+                {["Product", "Aggregate", "Open batches", "Ledger", "Diff (agg−batch)", "Severity", "Suggested action", "Repair"].map(h => (
                   <th key={h} className="border-b px-4 py-3 text-start text-[10px] font-bold uppercase tracking-[0.14em]"
                     style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{h}</th>
                 ))}
@@ -138,6 +172,13 @@ export default function LedgerReconciliationPanel() {
                       <span className="rounded px-2 py-0.5 text-[11px] font-bold uppercase" style={{ backgroundColor: c.bg, color: c.fg }}>{r.severity}</span>
                     </td>
                     <td className="border-b px-4 py-3 text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{r.suggestedAction}</td>
+                    <td className="border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
+                      {canRepair(r) ? (
+                        <button className="btn btn-default btn-sm whitespace-nowrap" onClick={() => { setRepairTarget(r); setRepairReason(""); setRepairError(null) }}>
+                          Lower aggregate to batch total
+                        </button>
+                      ) : <span className="text-[11px]" style={{ color: "var(--text-3)" }}>—</span>}
+                    </td>
                   </tr>
                 )
               })}
@@ -147,6 +188,28 @@ export default function LedgerReconciliationPanel() {
       ) : report && !loading ? (
         <div className="px-5 py-12 text-center text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
           No discrepancies — aggregate, batches, and ledger all agree. ✅
+        </div>
+      ) : null}
+
+      {repairTarget ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }} role="dialog" aria-modal="true">
+          <div className="card w-full max-w-md p-5" style={{ background: "var(--surface)" }}>
+            <h3 className="text-[15px] font-bold" style={{ color: "var(--text)" }}>Lower aggregate to batch total</h3>
+            <p className="mt-2 text-[13px]" style={{ color: "var(--text-2)" }}>
+              This will reduce <b>{repairTarget.name}</b> stock from <b>{repairTarget.aggregate}</b> to <b>{repairTarget.openBatchTotal}</b> to match open batch stock. It will <b>not</b> change batches.
+            </p>
+            <label className="mt-4 block text-[12px] font-semibold" style={{ color: "var(--text-3)" }}>Reason (required)</label>
+            <textarea value={repairReason} onChange={e => setRepairReason(e.target.value)} rows={2}
+              className="mt-1 w-full rounded-lg border px-3 py-2 text-[13px]" style={{ borderColor: "var(--border)", background: "var(--bg)", color: "var(--text)" }}
+              placeholder="e.g. Batches confirmed as truth after physical check" />
+            {repairError ? <div className="mt-2 text-[12px]" style={{ color: "var(--danger-text)" }}>{repairError}</div> : null}
+            <div className="mt-4 flex justify-end gap-2">
+              <button className="btn btn-default btn-sm" onClick={() => { setRepairTarget(null); setRepairError(null) }} disabled={repairing}>Cancel</button>
+              <button className="btn btn-primary btn-sm" onClick={doRepair} disabled={repairing || !repairReason.trim()}>
+                {repairing ? "Repairing…" : "Confirm repair"}
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
     </section>
