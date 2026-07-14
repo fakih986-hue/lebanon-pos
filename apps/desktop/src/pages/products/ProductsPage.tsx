@@ -935,6 +935,14 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
 
       {activeProductView === "Control" ? (
       <>
+      {/* POS-UX-IA-2A: signpost explaining what lives in this view (labels only) */}
+      <div className="card mb-4 p-4 text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>
+        <span className="font-bold" style={{ color: "var(--text)" }}>Stock control</span> — everything for correcting and auditing stock in one place:
+        <span className="font-semibold"> Adjust stock</span> (add/remove with a reason),
+        <span className="font-semibold"> Stock count</span> (physical recount),
+        <span className="font-semibold"> Reconciliation</span> (aggregate vs batches vs ledger, with safe repair — below), and
+        <span className="font-semibold"> Recent movements</span>. To add new stock, use <span className="font-semibold">Receive stock</span> in the sidebar.
+      </div>
       <StockControlPanel
         products={products}
         adjustmentProduct={adjustmentProduct}

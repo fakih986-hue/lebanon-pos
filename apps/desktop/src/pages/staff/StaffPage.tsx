@@ -775,6 +775,12 @@ export default function StaffPage() {
         <aside className="min-w-0 space-y-5 xl:sticky xl:top-4">
           {activeWorkspace === "Shifts" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+            {/* POS-UX-IA-2A: shift canonicalization (surface-level) — the everyday place
+                to open/close a till is Money → Accounting → Shift (reachable by managers).
+                This tab remains for admin oversight + history. Controls are unchanged. */}
+            <div className="mb-4 rounded-lg border p-3 text-[12px]" style={{ borderColor: "var(--info, #cbd5e1)", background: "var(--info-soft, #f1f5f9)", color: "var(--info-text, #334155)" }}>
+              Day-to-day, open and close tills from <b>Money → Accounting → Shift</b>. This tab is for shift <b>history &amp; oversight</b>.
+            </div>
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-950 text-white">
                 <Clock3 size={21} />
