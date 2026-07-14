@@ -325,7 +325,11 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
       entity: "product",
       action: "update",
       summary: `${mod.name} stock updated.`,
-      payload: mod,
+      // POS-SYNC-HARDEN-2: receiving an existing product legitimately raises its
+      // aggregate via this update. Mark it so the server's stock-write guard
+      // permits the stock change here while stripping stock from every other
+      // (generic/edit) product update.
+      payload: { ...mod, _stockUpdate: true },
     })
   }
 

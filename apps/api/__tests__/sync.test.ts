@@ -368,6 +368,51 @@ describe("POST /api/sync/push — stock ledger record-only (POS-SYNC-AUTHORITY-2
   })
 })
 
+describe("POST /api/sync/push — server-side stock write guard (POS-SYNC-HARDEN-2)", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it("strips 'stock' from a generic product update but still applies metadata", async () => {
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-guard", entity: "product", action: "update", payload: {
+        syncId: "sync-1", name: "Renamed", price: 3.5, cost: 2, category: "Drinks", barcode: "B1", archived: false, reorderPoint: 4, stock: 9999,
+      } }] },
+    })
+    expect(res.status).toBe(200)
+    const data = vi.mocked(prisma.product.updateMany).mock.calls[0][0].data as any
+    expect(data).not.toHaveProperty("stock")             // stock stripped
+    expect(data).not.toHaveProperty("_stockUpdate")      // marker never persisted
+    expect(data).toMatchObject({ name: "Renamed", price: 3.5, cost: 2, category: "Drinks", barcode: "B1", archived: false, reorderPoint: 4 })
+  })
+
+  it("KEEPS 'stock' when the update is a marked receive (_stockUpdate) — restocking still works", async () => {
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-receive", entity: "product", action: "update", payload: {
+        syncId: "sync-2", name: "Cola", stock: 50, _stockUpdate: true,
+      } }] },
+    })
+    expect(res.status).toBe(200)
+    const data = vi.mocked(prisma.product.updateMany).mock.calls[0][0].data as any
+    expect(data.stock).toBe(50)                          // stock preserved for receive
+    expect(data).not.toHaveProperty("_stockUpdate")      // marker not persisted
+    expect(data.name).toBe("Cola")
+  })
+
+  it("a stockless product update is unaffected", async () => {
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    const res = await request("POST", "/api/sync/push", {
+      token, body: { operations: [{ id: "op-meta", entity: "product", action: "update", payload: { syncId: "sync-3", name: "Just Metadata" } }] },
+    })
+    expect(res.status).toBe(200)
+    const data = vi.mocked(prisma.product.updateMany).mock.calls[0][0].data as any
+    expect(data).toMatchObject({ name: "Just Metadata" })
+    expect(data).not.toHaveProperty("stock")
+  })
+})
+
 describe("POST /api/sync/push — sale stock integrity", () => {
   beforeEach(() => { vi.clearAllMocks() })
 

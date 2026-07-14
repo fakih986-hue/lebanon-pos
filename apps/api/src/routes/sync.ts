@@ -679,7 +679,19 @@ async function processOperation(
         // Partial patches (archive/restore send {id?, syncId?, archived}).
         const items = Array.isArray(payload) ? payload : [payload]
         for (const item of items) {
-          const { id, syncId, tenantId: _t, ...patch } = { ...item } as Record<string, unknown>
+          // POS-SYNC-HARDEN-2: a GENERIC product update must never change stock.
+          // Strip `stock` from the patch; real stock changes go only through the
+          // approved stock operations (sale/refund/void/receive/adjustment/count/
+          // reconciliation-repair). The ONE exception is receiving an existing
+          // product, which legitimately raises the aggregate and marks its update
+          // with `_stockUpdate` — for that we re-attach stock. The `_stockUpdate`
+          // marker is a transient protocol flag, never persisted.
+          const { id, syncId, tenantId: _t, _stockUpdate, stock: _stock, ...patch } = { ...item } as Record<string, unknown>
+          if (_stockUpdate) {
+            if (_stock !== undefined) (patch as Record<string, unknown>).stock = _stock
+          } else if (_stock !== undefined) {
+            console.warn(`[sync] product.update: ignored a 'stock' field (server-side guard) for product ${syncId ?? id ?? patch.barcode ?? "?"} — stock only changes via approved stock operations.`)
+          }
           if (syncId) {
             const r = await db.product.updateMany({ where: { tenantId, syncId: syncId as string }, data: patch as any })
             if (r.count > 0) continue
