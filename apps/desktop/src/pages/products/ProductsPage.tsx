@@ -395,7 +395,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     },
     {
       value: "Control",
-      label: "Stock control",
+      label: "Stock tools",
       count: activeStockCount ? 1 : recentAdjustments.length,
     },
     {
@@ -937,7 +937,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       <>
       {/* POS-UX-IA-2A: signpost explaining what lives in this view (labels only) */}
       <div className="card mb-4 p-4 text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>
-        <span className="font-bold" style={{ color: "var(--text)" }}>Stock control</span> — everything for correcting and auditing stock in one place:
+        <span className="font-bold" style={{ color: "var(--text)" }}>Stock tools</span> — everything for correcting and auditing stock in one place:
         <span className="font-semibold"> Adjust stock</span> (add/remove with a reason),
         <span className="font-semibold"> Stock count</span> (physical recount),
         <span className="font-semibold"> Reconciliation</span> (aggregate vs batches vs ledger, with safe repair — below), and

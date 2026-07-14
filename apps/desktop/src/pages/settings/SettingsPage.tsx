@@ -604,7 +604,7 @@ export default function SettingsPage() {
         tabs={[
           { label: "Business" },
           { label: "Delivery" },
-          { label: "Cloud sync", count: syncStatus.pending + syncStatus.failed },
+          { value: "Cloud sync", label: "Devices & Sync", count: syncStatus.pending + syncStatus.failed },
           { label: "Security" },
           { label: "Backup" },
           { label: "About" },
@@ -1110,7 +1110,7 @@ export default function SettingsPage() {
                 <Cloud size={21} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-zinc-950">Connection</h2>
+                <h2 className="text-lg font-bold text-zinc-950">Connection mode</h2>
                 <p className="text-sm text-zinc-500">How this device connects</p>
               </div>
             </div>
@@ -1226,7 +1226,7 @@ export default function SettingsPage() {
                  syncStatus.online ? <Cloud size={21} /> : <CloudOff size={21} />}
               </div>
               <div>
-                <h2 className="text-lg font-bold text-zinc-950">Hub status</h2>
+                <h2 className="text-lg font-bold text-zinc-950">Hub / LAN access</h2>
                 <p className="text-sm text-zinc-500">
                   Mode: {connectionMode === "STORE_HUB" ? "Store Hub" :
                          connectionMode === "CONNECT_TO_HUB" ? "Hub Client" : "Direct to Cloud"}
@@ -1358,7 +1358,7 @@ export default function SettingsPage() {
                 <Settings size={21} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-zinc-950">Device management</h2>
+                <h2 className="text-lg font-bold text-zinc-950">Paired devices</h2>
                 <p className="text-sm text-zinc-500">Only approved devices can sync to this hub</p>
               </div>
             </div>
@@ -1432,7 +1432,7 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-zinc-950">
-                    Offline sync
+                    Offline queue
                   </h2>
                   <p className="text-sm text-zinc-500">
                     Last sync: {formatDateTime(syncStatus.lastSyncedAt)}
@@ -1599,7 +1599,7 @@ export default function SettingsPage() {
                 <Cloud size={21} />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-zinc-950">Cloud connection</h2>
+                <h2 className="text-lg font-bold text-zinc-950">Cloud account</h2>
                 <p className="text-sm text-zinc-500">Link this store to the cloud so the owner sees its data.</p>
               </div>
             </div>
