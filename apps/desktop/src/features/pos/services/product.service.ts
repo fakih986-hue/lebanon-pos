@@ -463,12 +463,18 @@ export function createProduct(input: {
   const nextProducts = [...currentProducts, product]
   writeProducts(nextProducts)
 
-  // Queue product create FIRST so server has the product before receiving batch
+  // Queue product create FIRST so server has the product before receiving batch.
+  // POS-PRODUCT-CREATE-STOCK-1: send stock 0 to the server. The inventory/receive
+  // op below is the single authoritative source of the opening quantity (mirrors
+  // POS-SYNC-RECEIVE-1 in receiveProducts). Sending the real stock here AND a
+  // receive batch double-counted on the server/cloud (24 → 48) and also produced
+  // a duplicate Opening + Receive ledger movement. The local cache keeps the
+  // entered stock (set on `product` above) for immediate display.
   enqueueSyncOperation({
     entity: "product",
     action: "create",
     summary: `${product.name} created.`,
-    payload: product,
+    payload: { ...product, stock: 0 },
   })
 
   // Create initial batch for opening stock
