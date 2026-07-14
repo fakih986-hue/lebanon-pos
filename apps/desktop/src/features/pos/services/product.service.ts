@@ -748,6 +748,19 @@ export function productMatchesSearch(product: Product, query: string) {
   )
 }
 
+/** POS-RECEIVE-UX-1C: active (non-archived) products whose name matches `name`
+ *  after case-insensitive whitespace normalization. Used by receiving to nudge
+ *  ("Pepsi already exists — add this barcode to it?") — detection only; it never
+ *  merges or writes. */
+export function findProductsByExactName(name: string, list?: Product[]): Product[] {
+  const target = name.trim().replace(/\s+/g, " ").toLowerCase()
+  if (!target) return []
+  const products = list ?? getProductsSync()
+  return products.filter(
+    (p) => !p.archived && p.name.trim().replace(/\s+/g, " ").toLowerCase() === target
+  )
+}
+
 export function generateProductBarcode() {
   const existingBarcodes = new Set(
     getProductsSync().flatMap((product) => [

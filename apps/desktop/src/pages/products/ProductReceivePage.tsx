@@ -18,7 +18,7 @@ import {
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import { createId } from "../../features/pos/lib/storage"
 import {
-  findProductByBarcode, generateProductBarcode,
+  findProductByBarcode, findProductsByExactName, generateProductBarcode,
   getProducts, parseSpreadsheetPaste, productMatchesSearch,
 } from "../../features/pos/services/product.service"
 import { recordAuditEvent } from "../../features/pos/services/security.service"
@@ -461,6 +461,10 @@ export default function ProductReceivePage() {
               const aliasTarget = row.mode === "alias" && row.targetProductId != null ? products.find((p) => p.id === row.targetProductId) : undefined
               const scannedAlias = matched && row.scannedBarcode && row.scannedBarcode !== matched.barcode ? row.scannedBarcode : ""
               const pickerResults = pickerRowId === row.id ? products.filter((p) => !p.archived && productMatchesSearch(p, pickerQuery)).slice(0, 20) : []
+              // POS-RECEIVE-UX-1C: a new-product row whose name matches an existing
+              // active product → nudge to add the barcode to it instead (soft).
+              const nameMatches = row.mode === "new" && row.name.trim().length > 0 ? findProductsByExactName(row.name, products) : []
+              const showNameNudge = nameMatches.length > 0 && !row.decisionConfirmed
 
               return (
                 <div
@@ -583,6 +587,25 @@ export default function ProductReceivePage() {
                           className="btn btn-default h-7 gap-1 text-[11px] opacity-40">⧉ Variant / pack</button>
                         <button type="button" onClick={(e) => { e.stopPropagation(); skipRowBarcode(row.id) }}
                           className="btn btn-ghost h-7 text-[11px]">Skip</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Name-collision nudge — soft guardrail against duplicate products */}
+                  {showNameNudge && (
+                    <div className="flex flex-wrap items-center gap-2 px-4 py-2 text-[11px]" style={{ background: "var(--amber-soft)", borderTop: "1px solid var(--border)", color: "var(--amber)" }}>
+                      <span className="font-semibold">
+                        “{nameMatches[0].name}” already exists
+                        {" "}({nameMatches[0].barcode ? `barcode ${nameMatches[0].barcode}, ` : ""}{formatCurrency(nameMatches[0].price)}, stock {formatNumber(nameMatches[0].stock)})
+                        {nameMatches.length > 1 ? ` +${nameMatches.length - 1} more` : ""} — add this barcode to it?
+                      </span>
+                      <div className="flex items-center gap-1.5 ms-auto">
+                        <button type="button"
+                          onClick={(e) => { e.stopPropagation(); if (nameMatches.length === 1) { stageAlias(row.id, nameMatches[0]) } else { setActiveRowId(row.id); setPickerRowId(row.id); setPickerQuery(row.name) } }}
+                          className="btn btn-primary h-7 text-[11px]">Add barcode to existing</button>
+                        <button type="button"
+                          onClick={(e) => { e.stopPropagation(); chooseNewProduct(row.id) }}
+                          className="btn btn-default h-7 text-[11px]">Keep as new product</button>
                       </div>
                     </div>
                   )}
