@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest"
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from "vitest"
 import { startServer, stopServer, request } from "./helpers"
 import prisma from "../src/lib/prisma"
 import { signToken } from "../src/middleware/auth"
@@ -470,6 +470,59 @@ describe("POST /api/sync/push — server-authoritative receiving (POS-SYNC-RECEI
     const increments = vi.mocked(prisma.product.updateMany).mock.calls.map(c => (c[0].data as any).stock?.increment).filter((x: any) => x !== undefined)
     expect(increments).toEqual([4, 6])
     expect(vi.mocked(prisma.inventoryBatch.create)).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe("POST /api/sync/push — barcode alias resolution (POS-BARCODE-ALIAS-1)", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+  // findsByAliasOnly installs a persistent mockImplementation; clearAllMocks
+  // does NOT remove implementations, so reset findFirst after each test to keep
+  // it from leaking into later suites (e.g. sale-integrity relies on the default).
+  afterEach(() => { vi.mocked(prisma.product.findFirst).mockReset() })
+
+  // Primary-barcode lookups return null; only an alias lookup finds the product.
+  function findsByAliasOnly(id: number, syncId?: string) {
+    vi.mocked(prisma.product.findFirst).mockImplementation((args: any) => {
+      const where = args?.where ?? {}
+      if (where.barcodeAliases?.has) return Promise.resolve({ id, syncId: syncId ?? null } as any)
+      return Promise.resolve(null)
+    })
+  }
+
+  it("inventory/receive resolves the product by an ALIAS barcode and increments it", async () => {
+    findsByAliasOnly(7)
+    vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.inventoryBatch.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.stockMovement.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.stockMovement.create).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-alias-recv", entity: "inventory", action: "receive", payload: [{ id: "batch-alias", barcode: "ALIAS-B", batchNumber: "BA", quantityRemaining: 3, initialQuantity: 3 }] }] },
+    })
+
+    expect(res.status).toBe(200)
+    // stock incremented on the alias owner (id 7), not orphaned to product 0
+    expect(vi.mocked(prisma.product.updateMany)).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { tenantId: "t1", id: 7 }, data: expect.objectContaining({ stock: { increment: 3 } }) })
+    )
+  })
+
+  it("product/create with a barcode that is an existing ALIAS does not duplicate or overwrite the owner", async () => {
+    findsByAliasOnly(7, "ps-7")
+    vi.mocked(prisma.product.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.update).mockResolvedValue({} as any)
+
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-alias-create", entity: "product", action: "create", payload: [{ name: "Dupe Pepsi", barcode: "ALIAS-B", price: 2, cost: 1, category: "Bev", stock: 0 }] }] },
+    })
+
+    expect(res.status).toBe(200)
+    // same logical product → no new row, and the owner's fields are left intact
+    expect(vi.mocked(prisma.product.create)).not.toHaveBeenCalled()
+    expect(vi.mocked(prisma.product.update)).not.toHaveBeenCalled()
   })
 })
 

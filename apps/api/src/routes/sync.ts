@@ -632,10 +632,30 @@ async function processOperation(
     }
     const barcode = idOrProduct.barcode
     if (barcode) {
-      const product = await db.product.findFirst({ where: { tenantId, barcode }, select: { id: true } })
+      const product = await matchProductByBarcode(barcode)
       if (product) return product.id
     }
     return pid || 0
+  }
+
+  // POS-BARCODE-ALIAS-1: resolve a product by barcode considering BOTH the
+  // primary `barcode` and `barcodeAliases`. A barcode belongs to exactly one
+  // product (client + server guards keep aliases unique across products), so a
+  // primary match wins; otherwise fall back to an alias match. `via` lets
+  // callers avoid overwriting an owner's primary barcode on an alias match.
+  const matchProductByBarcode = async (barcode: string | null | undefined) => {
+    if (!barcode) return null
+    const byPrimary = await db.product.findFirst({
+      where: { tenantId, barcode: String(barcode) },
+      select: { id: true, syncId: true },
+    })
+    if (byPrimary) return { ...byPrimary, via: "primary" as const }
+    const byAlias = await db.product.findFirst({
+      where: { tenantId, barcodeAliases: { has: String(barcode) } },
+      select: { id: true, syncId: true },
+    })
+    if (byAlias) return { ...byAlias, via: "alias" as const }
+    return null
   }
 
   // registerId/deviceId are client-side attribution metadata the desktop app
@@ -699,7 +719,20 @@ async function processOperation(
           if (id !== undefined) {
             await db.product.updateMany({ where: { tenantId, id: id as number }, data: patch as any })
           } else if (patch.barcode) {
-            await db.product.updateMany({ where: { tenantId, barcode: patch.barcode as string }, data: patch as any })
+            // POS-BARCODE-ALIAS-1: legacy barcode-keyed update — match primary OR
+            // alias. When matched via an alias, drop `barcode` from the patch so
+            // the owner's primary barcode is never rewritten with the alias value.
+            const match = await matchProductByBarcode(patch.barcode as string)
+            if (match) {
+              const data =
+                match.via === "alias"
+                  ? (() => {
+                      const { barcode: _b, ...rest2 } = patch
+                      return rest2
+                    })()
+                  : patch
+              await db.product.updateMany({ where: { tenantId, id: match.id }, data: data as any })
+            }
           }
         }
       } else if (action === "create") {
@@ -726,14 +759,20 @@ async function processOperation(
           //    create a duplicate). Keep its existing syncId if it has one;
           //    otherwise assign the incoming/generated one.
           if (barcode) {
-            const byBarcode = await db.product.findFirst({ where: { tenantId, barcode }, select: { id: true, syncId: true } })
-            if (byBarcode) {
-              const finalSyncId = byBarcode.syncId ?? syncId ?? (IS_CLOUD ? randomUUID() : undefined)
+            const match = await matchProductByBarcode(barcode)
+            if (match?.via === "primary") {
+              const finalSyncId = match.syncId ?? syncId ?? (IS_CLOUD ? randomUUID() : undefined)
               const { id: _i, syncId: _s, ...patch } = rest as Record<string, unknown>
               await db.product.update({
-                where: { id: byBarcode.id },
+                where: { id: match.id },
                 data: { ...patch, ...(finalSyncId ? { syncId: finalSyncId } : {}) } as any,
               })
+              continue
+            }
+            if (match?.via === "alias") {
+              // POS-BARCODE-ALIAS-1: the barcode is already an ALIAS of another
+              // product → it is the same logical product. Skip creating a
+              // duplicate; do NOT overwrite the owner (its primary barcode differs).
               continue
             }
           }

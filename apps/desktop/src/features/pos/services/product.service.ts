@@ -754,22 +754,40 @@ export function mergeCategories(from: string, to: string): CleanupResult {
   return { changed, message: `Merged ${changed} products from "${from}" to "${to}"` }
 }
 
-/** Detect products with duplicate barcodes */
+/** Detect products with duplicate barcodes.
+ *
+ * POS-BARCODE-ALIAS-1: a barcode collision is counted across BOTH the primary
+ * `barcode` and every entry in `barcodeAliases`. A barcode is a conflict when
+ * more than one DISTINCT product uses it — as primary on one and alias on
+ * another, as an alias on two products, or as primary on two products. Each
+ * conflicting product is returned exactly once (a Set of ids per barcode makes
+ * self-references and 3+-way groups immune to count inflation). */
 export function detectDuplicateBarcodes() {
   const products = getProductsSync()
-  const groups = new Map<string, Array<{ id: number; name: string; barcode: string }>>()
-  for (const p of products) {
-    if (!p.barcode) continue
-    const group = groups.get(p.barcode)
-    if (group) group.push({ id: p.id, name: p.name, barcode: p.barcode })
-    else groups.set(p.barcode, [{ id: p.id, name: p.name, barcode: p.barcode }])
+
+  // Map every barcode (primary + aliases) → the set of product ids using it.
+  const productIdsByBarcode = new Map<string, Set<number>>()
+  const register = (barcode: string | undefined, id: number) => {
+    const normalized = normalizeBarcode(barcode ?? "")
+    if (!normalized) return
+    const ids = productIdsByBarcode.get(normalized) ?? new Set<number>()
+    ids.add(id)
+    productIdsByBarcode.set(normalized, ids)
   }
-  // Each product in a duplicated barcode group is listed exactly once —
-  // previously the first product in a 3+-way duplicate was re-pushed on every
-  // additional match (once per subsequent duplicate found), inflating the
-  // displayed "Dupes (N)" count without affecting the actual highlight/filter
-  // (which used a Set of barcodes, naturally immune to the duplication).
-  return [...groups.values()].filter((group) => group.length > 1).flat()
+  for (const p of products) {
+    register(p.barcode, p.id)
+    for (const alias of normalizeBarcodeList(p.barcodeAliases)) register(alias, p.id)
+  }
+
+  // Any barcode shared by 2+ distinct products marks all of them as conflicting.
+  const conflictedIds = new Set<number>()
+  for (const ids of productIdsByBarcode.values()) {
+    if (ids.size > 1) for (const id of ids) conflictedIds.add(id)
+  }
+
+  return products
+    .filter((p) => conflictedIds.has(p.id))
+    .map((p) => ({ id: p.id, name: p.name, barcode: p.barcode ?? "" }))
 }
 
 /** Detect products missing required fields */
