@@ -366,6 +366,7 @@ export const ar = {
   "desktop.nav.sales": "المبيعات",
   "desktop.nav.history": "السجل",
   "desktop.nav.receiving": "استلام مخزون",
+  "desktop.nav.stock": "المخزون والدفعات",
   "desktop.nav.batches": "الدفعات",
   "desktop.nav.debts": "الديون",
   "desktop.nav.orders": "الطلبات",

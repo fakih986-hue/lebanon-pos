@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router"
 import {
   BarChart3, Banknote, Boxes, Building2,
-  CircleDollarSign, PackagePlus, PanelLeftClose, PanelLeftOpen,
+  CircleDollarSign, Layers, PackagePlus, PanelLeftClose, PanelLeftOpen,
   PanelRightClose, PanelRightOpen, ReceiptText, ScanLine,
   SlidersHorizontal, Truck, UserCog, Users,
 } from "lucide-react"
@@ -34,6 +34,7 @@ export const menuItems: MenuItem[] = [
   { label: "Customers",  labelKey: "nav.customers",           path: "/customers",        icon: Users,             permission: "customers.manage", group: "Register"  },
   { label: "Products",   labelKey: "nav.products",            path: "/products",         icon: Boxes,             permission: "inventory.manage", group: "Inventory" },
   { label: "Receiving",  labelKey: "desktop.nav.receiving",   path: "/products/new",     icon: PackagePlus,       permission: "inventory.manage", group: "Inventory" },
+  { label: "Stock & Batches", labelKey: "desktop.nav.stock",  path: "/stock",            icon: Layers,            permission: "inventory.manage", group: "Inventory" },
   { label: "Suppliers",  labelKey: "desktop.nav.suppliers",   path: "/suppliers",        icon: Building2,         permission: "accounting.manage",group: "Inventory" },
   { label: "Dashboard",  labelKey: "nav.dashboard",           path: "/dashboard",        icon: BarChart3,         permission: "reports.view",     group: "Finance"   },
   { label: "Accounting", labelKey: "desktop.nav.accounting",  path: "/accounting",       icon: Banknote,          permission: "accounting.manage",group: "Finance"   },

@@ -366,6 +366,7 @@ export const en = {
   "desktop.nav.sales": "Sales",
   "desktop.nav.history": "History",
   "desktop.nav.receiving": "Receive stock",
+  "desktop.nav.stock": "Stock & Batches",
   "desktop.nav.batches": "Batches",
   "desktop.nav.debts": "Debts",
   "desktop.nav.orders": "Orders",

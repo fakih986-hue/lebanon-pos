@@ -765,6 +765,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
         <span className="font-semibold"> Stock count</span> (physical recount),
         <span className="font-semibold"> Reconciliation</span> (aggregate vs batches vs ledger, with safe repair — below), and
         <span className="font-semibold"> Recent movements</span>. To add new stock, use <span className="font-semibold">Receive stock</span> in the sidebar.
+        {" "}Prefer a dedicated screen? Open <span className="font-semibold">Stock &amp; Batches</span> in the sidebar.
       </div>
       <StockControlPanel
         products={products}

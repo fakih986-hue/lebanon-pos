@@ -28,6 +28,7 @@ import CustomersPage from "../pages/customers/CustomersPage"
 import DashboardPage from "../pages/dashboard/DashboardPage"
 import ProductsPage from "../pages/products/ProductsPage"
 import ProductReceivePage from "../pages/products/ProductReceivePage"
+import StockPage from "../pages/stock/StockPage"
 import SalesPage from "../pages/sales/SalesPage"
 import StaffPage from "../pages/staff/StaffPage"
 import SettingsPage from "../pages/settings/SettingsPage"
@@ -207,6 +208,17 @@ const router = createBrowserRouter([
       <Shell>
         <RequirePermission permission="inventory.manage">
           <ProductsPage initialTab="Control" />
+        </RequirePermission>
+      </Shell>
+    ),
+  },
+
+  {
+    path: "/stock",
+    element: (
+      <Shell>
+        <RequirePermission permission="inventory.manage">
+          <StockPage />
         </RequirePermission>
       </Shell>
     ),
