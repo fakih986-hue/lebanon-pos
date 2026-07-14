@@ -702,7 +702,7 @@ export const en = {
   "pos.stock.auto_lot": "Auto lot",
   "pos.note": "Note",
   "pos.stock.optional_reason_detail": "Optional reason detail",
-  "pos.stock.post": "Post",
+  "pos.stock.post": "Apply adjustment",
   "pos.stock.no_corrections": "Stock corrections will be listed here.",
   "pos.stock.physical_count_title": "Physical count",
   "pos.stock.physical_count_desc": "Count shelf stock and post only the variance.",

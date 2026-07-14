@@ -3,6 +3,7 @@ import { Plus, Pencil, Truck } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 import { getApiUrl, getAuthToken } from "../../features/pos/services/sync.service"
 import { showToast } from "../../features/pos/services/toast.service"
+import ConfirmDialog from "../../components/ConfirmDialog"
 
 type Driver = { id: string; name: string; mobile: string; code: string; active: boolean; createdAt: string }
 
@@ -16,6 +17,8 @@ export default function DriversPage() {
   const [mobile, setMobile] = useState("")
   const [code, setCode] = useState("")
   const [pin, setPin] = useState("")
+  // POS-UX-IA-1A: confirm before DEACTIVATING a driver (enabling stays instant)
+  const [deactivateTarget, setDeactivateTarget] = useState<Driver | null>(null)
 
   useEffect(() => { load() }, [])
 
@@ -145,7 +148,7 @@ export default function DriversPage() {
                   <td className="px-4 py-3 text-zinc-500 font-mono">{d.code}</td>
                   <td className="px-4 py-3 text-zinc-500">{d.mobile || "—"}</td>
                   <td className="px-4 py-3 text-center">
-                    <button onClick={() => toggleActive(d)}
+                    <button onClick={() => { if (d.active) setDeactivateTarget(d); else toggleActive(d) }}
                       aria-pressed={d.active}
                       aria-label={`${d.name}: ${d.active ? t("drivers.active") : t("drivers.inactive")}`}
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${d.active ? "chip-success" : "chip-neutral"}`}>
@@ -166,6 +169,16 @@ export default function DriversPage() {
           </table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deactivateTarget}
+        title={t("drivers.inactive")}
+        confirmDestructive
+        onCancel={() => setDeactivateTarget(null)}
+        onConfirm={() => { if (deactivateTarget) toggleActive(deactivateTarget); setDeactivateTarget(null) }}
+      >
+        {deactivateTarget ? `Deactivate driver "${deactivateTarget.name}"? They will no longer be able to log in or receive deliveries until re-enabled.` : ""}
+      </ConfirmDialog>
     </div>
   )
 }

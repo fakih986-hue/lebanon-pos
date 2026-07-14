@@ -123,6 +123,10 @@ export default function SettingsPage() {
   // ── Hub LAN mode ──
   const [bindHost, setBindHost] = useState("127.0.0.1")
   const [showLanConfirm, setShowLanConfirm] = useState(false)
+  // POS-UX-IA-1A: confirm the two data-danger actions (backup export exposes
+  // secrets; restore overwrites local data). Grouped into a Danger zone below.
+  const [showExportConfirm, setShowExportConfirm] = useState(false)
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false)
   const [lanIp, setLanIp] = useState("")
   const [copySuccess, setCopySuccess] = useState(false)
   const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([])
@@ -1775,23 +1779,30 @@ export default function SettingsPage() {
               </button>
             </div>
 
-            <button
-              type="button"
-              onClick={exportData}
-              className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
-            >
-              <Download size={17} />
-              Export Full Data Backup (JSON)
-            </button>
+            {/* POS-UX-IA-1A: Danger zone — grouped + confirmation-gated data actions */}
+            <div className="mt-4 rounded-lg border-2 p-4" style={{ borderColor: "var(--danger-border, var(--danger))", background: "var(--danger-soft)" }}>
+              <p className="text-[13px] font-bold mb-1" style={{ color: "var(--danger-text)" }}>⚠️ Danger zone</p>
+              <p className="text-[12px] mb-3" style={{ color: "var(--text-2)" }}>
+                These actions expose or overwrite local data. Use with care.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowExportConfirm(true)}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                <Download size={17} />
+                Export Full Data Backup (JSON)
+              </button>
 
-            <button
-              type="button"
-                onClick={() => void handleRestoreFromIndexedDB()}
-              className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
-            >
-              <Upload size={16} />
-              Restore from IndexedDB
-            </button>
+              <button
+                type="button"
+                onClick={() => setShowRestoreConfirm(true)}
+                className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+              >
+                <Upload size={16} />
+                Restore from IndexedDB
+              </button>
+            </div>
 
             <div className="mt-3 rounded-lg border border-dashed border-zinc-300 p-4 text-sm font-medium text-zinc-500">
               <div className="mb-2 flex items-center gap-2 font-bold text-zinc-700">
@@ -1801,6 +1812,28 @@ export default function SettingsPage() {
               Database import belongs in the production backend. This preview
               can already export clean JSON data for migration.
             </div>
+
+            <ConfirmDialog
+              open={showExportConfirm}
+              title="Export full data backup?"
+              confirmLabel="Export"
+              confirmDestructive
+              onConfirm={() => { setShowExportConfirm(false); exportData() }}
+              onCancel={() => setShowExportConfirm(false)}
+            >
+              This downloads a JSON file containing ALL local data — including staff PINs and access tokens. Store it securely and delete it when no longer needed.
+            </ConfirmDialog>
+
+            <ConfirmDialog
+              open={showRestoreConfirm}
+              title="Restore from IndexedDB?"
+              confirmLabel="Restore"
+              confirmDestructive
+              onConfirm={() => { setShowRestoreConfirm(false); void handleRestoreFromIndexedDB() }}
+              onCancel={() => setShowRestoreConfirm(false)}
+            >
+              This overwrites the current local data with the last IndexedDB snapshot. Any unsynced local changes will be lost.
+            </ConfirmDialog>
           </section>
           ) : null}
 

@@ -6,6 +6,7 @@ import { useHotkeys } from "../../hooks/useHotkey"
 import Spinner from "../../components/ui/Spinner"
 import EmptyState from "../../components/ui/EmptyState"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
+import ConfirmDialog from "../../components/ConfirmDialog"
 import DriversPage from "../drivers/DriversPage"
 import { formatCurrency } from "../../features/pos/lib/currency"
 import { showToast } from "../../features/pos/services/toast.service"
@@ -56,6 +57,8 @@ export default function DeliveryPage() {
   const [statusFilter, setStatusFilter] = useState("All")
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"Orders" | "Drivers">("Orders")
+  // POS-UX-IA-1A: confirm before cancelling a delivery order (was a 1-click, no-confirm destructive action)
+  const [cancelTarget, setCancelTarget] = useState<DeliveryOrder | null>(null)
   const debouncedSearch = useDebounce(search, 200)
 
   useHotkeys([{ key: "f", modifiers: ["ctrl"], handler: () => document.getElementById("deliverySearch")?.focus() }])
@@ -228,7 +231,7 @@ export default function DeliveryPage() {
                           {t("delivery.mark_as")} {nextStatus(order.status)}
                         </button>
                       )}
-                      <button onClick={() => updateStatus(order.id, "Cancelled")}
+                      <button onClick={() => setCancelTarget(order)}
                         aria-label={`Cancel order ${order.orderNumber}`}
                         className="btn-danger btn-sm text-xs">
                         {t("delivery.cancel_order")}
@@ -243,6 +246,16 @@ export default function DeliveryPage() {
       )}
       </>
       )}
+
+      <ConfirmDialog
+        open={!!cancelTarget}
+        title={t("delivery.cancel_order")}
+        confirmDestructive
+        onCancel={() => setCancelTarget(null)}
+        onConfirm={() => { if (cancelTarget) updateStatus(cancelTarget.id, "Cancelled"); setCancelTarget(null) }}
+      >
+        {cancelTarget ? `Cancel order ${cancelTarget.orderNumber} for ${cancelTarget.customerName}? This restores any reserved stock and cannot be undone.` : ""}
+      </ConfirmDialog>
     </div>
   )
 }

@@ -702,7 +702,7 @@ export const ar = {
   "pos.stock.auto_lot": "دفعة تلقائية",
   "pos.note": "ملاحظة",
   "pos.stock.optional_reason_detail": "تفاصيل السبب (اختياري)",
-  "pos.stock.post": "نشر",
+  "pos.stock.post": "تطبيق التعديل",
   "pos.stock.no_corrections": "سيتم عرض تصحيحات المخزون هنا.",
   "pos.stock.physical_count_title": "الجرد الفعلي",
   "pos.stock.physical_count_desc": "عد المخزون على الرف ونشر الفرق فقط.",

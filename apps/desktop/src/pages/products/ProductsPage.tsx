@@ -835,7 +835,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
         <div className="flex flex-wrap gap-2 px-5 pt-4">
           <div className="relative flex-1 min-w-48">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-3)" }} />
-            <input placeholder="Search lots by product, barcode, batch, supplier..."
+            <input placeholder="Search batches by product, barcode, batch, supplier..."
               value={lotSearch} onChange={e => setLotSearch(e.target.value)}
               className="input w-full pl-8 text-[13px]" />
           </div>
