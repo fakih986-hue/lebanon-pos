@@ -19,12 +19,7 @@ import {
   getInventoryBatches,
   subscribeInventoryBatches,
 } from "../../features/pos/services/inventoryBatch.service"
-import {
-  getStockAdjustments,
-  recordStockAdjustment,
-  subscribeStockAdjustments,
-type StockAdjustmentReason,
-} from "../../features/pos/services/inventoryAdjustment.service"
+import { useStockControl } from "../../features/pos/hooks/useStockControl"
 import {
   createProduct,
   deleteProduct,
@@ -37,10 +32,8 @@ import {
   subscribeProducts,
   updateProduct,
   detectDuplicateBarcodes,
-  getReconciliationIssues,
   type ProductSortKey,
   type SortDir,
-  type ReconciliationIssue,
 } from "../../features/pos/services/product.service"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import { subscribeSales } from "../../features/pos/services/sales.service"
@@ -56,14 +49,6 @@ import {
   getReorderSuggestions,
   groupReorderSuggestionsBySupplier,
 } from "../../features/pos/services/stock.service"
-import {
-  completeStockCount,
-  getStockCounts,
-  startStockCount,
-  subscribeStockCounts,
-  updateStockCountLine,
-  type StockCountSession,
-} from "../../features/pos/services/stockCount.service"
 import { showToast } from "../../features/pos/services/toast.service"
 import { useI18n } from "@lebanonpos/shared"
 type ProductWorkspaceView = "Catalog" | "Categories" | "Alerts" | "Control" | "Lots" | "Setup"
@@ -118,27 +103,9 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   const [categoryTo, setCategoryTo] = useState("")
   const [generatingImages, setGeneratingImages] = useState(false)
   const [genImageStatus, setGenImageStatus] = useState<string | null>(null)
-  const [adjustmentProductId, setAdjustmentProductId] = useState<number | null>(
-    null
-  )
-  const [adjustmentMode, setAdjustmentMode] = useState<"Add" | "Remove">(
-    "Remove"
-  )
-  const [adjustmentQuantity, setAdjustmentQuantity] = useState("")
-  const [adjustmentReason, setAdjustmentReason] =
-    useState<StockAdjustmentReason>("Damage")
-  const [adjustmentBatchId, setAdjustmentBatchId] = useState("")
-  const [adjustmentNote, setAdjustmentNote] = useState("")
-  const [stockCounts, setStockCounts] =
-    useState<StockCountSession[]>(getStockCounts())
-  const [countSearch, setCountSearch] = useState("")
-  const debouncedCountSearch = useDebounce(countSearch, 200)
-  const [countProductId, setCountProductId] = useState<number | null>(null)
-  const [countedQuantity, setCountedQuantity] = useState("")
   const [activeProductView, setActiveProductView] =
     useState<ProductWorkspaceView>(initialTab ?? "Catalog")
   const [batchVersion, setBatchVersion] = useState(0)
-  const [controlVersion, setControlVersion] = useState(0)
   const [deleteProductId, setDeleteProductId] = useState<number | null>(null)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [editName, setEditName] = useState("")
@@ -203,13 +170,6 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     const unsubscribeBatches = subscribeInventoryBatches(() =>
       setBatchVersion((version) => version + 1)
     )
-    const unsubscribeAdjustments = subscribeStockAdjustments(() =>
-      setControlVersion((version) => version + 1)
-    )
-    const unsubscribeCounts = subscribeStockCounts(() => {
-      setStockCounts(getStockCounts())
-      setControlVersion((version) => version + 1)
-    })
 
     return () => {
       active = false
@@ -217,8 +177,6 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       unsubscribeSuppliers()
       unsubscribeSales()
       unsubscribeBatches()
-      unsubscribeAdjustments()
-      unsubscribeCounts()
     }
   }, [])
 
@@ -261,39 +219,16 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   }, [products, debouncedSearch, selectedCategory, quickView, sortKey, sortDir])
 
   const duplicateBarcodes = useMemo(() => detectDuplicateBarcodes(), [products])
-  const [reconIssues, setReconIssues] = useState<ReconciliationIssue[]>([])
-  const [reconLoading, setReconLoading] = useState(false)
   const selectedProduct =
     products.find((product) => product.id === selectedProductId) ?? products[0]
-  const adjustmentProduct =
-    products.find((product) => product.id === adjustmentProductId) ??
-    selectedProduct
+  // POS-UX-IA-2B.2: Stock tools (adjust / count / reconciliation) state + logic
+  // live in a portable hook — the future /stock route boundary. Still mounted
+  // here inside ProductsPage; behavior unchanged.
+  const stock = useStockControl(products, selectedProduct)
   const reorderSuggestions = useMemo(
     () => getReorderSuggestions(products),
     [products, batchVersion]
   )
-  const activeStockCount = useMemo(
-    () => stockCounts.find((session) => session.status === "Draft"),
-    [stockCounts, controlVersion]
-  )
-  const recentAdjustments = useMemo(
-    () => getStockAdjustments().slice(0, 6),
-    [controlVersion, products]
-  )
-  const countLines = useMemo(() => {
-    const query = countSearch.trim().toLowerCase()
-    const lines = activeStockCount?.lines ?? []
-
-    return lines
-      .filter(
-        (line) =>
-          !query ||
-          line.productName.toLowerCase().includes(query) ||
-          line.barcode.includes(normalizeBarcode(query)) ||
-          line.category.toLowerCase().includes(query)
-      )
-      .slice(0, 7)
-      }, [activeStockCount, debouncedCountSearch])
   const reorderGroups = useMemo(
     () => groupReorderSuggestionsBySupplier(reorderSuggestions),
     [reorderSuggestions]
@@ -305,18 +240,6 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
   const expiryAlerts = useMemo(() => getExpiryAlerts(products, 30), [products])
   const deadStockItems = useMemo(() => getDeadStockItems(products, 60), [products])
   const promoSuggestions = useMemo(() => getPromoSuggestions(products), [products])
-  const openBatches = useMemo(
-    () =>
-      getInventoryBatches()
-        .filter((batch) => batch.quantityRemaining > 0)
-        .sort((a, b) => {
-          const aExpiry = a.expiryDate || "9999-12-31"
-          const bExpiry = b.expiryDate || "9999-12-31"
-
-          return aExpiry.localeCompare(bExpiry)
-        }),
-    [products]
-  )
 
   const filteredLots = useMemo(() => {
     const all = getInventoryBatches()
@@ -353,13 +276,6 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     if (diffDays <= 30) return { label: `${diffDays}d`, bg: "var(--warning-soft)", fg: "var(--warning-text)" }
     return { label: `${diffDays}d`, bg: "var(--success-soft)", fg: "var(--success-text)" }
   }
-  const selectedProductBatches = useMemo(
-    () =>
-      openBatches.filter(
-        (batch) => batch.productId === adjustmentProduct?.id
-      ),
-    [adjustmentProduct?.id, openBatches]
-  )
   const urgentReorders = reorderSuggestions.filter(
     (suggestion) => suggestion.suggestedQuantity > 0
   )
@@ -396,12 +312,12 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     {
       value: "Control",
       label: "Stock tools",
-      count: activeStockCount ? 1 : recentAdjustments.length,
+      count: stock.activeStockCount ? 1 : stock.recentAdjustments.length,
     },
     {
       value: "Lots",
       label: "Batches",
-      count: openBatches.length,
+      count: stock.openBatches.length,
     },
     {
       value: "Setup",
@@ -424,8 +340,6 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     setBarcodeAliases((selectedProduct.barcodeAliases ?? []).join("\n"))
     setIsParent(selectedProduct.isParent ?? false)
     setVariantName(selectedProduct.variantName ?? "")
-    setAdjustmentProductId((currentId) => currentId ?? selectedProduct.id)
-    setCountProductId((currentId) => currentId ?? selectedProduct.id)
   }, [selectedProduct])
 
   function buildSupplierOrderMessage(
@@ -658,97 +572,6 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
     showToast("Category renamed.")
   }
 
-  function saveStockAdjustment() {
-    if (!adjustmentProduct) {
-      showToast("Choose a product before adjusting stock.", "error")
-      return
-    }
-
-    const quantity = normalizeNumber(adjustmentQuantity)
-
-    if (quantity <= 0) {
-      showToast("Enter the adjustment quantity.", "error")
-      return
-    }
-
-    const signedQuantity = adjustmentMode === "Add" ? quantity : -quantity
-    const adjustment = recordStockAdjustment({
-      productId: adjustmentProduct.id,
-      quantityChange: signedQuantity,
-      reason: adjustmentReason,
-      batchId: adjustmentBatchId || undefined,
-      note: adjustmentNote,
-    })
-
-    if (!adjustment) {
-      showToast("Adjustment could not be posted.", "error")
-      return
-    }
-
-    setAdjustmentQuantity("")
-    setAdjustmentBatchId("")
-    setAdjustmentNote("")
-    setControlVersion((version) => version + 1)
-    showToast(
-      `${adjustment.adjustmentNumber} posted for ${adjustment.productName}.`
-    )
-  }
-
-  function beginStockCount() {
-    const session = startStockCount()
-
-    setStockCounts(getStockCounts())
-    showToast(`${session.countNumber} is ready for counting.`)
-  }
-
-  function saveCountLine() {
-    if (!activeStockCount || !countProductId) {
-      showToast("Start a count and choose a product.", "error")
-      return
-    }
-
-    const counted = normalizeNumber(countedQuantity)
-    const session = updateStockCountLine(
-      activeStockCount.id,
-      countProductId,
-      counted
-    )
-
-    setStockCounts(getStockCounts())
-    setCountedQuantity("")
-    showToast(
-      session
-        ? `${session.countNumber} count line saved.`
-        : "Count line could not be saved."
-    )
-  }
-
-  function postStockCount() {
-    if (!activeStockCount) {
-      showToast("Start a physical count first.", "error")
-      return
-    }
-
-    const countedLines = activeStockCount.lines.filter(
-      (line) => typeof line.countedQuantity === "number"
-    )
-
-    if (countedLines.length === 0) {
-      showToast("Enter at least one counted quantity before posting.", "error")
-      return
-    }
-
-    const completed = completeStockCount(activeStockCount.id)
-
-    setStockCounts(getStockCounts())
-    setControlVersion((version) => version + 1)
-    showToast(
-      completed
-        ? `${completed.countNumber} completed and variances posted.`
-        : "Physical count could not be completed."
-    )
-  }
-
   return (
     <main className="min-h-0 flex-1 overflow-y-auto app-page">
       {isLoading ? (
@@ -927,7 +750,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
         promoSuggestions={promoSuggestions}
         buildSupplierOrderMessage={buildSupplierOrderMessage}
         copySupplierOrder={copySupplierOrder}
-        onWriteOffProduct={(id) => { setAdjustmentProductId(id); setAdjustmentMode("Remove"); setActiveProductView("Control") }}
+        onWriteOffProduct={(id) => { stock.setAdjustmentProductId(id); stock.setAdjustmentMode("Remove"); setActiveProductView("Control") }}
         onViewProduct={(id) => { setSelectedProductId(id); setActiveProductView("Lots") }}
         onReceiveProduct={(id) => { window.location.href = "/products/new" }}
       />
@@ -945,33 +768,33 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
       </div>
       <StockControlPanel
         products={products}
-        adjustmentProduct={adjustmentProduct}
-        adjustmentProductId={adjustmentProductId}
-        onAdjustmentProductIdChange={setAdjustmentProductId}
-        adjustmentMode={adjustmentMode}
-        onAdjustmentModeChange={setAdjustmentMode}
-        adjustmentQuantity={adjustmentQuantity}
-        onAdjustmentQuantityChange={setAdjustmentQuantity}
-        adjustmentReason={adjustmentReason}
-        onAdjustmentReasonChange={setAdjustmentReason}
-        adjustmentBatchId={adjustmentBatchId}
-        onAdjustmentBatchIdChange={setAdjustmentBatchId}
-        adjustmentNote={adjustmentNote}
-        onAdjustmentNoteChange={setAdjustmentNote}
-        selectedProductBatches={selectedProductBatches}
-        recentAdjustments={recentAdjustments}
-        activeStockCount={activeStockCount}
-        countProductId={countProductId}
-        onCountProductIdChange={setCountProductId}
-        countedQuantity={countedQuantity}
-        onCountedQuantityChange={setCountedQuantity}
-        countSearch={countSearch}
-        onCountSearchChange={setCountSearch}
-        countLines={countLines}
-        onSaveStockAdjustment={saveStockAdjustment}
-        onBeginStockCount={beginStockCount}
-        onSaveCountLine={saveCountLine}
-        onPostStockCount={postStockCount}
+        adjustmentProduct={stock.adjustmentProduct}
+        adjustmentProductId={stock.adjustmentProductId}
+        onAdjustmentProductIdChange={stock.setAdjustmentProductId}
+        adjustmentMode={stock.adjustmentMode}
+        onAdjustmentModeChange={stock.setAdjustmentMode}
+        adjustmentQuantity={stock.adjustmentQuantity}
+        onAdjustmentQuantityChange={stock.setAdjustmentQuantity}
+        adjustmentReason={stock.adjustmentReason}
+        onAdjustmentReasonChange={stock.setAdjustmentReason}
+        adjustmentBatchId={stock.adjustmentBatchId}
+        onAdjustmentBatchIdChange={stock.setAdjustmentBatchId}
+        adjustmentNote={stock.adjustmentNote}
+        onAdjustmentNoteChange={stock.setAdjustmentNote}
+        selectedProductBatches={stock.selectedProductBatches}
+        recentAdjustments={stock.recentAdjustments}
+        activeStockCount={stock.activeStockCount}
+        countProductId={stock.countProductId}
+        onCountProductIdChange={stock.setCountProductId}
+        countedQuantity={stock.countedQuantity}
+        onCountedQuantityChange={stock.setCountedQuantity}
+        countSearch={stock.countSearch}
+        onCountSearchChange={stock.setCountSearch}
+        countLines={stock.countLines}
+        onSaveStockAdjustment={stock.saveStockAdjustment}
+        onBeginStockCount={stock.beginStockCount}
+        onSaveCountLine={stock.saveCountLine}
+        onPostStockCount={stock.postStockCount}
       />
       {/* Reconciliation section */}
       <section className="card mt-5 overflow-hidden">
@@ -982,18 +805,13 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
               Detect stock vs batch mismatches, orphan batches, and data integrity issues.
             </p>
           </div>
-          <button onClick={async () => {
-            setReconLoading(true)
-            const issues = await getReconciliationIssues()
-            setReconIssues(issues)
-            setReconLoading(false)
-          }}
-            className="btn btn-default btn-sm" disabled={reconLoading}>
-            {reconLoading ? "Scanning..." : reconIssues.length > 0 ? `Refresh` : "Run Scan"}
+          <button onClick={stock.runReconScan}
+            className="btn btn-default btn-sm" disabled={stock.reconLoading}>
+            {stock.reconLoading ? "Scanning..." : stock.reconIssues.length > 0 ? `Refresh` : "Run Scan"}
           </button>
         </div>
 
-        {reconIssues.length > 0 ? (
+        {stock.reconIssues.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full border-separate border-spacing-0 text-[13px]">
               <thead>
@@ -1005,7 +823,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
                 </tr>
               </thead>
               <tbody>
-                {reconIssues.map((issue, i) => (
+                {stock.reconIssues.map((issue, i) => (
                   <tr key={i} className="t-row">
                     <td className="border-b px-4 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>
                       {issue.productName}
@@ -1027,7 +845,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductWorks
               </tbody>
             </table>
           </div>
-        ) : reconIssues.length === 0 && !reconLoading ? (
+        ) : stock.reconIssues.length === 0 && !stock.reconLoading ? (
           <div className="px-5 py-12 text-center text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
             Click 'Run Scan' to check inventory integrity.
           </div>
