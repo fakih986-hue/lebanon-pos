@@ -22,6 +22,11 @@ export type ProductReceiveInput = {
   supplierId?: string
   supplierName?: string
   expiryDate?: string
+  // POS-RECEIVE-UX-1A: staged "add barcode to existing product" decision. When
+  // set, `barcode` is appended as an alias of this product (conflict-checked)
+  // and `stock` is received into that product — NOT matched-or-created. Unset =
+  // the existing match-or-create behavior (fully back-compatible).
+  attachAliasToProductId?: number
 }
 
 export type ReceiveResult = {
@@ -200,6 +205,65 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
     const barcode = normalizeBarcode(entry.barcode)
     const name = normalizeName(entry.name)
     const category = normalizeName(entry.category)
+
+    // ── POS-RECEIVE-UX-1A: staged alias decision ──────────────────────────
+    // Attach `barcode` as an alias of an existing product and receive `stock`
+    // into it. Stock still flows only through the batch (inventory/receive);
+    // the target's price/cost are NOT changed (aliases share the one price).
+    if (entry.attachAliasToProductId != null) {
+      if (!barcode) {
+        rejectedCount++
+        errors.push(`Entry #${index + 1}: barcode is missing`)
+        return
+      }
+      if (entry.stock <= 0) {
+        rejectedCount++
+        errors.push(`Entry #${index + 1}: quantity must be greater than 0`)
+        return
+      }
+      const targetIndex = nextProducts.findIndex(
+        (p) => p.id === entry.attachAliasToProductId
+      )
+      if (targetIndex < 0) {
+        rejectedCount++
+        errors.push(`Entry #${index + 1}: target product not found`)
+        return
+      }
+      // Conflict: the barcode already belongs to a DIFFERENT product.
+      const other = nextProducts.find(
+        (p) => p.id !== entry.attachAliasToProductId && productHasBarcode(p, barcode)
+      )
+      if (other) {
+        rejectedCount++
+        errors.push(`"${barcode}" already used by "${other.name}"`)
+        return
+      }
+      const target = nextProducts[targetIndex]
+      // Append the alias only if it isn't already the primary or an alias.
+      if (
+        barcode !== target.barcode &&
+        !normalizeBarcodeList(target.barcodeAliases).includes(barcode)
+      ) {
+        nextProducts[targetIndex] = {
+          ...target,
+          barcodeAliases: [...normalizeBarcodeList(target.barcodeAliases), barcode],
+        }
+      }
+      const updatedTarget = nextProducts[targetIndex]
+      batchInputs.push({
+        productId: updatedTarget.id,
+        productSyncId: updatedTarget.syncId ?? undefined,
+        productName: updatedTarget.name,
+        barcode: updatedTarget.barcode,
+        quantity: entry.stock,
+        unitCost: entry.cost,
+        unitPrice: entry.price,
+        expiryDate: entry.expiryDate,
+        supplierId: entry.supplierId,
+        supplierName: entry.supplierName,
+      })
+      return
+    }
 
     if (!barcode) {
       rejectedCount++

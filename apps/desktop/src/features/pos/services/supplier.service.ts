@@ -602,6 +602,8 @@ export async function receiveAndRecord(
     name: string; barcode: string; category: string; quantity: number
     cost: number; price: number; reorderPoint?: number; reorderQuantity?: number
     expiryDate?: string
+    // POS-RECEIVE-UX-1A: staged "add barcode to existing product" decision.
+    attachAliasToProductId?: number
   }>,
   context?: ReceivingContext
 ): Promise<ReceivingSummary> {
@@ -657,6 +659,7 @@ export async function receiveAndRecord(
       reorderPoint: e.reorderPoint, reorderQuantity: e.reorderQuantity,
       expiryDate: e.expiryDate,
       supplierId: context?.supplierId, supplierName: context?.supplierName,
+      attachAliasToProductId: e.attachAliasToProductId,
     }))
   )
 

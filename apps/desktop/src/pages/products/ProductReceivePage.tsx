@@ -19,8 +19,7 @@ import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import { createId } from "../../features/pos/lib/storage"
 import {
   findProductByBarcode, generateProductBarcode,
-  getProducts, receiveProducts, updateProduct,
-  parseSpreadsheetPaste,
+  getProducts, parseSpreadsheetPaste, productMatchesSearch,
 } from "../../features/pos/services/product.service"
 import { recordAuditEvent } from "../../features/pos/services/security.service"
 import { getSettings } from "../../features/pos/services/settings.service"
@@ -35,10 +34,18 @@ import type { Product, ProductAccent } from "../../features/pos/types/product"
 import { showToast } from "../../features/pos/services/toast.service"
 import { useI18n } from "@lebanonpos/shared"
 
+// POS-RECEIVE-UX-1A: every row carries an explicit decision. `mode` is chosen,
+// not inferred from empty fields. `scannedBarcode` preserves the exact code that
+// was scanned (which may be an alias of a matched product); `targetProductId` is
+// the product an `alias` row attaches its barcode to. No write happens until
+// Save Batch.
+type ReceiveRowMode = "matched" | "new" | "alias" | "conflict"
 type BatchRow = {
   id: string; name: string; category: string; quantity: number
   cost: number; price: number; reorderPoint: number; reorderQuantity: number
   expiryDate: string; barcode: string; labels: number; accent: ProductAccent
+  mode: ReceiveRowMode; scannedBarcode: string; targetProductId?: number
+  decisionConfirmed?: boolean
 }
 type LabelSize = "40x25" | "50x30" | "58x35"
 
@@ -58,11 +65,16 @@ const accents: ProductAccent[] = ["emerald", "cyan", "amber", "rose", "violet", 
 const RECEIVE_CAMERA_READER_ID = "lebanonpos-receive-camera-reader"
 
 function createRow(defaults?: Partial<BatchRow>): BatchRow {
-  return { id: createId(), name: "", category: "", quantity: 0, cost: 0, price: 0, reorderPoint: 10, reorderQuantity: 20, expiryDate: "", barcode: "", labels: 1, accent: accents[Math.floor(Math.random() * accents.length)], ...defaults }
+  return { id: createId(), name: "", category: "", quantity: 0, cost: 0, price: 0, reorderPoint: 10, reorderQuantity: 20, expiryDate: "", barcode: "", labels: 1, accent: accents[Math.floor(Math.random() * accents.length)], mode: "new", scannedBarcode: "", targetProductId: undefined, decisionConfirmed: false, ...defaults }
 }
 function escapeHtml(v: string) { return v.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;") }
 function normalizeNumber(v: string) { const n = Number(v); return Number.isFinite(n) ? n : 0 }
-function isRowReady(row: BatchRow) { return row.name.trim().length > 0 && row.barcode.trim().length > 0 && row.quantity > 0 }
+function isRowReady(row: BatchRow) {
+  // alias rows are ready once a target is picked + a scanned barcode + qty; the
+  // name is mirrored from the target so it is always present.
+  if (row.mode === "alias") return !!row.targetProductId && row.scannedBarcode.trim().length > 0 && row.quantity > 0
+  return row.name.trim().length > 0 && row.barcode.trim().length > 0 && row.quantity > 0
+}
 
 export default function ProductReceivePage() {
   const { t } = useI18n()
@@ -71,6 +83,9 @@ export default function ProductReceivePage() {
   const [suppliers, setSuppliers] = useState<SupplierLedger[]>(getSupplierLedger())
   const [rows, setRows] = useState<BatchRow[]>([createRow()])
   const [activeRowId, setActiveRowId] = useState(rows[0].id)
+  // POS-RECEIVE-UX-1A: searchable "add to existing product" picker (per row).
+  const [pickerRowId, setPickerRowId] = useState<string | null>(null)
+  const [pickerQuery, setPickerQuery] = useState("")
   const [cameraStatus, setCameraStatus] = useState("")
   const [cameraEngine, setCameraEngine] = useState<"native" | "html5" | null>(null)
   const [labelSize, setLabelSize] = useState<LabelSize>("50x30")
@@ -128,8 +143,14 @@ export default function ProductReceivePage() {
   }
   function fillRowFromBarcode(row: BatchRow, barcode: string): BatchRow {
     const product = findProductByBarcode(barcode)
-    if (!product) return { ...row, barcode, name: "", category: "Pantry", price: 0, cost: 0, reorderPoint: 10, reorderQuantity: 20, expiryDate: "" }
-    return { ...row, name: product.name, category: product.category, price: product.price, cost: product.cost, reorderPoint: product.reorderPoint ?? 10, reorderQuantity: product.reorderQuantity ?? 20, expiryDate: product.expiryDate ?? "", barcode: product.barcode, accent: product.accent }
+    if (!product) {
+      // Unknown → default to a NEW product; the decision strip lets staff switch
+      // to "add barcode to existing". Preserve the scanned code for context.
+      return { ...row, barcode, scannedBarcode: barcode, mode: "new", targetProductId: undefined, decisionConfirmed: false, name: "", category: "Pantry", price: 0, cost: 0, reorderPoint: 10, reorderQuantity: 20, expiryDate: "" }
+    }
+    // Known (primary OR alias) → restock. Keep `scannedBarcode` as the exact code
+    // scanned (may be an alias) while `barcode` holds the product's primary.
+    return { ...row, mode: "matched", targetProductId: undefined, scannedBarcode: barcode, name: product.name, category: product.category, price: product.price, cost: product.cost, reorderPoint: product.reorderPoint ?? 10, reorderQuantity: product.reorderQuantity ?? 20, expiryDate: product.expiryDate ?? "", barcode: product.barcode, accent: product.accent }
   }
   function applyBarcodeToActiveRow(barcode: string) {
     const clean = barcode.trim().replace(/\s+/g, "")
@@ -139,7 +160,7 @@ export default function ProductReceivePage() {
     showToast(product ? `Loaded: ${product.name}` : `New barcode: ${clean}`)
   }
   function handleBarcodeInput(rowId: string, value: string) {
-    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, barcode: value }))
+    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, barcode: value, scannedBarcode: value }))
     if (activeRowId !== rowId) return
     const clean = value.trim().replace(/\s+/g, "")
     if (!clean) return
@@ -148,8 +169,46 @@ export default function ProductReceivePage() {
       setRows((rows) => rows.map((r) => r.id !== rowId ? r : fillRowFromBarcode(r, clean)))
       return
     }
-    // Barcode not in local DB — try Open Food Facts
+    // Unknown barcode — keep it as a new-product decision (unless the user has
+    // already staged an alias for this row) and try an external catalog lookup.
+    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, scannedBarcode: clean, mode: r.mode === "alias" ? "alias" : "new" }))
     lookupBarcode(rowId, clean)
+  }
+  // POS-RECEIVE-UX-1A decision helpers — all staged, no writes until Save Batch.
+  function chooseNewProduct(rowId: string) {
+    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, mode: "new", targetProductId: undefined, decisionConfirmed: true }))
+  }
+  function stageAlias(rowId: string, target: Product) {
+    setRows((rows) => rows.map((r) => {
+      if (r.id !== rowId) return r
+      const alias = (r.scannedBarcode || r.barcode).trim().replace(/\s+/g, "")
+      return {
+        ...r,
+        mode: "alias",
+        targetProductId: target.id,
+        decisionConfirmed: true,
+        scannedBarcode: alias,
+        barcode: alias,
+        name: target.name,
+        category: target.category,
+        price: target.price,
+        cost: target.cost,
+        accent: target.accent,
+      }
+    }))
+    setPickerRowId(null)
+    setPickerQuery("")
+    showToast(`Will add ${(target.barcode && "barcode ") || "alias "}to ${target.name} on Save`)
+  }
+  function undoDecision(rowId: string) {
+    setRows((rows) => rows.map((r) => {
+      if (r.id !== rowId) return r
+      const code = r.scannedBarcode || r.barcode
+      return { ...r, mode: "new", targetProductId: undefined, decisionConfirmed: false, barcode: code, name: "", category: "Pantry", price: 0, cost: 0 }
+    }))
+  }
+  function skipRowBarcode(rowId: string) {
+    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, barcode: "", scannedBarcode: "", mode: "new", targetProductId: undefined, decisionConfirmed: false, name: "", category: "", price: 0, cost: 0 }))
   }
 
   async function lookupBarcode(rowId: string, barcode: string) {
@@ -221,13 +280,18 @@ export default function ProductReceivePage() {
     showToast(t("pos.receive.barcode_generated"))
   }
   function duplicateRow(row: BatchRow) {
-    addRow({ name: row.name, category: row.category, cost: row.cost, price: row.price, quantity: row.quantity, reorderPoint: row.reorderPoint, reorderQuantity: row.reorderQuantity, expiryDate: row.expiryDate, labels: row.labels, accent: row.accent, barcode: "" })
+    // A duplicate starts fresh as a new-product row (no barcode/alias carried).
+    addRow({ name: row.name, category: row.category, cost: row.cost, price: row.price, quantity: row.quantity, reorderPoint: row.reorderPoint, reorderQuantity: row.reorderQuantity, expiryDate: row.expiryDate, labels: row.labels, accent: row.accent, barcode: "", scannedBarcode: "", mode: "new", targetProductId: undefined, decisionConfirmed: false })
   }
   function saveBatch() {
     if (readyRows.length === 0) { showToast(t("pos.receive.no_ready_rows"), "error"); return }
     const supplierId = selectedSupplier?.id
     receiveAndRecord(
-      readyRows.map((r) => ({ name: r.name, barcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate })),
+      readyRows.map((r) =>
+        r.mode === "alias"
+          ? { name: r.name, barcode: r.scannedBarcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, attachAliasToProductId: r.targetProductId }
+          : { name: r.name, barcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate }
+      ),
       supplierId ? {
         supplierId,
         supplierName: selectedSupplier!.name,
@@ -393,7 +457,10 @@ export default function ProductReceivePage() {
             {rows.map((row, idx) => {
               const active = activeRowId === row.id
               const ready = isRowReady(row)
-              const matched = row.barcode ? findProductByBarcode(row.barcode) : null
+              const matched = row.mode === "matched" && row.barcode ? findProductByBarcode(row.barcode) : null
+              const aliasTarget = row.mode === "alias" && row.targetProductId != null ? products.find((p) => p.id === row.targetProductId) : undefined
+              const scannedAlias = matched && row.scannedBarcode && row.scannedBarcode !== matched.barcode ? row.scannedBarcode : ""
+              const pickerResults = pickerRowId === row.id ? products.filter((p) => !p.archived && productMatchesSearch(p, pickerQuery)).slice(0, 20) : []
 
               return (
                 <div
@@ -479,48 +546,83 @@ export default function ProductReceivePage() {
                     </div>
                   </div>
 
-                  {/* Match banner */}
+                  {/* Match / decision banner */}
                   {matched ? (
-                    <div className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+                    <div className="flex flex-wrap items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
                       <CheckCircle2 size={12} />
                       Restocking: <strong className="ms-0.5">{matched.name}</strong>
+                      {scannedAlias && <span className="opacity-70">· scanned alias {scannedAlias}</span>}
                       <span className="ms-auto opacity-60">Stock {matched.stock} → {matched.stock + row.quantity}</span>
                     </div>
-                  ) : row.barcode ? (
+                  ) : aliasTarget ? (
+                    <div className="flex flex-wrap items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+                      <CheckCircle2 size={12} />
+                      Add barcode <strong className="font-mono">{row.scannedBarcode}</strong> to <strong>{aliasTarget.name}</strong>
+                      <span className="opacity-60">Stock {aliasTarget.stock} → {aliasTarget.stock + row.quantity}</span>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); undoDecision(row.id) }}
+                        className="ms-auto underline opacity-70 hover:opacity-100">Undo</button>
+                    </div>
+                  ) : row.barcode && (row.decisionConfirmed || row.name.trim().length > 0) ? (
                     <div className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--amber-soft)", color: "var(--amber)" }}>
                       <PackagePlus size={12} /> New product
                     </div>
                   ) : null}
 
-                  {/* Add as alias — when barcode doesn't match any existing product */}
-                  {!matched && row.barcode && row.barcode.length >= 3 && !row.name && (
-                    <div className="flex items-center gap-2 px-4 py-1.5 text-[11px]" style={{ background: "var(--surface-2)", borderTop: "1px solid var(--border)" }}>
-                      <span className="text-[10px] font-bold shrink-0" style={{ color: "var(--amber)" }}>↳</span>
-                      <select
-                        className="input flex-1 text-[11px] font-semibold"
-                        style={{ height: 28, minWidth: 0 }}
-                        value=""
-                        onChange={(e) => {
-                          if (!e.target.value) return
-                          const targetId = Number(e.target.value)
-                          const target = products.find((p) => p.id === targetId)
-                          if (!target) return
-                          const aliases = [...(target.barcodeAliases ?? []), row.barcode]
-                          updateProduct(targetId, { barcodeAliases: aliases })
-                          updateRow(row.id, { name: target.name, category: target.category, price: target.price, cost: target.cost, barcode: target.barcode })
-                          showToast(`Added ${row.barcode} as alias of ${target.name}`)
-                        }}
-                      >
-                        <option value="">+ Add as alias of...</option>
-                        {products.map((p) => (
-                          <option key={p.id} value={p.id}>{p.name} ({p.barcode})</option>
-                        ))}
-                      </select>
+                  {/* Unknown-barcode decision strip — explicit choice, staged only.
+                      Typing a name is itself the "new product" choice, so the strip
+                      steps aside once a name exists or the choice is confirmed. */}
+                  {row.mode === "new" && row.barcode.trim().length > 0 && !row.decisionConfirmed && !row.name.trim() && (
+                    <div className="flex flex-wrap items-center gap-2 px-4 py-2 text-[11px]" style={{ background: "var(--surface-2)", borderTop: "1px solid var(--border)" }}>
+                      <span className="font-semibold shrink-0" style={{ color: "var(--text-2)" }}>Unknown barcode — choose:</span>
+                      <div className="flex flex-wrap items-center gap-1.5 ms-auto">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); chooseNewProduct(row.id) }}
+                          className="btn btn-primary h-7 gap-1 text-[11px]"><PackagePlus size={11} /> New product</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setActiveRowId(row.id); setPickerRowId(row.id); setPickerQuery("") }}
+                          className="btn btn-default h-7 gap-1 text-[11px]">↳ Add to existing</button>
+                        <button type="button" disabled title="Variants & pack sizes are coming in a later update"
+                          className="btn btn-default h-7 gap-1 text-[11px] opacity-40">⧉ Variant / pack</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); skipRowBarcode(row.id) }}
+                          className="btn btn-ghost h-7 text-[11px]">Skip</button>
+                      </div>
                     </div>
                   )}
 
-                  {/* Open Food Facts suggestion */}
-                  {!matched && barcodeSuggestions[row.barcode] && !row.name && (
+                  {/* Searchable "add to existing product" picker */}
+                  {pickerRowId === row.id && (
+                    <div className="px-4 py-2 space-y-1.5" style={{ background: "var(--surface-2)", borderTop: "1px solid var(--border)" }}
+                      onClick={(e) => e.stopPropagation()}>
+                      <input
+                        autoFocus
+                        value={pickerQuery}
+                        onChange={(e) => setPickerQuery(e.target.value)}
+                        placeholder="Search product by name or barcode…"
+                        className="input w-full text-[12px]" style={{ height: 32 }}
+                      />
+                      <div className="max-h-48 overflow-y-auto rounded-lg border" style={{ borderColor: "var(--border)" }}>
+                        {pickerResults.length === 0 ? (
+                          <div className="px-3 py-4 text-center text-[11px]" style={{ color: "var(--text-3)" }}>
+                            {pickerQuery.trim() ? "No matching products." : "Type to search your products…"}
+                          </div>
+                        ) : (
+                          pickerResults.map((p) => (
+                            <button key={p.id} type="button" onClick={(e) => { e.stopPropagation(); stageAlias(row.id, p) }}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-start transition hover:opacity-80"
+                              style={{ borderBottom: "1px solid var(--border)" }}>
+                              <span className="font-semibold text-[12px] truncate" style={{ color: "var(--text)" }}>{p.name}</span>
+                              <span className="ms-auto shrink-0 text-[10px] font-mono" style={{ color: "var(--text-3)" }}>
+                                {p.barcode || "no barcode"} · {formatCurrency(p.price)} · stock {formatNumber(p.stock)}
+                              </span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setPickerRowId(null); setPickerQuery("") }}
+                        className="btn btn-ghost h-7 text-[11px]">Cancel</button>
+                    </div>
+                  )}
+
+                  {/* Open Food Facts suggestion (new-product accelerator) */}
+                  {row.mode === "new" && barcodeSuggestions[row.barcode] && !row.name && (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); applySuggestion(row.id, row.barcode) }}
@@ -535,7 +637,7 @@ export default function ProductReceivePage() {
                     </button>
                   )}
 
-                  {!matched && barcodeSuggestions[row.barcode] === null && row.barcode.length >= 8 && (
+                  {row.mode === "new" && barcodeSuggestions[row.barcode] === null && row.barcode.length >= 8 && (
                     <div className="flex items-center gap-2 px-4 py-1 text-[10px] opacity-40" style={{ color: "var(--text-3)" }}>
                       <LoaderCircle size={10} className="animate-spin shrink-0" />
                       Looking up barcode...
@@ -560,8 +662,8 @@ export default function ProductReceivePage() {
                   {/* Fields grid */}
                   <div className="grid grid-cols-2 gap-3 px-4 py-3 sm:grid-cols-3 lg:grid-cols-6">
                     {[
-                      { label: "Name",     value: row.name,     key: "name",     disabled: !!matched, type: "text",   colSpan: "lg:col-span-2" },
-                      { label: "Category", value: row.category, key: "category", disabled: !!matched, type: "text",   colSpan: "" },
+                      { label: "Name",     value: row.name,     key: "name",     disabled: !!matched || row.mode === "alias", type: "text",   colSpan: "lg:col-span-2" },
+                      { label: "Category", value: row.category, key: "category", disabled: !!matched || row.mode === "alias", type: "text",   colSpan: "" },
                     ].map((f) => (
                       <label key={f.key} className={`block ${f.colSpan}`}>
                         <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>{f.label}</span>
@@ -620,9 +722,11 @@ export default function ProductReceivePage() {
                             <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Price $</span>
                             <input
                               type="number" min="0" step="0.01" value={row.price || ""}
+                              disabled={row.mode === "alias"}
+                              title={row.mode === "alias" ? "Aliases share the existing product's price" : undefined}
                               onChange={(e) => updateRow(row.id, { price: normalizeNumber(e.target.value) } as any)}
                               className="input w-full text-end"
-                              style={{ height: 34, fontSize: 13, fontWeight: 600 }}
+                              style={{ height: 34, fontSize: 13, fontWeight: 600, opacity: row.mode === "alias" ? 0.55 : 1 }}
                             />
                           </label>
                           <label className="block">
