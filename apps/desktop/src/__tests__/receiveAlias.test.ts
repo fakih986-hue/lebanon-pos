@@ -149,4 +149,48 @@ describe("POS-RECEIVE-UX-1A — alias receive decision", () => {
     const upd = opsFor("product", "update").map((o) => o.payload).find((p) => p.id === 1)
     expect(upd.image).toBe("OLD-IMG")
   })
+
+  // POS-RECEIVE-VARIANT-1B
+  it("variant row creates a child product (parentId + variantName), stock = qty (not doubled), parent stock untouched", async () => {
+    const { receiveProducts } = await import("../features/pos/services/product.service")
+    seed([base({ id: 1, name: "Pepsi", barcode: "A", stock: 40, price: 0.75 })])
+
+    const r = receiveProducts([
+      { name: "Pepsi - 1L", barcode: "VAR-1L", category: "Bev", stock: 5, cost: 0.5, price: 1.5, parentId: 1, variantName: "1L" },
+    ])
+
+    expect(r.newlyCreated.length).toBe(1)
+    const child = r.newlyCreated[0]
+    expect(child.parentId).toBe(1)
+    expect(child.variantName).toBe("1L")
+    expect(child.barcode).toBe("VAR-1L")
+
+    // create payload follows the stock:0 rule → receive adds qty → net = qty, not 2×
+    const created = items(opsFor("product", "create")[0].payload).find((p) => p.barcode === "VAR-1L")
+    expect(created.stock).toBe(0)
+    expect(created.parentId).toBe(1)
+    expect(created.variantName).toBe("1L")
+
+    // exactly one receive batch, for the CHILD; none for the parent (parent stock untouched)
+    const batches = items(opsFor("inventory", "receive")[0].payload)
+    expect(batches).toHaveLength(1)
+    expect(batches[0].productId).toBe(child.id)
+    expect(batches[0].initialQuantity).toBe(5)
+    expect(batches.some((b) => b.productId === 1)).toBe(false)
+  })
+
+  it("variant flags the parent isParent (metadata only) and never adds an alias to it", async () => {
+    const { receiveProducts } = await import("../features/pos/services/product.service")
+    seed([base({ id: 1, name: "Pepsi", barcode: "A" })])
+
+    receiveProducts([
+      { name: "Pepsi - 1L", barcode: "VAR-1L", category: "Bev", stock: 3, cost: 0.5, price: 1.5, parentId: 1, variantName: "1L" },
+    ])
+
+    const parentUpd = opsFor("product", "update").map((o) => o.payload).find((p) => p.id === 1)
+    expect(parentUpd).toBeDefined()
+    expect(parentUpd.isParent).toBe(true)
+    expect(parentUpd).not.toHaveProperty("stock")
+    expect(parentUpd.barcodeAliases ?? []).not.toContain("VAR-1L")
+  })
 })

@@ -30,6 +30,12 @@ export type ProductReceiveInput = {
   // POS-PRODUCT-IMAGE-1: optional image for NEW products only. Ignored on
   // restock/alias so an existing product's image is never overwritten.
   image?: string | null
+  // POS-RECEIVE-VARIANT-1B: create this row as a VARIANT (separate product with
+  // its own barcode/price/stock) linked to an existing parent. Applies only on
+  // the create path; the parent is flagged isParent (metadata only — no parent
+  // price/stock/barcode change). No pack conversion, no stock sharing.
+  parentId?: number
+  variantName?: string
 }
 
 export type ReceiveResult = {
@@ -351,9 +357,22 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
       expiryDate: entry.expiryDate,
       barcodeAliases: [],
       image: entry.image || undefined,
+      // POS-RECEIVE-VARIANT-1B: link as a variant of an existing parent (own
+      // barcode/price/stock; no stock sharing with the parent).
+      parentId: entry.parentId ?? null,
+      variantName: entry.variantName || undefined,
     }
 
     nextProducts.push(product)
+    // POS-RECEIVE-VARIANT-1B: flag the parent as a grouping parent so POS shows
+    // the variant picker. Metadata only — the parent's price/stock/barcode are
+    // never touched here.
+    if (entry.parentId != null) {
+      const parentIndex = nextProducts.findIndex((p) => p.id === entry.parentId)
+      if (parentIndex >= 0 && !nextProducts[parentIndex].isParent) {
+        nextProducts[parentIndex] = { ...nextProducts[parentIndex], isParent: true }
+      }
+    }
     batchInputs.push({
       productId: product.id,
       productSyncId: product.syncId ?? undefined,

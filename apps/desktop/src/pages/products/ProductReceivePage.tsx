@@ -40,7 +40,7 @@ import { useI18n } from "@lebanonpos/shared"
 // was scanned (which may be an alias of a matched product); `targetProductId` is
 // the product an `alias` row attaches its barcode to. No write happens until
 // Save Batch.
-type ReceiveRowMode = "matched" | "new" | "alias" | "conflict"
+type ReceiveRowMode = "matched" | "new" | "alias" | "variant" | "conflict"
 type BatchRow = {
   id: string; name: string; category: string; quantity: number
   cost: number; price: number; reorderPoint: number; reorderQuantity: number
@@ -49,6 +49,8 @@ type BatchRow = {
   decisionConfirmed?: boolean
   // POS-PRODUCT-IMAGE-1: optional image for NEW-product rows (staged to Save).
   image?: string
+  // POS-RECEIVE-VARIANT-1B: staged variant of an existing parent product.
+  parentProductId?: number; variantName?: string
 }
 type LabelSize = "40x25" | "50x30" | "58x35"
 
@@ -76,6 +78,8 @@ function isRowReady(row: BatchRow) {
   // alias rows are ready once a target is picked + a scanned barcode + qty; the
   // name is mirrored from the target so it is always present.
   if (row.mode === "alias") return !!row.targetProductId && row.scannedBarcode.trim().length > 0 && row.quantity > 0
+  // variant rows need a parent, a variant name, its own barcode, and qty.
+  if (row.mode === "variant") return !!row.parentProductId && (row.variantName ?? "").trim().length > 0 && row.scannedBarcode.trim().length > 0 && row.quantity > 0
   return row.name.trim().length > 0 && row.barcode.trim().length > 0 && row.quantity > 0
 }
 
@@ -87,8 +91,11 @@ export default function ProductReceivePage() {
   const [rows, setRows] = useState<BatchRow[]>([createRow()])
   const [activeRowId, setActiveRowId] = useState(rows[0].id)
   // POS-RECEIVE-UX-1A: searchable "add to existing product" picker (per row).
+  // pickerMode: 'alias' = attach barcode to picked product; 'variant' = make a
+  // variant of the picked parent (POS-RECEIVE-VARIANT-1B).
   const [pickerRowId, setPickerRowId] = useState<string | null>(null)
   const [pickerQuery, setPickerQuery] = useState("")
+  const [pickerMode, setPickerMode] = useState<"alias" | "variant">("alias")
   const [cameraStatus, setCameraStatus] = useState("")
   const [cameraEngine, setCameraEngine] = useState<"native" | "html5" | null>(null)
   const [labelSize, setLabelSize] = useState<LabelSize>("50x30")
@@ -174,7 +181,7 @@ export default function ProductReceivePage() {
     }
     // Unknown barcode — keep it as a new-product decision (unless the user has
     // already staged an alias for this row) and try an external catalog lookup.
-    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, scannedBarcode: clean, mode: r.mode === "alias" ? "alias" : "new" }))
+    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, scannedBarcode: clean, mode: (r.mode === "alias" || r.mode === "variant") ? r.mode : "new" }))
     lookupBarcode(rowId, clean)
   }
   // POS-RECEIVE-UX-1A decision helpers — all staged, no writes until Save Batch.
@@ -207,11 +214,44 @@ export default function ProductReceivePage() {
     setRows((rows) => rows.map((r) => {
       if (r.id !== rowId) return r
       const code = r.scannedBarcode || r.barcode
-      return { ...r, mode: "new", targetProductId: undefined, decisionConfirmed: false, barcode: code, name: "", category: "Pantry", price: 0, cost: 0 }
+      return { ...r, mode: "new", targetProductId: undefined, parentProductId: undefined, variantName: undefined, decisionConfirmed: false, barcode: code, name: "", category: "Pantry", price: 0, cost: 0 }
+    }))
+  }
+  // POS-RECEIVE-VARIANT-1B: stage a variant of an existing parent. The row keeps
+  // its own scanned barcode / price / cost / qty (independent). Category+accent
+  // copy from the parent for grouping; the parent's price/stock are untouched.
+  function stageVariant(rowId: string, parent: Product) {
+    setRows((rows) => rows.map((r) => {
+      if (r.id !== rowId) return r
+      const barcode = (r.scannedBarcode || r.barcode).trim().replace(/\s+/g, "")
+      return {
+        ...r,
+        mode: "variant",
+        parentProductId: parent.id,
+        targetProductId: undefined,
+        decisionConfirmed: true,
+        scannedBarcode: barcode,
+        barcode,
+        variantName: r.variantName ?? "",
+        name: parent.name,
+        category: parent.category,
+        accent: parent.accent,
+      }
+    }))
+    setPickerRowId(null)
+    setPickerQuery("")
+    showToast(`Creating a variant of ${parent.name}`)
+  }
+  function setVariantName(rowId: string, value: string) {
+    setRows((rows) => rows.map((r) => {
+      if (r.id !== rowId) return r
+      const parent = r.parentProductId != null ? products.find((p) => p.id === r.parentProductId) : undefined
+      const name = parent ? `${parent.name}${value.trim() ? ` - ${value.trim()}` : ""}` : r.name
+      return { ...r, variantName: value, name }
     }))
   }
   function skipRowBarcode(rowId: string) {
-    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, barcode: "", scannedBarcode: "", mode: "new", targetProductId: undefined, decisionConfirmed: false, name: "", category: "", price: 0, cost: 0 }))
+    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, barcode: "", scannedBarcode: "", mode: "new", targetProductId: undefined, parentProductId: undefined, variantName: undefined, decisionConfirmed: false, name: "", category: "", price: 0, cost: 0 }))
   }
   // POS-PRODUCT-IMAGE-1: stage an optional image on a NEW-product row (compressed,
   // never written until Save Batch). Existing products' images are never touched.
@@ -289,7 +329,7 @@ export default function ProductReceivePage() {
   }
   function duplicateRow(row: BatchRow) {
     // A duplicate starts fresh as a new-product row (no barcode/alias carried).
-    addRow({ name: row.name, category: row.category, cost: row.cost, price: row.price, quantity: row.quantity, reorderPoint: row.reorderPoint, reorderQuantity: row.reorderQuantity, expiryDate: row.expiryDate, labels: row.labels, accent: row.accent, barcode: "", scannedBarcode: "", mode: "new", targetProductId: undefined, decisionConfirmed: false })
+    addRow({ name: row.name, category: row.category, cost: row.cost, price: row.price, quantity: row.quantity, reorderPoint: row.reorderPoint, reorderQuantity: row.reorderQuantity, expiryDate: row.expiryDate, labels: row.labels, accent: row.accent, barcode: "", scannedBarcode: "", mode: "new", targetProductId: undefined, parentProductId: undefined, variantName: undefined, decisionConfirmed: false })
   }
   function saveBatch() {
     if (readyRows.length === 0) { showToast(t("pos.receive.no_ready_rows"), "error"); return }
@@ -298,6 +338,8 @@ export default function ProductReceivePage() {
       readyRows.map((r) =>
         r.mode === "alias"
           ? { name: r.name, barcode: r.scannedBarcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, attachAliasToProductId: r.targetProductId }
+          : r.mode === "variant"
+          ? { name: r.name, barcode: r.scannedBarcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, image: r.image, parentId: r.parentProductId, variantName: (r.variantName ?? "").trim() }
           : { name: r.name, barcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, image: r.mode === "new" ? r.image : undefined }
       ),
       supplierId ? {
@@ -467,6 +509,7 @@ export default function ProductReceivePage() {
               const ready = isRowReady(row)
               const matched = row.mode === "matched" && row.barcode ? findProductByBarcode(row.barcode) : null
               const aliasTarget = row.mode === "alias" && row.targetProductId != null ? products.find((p) => p.id === row.targetProductId) : undefined
+              const variantParent = row.mode === "variant" && row.parentProductId != null ? products.find((p) => p.id === row.parentProductId) : undefined
               const scannedAlias = matched && row.scannedBarcode && row.scannedBarcode !== matched.barcode ? row.scannedBarcode : ""
               const pickerResults = pickerRowId === row.id ? products.filter((p) => !p.archived && productMatchesSearch(p, pickerQuery)).slice(0, 20) : []
               // POS-RECEIVE-UX-1C: a new-product row whose name matches an existing
@@ -574,6 +617,28 @@ export default function ProductReceivePage() {
                       <button type="button" onClick={(e) => { e.stopPropagation(); undoDecision(row.id) }}
                         className="ms-auto underline opacity-70 hover:opacity-100">Undo</button>
                     </div>
+                  ) : variantParent ? (
+                    <div className="flex flex-col gap-1.5 px-4 py-2 text-[11px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <CheckCircle2 size={12} />
+                        Creating variant of <strong>{variantParent.name}</strong>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); undoDecision(row.id) }}
+                          className="ms-auto underline opacity-70 hover:opacity-100">Undo</button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="shrink-0 uppercase tracking-wide" style={{ fontSize: 10 }}>Variant name</span>
+                        <input
+                          value={row.variantName ?? ""}
+                          onChange={(e) => setVariantName(row.id, e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          placeholder="e.g. 1L, 6-pack, Large"
+                          className="input flex-1 text-[12px]" style={{ height: 28 }}
+                        />
+                      </div>
+                      <span className="font-normal opacity-70" style={{ fontSize: 10 }}>
+                        Variant has its own price and stock. Barcode <span className="font-mono">{row.scannedBarcode}</span>.
+                      </span>
+                    </div>
                   ) : row.barcode && (row.decisionConfirmed || row.name.trim().length > 0) ? (
                     <div className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--amber-soft)", color: "var(--amber)" }}>
                       <PackagePlus size={12} /> New product
@@ -589,10 +654,10 @@ export default function ProductReceivePage() {
                       <div className="flex flex-wrap items-center gap-1.5 ms-auto">
                         <button type="button" onClick={(e) => { e.stopPropagation(); chooseNewProduct(row.id) }}
                           className="btn btn-primary h-7 gap-1 text-[11px]"><PackagePlus size={11} /> New product</button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setActiveRowId(row.id); setPickerRowId(row.id); setPickerQuery("") }}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setActiveRowId(row.id); setPickerMode("alias"); setPickerRowId(row.id); setPickerQuery("") }}
                           className="btn btn-default h-7 gap-1 text-[11px]">↳ Add to existing</button>
-                        <button type="button" disabled title="Variants & pack sizes are coming in a later update"
-                          className="btn btn-default h-7 gap-1 text-[11px] opacity-40">⧉ Variant / pack</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setActiveRowId(row.id); setPickerMode("variant"); setPickerRowId(row.id); setPickerQuery("") }}
+                          className="btn btn-default h-7 gap-1 text-[11px]">⧉ Create variant</button>
                         <button type="button" onClick={(e) => { e.stopPropagation(); skipRowBarcode(row.id) }}
                           className="btn btn-ghost h-7 text-[11px]">Skip</button>
                       </div>
@@ -609,7 +674,7 @@ export default function ProductReceivePage() {
                       </span>
                       <div className="flex items-center gap-1.5 ms-auto">
                         <button type="button"
-                          onClick={(e) => { e.stopPropagation(); if (nameMatches.length === 1) { stageAlias(row.id, nameMatches[0]) } else { setActiveRowId(row.id); setPickerRowId(row.id); setPickerQuery(row.name) } }}
+                          onClick={(e) => { e.stopPropagation(); if (nameMatches.length === 1) { stageAlias(row.id, nameMatches[0]) } else { setActiveRowId(row.id); setPickerMode("alias"); setPickerRowId(row.id); setPickerQuery(row.name) } }}
                           className="btn btn-primary h-7 text-[11px]">Add barcode to existing</button>
                         <button type="button"
                           onClick={(e) => { e.stopPropagation(); chooseNewProduct(row.id) }}
@@ -622,6 +687,9 @@ export default function ProductReceivePage() {
                   {pickerRowId === row.id && (
                     <div className="px-4 py-2 space-y-1.5" style={{ background: "var(--surface-2)", borderTop: "1px solid var(--border)" }}
                       onClick={(e) => e.stopPropagation()}>
+                      <span className="block text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
+                        {pickerMode === "variant" ? "Choose the parent product" : "Add barcode to which product?"}
+                      </span>
                       <input
                         autoFocus
                         value={pickerQuery}
@@ -636,7 +704,7 @@ export default function ProductReceivePage() {
                           </div>
                         ) : (
                           pickerResults.map((p) => (
-                            <button key={p.id} type="button" onClick={(e) => { e.stopPropagation(); stageAlias(row.id, p) }}
+                            <button key={p.id} type="button" onClick={(e) => { e.stopPropagation(); pickerMode === "variant" ? stageVariant(row.id, p) : stageAlias(row.id, p) }}
                               className="flex w-full items-center gap-2 px-3 py-2 text-start transition hover:opacity-80"
                               style={{ borderBottom: "1px solid var(--border)" }}>
                               <span className="font-semibold text-[12px] truncate" style={{ color: "var(--text)" }}>{p.name}</span>
@@ -693,8 +761,8 @@ export default function ProductReceivePage() {
                   {/* Fields grid */}
                   <div className="grid grid-cols-2 gap-3 px-4 py-3 sm:grid-cols-3 lg:grid-cols-6">
                     {[
-                      { label: "Name",     value: row.name,     key: "name",     disabled: !!matched || row.mode === "alias", type: "text",   colSpan: "lg:col-span-2" },
-                      { label: "Category", value: row.category, key: "category", disabled: !!matched || row.mode === "alias", type: "text",   colSpan: "" },
+                      { label: "Name",     value: row.name,     key: "name",     disabled: !!matched || row.mode === "alias" || row.mode === "variant", type: "text",   colSpan: "lg:col-span-2" },
+                      { label: "Category", value: row.category, key: "category", disabled: !!matched || row.mode === "alias" || row.mode === "variant", type: "text",   colSpan: "" },
                     ].map((f) => (
                       <label key={f.key} className={`block ${f.colSpan}`}>
                         <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>{f.label}</span>

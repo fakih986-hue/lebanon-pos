@@ -606,6 +606,9 @@ export async function receiveAndRecord(
     attachAliasToProductId?: number
     // POS-PRODUCT-IMAGE-1: optional image for new-product rows.
     image?: string | null
+    // POS-RECEIVE-VARIANT-1B: create as a variant linked to this parent.
+    parentId?: number
+    variantName?: string
   }>,
   context?: ReceivingContext
 ): Promise<ReceivingSummary> {
@@ -663,6 +666,8 @@ export async function receiveAndRecord(
       supplierId: context?.supplierId, supplierName: context?.supplierName,
       attachAliasToProductId: e.attachAliasToProductId,
       image: e.image,
+      parentId: e.parentId,
+      variantName: e.variantName,
     }))
   )
 
