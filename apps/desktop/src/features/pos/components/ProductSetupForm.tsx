@@ -4,6 +4,7 @@ import { ImagePlus, Save, Star, Trash2 } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 import type { SupplierLedger } from "../services/supplier.service"
 import type { Product } from "../types/product"
+import { fileToCompressedDataUrl } from "../lib/image"
 
 type Props = {
   selectedProduct: Product | undefined
@@ -90,23 +91,8 @@ export default function ProductSetupForm({
   }
 
   function handleImageFile(file: File) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string
-      // Resize to max 300x300 using canvas
-      const img = new Image()
-      img.onload = () => {
-        const MAX = 300
-        const scale = Math.min(MAX / img.width, MAX / img.height, 1)
-        const canvas = document.createElement("canvas")
-        canvas.width = Math.round(img.width * scale)
-        canvas.height = Math.round(img.height * scale)
-        canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height)
-        onImageChange(canvas.toDataURL("image/jpeg", 0.8))
-      }
-      img.src = dataUrl
-    }
-    reader.readAsDataURL(file)
+    // POS-PRODUCT-IMAGE-1: shared compression (max 300×300, JPEG q0.8).
+    fileToCompressedDataUrl(file).then(onImageChange).catch(() => undefined)
   }
 
   return (

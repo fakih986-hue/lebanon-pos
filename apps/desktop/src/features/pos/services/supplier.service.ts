@@ -604,6 +604,8 @@ export async function receiveAndRecord(
     expiryDate?: string
     // POS-RECEIVE-UX-1A: staged "add barcode to existing product" decision.
     attachAliasToProductId?: number
+    // POS-PRODUCT-IMAGE-1: optional image for new-product rows.
+    image?: string | null
   }>,
   context?: ReceivingContext
 ): Promise<ReceivingSummary> {
@@ -660,6 +662,7 @@ export async function receiveAndRecord(
       expiryDate: e.expiryDate,
       supplierId: context?.supplierId, supplierName: context?.supplierName,
       attachAliasToProductId: e.attachAliasToProductId,
+      image: e.image,
     }))
   )
 

@@ -27,6 +27,9 @@ export type ProductReceiveInput = {
   // and `stock` is received into that product — NOT matched-or-created. Unset =
   // the existing match-or-create behavior (fully back-compatible).
   attachAliasToProductId?: number
+  // POS-PRODUCT-IMAGE-1: optional image for NEW products only. Ignored on
+  // restock/alias so an existing product's image is never overwritten.
+  image?: string | null
 }
 
 export type ReceiveResult = {
@@ -347,6 +350,7 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
       supplierName: entry.supplierName,
       expiryDate: entry.expiryDate,
       barcodeAliases: [],
+      image: entry.image || undefined,
     }
 
     nextProducts.push(product)
@@ -489,6 +493,9 @@ export function createProduct(input: {
   accent?: ProductAccent
   parentId?: number | null
   variantName?: string
+  // POS-PRODUCT-IMAGE-1: optional product image (compressed JPEG data URL).
+  // Persisted locally and carried in the product.create sync payload.
+  image?: string | null
 }): Product | undefined {
   assertCanWrite("create product")
   const currentProducts = getProductsSync()
@@ -523,6 +530,7 @@ export function createProduct(input: {
     parentId: input.parentId ?? null,
     variantName: input.variantName ?? undefined,
     barcodeAliases: [],
+    image: input.image || undefined,
   }
   const nextProducts = [...currentProducts, product]
   writeProducts(nextProducts)

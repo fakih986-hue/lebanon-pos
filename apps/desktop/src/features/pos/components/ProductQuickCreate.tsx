@@ -1,8 +1,8 @@
-import { useState } from "react"
-import { X } from "lucide-react"
+import { useRef, useState } from "react"
+import { ImagePlus, X } from "lucide-react"
 import { createProduct } from "../services/product.service"
 import { showToast } from "../services/toast.service"
-import type { ProductAccent } from "../types/product"
+import { fileToCompressedDataUrl } from "../lib/image"
 
 type Props = {
   categories: string[]
@@ -17,7 +17,13 @@ export default function ProductQuickCreate({ categories, onClose, onCreated }: P
   const [price, setPrice] = useState("")
   const [cost, setCost] = useState("")
   const [stock, setStock] = useState("0")
+  const [image, setImage] = useState<string>("")
   const [error, setError] = useState("")
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
+
+  function handleImageFile(file: File) {
+    fileToCompressedDataUrl(file).then(setImage).catch(() => undefined)
+  }
 
   function handleCreate() {
     setError("")
@@ -32,6 +38,7 @@ export default function ProductQuickCreate({ categories, onClose, onCreated }: P
       price: Number(price) || 0,
       cost: Number(cost) || 0,
       stock: Number(stock) || 0,
+      image: image || undefined,
     })
 
     if (!result) {
@@ -53,10 +60,28 @@ export default function ProductQuickCreate({ categories, onClose, onCreated }: P
         </div>
 
         <div className="p-5 flex flex-col gap-3">
-          <label className="block">
-            <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Name *</span>
-            <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Product name" className="input w-full" />
-          </label>
+          <div className="flex items-start gap-3">
+            {/* Optional product image */}
+            <div className="shrink-0">
+              <button type="button" onClick={() => imageInputRef.current?.click()}
+                aria-label="Add product image"
+                className="flex h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-lg border transition hover:opacity-80"
+                style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-3)" }}>
+                {image ? <img src={image} alt="Product" className="h-full w-full object-cover" /> : <ImagePlus size={20} />}
+              </button>
+              {image && (
+                <button type="button" onClick={() => setImage("")}
+                  className="mt-1 w-full text-[10px] font-semibold" style={{ color: "var(--text-3)" }}>Remove</button>
+              )}
+              <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageFile(f); e.target.value = "" }} />
+            </div>
+            <label className="block flex-1">
+              <span className="block text-[12px] font-bold mb-1" style={{ color: "var(--text-2)" }}>Name *</span>
+              <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="Product name" className="input w-full" />
+              <span className="block text-[10px] mt-1" style={{ color: "var(--text-3)" }}>Image optional</span>
+            </label>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block">

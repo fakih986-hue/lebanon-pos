@@ -114,4 +114,39 @@ describe("POS-RECEIVE-UX-1A — alias receive decision", () => {
     const batch = items(opsFor("inventory", "receive")[0].payload).find((b) => b.productId === 1)
     expect(batch.initialQuantity).toBe(5)
   })
+
+  // POS-PRODUCT-IMAGE-1
+  it("a NEW-product receive carries the image into the create payload (at stock 0)", async () => {
+    const { receiveProducts } = await import("../features/pos/services/product.service")
+    seed([])
+    const r = receiveProducts([
+      { name: "Imaged", barcode: "IMG-X", category: "Bev", stock: 2, cost: 1, price: 2, image: "data:image/jpeg;base64,ZZZ" },
+    ])
+    expect(r.newlyCreated.length).toBe(1)
+    const created = items(opsFor("product", "create")[0].payload).find((p) => p.barcode === "IMG-X")
+    expect(created.image).toBe("data:image/jpeg;base64,ZZZ")
+    expect(created.stock).toBe(0)
+  })
+
+  it("alias receive never overwrites the target's existing image", async () => {
+    const { receiveProducts } = await import("../features/pos/services/product.service")
+    seed([base({ id: 1, name: "Pepsi", barcode: "A", image: "OLD-IMG" })])
+    const r = receiveProducts([
+      { name: "Pepsi", barcode: "NEW-B", category: "Bev", stock: 3, cost: 0.4, price: 0.75, attachAliasToProductId: 1, image: "SHOULD-IGNORE" },
+    ])
+    expect(r.rejectedCount).toBe(0)
+    const upd = opsFor("product", "update").map((o) => o.payload).find((p) => p.id === 1)
+    expect(upd.image).toBe("OLD-IMG")
+  })
+
+  it("matched restock never overwrites the target's existing image", async () => {
+    const { receiveProducts } = await import("../features/pos/services/product.service")
+    seed([base({ id: 1, name: "Pepsi", barcode: "PRIMARY-A", image: "OLD-IMG" })])
+    const r = receiveProducts([
+      { name: "Pepsi", barcode: "PRIMARY-A", category: "Test", stock: 5, cost: 0.4, price: 0.75, image: "SHOULD-IGNORE" },
+    ])
+    expect(r.modifiedExisting.length).toBe(1)
+    const upd = opsFor("product", "update").map((o) => o.payload).find((p) => p.id === 1)
+    expect(upd.image).toBe("OLD-IMG")
+  })
 })

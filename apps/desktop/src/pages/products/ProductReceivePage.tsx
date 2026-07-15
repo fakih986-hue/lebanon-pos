@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import type { ChangeEvent } from "react"
 import {
   Banknote, Barcode, Building2, Camera, CheckCircle2, ClipboardCheck,
-  Copy, CreditCard, Landmark, LoaderCircle, PackagePlus, Plus, Printer,
+  Copy, CreditCard, ImagePlus, Landmark, LoaderCircle, PackagePlus, Plus, Printer,
   RotateCcw, Search, Trash2, WalletCards,
 } from "lucide-react"
 import { Link } from "react-router"
@@ -21,6 +21,7 @@ import {
   findProductByBarcode, findProductsByExactName, generateProductBarcode,
   getProducts, parseSpreadsheetPaste, productMatchesSearch,
 } from "../../features/pos/services/product.service"
+import { fileToCompressedDataUrl } from "../../features/pos/lib/image"
 import { recordAuditEvent } from "../../features/pos/services/security.service"
 import { getSettings } from "../../features/pos/services/settings.service"
 import {
@@ -46,6 +47,8 @@ type BatchRow = {
   expiryDate: string; barcode: string; labels: number; accent: ProductAccent
   mode: ReceiveRowMode; scannedBarcode: string; targetProductId?: number
   decisionConfirmed?: boolean
+  // POS-PRODUCT-IMAGE-1: optional image for NEW-product rows (staged to Save).
+  image?: string
 }
 type LabelSize = "40x25" | "50x30" | "58x35"
 
@@ -210,6 +213,11 @@ export default function ProductReceivePage() {
   function skipRowBarcode(rowId: string) {
     setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, barcode: "", scannedBarcode: "", mode: "new", targetProductId: undefined, decisionConfirmed: false, name: "", category: "", price: 0, cost: 0 }))
   }
+  // POS-PRODUCT-IMAGE-1: stage an optional image on a NEW-product row (compressed,
+  // never written until Save Batch). Existing products' images are never touched.
+  function handleRowImageFile(rowId: string, file: File) {
+    fileToCompressedDataUrl(file).then((dataUrl) => updateRow(rowId, { image: dataUrl })).catch(() => undefined)
+  }
 
   async function lookupBarcode(rowId: string, barcode: string) {
     if (barcode.length < 8) return
@@ -290,7 +298,7 @@ export default function ProductReceivePage() {
       readyRows.map((r) =>
         r.mode === "alias"
           ? { name: r.name, barcode: r.scannedBarcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, attachAliasToProductId: r.targetProductId }
-          : { name: r.name, barcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate }
+          : { name: r.name, barcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, image: r.mode === "new" ? r.image : undefined }
       ),
       supplierId ? {
         supplierId,
@@ -768,6 +776,29 @@ export default function ProductReceivePage() {
 
                   {/* Expiry + barcode preview — compact footer */}
                   <div className="flex items-center gap-3 border-t px-4 py-2" style={{ borderColor: "var(--border)" }}>
+                    {/* POS-PRODUCT-IMAGE-1: optional image for new rows; existing image (read-only) for matched/alias */}
+                    {row.mode === "new" ? (
+                      <label className="flex items-center gap-2 shrink-0 cursor-pointer" title="Add product image (optional)">
+                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Image</span>
+                        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-3)" }}>
+                          {row.image ? <img src={row.image} alt="" className="h-full w-full object-cover" /> : <ImagePlus size={15} />}
+                        </span>
+                        <input type="file" accept="image/*" className="hidden"
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleRowImageFile(row.id, f); e.target.value = "" }} />
+                        {row.image && (
+                          <button type="button" onClick={(e) => { e.stopPropagation(); updateRow(row.id, { image: undefined }) }}
+                            className="text-[10px] font-semibold" style={{ color: "var(--text-3)" }}>Remove</button>
+                        )}
+                      </label>
+                    ) : (matched?.image || aliasTarget?.image) ? (
+                      <div className="flex items-center gap-2 shrink-0" title="Existing product image (unchanged)">
+                        <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Image</span>
+                        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border" style={{ borderColor: "var(--border)" }}>
+                          <img src={(matched?.image || aliasTarget?.image) as string} alt="" className="h-full w-full object-cover" />
+                        </span>
+                      </div>
+                    ) : null}
                     <label className="flex items-center gap-2 min-w-0">
                       <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Expiry</span>
                       <input

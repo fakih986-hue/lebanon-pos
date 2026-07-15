@@ -95,4 +95,25 @@ describe("POS-PRODUCT-CREATE-STOCK-1 — createProduct opening stock", () => {
     // No opening stock → no receive op → server stock stays 0.
     expect(opsFor("inventory", "receive").length).toBe(0)
   })
+
+  // POS-PRODUCT-IMAGE-1
+  it("carries an optional image into the product.create payload", async () => {
+    const { createProduct } = await import("../features/pos/services/product.service")
+    const created = createProduct({
+      name: "ZZ Imaged", price: 1, cost: 0.5, stock: 0,
+      barcode: "990000000900", category: "Test Beverages",
+      image: "data:image/jpeg;base64,IMGDATA",
+    })
+    expect(created!.image).toBe("data:image/jpeg;base64,IMGDATA")
+    const row = asItems(opsFor("product", "create")[0].payload).find((p) => p.barcode === "990000000900") as { image?: string }
+    expect(row.image).toBe("data:image/jpeg;base64,IMGDATA")
+  })
+
+  it("creates fine without an image (image optional)", async () => {
+    const { createProduct } = await import("../features/pos/services/product.service")
+    const created = createProduct({ name: "ZZ NoImage", price: 1, cost: 0.5, stock: 0, barcode: "990000000901", category: "Test Beverages" })
+    expect(created).toBeDefined()
+    const row = asItems(opsFor("product", "create")[0].payload).find((p) => p.barcode === "990000000901") as { image?: string }
+    expect(row.image).toBeUndefined()
+  })
 })
