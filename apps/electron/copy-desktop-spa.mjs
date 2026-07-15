@@ -7,7 +7,7 @@
  *
  * Without this step the API serves a stale POS build and the app looks outdated.
  */
-import { cpSync, existsSync } from "node:fs"
+import { cpSync, existsSync, rmSync } from "node:fs"
 import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -18,6 +18,18 @@ const dst = join(__dirname, "..", "..", "apps", "api", "public")
 if (!existsSync(src)) {
   console.error("✗ desktop/dist not found — run the desktop build first.")
   process.exit(1)
+}
+
+// POS-RELEASE-1.0.37 build hygiene: the root SPA's /assets are content-hashed,
+// so a plain merge-copy accumulates stale index-*.js/css from previous builds
+// and ships them inside the installer. Clear ONLY the root SPA's assets dir
+// first (admin/driver/order/owner live in their own subfolders and are left
+// untouched), then copy the fresh bundle. index.html at the root is overwritten
+// by the copy, so only /assets needs clearing.
+const rootAssets = join(dst, "assets")
+if (existsSync(rootAssets)) {
+  rmSync(rootAssets, { recursive: true, force: true })
+  console.log("🧹 Cleared stale root SPA assets → apps/api/public/assets")
 }
 
 // Merge-copy: overwrites index.html + adds hashed /assets, keeps admin/driver/order subfolders
