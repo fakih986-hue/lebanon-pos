@@ -15,6 +15,7 @@ import { getSales, getSalesMetrics, getTopProducts, getOperationalAlerts, subscr
 import { getSettings, subscribeSettings, type AppSettings } from "../../features/pos/services/settings.service"
 import { getDeadStockItems, getExpiryAlerts, getReorderSuggestions } from "../../features/pos/services/stock.service"
 import type { Product } from "../../features/pos/types/product"
+import { buildActionQueue } from "../../features/pos/lib/actionQueue"
 import { useI18n } from "@lebanonpos/shared"
 
 type DateRange = "today" | "week" | "month"
@@ -178,15 +179,17 @@ export default function DashboardPage() {
   const expiryAlerts       = useMemo(() => getExpiryAlerts(products, 30), [products])
   const deadStockItems     = useMemo(() => getDeadStockItems(products, 60).slice(0, 3), [products])
   const operationalAlerts  = useMemo(() => getOperationalAlerts(), [ledgerVersion])
-  // Combined action queue sorted by money-at-risk (desc)
-  const actionQueue = useMemo(() => {
-    const items: Array<{ type: string; label: string; sub: string; value: number; link: string; color: string; bg: string }> = []
-    // Over-limit and overdue customers removed from action queue — handled in Customer Debt view
-    for (const p of lowStockProducts) items.push({ type: "lowstock", label: p.name, sub: `${formatNumber(p.stock)} units left`, value: p.stock * p.cost, link: "/products", color: "var(--amber)", bg: "var(--amber-soft)" })
-    for (const d of deadStockItems) items.push({ type: "deadstock", label: d.product.name, sub: `No sales in 60d`, value: d.product.stock * d.product.cost, link: "/products", color: "var(--amber)", bg: "var(--amber-soft)" })
-    for (const a of operationalAlerts) items.push({ type: a.type, label: a.message, sub: a.action ?? "", value: 0, link: a.action === "retry-sync" ? "/settings" : "", color: a.type === "danger" ? "var(--rose)" : "var(--amber)", bg: a.type === "danger" ? "var(--rose-soft)" : "var(--amber-soft)" })
-    return items.sort((a, b) => b.value - a.value).slice(0, 8)
-  }, [lowStockProducts, deadStockItems, operationalAlerts])
+  // POS-OWNER-DASHBOARD-POLISH-1: action-verb labels, correct links, and a
+  // critical-first / money-at-risk order (pure helper — no calculation change).
+  const actionQueue = useMemo(() => buildActionQueue({
+    outstanding: ledgerTotals.outstanding,
+    debtCustomers: ledgerTotals.customers,
+    lowStock: lowStockProducts.map((p) => ({ name: p.name, stock: p.stock, cost: p.cost })),
+    deadStock: deadStockItems.map((d) => ({ name: d.product.name, stock: d.product.stock, cost: d.product.cost })),
+    operationalAlerts,
+    fmtMoney: formatCurrency,
+    fmtNum: formatNumber,
+  }), [ledgerTotals, lowStockProducts, deadStockItems, operationalAlerts])
   const actionCount = actionQueue.length
 
   const rangeLabel: Record<DateRange, string> = {
@@ -490,24 +493,25 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {actionQueue.map((item, i) => {
-                  const Tag = item.link ? Link : "div"
+                {actionQueue.map((item) => {
+                  const color = item.severity === "critical" ? "var(--rose)" : "var(--amber)"
+                  const bg = item.severity === "critical" ? "var(--rose-soft)" : "var(--amber-soft)"
                   return (
-                    <Tag
-                      key={`${item.type}-${i}`}
-                      to={item.link as any}
-                      className="flex items-center justify-between rounded-xl px-3 py-2.5 transition hover:opacity-80 cursor-pointer"
-                      style={{ background: item.bg, border: `1px solid ${item.color}20` }}
+                    <Link
+                      key={item.key}
+                      to={item.link}
+                      className="flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 transition hover:opacity-80 cursor-pointer"
+                      style={{ background: bg, border: `1px solid ${color}20` }}
                       aria-label={`${item.label} — ${item.sub}`}
                     >
-                      <div>
-                        <p className="text-[12px] font-bold" style={{ color: item.color }}>{item.label}</p>
-                        <p className="text-[10px]" style={{ color: item.color, opacity: 0.7 }}>{item.sub}</p>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-bold truncate" style={{ color }}>{item.label}</p>
+                        <p className="text-[10px] truncate" style={{ color, opacity: 0.7 }}>{item.sub}</p>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg shrink-0" style={{ background: item.color, color: "#fff" }}>
-                        {item.type === "lowstock" ? "Low" : item.type === "deadstock" ? "Dead" : "⚠"}
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg shrink-0" style={{ background: color, color: "#fff" }}>
+                        {item.tag}
                       </span>
-                    </Tag>
+                    </Link>
                   )
                 })}
               </div>
