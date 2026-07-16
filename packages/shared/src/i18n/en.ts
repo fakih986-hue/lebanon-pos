@@ -297,6 +297,8 @@ export const en = {
   "ordering.your_driver": "Your Driver",
   "ordering.on_the_way": "On the way to you",
   "ordering.order_summary": "Order Summary",
+  "ordering.cart_availability_changed": "Some items are no longer available in the quantity you chose.",
+  "ordering.update_cart": "Update cart",
   "ordering.payment": "Payment",
   "ordering.cash_on_delivery": "Cash on Delivery",
   "ordering.card": "Card",

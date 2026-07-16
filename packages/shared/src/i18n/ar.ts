@@ -297,6 +297,8 @@ export const ar = {
   "ordering.your_driver": "السائق الخاص بك",
   "ordering.on_the_way": "في الطريق إليك",
   "ordering.order_summary": "ملخص الطلب",
+  "ordering.cart_availability_changed": "بعض العناصر لم تعد متوفرة بالكمية التي اخترتها.",
+  "ordering.update_cart": "تحديث السلة",
   "ordering.payment": "الدفع",
   "ordering.cash_on_delivery": "الدفع عند الاستلام",
   "ordering.card": "بطاقة",

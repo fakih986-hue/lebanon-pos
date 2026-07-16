@@ -241,6 +241,33 @@ export function MenuPage() {
     total: cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
   }), [cart])
 
+  // POS-ORDER-CHECKOUT-1: flag cart items that are no longer available against
+  // the loaded menu (product removed/archived → "out"; current stock below the
+  // cart quantity → "short"). Advisory only — the order endpoint remains the
+  // authority; we warn + offer a one-tap fix rather than hard-block on possibly
+  // stale client stock.
+  const issueById = useMemo(() => {
+    const stockById = new Map<number, number>()
+    for (const p of products) stockById.set(p.id, p.stock)
+    const m = new Map<number, { type: "out" | "short"; available: number }>()
+    for (const item of cart) {
+      const stock = stockById.get(item.product.id)
+      if (stock === undefined || stock <= 0) m.set(item.product.id, { type: "out", available: 0 })
+      else if (stock < item.quantity) m.set(item.product.id, { type: "short", available: stock })
+    }
+    return m
+  }, [cart, products])
+  const hasCartIssues = issueById.size > 0
+
+  const fixCart = useCallback(() => {
+    setCart((prev) => prev.flatMap((item) => {
+      const issue = issueById.get(item.product.id)
+      if (!issue) return [item]
+      if (issue.type === "out") return []
+      return [{ ...item, quantity: issue.available }]
+    }))
+  }, [issueById])
+
   const addToCart = useCallback((product: Product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id)
@@ -261,7 +288,7 @@ export function MenuPage() {
   }, [])
 
   const placeOrder = useCallback(async () => {
-    if (!tenantId) return
+    if (!tenantId || submitting) return // guard against double-submit
     setOrderError(null)
     setSubmitting(true)
     try {
@@ -277,7 +304,7 @@ export function MenuPage() {
       navigate(`/order/${tenantSubdomain}/track/${result.order.orderNumber}`)
     } catch (err: any) { setOrderError(err.message) }
     finally { setSubmitting(false) }
-  }, [tenantId, customerName, customerPhone, address, deliveryNote, deliveryFee, cart, tenantSubdomain, navigate, customerId, paymentMethod, CART_KEY])
+  }, [tenantId, submitting, customerName, customerPhone, address, deliveryNote, deliveryFee, cart, tenantSubdomain, navigate, customerId, paymentMethod, CART_KEY])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -334,6 +361,15 @@ export function MenuPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-primary text-sm truncate">{item.product.name}</p>
                     <p className="text-xs text-secondary">{fmt(item.product.price)} each · {fmt(item.product.price * item.quantity)}</p>
+                    {(() => {
+                      const issue = issueById.get(item.product.id)
+                      if (!issue) return null
+                      return (
+                        <p className="mt-1 inline-block rounded-md bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-rose-300">
+                          {issue.type === "out" ? (t("ordering.out_of_stock") || "Out of stock") : `Only ${issue.available} left`}
+                        </p>
+                      )
+                    })()}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button onClick={() => updateQuantity(item.product.id, -1)}
@@ -364,6 +400,18 @@ export function MenuPage() {
           <div className="border-t border-glass p-4">
             <h3 className="text-sm font-bold text-primary mb-3">{t("ordering.checkout_details") || "Your Details"}</h3>
             <div className="max-w-md mx-auto space-y-3">
+              {hasCartIssues && (
+                <div className="flex flex-wrap items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                  <span className="text-amber-300 text-sm font-medium flex-1 min-w-0">
+                    {t("ordering.cart_availability_changed") || "Some items are no longer available in the quantity you chose."}
+                  </span>
+                  <button type="button" onClick={fixCart}
+                    aria-label="Update cart to available quantities"
+                    className="shrink-0 rounded-lg bg-amber-500/90 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-400 active:scale-95 transition-all">
+                    {t("ordering.update_cart") || "Update cart"}
+                  </button>
+                </div>
+              )}
               {orderError && (
                 <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl text-center">{orderError}</div>
               )}
