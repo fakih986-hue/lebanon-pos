@@ -56,6 +56,7 @@ import {
 } from "../../features/pos/services/sync.service"
 import type { ConnectionMode } from "../../features/pos/services/settings.service"
 import { restoreIndexedDBToLocal } from "../../features/pos/services/storage.service"
+import { buildSafeBackup, buildRawBackup } from "../../features/pos/lib/backup"
 import { showToast } from "../../features/pos/services/toast.service"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
@@ -125,8 +126,11 @@ export default function SettingsPage() {
   const [showLanConfirm, setShowLanConfirm] = useState(false)
   // POS-UX-IA-1A: confirm the two data-danger actions (backup export exposes
   // secrets; restore overwrites local data). Grouped into a Danger zone below.
-  const [showExportConfirm, setShowExportConfirm] = useState(false)
+  const [showSafeExportConfirm, setShowSafeExportConfirm] = useState(false)
+  const [showExportConfirm, setShowExportConfirm] = useState(false) // full raw export
+  const [rawExportText, setRawExportText] = useState("")
   const [showRestoreConfirm, setShowRestoreConfirm] = useState(false)
+  const [restoreText, setRestoreText] = useState("")
   const [lanIp, setLanIp] = useState("")
   const [copySuccess, setCopySuccess] = useState(false)
   const [pairedDevices, setPairedDevices] = useState<PairedDevice[]>([])
@@ -502,8 +506,17 @@ export default function SettingsPage() {
   }
 
   async function handleRestoreFromIndexedDB() {
-    const count = await restoreIndexedDBToLocal()
-    showToast(count > 0 ? `Restored ${count} stores from IndexedDB.` : "No stores needed restoring.")
+    try {
+      const count = await restoreIndexedDBToLocal()
+      recordAuditEvent({
+        action: "data.restore.indexeddb", entity: "system",
+        summary: `Restored ${count} store(s) from the local IndexedDB snapshot.`,
+        metadata: { stores: count },
+      })
+      showToast(count > 0 ? `Restored ${count} stores from IndexedDB.` : "No stores needed restoring.")
+    } catch (err) {
+      showToast(`Restore failed: ${(err as Error).message}`, "error")
+    }
   }
 
   function downloadRecoveryCard() {
@@ -544,49 +557,28 @@ export default function SettingsPage() {
     showToast("Recovery card downloaded. Save it somewhere safe off this device.")
   }
 
-  function exportData() {
-    const keys = [
-      "lebanonpos.products.v1",
-      "lebanonpos.inventory-batches.v1",
-      "lebanonpos.inventory-adjustments.v1",
-      "lebanonpos.stock-counts.v1",
-      "lebanonpos.customers.v1",
-      "lebanonpos.debt-sales.v1",
-      "lebanonpos.debt-payments.v1",
-      "lebanonpos.sales.v1",
-      "lebanonpos.refunds.v1",
-      "lebanonpos.held-sales.v1",
-      "lebanonpos.expenses.v1",
-      "lebanonpos.daily-closes.v1",
-      "lebanonpos.suppliers.v1",
-      "lebanonpos.purchase-orders.v1",
-      "lebanonpos.supplier-payments.v1",
-      "lebanonpos.settings.v1",
-      "lebanonpos.users.v1",
-      "lebanonpos.current-user.v1",
-      "lebanonpos.session.v1",
-      "lebanonpos.shifts.v1",
-      "lebanonpos.audit.v1",
-      "lebanonpos.sync-queue.v1",
-      "lebanonpos.sync-last.v1",
-    ]
-    const payload = keys.reduce<Record<string, string | null>>((data, key) => {
-      data[key] = window.localStorage.getItem(key)
-      return data
-    }, {})
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    })
+  // POS-SETTINGS-DATA-SAFETY-1: 'safe' redacts PINs/tokens/secrets and omits the
+  // live session; 'raw' keeps everything (admin + typed-confirm gated in the UI).
+  function exportData(mode: "safe" | "raw") {
+    const getItem = (key: string) => window.localStorage.getItem(key)
+    const payload = mode === "safe" ? buildSafeBackup(getItem) : buildRawBackup(getItem)
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
-
     link.href = url
-    link.download = `lebanonpos-backup-${new Date()
+    link.download = `lebanonpos-${mode === "safe" ? "backup-safe" : "backup-full"}-${new Date()
       .toISOString()
       .slice(0, 10)}.json`
     link.click()
     URL.revokeObjectURL(url)
-    showToast("Backup exported.")
+    recordAuditEvent({
+      action: mode === "safe" ? "data.export.safe" : "data.export.full",
+      entity: "system",
+      summary: mode === "safe"
+        ? "Safe data backup exported (PINs/tokens/secrets redacted)."
+        : "FULL raw data backup exported — includes staff PINs and tokens.",
+    })
+    showToast(mode === "safe" ? "Safe backup exported (secrets redacted)." : "Full raw backup exported.")
   }
 
   return (
@@ -1787,16 +1779,29 @@ export default function SettingsPage() {
               </p>
               <button
                 type="button"
-                onClick={() => setShowExportConfirm(true)}
+                onClick={() => setShowSafeExportConfirm(true)}
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
               >
                 <Download size={17} />
-                Export Full Data Backup (JSON)
+                Safe backup export (JSON)
+              </button>
+              <p className="mt-1 text-[11px]" style={{ color: "var(--text-3)" }}>
+                Business data only — staff PINs, tokens and keys are removed.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => { setRawExportText(""); setShowExportConfirm(true) }}
+                className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg border px-3 text-sm font-bold transition hover:opacity-90"
+                style={{ borderColor: "var(--danger-border, var(--danger))", color: "var(--danger-text)" }}
+              >
+                <Download size={16} />
+                Full raw export — includes secrets
               </button>
 
               <button
                 type="button"
-                onClick={() => setShowRestoreConfirm(true)}
+                onClick={() => { setRestoreText(""); setShowRestoreConfirm(true) }}
                 className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
               >
                 <Upload size={16} />
@@ -1814,14 +1819,44 @@ export default function SettingsPage() {
             </div>
 
             <ConfirmDialog
-              open={showExportConfirm}
-              title="Export full data backup?"
+              open={showSafeExportConfirm}
+              title="Export safe backup?"
               confirmLabel="Export"
+              onConfirm={() => { setShowSafeExportConfirm(false); exportData("safe") }}
+              onCancel={() => setShowSafeExportConfirm(false)}
+            >
+              Downloads a JSON backup of your business data (products, sales,
+              customers, suppliers, settings, staff names/roles). Staff PINs,
+              access tokens, keys and the live session are removed so the file is
+              safe to store or send.
+            </ConfirmDialog>
+
+            <ConfirmDialog
+              open={showExportConfirm}
+              title="Export FULL raw backup?"
+              confirmLabel="Export raw backup"
               confirmDestructive
-              onConfirm={() => { setShowExportConfirm(false); exportData() }}
+              confirmDisabled={rawExportText.trim().toUpperCase() !== "EXPORT"}
+              onConfirm={() => { setShowExportConfirm(false); exportData("raw") }}
               onCancel={() => setShowExportConfirm(false)}
             >
-              This downloads a JSON file containing ALL local data — including staff PINs and access tokens. Store it securely and delete it when no longer needed.
+              <p className="mb-3">
+                This file contains <strong>everything</strong> — including staff
+                PIN hashes and access tokens. Anyone with this file can gain
+                access. Only export it for a controlled migration, store it
+                encrypted, and delete it immediately after.
+              </p>
+              <label className="block text-[12px] font-semibold mb-1" style={{ color: "var(--text-2)" }}>
+                Type <span className="font-mono" style={{ color: "var(--danger-text)" }}>EXPORT</span> to confirm
+              </label>
+              <input
+                value={rawExportText}
+                onChange={(e) => setRawExportText(e.target.value)}
+                placeholder="EXPORT"
+                aria-label="Type EXPORT to confirm the full raw export"
+                className="h-10 w-full rounded-lg border px-3 font-mono text-sm outline-none"
+                style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }}
+              />
             </ConfirmDialog>
 
             <ConfirmDialog
@@ -1829,10 +1864,27 @@ export default function SettingsPage() {
               title="Restore from IndexedDB?"
               confirmLabel="Restore"
               confirmDestructive
+              confirmDisabled={restoreText.trim().toUpperCase() !== "RESTORE"}
               onConfirm={() => { setShowRestoreConfirm(false); void handleRestoreFromIndexedDB() }}
               onCancel={() => setShowRestoreConfirm(false)}
             >
-              This overwrites the current local data with the last IndexedDB snapshot. Any unsynced local changes will be lost.
+              <p className="mb-3">
+                This <strong>overwrites</strong> current local data (products,
+                sales, customers, suppliers, settings, staff and more) with the
+                last on-device IndexedDB snapshot. Any unsynced local changes
+                will be lost. This cannot be undone.
+              </p>
+              <label className="block text-[12px] font-semibold mb-1" style={{ color: "var(--text-2)" }}>
+                Type <span className="font-mono" style={{ color: "var(--danger-text)" }}>RESTORE</span> to confirm
+              </label>
+              <input
+                value={restoreText}
+                onChange={(e) => setRestoreText(e.target.value)}
+                placeholder="RESTORE"
+                aria-label="Type RESTORE to confirm the restore"
+                className="h-10 w-full rounded-lg border px-3 font-mono text-sm outline-none"
+                style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text)" }}
+              />
             </ConfirmDialog>
           </section>
           ) : null}

@@ -8,11 +8,13 @@ type Props = {
   children: ReactNode
   confirmLabel?: string
   confirmDestructive?: boolean
+  /** When true, the confirm button is disabled (e.g. typed-confirmation gates). */
+  confirmDisabled?: boolean
   onConfirm: () => void
   onCancel: () => void
 }
 
-export default function ConfirmDialog({ open, title, children, confirmLabel, confirmDestructive, onConfirm, onCancel }: Props) {
+export default function ConfirmDialog({ open, title, children, confirmLabel, confirmDestructive, confirmDisabled, onConfirm, onCancel }: Props) {
   const { t } = useI18n()
 
   useEffect(() => {
@@ -59,8 +61,8 @@ export default function ConfirmDialog({ open, title, children, confirmLabel, con
           <button
             type="button"
             onClick={onConfirm}
-            className={`btn btn-md ${confirmDestructive ? "btn-danger hover:bg-[var(--rose)] hover:text-white" : "btn-primary"}`}
-            style={confirmDestructive ? undefined : undefined}
+            disabled={confirmDisabled}
+            className={`btn btn-md ${confirmDestructive ? "btn-danger hover:bg-[var(--rose)] hover:text-white" : "btn-primary"} disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             {confirmLabel ?? t("pos.confirm")}
           </button>
