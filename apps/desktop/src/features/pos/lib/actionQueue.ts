@@ -21,7 +21,7 @@ export type ActionQueueInput = {
   debtCustomers: number
   lowStock: Array<{ name: string; stock: number; cost: number }>
   deadStock: Array<{ name: string; stock: number; cost: number }>
-  operationalAlerts: Array<{ type: "warning" | "danger"; message: string; action?: string }>
+  operationalAlerts: Array<{ type: "warning" | "danger" | "info"; message: string; action?: string }>
   fmtMoney: (n: number) => string
   fmtNum: (n: number) => string
 }
