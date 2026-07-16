@@ -57,7 +57,16 @@ export function ThreeBackground() {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     const isMobile = window.matchMedia("(max-width: 768px)").matches
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, alpha: true })
+    // POS-WEBSITE-MOBILE-1: some mobile/strict browsers fail WebGL context
+    // creation (blocked, low-power, or unsupported). Guard it so the effect
+    // degrades gracefully to the CSS background gradient instead of throwing
+    // and leaving a broken/blank scene.
+    let renderer: THREE.WebGLRenderer
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, alpha: true })
+    } catch {
+      return
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1 : 2))
     renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.autoClear = false

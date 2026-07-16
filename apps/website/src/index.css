@@ -10,6 +10,10 @@
 
 html {
   scroll-behavior: smooth;
+  /* POS-WEBSITE-MOBILE-1: belt-and-braces with body's overflow-x:hidden so no
+     stray wide element forces the mobile layout viewport wider than the screen
+     (the "starts zoomed / had to zoom out" symptom). */
+  overflow-x: hidden;
 }
 
 body {
