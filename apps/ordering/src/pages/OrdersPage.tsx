@@ -20,7 +20,7 @@ export function OrdersPage() {
 
   useEffect(() => {
     if (!token) { navigate(`/order/${tenantSubdomain}`); return }
-    api<unknown[]>("/api/delivery/customer/orders").then(data => {
+    api<Order[]>("/api/delivery/customer/orders").then(data => {
       setOrders(Array.isArray(data) ? data : [])
     }).catch(() => {}).finally(() => setLoading(false))
   }, [token])

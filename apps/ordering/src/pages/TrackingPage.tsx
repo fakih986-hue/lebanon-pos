@@ -73,7 +73,7 @@ function TrackingContentInner({
   const [tenantId, setTenantId] = useState("")
   const [storeWhatsApp, setStoreWhatsApp] = useState("")
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
-  const fetchOrderRef = useRef<() => Promise<void>>()
+  const fetchOrderRef = useRef<(() => Promise<void>) | undefined>(undefined)
 
   const wsUrl = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}/ws`
 
@@ -120,7 +120,7 @@ function TrackingContentInner({
   fetchOrderRef.current = fetchOrder
 
   useEffect(() => {
-    fetchOrderRef.current()
+    fetchOrderRef.current?.()
     const interval = setInterval(() => fetchOrderRef.current?.(), 30_000)
     return () => clearInterval(interval)
   }, [])

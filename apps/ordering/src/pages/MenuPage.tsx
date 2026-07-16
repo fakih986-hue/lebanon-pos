@@ -46,6 +46,89 @@ function LazyProductImage({ src, name }: { src: string; name: string }) {
   return <ProductImage src={src} name={name} />
 }
 
+// POS-ORDER-CATALOG-1: the menu endpoint includes `parent { name, image }` for
+// variants (not in the shared Product type) — widen locally for grouping.
+type MenuProduct = Product & { parent?: { name: string; image?: boolean | null } | null }
+type GroupEntry = { kind: "group"; parentId: number; name: string; hasParentImage: boolean; variants: MenuProduct[] }
+type CatalogEntry = { kind: "single"; product: MenuProduct } | GroupEntry
+
+// A standalone product card (handles both in-stock and out-of-stock).
+function CatalogCard({ product, onAdd, t }: { product: MenuProduct; onAdd: (p: MenuProduct) => void; t: (k: string) => string }) {
+  const oos = product.stock <= 0
+  const imgSrc = `/api/delivery/public/image/${product.id}`
+  return (
+    <div className={`bg-glass border border-glass rounded-xl overflow-hidden ${oos ? "opacity-50" : "shadow-lg hover:bg-glass-hover transition-all duration-200"}`}>
+      {product.image ? (
+        oos
+          ? <img src={imgSrc} alt={product.name} className="w-full aspect-[4/3] object-cover grayscale" loading="lazy" />
+          : <LazyProductImage src={imgSrc} name={product.name} />
+      ) : <ProductImagePlaceholder name={product.name} />}
+      <div className="p-3">
+        <div className="flex items-center justify-between">
+          <span className={`rounded-lg px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${oos ? "bg-white/[0.06] text-muted" : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-300"}`}>{product.category}</span>
+          <span className={`text-sm font-bold ${oos ? "text-muted" : "text-emerald-400"}`}>{fmt(product.price)}</span>
+        </div>
+        <p className="mt-2 text-sm font-medium text-primary leading-tight">{product.name}</p>
+        {product.variantName && <p className={`text-xs mt-0.5 ${oos ? "text-muted" : "text-secondary"}`}>{product.variantName}</p>}
+        {oos ? (
+          <p className="mt-2 text-center text-xs text-muted">{t("ordering.out_of_stock")}</p>
+        ) : (
+          <button onClick={() => onAdd(product)}
+            aria-label={`Add ${product.name} to cart — ${fmt(product.price)}`}
+            className="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:from-emerald-500 hover:to-emerald-400 active:scale-95">
+            {t("ordering.add_to_cart")}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// A variant family grouped under one card: pick a size to add that specific
+// variant (each variant is still its own product — no identity/stock change).
+function VariantGroupCard({ entry, onAdd, t }: { entry: GroupEntry; onAdd: (p: MenuProduct) => void; t: (k: string) => string }) {
+  const prices = entry.variants.map((v) => v.price)
+  const min = Math.min(...prices), max = Math.max(...prices)
+  const priceLabel = min === max ? fmt(min) : `${fmt(min)} – ${fmt(max)}`
+  const groupOOS = entry.variants.every((v) => v.stock <= 0)
+  const imgVariant = entry.hasParentImage ? null : entry.variants.find((v) => v.image)
+  const imgSrc = entry.hasParentImage
+    ? `/api/delivery/public/image/${entry.parentId}`
+    : imgVariant ? `/api/delivery/public/image/${imgVariant.id}` : null
+  return (
+    <div className={`bg-glass border border-glass rounded-xl overflow-hidden ${groupOOS ? "opacity-50" : "shadow-lg"}`}>
+      {imgSrc ? (
+        groupOOS
+          ? <img src={imgSrc} alt={entry.name} className="w-full aspect-[4/3] object-cover grayscale" loading="lazy" />
+          : <LazyProductImage src={imgSrc} name={entry.name} />
+      ) : <ProductImagePlaceholder name={entry.name} />}
+      <div className="p-3">
+        <div className="flex items-center justify-between">
+          <span className={`rounded-lg px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${groupOOS ? "bg-white/[0.06] text-muted" : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-300"}`}>{entry.variants[0].category}</span>
+          <span className={`text-sm font-bold ${groupOOS ? "text-muted" : "text-emerald-400"}`}>{priceLabel}</span>
+        </div>
+        <p className="mt-2 text-sm font-medium text-primary leading-tight">{entry.name}</p>
+        {groupOOS ? (
+          <p className="mt-2 text-center text-xs text-muted">{t("ordering.out_of_stock")}</p>
+        ) : (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {entry.variants.map((v) => {
+              const vOOS = v.stock <= 0
+              return (
+                <button key={v.id} disabled={vOOS} onClick={() => onAdd(v)}
+                  aria-label={`Add ${entry.name} ${v.variantName ?? ""} — ${fmt(v.price)}`}
+                  className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${vOOS ? "bg-white/[0.04] text-muted line-through cursor-not-allowed" : "bg-emerald-600/90 text-white hover:bg-emerald-500 active:scale-95"}`}>
+                  {(v.variantName ?? v.name)} · {fmt(v.price)}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 type CartItem = { product: Product; quantity: number }
 type OrderPayload = { tenantId: string; customerName: string; customerPhone: string; address: string; deliveryNote?: string; deliveryFee: number; customerId?: string; paymentMethod: string; items: Array<{ productId: number; productName: string; barcode: string; quantity: number; unitPrice: number }> }
 
@@ -76,7 +159,7 @@ export function MenuPage() {
   const cartRef = useRef<HTMLDivElement>(null)
   const customerId = localStorage.getItem("customer_id") || undefined
   const CART_KEY = `cart_${tenantSubdomain}`
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const lastCartSaveRef = useRef(0)
 
   useEffect(() => {
@@ -120,10 +203,38 @@ export function MenuPage() {
     })
   }, [products, activeCategory, search])
 
-  const { inStock, outOfStock } = useMemo(() => ({
-    inStock: filteredProducts.filter((p) => p.stock > 0),
-    outOfStock: filteredProducts.filter((p) => p.stock === 0),
-  }), [filteredProducts])
+  // POS-ORDER-CATALOG-1: group variant rows under one parent entry (choose a
+  // size on the card); standalone products stay as single entries. Split into
+  // in-stock / out-of-stock, keeping OOS at the bottom as before.
+  const { inStock, outOfStock } = useMemo(() => {
+    const groups = new Map<number, MenuProduct[]>()
+    const singles: MenuProduct[] = []
+    for (const p of filteredProducts as MenuProduct[]) {
+      if (p.parentId != null) {
+        const arr = groups.get(p.parentId) ?? []
+        arr.push(p)
+        groups.set(p.parentId, arr)
+      } else {
+        singles.push(p)
+      }
+    }
+    const all: CatalogEntry[] = singles.map((product) => ({ kind: "single", product }))
+    for (const [parentId, variants] of groups) {
+      variants.sort((a, b) => a.price - b.price)
+      all.push({
+        kind: "group",
+        parentId,
+        name: variants[0].parent?.name ?? variants[0].name,
+        hasParentImage: !!variants[0].parent?.image,
+        variants,
+      })
+    }
+    const nameOf = (e: CatalogEntry) => (e.kind === "single" ? e.product.name : e.name)
+    all.sort((a, b) => nameOf(a).localeCompare(nameOf(b)))
+    const available = (e: CatalogEntry) =>
+      e.kind === "single" ? e.product.stock > 0 : e.variants.some((v) => v.stock > 0)
+    return { inStock: all.filter(available), outOfStock: all.filter((e) => !available(e)) }
+  }, [filteredProducts])
 
   const cartStats = useMemo(() => ({
     count: cart.reduce((sum, item) => sum + item.quantity, 0),
@@ -378,46 +489,13 @@ export function MenuPage() {
           </div>
         )}
         <div className="grid grid-cols-2 gap-3">
-          {inStock.map((product) => (
-            <div key={product.id} className="bg-glass border border-glass rounded-xl shadow-lg hover:bg-glass-hover transition-all duration-200 overflow-hidden">
-              {product.image ? (
-                <LazyProductImage src={`/api/delivery/public/image/${product.id}`} name={product.name} />
-              ) : (
-                <ProductImagePlaceholder name={product.name} />
-              )}
-              <div className="p-3">
-                <div className="flex items-center justify-between">
-                  <span className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-300 font-medium uppercase tracking-wider">{product.category}</span>
-                  <span className="text-sm font-bold text-emerald-400">{fmt(product.price)}</span>
-                </div>
-                <p className="mt-2 text-sm font-medium text-primary leading-tight">{product.name}</p>
-                {product.variantName && <p className="text-xs text-secondary mt-0.5">{product.variantName}</p>}
-                <button onClick={() => addToCart(product)}
-                  aria-label={`Add ${product.name} to cart — ${fmt(product.price)}`}
-                  className="mt-2 flex h-9 w-full items-center justify-center rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all duration-200 hover:from-emerald-500 hover:to-emerald-400 active:scale-95">
-                  {t("ordering.add_to_cart")}
-                </button>
-              </div>
-            </div>
-          ))}
-          {outOfStock.map((product) => (
-            <div key={product.id} className="bg-glass border border-glass rounded-xl opacity-50 overflow-hidden">
-              {product.image ? (
-                <img src={`/api/delivery/public/image/${product.id}`} alt={product.name} className="w-full aspect-[4/3] object-cover grayscale" loading="lazy" />
-              ) : (
-                <ProductImagePlaceholder name={product.name} />
-              )}
-              <div className="p-3">
-                <div className="flex items-center justify-between">
-                  <span className="rounded-lg bg-white/[0.06] px-2 py-0.5 text-[10px] text-muted font-medium uppercase tracking-wider">{product.category}</span>
-                  <span className="text-sm font-bold text-muted">{fmt(product.price)}</span>
-                </div>
-                <p className="mt-2 text-sm font-medium text-primary leading-tight">{product.name}</p>
-                {product.variantName && <p className="text-xs text-muted mt-0.5">{product.variantName}</p>}
-                <p className="mt-2 text-center text-xs text-muted">{t("ordering.out_of_stock")}</p>
-              </div>
-            </div>
-          ))}
+          {[...inStock, ...outOfStock].map((entry) =>
+            entry.kind === "single" ? (
+              <CatalogCard key={`p${entry.product.id}`} product={entry.product} onAdd={addToCart} t={t} />
+            ) : (
+              <VariantGroupCard key={`g${entry.parentId}`} entry={entry} onAdd={addToCart} t={t} />
+            )
+          )}
         </div>
       </div>
 
