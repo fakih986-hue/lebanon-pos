@@ -515,19 +515,28 @@ export function createProduct(input: {
   // POS-PRODUCT-IMAGE-1: optional product image (compressed JPEG data URL).
   // Persisted locally and carried in the product.create sync payload.
   image?: string | null
+  // POS-PRODUCT-ONBOARDING-1: optional catalog metadata so a product can be
+  // created complete in one step (bulk import / quick create). All optional.
+  reorderPoint?: number
+  reorderQuantity?: number
+  supplierId?: string
+  supplierName?: string
+  barcodeAliases?: string[]
 }): Product | undefined {
   assertCanWrite("create product")
   const currentProducts = getProductsSync()
   const normalizedBarcode = normalizeBarcode(input.barcode)
+  const inputAliases = normalizeBarcodeList(input.barcodeAliases).filter((b) => b !== normalizedBarcode)
 
-  // Check for barcode conflicts — primary AND aliases
-  if (normalizedBarcode) {
+  // Check for barcode conflicts — primary AND aliases, incoming primary + aliases
+  const conflictCandidates = [normalizedBarcode, ...inputAliases].filter(Boolean)
+  for (const code of conflictCandidates) {
     const conflict = currentProducts.find(p =>
-      (p.barcode ?? "") === normalizedBarcode || (p.barcodeAliases ?? []).includes(normalizedBarcode)
+      (p.barcode ?? "") === code || normalizeBarcodeList(p.barcodeAliases).includes(code)
     )
     if (conflict) {
       // Barcode exists → restock through receiving, not direct stock merge
-      console.warn(`[createProduct] Barcode ${normalizedBarcode} already used by "${conflict.name}" — receive stock instead`)
+      console.warn(`[createProduct] Barcode ${code} already used by "${conflict.name}" — receive stock instead`)
       return undefined
     }
   }
@@ -548,8 +557,12 @@ export function createProduct(input: {
     accent: input.accent ?? chooseAccent(input.category, nextId),
     parentId: input.parentId ?? null,
     variantName: input.variantName ?? undefined,
-    barcodeAliases: [],
+    barcodeAliases: inputAliases,
     image: input.image || undefined,
+    reorderPoint: input.reorderPoint,
+    reorderQuantity: input.reorderQuantity,
+    supplierId: input.supplierId,
+    supplierName: input.supplierName,
   }
   const nextProducts = [...currentProducts, product]
   writeProducts(nextProducts)
