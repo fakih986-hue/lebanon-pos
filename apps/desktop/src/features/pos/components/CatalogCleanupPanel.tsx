@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react"
-import { X, Layers, Archive, Pencil, AlertTriangle } from "lucide-react"
+import { X, Layers, Archive, Pencil, AlertTriangle, ImagePlus, LoaderCircle } from "lucide-react"
 
 import type { Product } from "../types/product"
 import { formatCurrency, formatNumber } from "../lib/currency"
 import { analyzeCatalog } from "../lib/catalogHealth"
 import { updateProduct, archiveProduct } from "../services/product.service"
+import { getApiUrl, getAuthToken } from "../services/sync.service"
+import { generateImageViaApi, completeMissingImages } from "../services/productImage.service"
 import { showToast } from "../services/toast.service"
 
 // POS-PRODUCT-CATALOG-CLEANUP-1: surfaces catalog-quality issues and offers only
@@ -22,6 +24,46 @@ type Props = {
 export default function CatalogCleanupPanel({ products, onClose, onChanged, onEditProduct }: Props) {
   const health = useMemo(() => analyzeCatalog(products), [products])
   const [pendingArchive, setPendingArchive] = useState<number | null>(null)
+  const [imgBusy, setImgBusy] = useState<Set<number>>(new Set())
+  const [batchRunning, setBatchRunning] = useState(false)
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null)
+
+  const connected = () => {
+    if (getApiUrl() && getAuthToken()) return true
+    showToast("Connect to the server first (Settings → Devices & Sync).", "error")
+    return false
+  }
+
+  async function generateOne(p: Product) {
+    if (!connected() || imgBusy.has(p.id)) return
+    setImgBusy((s) => new Set(s).add(p.id))
+    try {
+      const gen = await generateImageViaApi({ name: p.name, category: p.category, barcode: p.barcode })
+      if (gen?.image) { updateProduct(p.id, { image: gen.image }); showToast(`Image added to ${p.name}${gen.source ? ` (${gen.source})` : ""}.`); onChanged() }
+      else showToast(`Could not generate an image for ${p.name}.`, "error")
+    } catch (e) { showToast((e as Error).message, "error") }
+    finally { setImgBusy((s) => { const n = new Set(s); n.delete(p.id); return n }) }
+  }
+
+  async function generateAllMissing() {
+    if (batchRunning || !connected()) return
+    setBatchRunning(true)
+    setBatchProgress({ done: 0, total: health.missingImage.length })
+    try {
+      const r = await completeMissingImages(health.missingImage, {
+        generate: (p) => generateImageViaApi({ name: p.name, category: p.category, barcode: p.barcode }),
+        save: (id, image) => updateProduct(id, { image }),
+        onProgress: (done, total) => setBatchProgress({ done, total }),
+      })
+      showToast(`${r.generated} image(s) added${r.failed ? ` · ${r.failed} failed` : ""}.`, r.failed ? "error" : "success")
+      onChanged()
+    } catch (e) {
+      showToast((e as Error).message, "error")
+    } finally {
+      setBatchRunning(false)
+      setBatchProgress(null)
+    }
+  }
 
   function makeVariantsOfFirst(group: Product[]) {
     const [parent, ...rest] = group
@@ -148,9 +190,41 @@ export default function CatalogCleanupPanel({ products, onClose, onChanged, onEd
             {health.missingBarcode.map((p) => <Row key={p.id} p={p} />)}
           </Section>
 
-          <Section title="Missing image" count={health.missingImage.length}>
-            {health.missingImage.map((p) => <Row key={p.id} p={p} note="no image" />)}
-          </Section>
+          {health.missingImage.length > 0 && (
+            <details className="rounded-xl border" style={{ borderColor: "var(--border)" }}>
+              <summary className="flex cursor-pointer items-center justify-between px-3 py-2.5 text-[13px] font-bold" style={{ color: "var(--text)" }}>
+                <span>Missing image</span>
+                <span className="rounded-full px-2 py-0.5 text-[11px]" style={{ background: "var(--surface-3)", color: "var(--text-2)" }}>{health.missingImage.length}</span>
+              </summary>
+              <div className="space-y-1.5 px-3 pb-3">
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={generateAllMissing} disabled={batchRunning}
+                    className="btn btn-primary btn-sm gap-1.5 disabled:opacity-50">
+                    {batchRunning ? <LoaderCircle size={13} className="animate-spin" /> : <ImagePlus size={13} />}
+                    {batchRunning && batchProgress
+                      ? `Generating ${batchProgress.done}/${batchProgress.total}…`
+                      : `Generate all missing (${health.missingImage.length})`}
+                  </button>
+                  <span className="text-[10px]" style={{ color: "var(--text-3)" }}>Barcode catalog → AI → placeholder. Never overwrites an existing image.</span>
+                </div>
+                {health.missingImage.map((p) => (
+                  <div key={p.id} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ background: "var(--surface-2)" }}>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-semibold truncate" style={{ color: "var(--text)" }}>{p.name}</p>
+                      <p className="text-[10px] truncate" style={{ color: "var(--text-3)" }}>{p.barcode || "no barcode"} · {formatCurrency(p.price)}</p>
+                    </div>
+                    <button type="button" onClick={() => generateOne(p)} disabled={batchRunning || imgBusy.has(p.id)}
+                      className="btn btn-ghost btn-sm gap-1 shrink-0 disabled:opacity-50" aria-label={`Generate image for ${p.name}`}>
+                      {imgBusy.has(p.id) ? <LoaderCircle size={12} className="animate-spin" /> : <ImagePlus size={12} />} Generate
+                    </button>
+                    <button type="button" onClick={() => onEditProduct(p)} className="btn btn-ghost btn-sm gap-1 shrink-0" aria-label={`Edit ${p.name}`}>
+                      <Pencil size={12} /> Edit
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
 
           <Section title="Uncategorized" count={health.uncategorized.length}>
             {health.uncategorized.map((p) => <Row key={p.id} p={p} note="no category" />)}
