@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react"
 import { useDebounce } from "../../hooks/useDebounce"
 import type { Product } from "../../features/pos/types/product"
-import { ImagePlus, Plus, Download, SlidersHorizontal, X, Filter, ArrowUpDown, FileSpreadsheet } from "lucide-react"
+import { ImagePlus, Plus, Download, SlidersHorizontal, X, Filter, ArrowUpDown, FileSpreadsheet, ListChecks } from "lucide-react"
 import KpiCards from "../../features/pos/components/KpiCards"
 import AlertsPanel from "../../features/pos/components/AlertsPanel"
 import ProductSetupForm from "../../features/pos/components/ProductSetupForm"
 import ProductTable from "../../features/pos/components/ProductTable"
 import ProductQuickCreate from "../../features/pos/components/ProductQuickCreate"
 import BulkImportModal from "../../features/pos/components/BulkImportModal"
+import CatalogCleanupPanel from "../../features/pos/components/CatalogCleanupPanel"
 import ProductEditDrawer from "../../features/pos/components/ProductEditDrawer"
 import Spinner from "../../components/ui/Spinner"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
@@ -117,6 +118,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [toolsOpen, setToolsOpen] = useState(false)
   const [bulkImportOpen, setBulkImportOpen] = useState(false)
+  const [cleanupOpen, setCleanupOpen] = useState(false)
   const [bulkEditCategory, setBulkEditCategory] = useState("All")
   const [bulkEditField, setBulkEditField] = useState<"price" | "cost">("price")
   const [bulkEditMode, setBulkEditMode] = useState<"percent" | "fixed">("percent")
@@ -567,6 +569,13 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
                     <FileSpreadsheet size={14} style={{ color: "var(--text-3)" }} />
                     Bulk Import
                   </button>
+                  <button type="button" role="menuitem"
+                    onClick={() => { setToolsOpen(false); setCleanupOpen(true) }}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-start text-[13px] font-semibold transition hover:opacity-80"
+                    style={{ color: "var(--text)" }}>
+                    <ListChecks size={14} style={{ color: "var(--text-3)" }} />
+                    Catalog Cleanup
+                  </button>
                 </div>
               </>
             )}
@@ -960,6 +969,16 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
           products={products}
           onClose={() => setBulkImportOpen(false)}
           onImported={() => { getProducts().then(setProducts); setBatchVersion(v => v + 1) }}
+        />
+      )}
+
+      {/* Catalog Cleanup Panel */}
+      {cleanupOpen && (
+        <CatalogCleanupPanel
+          products={products}
+          onClose={() => setCleanupOpen(false)}
+          onChanged={() => { getProducts().then(setProducts); setBatchVersion(v => v + 1) }}
+          onEditProduct={(p) => { setCleanupOpen(false); openProductEdit(p) }}
         />
       )}
 
