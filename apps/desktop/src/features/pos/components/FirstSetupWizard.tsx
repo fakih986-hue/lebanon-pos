@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react"
+import { useNavigate } from "react-router"
 import { X, FileSpreadsheet, ScanLine, Sparkles, PackageOpen, CheckCircle2 } from "lucide-react"
 
 import { getStoreState, markSetupCompleted } from "../lib/storeSetup"
@@ -17,6 +18,12 @@ type Step = "welcome" | "import" | "scan" | "done"
 export default function FirstSetupWizard({ onClose, onCompleted }: { onClose: () => void; onCompleted?: () => void }) {
   const [step, setStep] = useState<Step>("welcome")
   const state = useMemo(() => getStoreState(), [])
+  const navigate = useNavigate()
+
+  function viewReport() {
+    onClose()
+    navigate("/stock?view=Opening")
+  }
 
   function finishEmpty() {
     markSetupCompleted()
@@ -103,7 +110,10 @@ export default function FirstSetupWizard({ onClose, onCompleted }: { onClose: ()
               <CheckCircle2 size={30} className="mx-auto mb-2" style={{ color: "var(--success)" }} />
               <p className="text-[14px] font-bold" style={{ color: "var(--success)" }}>You're set up</p>
               <p className="text-[12px] mt-1" style={{ color: "var(--text-3)" }}>Add products any time from the Products screen.</p>
-              <button type="button" onClick={onClose} className="btn btn-primary mt-4">Done</button>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <button type="button" onClick={viewReport} className="btn btn-default gap-1.5"><PackageOpen size={15} /> View opening inventory report</button>
+                <button type="button" onClick={onClose} className="btn btn-primary">Done</button>
+              </div>
             </div>
           )}
         </div>

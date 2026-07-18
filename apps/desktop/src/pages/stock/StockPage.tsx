@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react"
+import { useSearchParams } from "react-router"
 
 import type { Product } from "../../features/pos/types/product"
 import StockControlPanel from "../../features/pos/components/StockControlPanel"
 import BatchesPanel from "../../features/pos/components/BatchesPanel"
+import OpeningInventoryPanel from "../../features/pos/components/OpeningInventoryPanel"
 import LedgerReconciliationPanel from "../../features/pos/components/LedgerReconciliationPanel"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 import Spinner from "../../components/ui/Spinner"
@@ -16,7 +18,7 @@ import { useStockControl } from "../../features/pos/hooks/useStockControl"
 // All stock behavior is reused from useStockControl + the existing panels — no
 // business logic here, no logic/service files touched.
 
-type StockWorkspaceView = "Control" | "Lots" | "Recon"
+type StockWorkspaceView = "Control" | "Lots" | "Opening" | "Recon"
 
 const stockViews: Array<{
   value?: StockWorkspaceView
@@ -25,14 +27,20 @@ const stockViews: Array<{
 }> = [
   { value: "Control", label: "Adjust & count" },
   { value: "Lots", label: "Batches" },
+  { value: "Opening", label: "Opening inventory" },
   { value: "Recon", label: "Reconciliation" },
 ]
+
+const isStockView = (v: string | null): v is StockWorkspaceView =>
+  v === "Control" || v === "Lots" || v === "Opening" || v === "Recon"
 
 export default function StockPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedProductId] = useState<number | null>(null)
-  const [activeView, setActiveView] = useState<StockWorkspaceView>("Control")
+  const [searchParams] = useSearchParams()
+  const initialView = searchParams.get("view")
+  const [activeView, setActiveView] = useState<StockWorkspaceView>(isStockView(initialView) ? initialView : "Control")
 
   useEffect(() => {
     let active = true
@@ -125,6 +133,8 @@ export default function StockPage() {
           ) : null}
 
           {activeView === "Lots" ? <BatchesPanel /> : null}
+
+          {activeView === "Opening" ? <OpeningInventoryPanel /> : null}
 
           {activeView === "Recon" ? (
             <>

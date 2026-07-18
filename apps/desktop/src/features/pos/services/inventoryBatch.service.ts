@@ -36,6 +36,11 @@ function getMovements(): StockMovement[] {
   } catch { return [] }
 }
 
+/** Read-only access to the stock-movement ledger (reporting/audit only). */
+export function getStockMovements(): StockMovement[] {
+  return getMovements()
+}
+
 function recordStockMovement(params: {
   productId: number; productName: string; type: MovementType;
   quantity: number; reference: string; note?: string; userId?: string; userName?: string;
