@@ -617,8 +617,16 @@ textarea:focus,
 .input {
   display: block;
   width: 100%;
-  padding: 0 14px;
   font-weight: 650;
+}
+
+/* POS-UX-FINAL-PRODUCTS-1: .input padding lives in the components layer so
+   Tailwind padding utilities (ps-10, pl-8 …) can override it — icon-prefixed
+   search inputs previously kept 14px and the icon overlapped the text. */
+@layer components {
+  .input {
+    padding: 0 14px;
+  }
 }
 
 .input-lg {
@@ -1032,6 +1040,14 @@ textarea:hover:not(:disabled):not(:focus),
 .cart-remove-btn:hover {
   color: var(--danger-text);
   background: var(--danger-soft);
+}
+
+/* POS-UX-FINAL-PRODUCTS-1: destructive affordance for icon buttons that carry
+   neutral inline styles (inline style beats classes, hence !important). */
+.hover-danger:hover:not(:disabled) {
+  color: var(--danger-text) !important;
+  background: var(--danger-soft) !important;
+  border-color: var(--danger) !important;
 }
 
 /* ── Button success variant ── */

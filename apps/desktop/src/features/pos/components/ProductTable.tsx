@@ -173,7 +173,7 @@ function ProductRow({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onEditClick(product) }}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border transition"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border transition hover:opacity-80"
             style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
             title="Edit product"
             aria-label={`Edit ${displayName}`}
@@ -183,8 +183,9 @@ function ProductRow({
           <button
             type="button"
             onClick={() => onDeleteClick(product.id)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border transition hover:opacity-80"
+            className="hover-danger flex h-9 w-9 items-center justify-center rounded-lg border transition"
             style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
+            title="Archive product"
             aria-label={t("pos.delete_product", { name: product.name })}
           >
             <X size={15} />

@@ -728,8 +728,9 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
                   <td className="border-b px-4 py-3 font-mono text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{variant.barcode}</td>
                   <td className="border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
                     <button onClick={() => setDeleteVariantId(variant.id)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg border transition hover:opacity-80"
+                      className="hover-danger flex h-7 w-7 items-center justify-center rounded-lg border transition"
                       style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
+                      title="Remove variant"
                       aria-label={`Remove ${variant.variantName}`}>
                       <X size={13} />
                     </button>
