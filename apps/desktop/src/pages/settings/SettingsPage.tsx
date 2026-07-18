@@ -10,6 +10,7 @@ import {
   Key,
   Lock,
   RotateCw,
+  PackageOpen,
   Save,
   Settings,
   Store,
@@ -19,6 +20,7 @@ import {
 
 import Spinner from "../../components/ui/Spinner"
 import ConfirmDialog from "../../components/ConfirmDialog"
+import FirstSetupWizard from "../../features/pos/components/FirstSetupWizard"
 import {
   getSettings,
   saveSettings,
@@ -126,6 +128,7 @@ export default function SettingsPage() {
   const [showLanConfirm, setShowLanConfirm] = useState(false)
   // POS-UX-IA-1A: confirm the two data-danger actions (backup export exposes
   // secrets; restore overwrites local data). Grouped into a Danger zone below.
+  const [setupWizardOpen, setSetupWizardOpen] = useState(false)
   const [showSafeExportConfirm, setShowSafeExportConfirm] = useState(false)
   const [showExportConfirm, setShowExportConfirm] = useState(false) // full raw export
   const [rawExportText, setRawExportText] = useState("")
@@ -1752,8 +1755,20 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-zinc-950">System</h2>
-                <p className="text-sm text-zinc-500">Export backup data or manage offline sync.</p>
+                <p className="text-sm text-zinc-500">Data &amp; setup, backup, and offline sync.</p>
               </div>
+            </div>
+
+            {/* POS-FIRST-SETUP-CATALOG-1B: first-time catalog setup entry */}
+            <div className="mt-4 rounded-lg border-2 p-4" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+              <p className="text-[13px] font-bold mb-1" style={{ color: "var(--text)" }}>📦 First-time catalog setup</p>
+              <p className="text-[12px] mb-3" style={{ color: "var(--text-2)" }}>
+                Set up your starting product catalog and opening inventory. Separate from daily <strong>Receive stock</strong> — opening stock is not recorded as a purchase.
+              </p>
+              <button type="button" onClick={() => setSetupWizardOpen(true)} className="btn btn-default w-full h-11 text-[14px] font-bold">
+                <PackageOpen size={16} className="inline me-2" />
+                Set up product catalog
+              </button>
             </div>
 
             <div className="mt-4 rounded-lg border-2 p-4" style={{ borderColor: "var(--brand-border)", background: "var(--brand-soft)" }}>
@@ -1959,6 +1974,8 @@ export default function SettingsPage() {
       </div>
       </>
       )}
+
+      {setupWizardOpen && <FirstSetupWizard onClose={() => setSetupWizardOpen(false)} />}
     </main>
   )
 }

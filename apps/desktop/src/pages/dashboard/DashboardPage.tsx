@@ -16,6 +16,7 @@ import { getSettings, subscribeSettings, type AppSettings } from "../../features
 import { getDeadStockItems, getExpiryAlerts, getReorderSuggestions } from "../../features/pos/services/stock.service"
 import type { Product } from "../../features/pos/types/product"
 import { buildActionQueue } from "../../features/pos/lib/actionQueue"
+import { shouldShowFirstRunPrompt, dismissSetupPrompt } from "../../features/pos/lib/storeSetup"
 import { useI18n } from "@lebanonpos/shared"
 
 type DateRange = "today" | "week" | "month"
@@ -135,11 +136,12 @@ export default function DashboardPage() {
   const [settings, setSettings] = useState<AppSettings>(getSettings())
   const [ledgerVersion, setLedgerVersion] = useState(0)
   const [dateRange, setDateRange] = useState<DateRange>("today")
+  const [showSetupPrompt, setShowSetupPrompt] = useState(false)
   const { t } = useI18n()
 
   useEffect(() => {
     let active = true
-    getProducts().then((data) => { if (active) { setProducts(data); setIsLoading(false) } }).catch(() => { if (active) setIsLoading(false) })
+    getProducts().then((data) => { if (active) { setProducts(data); setIsLoading(false); setShowSetupPrompt(shouldShowFirstRunPrompt()) } }).catch(() => { if (active) setIsLoading(false) })
     const u1 = subscribeProducts((d) => { if (active) setProducts(d) })
     const u2 = subscribeSales((d) => { if (active) setSales(d) })
     const u3 = subscribeExpenses((d) => { if (active) setExpenses(d) })
@@ -250,6 +252,21 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
+
+        {/* POS-FIRST-SETUP-CATALOG-1B: non-blocking first-run prompt (fresh store only) */}
+        {showSetupPrompt && (
+          <div className="flex flex-wrap items-center gap-3 rounded-2xl border p-4" style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)" }}>
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-bold" style={{ color: "var(--brand-text)" }}>Set up your product catalog</p>
+              <p className="text-[12px] mt-0.5" style={{ color: "var(--text-2)" }}>Import your product list or add items to start selling. Opening stock is recorded separately from purchases.</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link to="/settings" className="btn btn-primary btn-sm">Set up catalog</Link>
+              <button type="button" onClick={() => { dismissSetupPrompt(); setShowSetupPrompt(false) }}
+                className="btn btn-ghost btn-sm" aria-label="Dismiss setup prompt">Dismiss</button>
+            </div>
+          </div>
+        )}
 
         {/* ── KPI row ─────────────────────────────────────── */}
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
