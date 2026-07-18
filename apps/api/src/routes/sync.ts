@@ -1170,7 +1170,11 @@ async function processOperation(
           // cross-system hint only — it is NOT an InventoryBatch column, so it
           // must be stripped from the persisted row.
           const productId = await resolveProductId(item)
-          const { id: batchId, productSyncId: _ps, ...batchData } = { ...item, productId } as Record<string, unknown>
+          // POS-FIRST-SETUP-CATALOG-1A: `opening` is a transient flag (not an
+          // InventoryBatch column) — strip it from the persisted row and use it
+          // only to tag the ledger movement as Opening vs Receive.
+          const { id: batchId, productSyncId: _ps, opening: _opening, ...batchData } = { ...item, productId } as Record<string, unknown>
+          const isOpening = (item as any).opening === true
           const qty = Number((item as any).quantityRemaining ?? (item as any).initialQuantity ?? 0)
           // POS-SYNC-RECEIVE-1: the receive handler is authoritative for the
           // aggregate. The batch id (client-generated, stable) is the idempotency
@@ -1185,8 +1189,8 @@ async function processOperation(
               await db.product.updateMany({ where: { tenantId, id: productId }, data: { stock: { increment: qty }, updatedAt: new Date() } as any })
             }
             await recordStockMovementOnce(db, tenantId, {
-              productId, type: "Receive", quantity: qty, reference: batchId as string,
-              note: `Batch ${(item as any).batchNumber ?? ""}`,
+              productId, type: isOpening ? "Opening" : "Receive", quantity: qty, reference: batchId as string,
+              note: isOpening ? `Opening stock ${(item as any).batchNumber ?? ""}` : `Batch ${(item as any).batchNumber ?? ""}`,
               deviceId: source.deviceId ?? null, userId: source.userId ?? null, userName: cashier ?? null,
             })
           } else {

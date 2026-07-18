@@ -8,7 +8,7 @@ const MOVEMENTS_KEY = "lebanonpos.stock-movements.v1"
 const PRODUCTS_KEY  = "lebanonpos.products.v1"
 const PRODUCTS_EVENT = "lebanonpos-products-changed"
 
-export type MovementType = "Receive" | "Sale" | "Refund" | "Adjustment" | "WriteOff"
+export type MovementType = "Receive" | "Sale" | "Refund" | "Adjustment" | "WriteOff" | "Opening"
 
 export interface StockMovement {
   id: string
@@ -148,6 +148,14 @@ function createBatchNumber() {
   )}`
 }
 
+// POS-FIRST-SETUP-CATALOG-1A: opening (first-setup) batches are numbered so they
+// read clearly as opening inventory rather than a received purchase.
+function createOpeningBatchNumber() {
+  return `OPENING-${Date.now().toString().slice(-7)}-${Math.floor(
+    Math.random() * 90 + 10
+  )}`
+}
+
 function readBatches() {
   if (!canUseStorage()) {
     return []
@@ -202,14 +210,24 @@ export function getOpenBatchesForProduct(productId: number) {
     .sort(sortBatchesForConsumption)
 }
 
-export function receiveInventoryBatches(entries: ReceiveBatchInput[]) {
+/** POS-FIRST-SETUP-CATALOG-1A: opening inventory = a first-setup starting count.
+ *  Same batch + single-increment mechanics as receiving, but the ledger movement
+ *  is recorded as "Opening" (not "Receive") and the batch reads as OPENING-*, so
+ *  it never looks like a supplier purchase. No PO / no supplier payment (those
+ *  live in receiveAndRecord, which opening never calls). */
+export function openingInventoryBatches(entries: ReceiveBatchInput[]) {
+  return receiveInventoryBatches(entries, { opening: true })
+}
+
+export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { opening?: boolean }) {
   assertCanWrite("receive inventory batches")
+  const opening = opts?.opening === true
   const now = new Date().toISOString()
   const batches = entries
     .filter((entry) => entry.quantity > 0)
     .map<InventoryBatch>((entry) => ({
       id: createId("batch"),
-      batchNumber: entry.purchaseOrderNumber || createBatchNumber(),
+      batchNumber: entry.purchaseOrderNumber || (opening ? createOpeningBatchNumber() : createBatchNumber()),
       productId: entry.productId,
       productSyncId: entry.productSyncId,
       productName: entry.productName,
@@ -232,23 +250,27 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[]) {
 
   writeBatches([...batches, ...getInventoryBatches()])
 
-  // Record stock movements for each received batch
+  // Record stock movements for each batch — Opening for first-setup, else Receive.
   for (const b of batches) {
     recordStockMovement({
       productId: b.productId, productName: b.productName,
-      type: "Receive", quantity: b.initialQuantity,
+      type: opening ? "Opening" : "Receive", quantity: b.initialQuantity,
       reference: b.batchNumber,
-      note: `Received batch ${b.batchNumber}${b.supplierName ? ` from ${b.supplierName}` : ""}`,
+      note: opening
+        ? `Opening stock ${b.batchNumber}`
+        : `Received batch ${b.batchNumber}${b.supplierName ? ` from ${b.supplierName}` : ""}`,
     })
   }
 
   enqueueSyncOperation({
     entity: "inventory",
     action: "receive",
-    summary: `${batches.length} inventory batch${
+    summary: `${batches.length} ${opening ? "opening" : "inventory"} batch${
       batches.length === 1 ? "" : "es"
     } queued for sync.`,
-    payload: batches,
+    // The `opening` flag rides the sync payload only (not the stored batch row);
+    // the server strips it and tags the movement Opening vs Receive.
+    payload: opening ? batches.map((b) => ({ ...b, opening: true })) : batches,
   })
 
   return batches

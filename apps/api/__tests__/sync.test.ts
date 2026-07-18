@@ -1324,3 +1324,55 @@ describe("POST /api/sync/push — refund idempotency and batch restore", () => {
   })
 })
 })
+
+describe("POST /api/sync/push — opening inventory (POS-FIRST-SETUP-CATALOG-1A)", () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  function receive(ops: any) {
+    return request("POST", "/api/sync/push", { token, body: { operations: [{ id: "op-open-" + Math.random().toString(36).slice(2), entity: "inventory", action: "receive", payload: ops }] } })
+  }
+
+  it("records an Opening movement (not Receive) and increments stock once", async () => {
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)
+    vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.inventoryBatch.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.stockMovement.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.stockMovement.create).mockResolvedValue({} as any)
+
+    const res = await receive([{ id: "ob-1", productSyncId: "ps-5", batchNumber: "OPENING-1", quantityRemaining: 12, initialQuantity: 12, opening: true }])
+    expect(res.status).toBe(200)
+    expect(vi.mocked(prisma.product.updateMany)).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { tenantId: "t1", id: 5 }, data: expect.objectContaining({ stock: { increment: 12 } }) })
+    )
+    const mv = vi.mocked(prisma.stockMovement.create).mock.calls.map((c) => c[0].data as any).find((d) => d.quantity === 12)
+    expect(mv.type).toBe("Opening")
+    // the transient `opening` flag must not be persisted on the batch row
+    expect(vi.mocked(prisma.inventoryBatch.create).mock.calls[0][0].data).not.toHaveProperty("opening")
+  })
+
+  it("a normal receive (no opening flag) still records a Receive movement", async () => {
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)
+    vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.inventoryBatch.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.stockMovement.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.stockMovement.create).mockResolvedValue({} as any)
+
+    await receive([{ id: "rb-1", productSyncId: "ps-5", batchNumber: "LOT-1", quantityRemaining: 7, initialQuantity: 7 }])
+    const mv = vi.mocked(prisma.stockMovement.create).mock.calls.map((c) => c[0].data as any).find((d) => d.quantity === 7)
+    expect(mv.type).toBe("Receive")
+  })
+
+  it("a retry of the same opening batch does not double-increment", async () => {
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)
+    vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue({ id: "ob-1" } as any) // already applied
+    vi.mocked(prisma.inventoryBatch.update).mockResolvedValue({} as any)
+
+    const res = await receive([{ id: "ob-1", productSyncId: "ps-5", batchNumber: "OPENING-1", quantityRemaining: 12, initialQuantity: 12, opening: true }])
+    expect(res.status).toBe(200)
+    expect(vi.mocked(prisma.product.updateMany)).not.toHaveBeenCalled()
+    expect(vi.mocked(prisma.stockMovement.create)).not.toHaveBeenCalled()
+    expect(vi.mocked(prisma.inventoryBatch.create)).not.toHaveBeenCalled()
+  })
+})
