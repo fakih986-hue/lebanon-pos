@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useDebounce } from "../../hooks/useDebounce"
 import { useHotkeys } from "../../hooks/useHotkey"
 import {
+  Archive,
+  ArchiveRestore,
   Banknote,
   Building2,
   CreditCard,
@@ -464,7 +466,7 @@ export default function SuppliersPage() {
                             title={supplier.archived ? "Restore supplier" : "Archive supplier"}
                             aria-label={supplier.archived ? `Restore ${supplier.name}` : `Archive ${supplier.name}`}
                           >
-                            {supplier.archived ? "↩" : "📦"}
+                            {supplier.archived ? <ArchiveRestore size={15} /> : <Archive size={15} />}
                           </button>
                           <button
                             type="button"

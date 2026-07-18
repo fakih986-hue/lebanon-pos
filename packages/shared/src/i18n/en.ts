@@ -861,6 +861,7 @@ export const en = {
   "pos.staff.permission_settings": "Settings",
   "pos.staff.permission_staff": "Staff",
   "pos.staff.permission_shifts": "Shifts",
+  "pos.staff.permission_delivery": "Delivery",
   "pos.staff.add_user_required": "Add name, mobile, and PIN before saving a user.",
   "pos.staff.user_added": "{name} was added.",
   "pos.staff.shift_opened": "{shift} is open.",

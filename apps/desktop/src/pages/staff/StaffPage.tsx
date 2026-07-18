@@ -311,6 +311,7 @@ export default function StaffPage() {
     "settings.manage": t("pos.staff.permission_settings"),
     "staff.manage": t("pos.staff.permission_staff"),
     "shifts.manage": t("pos.staff.permission_shifts"),
+    "delivery.manage": t("pos.staff.permission_delivery"),
   }
 
   const searchQuery = debouncedSearch.trim().toLowerCase()
@@ -538,7 +539,7 @@ export default function StaffPage() {
         {activeWorkspace === "Team" ? (
         <div className="space-y-5">
           <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-            <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-zinc-950 text-white">
                   <UsersRound size={21} />
@@ -556,7 +557,8 @@ export default function StaffPage() {
               <select
                 value={activeUserId}
                 onChange={(event) => setCurrentUser(event.target.value)}
-                className="h-11 rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-semibold text-zinc-700 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                aria-label="Active register user"
+                className="h-11 min-w-0 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-semibold text-zinc-700 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               >
                 {users
                   .filter((user) => user.active)
@@ -967,7 +969,7 @@ export default function StaffPage() {
                         key={permission}
                         className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-zinc-600 ring-1 ring-zinc-200"
                       >
-                        {permissionLabels[permission]}
+                        {permissionLabels[permission] ?? permission}
                       </span>
                     ))}
                   </div>

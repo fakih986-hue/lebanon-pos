@@ -861,6 +861,7 @@ export const ar = {
   "pos.staff.permission_settings": "الإعدادات",
   "pos.staff.permission_staff": "الموظفون",
   "pos.staff.permission_shifts": "الورديات",
+  "pos.staff.permission_delivery": "التوصيل",
   "pos.staff.add_user_required": "أضف الاسم والجوال ورمز PIN قبل حفظ المستخدم.",
   "pos.staff.user_added": "تمت إضافة {name}.",
   "pos.staff.shift_opened": "{shift} مفتوحة.",
