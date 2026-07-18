@@ -1011,6 +1011,29 @@ textarea:hover:not(:disabled):not(:focus),
   cursor: not-allowed;
 }
 
+/* ── POS-UX-FINAL-CHECKOUT-1: checkout & cart polish ──
+   A disabled checkout must read as clearly inert (not a faded gold that still
+   looks tappable). Overrides the shared .btn:disabled opacity for this button
+   only; the enabled state stays full gold. */
+.btn-checkout:disabled {
+  opacity: 1;
+  background: var(--surface-3);
+  border-color: var(--border);
+  color: var(--text-3);
+  box-shadow: none;
+}
+
+/* Cart line remove: neutral by default, unmistakably destructive on hover. */
+.cart-remove-btn {
+  color: var(--text-3);
+  background: var(--surface-2);
+  transition: background-color 140ms ease, color 140ms ease;
+}
+.cart-remove-btn:hover {
+  color: var(--danger-text);
+  background: var(--danger-soft);
+}
+
 /* ── Button success variant ── */
 .btn-success {
   color: var(--success-text);

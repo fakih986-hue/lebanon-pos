@@ -154,8 +154,7 @@ const CartItemCard = memo(function CartItemCard({
         <button
           type="button"
           onClick={onRemove}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition hover:opacity-80"
-          style={{ color: "var(--text-2)", background: "var(--surface-2)" }}
+          className="cart-remove-btn flex h-9 w-9 shrink-0 items-center justify-center rounded-lg active:scale-90"
           aria-label={t("pos.remove_item", { name })}
         >
           <Trash2 size={14} />
@@ -169,9 +168,7 @@ const CartItemCard = memo(function CartItemCard({
             key={preset}
             type="button"
             onClick={() => onSetQuantity(preset)}
-            className={`h-6 flex-1 rounded-md text-[11px] font-bold transition hover:opacity-80 ${
-              quantity === preset ? "" : ""
-            }`}
+            className="h-6 flex-1 rounded-md text-[11px] font-bold transition hover:opacity-80"
             style={quantity === preset
               ? { background: "var(--brand)", color: "white", border: "1px solid var(--brand)" }
               : { background: "var(--surface-2)", color: "var(--text-2)", border: "1px solid var(--surface-3)" }
