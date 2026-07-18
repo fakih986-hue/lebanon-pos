@@ -170,6 +170,14 @@ export function getProductsSync(): Product[] {
   }))
 }
 
+/** Raw stored products WITHOUT the bundled demo fallback — `null` when the
+ *  products key has never been written (a brand-new install that hasn't synced
+ *  yet). First-setup detection uses this so the demo catalog getProductsSync()
+ *  falls back to isn't mistaken for a real, owner-entered catalog. */
+export function getStoredProducts(): Product[] | null {
+  return readStoredProducts()
+}
+
 export async function getProducts(): Promise<Product[]> {
   return getProductsSync()
 }

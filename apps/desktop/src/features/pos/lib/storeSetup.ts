@@ -1,4 +1,4 @@
-import { getProductsSync } from "../services/product.service"
+import { getStoredProducts } from "../services/product.service"
 import { getSales } from "../services/sales.service"
 import { getInventoryBatches } from "../services/inventoryBatch.service"
 import { getDailyCloses } from "../services/dailyClose.service"
@@ -43,11 +43,14 @@ export function detectStoreState(s: StoreSignals): StoreState {
 
 const isOpeningBatch = (n: string | undefined) => (n ?? "").startsWith("OPENING-")
 
-/** Live convenience wrapper — reads the current stores and classifies them. */
+/** Live convenience wrapper — reads the current stores and classifies them.
+ *  Uses getStoredProducts() (raw, no demo fallback): a brand-new install whose
+ *  products key was never written reads as 0 products — so it is detected as
+ *  fresh even before the first cloud pull writes an empty catalog. */
 export function getStoreState(): StoreState {
   const batches = getInventoryBatches()
   return detectStoreState({
-    productCount: getProductsSync().length,
+    productCount: getStoredProducts()?.length ?? 0,
     salesCount: getSales().length,
     dailyCloseCount: getDailyCloses().length,
     receivedBatchCount: batches.filter((b) => !isOpeningBatch(b.batchNumber)).length,
