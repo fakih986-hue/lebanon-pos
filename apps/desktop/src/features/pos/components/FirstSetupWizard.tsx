@@ -1,14 +1,16 @@
 import { useMemo, useState } from "react"
-import { X, FileSpreadsheet, ScanLine, Sparkles, PackageOpen, CheckCircle2, ArrowLeft } from "lucide-react"
+import { X, FileSpreadsheet, ScanLine, Sparkles, PackageOpen, CheckCircle2 } from "lucide-react"
 
 import { getStoreState, markSetupCompleted } from "../lib/storeSetup"
 import { getProductsSync } from "../services/product.service"
 import { showToast } from "../services/toast.service"
 import FirstSetupImport from "./FirstSetupImport"
+import FirstSetupScan from "./FirstSetupScan"
 
-// POS-FIRST-SETUP-CATALOG-1B: wizard SHELL only. "Start empty" is functional
-// (marks setup done). Import / Scan / Review / Confirm are signposts — the real
-// workflows land in 1C+. Commits no product or opening-inventory data here.
+// First-time catalog setup wizard. Import (1C) and Scan (1D) commit into OPENING
+// inventory; "Start empty" (1B) just marks setup done. Sample catalog is a
+// disabled signpost (1E). All product/stock writes route through the hardened
+// create/receive services with the opening flag — no supplier PO/payment.
 
 type Step = "welcome" | "import" | "scan" | "done"
 
@@ -28,17 +30,6 @@ export default function FirstSetupWizard({ onClose, onCompleted }: { onClose: ()
     onCompleted?.()
     setStep("done")
   }
-
-  const Placeholder = ({ title, body, cta }: { title: string; body: string; cta: string }) => (
-    <div className="space-y-3">
-      <button type="button" onClick={() => setStep("welcome")} className="btn btn-ghost btn-sm gap-1"><ArrowLeft size={13} /> Back</button>
-      <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
-        <p className="text-[14px] font-bold" style={{ color: "var(--text)" }}>{title}</p>
-        <p className="text-[12px] mt-1" style={{ color: "var(--text-2)" }}>{body}</p>
-        <p className="text-[12px] mt-3 font-semibold" style={{ color: "var(--brand-text)" }}>{cta}</p>
-      </div>
-    </div>
-  )
 
   return (
     <div className="modal-overlay" style={{ zIndex: 100 }} onClick={onClose}>
@@ -101,10 +92,10 @@ export default function FirstSetupWizard({ onClose, onCompleted }: { onClose: ()
             />
           )}
           {step === "scan" && (
-            <Placeholder
-              title="Scan products one by one"
-              body="Guided scan setup is coming in the next update."
-              cta="Available now: Receive stock (for stock you're buying) or Products → New Product."
+            <FirstSetupScan
+              storeStatus={state.status}
+              onBack={() => setStep("welcome")}
+              onFinish={finishImported}
             />
           )}
           {step === "done" && (
