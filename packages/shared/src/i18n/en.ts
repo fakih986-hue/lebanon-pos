@@ -328,6 +328,8 @@ export const en = {
   "desktop.page.dashboard.subtitle": "Live sales, stock, debts, and operations",
   "desktop.page.products.title": "Products",
   "desktop.page.products.subtitle": "Catalog, stock, and pricing",
+  "desktop.page.stock.title": "Stock & Batches",
+  "desktop.page.stock.subtitle": "Adjust, count, batches, and reconciliation",
   "desktop.page.sales.title": "Sales",
   "desktop.page.sales.subtitle": "Receipts, payment mix, and performance",
   "desktop.page.receive.title": "Receive Products",

@@ -17,6 +17,7 @@ const pageCopy: Record<string, { titleKey: string; subtitleKey: string }> = {
   "/dashboard": { titleKey: "desktop.page.dashboard.title", subtitleKey: "desktop.page.dashboard.subtitle" },
   "/products": { titleKey: "desktop.page.products.title", subtitleKey: "desktop.page.products.subtitle" },
   "/products/count": { titleKey: "desktop.page.products.title", subtitleKey: "desktop.page.products.subtitle" },
+  "/stock": { titleKey: "desktop.page.stock.title", subtitleKey: "desktop.page.stock.subtitle" },
   "/sales": { titleKey: "desktop.page.sales.title", subtitleKey: "desktop.page.sales.subtitle" },
   "/products/new": { titleKey: "desktop.page.receive.title", subtitleKey: "desktop.page.receive.subtitle" },
   "/customers": { titleKey: "desktop.page.customers.title", subtitleKey: "desktop.page.customers.subtitle" },

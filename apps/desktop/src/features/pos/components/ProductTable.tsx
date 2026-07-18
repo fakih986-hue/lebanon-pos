@@ -312,7 +312,9 @@ export default function ProductTable({
                   {h.label}
                 </th>
               ))}
-              <th className={cell} style={{ borderBottom: "1px solid var(--border)" }}>
+              {/* relative: keeps the absolute sr-only span inside the scroll container
+                  (it otherwise positions against the document and widens the page on mobile) */}
+              <th className={`${cell} relative`} style={{ borderBottom: "1px solid var(--border)" }}>
                 <span className="sr-only">{t("pos.table.actions")}</span>
               </th>
             </tr>

@@ -328,6 +328,8 @@ export const ar = {
   "desktop.page.dashboard.subtitle": "المبيعات والمخزون والديون والعمليات مباشرة",
   "desktop.page.products.title": "المنتجات",
   "desktop.page.products.subtitle": "الكتالوج والمخزون والأسعار",
+  "desktop.page.stock.title": "المخزون والدفعات",
+  "desktop.page.stock.subtitle": "تعديل وجرد المخزون والدفعات والمطابقة",
   "desktop.page.sales.title": "المبيعات",
   "desktop.page.sales.subtitle": "الإيصالات وطرق الدفع والأداء",
   "desktop.page.receive.title": "استلام المنتجات",

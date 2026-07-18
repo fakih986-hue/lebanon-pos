@@ -298,10 +298,11 @@ export default function SuppliersPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <WorkspaceTabs<SupplierWorkspace>
               active={activeWorkspace}
               onChange={setActiveWorkspace}
+              className="min-w-0"
               tabs={[
                 { label: "Accounts", count: filteredSuppliers.length },
                 { label: "Orders", count: purchaseOrders.length },
@@ -374,7 +375,7 @@ export default function SuppliersPage() {
                     <th className="border-b border-zinc-200 px-4 py-3">
                       Last activity
                     </th>
-                    <th className="border-b border-zinc-200 px-4 py-3">
+                    <th className="relative border-b border-zinc-200 px-4 py-3">
                       <span className="sr-only">Delete</span>
                     </th>
                   </tr>
