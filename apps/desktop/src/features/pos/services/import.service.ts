@@ -174,11 +174,31 @@ export function analyzeProductImport(rows: ProductImportRow[], products: Product
   return { actions, counts, warnings }
 }
 
+/** Opening-stock preview totals for the plan (dry-run — no mutation).
+ *  Sums units and value across the rows that would actually commit. */
+export function summarizeOpeningStock(plan: ProductImportPlan): { units: number; value: number; lines: number } {
+  let units = 0, value = 0, lines = 0
+  for (const a of plan.actions) {
+    if (!a.row) continue
+    if (a.kind !== "create" && a.kind !== "variant" && a.kind !== "existing") continue
+    const qty = a.row.openingQty
+    if (qty > 0) { units += qty; value += qty * a.row.cost; lines++ }
+  }
+  return { units, value, lines }
+}
+
 /** Commit an analyzed plan using the hardened product/receive services.
  *  New products use createProduct (stock:0 create + opening batch — no double
- *  count); restocks use receiveProducts; aliases via updateProduct. */
-export function commitProductImport(plan: ProductImportPlan): ImportResult {
+ *  count); restocks use receiveProducts; aliases via updateProduct.
+ *
+ *  POS-FIRST-SETUP-CATALOG-1C: with { opening: true } (first-setup wizard) the
+ *  opening quantities are recorded as Opening inventory movements/batches rather
+ *  than daily Receive — no supplier PO, no supplier payment (createProduct /
+ *  receiveProducts never call receiveAndRecord). Default (daily Bulk Import)
+ *  behavior is unchanged. */
+export function commitProductImport(plan: ProductImportPlan, opts?: { opening?: boolean }): ImportResult {
   assertCanWrite("import products")
+  const opening = opts?.opening === true
   const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] }
   const suppliers = getSuppliers()
   const resolveSupplier = (name?: string) => {
@@ -197,7 +217,7 @@ export function commitProductImport(plan: ProductImportPlan): ImportResult {
           name: row.name, price: row.price, cost: row.cost, stock: row.openingQty,
           barcode: row.primaryBarcode, category: row.category,
           reorderPoint: row.reorderPoint, supplierId: sup.supplierId, supplierName: sup.supplierName,
-          barcodeAliases: a.aliases,
+          barcodeAliases: a.aliases, opening,
         })
         if (p) result.created++
         else result.errors.push(`Line ${a.line}: could not create "${row.name}"`)
@@ -210,7 +230,7 @@ export function commitProductImport(plan: ProductImportPlan): ImportResult {
           barcode: row.primaryBarcode, category: row.category,
           parentId: a.targetId, variantName: vname,
           reorderPoint: row.reorderPoint, supplierId: sup.supplierId, supplierName: sup.supplierName,
-          barcodeAliases: a.aliases,
+          barcodeAliases: a.aliases, opening,
         })
         if (p) {
           if (a.targetId != null && parent && !parent.isParent) updateProduct(a.targetId, { isParent: true })
@@ -223,7 +243,7 @@ export function commitProductImport(plan: ProductImportPlan): ImportResult {
             name: target.name, barcode: target.barcode ?? row.primaryBarcode, category: row.category,
             stock: row.openingQty, cost: row.cost, price: row.price,
             reorderPoint: row.reorderPoint, supplierId: sup.supplierId, supplierName: sup.supplierName,
-          }])
+          }], { opening })
         }
         if (a.aliases?.length && target) {
           updateProduct(a.targetId, { barcodeAliases: [...(target.barcodeAliases ?? []), ...a.aliases] })

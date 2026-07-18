@@ -1,6 +1,6 @@
 import { products } from "../data/products"
 import type { Product, ProductAccent } from "../types/product"
-import { receiveInventoryBatches, type ReceiveBatchInput } from "./inventoryBatch.service"
+import { receiveInventoryBatches, openingInventoryBatches, type ReceiveBatchInput } from "./inventoryBatch.service"
 import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
 import { recordAuditEvent } from "./security.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
@@ -199,8 +199,9 @@ export function subscribeProducts(callback: (products: Product[]) => void) {
   }
 }
 
-export function receiveProducts(entries: ProductReceiveInput[]) {
+export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening?: boolean }) {
   assertCanWrite("receive products")
+  const opening = opts?.opening === true
   const currentProducts = getProductsSync()
   const nextProducts = [...currentProducts]
   let nextId =
@@ -427,7 +428,8 @@ export function receiveProducts(entries: ProductReceiveInput[]) {
   // Enqueue inventory receives AFTER product creates/updates
   let batchesCreated = 0
   if (batchInputs.length > 0) {
-    const batches = receiveInventoryBatches(batchInputs)
+    const receive = opening ? openingInventoryBatches : receiveInventoryBatches
+    const batches = receive(batchInputs)
     batchesCreated = batches.length
   }
 
@@ -522,6 +524,10 @@ export function createProduct(input: {
   supplierId?: string
   supplierName?: string
   barcodeAliases?: string[]
+  // POS-FIRST-SETUP-CATALOG-1C: when true, the opening-stock batch is recorded
+  // as Opening inventory (first-setup starting count) instead of a Receive. No
+  // behavior change for the default (daily) create/receive path.
+  opening?: boolean
 }): Product | undefined {
   assertCanWrite("create product")
   const currentProducts = getProductsSync()
@@ -581,9 +587,12 @@ export function createProduct(input: {
     payload: { ...product, stock: 0 },
   })
 
-  // Create initial batch for opening stock
+  // Create initial batch for opening stock. First-setup import routes this
+  // through openingInventoryBatches → Opening movement (never a supplier
+  // purchase); the normal create path keeps the Receive movement.
   if (input.stock > 0) {
-    receiveInventoryBatches([{
+    const receive = input.opening ? openingInventoryBatches : receiveInventoryBatches
+    receive([{
       productId: product.id,
       productSyncId: product.syncId ?? undefined,
       productName: product.name,

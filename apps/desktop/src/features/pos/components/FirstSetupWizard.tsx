@@ -2,7 +2,9 @@ import { useMemo, useState } from "react"
 import { X, FileSpreadsheet, ScanLine, Sparkles, PackageOpen, CheckCircle2, ArrowLeft } from "lucide-react"
 
 import { getStoreState, markSetupCompleted } from "../lib/storeSetup"
+import { getProductsSync } from "../services/product.service"
 import { showToast } from "../services/toast.service"
+import FirstSetupImport from "./FirstSetupImport"
 
 // POS-FIRST-SETUP-CATALOG-1B: wizard SHELL only. "Start empty" is functional
 // (marks setup done). Import / Scan / Review / Confirm are signposts — the real
@@ -19,6 +21,12 @@ export default function FirstSetupWizard({ onClose, onCompleted }: { onClose: ()
     onCompleted?.()
     setStep("done")
     showToast("Catalog setup marked done. Add products any time from Products.")
+  }
+
+  function finishImported() {
+    markSetupCompleted()
+    onCompleted?.()
+    setStep("done")
   }
 
   const Placeholder = ({ title, body, cta }: { title: string; body: string; cta: string }) => (
@@ -85,10 +93,11 @@ export default function FirstSetupWizard({ onClose, onCompleted }: { onClose: ()
           )}
 
           {step === "import" && (
-            <Placeholder
-              title="Spreadsheet import"
-              body="The guided first-setup import (with opening-inventory stock) is coming in the next update."
-              cta="Available now: Products → Tools → Bulk Import."
+            <FirstSetupImport
+              products={getProductsSync()}
+              storeStatus={state.status}
+              onBack={() => setStep("welcome")}
+              onCommitted={finishImported}
             />
           )}
           {step === "scan" && (
