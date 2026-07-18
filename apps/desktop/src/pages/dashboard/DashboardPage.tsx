@@ -411,7 +411,10 @@ export default function DashboardPage() {
                 </div>
 
                 {Object.keys(paymentMix).length === 0 ? (
-                  <p className="text-[13px] py-4 text-center" style={{ color: "var(--text-3)" }}>No sales yet</p>
+                  <div className="py-4 text-center">
+                    <p className="text-[13px] font-bold" style={{ color: "var(--text-2)" }}>No sales yet</p>
+                    <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>Payment mix appears after the first sale.</p>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {/* Stacked bar */}
@@ -548,7 +551,11 @@ export default function DashboardPage() {
 
               <div className="divide-y" style={{ borderColor: "var(--border)" }}>
                 {recentSales.length === 0 && (
-                  <p className="px-4 py-8 text-center text-[12px]" style={{ color: "var(--text-3)" }}>No sales yet</p>
+                  <div className="px-4 py-8 text-center">
+                    <ReceiptText size={22} className="mx-auto" style={{ color: "var(--text-3)" }} />
+                    <p className="mt-2 text-[13px] font-bold" style={{ color: "var(--text-2)" }}>No sales yet</p>
+                    <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>Recent sales will appear here as you sell.</p>
+                  </div>
                 )}
                 {recentSales.map((sale) => {
                   const col = paymentColor(sale.paymentMethod)

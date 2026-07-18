@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useDebounce } from "../../hooks/useDebounce"
 import type { Product } from "../../features/pos/types/product"
-import { ImagePlus, Plus, Download, SlidersHorizontal, X, Filter, ArrowUpDown, FileSpreadsheet, ListChecks } from "lucide-react"
+import { ImagePlus, Plus, Download, SlidersHorizontal, X, Filter, ArrowUpDown, FileSpreadsheet, ListChecks, Tag } from "lucide-react"
 import KpiCards from "../../features/pos/components/KpiCards"
 import AlertsPanel from "../../features/pos/components/AlertsPanel"
 import ProductSetupForm from "../../features/pos/components/ProductSetupForm"
@@ -814,6 +814,8 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
           </select>
           <button onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}
             className="icon-btn h-8 w-8 flex items-center justify-center rounded-md"
+            aria-label={`Sort ${sortDir === "asc" ? "descending" : "ascending"}`}
+            title={`Sort ${sortDir === "asc" ? "descending" : "ascending"}`}
             style={{ color: "var(--text-2)", border: "1px solid var(--border)" }}>
             <ArrowUpDown size={14} />
           </button>
@@ -883,8 +885,10 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
           <span className="chip chip-brand" style={{ fontSize: "12px", height: "28px" }}>{categories.length - 1} total</span>
         </div>
         {categories.filter((c) => c !== "All").length === 0 ? (
-          <div className="px-5 py-12 text-center text-[13px]" style={{ color: "var(--text-3)" }}>
-            No categories yet. Create one by editing a product.
+          <div className="px-5 py-12 text-center">
+            <Tag size={24} className="mx-auto" style={{ color: "var(--text-3)" }} />
+            <p className="mt-2 text-[13px] font-bold" style={{ color: "var(--text-2)" }}>No categories yet</p>
+            <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>Create one by setting a category on a product.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">

@@ -383,11 +383,10 @@ export default function SuppliersPage() {
                 <tbody>
                   {filteredSuppliers.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="px-4 py-12 text-center text-sm font-medium text-zinc-500"
-                      >
-                        No suppliers found
+                      <td colSpan={7} className="px-4 py-12 text-center">
+                        <Building2 size={26} className="mx-auto" style={{ color: "var(--text-3)" }} />
+                        <p className="mt-2 text-[13px] font-bold" style={{ color: "var(--text-2)" }}>No suppliers found</p>
+                        <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>Try a different search, or add your first supplier.</p>
                       </td>
                     </tr>
                   ) : null}
@@ -500,9 +499,11 @@ export default function SuppliersPage() {
             </div>
             <div className="max-h-[420px] space-y-3 overflow-y-auto p-4">
               {purchaseOrders.length === 0 ? (
-                <p className="rounded-lg border border-dashed border-zinc-300 p-8 text-center text-sm font-medium text-zinc-500">
-                  No purchase orders yet.
-                </p>
+                <div className="rounded-lg border border-dashed border-zinc-300 p-8 text-center">
+                  <Truck size={24} className="mx-auto" style={{ color: "var(--text-3)" }} />
+                  <p className="mt-2 text-[13px] font-bold" style={{ color: "var(--text-2)" }}>No purchase orders yet</p>
+                  <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>Orders appear here when you receive stock from a supplier.</p>
+                </div>
               ) : null}
               {purchaseOrders.slice(0, 12).map((purchaseOrder) => (
                 <article
@@ -806,8 +807,10 @@ export default function SuppliersPage() {
 
             <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">
               {selectedActivity.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-zinc-300 p-6 text-center text-sm font-medium text-zinc-500">
-                  No activity yet
+                <div className="rounded-lg border border-dashed border-zinc-300 p-6 text-center">
+                  <WalletCards size={22} className="mx-auto" style={{ color: "var(--text-3)" }} />
+                  <p className="mt-2 text-[13px] font-bold" style={{ color: "var(--text-2)" }}>No activity yet</p>
+                  <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>Purchases and payments for this supplier will appear here.</p>
                 </div>
               ) : null}
               {selectedActivity.map((activity) => (

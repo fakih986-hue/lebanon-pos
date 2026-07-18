@@ -456,6 +456,7 @@ export default function CustomersPage() {
                 <div className="flex flex-col items-center justify-center py-10 text-center">
                   <UsersRound size={28} style={{ color: "var(--text-3)" }} />
                   <p className="mt-2 text-[13px] font-bold" style={{ color: "var(--text-2)" }}>No customers found</p>
+                  <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>Try a different search, or add a customer.</p>
                 </div>
               ) : null}
 

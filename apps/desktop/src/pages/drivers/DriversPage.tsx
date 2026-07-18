@@ -159,8 +159,8 @@ export default function DriversPage() {
                   <td className="px-4 py-3 text-end">
                     <button onClick={() => startEdit(d)}
                       aria-label={`Edit ${d.name}`}
-                      className="text-xs px-2.5 py-1.5 bg-zinc-100 rounded-lg hover:bg-zinc-200">
-                      <Pencil className="w-3.5 h-3.5 inline me-1" /> {t("drivers.edit_btn")}
+                      className="btn btn-default btn-sm gap-1">
+                      <Pencil className="w-3.5 h-3.5" /> {t("drivers.edit_btn")}
                     </button>
                   </td>
                 </tr>

@@ -473,7 +473,7 @@ export default function LoginScreen() {
                 <CloudDownload size={20} style={{ color: "var(--accent)" }} />
                 <h2 className="text-[17px] font-bold" style={{ color: "var(--text)" }}>Connect to your store</h2>
               </div>
-              <button onClick={() => setConnectOpen(false)} style={{ color: "var(--text-3)" }}><X size={18} /></button>
+              <button onClick={() => setConnectOpen(false)} className="icon-btn" aria-label="Close connect dialog" style={{ color: "var(--text-3)" }}><X size={18} /></button>
             </div>
             <p className="text-[12px] mb-3" style={{ color: "var(--text-3)" }}>
               Use this on a new or replacement device. Select how your device connects, then enter the server details and your PIN. All your data will download.
@@ -618,7 +618,7 @@ function ChangePinModal({ user, onConfirm, onCancel }: { user: StaffUser; onConf
             <KeyRound size={20} style={{ color: "var(--accent)" }} />
             <h2 className="text-[17px] font-bold" style={{ color: "var(--text)" }}>Change your PIN</h2>
           </div>
-          <button onClick={onCancel} style={{ color: "var(--text-3)" }}><X size={18} /></button>
+          <button onClick={onCancel} className="icon-btn" aria-label="Close PIN change dialog" style={{ color: "var(--text-3)" }}><X size={18} /></button>
         </div>
         <p className="text-[12px] mb-4" style={{ color: "var(--text-3)" }}>
           {user.name}, you must change the default PIN before using the system.

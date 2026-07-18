@@ -959,6 +959,24 @@ textarea:hover:not(:disabled):not(:focus),
   transform: scale(0.975);
 }
 
+/* ── Default button sizing (POS-UX-FINAL-POLISH-1) ──
+   Lives in the `components` layer so it loses to BOTH the unlayered size
+   variants below (.btn-sm/.btn-md/.btn-lg/.btn-xl) and Tailwind utilities
+   (h-9, px-3 …) in the `utilities` layer. Unsized `btn btn-primary` buttons
+   previously rendered with no height/padding at all. */
+@layer components {
+  .btn,
+  .btn-default,
+  .btn-primary,
+  .btn-ghost,
+  .btn-danger,
+  .btn-success {
+    height: 40px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+}
+
 /* ── Button size variant ── */
 .btn-sm {
   height: 32px;
@@ -980,12 +998,17 @@ textarea:hover:not(:disabled):not(:focus),
   transition: background-color 140ms ease, color 140ms ease;
 }
 
-.icon-btn:hover {
+.icon-btn:hover:not(:disabled) {
   background: var(--surface-hover);
 }
 
-.icon-btn:active {
+.icon-btn:active:not(:disabled) {
   transform: scale(0.93);
+}
+
+.icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* ── Button success variant ── */
