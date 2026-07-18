@@ -441,6 +441,28 @@ describe("POST /api/sync/push — server-authoritative receiving (POS-SYNC-RECEI
     expect(mv).toMatchObject({ productId: 5, type: "Receive", quantity: 12, reference: "batch-1" })
   })
 
+  it("records an Opening movement (not Receive) when the receive op carries opening:true", async () => {
+    // POS-FIRST-SETUP-QA-1: the cloud-bridge path for first-setup opening stock.
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 7 } as any)
+    vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.inventoryBatch.create).mockResolvedValue({} as any)
+    vi.mocked(prisma.product.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.stockMovement.findFirst).mockResolvedValue(null)
+    vi.mocked(prisma.stockMovement.create).mockResolvedValue({} as any)
+
+    const res = await receive([{ id: "batch-op-1", productSyncId: "ps-7", batchNumber: "OPENING-123", quantityRemaining: 9, initialQuantity: 9, opening: true }])
+    expect(res.status).toBe(200)
+    // stock still increments once (authoritative), but the ledger movement is Opening
+    expect(vi.mocked(prisma.product.updateMany)).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ stock: { increment: 9 } }) }))
+    const created = vi.mocked(prisma.stockMovement.create).mock.calls.map(c => c[0].data as any)
+    expect(created.find(d => d.type === "Opening")).toMatchObject({ productId: 7, type: "Opening", quantity: 9, reference: "batch-op-1" })
+    expect(created.find(d => d.type === "Receive")).toBeUndefined()
+    // `opening` is transient — it must not be persisted as an InventoryBatch column
+    const batchData = vi.mocked(prisma.inventoryBatch.create).mock.calls[0]?.[0]?.data as any
+    expect(batchData).toBeDefined()
+    expect(batchData.opening).toBeUndefined()
+  })
+
   it("does NOT re-increment when the batch already exists (retry idempotency)", async () => {
     vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)
     vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue({ id: "batch-1" } as any) // already received
