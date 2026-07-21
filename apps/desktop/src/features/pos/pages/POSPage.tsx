@@ -51,7 +51,7 @@ import {
   type HeldSale,
 } from "../services/heldSale.service"
 import { recordDebtSale } from "../services/customer.service"
-import { recordAuditEvent, userCan } from "../services/security.service"
+import { recordAuditEvent, userCan, getActiveShift } from "../services/security.service"
 import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
 import { getConnectionMode, pullFromServer, commitSaleToHub } from "../services/sync.service"
 import { createId } from "../lib/storage"
@@ -583,11 +583,26 @@ export default function POSPage() {
 
   function handleReview() {
     if (checkoutBlocked) return
+    if (!getActiveShift()) {
+      setScannerStatus("⚠️ No open shift — open one in Accounting → Shift before selling.")
+      playErrorBuzz()
+      return
+    }
     setShowReview(true)
   }
 
   const completeSale = useCallback(async function completeSale() {
     if (checkoutBlocked || isValidatingStock) return
+
+    // A sale must belong to an open register shift (cash-control). On a fresh
+    // register no shift exists yet, so catch it here with a clear, actionable
+    // message instead of the generic "Checkout failed" the throw would produce.
+    if (!getActiveShift()) {
+      setShowReview(false)
+      setScannerStatus("⚠️ No open shift — open one in Accounting → Shift before selling.")
+      playErrorBuzz()
+      return
+    }
 
     const mode = getConnectionMode()
     // Every product in this system is stock-tracked, so a sale with items is
@@ -753,7 +768,9 @@ export default function POSPage() {
           )
         }
       }
-      setScannerStatus(`Checkout failed. Cart preserved, try again.`)
+      const reason = (err as Error)?.message?.trim()
+      console.error("[checkout] sale failed:", err)
+      setScannerStatus(reason ? `Checkout failed: ${reason}` : "Checkout failed. Cart preserved, try again.")
     }
   }, [checkoutBlocked, isValidatingStock, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal, sellAtCost, payableLbp, payableUsd])
 
