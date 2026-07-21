@@ -4,6 +4,7 @@ import { Link } from "react-router"
 
 import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatNumber } from "../lib/currency"
+import { userCan } from "../services/security.service"
 import type { Product } from "../types/product"
 
 function getStockStatus(product: Product, t: (key: string, params?: any) => string) {
@@ -169,6 +170,8 @@ function ProductRow({
         </button>
       </td>
       <td className={cell} style={cellStyle}>
+        {/* POS-PERMISSIONS-1: editing requires inventory.manage (view-only hides these) */}
+        {userCan("inventory.manage") && (
         <div className="flex items-center gap-1.5">
           <button
             type="button"
@@ -191,6 +194,7 @@ function ProductRow({
             <X size={15} />
           </button>
         </div>
+        )}
       </td>
     </tr>
   )
@@ -260,10 +264,12 @@ export default function ProductTable({
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row">
+          {userCan("inventory.receive") && (
           <Link to="/products/new" className="btn-default btn-md">
             <Plus size={17} />
             {t("pos.receive_products")}
           </Link>
+          )}
 
           <label className="relative w-full sm:w-80">
             <span className="sr-only">{t("pos.search_catalog")}</span>

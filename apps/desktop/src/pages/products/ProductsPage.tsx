@@ -33,6 +33,7 @@ import {
 } from "../../features/pos/services/product.service"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import { subscribeSales } from "../../features/pos/services/sales.service"
+import { userCan } from "../../features/pos/services/security.service"
 import {
   getSupplierLedger,
   subscribeSuppliers,
@@ -251,6 +252,8 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
     0
   )
   const lowStockCount = getLowStockProducts(products).length
+  // POS-PERMISSIONS-1: /products is inventory.view; mutating controls need manage.
+  const canManageInventory = userCan("inventory.manage")
   const productViews: Array<{
     value?: ProductWorkspaceView
     label: string
@@ -268,10 +271,10 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
       label: "Alerts",
       count: reorderSuggestions.length + expiryAlerts.length,
     },
-    {
-      value: "Setup",
+    ...(canManageInventory ? [{
+      value: "Setup" as ProductWorkspaceView,
       label: "Add product",
-    },
+    }] : []),
   ]
 
   useEffect(() => {
@@ -539,6 +542,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* Power tools live behind one calm menu — the toolbar stays quiet */}
+          {canManageInventory && (
           <div className="relative">
             <button type="button" onClick={() => setToolsOpen((v) => !v)}
               aria-expanded={toolsOpen} aria-haspopup="menu"
@@ -580,6 +584,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
               </>
             )}
           </div>
+          )}
           <button type="button" onClick={() => {
             const csv = ["Name,Category,Price,Cost,Stock,Barcode,Reorder Pt,Reorder Qty"].concat(
               products.map((p) => `"${p.name}","${p.category}",${p.price},${p.cost},${p.stock},"${p.barcode || ""}",${p.reorderPoint ?? ""},${p.reorderQuantity ?? ""}`)
@@ -822,6 +827,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
           </button>
         </div>
 
+        {canManageInventory && (<>
         <button onClick={() => setShowQuickCreate(true)}
           className="btn btn-primary btn-sm flex items-center gap-1">
           <Plus size={14} /> New Product
@@ -830,6 +836,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
           className="btn btn-default btn-sm flex items-center gap-1">
           <SlidersHorizontal size={14} /> Bulk Edit
         </button>
+        </>)}
       </div>
 
       {bulkEditOpen && (

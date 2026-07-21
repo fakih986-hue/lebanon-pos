@@ -270,9 +270,12 @@ describe("security.service", () => {
       expect(rolePermissions.Manager).not.toContain("settings.manage")
     })
 
-    it("Cashier has minimal permissions", () => {
-      // Sprint 5 tightened Cashier to checkout-only (customers.manage removed)
-      expect(rolePermissions.Cashier).toEqual(["sales.checkout"])
+    it("Cashier is checkout-focused (POS-PERMISSIONS-1 preset)", () => {
+      // Checkout + reprint + read-only catalog; no discount/refund/void/manage.
+      expect(rolePermissions.Cashier).toContain("sales.checkout")
+      expect(rolePermissions.Cashier).not.toContain("sales.refund")
+      expect(rolePermissions.Cashier).not.toContain("sales.discount")
+      expect(rolePermissions.Cashier).not.toContain("inventory.manage")
     })
   })
 

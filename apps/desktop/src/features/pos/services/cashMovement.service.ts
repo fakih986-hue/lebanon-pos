@@ -58,8 +58,8 @@ export function getCashMovements(): CashMovement[] {
 export function createCashMovement(input: CreateCashMovementInput): CashMovement | null {
   assertCanWrite("create cash movement")
 
-  // Permission: only Manager/Admin can create cash movements
-  if (!userCan("accounting.manage")) return null
+  // Permission: cash in/out (drawer) — POS-PERMISSIONS-1 split from accounting.
+  if (!userCan("cash.manage")) return null
 
   // Validation
   if (input.amountUsd <= 0) return null

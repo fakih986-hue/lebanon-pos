@@ -1229,6 +1229,10 @@ async function _pullFromServer(full = false) {
       const usersTarget = PULL_TARGETS.users
       const priorPins: Record<string, string> = {}
       const priorVerifiedVersions: Record<string, number> = {}
+      // POS-PERMISSIONS-1 (phase 1): permissions are hub-local and NOT sent to
+      // the cloud yet, so the server returns users without them. Snapshot local
+      // permissions and restore after the pull so a full sync can't wipe them.
+      const priorPermissions: Record<string, string[]> = {}
       if (usersTarget) {
         const raw = localStorage.getItem(usersTarget.key)
         if (raw) {
@@ -1241,6 +1245,9 @@ async function _pullFromServer(full = false) {
                 }
                 if (u?.id && u?.lastVerifiedPinVersion) {
                   priorVerifiedVersions[u.id] = u.lastVerifiedPinVersion
+                }
+                if (u?.id && Array.isArray(u.permissions)) {
+                  priorPermissions[u.id] = u.permissions
                 }
               }
             }
@@ -1276,6 +1283,11 @@ async function _pullFromServer(full = false) {
                 // Restore lastVerifiedPinVersion from before pull
                 if (u?.id && priorVerifiedVersions[u.id]) {
                   u.lastVerifiedPinVersion = priorVerifiedVersions[u.id]
+                  changed = true
+                }
+                // Restore hub-local permissions (server doesn't store them yet)
+                if (u?.id && priorPermissions[u.id]) {
+                  u.permissions = priorPermissions[u.id]
                   changed = true
                 }
               }
@@ -1393,9 +1405,13 @@ async function _incrementalPull(apiUrl: string, token: string): Promise<void> {
                     : undefined
                 const localVerifiedVersion =
                   key === "users" ? merged[idx].lastVerifiedPinVersion : undefined
+                // POS-PERMISSIONS-1: keep hub-local permissions (not synced yet).
+                const localPermissions =
+                  key === "users" && Array.isArray(merged[idx].permissions) ? merged[idx].permissions : undefined
                 merged[idx] = item
                 if (localPin !== undefined) merged[idx].pin = localPin
                 if (localVerifiedVersion !== undefined) merged[idx].lastVerifiedPinVersion = localVerifiedVersion
+                if (localPermissions !== undefined) merged[idx].permissions = localPermissions
               } else merged.push(item)
             }
           }

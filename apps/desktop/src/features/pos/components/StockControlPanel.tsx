@@ -1,7 +1,8 @@
-import { ClipboardCheck, PackageMinus, Plus, Save } from "lucide-react"
+import { ClipboardCheck, LockKeyhole, PackageMinus, Plus, Save } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatNumber } from "../lib/currency"
+import { userCan } from "../services/security.service"
 import type { InventoryBatch } from "../services/inventoryBatch.service"
 import type {
   StockAdjustment,
@@ -88,6 +89,20 @@ export default function StockControlPanel({
   onPostStockCount,
 }: Props) {
   const { t } = useI18n()
+
+  // POS-PERMISSIONS-1: adjusting/counting stock requires inventory.adjust.
+  // View-only users can still browse batches/opening tabs, just not mutate here.
+  if (!userCan("inventory.adjust")) {
+    return (
+      <section className="mt-5">
+        <div className="card flex flex-col items-center justify-center gap-3 p-12 text-center">
+          <LockKeyhole size={28} style={{ color: "var(--text-3)" }} />
+          <p className="text-[14px] font-bold" style={{ color: "var(--text-2)" }}>Adjustments are locked</p>
+          <p className="text-[12px]" style={{ color: "var(--text-3)" }}>You don&apos;t have permission to adjust or count stock. Ask an admin to enable &quot;Adjust &amp; count stock&quot;.</p>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">

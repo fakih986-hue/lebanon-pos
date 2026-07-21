@@ -69,6 +69,7 @@ interface Props {
   checkoutBlocked: boolean
   hasDiscount: boolean
   canApplyDiscount: boolean
+  canOverridePrice?: boolean
   sellAtCost: boolean
   onToggleSellAtCost: () => void
 }
@@ -85,6 +86,7 @@ export default function CartBody({
   itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, canApplyDiscount,
+  canOverridePrice = true,
   sellAtCost, onToggleSellAtCost,
 }: Props) {
   const [discountOpen, setDiscountOpen] = useState(false)
@@ -114,7 +116,7 @@ export default function CartBody({
               onDecrease={() => onDecreaseQty(item.id)}
               onRemove={() => onRemoveItem(item.id)}
               onSetQuantity={(qty) => onSetQuantity(item.id, qty)}
-              onSetPrice={(price) => onSetPrice(item.id, price)}
+              onSetPrice={canOverridePrice ? (price) => onSetPrice(item.id, price) : undefined}
             />
           ))}
         </div>
@@ -134,7 +136,8 @@ export default function CartBody({
       {/* Items-only content — no cash drawer, no TenderPanel */}
       {items.length > 0 && (<>
 
-        {/* Sell at Cost toggle */}
+        {/* Sell at Cost toggle — requires the price-override permission */}
+        {canOverridePrice && (
         <button
           type="button"
           onClick={onToggleSellAtCost}
@@ -147,6 +150,7 @@ export default function CartBody({
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: sellAtCost ? "var(--warning)" : "var(--text-3)" }} />
           {sellAtCost ? t("pos.sell_at_cost") + " — ON" : t("pos.sell_at_cost")}
         </button>
+        )}
 
         {/* Sale note + Discount — side by side */}
         <div className="flex gap-2">

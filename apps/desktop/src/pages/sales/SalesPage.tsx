@@ -217,6 +217,7 @@ export default function SalesPage() {
   const selectedSale = sales.find((s) => s.id === selectedSaleId) ?? filteredSales[0]
   const drawerSale = sales.find((s) => s.id === drawerSaleId)
   const canRefund = userCan("sales.refund")
+  const canReprint = userCan("sales.reprint")
 
   useEffect(() => {
     if (!selectedSale && filteredSales[0]) setSelectedSaleId(filteredSales[0].id)
@@ -234,6 +235,7 @@ export default function SalesPage() {
   }
 
   function handlePrint(sale: Sale) {
+    if (!canReprint) return
     printSaleReceipt(sale, settings.usdToLbpRate, refunds)
   }
 

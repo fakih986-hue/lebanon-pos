@@ -12,19 +12,66 @@ const SECURITY_EVENT = "lebanonpos-security-changed"
 
 export type UserRole = "Admin" | "Manager" | "Cashier" | "Driver"
 
+// POS-PERMISSIONS-1: detailed capability catalog. IDs keep legacy names where
+// they existed; the split-out ones (price_override, reprint, inventory.view/
+// receive/adjust, suppliers.manage, cash.manage) are new granular gates.
 export type Permission =
   | "sales.checkout"
   | "sales.discount"
+  | "sales.price_override"
   | "sales.refund"
   | "sales.void"
+  | "sales.reprint"
+  | "inventory.view"
   | "inventory.manage"
+  | "inventory.receive"
+  | "inventory.adjust"
   | "customers.manage"
+  | "suppliers.manage"
   | "reports.view"
   | "accounting.manage"
-  | "settings.manage"
-  | "staff.manage"
+  | "cash.manage"
   | "shifts.manage"
+  | "staff.manage"
+  | "settings.manage"
   | "delivery.manage"
+
+export type PermissionGroup = "Sales" | "Inventory" | "People" | "Money" | "Admin"
+
+export const PERMISSION_GROUP_ORDER: PermissionGroup[] = ["Sales", "Inventory", "People", "Money", "Admin"]
+
+export const PERMISSION_GROUP_LABEL_KEYS: Record<PermissionGroup, string> = {
+  Sales: "pos.staff.permgroup_sales",
+  Inventory: "pos.staff.permgroup_inventory",
+  People: "pos.staff.permgroup_people",
+  Money: "pos.staff.permgroup_money",
+  Admin: "pos.staff.permgroup_admin",
+}
+
+/** Ordered, grouped catalog — the single source of truth for the permission UI. */
+export const PERMISSION_CATALOG: Array<{ id: Permission; group: PermissionGroup; labelKey: string }> = [
+  { id: "sales.checkout", group: "Sales", labelKey: "pos.staff.permission_checkout" },
+  { id: "sales.discount", group: "Sales", labelKey: "pos.staff.permission_discounts" },
+  { id: "sales.price_override", group: "Sales", labelKey: "pos.staff.permission_price_override" },
+  { id: "sales.refund", group: "Sales", labelKey: "pos.staff.permission_refunds" },
+  { id: "sales.void", group: "Sales", labelKey: "pos.staff.permission_void" },
+  { id: "sales.reprint", group: "Sales", labelKey: "pos.staff.permission_reprint" },
+  { id: "inventory.view", group: "Inventory", labelKey: "pos.staff.permission_inventory_view" },
+  { id: "inventory.manage", group: "Inventory", labelKey: "pos.staff.permission_inventory" },
+  { id: "inventory.receive", group: "Inventory", labelKey: "pos.staff.permission_receive" },
+  { id: "inventory.adjust", group: "Inventory", labelKey: "pos.staff.permission_adjust" },
+  { id: "customers.manage", group: "People", labelKey: "pos.staff.permission_customers" },
+  { id: "suppliers.manage", group: "People", labelKey: "pos.staff.permission_suppliers" },
+  { id: "reports.view", group: "Money", labelKey: "pos.staff.permission_reports" },
+  { id: "accounting.manage", group: "Money", labelKey: "pos.staff.permission_accounting" },
+  { id: "cash.manage", group: "Money", labelKey: "pos.staff.permission_cash" },
+  { id: "shifts.manage", group: "Money", labelKey: "pos.staff.permission_shifts" },
+  { id: "staff.manage", group: "Admin", labelKey: "pos.staff.permission_staff" },
+  { id: "settings.manage", group: "Admin", labelKey: "pos.staff.permission_settings" },
+  { id: "delivery.manage", group: "Admin", labelKey: "pos.staff.permission_delivery" },
+]
+
+export const ALL_PERMISSIONS: Permission[] = PERMISSION_CATALOG.map((p) => p.id)
 
 export type StaffUser = {
   id: string
@@ -34,6 +81,10 @@ export type StaffUser = {
   pinVersion?: number       // from server — increments on PIN reset
   lastVerifiedPinVersion?: number // from last successful online login
   role: UserRole
+  // POS-PERMISSIONS-1: explicit effective permission set (source of truth for
+  // enforcement). Absent/empty → fall back to the role preset (see
+  // effectivePermissions), so legacy users keep working.
+  permissions?: Permission[]
   active: boolean
   createdAt: string
   pinChanged: boolean
@@ -88,35 +139,87 @@ export type RecordAuditInput = {
   metadata?: AuditEvent["metadata"]
 }
 
+// Built-in role presets over the detailed catalog. These pre-fill a new user's
+// permissions and are the fallback when a user has no explicit set.
 export const rolePermissions: Record<UserRole, Permission[]> = {
-  Admin: [
-    "sales.checkout",
-    "sales.discount",
-    "sales.refund",
-    "sales.void",
-    "inventory.manage",
-    "customers.manage",
-    "reports.view",
-    "accounting.manage",
-    "settings.manage",
-    "staff.manage",
-    "shifts.manage",
-    "delivery.manage",
-  ],
-  Manager: [
-    "sales.checkout",
-    "sales.discount",
-    "sales.refund",
-    "sales.void",
-    "inventory.manage",
-    "customers.manage",
-    "reports.view",
-    "accounting.manage",
-    "shifts.manage",
-    "delivery.manage",
-  ],
-  Cashier: ["sales.checkout"],
+  // Admin = everything (stays complete as the catalog grows).
+  Admin: [...ALL_PERMISSIONS],
+  // Manager = everything except the two owner-level admin controls.
+  Manager: ALL_PERMISSIONS.filter((p) => p !== "staff.manage" && p !== "settings.manage"),
+  // Cashier = ring up sales (+ reprint) and see the catalog.
+  Cashier: ["sales.checkout", "sales.reprint", "inventory.view"],
   Driver: ["delivery.manage"],
+}
+
+// Legacy coarse → granular expansion, so an explicit set saved under the old
+// 12-permission model (or a coarse role preset) still unlocks the split-out
+// gates. Idempotent for already-granular sets.
+export function expandLegacyPermissions(perms: Permission[] | undefined): Permission[] {
+  const set = new Set<Permission>(perms ?? [])
+  if (set.has("inventory.manage")) {
+    set.add("inventory.view"); set.add("inventory.receive"); set.add("inventory.adjust")
+  }
+  if (set.has("inventory.receive") || set.has("inventory.adjust")) set.add("inventory.view")
+  if (set.has("accounting.manage")) { set.add("suppliers.manage"); set.add("cash.manage") }
+  return [...set]
+}
+
+/** The effective permission set for a user: explicit set if present, else the
+ *  role preset — expanded for legacy coarse entries either way. */
+export function effectivePermissions(user?: StaffUser | null): Permission[] {
+  if (!user) return []
+  const base = user.permissions && user.permissions.length > 0
+    ? user.permissions
+    : (rolePermissions[user.role] ?? [])
+  return expandLegacyPermissions(base)
+}
+
+// ── Privilege-escalation guardrails (POS-PERMISSIONS-1) ──
+/** Permissions the editor is allowed to hand out = the editor's own set. */
+export function grantablePermissions(editor = getCurrentUser()): Permission[] {
+  return effectivePermissions(editor)
+}
+
+const FULL_ADMIN_PERMS: Permission[] = ["staff.manage", "settings.manage"]
+
+/** A "full admin" = active user holding both staff.manage and settings.manage. */
+export function isFullAdmin(user: StaffUser): boolean {
+  const p = effectivePermissions(user)
+  return user.active && FULL_ADMIN_PERMS.every((fp) => p.includes(fp))
+}
+
+/** Would applying this change drop the store to zero full admins? (Blocks lockout.) */
+export function wouldOrphanAdmin(
+  change: { userId: string; permissions?: Permission[]; active?: boolean; deleted?: boolean },
+  users = getUsers(),
+): boolean {
+  const before = users.filter(isFullAdmin).length
+  if (before === 0) return false // bootstrap / already none — don't block
+  const after = users
+    .filter((u) => !(change.deleted && u.id === change.userId))
+    .map((u) => u.id === change.userId
+      ? { ...u, permissions: change.permissions ?? u.permissions, active: change.active ?? u.active }
+      : u)
+    .filter(isFullAdmin).length
+  return after === 0
+}
+
+// POS-PERMISSIONS-1 (phase 1): permissions are HUB-LOCAL for now. The cloud
+// schema has no permissions column yet, so including it in the sync payload
+// would make the server reject the staff op and jam the queue. Strip it before
+// pushing; a later phase adds the column + server persistence + real sync.
+function syncStaffPayload(user: StaffUser): Omit<StaffUser, "permissions"> {
+  const { permissions: _permissions, ...rest } = user
+  return rest
+}
+
+/** Added/removed permissions between two sets (for audit). */
+export function permissionsDiff(before: Permission[], after: Permission[]): { added: Permission[]; removed: Permission[] } {
+  const b = new Set(before), a = new Set(after)
+  return {
+    added: [...a].filter((p) => !b.has(p)),
+    removed: [...b].filter((p) => !a.has(p)),
+  }
 }
 
 const initialUsers: StaffUser[] = []
@@ -614,6 +717,7 @@ export async function createUser(input: {
   mobile: string
   pin: string
   role: UserRole
+  permissions?: Permission[]
 }) {
   const cleanPin = input.pin.trim()
 
@@ -627,6 +731,9 @@ export async function createUser(input: {
     throw new Error(`PIN is already in use by ${duplicate.name}`)
   }
 
+  // Explicit permission set — the given one, or the role preset.
+  const permissions = (input.permissions ?? rolePermissions[input.role] ?? []).slice()
+
   const now = new Date().toISOString()
   const user: StaffUser = {
     id: createId("user"),
@@ -635,6 +742,7 @@ export async function createUser(input: {
     pin: pinHash,
     pinChanged: false,
     role: input.role,
+    permissions,
     active: true,
     createdAt: now,
   }
@@ -653,7 +761,7 @@ export async function createUser(input: {
     entity: "staff",
     action: "create",
     summary: `${user.name} staff profile queued for sync.`,
-    payload: user,
+    payload: syncStaffPayload(user),
   })
 
   return user
@@ -691,11 +799,31 @@ export async function updateUser(userId: string, patch: Partial<StaffUser>) {
         }
       : user
   )
+  const priorUser = users.find((user) => user.id === userId)
   const updatedUser = nextUsers.find((user) => user.id === userId)
 
   writeCollection(USERS_KEY, nextUsers)
 
   if (updatedUser) {
+    // POS-PERMISSIONS-1: audit permission changes with an added/removed diff.
+    if (patch.permissions || patch.role) {
+      const diff = permissionsDiff(effectivePermissions(priorUser), effectivePermissions(updatedUser))
+      if (diff.added.length || diff.removed.length) {
+        recordAuditEvent({
+          action: "staff.permissions.update",
+          entity: "staff",
+          summary: `${updatedUser.name}'s access changed`
+            + (diff.added.length ? ` · +${diff.added.length}` : "")
+            + (diff.removed.length ? ` · -${diff.removed.length}` : ""),
+          metadata: {
+            staffUserId: updatedUser.id,
+            role: updatedUser.role,
+            added: diff.added.join(",") || "—",
+            removed: diff.removed.join(",") || "—",
+          },
+        })
+      }
+    }
     recordAuditEvent({
       action: "staff.update",
       entity: "staff",
@@ -710,14 +838,14 @@ export async function updateUser(userId: string, patch: Partial<StaffUser>) {
       entity: "staff",
       action: "update",
       summary: `${updatedUser.name} staff update queued for sync.`,
-      payload: updatedUser,
+      payload: syncStaffPayload(updatedUser),
     })
   }
 }
 
 export function userCan(permission: Permission, user = getCurrentUser()) {
   if (!user?.role) return false
-  return rolePermissions[user.role]?.includes(permission) ?? false
+  return effectivePermissions(user).includes(permission)
 }
 
 // ── Simple POS Mode ──────────────────────────────────────────────────

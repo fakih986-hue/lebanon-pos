@@ -114,6 +114,7 @@ const ReceiptPreview = memo(function ReceiptPreview({
         </div>
 
         <div className="flex items-center gap-2">
+          {userCan("sales.reprint") && (
           <button
             type="button"
             onClick={() => onPrint(sale)}
@@ -122,6 +123,7 @@ const ReceiptPreview = memo(function ReceiptPreview({
             <Printer size={16} />
             {t("pos.print")}
           </button>
+          )}
           {onClose ? (
             <button
               type="button"

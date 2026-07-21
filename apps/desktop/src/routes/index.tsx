@@ -195,7 +195,7 @@ const router = createBrowserRouter([
     path: "/products",
     element: (
       <Shell>
-        <RequirePermission permission="inventory.manage">
+        <RequirePermission permission="inventory.view">
           <ProductsPage />
         </RequirePermission>
       </Shell>
@@ -213,7 +213,7 @@ const router = createBrowserRouter([
     path: "/stock",
     element: (
       <Shell>
-        <RequirePermission permission="inventory.manage">
+        <RequirePermission permission="inventory.view">
           <StockPage />
         </RequirePermission>
       </Shell>
@@ -257,7 +257,7 @@ const router = createBrowserRouter([
     path: "/suppliers",
     element: (
       <Shell>
-        <RequirePermission permission="accounting.manage">
+        <RequirePermission permission="suppliers.manage">
           <SuppliersPage />
         </RequirePermission>
       </Shell>
@@ -312,7 +312,7 @@ const router = createBrowserRouter([
     path: "/products/new",
     element: (
       <Shell>
-        <RequirePermission permission="inventory.manage">
+        <RequirePermission permission="inventory.receive">
           <ProductReceivePage />
         </RequirePermission>
       </Shell>

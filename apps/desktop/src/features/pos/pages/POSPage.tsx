@@ -225,6 +225,7 @@ export default function POSPage() {
   }, [products, scanCode, search, selectedCategory])
 
   const canApplyDiscount = userCan("sales.discount")
+  const canOverridePrice = userCan("sales.price_override")
   const grossSubtotal = roundMoney(items.reduce(
     (sum, item) => sum + item.price * item.quantity, 0
   ))
@@ -951,6 +952,7 @@ export default function POSPage() {
         {/* ── Right: Persistent cart rail (desktop only) ── */}
         <CartPanel
           quickMode={quickMode}
+          canOverridePrice={canOverridePrice}
           items={items}
           onIncreaseQty={increaseQuantity}
           onDecreaseQty={decreaseQuantity}
@@ -1009,6 +1011,7 @@ export default function POSPage() {
         <CartDrawer
           isOpen={isCartOpen}
           onClose={() => setIsCartOpen(false)}
+          canOverridePrice={canOverridePrice}
           items={items}
           onIncreaseQty={increaseQuantity}
           onDecreaseQty={decreaseQuantity}

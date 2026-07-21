@@ -76,6 +76,7 @@ interface Props {
   checkoutBlocked: boolean
   hasDiscount: boolean
   canApplyDiscount: boolean
+  canOverridePrice?: boolean
   sellAtCost: boolean
   onToggleSellAtCost: () => void
 }
@@ -92,7 +93,7 @@ export default function CartDrawer({
   onHold, onClean, onCompleteSale,
   itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
-  cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, canApplyDiscount,
+  cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, canApplyDiscount, canOverridePrice,
   sellAtCost, onToggleSellAtCost,
 }: Props) {
   const { t, dir } = useI18n()
@@ -280,6 +281,7 @@ export default function CartDrawer({
               checkoutBlocked={checkoutBlocked}
               hasDiscount={hasDiscount}
               canApplyDiscount={canApplyDiscount}
+              canOverridePrice={canOverridePrice}
               sellAtCost={sellAtCost}
               onToggleSellAtCost={onToggleSellAtCost}
             />

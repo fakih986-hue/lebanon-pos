@@ -3,6 +3,7 @@ import { useI18n } from "@lebanonpos/shared"
 import {
   BadgeCheck,
   Calculator,
+  Check,
   Clock3,
   KeyRound,
   LockKeyhole,
@@ -10,6 +11,7 @@ import {
   ReceiptText,
   Search,
   ShieldCheck,
+  SlidersHorizontal,
   Store,
   UserCog,
   UsersRound,
@@ -43,7 +45,14 @@ import {
   setCurrentUser,
   subscribeSecurity,
   updateUser,
+  effectivePermissions,
+  grantablePermissions,
+  wouldOrphanAdmin,
+  PERMISSION_CATALOG,
+  PERMISSION_GROUP_ORDER,
+  PERMISSION_GROUP_LABEL_KEYS,
   type AuditEvent,
+  type Permission,
   type Shift,
   type StaffUser,
   type UserRole,
@@ -60,8 +69,76 @@ import { useHotkeys } from "../../hooks/useHotkey"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import Spinner from "../../components/ui/Spinner"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
+import Drawer from "../../components/ui/Drawer"
 
 type StaffWorkspace = "Team" | "Shifts" | "Audit"
+
+// POS-PERMISSIONS-1: grouped permission checklist. `grantable` = the permissions
+// the editor is allowed to hand out (their own set); others render disabled so a
+// non-admin can't escalate someone past themselves.
+function PermissionMatrix({ value, grantable, onChange, t }: {
+  value: Permission[]
+  grantable: Permission[]
+  onChange: (next: Permission[]) => void
+  t: (key: string, params?: Record<string, string | number>) => string
+}) {
+  const has = (id: Permission) => value.includes(id)
+  const canGrant = (id: Permission) => grantable.includes(id)
+  const toggle = (id: Permission) => {
+    if (!canGrant(id)) return
+    onChange(has(id) ? value.filter((p) => p !== id) : [...value, id])
+  }
+  return (
+    <div className="space-y-2.5">
+      {PERMISSION_GROUP_ORDER.map((group) => {
+        const items = PERMISSION_CATALOG.filter((c) => c.group === group)
+        const grantableItems = items.filter((c) => canGrant(c.id))
+        const allOn = grantableItems.length > 0 && grantableItems.every((c) => has(c.id))
+        return (
+          <div key={group} className="rounded-xl border p-3" style={{ borderColor: "var(--border)" }}>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
+                {t(PERMISSION_GROUP_LABEL_KEYS[group])}
+              </span>
+              {grantableItems.length > 0 && (
+                <button type="button"
+                  onClick={() => {
+                    const ids = grantableItems.map((c) => c.id)
+                    onChange(allOn ? value.filter((p) => !ids.includes(p)) : [...new Set([...value, ...ids])])
+                  }}
+                  className="text-[11px] font-bold" style={{ color: "var(--brand-text)" }}>
+                  {allOn ? t("pos.staff.select_none") : t("pos.staff.select_all")}
+                </button>
+              )}
+            </div>
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {items.map((c) => {
+                const enabled = canGrant(c.id)
+                const on = has(c.id)
+                return (
+                  <button key={c.id} type="button" disabled={!enabled} onClick={() => toggle(c.id)}
+                    title={enabled ? undefined : t("pos.staff.perm_locked")}
+                    className="flex items-center gap-2 rounded-lg border px-2.5 py-2 text-start text-[12px] font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={on
+                      ? { background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }
+                      : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded"
+                      style={on
+                        ? { background: "var(--brand)" }
+                        : { border: "1px solid var(--border-strong)" }}>
+                      {on && <Check size={12} style={{ color: "var(--brand-contrast)" }} />}
+                    </span>
+                    {t(c.labelKey)}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 const cashDenominations = [100, 50, 20, 10, 5, 1, 0.25]
 
@@ -212,6 +289,14 @@ export default function StaffPage() {
   const [mobile, setMobile] = useState("")
   const [pin, setPin] = useState("")
   const [role, setRole] = useState<UserRole>("Cashier")
+  // POS-PERMISSIONS-1: new-user permission set (prefilled from role preset).
+  const [newPermissions, setNewPermissions] = useState<Permission[]>(() => rolePermissions.Cashier.slice())
+  // Edit-access drawer state.
+  const [editUserId, setEditUserId] = useState<string | null>(null)
+  const [editName, setEditName] = useState("")
+  const [editMobile, setEditMobile] = useState("")
+  const [editRole, setEditRole] = useState<UserRole>("Cashier")
+  const [editPermissions, setEditPermissions] = useState<Permission[]>([])
   const [openingFloat, setOpeningFloat] = useState("250")
   const [closingCash, setClosingCash] = useState("")
   const [shiftNotes, setShiftNotes] = useState("")
@@ -299,19 +384,10 @@ export default function StaffPage() {
     Cashier: t("pos.staff.role_cashier"),
     Driver: t("pos.staff.role_driver_name"),
   }
-  const permissionLabels: Record<string, string> = {
-    "sales.checkout": t("pos.staff.permission_checkout"),
-    "sales.discount": t("pos.staff.permission_discounts"),
-    "sales.refund": t("pos.staff.permission_refunds"),
-    "sales.void": t("pos.staff.permission_void"),
-    "inventory.manage": t("pos.staff.permission_inventory"),
-    "customers.manage": t("pos.staff.permission_customers"),
-    "reports.view": t("pos.staff.permission_reports"),
-    "accounting.manage": t("pos.staff.permission_accounting"),
-    "settings.manage": t("pos.staff.permission_settings"),
-    "staff.manage": t("pos.staff.permission_staff"),
-    "shifts.manage": t("pos.staff.permission_shifts"),
-    "delivery.manage": t("pos.staff.permission_delivery"),
+  // Catalog-driven label for a permission id.
+  const permLabel = (id: Permission): string => {
+    const entry = PERMISSION_CATALOG.find((c) => c.id === id)
+    return entry ? t(entry.labelKey) : id
   }
 
   const searchQuery = debouncedSearch.trim().toLowerCase()
@@ -359,15 +435,57 @@ export default function StaffPage() {
         mobile,
         pin,
         role,
+        permissions: newPermissions,
       })
 
       setName("")
       setMobile("")
       setPin("")
       setRole("Cashier")
+      setNewPermissions(rolePermissions.Cashier.slice())
       showToast(t("pos.staff.user_added", { name: user.name }))
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Failed to create user", "error")
+    }
+  }
+
+  // Changing the role preset in the add form re-fills the checklist.
+  function pickNewRole(nextRole: UserRole) {
+    setRole(nextRole)
+    setNewPermissions((rolePermissions[nextRole] ?? []).slice())
+  }
+
+  // ── Edit-access drawer (POS-PERMISSIONS-1) ──
+  const editingUser = editUserId ? users.find((u) => u.id === editUserId) ?? null : null
+  const isSelfEdit = editingUser?.id === activeUserId
+  const grantable = grantablePermissions() // = current operator's own permissions
+
+  function openEditUser(user: StaffUser) {
+    setEditUserId(user.id)
+    setEditName(user.name)
+    setEditMobile(user.mobile)
+    setEditRole(user.role)
+    setEditPermissions(effectivePermissions(user))
+  }
+
+  async function saveEditUser() {
+    if (!editingUser) return
+    if (isSelfEdit) { showToast(t("pos.staff.no_self_edit"), "error"); return }
+    if (wouldOrphanAdmin({ userId: editingUser.id, permissions: editPermissions })) {
+      showToast(t("pos.staff.last_admin_block"), "error")
+      return
+    }
+    try {
+      await updateUser(editingUser.id, {
+        name: editName.trim(),
+        mobile: editMobile.trim(),
+        role: editRole,
+        permissions: editPermissions,
+      })
+      showToast(t("pos.staff.access_saved", { name: editName.trim() }))
+      setEditUserId(null)
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Failed to save", "error")
     }
   }
 
@@ -611,19 +729,27 @@ export default function StaffPage() {
                       aria-label={`Role: ${roleNameLabels[user.role]}`}>
                       {roleNameLabels[user.role]}
                     </span>
-                    {(rolePermissions[user.role] ?? []).slice(0, 3).map(p => (
+                    {effectivePermissions(user).slice(0, 3).map(p => (
                       <span key={p} className="rounded-lg px-2 py-1" style={{ background: "var(--surface-3)", color: "var(--text-2)" }}>
-                        {permissionLabels[p] ?? p}
+                        {permLabel(p)}
                       </span>
                     ))}
-                    {(rolePermissions[user.role] ?? []).length > 3 && (
-                      <span className="rounded-lg px-2 py-1 text-zinc-400" title={(rolePermissions[user.role] ?? []).slice(3).map(p => permissionLabels[p] ?? p).join(", ")}>
-                        +{(rolePermissions[user.role] ?? []).length - 3} more
+                    {effectivePermissions(user).length > 3 && (
+                      <span className="rounded-lg px-2 py-1 text-zinc-400" title={effectivePermissions(user).slice(3).map(permLabel).join(", ")}>
+                        +{effectivePermissions(user).length - 3} more
                       </span>
                     )}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => openEditUser(user)}
+                    className="btn btn-default btn-sm mt-4 w-full gap-1.5"
+                  >
+                    <SlidersHorizontal size={13} /> {t("pos.staff.manage_access")}
+                  </button>
+
+                  <div className="mt-2 grid grid-cols-3 gap-1.5">
                     <button
                       type="button"
                       onClick={() => setCurrentUser(user.id)}
@@ -750,7 +876,7 @@ export default function StaffPage() {
                 {t("pos.staff.role")}
                 <select
                   value={role}
-                  onChange={(event) => setRole(event.target.value as UserRole)}
+                  onChange={(event) => pickNewRole(event.target.value as UserRole)}
                   className="mt-2 h-11 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                 >
                   <option value="Cashier">{t("pos.staff.role_cashier")}</option>
@@ -758,6 +884,14 @@ export default function StaffPage() {
                   <option value="Admin">{t("pos.staff.role_admin")}</option>
                 </select>
               </label>
+            </div>
+
+            {/* POS-PERMISSIONS-1: preset pre-fills; fine-tune before adding. */}
+            <div className="px-4 pb-1">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
+                {t("pos.staff.access")}
+              </p>
+              <PermissionMatrix value={newPermissions} grantable={grantable} onChange={setNewPermissions} t={t} />
             </div>
 
             <div className="flex justify-end border-t border-zinc-200 p-4">
@@ -969,7 +1103,7 @@ export default function StaffPage() {
                         key={permission}
                         className="rounded-lg bg-white px-2 py-1 text-xs font-bold text-zinc-600 ring-1 ring-zinc-200"
                       >
-                        {permissionLabels[permission] ?? permission}
+                        {permLabel(permission)}
                       </span>
                     ))}
                   </div>
@@ -1110,6 +1244,76 @@ export default function StaffPage() {
           <p>{confirmAction.message}</p>
         </ConfirmDialog>
       )}
+
+      {/* ── Edit-access drawer (POS-PERMISSIONS-1) ── */}
+      <Drawer
+        open={!!editingUser}
+        onClose={() => setEditUserId(null)}
+        title={editingUser ? t("pos.staff.edit_access_for", { name: editingUser.name }) : ""}
+        subtitle={t("pos.staff.edit_access_hint")}
+        footer={
+          <>
+            <button type="button" onClick={() => setEditUserId(null)} className="btn btn-default btn-md">
+              {t("pos.staff.cancel_btn")}
+            </button>
+            <button type="button" onClick={() => void saveEditUser()} disabled={isSelfEdit} className="btn btn-primary btn-md disabled:opacity-40">
+              {t("pos.staff.save_access")}
+            </button>
+          </>
+        }
+      >
+        {editingUser && (
+          <div className="space-y-4">
+            {isSelfEdit && (
+              <p className="rounded-lg px-3 py-2 text-[12px] font-semibold" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>
+                {t("pos.staff.no_self_edit")}
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{t("pos.staff.name") || "Name"}</span>
+                <input value={editName} onChange={(e) => setEditName(e.target.value)} disabled={isSelfEdit} className="input mt-1 w-full disabled:opacity-60" />
+              </label>
+              <label className="block">
+                <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{t("pos.staff.mobile") || "Mobile"}</span>
+                <input value={editMobile} onChange={(e) => setEditMobile(e.target.value)} disabled={isSelfEdit} className="input mt-1 w-full disabled:opacity-60" />
+              </label>
+            </div>
+            <label className="block">
+              <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{t("pos.staff.role_preset")}</span>
+              <div className="mt-1 flex gap-2">
+                <select value={editRole} disabled={isSelfEdit}
+                  onChange={(e) => setEditRole(e.target.value as UserRole)}
+                  className="input flex-1 disabled:opacity-60">
+                  <option value="Cashier">{t("pos.staff.role_cashier")}</option>
+                  <option value="Manager">{t("pos.staff.role_manager")}</option>
+                  <option value="Admin">{t("pos.staff.role_admin")}</option>
+                  {editingUser.role === "Driver" && <option value="Driver">{t("pos.staff.role_driver_name")}</option>}
+                </select>
+                <button type="button" disabled={isSelfEdit}
+                  onClick={() => setEditPermissions((rolePermissions[editRole] ?? []).filter((p) => grantable.includes(p)))}
+                  className="btn btn-default btn-md disabled:opacity-40">
+                  {t("pos.staff.reset_to_preset")}
+                </button>
+              </div>
+            </label>
+
+            {!isSelfEdit && (
+              <PermissionMatrix value={editPermissions} grantable={grantable} onChange={setEditPermissions} t={t} />
+            )}
+
+            {/* Live Can / Cannot summary */}
+            {!isSelfEdit && (
+              <div className="rounded-lg border p-3 text-[12px]" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
+                <p style={{ color: "var(--success-text)" }}>
+                  <strong>{t("pos.staff.can_do")}:</strong>{" "}
+                  {editPermissions.length ? editPermissions.map(permLabel).join(" · ") : "—"}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </Drawer>
       </>
       )}
     </main>
