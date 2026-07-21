@@ -48,6 +48,7 @@ interface Props {
   onHold: () => void
   onClean: () => void
   onCompleteSale: () => void
+  onTenderEnter?: () => void
   saleNote: string
   onSaleNoteChange: (note: string) => void
   itemCount: number
@@ -106,6 +107,7 @@ export default function CartPanel({
   onHold,
   onClean,
   onCompleteSale,
+  onTenderEnter,
   itemCount,
   grossSubtotal,
   discountTotal,
@@ -266,6 +268,7 @@ export default function CartPanel({
         onHold={onHold}
         onClean={onClean}
         onCompleteSale={onCompleteSale}
+        onTenderEnter={onTenderEnter}
         itemCount={itemCount}
         grossSubtotal={grossSubtotal}
         discountTotal={discountTotal}

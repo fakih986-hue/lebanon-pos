@@ -125,6 +125,13 @@ export default function POSPage() {
   const [showReview, setShowReview] = useState(false)
 
   const productListRef = useRef<HTMLDivElement | null>(null)
+  const reviewRef = useRef<HTMLElement | null>(null)
+
+  // Move keyboard focus into the Confirm-Sale modal when it opens, so its
+  // Enter (confirm) and Escape (cancel) handlers actually receive the keys.
+  useEffect(() => {
+    if (showReview) window.requestAnimationFrame(() => reviewRef.current?.focus())
+  }, [showReview])
 
   // --- Auto-select first customer for Debt ---
   useEffect(() => {
@@ -349,6 +356,25 @@ export default function POSPage() {
   function quickAddProduct(value: string) {
     const query = value.trim().toLowerCase()
     if (!query) {
+      // Enter on an empty scan box = "I'm done adding — take payment". The scan
+      // input is auto-focused and keeps focus through the sale, so this is how a
+      // cashier naturally reaches for checkout from the keyboard.
+      if (items.length > 0) {
+        if (checkoutBlocked) {
+          setScannerStatus(
+            paymentMethod === "Cash" && !cashTenderValid
+              ? `Enter payment — still due ${formatCurrency(cashStillDueUsd)}`
+              : paymentMethod === "Debt" && !selectedCustomer
+                ? "Select a customer for this debt sale."
+                : creditLimitExceeded
+                  ? "Credit limit exceeded — cannot checkout."
+                  : "Cannot checkout yet."
+          )
+        } else {
+          setShowReview(true)
+        }
+        return
+      }
       setScannerStatus("Type, scan, or choose an item first.")
       return
     }
@@ -983,6 +1009,7 @@ export default function POSPage() {
           onHold={holdCurrentSale}
           onClean={cleanSale}
           onCompleteSale={handleReview}
+          onTenderEnter={handleReview}
           itemCount={itemCount}
           grossSubtotal={grossSubtotal}
           discountTotal={discountTotal}
@@ -1042,6 +1069,7 @@ export default function POSPage() {
           onHold={holdCurrentSale}
           onClean={cleanSale}
           onCompleteSale={handleReview}
+          onTenderEnter={handleReview}
           itemCount={itemCount}
           grossSubtotal={grossSubtotal}
           discountTotal={discountTotal}
@@ -1093,7 +1121,7 @@ export default function POSPage() {
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
       {showReview && (
-        <section className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+        <section ref={reviewRef} className="fixed inset-0 z-[200] flex items-center justify-center p-4 outline-none"
           style={{ background: "rgba(5,7,13,0.92)", backdropFilter: "blur(16px)" }}
           onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setShowReview(false) }; if (e.key === "Enter" && !checkoutBlocked) { e.preventDefault(); setShowReview(false); completeSale() }}}
           tabIndex={0}>

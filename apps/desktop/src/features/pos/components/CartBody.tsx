@@ -51,6 +51,8 @@ interface Props {
   onHold: () => void
   onClean: () => void
   onCompleteSale: () => void
+  /** Enter pressed in a cash tender field — jump straight to checkout. */
+  onTenderEnter?: () => void
   itemCount: number
   grossSubtotal: number
   discountTotal: number
@@ -82,7 +84,7 @@ export default function CartBody({
   paymentMethod, onSelectPayment,
   paidUsd, paidLbp, onPaidUsdChange, onPaidLbpChange, onFillExactTender,
   discountMode, discountValue, onDiscountModeChange, onDiscountValueChange,
-  onHold, onClean, onCompleteSale,
+  onHold, onClean, onCompleteSale, onTenderEnter,
   itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, canApplyDiscount,
@@ -286,6 +288,8 @@ export default function CartBody({
           onSelectCustomer={onSelectCustomer}
           selectedCustomer={selectedCustomer}
           creditLimitExceeded={creditLimitExceeded}
+          onUsdEnter={onTenderEnter}
+          onLbpEnter={onTenderEnter}
         />
 
         {/* Totals */}
