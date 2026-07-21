@@ -7,6 +7,7 @@ import { Counter } from "../components/Counter"
 import { BrowserFrame } from "../components/BrowserFrame"
 import { Parallax } from "../components/Parallax"
 import { introPending } from "../components/IntroLoader"
+import { Seo } from "../components/Seo"
 
 /** Headline words rise one-by-one, waiting for the intro curtain if it's playing. */
 function KineticLine({ words, gradient = false, baseDelay = 0 }: { words: string; gradient?: boolean; baseDelay?: number }) {
@@ -87,6 +88,11 @@ const OPERATOR_PROOF = [
 export default function HomePage() {
   return (
     <div>
+      <Seo
+        title="Titan — Software for Real Businesses"
+        description="Commercial-grade software for real businesses — Titan POS on the floor, Titan HR & payroll behind the scenes. Offline-first, Lebanon-first, built to actually run."
+        path="/"
+      />
       {/* â”€â”€ Hero â”€â”€ */}
       <section className="relative min-h-[92svh] md:min-h-[100svh] flex items-start md:items-center px-4 sm:px-8 pt-24 sm:pt-28 pb-12 sm:pb-16 overflow-hidden">
         <div className="max-w-6xl mx-auto w-full">

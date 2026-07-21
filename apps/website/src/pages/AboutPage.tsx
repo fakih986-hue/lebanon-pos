@@ -1,9 +1,15 @@
 import { Reveal } from "../components/Reveal"
 import { TiltCard } from "../components/TiltCard"
+import { Seo } from "../components/Seo"
 
 export default function AboutPage() {
   return (
     <div className="pt-40 pb-16">
+      <Seo
+        title="The founder — Titan"
+        description="Behind Titan: Mohammad Fakih, founder, with over 10 years in IT infrastructure and information security — and why that background shapes how Titan handles money, data, and trust."
+        path="/about"
+      />
       <div className="max-w-4xl mx-auto px-5 sm:px-8">
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 mb-4">The founder</p>

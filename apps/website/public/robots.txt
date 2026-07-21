@@ -1,0 +1,6 @@
+# Titan — https://titan-suite.net
+# Allow all crawlers; nothing on the marketing site is private.
+User-agent: *
+Allow: /
+
+Sitemap: https://titan-suite.net/sitemap.xml

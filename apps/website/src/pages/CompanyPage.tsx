@@ -1,5 +1,6 @@
 import { Reveal } from "../components/Reveal"
 import { TiltCard } from "../components/TiltCard"
+import { Seo } from "../components/Seo"
 
 const VALUES = [
   { n: "01", title: "Built to run, not to demo", desc: "Every Titan product is judged by whether it survives a real business day — not by how it looks in a pitch." },
@@ -10,6 +11,11 @@ const VALUES = [
 export default function CompanyPage() {
   return (
     <div className="pt-40 pb-16">
+      <Seo
+        title="About Titan — Commercial software, built Lebanon-first"
+        description="Why Titan exists: commercial-grade software for businesses that can't afford downtime — point of sale for the shop floor and HR & payroll for the people behind it. Built to run, not to demo."
+        path="/company"
+      />
       <div className="max-w-5xl mx-auto px-5 sm:px-8">
         <Reveal>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 mb-4">The company</p>

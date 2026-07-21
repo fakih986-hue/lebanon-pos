@@ -3,13 +3,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Titan builds commercial-grade software for real businesses — starting with Titan POS and Titan HR." />
+    <meta name="description" content="Titan builds commercial-grade software for real businesses — point of sale, HR, and payroll, built Lebanon-first to run day-to-day operations." />
     <meta name="theme-color" content="#050403" />
     <link rel="icon" type="image/png" href="/brand/titan-mark.png" />
+
+    <!-- Canonical + social defaults. These static values are what non-JS social
+         scrapers (WhatsApp, LinkedIn) read; the <Seo> component refines them
+         per-route for browsers and JS-rendering crawlers. -->
+    <link rel="canonical" href="https://titan-suite.net/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Titan" />
+    <meta property="og:title" content="Titan — Software for Real Businesses" />
+    <meta property="og:description" content="Commercial-grade software for real businesses — Titan POS on the floor, Titan HR & payroll behind the scenes. Built Lebanon-first." />
+    <meta property="og:url" content="https://titan-suite.net/" />
+    <meta property="og:image" content="https://titan-suite.net/brand/titan-logo-full.png" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Titan — Software for Real Businesses" />
+    <meta name="twitter:description" content="Commercial-grade software for real businesses — Titan POS on the floor, Titan HR & payroll behind the scenes. Built Lebanon-first." />
+    <meta name="twitter:image" content="https://titan-suite.net/brand/titan-logo-full.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>Titan — Software for Real Businesses</title>
+
+    <!-- Organization structured data (site-wide publisher identity) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Titan",
+        "url": "https://titan-suite.net",
+        "logo": "https://titan-suite.net/brand/titan-logo-full.png",
+        "description": "Titan builds commercial-grade software for real businesses — point of sale, HR, and payroll, built Lebanon-first to run day-to-day operations.",
+        "email": "hello@titan-suite.net",
+        "foundingLocation": { "@type": "Place", "name": "Lebanon" }
+      }
+    </script>
   </head>
   <body class="bg-[#050403] text-white antialiased">
     <div id="root"></div>

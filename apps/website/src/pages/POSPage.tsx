@@ -3,6 +3,8 @@ import { Reveal } from "../components/Reveal"
 import { TiltCard } from "../components/TiltCard"
 import { Magnetic } from "../components/Magnetic"
 import { DemoCarousel } from "../components/DemoCarousel"
+import { Seo } from "../components/Seo"
+import { softwareAppJsonLd } from "../lib/seo"
 
 const FEATURES = [
   { icon: "M12 6v12m-8-6h16", title: "Offline-first checkout", desc: "Runs entirely on the local machine — sales keep ringing up with no internet, and sync catches up automatically once it's back." },
@@ -46,6 +48,18 @@ const SLIDES = [
 export default function POSPage() {
   return (
     <div className="pt-40 pb-16">
+      <Seo
+        title="Titan POS — Offline-first point of sale for Lebanon"
+        description="Offline-first checkout, inventory & batches, customers & debts, suppliers, and delivery on one desktop platform. Keeps selling with no internet and syncs to the cloud. Arabic & English, USD + LBP."
+        path="/pos"
+        jsonLd={softwareAppJsonLd({
+          name: "Titan POS",
+          path: "/pos",
+          category: "BusinessApplication",
+          description:
+            "Offline-first point of sale for mini markets, supermarkets, and small retail — checkout, inventory, customers, debts, suppliers, and delivery on one machine.",
+        })}
+      />
       <div className="max-w-6xl mx-auto px-5 sm:px-8">
         {/* ── Hero ── */}
         <Reveal>

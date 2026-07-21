@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react"
 import { Reveal } from "../components/Reveal"
 import { Magnetic } from "../components/Magnetic"
+import { Seo } from "../components/Seo"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OWNER CONFIG — set these before go-live.
@@ -75,6 +76,11 @@ export default function ContactPage() {
 
   return (
     <div className="pt-32 sm:pt-40 pb-16">
+      <Seo
+        title="Book a demo — Titan"
+        description="Tell us about your business and we'll walk you through Titan POS or Titan HR against a real workflow — not a slide deck. We usually reply within one business day."
+        path="/contact"
+      />
       <div className="max-w-5xl mx-auto px-5 sm:px-8">
         {/* ── Hero ── */}
         <Reveal>

@@ -3,6 +3,8 @@ import { Reveal } from "../components/Reveal"
 import { TiltCard } from "../components/TiltCard"
 import { Magnetic } from "../components/Magnetic"
 import { DemoCarousel } from "../components/DemoCarousel"
+import { Seo } from "../components/Seo"
+import { softwareAppJsonLd } from "../lib/seo"
 
 const FEATURES = [
   { icon: "M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z", title: "Employee 360", desc: "One profile per person — employment history, contracts, compensation, documents, assets, attendance, leave, and payroll history in one place." },
@@ -26,6 +28,18 @@ const SLIDES = [
 export default function PayrollPage() {
   return (
     <div className="pt-40 pb-16">
+      <Seo
+        title="Titan HR & Payroll — Lebanon-first HR operating system"
+        description="A complete HR operating system — employees, contracts, attendance, leave, documents, assets, and a rule-traceable payroll engine built for accountant review. Lebanon-first, multi-country-ready."
+        path="/payroll"
+        jsonLd={softwareAppJsonLd({
+          name: "Titan HR & Payroll",
+          path: "/payroll",
+          category: "BusinessApplication",
+          description:
+            "A Lebanon-first HR operating system — employees, attendance, leave, documents, assets, and a rule-traceable payroll engine built for accountant review.",
+        })}
+      />
       <div className="max-w-6xl mx-auto px-5 sm:px-8">
         <Reveal>
           <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#e9c766] bg-[#d4af37]/[0.08] border border-[#d4af37]/25 rounded-full px-4 py-2">
