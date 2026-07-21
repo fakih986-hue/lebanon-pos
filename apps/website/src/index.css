@@ -68,6 +68,35 @@ body {
   box-shadow: 0 0 40px -12px rgba(212, 175, 55, 0.35);
 }
 
+/* Form fields (Contact) â€” on-brand glass inputs */
+.field {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.85rem;
+  padding: 0.8rem 1rem;
+  color: #e5e7eb;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.field::placeholder { color: #5b6472; }
+.field:focus {
+  outline: none;
+  border-color: rgba(212, 175, 55, 0.55);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.14);
+}
+select.field {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23e9c766' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  padding-right: 2.4rem;
+}
+[dir] select.field option { background: #0b0906; color: #e5e7eb; }
+
 /* Animated gradient border â€” wrap content in .shimmer-border > .shimmer-inner */
 .shimmer-border {
   position: relative;

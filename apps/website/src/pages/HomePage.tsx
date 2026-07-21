@@ -308,7 +308,7 @@ export default function HomePage() {
             <p className="mt-5 text-slate-400 max-w-lg mx-auto">Get a walkthrough of Titan POS or Titan HR against a real setup — not a slide deck.</p>
             <Magnetic className="mt-10">
               <Link to="/contact" className="inline-flex items-center gap-2 px-8 py-4 shine rounded-2xl bg-gradient-to-r from-[#e9c766] to-[#a4841f] text-[#0b0803] font-semibold shadow-[0_8px_40px_-8px_rgba(212,175,55,0.45)]">
-                Request a demo
+                Book a demo
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
               </Link>
             </Magnetic>

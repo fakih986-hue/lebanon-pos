@@ -109,7 +109,7 @@ export default function PayrollPage() {
               <p className="text-slate-400 max-w-xl mx-auto mb-9">Walk through the rule-traceable payroll engine with us — and bring your accountant. It's built to be reviewed.</p>
               <Magnetic>
                 <Link to="/contact" className="inline-flex items-center gap-2 px-8 py-4 shine rounded-2xl bg-gradient-to-r from-[#d4af37] to-[#8f6a14] text-[#0b0803] font-semibold shadow-[0_8px_40px_-8px_rgba(212,175,55,0.45)]">
-                  Request a demo
+                  Book a demo
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                 </Link>
               </Magnetic>
