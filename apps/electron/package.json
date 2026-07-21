@@ -1,6 +1,6 @@
 {
   "name": "lebanon-pos",
-  "version": "1.0.42",
+  "version": "1.0.43",
   "description": "Titan POS — Local Server Desktop App",
   "main": "dist/main.js",
   "scripts": {
@@ -82,7 +82,11 @@
       "shortcutName": "Titan POS",
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
-      "installerHeaderIcon": "assets/icon.ico"
+      "installerHeaderIcon": "assets/icon.ico",
+      "artifactName": "Titan-POS-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Titan-POS-Portable-${version}.${ext}"
     },
     "mac": {
       "target": "dmg",
