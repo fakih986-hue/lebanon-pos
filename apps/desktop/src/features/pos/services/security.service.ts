@@ -204,15 +204,6 @@ export function wouldOrphanAdmin(
   return after === 0
 }
 
-// POS-PERMISSIONS-1 (phase 1): permissions are HUB-LOCAL for now. The cloud
-// schema has no permissions column yet, so including it in the sync payload
-// would make the server reject the staff op and jam the queue. Strip it before
-// pushing; a later phase adds the column + server persistence + real sync.
-function syncStaffPayload(user: StaffUser): Omit<StaffUser, "permissions"> {
-  const { permissions: _permissions, ...rest } = user
-  return rest
-}
-
 /** Added/removed permissions between two sets (for audit). */
 export function permissionsDiff(before: Permission[], after: Permission[]): { added: Permission[]; removed: Permission[] } {
   const b = new Set(before), a = new Set(after)
@@ -761,7 +752,7 @@ export async function createUser(input: {
     entity: "staff",
     action: "create",
     summary: `${user.name} staff profile queued for sync.`,
-    payload: syncStaffPayload(user),
+    payload: user,
   })
 
   return user
@@ -838,7 +829,7 @@ export async function updateUser(userId: string, patch: Partial<StaffUser>) {
       entity: "staff",
       action: "update",
       summary: `${updatedUser.name} staff update queued for sync.`,
-      payload: syncStaffPayload(updatedUser),
+      payload: updatedUser,
     })
   }
 }

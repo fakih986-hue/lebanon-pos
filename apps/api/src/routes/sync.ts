@@ -10,6 +10,7 @@ const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
 import { recordStockMovement, recordStockMovementOnce } from "../lib/ledger.js"
+import { effectivePermissions, requiredPermissionForOp } from "../lib/permissions.js"
 import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
 import { broadcastToTenant } from "../ws/index.js"
@@ -142,6 +143,20 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
     return
   }
 
+  // ── Permission enforcement (POS-PERMISSIONS-1 phase 3) ──────────────
+  // Load the acting staff user's effective permissions once. When there is no
+  // matching staff row (cloud-bridge / system relays), enforcement is skipped —
+  // those ops were already authorized on the originating device. Role fallback
+  // (via effectivePermissions) keeps pre-1.0.44 clients and empty columns working.
+  let actorPermissions: string[] | null = null
+  try {
+    const actor = await prisma.staffUser.findUnique({
+      where: { id: req.auth!.userId },
+      select: { role: true, permissions: true },
+    })
+    if (actor) actorPermissions = effectivePermissions(actor.permissions, actor.role)
+  } catch { actorPermissions = null }
+
   const results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string }> = []
   const activities: Array<{ entity: string; action: string; summary: string }> = []
 
@@ -159,10 +174,24 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
 
       validateSyncOperation(op)
 
-      // Cashiers cannot void sales or issue refunds — requires Manager+
-      if (["void"].includes(op.action) && ["sale", "refund"].includes(op.entity)) {
-        if (req.auth!.role === "Cashier") {
-          results.push({ id: op.id, status: "error", error: "Only managers can void transactions" })
+      // POS-PERMISSIONS-1: server-enforce the money/admin-sensitive subset so a
+      // tampered client can't bypass in-app limits. Only fires for a real staff
+      // actor (actorPermissions != null) and only for mapped ops; everything
+      // else passes through unchanged.
+      if (actorPermissions) {
+        const required = requiredPermissionForOp(op.entity, op.action, op.payload)
+        if (required && !actorPermissions.includes(required)) {
+          try {
+            await prisma.auditEvent.create({
+              data: {
+                tenantId, action: "security.permission.denied", entity: op.entity,
+                summary: `Blocked ${op.action} ${op.entity}: missing ${required}`,
+                metadata: { required, userId: req.auth!.userId },
+                userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
+              },
+            })
+          } catch { /* best-effort audit */ }
+          results.push({ id: op.id, status: "error", error: `You don't have permission to ${op.action} ${op.entity}` })
           continue
         }
       }

@@ -6505,6 +6505,7 @@ export namespace Prisma {
     pinVersion: number
     tokenVersion: number
     role: number
+    permissions: number
     active: number
     pinChanged: number
     createdAt: number
@@ -6565,6 +6566,7 @@ export namespace Prisma {
     pinVersion?: true
     tokenVersion?: true
     role?: true
+    permissions?: true
     active?: true
     pinChanged?: true
     createdAt?: true
@@ -6668,6 +6670,7 @@ export namespace Prisma {
     pinVersion: number
     tokenVersion: number
     role: $Enums.UserRole
+    permissions: string[]
     active: boolean
     pinChanged: boolean
     createdAt: Date
@@ -6703,6 +6706,7 @@ export namespace Prisma {
     pinVersion?: boolean
     tokenVersion?: boolean
     role?: boolean
+    permissions?: boolean
     active?: boolean
     pinChanged?: boolean
     createdAt?: boolean
@@ -6725,6 +6729,7 @@ export namespace Prisma {
     pinVersion?: boolean
     tokenVersion?: boolean
     role?: boolean
+    permissions?: boolean
     active?: boolean
     pinChanged?: boolean
     createdAt?: boolean
@@ -6742,6 +6747,7 @@ export namespace Prisma {
     pinVersion?: boolean
     tokenVersion?: boolean
     role?: boolean
+    permissions?: boolean
     active?: boolean
     pinChanged?: boolean
     createdAt?: boolean
@@ -6759,13 +6765,14 @@ export namespace Prisma {
     pinVersion?: boolean
     tokenVersion?: boolean
     role?: boolean
+    permissions?: boolean
     active?: boolean
     pinChanged?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type StaffUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "code" | "pin" | "pinVersion" | "tokenVersion" | "role" | "active" | "pinChanged" | "createdAt" | "updatedAt", ExtArgs["result"]["staffUser"]>
+  export type StaffUserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "name" | "mobile" | "code" | "pin" | "pinVersion" | "tokenVersion" | "role" | "permissions" | "active" | "pinChanged" | "createdAt" | "updatedAt", ExtArgs["result"]["staffUser"]>
   export type StaffUserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     openedShifts?: boolean | StaffUser$openedShiftsArgs<ExtArgs>
@@ -6800,6 +6807,7 @@ export namespace Prisma {
       pinVersion: number
       tokenVersion: number
       role: $Enums.UserRole
+      permissions: string[]
       active: boolean
       pinChanged: boolean
       createdAt: Date
@@ -7241,6 +7249,7 @@ export namespace Prisma {
     readonly pinVersion: FieldRef<"StaffUser", 'Int'>
     readonly tokenVersion: FieldRef<"StaffUser", 'Int'>
     readonly role: FieldRef<"StaffUser", 'UserRole'>
+    readonly permissions: FieldRef<"StaffUser", 'String[]'>
     readonly active: FieldRef<"StaffUser", 'Boolean'>
     readonly pinChanged: FieldRef<"StaffUser", 'Boolean'>
     readonly createdAt: FieldRef<"StaffUser", 'DateTime'>
@@ -44565,6 +44574,7 @@ export namespace Prisma {
     pinVersion: 'pinVersion',
     tokenVersion: 'tokenVersion',
     role: 'role',
+    permissions: 'permissions',
     active: 'active',
     pinChanged: 'pinChanged',
     createdAt: 'createdAt',
@@ -45651,6 +45661,7 @@ export namespace Prisma {
     pinVersion?: IntFilter<"StaffUser"> | number
     tokenVersion?: IntFilter<"StaffUser"> | number
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
+    permissions?: StringNullableListFilter<"StaffUser">
     active?: BoolFilter<"StaffUser"> | boolean
     pinChanged?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
@@ -45672,6 +45683,7 @@ export namespace Prisma {
     pinVersion?: SortOrder
     tokenVersion?: SortOrder
     role?: SortOrder
+    permissions?: SortOrder
     active?: SortOrder
     pinChanged?: SortOrder
     createdAt?: SortOrder
@@ -45697,6 +45709,7 @@ export namespace Prisma {
     pinVersion?: IntFilter<"StaffUser"> | number
     tokenVersion?: IntFilter<"StaffUser"> | number
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
+    permissions?: StringNullableListFilter<"StaffUser">
     active?: BoolFilter<"StaffUser"> | boolean
     pinChanged?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
@@ -45718,6 +45731,7 @@ export namespace Prisma {
     pinVersion?: SortOrder
     tokenVersion?: SortOrder
     role?: SortOrder
+    permissions?: SortOrder
     active?: SortOrder
     pinChanged?: SortOrder
     createdAt?: SortOrder
@@ -45742,6 +45756,7 @@ export namespace Prisma {
     pinVersion?: IntWithAggregatesFilter<"StaffUser"> | number
     tokenVersion?: IntWithAggregatesFilter<"StaffUser"> | number
     role?: EnumUserRoleWithAggregatesFilter<"StaffUser"> | $Enums.UserRole
+    permissions?: StringNullableListFilter<"StaffUser">
     active?: BoolWithAggregatesFilter<"StaffUser"> | boolean
     pinChanged?: BoolWithAggregatesFilter<"StaffUser"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"StaffUser"> | Date | string
@@ -49051,6 +49066,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -49072,6 +49088,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -49091,6 +49108,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -49112,6 +49130,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -49132,6 +49151,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -49147,6 +49167,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -49163,6 +49184,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -53017,6 +53039,14 @@ export namespace Prisma {
     not?: NestedEnumUserRoleFilter<$PrismaModel> | $Enums.UserRole
   }
 
+  export type StringNullableListFilter<$PrismaModel = never> = {
+    equals?: string[] | ListStringFieldRefInput<$PrismaModel> | null
+    has?: string | StringFieldRefInput<$PrismaModel> | null
+    hasEvery?: string[] | ListStringFieldRefInput<$PrismaModel>
+    hasSome?: string[] | ListStringFieldRefInput<$PrismaModel>
+    isEmpty?: boolean
+  }
+
   export type TenantScalarRelationFilter = {
     is?: TenantWhereInput
     isNot?: TenantWhereInput
@@ -53037,6 +53067,7 @@ export namespace Prisma {
     pinVersion?: SortOrder
     tokenVersion?: SortOrder
     role?: SortOrder
+    permissions?: SortOrder
     active?: SortOrder
     pinChanged?: SortOrder
     createdAt?: SortOrder
@@ -53251,14 +53282,6 @@ export namespace Prisma {
     gt?: number | FloatFieldRefInput<$PrismaModel>
     gte?: number | FloatFieldRefInput<$PrismaModel>
     not?: NestedFloatFilter<$PrismaModel> | number
-  }
-
-  export type StringNullableListFilter<$PrismaModel = never> = {
-    equals?: string[] | ListStringFieldRefInput<$PrismaModel> | null
-    has?: string | StringFieldRefInput<$PrismaModel> | null
-    hasEvery?: string[] | ListStringFieldRefInput<$PrismaModel>
-    hasSome?: string[] | ListStringFieldRefInput<$PrismaModel>
-    isEmpty?: boolean
   }
 
   export type ProductNullableScalarRelationFilter = {
@@ -56526,6 +56549,10 @@ export namespace Prisma {
     deleteMany?: PairingCodeScalarWhereInput | PairingCodeScalarWhereInput[]
   }
 
+  export type StaffUserCreatepermissionsInput = {
+    set: string[]
+  }
+
   export type TenantCreateNestedOneWithoutUsersInput = {
     create?: XOR<TenantCreateWithoutUsersInput, TenantUncheckedCreateWithoutUsersInput>
     connectOrCreate?: TenantCreateOrConnectWithoutUsersInput
@@ -56590,6 +56617,11 @@ export namespace Prisma {
 
   export type EnumUserRoleFieldUpdateOperationsInput = {
     set?: $Enums.UserRole
+  }
+
+  export type StaffUserUpdatepermissionsInput = {
+    set?: string[]
+    push?: string | string[]
   }
 
   export type TenantUpdateOneRequiredWithoutUsersNestedInput = {
@@ -58692,6 +58724,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -58711,6 +58744,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -59802,6 +59836,7 @@ export namespace Prisma {
     pinVersion?: IntFilter<"StaffUser"> | number
     tokenVersion?: IntFilter<"StaffUser"> | number
     role?: EnumUserRoleFilter<"StaffUser"> | $Enums.UserRole
+    permissions?: StringNullableListFilter<"StaffUser">
     active?: BoolFilter<"StaffUser"> | boolean
     pinChanged?: BoolFilter<"StaffUser"> | boolean
     createdAt?: DateTimeFilter<"StaffUser"> | Date | string
@@ -65612,6 +65647,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -65632,6 +65668,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -65655,6 +65692,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -65675,6 +65713,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -65818,6 +65857,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -65838,6 +65878,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -65867,6 +65908,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -65887,6 +65929,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -66220,6 +66263,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -66240,6 +66284,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -66383,6 +66428,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -66403,6 +66449,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -67811,6 +67858,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -67831,6 +67879,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -68049,6 +68098,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -68069,6 +68119,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -69667,6 +69718,7 @@ export namespace Prisma {
     pinVersion?: number
     tokenVersion?: number
     role: $Enums.UserRole
+    permissions?: StaffUserCreatepermissionsInput | string[]
     active?: boolean
     pinChanged?: boolean
     createdAt?: Date | string
@@ -70048,6 +70100,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -70067,6 +70120,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -70086,6 +70140,7 @@ export namespace Prisma {
     pinVersion?: IntFieldUpdateOperationsInput | number
     tokenVersion?: IntFieldUpdateOperationsInput | number
     role?: EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+    permissions?: StaffUserUpdatepermissionsInput | string[]
     active?: BoolFieldUpdateOperationsInput | boolean
     pinChanged?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string

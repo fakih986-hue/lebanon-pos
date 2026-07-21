@@ -1398,3 +1398,59 @@ describe("POST /api/sync/push — opening inventory (POS-FIRST-SETUP-CATALOG-1A)
     expect(vi.mocked(prisma.inventoryBatch.create)).not.toHaveBeenCalled()
   })
 })
+
+describe("POST /api/sync/push — permission enforcement (POS-PERMISSIONS-1)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(prisma.tenant.findUnique).mockResolvedValue({ licenseStatus: "active", suspendedAt: null, offlineGraceDays: 7 } as any)
+  })
+
+  const pushVoid = () => request("POST", "/api/sync/push", {
+    token,
+    body: { operations: [{ id: "op-void-" + Math.random().toString(36).slice(2), entity: "sale", action: "void", payload: { id: "s1", saleNumber: "S1" } }] },
+  })
+
+  it("blocks a cashier (no sales.void) from voiding a sale", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockResolvedValue({ role: "Cashier", permissions: ["sales.checkout"] } as any)
+    const res = await pushVoid()
+    expect(res.status).toBe(200)
+    expect(res.body.results[0].status).toBe("error")
+    expect(res.body.results[0].error).toMatch(/permission/i)
+  })
+
+  it("allows an admin to void (role fallback = all)", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockResolvedValue({ role: "Admin", permissions: [] } as any)
+    vi.mocked(prisma.sale.findFirst).mockResolvedValue(null as any)
+    const res = await pushVoid()
+    expect(res.body.results[0].status).toBe("ok")
+  })
+
+  it("blocks an explicit permission set that lacks sales.void (tamper case)", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockResolvedValue({ role: "Manager", permissions: ["sales.checkout", "sales.refund"] } as any)
+    const res = await pushVoid()
+    expect(res.body.results[0].status).toBe("error")
+  })
+
+  it("legacy manager with empty permissions can void via role fallback", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockResolvedValue({ role: "Manager", permissions: [] } as any)
+    vi.mocked(prisma.sale.findFirst).mockResolvedValue(null as any)
+    const res = await pushVoid()
+    expect(res.body.results[0].status).toBe("ok")
+  })
+
+  it("blocks a cash movement without cash.manage", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockResolvedValue({ role: "Cashier", permissions: ["sales.checkout"] } as any)
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-cm-" + Math.random().toString(36).slice(2), entity: "cash-movement", action: "create", payload: { id: "c1", amountUsd: 5 } }] },
+    })
+    expect(res.body.results[0].status).toBe("error")
+  })
+
+  it("skips enforcement when there is no staff actor (cloud bridge relay)", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockResolvedValue(null as any)
+    vi.mocked(prisma.sale.findFirst).mockResolvedValue(null as any)
+    const res = await pushVoid()
+    expect(res.body.results[0].status).toBe("ok")
+  })
+})
