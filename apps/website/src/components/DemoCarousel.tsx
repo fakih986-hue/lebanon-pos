@@ -24,6 +24,8 @@ export function DemoCarousel({ slides, intervalMs = 4500 }: { slides: DemoSlide[
 
   useEffect(() => {
     if (lightbox) return
+    // Respect reduced motion — no auto-advancing carousel; dots/arrows still work.
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
     const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), intervalMs)
     return () => clearInterval(id)
   }, [slides.length, intervalMs, lightbox])
@@ -76,6 +78,8 @@ export function DemoCarousel({ slides, intervalMs = 4500 }: { slides: DemoSlide[
                         src={slide.src}
                         alt={slide.label}
                         className="absolute inset-0 w-full h-full object-cover object-top"
+                        loading={i === 0 ? "eager" : "lazy"}
+                        decoding="async"
                         draggable={false}
                       />
                       {active && (
@@ -156,7 +160,7 @@ export function DemoCarousel({ slides, intervalMs = 4500 }: { slides: DemoSlide[
           )}
           <div className="max-w-6xl w-full" onClick={(e) => e.stopPropagation()}>
             <BrowserFrame>
-              <img src={lightbox.src} alt={lightbox.label} className="w-full max-h-[82vh] object-contain bg-[#050403]" />
+              <img src={lightbox.src} alt={lightbox.label} className="w-full max-h-[82vh] object-contain bg-[#050403]" decoding="async" />
             </BrowserFrame>
             <p className="text-center text-sm text-slate-400 mt-4 font-display tracking-wide">
               {lightbox.label}

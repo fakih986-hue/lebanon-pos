@@ -225,7 +225,7 @@ export default function HomePage() {
                   <Parallax speed={block.flip ? -0.05 : 0.05}>
                     <TiltCard max={6}>
                       <BrowserFrame url={block.url}>
-                        <img src={block.img} alt={block.title} className="w-full block" draggable={false} />
+                        <img src={block.img} alt={block.title} width={1440} height={900} className="w-full block h-auto" loading="lazy" decoding="async" draggable={false} />
                       </BrowserFrame>
                     </TiltCard>
                   </Parallax>

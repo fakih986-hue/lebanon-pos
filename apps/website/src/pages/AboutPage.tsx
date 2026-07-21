@@ -28,7 +28,11 @@ export default function AboutPage() {
                       <img
                         src="/brand/founder.jpg"
                         alt="Mohammad Fakih, founder of Titan"
+                        width={144}
+                        height={144}
                         className="w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
                         draggable={false}
                       />
                     </div>

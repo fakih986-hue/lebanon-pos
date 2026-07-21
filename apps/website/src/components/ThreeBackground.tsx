@@ -222,7 +222,7 @@ export function ThreeBackground() {
     scene.add(core)
 
     const EMBLEM_SIZE = 5.4
-    const sigilTexture = new THREE.TextureLoader().load("/brand/titan-mark.png")
+    const sigilTexture = new THREE.TextureLoader().load("/brand/titan-mark.webp")
     sigilTexture.colorSpace = THREE.SRGBColorSpace
     sigilTexture.anisotropy = renderer.capabilities.getMaxAnisotropy()
 
