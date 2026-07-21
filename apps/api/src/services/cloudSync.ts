@@ -904,25 +904,68 @@ async function upsertPulledData(
   // pull, because its only mutable fields (quantityRemaining, status) are
   // hub-owned and a stale cloud copy would resurrect consumed stock. Only an
   // explicit restore (applyInventoryToExisting) may overwrite.
+  //
+  // POS-SYNC-BATCH-RESILIENCE-1: map ONLY the known InventoryBatch scalar
+  // columns (never spread the raw cloud row) and coerce their types, so an extra
+  // field from a newer/older cloud schema can't fail the create with a Prisma
+  // validation error and take the whole "inventoryBatch" entity down (the
+  // "Partial pull failure — entities not synced: inventoryBatch" report on a
+  // fresh register). Missing/mismatched product or supplier FKs skip that one
+  // batch instead of failing the entity.
+  const BATCH_STATUSES = new Set(["Open", "Consumed", "Expired"])
+  const num = (v: unknown, fallback = 0): number => {
+    const n = Number(v)
+    return Number.isFinite(n) ? n : fallback
+  }
+  const buildBatchData = (raw: Record<string, any>, productId: number, supplierId: string | null) => ({
+    batchNumber: String(raw.batchNumber ?? ""),
+    productId,
+    productName: String(raw.productName ?? ""),
+    barcode: String(raw.barcode ?? ""),
+    initialQuantity: num(raw.initialQuantity),
+    quantityRemaining: num(raw.quantityRemaining),
+    unitCost: raw.unitCost ?? 0,
+    unitPrice: raw.unitPrice ?? 0,
+    expiryDate: raw.expiryDate ?? null,
+    supplierId,
+    supplierName: raw.supplierName ?? null,
+    purchaseOrderNumber: raw.purchaseOrderNumber ?? null,
+    ...(raw.receivedAt ? { receivedAt: raw.receivedAt } : {}),
+    status: BATCH_STATUSES.has(raw.status) ? raw.status : "Open",
+  })
+
   for (const b of data.batches ?? []) {
     await run("inventoryBatch", async () => {
-      const id = (b as any).id
+      const raw = b as Record<string, any>
+      const id = String(raw.id)
+      const productId = Number(raw.productId)
+      // A batch is meaningless without a resolvable product — skip orphans
+      // rather than throwing an FK error that fails every batch.
+      if (!Number.isFinite(productId) || productId <= 0) { skippedBatchCount++; return }
+
       const existing = await prisma.inventoryBatch.findUnique({ where: { id }, select: { id: true } })
+      if (existing && !applyInventoryToExisting) { skippedBatchCount++; return }
+
+      // Resolve FKs locally; drop a dangling supplier ref (nullable) and skip a
+      // batch whose product isn't here yet.
+      const product = await prisma.product.findFirst({ where: { tenantId, id: productId }, select: { id: true } })
+      if (!product) { skippedBatchCount++; return }
+      let supplierId: string | null = raw.supplierId ? String(raw.supplierId) : null
+      if (supplierId) {
+        const supplier = await prisma.supplier.findFirst({ where: { tenantId, id: supplierId }, select: { id: true } })
+        if (!supplier) supplierId = null
+      }
+      const data = buildBatchData(raw, productId, supplierId)
+
       if (existing) {
-        if (!applyInventoryToExisting) { skippedBatchCount++; return }
-        await prisma.inventoryBatch.update({ where: { id }, data: b as any })
+        await prisma.inventoryBatch.update({ where: { id }, data: data as any })
         return
       }
-      // Not present locally — create it (bootstrap / genuinely new item). Guard
-      // the check-then-create against a concurrent insert of the same id (the
-      // old code used an atomic upsert): if the row raced in, fall back to the
-      // existing-row policy instead of failing the whole pull. Re-throw any
-      // other error (e.g. a real FK violation) so it still surfaces.
       try {
-        await prisma.inventoryBatch.create({ data: { ...b, tenantId } as any })
+        await prisma.inventoryBatch.create({ data: { ...data, id, tenantId } as any })
       } catch (err) {
         if ((err as { code?: string })?.code !== "P2002") throw err
-        if (applyInventoryToExisting) await prisma.inventoryBatch.update({ where: { id }, data: b as any })
+        if (applyInventoryToExisting) await prisma.inventoryBatch.update({ where: { id }, data: data as any })
         else skippedBatchCount++
       }
     })
