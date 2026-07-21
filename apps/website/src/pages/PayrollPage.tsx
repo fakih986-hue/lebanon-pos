@@ -29,6 +29,7 @@ const WORKFLOWS: Workflow[] = [
     ],
     img: "/screenshots/hr-employees.png", imgAlt: "Titan HR employee directory", w: 1440, h: 900,
     frameUrl: "titan-suite.net — people",
+    crop: { zoom: 1.4, pos: "45% 25%", aspect: "4 / 3" },
   },
   {
     eyebrow: "Time & leave",
@@ -42,6 +43,7 @@ const WORKFLOWS: Workflow[] = [
     ],
     img: "/screenshots/hr-attendance.png", imgAlt: "Titan HR attendance and leave", w: 1440, h: 900,
     frameUrl: "titan-suite.net — attendance",
+    crop: { zoom: 1.5, pos: "50% 20%", aspect: "4 / 3" },
   },
   {
     eyebrow: "Approvals & structure",
@@ -55,6 +57,7 @@ const WORKFLOWS: Workflow[] = [
     ],
     img: "/screenshots/hr-orgchart.png", imgAlt: "Titan HR org chart", w: 1440, h: 900,
     frameUrl: "titan-suite.net — org",
+    crop: { zoom: 1.6, pos: "55% 12%", aspect: "4 / 3" },
   },
   {
     eyebrow: "Payroll",
@@ -68,6 +71,7 @@ const WORKFLOWS: Workflow[] = [
     ],
     img: "/screenshots/hr-payroll.png", imgAlt: "Titan HR payroll run", w: 1440, h: 900,
     frameUrl: "titan-suite.net — payroll",
+    crop: { zoom: 1.45, pos: "38% 26%", aspect: "4 / 3" },
   },
   {
     eyebrow: "For HR & managers",
@@ -81,6 +85,7 @@ const WORKFLOWS: Workflow[] = [
     ],
     img: "/screenshots/hr-dashboard.png", imgAlt: "Titan HR dashboard", w: 1440, h: 900,
     frameUrl: "titan-suite.net — dashboard",
+    crop: { zoom: 1.5, pos: "68% 55%", aspect: "4 / 3" },
   },
 ]
 
@@ -248,13 +253,14 @@ export default function PayrollPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 mb-3">Why Titan HR</p>
           <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight mb-12">Numbers you can defend.</h2>
         </Reveal>
-        <div className="grid lg:grid-cols-3 gap-5">
+        {/* Editorial rows — a different shape from the card grids above */}
+        <div className="border-t border-white/[0.07]">
           {WHY.map((w, i) => (
-            <Reveal key={w.title} delay={(i % 3) * 100}>
-              <div className="glass glass-hover rounded-2xl p-8 h-full">
-                <div className="w-8 h-[2px] bg-gradient-to-r from-[#e9c766] to-transparent mb-5" />
-                <h3 className="font-display text-lg font-bold mb-3">{w.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{w.desc}</p>
+            <Reveal key={w.title} delay={i * 100}>
+              <div className="grid sm:grid-cols-12 gap-4 sm:gap-8 items-baseline py-9 border-b border-white/[0.07]">
+                <span className="sm:col-span-2 font-display text-4xl sm:text-5xl font-bold text-gradient leading-none">{String(i + 1).padStart(2, "0")}</span>
+                <h3 className="sm:col-span-4 font-display text-xl sm:text-2xl font-bold tracking-tight">{w.title}</h3>
+                <p className="sm:col-span-6 text-[15px] text-slate-400 leading-relaxed">{w.desc}</p>
               </div>
             </Reveal>
           ))}

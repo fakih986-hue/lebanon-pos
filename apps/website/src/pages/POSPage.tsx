@@ -30,6 +30,7 @@ const WORKFLOWS: Workflow[] = [
     ],
     img: "/screenshots/pos-checkout.png", imgAlt: "Titan POS checkout and cart screen", w: 1440, h: 900,
     frameUrl: "titan-suite.net — checkout",
+    crop: { zoom: 1.5, pos: "30% 12%", aspect: "4 / 3" },
   },
   {
     eyebrow: "For the owner",
@@ -43,6 +44,7 @@ const WORKFLOWS: Workflow[] = [
     ],
     img: "/screenshots/pos-dashboard.png", imgAlt: "Titan POS owner dashboard", w: 2547, h: 1163,
     frameUrl: "titan-suite.net — dashboard",
+    crop: { zoom: 1.6, pos: "55% 15%", aspect: "3 / 2" },
   },
   {
     eyebrow: "Stock control",
@@ -56,6 +58,7 @@ const WORKFLOWS: Workflow[] = [
     ],
     img: "/screenshots/pos-products.png", imgAlt: "Titan POS inventory and products screen", w: 1440, h: 900,
     frameUrl: "titan-suite.net — products",
+    crop: { zoom: 1.4, pos: "50% 28%", aspect: "4 / 3" },
   },
   {
     eyebrow: "Customers & credit",
@@ -69,6 +72,7 @@ const WORKFLOWS: Workflow[] = [
     ],
     img: "/screenshots/pos-customers.png", imgAlt: "Titan POS customers and debts screen", w: 2552, h: 1152,
     frameUrl: "titan-suite.net — customers",
+    crop: { zoom: 1.5, pos: "25% 30%", aspect: "3 / 2" },
   },
   {
     eyebrow: "The hub",
@@ -82,6 +86,7 @@ const WORKFLOWS: Workflow[] = [
     ],
     img: "/screenshots/pos-settings.png", imgAlt: "Titan POS security and settings screen", w: 2552, h: 1070,
     frameUrl: "titan-suite.net — settings",
+    crop: { zoom: 1.55, pos: "55% 18%", aspect: "3 / 2" },
   },
 ]
 
@@ -231,13 +236,14 @@ export default function POSPage() {
             Good on a demo day. <span className="text-gradient">Better on a bad one.</span>
           </h2>
         </Reveal>
-        <div className="grid lg:grid-cols-3 gap-5">
+        {/* Editorial rows — a different shape from the card grids above */}
+        <div className="border-t border-white/[0.07]">
           {WHY.map((w, i) => (
-            <Reveal key={w.title} delay={(i % 3) * 100}>
-              <div className="glass glass-hover rounded-2xl p-8 h-full">
-                <div className="w-8 h-[2px] bg-gradient-to-r from-[#e9c766] to-transparent mb-5" />
-                <h3 className="font-display text-lg font-bold mb-3">{w.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{w.desc}</p>
+            <Reveal key={w.title} delay={i * 100}>
+              <div className="grid sm:grid-cols-12 gap-4 sm:gap-8 items-baseline py-9 border-b border-white/[0.07]">
+                <span className="sm:col-span-2 font-display text-4xl sm:text-5xl font-bold text-gradient leading-none">{String(i + 1).padStart(2, "0")}</span>
+                <h3 className="sm:col-span-4 font-display text-xl sm:text-2xl font-bold tracking-tight">{w.title}</h3>
+                <p className="sm:col-span-6 text-[15px] text-slate-400 leading-relaxed">{w.desc}</p>
               </div>
             </Reveal>
           ))}

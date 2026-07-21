@@ -4,9 +4,8 @@ import { Reveal } from "../components/Reveal"
 import { TiltCard } from "../components/TiltCard"
 import { Magnetic } from "../components/Magnetic"
 import { Counter } from "../components/Counter"
-import { BrowserFrame } from "../components/BrowserFrame"
-import { Parallax } from "../components/Parallax"
 import { introPending } from "../components/IntroLoader"
+import { WorkflowShowcase } from "../components/WorkflowShowcase"
 import { Seo } from "../components/Seo"
 
 /** Headline words rise one-by-one, waiting for the intro curtain if it's playing. */
@@ -185,54 +184,34 @@ export default function HomePage() {
       {/* â”€â”€ Showcase: real screens, editorial layout â”€â”€ */}
       <section className="px-5 sm:px-8 pb-28">
         <div className="max-w-6xl mx-auto space-y-24">
-          {[
-            {
+          <WorkflowShowcase
+            wf={{
               eyebrow: "Titan POS",
               title: "The register, live.",
               desc: "Barcode-first checkout with dual-currency totals (USD + LBP), favorites, quick sale, and a cart that keeps moving even when the internet doesn't. This is the screen a cashier lives in all day — built to be fast at hour nine, not just minute one.",
               img: "/screenshots/pos-checkout.png",
-              url: "pos.titan-suite.net",
-              to: "/pos",
-              cta: "Explore Titan POS",
-              flip: false,
-            },
-            {
+              imgAlt: "Titan POS checkout screen",
+              w: 1440, h: 900,
+              frameUrl: "pos.titan-suite.net",
+              crop: { zoom: 1.5, pos: "30% 12%", aspect: "4 / 3" },
+              cta: { label: "Explore Titan POS", to: "/pos" },
+            }}
+            flip={false}
+          />
+          <WorkflowShowcase
+            wf={{
               eyebrow: "Titan HR",
               title: "Payroll with receipts.",
               desc: "Every payroll number traces back to an explicit rule you can open and read — and when a rule hasn't been accountant-verified yet, the platform flags it out loud instead of guessing. Verification-ready by design: built to be reviewed, not just believed.",
               img: "/screenshots/hr-payroll.png",
-              url: "titan-hr — payroll",
-              to: "/payroll",
-              cta: "Explore Titan HR",
-              flip: true,
-            },
-          ].map((block) => (
-            <Reveal key={block.title}>
-              <div className={`grid lg:grid-cols-2 gap-10 lg:gap-14 items-center ${block.flip ? "lg:[direction:rtl]" : ""}`}>
-                <div className="lg:[direction:ltr]">
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#e9c766] mb-4">{block.eyebrow}</p>
-                  <h3 className="font-display text-3xl sm:text-4xl font-bold tracking-tight mb-5">{block.title}</h3>
-                  <p className="text-slate-400 leading-relaxed text-[15px] mb-8">{block.desc}</p>
-                  <Magnetic>
-                    <Link to={block.to} className="inline-flex items-center gap-2 text-sm font-semibold text-[#e9c766] hover:gap-3.5 transition-all">
-                      {block.cta}
-                      <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
-                    </Link>
-                  </Magnetic>
-                </div>
-                <div className="relative lg:[direction:ltr]">
-                  <div className="absolute -inset-6 bg-[#d4af37]/[0.08] blur-3xl rounded-full pointer-events-none" />
-                  <Parallax speed={block.flip ? -0.05 : 0.05}>
-                    <TiltCard max={6}>
-                      <BrowserFrame url={block.url}>
-                        <img src={block.img} alt={block.title} width={1440} height={900} className="w-full block h-auto" loading="lazy" decoding="async" draggable={false} />
-                      </BrowserFrame>
-                    </TiltCard>
-                  </Parallax>
-                </div>
-              </div>
-            </Reveal>
-          ))}
+              imgAlt: "Titan HR payroll run",
+              w: 1440, h: 900,
+              frameUrl: "titan-hr — payroll",
+              crop: { zoom: 1.45, pos: "38% 26%", aspect: "4 / 3" },
+              cta: { label: "Explore Titan HR", to: "/payroll" },
+            }}
+            flip={true}
+          />
         </div>
       </section>
 
@@ -287,20 +266,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Pillars */}
+      {/* Pillars — editorial rows, not another card grid */}
       <section className="px-5 sm:px-8 pb-28">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-3 gap-6">
-            {PILLARS.map((p, i) => (
-              <Reveal key={p.n} delay={i * 120}>
-                <div className="relative glass glass-hover shine rounded-2xl p-8 h-full overflow-hidden">
-                  <span className="font-display absolute -top-4 -right-2 text-[5.5rem] sm:text-[7rem] font-bold text-outline leading-none">{p.n}</span>
-                  <h3 className="font-display text-xl font-bold mb-3 relative">{p.title}</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed relative max-w-[90%]">{p.desc}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+        <div className="max-w-6xl mx-auto border-t border-white/[0.07]">
+          {PILLARS.map((p, i) => (
+            <Reveal key={p.n} delay={i * 100}>
+              <div className="grid sm:grid-cols-12 gap-4 sm:gap-8 items-baseline py-9 border-b border-white/[0.07]">
+                <span className="sm:col-span-2 font-display text-4xl sm:text-5xl font-bold text-gradient leading-none">{p.n}</span>
+                <h3 className="sm:col-span-4 font-display text-xl sm:text-2xl font-bold tracking-tight">{p.title}</h3>
+                <p className="sm:col-span-6 text-[15px] text-slate-400 leading-relaxed">{p.desc}</p>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </section>
 

@@ -79,6 +79,13 @@ body {
   box-shadow: 0 0 40px -12px rgba(212, 175, 55, 0.35);
 }
 
+/* Product screenshots inside showcases get a whisper of warmth so the app's
+   cool UI palette sits comfortably in the gold/black page. Carousel + lightbox
+   stay untreated — full-fidelity proof. */
+.shot-warm {
+  filter: sepia(0.16) saturate(1.06) contrast(1.02);
+}
+
 /* Form fields (Contact) â€” on-brand glass inputs */
 .field {
   width: 100%;
