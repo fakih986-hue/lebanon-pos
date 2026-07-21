@@ -15,6 +15,26 @@ const FEATURES = [
 
 const CHIPS = ["Barcode scanning", "AI product images", "Daily close", "Cash drawer", "Refunds & holds", "Expenses", "Stock counts", "Arabic & English", "LBP + USD dual currency", "Receipt printing"]
 
+// Trust mechanics — all provable in the product, no adoption claims.
+const TRUST = [
+  {
+    title: "The store owns its system",
+    desc: "Titan POS runs on a local hub in the store — the register, database, and other devices all work off that machine. The internet going down is an inconvenience, not an outage.",
+  },
+  {
+    title: "Per-user permissions, server-enforced",
+    desc: "Choose exactly what each staff member can do — checkout only, discounts, refunds, cash drawer, settings. Sensitive actions are re-checked by the server, so limits hold even against a tampered device.",
+  },
+  {
+    title: "An audit trail that answers questions",
+    desc: "Logins, voids, refunds, permission changes, shift opens and closes — recorded with who and when. When something looks off at day's end, you can trace it instead of arguing about it.",
+  },
+  {
+    title: "Backups + a live cloud copy",
+    desc: "The hub syncs continuously to the cloud, safe backup export strips secrets before it leaves the machine, and only paired, approved devices can connect to the store's data.",
+  },
+]
+
 const SLIDES = [
   { label: "Checkout & cart", src: "/screenshots/pos-checkout.png" },
   { label: "Inventory & products", src: "/screenshots/pos-products.png" },
@@ -51,7 +71,7 @@ export default function POSPage() {
         {/* ── Coverflow demo ── */}
         <Reveal delay={280} className="mt-20">
           <DemoCarousel slides={SLIDES} />
-          <p className="text-xs text-slate-600 mt-4 text-center">Real product screenshots — swapped in once captured from the live platform.</p>
+          <p className="text-xs text-slate-600 mt-4 text-center">Real product screenshots from the live platform.</p>
         </Reveal>
 
         {/* ── Features ── */}
@@ -67,6 +87,25 @@ export default function POSPage() {
                   <p className="text-sm text-slate-400 leading-relaxed">{f.desc}</p>
                 </div>
               </TiltCard>
+            </Reveal>
+          ))}
+        </div>
+
+        {/* Trust — how it holds up when things go wrong */}
+        <Reveal className="mt-28">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 mb-3">Built to be trusted</p>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight mb-12">
+            Good on a demo day.<br /><span className="text-gradient">Better on a bad one.</span>
+          </h2>
+        </Reveal>
+        <div className="grid sm:grid-cols-2 gap-5">
+          {TRUST.map((f, i) => (
+            <Reveal key={f.title} delay={(i % 2) * 100}>
+              <div className="glass glass-hover rounded-2xl p-8 h-full">
+                <div className="w-8 h-[2px] bg-gradient-to-r from-[#e9c766] to-transparent mb-5" />
+                <h3 className="font-display text-lg font-bold mb-3">{f.title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{f.desc}</p>
+              </div>
             </Reveal>
           ))}
         </div>

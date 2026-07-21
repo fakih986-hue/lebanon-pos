@@ -62,16 +62,26 @@ const PRODUCTS = [
     to: "/payroll",
     tag: "People Operations",
     name: "Titan HR & Payroll",
-    desc: "A Lebanon-first HR operating system — employees, attendance, leave, documents, assets, and an accountant-verified payroll engine in one workspace.",
+    desc: "A Lebanon-first HR operating system — employees, attendance, leave, documents, assets, and a rule-traceable payroll engine built for accountant review.",
     accent: "from-[#d4af37] to-[#7a5c10]",
     glow: "group-hover:shadow-[0_0_60px_-15px_rgba(212,175,55,0.35)]",
   },
 ]
 
 const PILLARS = [
-  { n: "01", title: "Built to actually run", desc: "Not demos, not prototypes — platforms that are live today, handling real sales and real payroll runs for real businesses." },
+  { n: "01", title: "Built to actually run", desc: "Not demos, not prototypes — Titan POS is live in production today, ringing up real sales in a real store, updated release after release." },
   { n: "02", title: "Offline is a feature", desc: "Titan POS runs entirely on the local machine. Bad connection? Sales keep ringing up. The cloud catches up the moment you're back." },
   { n: "03", title: "Trust over shortcuts", desc: "Payroll, money, and inventory don't get to be 'roughly right'. Every number traces to a rule, every change to a person." },
+]
+
+// Provable product mechanics — no adoption numbers, no invented proof.
+const OPERATOR_PROOF = [
+  { title: "The register is the server", desc: "The store's own machine runs the whole system — checkout, inventory, database. No internet, no problem: it sells all day and syncs to the cloud when the line returns." },
+  { title: "Every sensitive action is gated & logged", desc: "Voids, refunds, discounts, cash in/out, and settings changes require per-user permission — and land in an audit trail with who, what, and when. Enforced on the server, not just the screen." },
+  { title: "Money reconciles, or you hear about it", desc: "Daily close counts the drawer against expected cash. Stock reconciles aggregate vs. batches vs. ledger. Differences surface — they don't hide." },
+  { title: "Backups you can actually restore", desc: "One-click safe backup export (secrets stripped), a live cloud copy of the store, and device pairing so only approved hardware can touch the data." },
+  { title: "Built for how Lebanon actually trades", desc: "Dual-currency checkout (USD + LBP) with quick-cash notes, customer debt ledgers, Arabic & English — the daily reality, not an afterthought." },
+  { title: "Updates without a technician", desc: "New versions install from inside the app — download, restart, done. Integrity-checked end to end." },
 ]
 
 export default function HomePage() {
@@ -183,7 +193,7 @@ export default function HomePage() {
             {
               eyebrow: "Titan HR",
               title: "Payroll with receipts.",
-              desc: "Every payroll run traces back to verified statutory rules — and when a rule isn't legally verified yet, the platform says so out loud instead of guessing. 90 runs on record, every number explainable.",
+              desc: "Every payroll number traces back to an explicit rule you can open and read — and when a rule hasn't been accountant-verified yet, the platform flags it out loud instead of guessing. Verification-ready by design: built to be reviewed, not just believed.",
               img: "/screenshots/hr-payroll.png",
               url: "titan-hr — payroll",
               to: "/payroll",
@@ -225,10 +235,11 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="shimmer-border">
             <div className="shimmer-inner grid grid-cols-2 lg:grid-cols-4 gap-px overflow-hidden rounded-[calc(1.25rem-1px)]">
+              {/* Product facts only — provable in the software, not adoption claims. */}
               {[
-                { to: 2, suffix: "", label: "Platforms live" },
-                { to: 7, suffix: "", label: "Apps in the POS suite" },
-                { to: 3, suffix: "", label: "Stores running today" },
+                { to: 0, suffix: "", label: "Internet required to sell" },
+                { to: 2, suffix: "", label: "Currencies at checkout — USD + LBP" },
+                { to: 2, suffix: "", label: "Languages — Arabic & English" },
                 { to: 100, suffix: "%", label: "Offline-capable checkout" },
               ].map((s) => (
                 <div key={s.label} className="p-8 sm:p-10 text-center bg-white/[0.015]">
@@ -243,7 +254,34 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* â”€â”€ Pillars â”€â”€ */}
+      {/* Built for real operators — provable mechanics, not testimonials */}
+      <section className="px-5 sm:px-8 pb-28">
+        <div className="max-w-6xl mx-auto">
+          <Reveal>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 mb-3">Why owners trust it</p>
+            <h2 className="font-display text-3xl sm:text-5xl font-bold tracking-tight mb-5">
+              Built for <span className="text-gradient">real operators.</span>
+            </h2>
+            <p className="text-slate-400 max-w-2xl leading-relaxed mb-14">
+              No borrowed logos, no invented numbers. These are mechanics you can walk in and test on a live setup —
+              pull the internet cable, try a void without permission, open the audit log.
+            </p>
+          </Reveal>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {OPERATOR_PROOF.map((f, i) => (
+              <Reveal key={f.title} delay={(i % 3) * 100}>
+                <div className="glass glass-hover rounded-2xl p-7 h-full">
+                  <div className="w-8 h-[2px] bg-gradient-to-r from-[#e9c766] to-transparent mb-5" />
+                  <h3 className="font-display font-bold mb-2.5">{f.title}</h3>
+                  <p className="text-sm text-slate-400 leading-relaxed">{f.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pillars */}
       <section className="px-5 sm:px-8 pb-28">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-3 gap-6">
