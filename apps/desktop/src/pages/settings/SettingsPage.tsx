@@ -9,6 +9,7 @@ import {
   Download,
   Key,
   Lock,
+  RefreshCw,
   RotateCw,
   PackageOpen,
   Save,
@@ -62,7 +63,15 @@ import { buildSafeBackup, buildRawBackup } from "../../features/pos/lib/backup"
 import { showToast } from "../../features/pos/services/toast.service"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
-import { checkForUpdates, fetchReleaseManifest, clearUpdateCache } from "../../features/pos/services/update.service"
+import {
+  isElectron,
+  getInstalledVersion,
+  subscribeUpdate,
+  checkForUpdate,
+  downloadUpdate,
+  installUpdate,
+  type UpdateState,
+} from "../../features/pos/services/appUpdater"
 import {
   generatePairingCode,
   getDeviceList,
@@ -70,7 +79,7 @@ import {
   revokeDevice,
   type PairedDevice,
 } from "../../features/pos/services/deviceRegistry.service"
-import { compareVersions, formatVersion, type UpdateStatus, type ReleaseManifest } from "../../features/pos/lib/version"
+import { formatVersion } from "../../features/pos/lib/version"
 
 type SettingsWorkspace = "Business" | "Cloud sync" | "Security" | "Backup" | "Delivery" | "About"
 
@@ -162,17 +171,9 @@ export default function SettingsPage() {
     useState<SettingsWorkspace>("Business")
   const [drivers, setDrivers] = useState<Array<{ id: string; name: string }>>([])
 
-  // ── Update awareness ──
+  // ── App updates (POS-UPDATE-1) ──
   const [installedVersion, setInstalledVersion] = useState<string | null>(null)
-  const [updateStatus, setUpdateStatus] = useState<{ status: UpdateStatus; manifest: ReleaseManifest | null }>({ status: "unable-to-check", manifest: null })
-  const [updateChecking, setUpdateChecking] = useState(false)
-
-  useEffect(() => {
-    const api = (window as { electronAPI?: { getAppVersion?: () => Promise<string> } }).electronAPI
-    if (api?.getAppVersion) {
-      api.getAppVersion().then(setInstalledVersion).catch(() => setInstalledVersion(null))
-    }
-  }, [])
+  const [update, setUpdate] = useState<UpdateState>({ phase: isElectron() ? "idle" : "unsupported" })
 
   useEffect(() => {
     const api = (window as { electronAPI?: { getBindHost?: () => Promise<string>; getLocalIP?: () => Promise<string> } }).electronAPI
@@ -188,16 +189,14 @@ export default function SettingsPage() {
   }, [connectionMode])
 
   useEffect(() => {
-    if (!installedVersion) return
-    setUpdateChecking(true)
-    checkForUpdates(installedVersion).then((result) => {
-      setUpdateStatus(result)
-      setUpdateChecking(false)
-    }).catch(() => {
-      setUpdateStatus({ status: "unable-to-check", manifest: null })
-      setUpdateChecking(false)
-    })
-  }, [installedVersion])
+    getInstalledVersion().then(setInstalledVersion).catch(() => setInstalledVersion(null))
+    if (!isElectron()) { setUpdate({ phase: "unsupported" }); return }
+    const unsub = subscribeUpdate(setUpdate)
+    // Kick an initial check so the About tab reflects availability on open.
+    setUpdate({ phase: "checking" })
+    checkForUpdate().catch(() => {})
+    return unsub
+  }, [])
 
   useEffect(() => {
     setIsLoading(false)
@@ -1009,89 +1008,86 @@ export default function SettingsPage() {
               </span>
             </div>
 
-            {/* Latest available */}
-            <div className="flex items-center justify-between rounded-lg border p-3.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>Latest available</span>
-              <span className="text-sm font-bold font-mono" style={{ color: "var(--text)" }}>
-                {updateStatus.manifest ? `v${formatVersion(updateStatus.manifest.version)}` : "—"}
-              </span>
-            </div>
-
             {/* Update status */}
             <div className="flex items-center justify-between rounded-lg border p-3.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
               <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>Status</span>
               <span className="text-sm font-bold">
-                {updateChecking ? (
-                  <span style={{ color: "var(--text-3)" }}>Checking...</span>
-                ) : updateStatus.status === "up-to-date" ? (
-                  <span style={{ color: "var(--success)" }}>Up to date</span>
-                ) : updateStatus.status === "update-available" ? (
-                  <span style={{ color: "var(--info)" }}>Update available</span>
-                ) : updateStatus.status === "update-required" ? (
-                  <span style={{ color: "var(--rose)" }}>Update required</span>
-                ) : (
-                  <span style={{ color: "var(--text-3)" }}>Unable to check</span>
-                )}
+                {update.phase === "checking" && <span style={{ color: "var(--text-3)" }}>Checking…</span>}
+                {update.phase === "up-to-date" && <span style={{ color: "var(--success-text)" }}>Up to date</span>}
+                {update.phase === "available" && <span style={{ color: "var(--info)" }}>Update available{update.version ? ` — v${formatVersion(update.version)}` : ""}</span>}
+                {update.phase === "downloading" && <span style={{ color: "var(--info)" }}>Downloading… {update.percent ?? 0}%</span>}
+                {update.phase === "downloaded" && <span style={{ color: "var(--success-text)" }}>Ready to install</span>}
+                {update.phase === "error" && <span style={{ color: "var(--rose)" }}>Update error</span>}
+                {update.phase === "idle" && <span style={{ color: "var(--text-3)" }}>—</span>}
+                {update.phase === "unsupported" && <span style={{ color: "var(--text-3)" }}>Managed on hub</span>}
               </span>
             </div>
 
-            {/* Channel */}
-            {updateStatus.manifest && (
-              <div className="flex items-center justify-between rounded-lg border p-3.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-                <span className="text-sm font-medium" style={{ color: "var(--text-2)" }}>Channel</span>
-                <span className="text-sm font-bold capitalize" style={{ color: "var(--text)" }}>
-                  {updateStatus.manifest.channel}
-                </span>
+            {/* Download progress */}
+            {update.phase === "downloading" && (
+              <div className="h-2 w-full overflow-hidden rounded-full" style={{ background: "var(--surface-3)" }}>
+                <div className="h-full rounded-full transition-all" style={{ width: `${update.percent ?? 0}%`, background: "var(--brand)" }} />
               </div>
             )}
 
             {/* Release notes */}
-            {updateStatus.manifest?.releaseNotes && (
+            {(update.phase === "available" || update.phase === "downloaded") && update.notes && (
               <details className="rounded-lg border" style={{ borderColor: "var(--border)" }}>
                 <summary className="cursor-pointer px-3.5 py-2.5 text-sm font-bold" style={{ color: "var(--text)" }}>
-                  Release notes
+                  What&apos;s new{update.version ? ` in v${formatVersion(update.version)}` : ""}
                 </summary>
                 <div className="border-t px-3.5 py-2.5 text-xs leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-2)", borderColor: "var(--border)" }}>
-                  {updateStatus.manifest.releaseNotes}
+                  {update.notes}
                 </div>
               </details>
             )}
 
-            {/* Action buttons */}
-            <div className="flex gap-2 pt-1">
-              {(updateStatus.status === "update-available" || updateStatus.status === "update-required") && updateStatus.manifest?.downloadUrl && (
-                <a
-                  href={updateStatus.manifest.downloadUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg text-sm font-bold text-white transition hover:opacity-90"
-                  style={{ background: "var(--brand)" }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  Download update
-                </a>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  clearUpdateCache()
-                  if (installedVersion) {
-                    setUpdateChecking(true)
-                    checkForUpdates(installedVersion).then(setUpdateStatus).finally(() => setUpdateChecking(false))
-                  }
-                }}
-                className="flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border text-sm font-bold transition hover:opacity-80"
-                style={{ borderColor: "var(--border)", color: "var(--text-2)" }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                Check again
-              </button>
-            </div>
+            {/* Error message */}
+            {update.phase === "error" && update.error && (
+              <p className="rounded-lg px-3 py-2 text-[12px] font-semibold" style={{ background: "var(--danger-soft)", color: "var(--danger-text)" }}>
+                {update.error}
+              </p>
+            )}
+
+            {/* Actions */}
+            {update.phase === "unsupported" ? (
+              <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-3)" }}>
+                Updates are installed on the hub device. On connected devices this screen is read-only — the app refreshes automatically when the hub updates.
+              </p>
+            ) : (
+              <div className="flex gap-2 pt-1">
+                {update.phase === "available" && (
+                  <button type="button" onClick={() => downloadUpdate()} className="btn btn-primary flex-1 gap-2">
+                    <Download size={16} /> Download &amp; install
+                  </button>
+                )}
+                {update.phase === "downloading" && (
+                  <button type="button" disabled className="btn btn-primary flex-1 gap-2">
+                    Downloading… {update.percent ?? 0}%
+                  </button>
+                )}
+                {update.phase === "downloaded" && (
+                  <button type="button" onClick={() => installUpdate()} className="btn btn-primary flex-1 gap-2">
+                    <RotateCw size={16} /> Restart now to finish
+                  </button>
+                )}
+                {(update.phase === "idle" || update.phase === "up-to-date" || update.phase === "error") && (
+                  <button type="button" onClick={() => { setUpdate({ phase: "checking" }); checkForUpdate() }} className="btn btn-default flex-1 gap-2">
+                    <RefreshCw size={16} /> Check for updates
+                  </button>
+                )}
+                {(update.phase === "available" || update.phase === "downloaded") && (
+                  <button type="button" onClick={() => { setUpdate({ phase: "checking" }); checkForUpdate() }} className="btn btn-default gap-2">
+                    Check again
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="mt-4 rounded-lg border p-3" style={{ borderColor: "var(--border-soft)", background: "var(--surface-3)" }}>
             <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-3)" }}>
-              Titan POS v{installedVersion ? formatVersion(installedVersion) : "—"} · {updateStatus.manifest?.channel ?? "—"} channel
+              Titan POS v{installedVersion ? formatVersion(installedVersion) : "—"}{isElectron() ? "" : " · connected device"}
             </p>
           </div>
         </section>

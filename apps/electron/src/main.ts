@@ -786,7 +786,7 @@ function createTray() {
       },
     },
     { type: "separator" },
-    { label: "Check for Updates", click: () => autoUpdater.checkForUpdates().catch(() => {}) },
+    { label: "Check for Updates", click: () => { mainWindow?.show(); mainWindow?.focus(); sendUpdateEvent({ phase: "checking" }); autoUpdater.checkForUpdates().catch(() => {}) } },
     { type: "separator" },
     { label: "Quit Titan POS", click: () => { isQuitting = true; app.quit() } },
   ]))
@@ -795,16 +795,38 @@ function createTray() {
 
 // ─── Auto-updater ─────────────────────────────────────────────────────────────
 
+// Forward an updater state change to the POS renderer (Settings → About drives
+// the UI). Safe if the window isn't ready yet.
+function sendUpdateEvent(payload: Record<string, unknown>) {
+  mainWindow?.webContents.send("update:event", payload)
+}
+
+function releaseNotesToText(notes: unknown): string {
+  if (typeof notes === "string") return notes
+  if (Array.isArray(notes)) return notes.map(n => (n && typeof n === "object" && "note" in n ? (n as { note?: string }).note ?? "" : "")).filter(Boolean).join("\n\n")
+  return ""
+}
+
+let updaterWired = false
+
 function setupAutoUpdater() {
   autoUpdater.logger = null
-  autoUpdater.autoDownload = true
+  // POS-UPDATE-1: controlled updates — don't download until the owner clicks.
+  // (autoInstallOnAppQuit stays on as a safety net for an already-downloaded update.)
+  autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = true
-  autoUpdater.on("update-available", info => {
-    dialog.showMessageBox({ type: "info", title: "Update Available",
-      message: `Titan POS v${info.version} is available and will install when you quit.`,
-      buttons: ["OK"] })
-  })
-  autoUpdater.on("error", e => console.error("[updater]", e.message))
+
+  if (!updaterWired) {
+    updaterWired = true
+    autoUpdater.on("checking-for-update", () => sendUpdateEvent({ phase: "checking" }))
+    autoUpdater.on("update-available", info => sendUpdateEvent({ phase: "available", version: info.version, notes: releaseNotesToText(info.releaseNotes) }))
+    autoUpdater.on("update-not-available", () => sendUpdateEvent({ phase: "up-to-date" }))
+    autoUpdater.on("download-progress", p => sendUpdateEvent({ phase: "downloading", percent: Math.round(p.percent) }))
+    autoUpdater.on("update-downloaded", info => sendUpdateEvent({ phase: "downloaded", version: info.version }))
+    autoUpdater.on("error", e => sendUpdateEvent({ phase: "error", error: e?.message ?? "Update failed" }))
+  }
+
+  // Surface availability shortly after boot (no auto-download — the renderer decides).
   setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 10_000)
 }
 
@@ -861,6 +883,38 @@ ipcMain.handle("get-local-ip", () => {
   return "localhost"
 })
 ipcMain.handle("get-app-version", () => app.getVersion())
+
+// ─── Update IPC (POS-UPDATE-1) ───────────────────────────────────────────────
+// Renderer-driven, controlled flow. In dev (unpackaged) these no-op with
+// { dev: true } so the About tab can show "updates only in the installed app".
+ipcMain.handle("update:check", async () => {
+  if (!IS_PACKAGED) return { dev: true }
+  try {
+    const r = await autoUpdater.checkForUpdates()
+    return { ok: true, version: r?.updateInfo?.version ?? null }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Update check failed" }
+  }
+})
+
+ipcMain.handle("update:download", async () => {
+  if (!IS_PACKAGED) return { dev: true }
+  try {
+    await autoUpdater.downloadUpdate()
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Download failed" }
+  }
+})
+
+ipcMain.handle("update:install", () => {
+  if (!IS_PACKAGED) return { dev: true }
+  // Let the IPC reply flush first, then quit the tray-guarded window and run the
+  // NSIS installer. isQuitting must be set so the close handler doesn't cancel.
+  isQuitting = true
+  setImmediate(() => autoUpdater.quitAndInstall())
+  return { ok: true }
+})
 
 ipcMain.handle("get-bind-host", () => {
   try {

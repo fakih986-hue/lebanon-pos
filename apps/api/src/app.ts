@@ -24,7 +24,6 @@ import imageRoutes from "./routes/image.js"
 import adminRoutes from "./routes/admin.js"
 import reportsRoutes from "./routes/reports.js"
 import inventoryRoutes from "./routes/inventory.js"
-import releasesRoutes from "./routes/releases.js"
 import deviceRoutes from "./routes/device.js"
 import { errorHandler } from "./middleware/errorHandler.js"
 import {
@@ -74,7 +73,6 @@ app.use("/api/images", imageRoutes)
 app.use("/api/admin", adminRoutes)
 app.use("/api/reports", reportsRoutes)
 app.use("/api/inventory", inventoryRoutes)
-app.use("/api/releases", releasesRoutes)
 app.use("/api", deviceRoutes)
 
 app.get("/api/health", async (_req: IncomingMessage, res: ServerResponse) => {

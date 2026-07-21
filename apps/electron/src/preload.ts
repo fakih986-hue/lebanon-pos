@@ -28,4 +28,21 @@ contextBridge.exposeInMainWorld("electronAPI", {
   /** Sets BIND_HOST to 0.0.0.0 (hub/LAN mode) or 127.0.0.1 (local-only) and restarts the API */
   setBindHost: (value: "0.0.0.0" | "127.0.0.1"): Promise<{ ok: boolean; error?: string }> =>
     ipcRenderer.invoke("set-bind-host", value),
+
+  // ── App updates (POS-UPDATE-1) ──
+  /** Ask the updater to check GitHub for a newer release. */
+  checkForUpdate: (): Promise<{ ok?: boolean; dev?: boolean; version?: string | null; error?: string }> =>
+    ipcRenderer.invoke("update:check"),
+  /** Download the available update (progress arrives via onUpdateEvent). */
+  downloadUpdate: (): Promise<{ ok?: boolean; dev?: boolean; error?: string }> =>
+    ipcRenderer.invoke("update:download"),
+  /** Quit and install the downloaded update, then relaunch. */
+  installUpdate: (): Promise<{ ok?: boolean; dev?: boolean }> =>
+    ipcRenderer.invoke("update:install"),
+  /** Subscribe to updater state changes; returns an unsubscribe function. */
+  onUpdateEvent: (cb: (payload: { phase: string; version?: string; notes?: string; percent?: number; error?: string }) => void): (() => void) => {
+    const listener = (_e: unknown, payload: { phase: string }) => cb(payload as never)
+    ipcRenderer.on("update:event", listener)
+    return () => ipcRenderer.removeListener("update:event", listener)
+  },
 })

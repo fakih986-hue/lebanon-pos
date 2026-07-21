@@ -9,7 +9,8 @@
     "make-icons": "node make-icons.mjs",
     "build:spa": "pnpm --prefix ../../apps/desktop build && node copy-desktop-spa.mjs && pnpm --prefix ../../apps/api bundle",
     "package": "npm run build:spa && npm run build && electron-builder --win",
-    "package:dir": "npm run build:spa && npm run build && electron-builder --win --dir"
+    "package:dir": "npm run build:spa && npm run build && electron-builder --win --dir",
+    "release:publish": "npm run build:spa && npm run build && electron-builder --win --publish always"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
