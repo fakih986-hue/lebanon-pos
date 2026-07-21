@@ -41,7 +41,7 @@ export function Footer() {
 
       <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-8 py-6 border-t border-white/[0.06] text-xs text-slate-500 flex items-center justify-between">
         <span>© {new Date().getFullYear()} Titan. All rights reserved.</span>
-        <span className="text-slate-600">Built in Lebanon 🇱🇧</span>
+        <span className="text-slate-500">Built in Lebanon 🇱🇧</span>
       </div>
     </footer>
   )

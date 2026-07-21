@@ -23,6 +23,14 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
 
+  // Escape closes the mobile menu
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false) }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [open])
+
   return (
     <>
       {/* Scroll progress */}
@@ -78,7 +86,7 @@ export function Navbar() {
 
         {open && (
           <div className="mobile-menu-panel md:hidden max-w-3xl mx-auto mt-2 rounded-2xl px-3 py-3 flex flex-col gap-1">
-            {[...LINKS, { to: "/contact", label: "Contact" }].map((l) => (
+            {LINKS.map((l) => (
               <NavLink
                 key={l.to}
                 to={l.to}
@@ -90,6 +98,14 @@ export function Navbar() {
                 {l.label}
               </NavLink>
             ))}
+            {/* Contact carries the same primary emphasis as the desktop nav CTA */}
+            <NavLink
+              to="/contact"
+              onClick={() => setOpen(false)}
+              className="mt-1 px-4 py-3 rounded-xl text-sm font-semibold text-center bg-gradient-to-r from-[#e9c766] to-[#a4841f] text-[#0b0803]"
+            >
+              Contact
+            </NavLink>
           </div>
         )}
       </header>

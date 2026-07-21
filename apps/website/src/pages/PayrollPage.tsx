@@ -156,9 +156,9 @@ export default function PayrollPage() {
         <Reveal delay={280}>
           <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:items-center">
             <Magnetic>
-              <Link to="/contact" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-7 py-3.5 shine rounded-2xl bg-gradient-to-r from-[#d4af37] to-[#8f6a14] text-[#0b0803] font-semibold text-sm shadow-[0_8px_40px_-8px_rgba(212,175,55,0.45)]">
+              <Link to="/contact" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-7 py-3.5 shine rounded-2xl bg-gradient-to-r from-[#e9c766] to-[#a4841f] text-[#0b0803] font-semibold text-sm shadow-[0_8px_40px_-8px_rgba(212,175,55,0.45)]">
                 Request HR demo
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+                <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
               </Link>
             </Magnetic>
             <Link to="/contact" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-7 py-3.5 rounded-2xl glass glass-hover font-semibold text-sm">
@@ -170,7 +170,7 @@ export default function PayrollPage() {
         {/* ── Coverflow demo ── */}
         <Reveal delay={340} className="mt-20">
           <DemoCarousel slides={SLIDES} />
-          <p className="text-xs text-slate-600 mt-4 text-center">Real product screenshots from the live platform.</p>
+          <p className="text-xs text-slate-500 mt-4 text-center">Real product screenshots from the live platform.</p>
         </Reveal>
 
         {/* ── Workflows ── */}
@@ -262,7 +262,7 @@ export default function PayrollPage() {
 
         {/* ── Capability chips ── */}
         <Reveal className="mt-24">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.3em] text-slate-600 mb-6">Everything else it does</p>
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 mb-6">Everything else it does</p>
           <div className="flex flex-wrap gap-2.5 justify-center">
             {CHIPS.map((c) => (
               <span key={c} className="text-[13px] text-slate-300 glass rounded-full px-4 py-2 hover:border-[#d4af37]/40 hover:text-white transition-colors cursor-default">
@@ -280,9 +280,9 @@ export default function PayrollPage() {
               <p className="text-slate-400 max-w-xl mx-auto mb-9">Walk through the rule-traceable payroll engine with us — and bring your accountant. It's built to be reviewed.</p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
                 <Magnetic>
-                  <Link to="/contact" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-4 shine rounded-2xl bg-gradient-to-r from-[#d4af37] to-[#8f6a14] text-[#0b0803] font-semibold shadow-[0_8px_40px_-8px_rgba(212,175,55,0.45)]">
+                  <Link to="/contact" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-4 shine rounded-2xl bg-gradient-to-r from-[#e9c766] to-[#a4841f] text-[#0b0803] font-semibold shadow-[0_8px_40px_-8px_rgba(212,175,55,0.45)]">
                     Request HR demo
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+                    <svg aria-hidden="true" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
                   </Link>
                 </Magnetic>
                 <Link to="/contact" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 px-8 py-4 rounded-2xl glass glass-hover font-semibold">

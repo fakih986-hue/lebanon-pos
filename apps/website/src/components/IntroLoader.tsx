@@ -77,7 +77,7 @@ export function IntroLoader() {
       >
         TITAN
       </p>
-      <p className="absolute bottom-8 text-[11px] uppercase tracking-[0.25em] text-slate-600">Tap to skip</p>
+      <p className="absolute bottom-8 text-[11px] uppercase tracking-[0.25em] text-slate-500">Tap to skip</p>
     </div>
   )
 }
