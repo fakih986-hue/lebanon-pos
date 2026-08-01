@@ -270,10 +270,18 @@ export default function LoginScreen() {
             if (raw) {
               const users = JSON.parse(raw)
               const pinHash = await hashPin(cPin.trim())
+              // The server just verified this PIN, so record the version it
+              // reported as the last verified one. Otherwise the offline guard
+              // (pinVersion vs lastVerifiedPinVersion) would treat a PIN the
+              // owner set in the portal — which bumps pinVersion — as "reset on
+              // server" and reject it at the very next login.
+              const verifiedPinVersion = data.user.pinVersion ?? 1
               for (const u of users) {
                 if (u.id === data.user.id) {
                   u.pin = pinHash
                   u.pinChanged = true
+                  u.pinVersion = verifiedPinVersion
+                  u.lastVerifiedPinVersion = verifiedPinVersion
                   break
                 }
               }

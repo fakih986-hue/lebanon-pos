@@ -443,6 +443,20 @@ export function isSessionUnlocked() {
   return getUsers().some((user) => user.id === session.userId && user.active)
 }
 
+// The store subdomain, if this device is bound to one. Lets the login call name
+// its tenant so the multi-tenant cloud can resolve the right store's users.
+function getStoreSubdomain(): string | undefined {
+  try {
+    const raw = localStorage.getItem("lebanonpos.settings.v1")
+    if (!raw) return undefined
+    const settings = JSON.parse(raw)
+    const sd = Array.isArray(settings) ? settings[0]?.subdomain : settings?.subdomain
+    return typeof sd === "string" && sd.trim() ? sd.trim() : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export async function unlockWithPin(pin: string) {
   if (!canUseStorage()) {
     return null
@@ -496,10 +510,15 @@ export async function unlockWithPin(pin: string) {
 
   if (apiUrl) {
     try {
+      // Include the store subdomain when we know it. On the multi-tenant cloud
+      // (pos.titan-suite.net) the server can't resolve which store's users to
+      // check from a bare PIN, so without this it returns 400 and login silently
+      // falls back to the local cache — which then trips the pinVersion guard.
+      const tenantSubdomain = getStoreSubdomain()
       const res = await fetch(`${apiUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin: cleanPin }),
+        body: JSON.stringify({ pin: cleanPin, ...(tenantSubdomain ? { tenantSubdomain } : {}) }),
       })
       if (res.ok) {
         const data = await res.json()
