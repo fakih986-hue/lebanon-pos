@@ -218,6 +218,14 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
   let rejectedCount = 0
   const errors: string[] = []
   const batchInputs: ReceiveBatchInput[] = []
+  // Per-entry outcome, index-aligned with `entries`: callers identify rows structurally
+  // (by position), never by parsing the error text.
+  const results: Array<{ accepted: boolean; error?: string }> = entries.map(() => ({ accepted: true }))
+  const reject = (index: number, error: string) => {
+    rejectedCount++
+    errors.push(error)
+    results[index] = { accepted: false, error }
+  }
 
   entries.forEach((entry, index) => {
     const barcode = normalizeBarcode(entry.barcode)
@@ -230,21 +238,18 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
     // the target's price/cost are NOT changed (aliases share the one price).
     if (entry.attachAliasToProductId != null) {
       if (!barcode) {
-        rejectedCount++
-        errors.push(`Entry #${index + 1}: barcode is missing`)
+        reject(index, `Entry #${index + 1}: barcode is missing`)
         return
       }
       if (entry.stock <= 0) {
-        rejectedCount++
-        errors.push(`Entry #${index + 1}: quantity must be greater than 0`)
+        reject(index, `Entry #${index + 1}: quantity must be greater than 0`)
         return
       }
       const targetIndex = nextProducts.findIndex(
         (p) => p.id === entry.attachAliasToProductId
       )
       if (targetIndex < 0) {
-        rejectedCount++
-        errors.push(`Entry #${index + 1}: target product not found`)
+        reject(index, `Entry #${index + 1}: target product not found`)
         return
       }
       // Conflict: the barcode already belongs to a DIFFERENT product.
@@ -252,8 +257,7 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
         (p) => p.id !== entry.attachAliasToProductId && productHasBarcode(p, barcode)
       )
       if (other) {
-        rejectedCount++
-        errors.push(`"${barcode}" already used by "${other.name}"`)
+        reject(index, `"${barcode}" already used by "${other.name}"`)
         return
       }
       const target = nextProducts[targetIndex]
@@ -284,18 +288,15 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
     }
 
     if (!barcode) {
-      rejectedCount++
-      errors.push(`Entry #${index + 1}: barcode is missing`)
+      reject(index, `Entry #${index + 1}: barcode is missing`)
       return
     }
     if (!name) {
-      rejectedCount++
-      errors.push(`Entry #${index + 1}: product name is missing`)
+      reject(index, `Entry #${index + 1}: product name is missing`)
       return
     }
     if (entry.stock <= 0) {
-      rejectedCount++
-      errors.push(`Entry #${index + 1}: quantity must be greater than 0`)
+      reject(index, `Entry #${index + 1}: quantity must be greater than 0`)
       return
     }
 
@@ -306,8 +307,7 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
         (p.name !== name || p.category !== category)
     )
     if (barcodeConflict) {
-      rejectedCount++
-      errors.push(`"${barcode}" already used by "${barcodeConflict.name}"`)
+      reject(index, `"${barcode}" already used by "${barcodeConflict.name}"`)
       return
     }
 
@@ -442,7 +442,7 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
   }
 
   const acceptedCount = newlyCreated.length + modifiedExisting.length
-  return { acceptedCount, rejectedCount, errors, newlyCreated, modifiedExisting, batchesCreated }
+  return { acceptedCount, rejectedCount, errors, results, newlyCreated, modifiedExisting, batchesCreated }
 }
 
 export function updateProduct(productId: number, patch: Partial<Product>) {

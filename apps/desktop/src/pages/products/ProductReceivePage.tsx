@@ -16,9 +16,14 @@ import {
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import { fileToCompressedDataUrl } from "../../features/pos/lib/image"
 import {
-  addScan, applySaveResult, createRow, fillRowFromBarcode, isBlankRow, isRowReady, normalizeCode, parseDraft,
-  RECEIVE_DRAFT_KEY, rowProblems, serializeDraft, toReceiveEntry, type BatchRow, type RowProblem,
+  addScan, applyReceiveResults, createRow, fillRowFromBarcode, isBlankRow, isRowReady, normalizeCode, parseDraft,
+  rowProblems, serializeDraft, toReceiveEntry, type BatchRow, type ReceiveDraft, type RowProblem,
 } from "../../features/pos/lib/receiveRows"
+import {
+  clearReceiveDraft, getUnresolvedReceiveSubmissions, readReceiveDraftRaw, recoverReceiveDraft, ReceiveOutcomeUnknownError,
+  resolveReceiveSubmission, writeReceiveDraft, type DraftRecovery,
+} from "../../features/pos/services/receiveSubmission.service"
+import { createId } from "../../features/pos/lib/storage"
 import {
   findProductByBarcode, findProductsByExactName, generateProductBarcode, getProducts, parseSpreadsheetPaste, productMatchesSearch,
   subscribeProducts,
@@ -52,14 +57,25 @@ const num = (v: string) => { const n = Number(v); return Number.isFinite(n) ? n 
 type SavedInfo = ReceivingSummary & { units: number; labels: Array<{ name: string; price: number; barcode: string; n: number }> }
 
 export default function ProductReceivePage() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [params, setParams] = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [suppliers, setSuppliers] = useState<SupplierLedger[]>(() => getSupplierLedger())
-  const initialDraft = useMemo(() => { try { return parseDraft(localStorage.getItem(RECEIVE_DRAFT_KEY)) } catch { return null } }, [])
+  // Reopening: a draft whose save was in flight is settled by that save's ledger entry first
+  // (receiveSubmission.service), so a delivery that already went in is never offered again.
+  const initial = useMemo(() => {
+    try {
+      const d = parseDraft(readReceiveDraftRaw())
+      return d ? recoverReceiveDraft(d) : null
+    } catch { return null }
+  }, [])
+  const initialDraft = initial?.draft ?? null
   const [rows, setRows] = useState<BatchRow[]>(() => initialDraft?.rows ?? [createRow()])
-  const [draftRestored, setDraftRestored] = useState(!!initialDraft)
+  const [draftRestored, setDraftRestored] = useState(!!initialDraft && initial?.recovery.kind !== "committed")
+  const [pending, setPending] = useState<ReceiveDraft["pending"]>(initialDraft?.pending)
+  const [recovery, setRecovery] = useState<DraftRecovery>(initial?.recovery ?? { kind: "none" })
+  const [unresolved, setUnresolved] = useState(() => { try { return getUnresolvedReceiveSubmissions() } catch { return [] } })
   const [activeRowId, setActiveRowId] = useState<string>(() => (initialDraft?.rows ?? [])[0]?.id ?? "")
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [scan, setScan] = useState("")
@@ -114,12 +130,12 @@ export default function ProductReceivePage() {
     const id = window.setTimeout(() => {
       try {
         const begun = rows.some((r) => !isBlankRow(r))
-        if (!begun && !invoice.trim() && !note.trim()) localStorage.removeItem(RECEIVE_DRAFT_KEY)
-        else localStorage.setItem(RECEIVE_DRAFT_KEY, serializeDraft({ rows, supplierId, invoiceNumber: invoice, paymentMethod: payment, note }))
+        if (!begun && !invoice.trim() && !note.trim() && !pending) clearReceiveDraft()
+        else writeReceiveDraft(serializeDraft({ rows, supplierId, invoiceNumber: invoice, paymentMethod: payment, note, pending }))
       } catch { /* storage unavailable: nothing to persist */ }
     }, 300)
     return () => window.clearTimeout(id)
-  }, [rows, supplierId, invoice, payment, note])
+  }, [rows, supplierId, invoice, payment, note, pending])
 
   const byId = (id?: number) => (id == null ? undefined : products.find((p) => p.id === id))
   const productFor = (r: BatchRow) => (r.mode === "matched" ? findProductByBarcode(r.barcode) ?? undefined : r.mode === "alias" ? byId(r.targetProductId) : undefined)
@@ -247,6 +263,8 @@ export default function ProductReceivePage() {
 
   function save(readyOnly = false) {
     if (savingRef.current) return
+    // An interrupted save must be reconciled before anything else is received (no blind resend).
+    if (unresolved.length > 0) { document.getElementById("rcv-unknown")?.focus(); return }
     if (ready.length === 0) {
       showToast(t("pos.receive.no_ready_rows"), "error")
       if (problemRows[0]) focusRow(problemRows[0].id)
@@ -259,29 +277,64 @@ export default function ProductReceivePage() {
     const sentUnits = units
     const sentCost = cost
     const labels = sent.filter((r) => r.barcode.trim() && r.name.trim() && r.labels > 0).map((r) => ({ name: r.name, price: r.price, barcode: r.mode === "alias" ? r.scannedBarcode : r.barcode, n: r.labels }))
+    // The draft records this save (its id and row ids) on disk BEFORE anything is written, so a
+    // crash at any point is recoverable on reopen. If that cannot be recorded, nothing is sent.
+    const nextPending = { submissionId: createId("receive"), rowIds: sent.map((r) => r.id) }
+    try {
+      writeReceiveDraft(serializeDraft({ rows, supplierId, invoiceNumber: invoice, paymentMethod: payment, note, pending: nextPending }))
+    } catch {
+      showToast(t("inv.rcv.rec.persist_failed"), "error")
+      return
+    }
     savingRef.current = true
     setSaving(true)
-    receiveAndRecord(sent.map(toReceiveEntry), supplier ? { supplierId: supplier.id, supplierName: supplier.name, invoiceNumber: invoice, paymentMethod: payment, note } : undefined)
+    setPending(nextPending)
+    setRecovery({ kind: "none" })
+    receiveAndRecord(sent.map(toReceiveEntry), supplier ? { supplierId: supplier.id, supplierName: supplier.name, invoiceNumber: invoice, paymentMethod: payment, note } : undefined, { submissionId: nextPending.submissionId })
       .then((summary) => {
-        const after = applySaveResult(rows, sent, summary.errors)
-        setRows(after.rows)
+        // Rows are matched by id; rows added while saving are untouched.
+        const after = applyReceiveResults(rows, summary.results)
+        setRows((rs) => applyReceiveResults(rs, summary.results))
+        setPending(undefined)
         setProblemBanner(false)
         setDraftRestored(false)
         getProducts().then(setProducts)
         setSuppliers(getSupplierLedger())
         recordAuditEvent({ action: "inventory.receive", entity: "inventory", summary: `${sentUnits} units received.`, metadata: { rows: sent.length, totalUnits: sentUnits, totalCost: sentCost, poNumber: summary.poNumber } })
         setLastSaved({ ...summary, units: sentUnits, labels })
-        if (after.rows.every(isBlankRow)) { setInvoice(""); setNote("") }
-        for (const err of after.unmatchedErrors.slice(0, 3)) showToast(err, "error")
+        if (after.every(isBlankRow)) { setInvoice(""); setNote("") }
         showToast(summary.errors.length ? t("inv.rcv.saved_partial", { ok: summary.acceptedCount, bad: summary.rejectedCount }) : t("inv.rcv.saved", { units: formatNumber(sentUnits) }), summary.errors.length ? "error" : "success")
         window.requestAnimationFrame(() => scanRef.current?.focus())
       })
-      .catch((err) => showToast(String((err as Error)?.message ?? err), "error")) // nothing received: every row stays
+      .catch((err) => {
+        if (err instanceof ReceiveOutcomeUnknownError) {
+          // Some of it may be in stock: keep the rows locked under this save until someone checks.
+          setRecovery({ kind: "unknown", submissionId: err.submissionId })
+          setUnresolved(getUnresolvedReceiveSubmissions())
+          showToast(t("inv.rcv.rec.unknown_title"), "error")
+        } else {
+          // Refused before anything was written (permissions, license): every row stays.
+          setPending(undefined)
+          showToast(String((err as Error)?.message ?? err), "error")
+        }
+      })
       .finally(() => { savingRef.current = false; setSaving(false) })
   }
+  function resolveUnknown(id: string, resolution: "received" | "not_received") {
+    const sub = resolveReceiveSubmission(id, resolution)
+    if (resolution === "received" && sub) {
+      const sent = new Set(sub.rowIds)
+      setRows((rs) => { const next = rs.filter((r) => !sent.has(r.id)); return next.length ? next : [createRow()] })
+    }
+    if (pending?.submissionId === id) setPending(undefined)
+    setRecovery({ kind: "none" })
+    setUnresolved(getUnresolvedReceiveSubmissions())
+    showToast(t(resolution === "received" ? "inv.rcv.rec.done_received" : "inv.rcv.rec.done_not_received"))
+  }
   function clearDelivery() {
+    if (pending) return // rows under an unreconciled save are evidence; resolve it first
     setRows([createRow()]); setInvoice(""); setNote(""); setLastSaved(null); setProblemBanner(false); setDraftRestored(false)
-    try { localStorage.removeItem(RECEIVE_DRAFT_KEY) } catch { /* ignore */ }
+    try { clearReceiveDraft() } catch { /* ignore */ }
     showToast(t("pos.receive.batch_cleared"))
   }
   function printLabels(list: Array<{ name: string; price: number; barcode: string; n: number }>) {
@@ -339,7 +392,9 @@ export default function ProductReceivePage() {
     frameRef.current = window.requestAnimationFrame(() => void cameraFrame())
   }
 
+  const lockedRows = new Set(pending && unresolved.some((u) => u.id === pending.submissionId) ? pending.rowIds : [])
   function rowState(r: BatchRow): { tone: Tone; text: string } {
+    if (lockedRows.has(r.id)) return { tone: "err", text: t("inv.rcv.rec.row_unknown") }
     if (r.saveError) return { tone: "err", text: t("inv.rcv.not_saved", { reason: r.saveError }) }
     const { problems } = rowProblems(r, productFor(r))
     if (problems.length) return { tone: "warn", text: problems.map((p) => t(PROBLEM_KEY[p])).join(" · ") }
@@ -355,11 +410,30 @@ export default function ProductReceivePage() {
     <main className="mg2 mg2-bo min-h-0 flex-1 overflow-y-auto">
       <div className="mg2-wrap">
         <PageHeader eyebrow={t("inv.eyebrow")} title={t("inv.rcv.title")} actions={
-          <button type="button" className="mg2-btn mg2-btn-ghost" onClick={clearDelivery} disabled={started.length === 0 && !invoice}><RotateCcw size={16} />{t("inv.rcv.clear")}</button>
+          <button type="button" className="mg2-btn mg2-btn-ghost" onClick={clearDelivery} disabled={(started.length === 0 && !invoice) || !!pending}><RotateCcw size={16} />{t("inv.rcv.clear")}</button>
         } />
         <StockNav counts={{ receiving: started.length || undefined }} />
 
-        {draftRestored && started.length > 0 && (
+        {unresolved.map((u) => (
+          <div key={u.id} id="rcv-unknown" tabIndex={-1} className="mg2-banner mg2-t-err" role="alert" style={{ marginBottom: 12, flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 320px", color: "var(--text)" }}>
+              <strong style={{ display: "block" }}>{t("inv.rcv.rec.unknown_title")}</strong>
+              <span>{t("inv.rcv.rec.unknown_text", { n: u.rowIds.length, time: new Intl.DateTimeFormat(locale === "ar" ? "ar-LB" : "en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(u.startedAt)) })}</span>
+            </div>
+            <Link to="/stock" className="mg2-btn" style={{ textDecoration: "none" }}>{t("inv.rcv.view_lots")}</Link>
+            <button type="button" className="mg2-btn" onClick={() => resolveUnknown(u.id, "received")}>{t("inv.rcv.rec.mark_received")}</button>
+            <button type="button" className="mg2-btn" onClick={() => resolveUnknown(u.id, "not_received")}>{t("inv.rcv.rec.mark_not_received")}</button>
+          </div>
+        ))}
+        {recovery.kind === "committed" && (
+          <div className="mg2-banner mg2-t-ok" role="status" style={{ marginBottom: 12 }}>
+            <CheckCircle2 size={18} aria-hidden="true" />
+            <span style={{ flex: 1, color: "var(--text)" }}>{t(recovery.rejected ? "inv.rcv.rec.recovered_some" : "inv.rcv.rec.recovered", { n: recovery.accepted, units: formatNumber(recovery.units), r: recovery.rejected })}</span>
+            <Link to="/stock" className="mg2-btn" style={{ textDecoration: "none" }}>{t("inv.rcv.view_lots")}</Link>
+            <button type="button" className="mg2-btn mg2-btn-ghost" onClick={() => setRecovery({ kind: "none" })}>{t("inv.rcv.rec.dismiss")}</button>
+          </div>
+        )}
+        {draftRestored && started.length > 0 && unresolved.length === 0 && (
           <div className="mg2-banner mg2-t-info" role="status" style={{ marginBottom: 12 }}>
             <span style={{ flex: 1 }}>{t("inv.rcv.draft_restored", { n: started.length })}</span>
             <button type="button" className="mg2-btn" onClick={() => setDraftRestored(false)}>{t("inv.rcv.keep")}</button>
@@ -420,7 +494,7 @@ export default function ProductReceivePage() {
                     const label = r.name || code || ""
                     const pickerResults = pickerRowId === r.id ? products.filter((p) => !p.archived && productMatchesSearch(p, pickerQuery)).slice(0, 20) : []
                     const main = (
-                      <tr key={r.id} data-row={r.id} aria-selected={activeRowId === r.id} className={r.saveError ? "row-error" : st?.tone === "warn" ? "row-problem" : undefined} onFocus={() => setActiveRowId(r.id)}>
+                      <tr key={r.id} data-row={r.id} aria-selected={activeRowId === r.id} className={st?.tone === "err" ? "row-error" : st?.tone === "warn" ? "row-problem" : undefined} onFocus={() => setActiveRowId(r.id)}>
                         <td>
                           {fixed
                             ? <strong>{r.name}</strong>
@@ -533,7 +607,7 @@ export default function ProductReceivePage() {
               <div className="mg2-banner mg2-t-warn" role={problemBanner ? "alert" : "status"} style={{ margin: 12 }}>
                 <span style={{ flex: 1, color: "var(--text)" }}>{t("inv.rcv.problems", { n: problemRows.length })}</span>
                 <button type="button" className="mg2-btn" onClick={() => focusRow(problemRows[0].id)}>{t("inv.rcv.go_to_row")}</button>
-                {ready.length > 0 && <button type="button" className="mg2-btn" onClick={() => save(true)} disabled={saving}>{t("inv.rcv.save_ready_only", { n: ready.length })}</button>}
+                {ready.length > 0 && <button type="button" className="mg2-btn" onClick={() => save(true)} disabled={saving || unresolved.length > 0}>{t("inv.rcv.save_ready_only", { n: ready.length })}</button>}
               </div>
             )}
           </section>
@@ -570,10 +644,10 @@ export default function ProductReceivePage() {
               <div className="mg2-sum"><span>{t("inv.rcv.units")}</span><strong>{formatNumber(units)}</strong></div>
               <div className="mg2-sum"><span>{t("inv.field.cost")}</span><strong>{formatCurrency(cost)}</strong></div>
               <div className="mg2-sum"><span>{t("inv.rcv.labels_to_print")}</span><strong>{formatNumber(labelsCount)}</strong></div>
-              <button type="button" className="mg2-btn mg2-btn-primary" style={{ width: "100%", minHeight: 52, marginTop: 10 }} onClick={() => save(false)} aria-busy={saving || undefined} disabled={saving}>
+              <button type="button" className="mg2-btn mg2-btn-primary" style={{ width: "100%", minHeight: 52, marginTop: 10 }} onClick={() => save(false)} aria-busy={saving || undefined} disabled={saving || unresolved.length > 0}>
                 {saving ? <LoaderCircle size={18} className="animate-spin" aria-hidden="true" /> : <CheckCircle2 size={18} aria-hidden="true" />}{saving ? t("inv.rcv.saving") : t("inv.rcv.save")}
               </button>
-              <p className="mg2-cap" style={{ margin: "8px 0 0" }}>{problemRows.length ? t("inv.rcv.save_help_problems", { n: problemRows.length }) : t("inv.rcv.save_help")}</p>
+              <p className="mg2-cap" style={{ margin: "8px 0 0" }}>{unresolved.length > 0 ? t("inv.rcv.rec.blocked") : problemRows.length ? t("inv.rcv.save_help_problems", { n: problemRows.length }) : t("inv.rcv.save_help")}</p>
             </section>
 
             <section className="mg2-card mg2-card-body" style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-label={t("inv.rcv.labels")}>

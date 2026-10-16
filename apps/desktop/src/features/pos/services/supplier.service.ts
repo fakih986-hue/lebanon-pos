@@ -7,6 +7,10 @@ import { enqueueSyncOperation, assertCanWrite, getDeviceId, nextDocumentReferenc
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getRegisterId } from "./settings.service"
+import {
+  beginReceiveSubmission, commitReceiveSubmission, getReceiveSubmission, noteReceiveFailure,
+  ReceiveOutcomeUnknownError, type ReceiveRowResult, type ReceiveSubmission,
+} from "./receiveSubmission.service"
 
 const SUPPLIERS_KEY = "lebanonpos.suppliers.v1"
 const PURCHASE_ORDERS_KEY = "lebanonpos.purchase-orders.v1"
@@ -595,91 +599,138 @@ export type ReceivingSummary = {
   poNumber?: string
   paymentRecorded: boolean
   totalValue: number
+  /** Per-entry outcome by row id (entry.rowId, or the entry's position when none was given). */
+  results: ReceiveRowResult[]
+  submissionId?: string
+  /** True when this submission had already been received: nothing was written again. */
+  replayed?: boolean
 }
 
+export type ReceiveEntry = {
+  /** Stable identity of the row this entry came from; results are reported by it. */
+  rowId?: string
+  name: string; barcode: string; category: string; quantity: number
+  cost: number; price: number; reorderPoint?: number; reorderQuantity?: number
+  expiryDate?: string
+  // POS-RECEIVE-UX-1A: staged "add barcode to existing product" decision.
+  attachAliasToProductId?: number
+  // POS-PRODUCT-IMAGE-1: optional image for new-product rows.
+  image?: string | null
+  // POS-RECEIVE-VARIANT-1B: create as a variant linked to this parent.
+  parentId?: number
+  variantName?: string
+}
+
+/**
+ * Receive a delivery: stock and lots for each accepted entry, then (with a supplier) the
+ * purchase order and payment for exactly the entries that were received.
+ *
+ * With `opts.submissionId` the save is idempotent and recoverable (receiveSubmission.service):
+ * - already committed  -> returns the recorded outcome, writes nothing (`replayed: true`);
+ * - started, never committed (crash/exception mid-write) -> ReceiveOutcomeUnknownError, writes
+ *   nothing: what reached stock is unknown and a person must reconcile it, not a blind resend.
+ */
 export async function receiveAndRecord(
-  entries: Array<{
-    name: string; barcode: string; category: string; quantity: number
-    cost: number; price: number; reorderPoint?: number; reorderQuantity?: number
-    expiryDate?: string
-    // POS-RECEIVE-UX-1A: staged "add barcode to existing product" decision.
-    attachAliasToProductId?: number
-    // POS-PRODUCT-IMAGE-1: optional image for new-product rows.
-    image?: string | null
-    // POS-RECEIVE-VARIANT-1B: create as a variant linked to this parent.
-    parentId?: number
-    variantName?: string
-  }>,
-  context?: ReceivingContext
+  entries: ReceiveEntry[],
+  context?: ReceivingContext,
+  opts?: { submissionId?: string }
 ): Promise<ReceivingSummary> {
   const { receiveProducts } = await import("./product.service")
+  const rowIdOf = (e: ReceiveEntry, i: number) => e.rowId ?? String(i)
 
-  // Create PO first (Draft) so batch inputs can carry the PO reference
-  let poNumber: string | undefined
-  let paymentRecorded = false
-  const totalCost = entries.reduce((s, e) => s + e.quantity * e.cost, 0)
-
-  if (context?.supplierId && totalCost > 0) {
-    try {
-      const po = recordPurchaseOrder({
-        supplierId: context.supplierId,
-        supplierName: context.supplierName ?? "",
-        status: "Draft",
-        invoiceNumber: context.invoiceNumber ?? "",
-        note: context.note ?? "",
-        paymentMethod: context.paymentMethod ?? "On Account",
-        paidAmount: context.paymentMethod && context.paymentMethod !== "On Account" ? totalCost : 0,
-        items: entries.map(e => ({
-          name: e.name, barcode: e.barcode, quantity: e.quantity,
-          unitCost: e.cost, unitPrice: e.price, total: e.quantity * e.cost,
-        })),
-      })
-      poNumber = po.poNumber
-      paymentRecorded = context.paymentMethod !== undefined && context.paymentMethod !== "On Account"
-
-      // Now update PO to Received status
-      const orders = getPurchaseOrders()
-      const createdPo = orders.find(o => o.id === po.id)
-      if (createdPo) {
-        createdPo.status = "Received"
-        createdPo.receivedAt = new Date().toISOString()
-        writePurchaseOrders(orders)
-        // writePurchaseOrders() only writes local storage — it does not sync.
-        // Without this, the server never learns the PO left Draft, so its
-        // status stays permanently out of sync with every device that pulls it.
-        enqueueSyncOperation({
-          entity: "purchase-order",
-          action: "update",
-          summary: `${createdPo.poNumber} marked Received.`,
-          payload: createdPo,
-        })
-      }
-    } catch { /* PO creation failure is non-fatal */ }
+  let submission: ReceiveSubmission | undefined
+  if (opts?.submissionId) {
+    const prior = getReceiveSubmission(opts.submissionId)
+    if (prior?.status === "committed" && prior.results && prior.summary) {
+      return { ...prior.summary, errors: prior.results.filter((r) => r.status === "rejected").map((r) => r.reason ?? "rejected"), results: prior.results, submissionId: prior.id, replayed: true }
+    }
+    if (prior) throw new ReceiveOutcomeUnknownError(prior.id)
+    // Checks that write nothing run before the ledger entry, so a refusal is not an "unknown".
+    assertCanWrite("receive products")
+    submission = beginReceiveSubmission(opts.submissionId, entries.map(rowIdOf))
   }
 
-  const receiveResult = receiveProducts(
-    entries.map(e => ({
-      name: e.name, barcode: e.barcode, category: e.category,
-      stock: e.quantity, cost: e.cost, price: e.price,
-      reorderPoint: e.reorderPoint, reorderQuantity: e.reorderQuantity,
-      expiryDate: e.expiryDate,
-      supplierId: context?.supplierId, supplierName: context?.supplierName,
-      attachAliasToProductId: e.attachAliasToProductId,
-      image: e.image,
-      parentId: e.parentId,
-      variantName: e.variantName,
-    }))
-  )
+  try {
+    const receiveResult = receiveProducts(
+      entries.map(e => ({
+        name: e.name, barcode: e.barcode, category: e.category,
+        stock: e.quantity, cost: e.cost, price: e.price,
+        reorderPoint: e.reorderPoint, reorderQuantity: e.reorderQuantity,
+        expiryDate: e.expiryDate,
+        supplierId: context?.supplierId, supplierName: context?.supplierName,
+        attachAliasToProductId: e.attachAliasToProductId,
+        image: e.image,
+        parentId: e.parentId,
+        variantName: e.variantName,
+      }))
+    )
+    const results: ReceiveRowResult[] = entries.map((e, i) => {
+      const r = receiveResult.results[i]
+      return r?.accepted === false ? { rowId: rowIdOf(e, i), status: "rejected", reason: r.error } : { rowId: rowIdOf(e, i), status: "accepted" }
+    })
+    // The purchase order (and any payment) covers only what was actually received: a rejected
+    // row is fixed and saved again later, and must not be billed twice.
+    const received = entries.filter((_, i) => results[i].status === "accepted")
 
-  return {
-    acceptedCount: receiveResult.acceptedCount,
-    rejectedCount: receiveResult.rejectedCount,
-    errors: receiveResult.errors,
-    productsCreated: receiveResult.newlyCreated.length,
-    productsUpdated: receiveResult.modifiedExisting.length,
-    batchesCreated: receiveResult.batchesCreated,
-    poNumber,
-    paymentRecorded,
-    totalValue: totalCost,
+    let poNumber: string | undefined
+    let paymentRecorded = false
+    const totalCost = received.reduce((s, e) => s + e.quantity * e.cost, 0)
+
+    if (context?.supplierId && totalCost > 0) {
+      try {
+        const po = recordPurchaseOrder({
+          supplierId: context.supplierId,
+          supplierName: context.supplierName ?? "",
+          status: "Draft",
+          invoiceNumber: context.invoiceNumber ?? "",
+          note: context.note ?? "",
+          paymentMethod: context.paymentMethod ?? "On Account",
+          paidAmount: context.paymentMethod && context.paymentMethod !== "On Account" ? totalCost : 0,
+          items: received.map(e => ({
+            name: e.name, barcode: e.barcode, quantity: e.quantity,
+            unitCost: e.cost, unitPrice: e.price, total: e.quantity * e.cost,
+          })),
+        })
+        poNumber = po.poNumber
+        paymentRecorded = context.paymentMethod !== undefined && context.paymentMethod !== "On Account"
+
+        // Now update PO to Received status
+        const orders = getPurchaseOrders()
+        const createdPo = orders.find(o => o.id === po.id)
+        if (createdPo) {
+          createdPo.status = "Received"
+          createdPo.receivedAt = new Date().toISOString()
+          writePurchaseOrders(orders)
+          // writePurchaseOrders() only writes local storage — it does not sync.
+          // Without this, the server never learns the PO left Draft, so its
+          // status stays permanently out of sync with every device that pulls it.
+          enqueueSyncOperation({
+            entity: "purchase-order",
+            action: "update",
+            summary: `${createdPo.poNumber} marked Received.`,
+            payload: createdPo,
+          })
+        }
+      } catch { /* PO creation failure is non-fatal */ }
+    }
+
+    const summary = {
+      acceptedCount: receiveResult.acceptedCount,
+      rejectedCount: receiveResult.rejectedCount,
+      productsCreated: receiveResult.newlyCreated.length,
+      productsUpdated: receiveResult.modifiedExisting.length,
+      batchesCreated: receiveResult.batchesCreated,
+      poNumber,
+      paymentRecorded,
+      totalValue: totalCost,
+      units: received.reduce((s, e) => s + e.quantity, 0),
+    }
+    if (submission) commitReceiveSubmission(submission, results, summary)
+    return { ...summary, errors: receiveResult.errors, results, submissionId: submission?.id }
+  } catch (err) {
+    if (!submission) throw err
+    // Products, lots, PO or payment may be partly written: never report "nothing happened".
+    try { noteReceiveFailure(submission, String((err as Error)?.message ?? err)) } catch { /* the started entry stands */ }
+    throw new ReceiveOutcomeUnknownError(submission.id, err)
   }
 }

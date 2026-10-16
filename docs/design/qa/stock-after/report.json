@@ -1,55 +1,116 @@
 {
   "base": "http://localhost:5174",
-  "at": "2026-10-16T21:11:29.031Z",
+  "at": "2026-10-16T21:23:24.642Z",
   "results": [
     {
-      "name": "receiving-saved.en.dark.desktop",
+      "name": "receiving-recovered.en.dark.desktop",
       "w": 1440,
       "h": 900,
       "theme": "dark",
       "lang": "en",
       "log": [
         [
-          "before",
-          "Pepsi stock 126; lots 0 ()"
+          "simulate a save that finished, then a crash",
+          "Pepsi stock now 132"
         ],
         [
-          "scan PEPSI + Enter",
-          "1 row(s): Pepsi CanMatched · 528100100002 qty 1; status: Pepsi Can added (qty 1)."
+          "reload",
+          1
         ],
         [
-          "scan PEPSI + Enter",
-          "1 row(s): Pepsi CanMatched · 528100100002 qty 2; status: Pepsi Can: qty now 2."
+          "after reopening",
+          "banners: This delivery was saved before the app closed: 1 row(s), 6 units received. Those rows were; rows: New product; Save enabled; Pepsi stock 132"
         ],
         [
-          "scan 6291000999001 + Enter",
-          "2 row(s): Pepsi CanMatched · 528100100002 qty 2 | New product or barcode for an existing o qty 1; status: 6291000999001 is not in your products: choose new product or an existing one."
-        ],
-        [
-          "press Save delivery",
-          "focus: Name in row yes; banner: Unknown barcode 6291000999001:New productAdd to existingCreate variant"
-        ],
-        [
-          "Save ready rows only (clicked twice in one tick)",
-          "rows left 1: New product or barcode for an ; banner: Received 2 units · new 0 · updated 1 · lots 1Print labelsView lots"
-        ],
-        [
-          "after",
-          "Pepsi stock 128; lots 1 (2)"
-        ],
-        [
-          "press Save again",
-          "Save enabled; focus: Name"
-        ],
-        [
-          "after second Save",
-          "Pepsi stock 128; lots 1 (2)"
+          "press Save (retry)",
+          "Pepsi stock 132; Pepsi lots 6"
         ]
       ],
       "facts": {
         "dir": "ltr",
         "theme": "dark",
-        "active": "Name",
+        "active": "Scan items into this delivery…",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receiving-unknown.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "simulate a save interrupted mid-write, then a crash",
+          "Pepsi stock now 126"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "after reopening",
+          "banners: A save was interruptedSaving 1 row(s) started 17 Oct 2026, 00:23 and did not finish. Some ; rows: Pepsi CanSave outcome unknown: check LotsCos | New product; Save DISABLED; Pepsi stock 126"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan items into this delivery…",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receiving-unknown.ar.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "simulate a save interrupted mid-write, then a crash",
+          "Pepsi stock now 126"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "after reopening",
+          "banners: توقّف حفظ قبل اكتمالهبدأ حفظ 1 من الأسطر في ١٧‏/١٠‏/٢٠٢٦، ١٢:٢٣ ص ولم يكتمل. قد يكون بعضه ; rows: Pepsi Canنتيجة الحفظ غير معروفة: راجع الدفعا | منتج جديد; Save DISABLED; Pepsi stock 126"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "امسح الأصناف في هذه الشحنة…",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receiving-unknown-resolved.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "simulate a save interrupted mid-write, then a crash",
+          "Pepsi stock now 126"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "choose: it was not received",
+          "alerts left 1; Save enabled; rows 2"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan items into this delivery…",
         "overflowX": false
       }
     }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import {
-  addScan, applySaveResult, createRow, isBlankRow, isRowReady, parseDraft, rowProblems, serializeDraft, toReceiveEntry,
+  addScan, applyReceiveResults, createRow, isBlankRow, isRowReady, parseDraft, rowProblems, serializeDraft, toReceiveEntry,
   type BatchRow,
 } from "../features/pos/lib/receiveRows"
 import type { Product } from "../features/pos/types/product"
@@ -45,30 +45,23 @@ describe("receiving rows", () => {
     expect(rowProblems(matched({ quantity: 1, cost: 1, price: 0.9 }), pepsi).notices.map((x) => x.key)).toContain("cost_over_price")
   })
 
-  it("after a save, accepted rows leave the grid, rejected rows stay with the reason, unready rows stay", () => {
+  it("after a save, results by row id: accepted rows leave, rejected rows stay with the reason, others are untouched", () => {
     const a = matched({ quantity: 5 })
     const b = { ...createRow(), name: "Kitkat", barcode: "999", quantity: 2, mode: "new" as const, decisionConfirmed: true }
-    const c = { ...createRow(), barcode: "123", scannedBarcode: "123" } // not ready
-    const sent = [a, b]
-    const r = applySaveResult([a, b, c], sent, ['"999" already used by "Other"'])
-    expect(r.rows.map((x) => x.id)).toEqual([b.id, c.id])
-    expect(r.rows[0].saveError).toContain("already used")
-    expect(r.unmatchedErrors).toEqual([])
+    const c = { ...createRow(), barcode: "123", scannedBarcode: "123" } // not ready, not sent
+    const rows = applyReceiveResults([a, b, c], [
+      { rowId: a.id, status: "accepted" },
+      { rowId: b.id, status: "rejected", reason: '"999" already used by "Other"' },
+    ])
+    expect(rows.map((x) => x.id)).toEqual([b.id, c.id])
+    expect(rows[0].saveError).toContain("already used")
   })
 
-  it("an error naming no row never keeps saved rows (they would be received twice)", () => {
-    const a = matched({ quantity: 5 })
-    const r = applySaveResult([a], [a], ["Something unexpected"])
-    expect(r.rows).toHaveLength(1)
-    expect(r.rows[0].id).not.toBe(a.id) // only a fresh blank row
-    expect(r.unmatchedErrors).toEqual(["Something unexpected"])
-  })
-
-  it("maps Entry #N errors to the Nth row sent", () => {
-    const a = matched({ quantity: 5 }); const b = matched({ id: "b", quantity: 1, expiryDate: "2027-01-01" })
-    const r = applySaveResult([a, b], [a, b], ["Entry #2: quantity must be greater than 0"])
-    expect(r.rows.map((x) => x.id)).toEqual(["b"])
-    expect(r.rows[0].saveError).toBe("quantity must be greater than 0")
+  it("identifies rows structurally: identical-looking rows are told apart by id, never by message text", () => {
+    const a = matched({ quantity: 5 }); const b = matched({ id: "b", quantity: 5 })
+    const rows = applyReceiveResults([a, b], [{ rowId: a.id, status: "rejected", reason: "Entry #2: odd text" }, { rowId: "b", status: "accepted" }])
+    expect(rows.map((x) => x.id)).toEqual([a.id])
+    expect(toReceiveEntry(a).rowId).toBe(a.id)
   })
 
   it("keeps the previous entry mapping (alias and variant rows send the scanned code)", () => {
@@ -85,6 +78,10 @@ describe("receiving rows", () => {
     expect(d?.rows[0].image).toBeUndefined()
     expect(parseDraft("{")).toBeNull()
     expect(parseDraft(JSON.stringify({ version: 2, rows: [] }))).toBeNull()
+    expect(parseDraft(JSON.stringify({ version: 1, rows: [row] }))).toBeNull()
+    // A draft with a save in flight is kept even if its rows look empty: the ledger must settle it.
+    const p = parseDraft(serializeDraft({ rows: [createRow()], supplierId: "", invoiceNumber: "", paymentMethod: "On Account", note: "", pending: { submissionId: "s-1", rowIds: ["x"] } }))
+    expect(p?.pending).toEqual({ submissionId: "s-1", rowIds: ["x"] })
     expect(parseDraft(serializeDraft({ rows: [createRow()], supplierId: "", invoiceNumber: "", paymentMethod: "On Account", note: "" }))).toBeNull()
   })
 })

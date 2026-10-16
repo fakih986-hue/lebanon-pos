@@ -8,6 +8,7 @@
 // received twice.
 import type { Product, ProductAccent } from "../types/product"
 import { createId } from "./storage"
+import type { ReceiveRowResult } from "../services/receiveSubmission.service"
 
 export type ReceiveRowMode = "matched" | "new" | "alias" | "variant" | "conflict"
 export type BatchRow = {
@@ -116,6 +117,9 @@ export function addScan(rows: BatchRow[], code: string, product: Product | undef
 
 /** The receiveAndRecord entry for a ready row (identical to the page's previous mapping). */
 export function toReceiveEntry(r: BatchRow) {
+  return { ...toReceiveFields(r), rowId: r.id }
+}
+function toReceiveFields(r: BatchRow) {
   if (r.mode === "alias") {
     return { name: r.name, barcode: r.scannedBarcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, attachAliasToProductId: r.targetProductId }
   }
@@ -124,60 +128,49 @@ export function toReceiveEntry(r: BatchRow) {
   }
   return { name: r.name, barcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, image: r.mode === "new" ? r.image : undefined }
 }
-
-/**
- * After a save: the rows that were sent and accepted leave the grid; rows the
- * save rejected stay, with the reason; rows that were not ready stay as they
- * were. The receive service reports rejections as "Entry #N: …" (N = position
- * in what was sent) or "\"<barcode>\" already used by …".
- */
-export function applySaveResult(rows: BatchRow[], sent: BatchRow[], errors: string[]): { rows: BatchRow[]; unmatchedErrors: string[] } {
-  const rejected = new Map<string, string>()
-  const unmatchedErrors: string[] = []
-  for (const err of errors) {
-    const byIndex = /^Entry #(\d+):\s*(.*)$/.exec(err)
-    if (byIndex && sent[Number(byIndex[1]) - 1]) { rejected.set(sent[Number(byIndex[1]) - 1].id, byIndex[2] || err); continue }
-    const byCode = /^"([^"]+)"/.exec(err)
-    const row = byCode ? sent.find((r) => normalizeCode(r.scannedBarcode || r.barcode) === byCode[1] || r.barcode === byCode[1]) : undefined
-    if (row) rejected.set(row.id, err)
-    else unmatchedErrors.push(err)
-  }
-  const sentIds = new Set(sent.map((r) => r.id))
-  // A sent row leaves the grid unless it is positively identified as rejected. An error that names
-  // no row is shown to the operator instead: keeping rows that may already be in would let the same
-  // delivery be received twice, which is worse than asking someone to re-add one line.
+/** A save's per-row results, by row id: accepted rows leave the grid, rejected rows stay with
+ *  their reason. Rows the results do not mention were not part of the save and are untouched. */
+export function applyReceiveResults(rows: BatchRow[], results: ReceiveRowResult[]): BatchRow[] {
+  const byId = new Map(results.map((r) => [r.rowId, r]))
   const next = rows
-    .filter((r) => !sentIds.has(r.id) || rejected.has(r.id))
-    .map((r) => (rejected.has(r.id) ? { ...r, saveError: rejected.get(r.id) } : r))
-  return { rows: next.length > 0 ? next : [createRow()], unmatchedErrors }
+    .filter((r) => byId.get(r.id)?.status !== "accepted")
+    .map((r) => {
+      const res = byId.get(r.id)
+      return res?.status === "rejected" ? { ...r, saveError: res.reason || "rejected" } : r
+    })
+  return next.length > 0 ? next : [createRow()]
 }
 
-// ── Draft: the delivery being entered survives leaving the page or a reload ──
-export const RECEIVE_DRAFT_KEY = "lebanonpos.receive-draft.v1"
+// ── Draft: the delivery being entered survives leaving the page, a reload or a crash ──
+// Stored per tenant by receiveSubmission.service; this is only the (de)serialization.
 export type ReceiveDraft = {
-  version: 1
+  version: 2
   rows: BatchRow[]
   supplierId: string
   invoiceNumber: string
   paymentMethod: string
   note: string
+  /** A save that was in flight for these rows (see receiveSubmission.service). */
+  pending?: { submissionId: string; rowIds: string[] }
   savedAt: string
 }
 
 export function serializeDraft(d: Omit<ReceiveDraft, "version" | "savedAt">): string {
   // Images can be large data URLs; they are dropped from the draft (re-add after restoring).
-  return JSON.stringify({ version: 1, ...d, rows: d.rows.map((r) => ({ ...r, image: undefined })), savedAt: new Date().toISOString() })
+  return JSON.stringify({ version: 2, ...d, rows: d.rows.map((r) => ({ ...r, image: undefined })), savedAt: new Date().toISOString() })
 }
 
-/** A draft worth restoring: right version and at least one started row. Anything malformed is ignored. */
+/** A draft worth restoring: right version and at least one started row, or a pending save to
+ *  account for. Anything malformed is ignored. */
 export function parseDraft(raw: string | null): ReceiveDraft | null {
   if (!raw) return null
   try {
     const d = JSON.parse(raw)
-    if (d?.version !== 1 || !Array.isArray(d.rows)) return null
+    if (d?.version !== 2 || !Array.isArray(d.rows)) return null
     const rows = (d.rows as BatchRow[]).filter((r) => r && typeof r.id === "string" && typeof r.mode === "string")
-    if (!rows.some((r) => !isBlankRow({ ...createRow(), ...r }))) return null
-    return { ...d, rows: rows.map((r) => ({ ...createRow(), ...r })) }
+    const pending = d.pending && typeof d.pending.submissionId === "string" && Array.isArray(d.pending.rowIds) ? d.pending : undefined
+    if (!pending && !rows.some((r) => !isBlankRow({ ...createRow(), ...r }))) return null
+    return { ...d, pending, rows: rows.map((r) => ({ ...createRow(), ...r })) }
   } catch {
     return null
   }
