@@ -39,3 +39,6 @@ skills-lock.json
 .mcp.json
 .better-design-claim.local.txt
 docs/design/qa/app-*/*.png
+
+docs/design/qa/review/*.png
+docs/design/qa/review/report.json

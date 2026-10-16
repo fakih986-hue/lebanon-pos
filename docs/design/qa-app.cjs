@@ -253,6 +253,32 @@ const NAMES = [
   ["names-longpress.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", steps: [longName(LONG_NAME_AR), openSheetFromChip, openShift, escSheet, nameFacts, ["long press (touch)", "@longpress:.pos-tile-button[aria-describedby]", 300]] }],
 ]
 
+// Visual review set: each scene in a fresh profile at its own size from the first paint.
+const mobileShift = [openSheetFromChip, openShift, escSheet]
+const printedReceipt = ["printed receipt (80 mm)", `
+  let html = ""
+  window.open = () => ({ document: { write: (h) => { html += h }, close() {} }, focus() {}, print() {}, close() {} })
+  const b = __t.textBtn(/^(Print receipt|طباعة الإيصال|طباعة)/i); if (!b) throw new Error("no Print receipt button"); b.click()
+  await new Promise((r) => setTimeout(r, 300)); if (!html) throw new Error("receipt not written")
+  const wrap = document.createElement("div"); wrap.style.cssText = "position:fixed;inset:0;z-index:99999;background:#2a2d33;display:flex;justify-content:center;align-items:flex-start;padding:24px;overflow:auto"
+  const frame = document.createElement("iframe"); frame.style.cssText = "width:320px;height:" + (innerHeight - 48) + "px;border:0;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.5)"; frame.srcdoc = html
+  wrap.appendChild(frame); document.body.appendChild(wrap); await new Promise((r) => setTimeout(r, 600))
+  return "receipt rendered (" + html.length + " chars)"`, 400]
+const REVIEW = [
+  ["review-full-pos.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid] }],
+  ["review-full-pos.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [...mobileShift, addTiles] }],
+  ["review-cart-sheet.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [...mobileShift, addTiles, openCartSheet, cashPaid] }],
+  ["review-simple-pos.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, quick, cashPaid] }],
+  ["review-simple-pos.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [...mobileShift, addTiles, quick, cashPaid] }],
+  ["review-payment.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid, review] }],
+  ["review-payment.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [...mobileShift, addTiles, openCartSheet, cashPaid, payInSheet] }],
+  ["review-receipt.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid, review, confirm] }],
+  ["review-receipt.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [...mobileShift, addTiles, openCartSheet, cashPaid, payInSheet, confirm] }],
+  ["review-printed-receipt.en.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid, review, confirm, printedReceipt] }],
+  ["review-full-pos.ar.light.desktop", { w: 1440, h: 900, theme: "light", lang: "ar", steps: [openShift, addTiles, cashPaid] }],
+  ["review-payment.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", steps: [...mobileShift, addTiles, openCartSheet, cashPaid, payInSheet] }],
+]
+
 const SCENES = [
   ["register-cash.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid] }],
   ["register-cash.en.light.desktop", { w: 1440, h: 900, theme: "light", steps: [openShift, addTiles, cashPaid] }],
@@ -275,7 +301,7 @@ const SCENES = [
     const cdp = new CDP(ws); await cdp.open()
     const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null
     const results = []
-    for (const [name, opts] of (process.env.QA_NAMES ? NAMES : process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL, ...NAMES])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
+    for (const [name, opts] of (process.env.QA_REVIEW ? REVIEW : process.env.QA_NAMES ? NAMES : process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL, ...NAMES])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
     fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify({ base: BASE, at: new Date().toISOString(), results }, null, 2))
   } finally { chrome.kill() }
 })().catch((e) => { console.error(e); process.exit(1) })
