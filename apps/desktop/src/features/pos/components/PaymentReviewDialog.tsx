@@ -43,6 +43,28 @@ export default function PaymentReviewDialog({
   const { t } = useI18n()
   const dialogRef = useRef<HTMLDivElement>(null)
   const confirmRef = useRef<HTMLButtonElement>(null)
+  // One confirm per opening: a double tap, a double click or held/repeated Enter
+  // cannot submit the same sale twice (POSPage also locks checkout while it runs).
+  const confirmed = useRef(false)
+  const confirmOnce = () => {
+    if (confirmed.current || blockedReason) return
+    confirmed.current = true
+    onConfirm()
+  }
+
+  // Everything outside the dialog is inert while it is open: the Pay bar, the
+  // cart sheet, the rail and the shell take no taps, clicks or focus. Walk up
+  // from the overlay and mark each sibling on the way; restore exactly what we set.
+  const overlayRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const marked: Element[] = []
+    for (let node: Element | null = overlayRef.current; node && node !== document.body; node = node.parentElement) {
+      for (const sibling of Array.from(node.parentElement?.children ?? [])) {
+        if (sibling !== node && !sibling.hasAttribute("inert") && !(sibling instanceof HTMLScriptElement)) { sibling.setAttribute("inert", ""); marked.push(sibling) }
+      }
+    }
+    return () => { for (const el of marked) el.removeAttribute("inert") }
+  }, [])
   const isCash = paymentMethod === "Cash"
   const changeInLbp = paidLbp > 0 && paidUsd === 0 // USD and mixed tenders give USD change
   const amountLabel = isCash && payableLbp !== totalLbp
@@ -55,7 +77,9 @@ export default function PaymentReviewDialog({
   }, [blockedReason])
 
   return (
-    <div className="mg2 fixed inset-0 z-[200] grid place-items-center p-4" style={{ background: "rgba(5,7,13,.78)" }}>
+    <div ref={overlayRef} className="mg2 fixed inset-0 z-[200] grid place-items-center p-4" style={{ background: "rgba(5,7,13,.78)" }}
+      // A tap or click on the backdrop does nothing and keeps focus in the dialog (Enter / Esc keep working).
+      onMouseDown={(e) => { if (e.target === e.currentTarget) e.preventDefault() }}>
       <div
         ref={dialogRef}
         role="dialog"
@@ -76,7 +100,7 @@ export default function PaymentReviewDialog({
             return
           }
           if (e.key === "Escape") { e.preventDefault(); onBack() }
-          if (e.key === "Enter" && !blockedReason) { e.preventDefault(); onConfirm() }
+          if (e.key === "Enter") { e.preventDefault(); if (!e.repeat) confirmOnce() }
         }}
       >
         <div className="flex items-center justify-between gap-2">
@@ -126,7 +150,7 @@ export default function PaymentReviewDialog({
             <ArrowLeft size={18} className="mg2-dir" />{t("pos.v2.back")} <span className="mg2-kbd">Esc</span>
           </button>
           <button ref={confirmRef} type="button" className="mg2-pay" style={{ flex: "1 1 240px", minHeight: 56, width: "auto", fontSize: 17, flexWrap: "wrap", justifyContent: "space-between" }}
-            disabled={!!blockedReason} onClick={onConfirm}>
+            disabled={!!blockedReason} onClick={confirmOnce}>
             <span>{paymentMethod === "Debt" ? t("pos.record_debt") : t("pos.v2.confirm_and_pay")}</span>
             <span className="num" style={{ whiteSpace: "nowrap" }}>{amountLabel}</span>
             <span className="mg2-kbd hidden sm:inline">Enter</span>

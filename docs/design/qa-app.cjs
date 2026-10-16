@@ -69,13 +69,30 @@ async function scene(cdp, name, { w, h, mobile = false, theme = "dark", lang = "
           for (const type of [key === "Enter" ? "keyDown" : "rawKeyDown", "keyUp"]) await cdp.send("Input.dispatchKeyEvent", { type, key, code: key, windowsVirtualKeyCode: codes[key], modifiers: shift ? 8 : 0, ...(key === "Enter" && type === "keyDown" ? { text: "\r", unmodifiedText: "\r" } : {}) }, sessionId)
           await sleep(80)
         }
-        log.push([label, await ev(`const d=document.querySelector("[role=dialog][aria-modal=true]"); const a=document.activeElement; return (d ? (d.contains(a) ? "inside dialog: " : "OUTSIDE dialog: ") : "no dialog, ") + (a ? (a.getAttribute("aria-label") || a.textContent.trim().slice(0,30) || a.tagName) : "none")`)])
+        log.push([label, await ev(`const d=[...document.querySelectorAll("[role=dialog][aria-modal=true]")].filter((x) => !x.closest("[inert]")).pop(); const a=document.activeElement; return (d ? (d.contains(a) ? "inside dialog: " : "OUTSIDE dialog: ") : "no dialog, ") + (a ? (a.getAttribute("aria-label") || a.textContent.trim().slice(0,30) || a.tagName) : "none")`)])
         await sleep(wait); continue
       }
       if (typeof js === "string" && js.startsWith("@resize:")) {
         const [, rw, rh] = js.split(":")
         await cdp.send("Emulation.setDeviceMetricsOverride", { width: Number(rw), height: Number(rh), deviceScaleFactor: 1, mobile: Number(rw) < 768 }, sessionId)
         log.push([label, `viewport ${rw}x${rh}`]); await sleep(wait); continue
+      }
+      if (typeof js === "string" && /^@(dbltap|dblclick):/.test(js)) {
+        const kind = js.slice(1, js.indexOf(":")); const sel = js.slice(js.indexOf(":") + 1)
+        const pt = await ev(`const el = [...document.querySelectorAll(${JSON.stringify(sel)})].find((e) => e.offsetParent !== null); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }`)
+        if (!pt) { log.push([label, "ERROR no element " + sel]); continue }
+        for (let i = 1; i <= 2; i++) {
+          if (kind === "dbltap") {
+            await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: pt.x, y: pt.y }] }, sessionId)
+            await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }, sessionId)
+          } else {
+            await cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x: pt.x, y: pt.y, button: "left", clickCount: i }, sessionId)
+            await cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: pt.x, y: pt.y, button: "left", clickCount: i }, sessionId)
+          }
+          await sleep(40)
+        }
+        await sleep(wait)
+        log.push([label, "done"]); continue
       }
       if (typeof js === "string" && /^@(hover|longpress|tap):/.test(js)) {
         const kind = js.slice(1, js.indexOf(":")); const sel = js.slice(js.indexOf(":") + 1)
@@ -323,6 +340,34 @@ const RECEIPT = [
   ["receipt-fit-58.desktop", { w: 1440, h: 1100, steps: [receiptFit([{ paperMm: 58, printableMm: 48, marginMm: 2 }, { paperMm: 58, printableMm: 48, marginMm: 4 }])] }],
 ]
 
+// Payment review: the background (Pay bar, cart sheet, rail, shell) is inert; one confirm = one sale.
+const salesCount = ["sales recorded", `const n = JSON.parse(localStorage.getItem("lebanonpos.sales.v1") || "[]").length; const q = JSON.parse(localStorage.getItem("lebanonpos.sync-queue.v1") || "[]").filter((o) => o.entity === "sale" && o.action === "create").length; return n + " sale(s), " + q + " queued; review " + (document.querySelector("[aria-labelledby=mg2-review-title]") ? "OPEN" : "closed")`, 50]
+const backgroundInert = ["background while review is open", `
+  const d = document.querySelector("[aria-labelledby=mg2-review-title]"); if (!d) return "no review open"
+  const pay = document.querySelector(".mg2-paybar .mg2-pay"); const cart = document.querySelector(".mg2-paybar button")
+  const sheetPay = [...document.querySelectorAll(".mg2-pay")].find((x) => !x.closest(".mg2-paybar") && !d.contains(x))
+  const inertOf = (el) => el ? (el.closest("[inert]") ? "inert" : "LIVE") : "absent"
+  pay?.focus(); const focusAfter = d.contains(document.activeElement) ? "focus stayed in review" : "FOCUS MOVED to " + (document.activeElement?.className || document.activeElement?.tagName)
+  const topbar = document.querySelector("header.topbar-shell")
+  return "pay bar " + inertOf(pay) + ", cart button " + inertOf(cart) + ", sheet pay " + inertOf(sheetPay) + ", top bar " + inertOf(topbar) + "; " + focusAfter`, 50]
+const whatIsUnderPayBar = ["what a finger on the visible Pay bar would hit", `const p = document.querySelector(".mg2-paybar .mg2-pay"); const r = p.getBoundingClientRect(); const pts = [[r.left + r.width / 2, r.top + 20], [r.left + r.width / 2, r.top + r.height / 2], [r.left + r.width / 2, r.bottom - 6]]; const d = document.querySelector("[aria-labelledby=mg2-review-title]"); return pts.map(([x, y]) => { const e = document.elementFromPoint(x, y); return Math.round(y) + "px: " + (d && d.contains(e) ? "review dialog " + (e.closest("button")?.textContent.trim().slice(0, 16) || e.tagName) : e?.closest(".mg2-paybar") ? "PAY BAR" : "backdrop") }).join("; ") + " (pay bar spans " + Math.round(r.top) + "–" + Math.round(r.bottom) + "px, dialog ends " + Math.round(d.getBoundingClientRect().bottom) + "px)"`, 50]
+const tapPayBar = ["real tap on the Pay bar", "@tap:.mg2-paybar .mg2-pay", 400]
+const enterScanEmpty = ["Enter in the empty scan field opens review", `const i = document.querySelector("input[aria-label*=Scan i]"); i.focus(); __t.type(i, ""); __t.key(i, "Enter"); await new Promise((r) => setTimeout(r, 300)); return document.querySelector("[aria-labelledby=mg2-review-title]") ? "review open" : "no review"`, 300]
+// Store-hub write-through: the sale waits for the server. Simulated: /api/sync/push answers "ok" after 2.5 s.
+const asStoreHub = `localStorage.setItem("lebanonpos.connection-mode.v1", "STORE_HUB"); localStorage.setItem("lebanonpos.api-url", "http://localhost:3015"); localStorage.setItem("lebanonpos.auth-token", "qa-test-token")`
+const slowHub = ["simulate a slow store hub (2.5 s commit)", `window.__push = 0; const real = window.fetch; window.fetch = async (u, o) => { if (String(u).includes("/api/sync/push") && String(o?.body || "").includes("\\"entity\\":\\"sale\\"")) { window.__push++; await new Promise((r) => setTimeout(r, 2500)); return new Response(JSON.stringify({ results: [{ id: "x", status: "ok" }] }), { status: 200, headers: { "Content-Type": "application/json" } }) } return real(u, o) }; return "fetch stubbed"`, 50]
+const inFlight = ["during the commit", `return "server commits started: " + window.__push + "; review " + (document.querySelector("[aria-labelledby=mg2-review-title]") ? "REOPENED" : "closed") + "; status: " + (document.querySelector("[role=status]")?.textContent.trim().slice(0, 60) || "")`, 50]
+const railPay = ["click the rail Pay button during the commit", `const b = [...document.querySelectorAll(".mg2-pay")].find((x) => x.offsetParent !== null && !x.closest("[aria-labelledby=mg2-review-title]")); if (!b) return "no rail pay"; b.click(); await new Promise((r) => setTimeout(r, 200)); return "clicked (" + (b.disabled ? "disabled" : "enabled") + "); review " + (document.querySelector("[aria-labelledby=mg2-review-title]") ? "REOPENED" : "closed")`, 50]
+const afterCommit = ["after the commit", `await new Promise((r) => setTimeout(r, 3200)); return "server commits: " + window.__push + "; local sales: " + JSON.parse(localStorage.getItem("lebanonpos.sales.v1") || "[]").length + "; cart lines: " + document.querySelectorAll("[aria-label^=Increase]").length`, 50]
+const PAY = [
+  ["pay-doubletap.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [openSheetFromChip, openShift, escSheet, addTiles, openCartSheet, exactCash, payInSheet, backgroundInert, salesCount, ["rapid double-tap on Confirm", "@dbltap:[aria-labelledby=mg2-review-title] .mg2-pay", 900], salesCount] }],
+  ["pay-bar-hidden.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [openSheetFromChip, openShift, escSheet, addTiles, openCartSheet, exactCash, payInSheet, whatIsUnderPayBar, ["pay bar visibility", `return getComputedStyle(document.querySelector(".mg2-paybar")).visibility`, 50], ["mark the bottom 12 px (where only the Pay bar was)", `const p = document.querySelector(".mg2-paybar").getBoundingClientRect(); const m = document.createElement("div"); m.id = "__tapTarget"; m.style.cssText = "position:fixed;left:" + (p.left + 40) + "px;width:" + (p.width - 80) + "px;top:" + (p.bottom - 12) + "px;height:12px;pointer-events:none"; document.body.appendChild(m); const e = document.elementFromPoint(p.left + p.width / 2, p.bottom - 6); return "at that point: " + (e?.closest("[aria-labelledby=mg2-review-title]") ? "review dialog" : e?.closest(".mg2-paybar") ? "PAY BAR" : "backdrop")`, 50], ["real tap there", "@tap:#__tapTarget", 400], salesCount] }],
+  ["pay-repeated-enter.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, exactCash, enterScanEmpty, backgroundInert, ["Enter ×6, 80 ms apart (real keys)", "@key:Enter:6", 900], salesCount] }],
+  ["pay-doubleclick.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, exactCash, review, ["rapid double-click on Confirm", "@dblclick:[aria-labelledby=mg2-review-title] .mg2-pay", 900], salesCount] }],
+  ["pay-slow-hub.en.dark.desktop", { w: 1440, h: 900, setup: asStoreHub, steps: [openShift, addTiles, exactCash, slowHub, enterScanEmpty, ["Enter confirms (real key)", "@key:Enter:1", 200], inFlight, ["Enter ×5 in the scan field during the commit", "@key:Enter:5", 150], inFlight, railPay, afterCommit] }],
+  ["pay-inert.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", steps: [openSheetFromChip, openShift, escSheet, addTiles, openCartSheet, exactCash, payInSheet, backgroundInert, ["Tab ×8 (real keys)", "@key:Tab:8", 150], ["Enter ×4 (real keys)", "@key:Enter:4", 900], salesCount] }],
+]
+
 const SCENES = [
   ["register-cash.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid] }],
   ["register-cash.en.light.desktop", { w: 1440, h: 900, theme: "light", steps: [openShift, addTiles, cashPaid] }],
@@ -345,7 +390,7 @@ const SCENES = [
     const cdp = new CDP(ws); await cdp.open()
     const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null
     const results = []
-    for (const [name, opts] of (process.env.QA_RECEIPT ? RECEIPT : process.env.QA_REVIEW ? REVIEW : process.env.QA_NAMES ? NAMES : process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL, ...NAMES])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
+    for (const [name, opts] of (process.env.QA_PAY ? PAY : process.env.QA_RECEIPT ? RECEIPT : process.env.QA_REVIEW ? REVIEW : process.env.QA_NAMES ? NAMES : process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL, ...NAMES])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
     fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify({ base: BASE, at: new Date().toISOString(), results }, null, 2))
   } finally { chrome.kill() }
 })().catch((e) => { console.error(e); process.exit(1) })

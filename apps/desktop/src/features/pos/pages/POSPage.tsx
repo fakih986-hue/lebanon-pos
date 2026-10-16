@@ -124,6 +124,11 @@ export default function POSPage() {
   const [quickMode, setQuickMode] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [showReview, setShowReview] = useState(false)
+  // Checkout lock: set before the (possibly async, server write-through) sale
+  // starts, cleared when it ends. While set, review cannot reopen and a second
+  // completeSale is ignored, so the same cart cannot be paid twice.
+  const checkoutLock = useRef(false)
+  const [checkingOut, setCheckingOut] = useState(false)
   const [hasShift, setHasShift] = useState(() => Boolean(getActiveShift()))
   useEffect(() => subscribeSecurity(() => setHasShift(Boolean(getActiveShift()))), [])
 
@@ -370,6 +375,8 @@ export default function POSPage() {
       // input is auto-focused and keeps focus through the sale, so this is how a
       // cashier naturally reaches for checkout from the keyboard.
       if (items.length > 0) {
+        // A sale is already being completed (e.g. waiting for the store hub): say so, open nothing.
+        if (checkoutLock.current) { setScannerStatus(t("pos.status.completing")); return }
         if (checkoutBlocked) {
           setScannerStatus(
             paymentMethod === "Cash" && !cashTenderValid
@@ -380,7 +387,7 @@ export default function POSPage() {
                   ? t("pos.status.credit_exceeded")
                   : t("pos.status.cannot_checkout")
           )
-        } else {
+        } else if (!checkoutLock.current) {
           setShowReview(true)
         }
         return
@@ -592,7 +599,7 @@ export default function POSPage() {
   }, [])
 
   function handleReview() {
-    if (checkoutBlocked) return
+    if (checkoutBlocked || checkoutLock.current) return
     if (!getActiveShift()) {
       setScannerStatus(t("pos.status.no_shift"))
       playErrorBuzz()
@@ -613,7 +620,19 @@ export default function POSPage() {
     return () => window.removeEventListener("keydown", onRegisterKey)
   }, [showReview, items.length, holdCurrentSale])
 
-  const completeSale = useCallback(async function completeSale() {
+  async function completeSale() {
+    if (checkoutLock.current) return
+    checkoutLock.current = true
+    setCheckingOut(true)
+    try {
+      await completeSaleOnce()
+    } finally {
+      checkoutLock.current = false
+      setCheckingOut(false)
+    }
+  }
+
+  async function completeSaleOnce() {
     if (checkoutBlocked || isValidatingStock) return
 
     // A sale must belong to an open register shift (cash-control). On a fresh
@@ -795,7 +814,7 @@ export default function POSPage() {
       console.error("[checkout] sale failed:", err)
       setScannerStatus(reason ? t("pos.status.checkout_failed", { reason }) : t("pos.status.checkout_failed_generic"))
     }
-  }, [checkoutBlocked, isValidatingStock, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal, sellAtCost, payableLbp, payableUsd])
+  }
 
   return (
     <main className="mg2 pos-workspace relative min-h-0 flex-1 overflow-hidden">
@@ -978,13 +997,14 @@ export default function POSPage() {
           </section>
 
           {/* ── Mobile floating cart button ── */}
-          {!quickMode && <div className="mg2-paybar lg:hidden">
+          {/* Hidden (not only inert) while review is open: on phones it sat right under the dialog's Confirm button. */}
+          {!quickMode && <div className="mg2-paybar lg:hidden" style={showReview ? { visibility: "hidden" } : undefined}>
             <button type="button" className="mg2-btn" style={{ minHeight: 64, flexDirection: "column", gap: 0, padding: "0 14px" }}
               onClick={() => setIsCartOpen(true)} aria-label={t("pos.v2.open_cart", { lines: formatNumber(items.length) })}>
               <ShoppingCart size={18} />
               <span className="num" style={{ fontSize: 13 }}>{t("pos.v2.lines", { lines: formatNumber(items.length) })}</span>
             </button>
-            <button type="button" className="mg2-pay" disabled={items.length === 0} onClick={() => setIsCartOpen(true)}>
+            <button type="button" className="mg2-pay" disabled={items.length === 0 || checkingOut} aria-busy={checkingOut || undefined} onClick={() => setIsCartOpen(true)}>
               <span>{t("pos.pay")}</span>
               <span className="num">{formatCurrency(paymentMethod === "Cash" ? payableUsd : total)}</span>
               <span className="num" style={{ fontSize: 14 }}>{formatNumber(Math.round(paymentMethod === "Cash" ? payableLbp : totalLbp))} {t("pos.v2.lbp")}</span>
