@@ -217,6 +217,9 @@ A duplicate is not cosmetic. Under the tenant-wide UNIQUE index, the second reco
   - Ids are random UUIDs, so this needs a leaked id.
   - It is still a cross-tenant write.
 - **The fix.** Before any write, an id that belongs to another tenant is rejected (`TenantScopeError`, never retried).
+- **Fail-closed (follow-up review).** An earlier version compared tenants only when the owning row's tenant was readable, to accommodate a mocked row. That was a fail-open. The guard now refuses any existing row whose tenant is not the caller's, including one with no readable tenant; the incomplete mocks were fixed instead (`sync.test.ts`: refund retry, duplicate sale, received lot), and a unit test pins the fail-closed rule.
+- **Coverage.** The guard now also covers `staff` (a cross-tenant push could have changed a person's role) and inventory `receive` (an array payload the per-operation check did not see; its metadata update is now tenant-scoped).
+- **Proof.** `apps/api/__tests__/tenant-scope.test.ts` (real Postgres, 14): for shift, expense, customer, supplier, staff, debt sale, debt payment, purchase order, supplier payment, cash movement, daily close and delivery order, a foreign push is rejected with the row unchanged, and the owner's retry is applied once. Also covered: foreign shift close, debt delete, sale void and sale re-create; foreign adjustment and received-lot rewrite; owner retries with no double stock movement. Mutation checks: disabling the guard fails all 14, the receive check 1, and the staff mapping 1.
 
 **Proof.**
 
@@ -279,7 +282,7 @@ A duplicate is not cosmetic. Under the tenant-wide UNIQUE index, the second reco
 
 | Suite | Result | Kind |
 |---|---|---|
-| API, all | 18 files, 279 tests, pass | Real-Postgres suites ran against the scratch DB `lebanonpos_refund_it` |
+| API, all | 19 files, 294 tests, pass | Real-Postgres suites ran against the scratch DB `lebanonpos_refund_it` |
 | `old-client-adjustments.test.ts` | 8 / 8 | Real Postgres (new) |
 | `z-report-close.test.ts` | 3 / 3 | Real Postgres (new); on the old handler, 2 of 3 failed: cash arithmetic and cross-tenant close |
 | `refund-integrity.test.ts` | 13 / 13 | Real Postgres (+1: duplicate refund numbers) |

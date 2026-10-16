@@ -463,12 +463,12 @@ describe("POST /api/sync/push — server-authoritative receiving (POS-SYNC-RECEI
 
   it("does NOT re-increment when the batch already exists (retry idempotency)", async () => {
     vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 5 } as any)
-    vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue({ id: "batch-1" } as any) // already received
-    vi.mocked(prisma.inventoryBatch.update).mockResolvedValue({} as any)
+    vi.mocked(prisma.inventoryBatch.findUnique).mockResolvedValue({ id: "batch-1", tenantId: "t1" } as any) // already received
+    vi.mocked(prisma.inventoryBatch.updateMany).mockResolvedValue({ count: 1 } as any)
 
     const res = await receive([{ id: "batch-1", productSyncId: "ps-5", batchNumber: "BN1", quantityRemaining: 12, initialQuantity: 12 }])
     expect(res.status).toBe(200)
-    expect(vi.mocked(prisma.inventoryBatch.update)).toHaveBeenCalledTimes(1) // metadata only
+    expect(vi.mocked(prisma.inventoryBatch.updateMany)).toHaveBeenCalledTimes(1) // metadata only, tenant-scoped
     expect(vi.mocked(prisma.inventoryBatch.create)).not.toHaveBeenCalled()
     expect(vi.mocked(prisma.product.updateMany)).not.toHaveBeenCalled()      // NO re-increment
     expect(vi.mocked(prisma.stockMovement.create)).not.toHaveBeenCalled()    // NO duplicate movement
@@ -798,10 +798,23 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     expect(updateArgs.data).not.toHaveProperty("id") // id is the where-key, not part of the patch
   })
 
+  it("refuses to write an existing row whose owning tenant cannot be established", async () => {
+    // A row with no readable tenant is never treated as writable (no fail-open).
+    vi.mocked(prisma.shift.findUnique).mockResolvedValue({ id: "shift-x" } as any)
+    vi.mocked(prisma.shift.upsert).mockClear()
+    const res = await request("POST", "/api/sync/push", {
+      token,
+      body: { operations: [{ id: "op-x", entity: "shift", action: "open", payload: { id: "shift-x", shiftNumber: "S-1", openedById: "u1", openedByName: "A", openingFloatUsd: 1 } }] },
+    })
+    expect(res.body.results[0].status).toBe("rejected")
+    expect(res.body.results[0].error).toMatch(/TENANT_SCOPE/)
+    expect(vi.mocked(prisma.shift.upsert)).not.toHaveBeenCalled()
+  })
+
   it("does not double-decrement stock on duplicate sale push", async () => {
     mockNewSale()
     // Simulate existing sale (second push with same ID)
-    vi.mocked(prisma.sale.findUnique).mockResolvedValue({ id: "sale-1" } as any)
+    vi.mocked(prisma.sale.findUnique).mockResolvedValue({ id: "sale-1", tenantId: "t1", status: "Completed" } as any)
 
     const res = await request("POST", "/api/sync/push", {
       token,
@@ -811,6 +824,8 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     })
 
     expect(res.status).toBe(200)
+    // Accepted as a retry — not rejected by the tenant guard.
+    expect(res.body.results[0].status).toBe("ok")
     // updateMany should NOT be called because sale already exists
     expect(vi.mocked(prisma.product.updateMany).mock.calls.length).toBe(0)
   })
@@ -1223,7 +1238,7 @@ describe("POST /api/sync/push — refund integrity (REFUND-INTEGRITY-1)", () => 
     mockSaleForRefund({ id: "sale-1", total: 20, items: [trackedLine()] })
     const ops = refundOp("ref-retry", [{ id: 1, saleLineId: "L1", barcode: "111", quantity: 3 }], 6)
     expect((await request("POST", "/api/sync/push", { token, body: { operations: ops } })).body.results[0].status).toBe("ok")
-    vi.mocked(prisma.saleRefund.findUnique).mockResolvedValue({ id: "ref-retry" } as any)
+    vi.mocked(prisma.saleRefund.findUnique).mockResolvedValue({ id: "ref-retry", tenantId: "t1" } as any) // a real row always carries its tenant
     expect((await request("POST", "/api/sync/push", { token, body: { operations: ops } })).body.results[0].status).toBe("ok")
     expect(stockIncrements().length).toBe(1)
     expect(vi.mocked(prisma.saleRefund.create)).toHaveBeenCalledTimes(1)

@@ -768,7 +768,7 @@ async function processOperation(
   // handlers upsert by id alone, so an id that already belongs to another
   // tenant would overwrite that tenant's row. Refuse it.
   const ID_MODELS: Record<string, string> = {
-    sale: "sale", refund: "saleRefund", shift: "shift", expense: "expense", customer: "customer", supplier: "supplier",
+    sale: "sale", refund: "saleRefund", shift: "shift", expense: "expense", customer: "customer", supplier: "supplier", staff: "staffUser",
     "purchase-order": "purchaseOrder", "supplier-payment": "supplierPayment", "daily-close": "dailyClose",
     "delivery-order": "deliveryOrder", "cash-movement": "cashMovement",
   }
@@ -778,7 +778,9 @@ async function processOperation(
   const guardId = (payload as any)?.id
   if (guardModel && typeof guardId === "string" && guardId) {
     const owner = await (db as any)[guardModel].findUnique({ where: { id: guardId }, select: { tenantId: true } })
-    if (owner?.tenantId && owner.tenantId !== tenantId) throw new TenantScopeError(`${entity} ${guardId} belongs to another store`)
+    // An existing row may only be written by its own tenant. A row whose tenant
+    // cannot be read is NOT treated as writable: missing ownership is a refusal.
+    if (owner && owner.tenantId !== tenantId) throw new TenantScopeError(`${entity} ${guardId} belongs to another store`)
   }
 
   // A debt belongs to a SALE (by id), not to a sale number: numbers are display
@@ -1449,7 +1451,9 @@ async function processOperation(
           // first creation of the batch. A retry (batch already exists) updates
           // metadata only and never re-increments. Stock is no longer carried by
           // product.create/product.update in the receive flow.
-          const existingBatch = await db.inventoryBatch.findUnique({ where: { id: batchId as string }, select: { id: true } })
+          const existingBatch = await db.inventoryBatch.findUnique({ where: { id: batchId as string }, select: { id: true, tenantId: true } })
+          // Receive carries an ARRAY of lots, so the per-operation guard above does not see these ids.
+          if (existingBatch && existingBatch.tenantId !== tenantId) throw new TenantScopeError(`inventory batch ${batchId} belongs to another store`)
           if (!existingBatch) {
             await db.inventoryBatch.create({ data: { ...batchData, id: batchId, tenantId } as any })
             if (productId > 0 && qty !== 0) {
@@ -1462,7 +1466,7 @@ async function processOperation(
             })
           } else {
             // Metadata correction for an already-received batch — NEVER re-increment stock.
-            await db.inventoryBatch.update({ where: { id: batchId as string }, data: batchData as any })
+            await db.inventoryBatch.updateMany({ where: { id: batchId as string, tenantId }, data: batchData as any })
           }
         }
       } else if (action === "update") {
