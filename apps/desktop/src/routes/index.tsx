@@ -4,6 +4,9 @@ import { AnimatePresence, motion } from "framer-motion"
 import TitanIntro from "../components/TitanIntro"
 
 import { runMigration } from "../features/pos/services/migration.service"
+import { recoverRefundJournal } from "../features/pos/services/sales.service"
+import { showToast } from "../features/pos/services/toast.service"
+import { useI18n } from "@lebanonpos/shared"
 import AppLayout from "../layouts/AppLayout"
 import Sidebar, { BottomNav } from "../components/layout/Sidebar"
 import Topbar from "../components/layout/Topbar"
@@ -64,8 +67,17 @@ function Shell({ children }: { children: ReactNode }) {
   const [, setSecurityVersion] = useState(0)
   const toasts = useToastStore((state) => state.toasts)
   const dismiss = useToastStore((state) => state.dismiss)
+  const { t } = useI18n()
 
   useEffect(() => { runMigration() }, [])
+
+  // REFUND-INTEGRITY-1: finish or roll back any refund interrupted by a crash
+  // or restart before the till is used again.
+  useEffect(() => {
+    const { rolledBack, completed } = recoverRefundJournal()
+    if (completed > 0) showToast(t("pos.refund.recovered_completed", { count: completed }), "info")
+    if (rolledBack > 0) showToast(t("pos.refund.recovered_rolled_back", { count: rolledBack }), "warning")
+  }, [])
 
   useEffect(() => { setupBackgroundSync(); return stopBackgroundSync }, [])
 

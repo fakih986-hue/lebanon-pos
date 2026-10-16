@@ -10614,6 +10614,7 @@ export namespace Prisma {
     cost: Decimal | null
     profit: Decimal | null
     payableLbp: Decimal | null
+    refundVersion: number | null
   }
 
   export type SaleSumAggregateOutputType = {
@@ -10624,6 +10625,7 @@ export namespace Prisma {
     cost: Decimal | null
     profit: Decimal | null
     payableLbp: Decimal | null
+    refundVersion: number | null
   }
 
   export type SaleMinAggregateOutputType = {
@@ -10646,6 +10648,7 @@ export namespace Prisma {
     shiftNumber: string | null
     payableLbp: Decimal | null
     status: $Enums.SaleStatus | null
+    refundVersion: number | null
     createdAt: Date | null
   }
 
@@ -10669,6 +10672,7 @@ export namespace Prisma {
     shiftNumber: string | null
     payableLbp: Decimal | null
     status: $Enums.SaleStatus | null
+    refundVersion: number | null
     createdAt: Date | null
   }
 
@@ -10692,6 +10696,7 @@ export namespace Prisma {
     shiftNumber: number
     payableLbp: number
     status: number
+    refundVersion: number
     createdAt: number
     _all: number
   }
@@ -10705,6 +10710,7 @@ export namespace Prisma {
     cost?: true
     profit?: true
     payableLbp?: true
+    refundVersion?: true
   }
 
   export type SaleSumAggregateInputType = {
@@ -10715,6 +10721,7 @@ export namespace Prisma {
     cost?: true
     profit?: true
     payableLbp?: true
+    refundVersion?: true
   }
 
   export type SaleMinAggregateInputType = {
@@ -10737,6 +10744,7 @@ export namespace Prisma {
     shiftNumber?: true
     payableLbp?: true
     status?: true
+    refundVersion?: true
     createdAt?: true
   }
 
@@ -10760,6 +10768,7 @@ export namespace Prisma {
     shiftNumber?: true
     payableLbp?: true
     status?: true
+    refundVersion?: true
     createdAt?: true
   }
 
@@ -10783,6 +10792,7 @@ export namespace Prisma {
     shiftNumber?: true
     payableLbp?: true
     status?: true
+    refundVersion?: true
     createdAt?: true
     _all?: true
   }
@@ -10893,6 +10903,7 @@ export namespace Prisma {
     shiftNumber: string | null
     payableLbp: Decimal | null
     status: $Enums.SaleStatus
+    refundVersion: number
     createdAt: Date
     _count: SaleCountAggregateOutputType | null
     _avg: SaleAvgAggregateOutputType | null
@@ -10935,6 +10946,7 @@ export namespace Prisma {
     shiftNumber?: boolean
     payableLbp?: boolean
     status?: boolean
+    refundVersion?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     items?: boolean | Sale$itemsArgs<ExtArgs>
@@ -10963,6 +10975,7 @@ export namespace Prisma {
     shiftNumber?: boolean
     payableLbp?: boolean
     status?: boolean
+    refundVersion?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["sale"]>
@@ -10987,6 +11000,7 @@ export namespace Prisma {
     shiftNumber?: boolean
     payableLbp?: boolean
     status?: boolean
+    refundVersion?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["sale"]>
@@ -11011,10 +11025,11 @@ export namespace Prisma {
     shiftNumber?: boolean
     payableLbp?: boolean
     status?: boolean
+    refundVersion?: boolean
     createdAt?: boolean
   }
 
-  export type SaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "saleNumber" | "paymentMethod" | "customerId" | "customerName" | "subtotal" | "discountTotal" | "tax" | "total" | "cost" | "profit" | "soldAtCost" | "cashier" | "cashierId" | "shiftId" | "shiftNumber" | "payableLbp" | "status" | "createdAt", ExtArgs["result"]["sale"]>
+  export type SaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "saleNumber" | "paymentMethod" | "customerId" | "customerName" | "subtotal" | "discountTotal" | "tax" | "total" | "cost" | "profit" | "soldAtCost" | "cashier" | "cashierId" | "shiftId" | "shiftNumber" | "payableLbp" | "status" | "refundVersion" | "createdAt", ExtArgs["result"]["sale"]>
   export type SaleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     items?: boolean | Sale$itemsArgs<ExtArgs>
@@ -11057,6 +11072,11 @@ export namespace Prisma {
       shiftNumber: string | null
       payableLbp: Prisma.Decimal | null
       status: $Enums.SaleStatus
+      /**
+       * REFUND-INTEGRITY-1: bumped inside every refund/void transaction so concurrent
+       * refunds of the same sale serialize on this row's lock.
+       */
+      refundVersion: number
       createdAt: Date
     }, ExtArgs["result"]["sale"]>
     composites: {}
@@ -11504,6 +11524,7 @@ export namespace Prisma {
     readonly shiftNumber: FieldRef<"Sale", 'String'>
     readonly payableLbp: FieldRef<"Sale", 'Decimal'>
     readonly status: FieldRef<"Sale", 'SaleStatus'>
+    readonly refundVersion: FieldRef<"Sale", 'Int'>
     readonly createdAt: FieldRef<"Sale", 'DateTime'>
   }
     
@@ -12004,6 +12025,7 @@ export namespace Prisma {
     unitPrice: Decimal | null
     total: Decimal | null
     cost: Decimal | null
+    lineIndex: number | null
   }
 
   export type SaleItemSumAggregateOutputType = {
@@ -12012,6 +12034,7 @@ export namespace Prisma {
     unitPrice: Decimal | null
     total: Decimal | null
     cost: Decimal | null
+    lineIndex: number | null
   }
 
   export type SaleItemMinAggregateOutputType = {
@@ -12024,6 +12047,8 @@ export namespace Prisma {
     unitPrice: Decimal | null
     total: Decimal | null
     cost: Decimal | null
+    lineId: string | null
+    lineIndex: number | null
   }
 
   export type SaleItemMaxAggregateOutputType = {
@@ -12036,6 +12061,8 @@ export namespace Prisma {
     unitPrice: Decimal | null
     total: Decimal | null
     cost: Decimal | null
+    lineId: string | null
+    lineIndex: number | null
   }
 
   export type SaleItemCountAggregateOutputType = {
@@ -12048,6 +12075,9 @@ export namespace Prisma {
     unitPrice: number
     total: number
     cost: number
+    lineId: number
+    lineIndex: number
+    batchAllocations: number
     _all: number
   }
 
@@ -12058,6 +12088,7 @@ export namespace Prisma {
     unitPrice?: true
     total?: true
     cost?: true
+    lineIndex?: true
   }
 
   export type SaleItemSumAggregateInputType = {
@@ -12066,6 +12097,7 @@ export namespace Prisma {
     unitPrice?: true
     total?: true
     cost?: true
+    lineIndex?: true
   }
 
   export type SaleItemMinAggregateInputType = {
@@ -12078,6 +12110,8 @@ export namespace Prisma {
     unitPrice?: true
     total?: true
     cost?: true
+    lineId?: true
+    lineIndex?: true
   }
 
   export type SaleItemMaxAggregateInputType = {
@@ -12090,6 +12124,8 @@ export namespace Prisma {
     unitPrice?: true
     total?: true
     cost?: true
+    lineId?: true
+    lineIndex?: true
   }
 
   export type SaleItemCountAggregateInputType = {
@@ -12102,6 +12138,9 @@ export namespace Prisma {
     unitPrice?: true
     total?: true
     cost?: true
+    lineId?: true
+    lineIndex?: true
+    batchAllocations?: true
     _all?: true
   }
 
@@ -12201,6 +12240,9 @@ export namespace Prisma {
     unitPrice: Decimal
     total: Decimal
     cost: Decimal
+    lineId: string | null
+    lineIndex: number | null
+    batchAllocations: JsonValue | null
     _count: SaleItemCountAggregateOutputType | null
     _avg: SaleItemAvgAggregateOutputType | null
     _sum: SaleItemSumAggregateOutputType | null
@@ -12232,6 +12274,9 @@ export namespace Prisma {
     unitPrice?: boolean
     total?: boolean
     cost?: boolean
+    lineId?: boolean
+    lineIndex?: boolean
+    batchAllocations?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -12245,6 +12290,9 @@ export namespace Prisma {
     unitPrice?: boolean
     total?: boolean
     cost?: boolean
+    lineId?: boolean
+    lineIndex?: boolean
+    batchAllocations?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -12258,6 +12306,9 @@ export namespace Prisma {
     unitPrice?: boolean
     total?: boolean
     cost?: boolean
+    lineId?: boolean
+    lineIndex?: boolean
+    batchAllocations?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -12271,9 +12322,12 @@ export namespace Prisma {
     unitPrice?: boolean
     total?: boolean
     cost?: boolean
+    lineId?: boolean
+    lineIndex?: boolean
+    batchAllocations?: boolean
   }
 
-  export type SaleItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "saleId" | "productId" | "productName" | "barcode" | "quantity" | "unitPrice" | "total" | "cost", ExtArgs["result"]["saleItem"]>
+  export type SaleItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "saleId" | "productId" | "productName" | "barcode" | "quantity" | "unitPrice" | "total" | "cost" | "lineId" | "lineIndex" | "batchAllocations", ExtArgs["result"]["saleItem"]>
   export type SaleItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }
@@ -12299,6 +12353,15 @@ export namespace Prisma {
       unitPrice: Prisma.Decimal
       total: Prisma.Decimal
       cost: Prisma.Decimal
+      /**
+       * REFUND-INTEGRITY-1: client-stamped line identity (null = legacy line, pooled per product).
+       */
+      lineId: string | null
+      lineIndex: number | null
+      /**
+       * Lots actually consumed by the server for this line: [{batchId|null, quantity, unitCost?}].
+       */
+      batchAllocations: Prisma.JsonValue | null
     }, ExtArgs["result"]["saleItem"]>
     composites: {}
   }
@@ -12732,6 +12795,9 @@ export namespace Prisma {
     readonly unitPrice: FieldRef<"SaleItem", 'Decimal'>
     readonly total: FieldRef<"SaleItem", 'Decimal'>
     readonly cost: FieldRef<"SaleItem", 'Decimal'>
+    readonly lineId: FieldRef<"SaleItem", 'String'>
+    readonly lineIndex: FieldRef<"SaleItem", 'Int'>
+    readonly batchAllocations: FieldRef<"SaleItem", 'Json'>
   }
     
 
@@ -14354,10 +14420,12 @@ export namespace Prisma {
 
   export type SaleRefundAvgAggregateOutputType = {
     total: Decimal | null
+    exchangeRate: Decimal | null
   }
 
   export type SaleRefundSumAggregateOutputType = {
     total: Decimal | null
+    exchangeRate: Decimal | null
   }
 
   export type SaleRefundMinAggregateOutputType = {
@@ -14375,6 +14443,8 @@ export namespace Prisma {
     cashierId: string | null
     shiftId: string | null
     shiftNumber: string | null
+    exchangeRate: Decimal | null
+    rateSource: string | null
     createdAt: Date | null
   }
 
@@ -14393,6 +14463,8 @@ export namespace Prisma {
     cashierId: string | null
     shiftId: string | null
     shiftNumber: string | null
+    exchangeRate: Decimal | null
+    rateSource: string | null
     createdAt: Date | null
   }
 
@@ -14411,6 +14483,8 @@ export namespace Prisma {
     cashierId: number
     shiftId: number
     shiftNumber: number
+    exchangeRate: number
+    rateSource: number
     createdAt: number
     _all: number
   }
@@ -14418,10 +14492,12 @@ export namespace Prisma {
 
   export type SaleRefundAvgAggregateInputType = {
     total?: true
+    exchangeRate?: true
   }
 
   export type SaleRefundSumAggregateInputType = {
     total?: true
+    exchangeRate?: true
   }
 
   export type SaleRefundMinAggregateInputType = {
@@ -14439,6 +14515,8 @@ export namespace Prisma {
     cashierId?: true
     shiftId?: true
     shiftNumber?: true
+    exchangeRate?: true
+    rateSource?: true
     createdAt?: true
   }
 
@@ -14457,6 +14535,8 @@ export namespace Prisma {
     cashierId?: true
     shiftId?: true
     shiftNumber?: true
+    exchangeRate?: true
+    rateSource?: true
     createdAt?: true
   }
 
@@ -14475,6 +14555,8 @@ export namespace Prisma {
     cashierId?: true
     shiftId?: true
     shiftNumber?: true
+    exchangeRate?: true
+    rateSource?: true
     createdAt?: true
     _all?: true
   }
@@ -14580,6 +14662,8 @@ export namespace Prisma {
     cashierId: string | null
     shiftId: string | null
     shiftNumber: string | null
+    exchangeRate: Decimal | null
+    rateSource: string | null
     createdAt: Date
     _count: SaleRefundCountAggregateOutputType | null
     _avg: SaleRefundAvgAggregateOutputType | null
@@ -14617,6 +14701,8 @@ export namespace Prisma {
     cashierId?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
+    exchangeRate?: boolean
+    rateSource?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     sale?: boolean | SaleDefaultArgs<ExtArgs>
@@ -14639,6 +14725,8 @@ export namespace Prisma {
     cashierId?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
+    exchangeRate?: boolean
+    rateSource?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     sale?: boolean | SaleDefaultArgs<ExtArgs>
@@ -14659,6 +14747,8 @@ export namespace Prisma {
     cashierId?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
+    exchangeRate?: boolean
+    rateSource?: boolean
     createdAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     sale?: boolean | SaleDefaultArgs<ExtArgs>
@@ -14679,10 +14769,12 @@ export namespace Prisma {
     cashierId?: boolean
     shiftId?: boolean
     shiftNumber?: boolean
+    exchangeRate?: boolean
+    rateSource?: boolean
     createdAt?: boolean
   }
 
-  export type SaleRefundOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "refundNumber" | "saleId" | "saleNumber" | "customerId" | "customerName" | "method" | "reason" | "total" | "cashier" | "cashierId" | "shiftId" | "shiftNumber" | "createdAt", ExtArgs["result"]["saleRefund"]>
+  export type SaleRefundOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "refundNumber" | "saleId" | "saleNumber" | "customerId" | "customerName" | "method" | "reason" | "total" | "cashier" | "cashierId" | "shiftId" | "shiftNumber" | "exchangeRate" | "rateSource" | "createdAt", ExtArgs["result"]["saleRefund"]>
   export type SaleRefundInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     sale?: boolean | SaleDefaultArgs<ExtArgs>
@@ -14720,6 +14812,11 @@ export namespace Prisma {
       cashierId: string | null
       shiftId: string | null
       shiftNumber: string | null
+      /**
+       * REFUND-INTEGRITY-1: original sale rate (null when the sale recorded none — never invented).
+       */
+      exchangeRate: Prisma.Decimal | null
+      rateSource: string | null
       createdAt: Date
     }, ExtArgs["result"]["saleRefund"]>
     composites: {}
@@ -15161,6 +15258,8 @@ export namespace Prisma {
     readonly cashierId: FieldRef<"SaleRefund", 'String'>
     readonly shiftId: FieldRef<"SaleRefund", 'String'>
     readonly shiftNumber: FieldRef<"SaleRefund", 'String'>
+    readonly exchangeRate: FieldRef<"SaleRefund", 'Decimal'>
+    readonly rateSource: FieldRef<"SaleRefund", 'String'>
     readonly createdAt: FieldRef<"SaleRefund", 'DateTime'>
   }
     
@@ -15638,6 +15737,7 @@ export namespace Prisma {
     unitPrice: Decimal | null
     cost: Decimal | null
     total: Decimal | null
+    saleLineId: string | null
   }
 
   export type RefundItemMaxAggregateOutputType = {
@@ -15650,6 +15750,7 @@ export namespace Prisma {
     unitPrice: Decimal | null
     cost: Decimal | null
     total: Decimal | null
+    saleLineId: string | null
   }
 
   export type RefundItemCountAggregateOutputType = {
@@ -15662,6 +15763,8 @@ export namespace Prisma {
     unitPrice: number
     cost: number
     total: number
+    saleLineId: number
+    batchAllocations: number
     _all: number
   }
 
@@ -15692,6 +15795,7 @@ export namespace Prisma {
     unitPrice?: true
     cost?: true
     total?: true
+    saleLineId?: true
   }
 
   export type RefundItemMaxAggregateInputType = {
@@ -15704,6 +15808,7 @@ export namespace Prisma {
     unitPrice?: true
     cost?: true
     total?: true
+    saleLineId?: true
   }
 
   export type RefundItemCountAggregateInputType = {
@@ -15716,6 +15821,8 @@ export namespace Prisma {
     unitPrice?: true
     cost?: true
     total?: true
+    saleLineId?: true
+    batchAllocations?: true
     _all?: true
   }
 
@@ -15815,6 +15922,8 @@ export namespace Prisma {
     unitPrice: Decimal
     cost: Decimal | null
     total: Decimal
+    saleLineId: string | null
+    batchAllocations: JsonValue | null
     _count: RefundItemCountAggregateOutputType | null
     _avg: RefundItemAvgAggregateOutputType | null
     _sum: RefundItemSumAggregateOutputType | null
@@ -15846,6 +15955,8 @@ export namespace Prisma {
     unitPrice?: boolean
     cost?: boolean
     total?: boolean
+    saleLineId?: boolean
+    batchAllocations?: boolean
     refund?: boolean | SaleRefundDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["refundItem"]>
 
@@ -15859,6 +15970,8 @@ export namespace Prisma {
     unitPrice?: boolean
     cost?: boolean
     total?: boolean
+    saleLineId?: boolean
+    batchAllocations?: boolean
     refund?: boolean | SaleRefundDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["refundItem"]>
 
@@ -15872,6 +15985,8 @@ export namespace Prisma {
     unitPrice?: boolean
     cost?: boolean
     total?: boolean
+    saleLineId?: boolean
+    batchAllocations?: boolean
     refund?: boolean | SaleRefundDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["refundItem"]>
 
@@ -15885,9 +16000,11 @@ export namespace Prisma {
     unitPrice?: boolean
     cost?: boolean
     total?: boolean
+    saleLineId?: boolean
+    batchAllocations?: boolean
   }
 
-  export type RefundItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "refundId" | "productId" | "productName" | "barcode" | "quantity" | "unitPrice" | "cost" | "total", ExtArgs["result"]["refundItem"]>
+  export type RefundItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "refundId" | "productId" | "productName" | "barcode" | "quantity" | "unitPrice" | "cost" | "total" | "saleLineId" | "batchAllocations", ExtArgs["result"]["refundItem"]>
   export type RefundItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     refund?: boolean | SaleRefundDefaultArgs<ExtArgs>
   }
@@ -15913,6 +16030,11 @@ export namespace Prisma {
       unitPrice: Prisma.Decimal
       cost: Prisma.Decimal | null
       total: Prisma.Decimal
+      /**
+       * REFUND-INTEGRITY-1: sale line refunded (lineId or legacy-product:<id>) and lots restored.
+       */
+      saleLineId: string | null
+      batchAllocations: Prisma.JsonValue | null
     }, ExtArgs["result"]["refundItem"]>
     composites: {}
   }
@@ -16346,6 +16468,8 @@ export namespace Prisma {
     readonly unitPrice: FieldRef<"RefundItem", 'Decimal'>
     readonly cost: FieldRef<"RefundItem", 'Decimal'>
     readonly total: FieldRef<"RefundItem", 'Decimal'>
+    readonly saleLineId: FieldRef<"RefundItem", 'String'>
+    readonly batchAllocations: FieldRef<"RefundItem", 'Json'>
   }
     
 
@@ -44659,6 +44783,7 @@ export namespace Prisma {
     shiftNumber: 'shiftNumber',
     payableLbp: 'payableLbp',
     status: 'status',
+    refundVersion: 'refundVersion',
     createdAt: 'createdAt'
   };
 
@@ -44674,7 +44799,10 @@ export namespace Prisma {
     quantity: 'quantity',
     unitPrice: 'unitPrice',
     total: 'total',
-    cost: 'cost'
+    cost: 'cost',
+    lineId: 'lineId',
+    lineIndex: 'lineIndex',
+    batchAllocations: 'batchAllocations'
   };
 
   export type SaleItemScalarFieldEnum = (typeof SaleItemScalarFieldEnum)[keyof typeof SaleItemScalarFieldEnum]
@@ -44712,6 +44840,8 @@ export namespace Prisma {
     cashierId: 'cashierId',
     shiftId: 'shiftId',
     shiftNumber: 'shiftNumber',
+    exchangeRate: 'exchangeRate',
+    rateSource: 'rateSource',
     createdAt: 'createdAt'
   };
 
@@ -44727,7 +44857,9 @@ export namespace Prisma {
     quantity: 'quantity',
     unitPrice: 'unitPrice',
     cost: 'cost',
-    total: 'total'
+    total: 'total',
+    saleLineId: 'saleLineId',
+    batchAllocations: 'batchAllocations'
   };
 
   export type RefundItemScalarFieldEnum = (typeof RefundItemScalarFieldEnum)[keyof typeof RefundItemScalarFieldEnum]
@@ -45320,6 +45452,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Json'
+   */
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+  /**
+   * Reference to a field of type 'QueryMode'
+   */
+  export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+  /**
    * Reference to a field of type 'RefundMethod'
    */
   export type EnumRefundMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RefundMethod'>
@@ -45372,20 +45518,6 @@ export namespace Prisma {
    * Reference to a field of type 'ShiftStatus[]'
    */
   export type ListEnumShiftStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ShiftStatus[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Json'
-   */
-  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
-    
-
-
-  /**
-   * Reference to a field of type 'QueryMode'
-   */
-  export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -46085,6 +46217,7 @@ export namespace Prisma {
     shiftNumber?: StringNullableFilter<"Sale"> | string | null
     payableLbp?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFilter<"Sale"> | $Enums.SaleStatus
+    refundVersion?: IntFilter<"Sale"> | number
     createdAt?: DateTimeFilter<"Sale"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     items?: SaleItemListRelationFilter
@@ -46112,6 +46245,7 @@ export namespace Prisma {
     shiftNumber?: SortOrderInput | SortOrder
     payableLbp?: SortOrderInput | SortOrder
     status?: SortOrder
+    refundVersion?: SortOrder
     createdAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
     items?: SaleItemOrderByRelationAggregateInput
@@ -46143,6 +46277,7 @@ export namespace Prisma {
     shiftNumber?: StringNullableFilter<"Sale"> | string | null
     payableLbp?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFilter<"Sale"> | $Enums.SaleStatus
+    refundVersion?: IntFilter<"Sale"> | number
     createdAt?: DateTimeFilter<"Sale"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     items?: SaleItemListRelationFilter
@@ -46170,6 +46305,7 @@ export namespace Prisma {
     shiftNumber?: SortOrderInput | SortOrder
     payableLbp?: SortOrderInput | SortOrder
     status?: SortOrder
+    refundVersion?: SortOrder
     createdAt?: SortOrder
     _count?: SaleCountOrderByAggregateInput
     _avg?: SaleAvgOrderByAggregateInput
@@ -46201,6 +46337,7 @@ export namespace Prisma {
     shiftNumber?: StringNullableWithAggregatesFilter<"Sale"> | string | null
     payableLbp?: DecimalNullableWithAggregatesFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusWithAggregatesFilter<"Sale"> | $Enums.SaleStatus
+    refundVersion?: IntWithAggregatesFilter<"Sale"> | number
     createdAt?: DateTimeWithAggregatesFilter<"Sale"> | Date | string
   }
 
@@ -46217,6 +46354,9 @@ export namespace Prisma {
     unitPrice?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
     total?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    lineId?: StringNullableFilter<"SaleItem"> | string | null
+    lineIndex?: IntNullableFilter<"SaleItem"> | number | null
+    batchAllocations?: JsonNullableFilter<"SaleItem">
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
   }
 
@@ -46230,11 +46370,15 @@ export namespace Prisma {
     unitPrice?: SortOrder
     total?: SortOrder
     cost?: SortOrder
+    lineId?: SortOrderInput | SortOrder
+    lineIndex?: SortOrderInput | SortOrder
+    batchAllocations?: SortOrderInput | SortOrder
     sale?: SaleOrderByWithRelationInput
   }
 
   export type SaleItemWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    saleId_lineId?: SaleItemSaleIdLineIdCompoundUniqueInput
     AND?: SaleItemWhereInput | SaleItemWhereInput[]
     OR?: SaleItemWhereInput[]
     NOT?: SaleItemWhereInput | SaleItemWhereInput[]
@@ -46246,8 +46390,11 @@ export namespace Prisma {
     unitPrice?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
     total?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    lineId?: StringNullableFilter<"SaleItem"> | string | null
+    lineIndex?: IntNullableFilter<"SaleItem"> | number | null
+    batchAllocations?: JsonNullableFilter<"SaleItem">
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
-  }, "id">
+  }, "id" | "saleId_lineId">
 
   export type SaleItemOrderByWithAggregationInput = {
     id?: SortOrder
@@ -46259,6 +46406,9 @@ export namespace Prisma {
     unitPrice?: SortOrder
     total?: SortOrder
     cost?: SortOrder
+    lineId?: SortOrderInput | SortOrder
+    lineIndex?: SortOrderInput | SortOrder
+    batchAllocations?: SortOrderInput | SortOrder
     _count?: SaleItemCountOrderByAggregateInput
     _avg?: SaleItemAvgOrderByAggregateInput
     _max?: SaleItemMaxOrderByAggregateInput
@@ -46279,6 +46429,9 @@ export namespace Prisma {
     unitPrice?: DecimalWithAggregatesFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
     total?: DecimalWithAggregatesFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalWithAggregatesFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    lineId?: StringNullableWithAggregatesFilter<"SaleItem"> | string | null
+    lineIndex?: IntNullableWithAggregatesFilter<"SaleItem"> | number | null
+    batchAllocations?: JsonNullableWithAggregatesFilter<"SaleItem">
   }
 
   export type SaleTenderWhereInput = {
@@ -46386,6 +46539,8 @@ export namespace Prisma {
     cashierId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftNumber?: StringNullableFilter<"SaleRefund"> | string | null
+    exchangeRate?: DecimalNullableFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string | null
+    rateSource?: StringNullableFilter<"SaleRefund"> | string | null
     createdAt?: DateTimeFilter<"SaleRefund"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
@@ -46407,6 +46562,8 @@ export namespace Prisma {
     cashierId?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
+    exchangeRate?: SortOrderInput | SortOrder
+    rateSource?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     tenant?: TenantOrderByWithRelationInput
     sale?: SaleOrderByWithRelationInput
@@ -46432,6 +46589,8 @@ export namespace Prisma {
     cashierId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftNumber?: StringNullableFilter<"SaleRefund"> | string | null
+    exchangeRate?: DecimalNullableFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string | null
+    rateSource?: StringNullableFilter<"SaleRefund"> | string | null
     createdAt?: DateTimeFilter<"SaleRefund"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
@@ -46453,6 +46612,8 @@ export namespace Prisma {
     cashierId?: SortOrderInput | SortOrder
     shiftId?: SortOrderInput | SortOrder
     shiftNumber?: SortOrderInput | SortOrder
+    exchangeRate?: SortOrderInput | SortOrder
+    rateSource?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: SaleRefundCountOrderByAggregateInput
     _avg?: SaleRefundAvgOrderByAggregateInput
@@ -46479,6 +46640,8 @@ export namespace Prisma {
     cashierId?: StringNullableWithAggregatesFilter<"SaleRefund"> | string | null
     shiftId?: StringNullableWithAggregatesFilter<"SaleRefund"> | string | null
     shiftNumber?: StringNullableWithAggregatesFilter<"SaleRefund"> | string | null
+    exchangeRate?: DecimalNullableWithAggregatesFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string | null
+    rateSource?: StringNullableWithAggregatesFilter<"SaleRefund"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"SaleRefund"> | Date | string
   }
 
@@ -46495,6 +46658,8 @@ export namespace Prisma {
     unitPrice?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalNullableFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string | null
     total?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
+    saleLineId?: StringNullableFilter<"RefundItem"> | string | null
+    batchAllocations?: JsonNullableFilter<"RefundItem">
     refund?: XOR<SaleRefundScalarRelationFilter, SaleRefundWhereInput>
   }
 
@@ -46508,6 +46673,8 @@ export namespace Prisma {
     unitPrice?: SortOrder
     cost?: SortOrderInput | SortOrder
     total?: SortOrder
+    saleLineId?: SortOrderInput | SortOrder
+    batchAllocations?: SortOrderInput | SortOrder
     refund?: SaleRefundOrderByWithRelationInput
   }
 
@@ -46524,6 +46691,8 @@ export namespace Prisma {
     unitPrice?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalNullableFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string | null
     total?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
+    saleLineId?: StringNullableFilter<"RefundItem"> | string | null
+    batchAllocations?: JsonNullableFilter<"RefundItem">
     refund?: XOR<SaleRefundScalarRelationFilter, SaleRefundWhereInput>
   }, "id">
 
@@ -46537,6 +46706,8 @@ export namespace Prisma {
     unitPrice?: SortOrder
     cost?: SortOrderInput | SortOrder
     total?: SortOrder
+    saleLineId?: SortOrderInput | SortOrder
+    batchAllocations?: SortOrderInput | SortOrder
     _count?: RefundItemCountOrderByAggregateInput
     _avg?: RefundItemAvgOrderByAggregateInput
     _max?: RefundItemMaxOrderByAggregateInput
@@ -46557,6 +46728,8 @@ export namespace Prisma {
     unitPrice?: DecimalWithAggregatesFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalNullableWithAggregatesFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string | null
     total?: DecimalWithAggregatesFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
+    saleLineId?: StringNullableWithAggregatesFilter<"RefundItem"> | string | null
+    batchAllocations?: JsonNullableWithAggregatesFilter<"RefundItem">
   }
 
   export type CustomerWhereInput = {
@@ -49567,6 +49740,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSalesInput
     items?: SaleItemCreateNestedManyWithoutSaleInput
@@ -49594,6 +49768,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
     items?: SaleItemUncheckedCreateNestedManyWithoutSaleInput
     refunds?: SaleRefundUncheckedCreateNestedManyWithoutSaleInput
@@ -49619,6 +49794,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSalesNestedInput
     items?: SaleItemUpdateManyWithoutSaleNestedInput
@@ -49646,6 +49822,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: SaleItemUncheckedUpdateManyWithoutSaleNestedInput
     refunds?: SaleRefundUncheckedUpdateManyWithoutSaleNestedInput
@@ -49672,6 +49849,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
   }
 
@@ -49694,6 +49872,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -49717,6 +49896,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -49729,6 +49909,9 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
+    lineId?: string | null
+    lineIndex?: number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     sale: SaleCreateNestedOneWithoutItemsInput
   }
 
@@ -49742,6 +49925,9 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
+    lineId?: string | null
+    lineIndex?: number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SaleItemUpdateInput = {
@@ -49753,6 +49939,9 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    lineId?: NullableStringFieldUpdateOperationsInput | string | null
+    lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     sale?: SaleUpdateOneRequiredWithoutItemsNestedInput
   }
 
@@ -49766,6 +49955,9 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    lineId?: NullableStringFieldUpdateOperationsInput | string | null
+    lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SaleItemCreateManyInput = {
@@ -49778,6 +49970,9 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
+    lineId?: string | null
+    lineIndex?: number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SaleItemUpdateManyMutationInput = {
@@ -49789,6 +49984,9 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    lineId?: NullableStringFieldUpdateOperationsInput | string | null
+    lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SaleItemUncheckedUpdateManyInput = {
@@ -49801,6 +49999,9 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    lineId?: NullableStringFieldUpdateOperationsInput | string | null
+    lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SaleTenderCreateInput = {
@@ -49913,6 +50114,8 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    exchangeRate?: Decimal | DecimalJsLike | number | string | null
+    rateSource?: string | null
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutRefundsInput
     sale: SaleCreateNestedOneWithoutRefundsInput
@@ -49934,6 +50137,8 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    exchangeRate?: Decimal | DecimalJsLike | number | string | null
+    rateSource?: string | null
     createdAt?: Date | string
     items?: RefundItemUncheckedCreateNestedManyWithoutRefundInput
   }
@@ -49951,6 +50156,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutRefundsNestedInput
     sale?: SaleUpdateOneRequiredWithoutRefundsNestedInput
@@ -49972,6 +50179,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: RefundItemUncheckedUpdateManyWithoutRefundNestedInput
   }
@@ -49991,6 +50200,8 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    exchangeRate?: Decimal | DecimalJsLike | number | string | null
+    rateSource?: string | null
     createdAt?: Date | string
   }
 
@@ -50007,6 +50218,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -50025,6 +50238,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -50037,6 +50252,8 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string | null
     total: Decimal | DecimalJsLike | number | string
+    saleLineId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     refund: SaleRefundCreateNestedOneWithoutItemsInput
   }
 
@@ -50050,6 +50267,8 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string | null
     total: Decimal | DecimalJsLike | number | string
+    saleLineId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type RefundItemUpdateInput = {
@@ -50061,6 +50280,8 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    saleLineId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     refund?: SaleRefundUpdateOneRequiredWithoutItemsNestedInput
   }
 
@@ -50074,6 +50295,8 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    saleLineId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type RefundItemCreateManyInput = {
@@ -50086,6 +50309,8 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string | null
     total: Decimal | DecimalJsLike | number | string
+    saleLineId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type RefundItemUpdateManyMutationInput = {
@@ -50097,6 +50322,8 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    saleLineId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type RefundItemUncheckedUpdateManyInput = {
@@ -50109,6 +50336,8 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    saleLineId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type CustomerCreateInput = {
@@ -53533,6 +53762,7 @@ export namespace Prisma {
     shiftNumber?: SortOrder
     payableLbp?: SortOrder
     status?: SortOrder
+    refundVersion?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -53544,6 +53774,7 @@ export namespace Prisma {
     cost?: SortOrder
     profit?: SortOrder
     payableLbp?: SortOrder
+    refundVersion?: SortOrder
   }
 
   export type SaleMaxOrderByAggregateInput = {
@@ -53566,6 +53797,7 @@ export namespace Prisma {
     shiftNumber?: SortOrder
     payableLbp?: SortOrder
     status?: SortOrder
+    refundVersion?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -53589,6 +53821,7 @@ export namespace Prisma {
     shiftNumber?: SortOrder
     payableLbp?: SortOrder
     status?: SortOrder
+    refundVersion?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -53600,6 +53833,7 @@ export namespace Prisma {
     cost?: SortOrder
     profit?: SortOrder
     payableLbp?: SortOrder
+    refundVersion?: SortOrder
   }
 
   export type EnumSalePaymentMethodWithAggregatesFilter<$PrismaModel = never> = {
@@ -53621,10 +53855,38 @@ export namespace Prisma {
     _min?: NestedEnumSaleStatusFilter<$PrismaModel>
     _max?: NestedEnumSaleStatusFilter<$PrismaModel>
   }
+  export type JsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type SaleScalarRelationFilter = {
     is?: SaleWhereInput
     isNot?: SaleWhereInput
+  }
+
+  export type SaleItemSaleIdLineIdCompoundUniqueInput = {
+    saleId: string
+    lineId: string
   }
 
   export type SaleItemCountOrderByAggregateInput = {
@@ -53637,6 +53899,9 @@ export namespace Prisma {
     unitPrice?: SortOrder
     total?: SortOrder
     cost?: SortOrder
+    lineId?: SortOrder
+    lineIndex?: SortOrder
+    batchAllocations?: SortOrder
   }
 
   export type SaleItemAvgOrderByAggregateInput = {
@@ -53645,6 +53910,7 @@ export namespace Prisma {
     unitPrice?: SortOrder
     total?: SortOrder
     cost?: SortOrder
+    lineIndex?: SortOrder
   }
 
   export type SaleItemMaxOrderByAggregateInput = {
@@ -53657,6 +53923,8 @@ export namespace Prisma {
     unitPrice?: SortOrder
     total?: SortOrder
     cost?: SortOrder
+    lineId?: SortOrder
+    lineIndex?: SortOrder
   }
 
   export type SaleItemMinOrderByAggregateInput = {
@@ -53669,6 +53937,8 @@ export namespace Prisma {
     unitPrice?: SortOrder
     total?: SortOrder
     cost?: SortOrder
+    lineId?: SortOrder
+    lineIndex?: SortOrder
   }
 
   export type SaleItemSumOrderByAggregateInput = {
@@ -53677,6 +53947,33 @@ export namespace Prisma {
     unitPrice?: SortOrder
     total?: SortOrder
     cost?: SortOrder
+    lineIndex?: SortOrder
+  }
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedJsonNullableFilter<$PrismaModel>
+    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type SaleTenderCountOrderByAggregateInput = {
@@ -53778,11 +54075,14 @@ export namespace Prisma {
     cashierId?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
+    exchangeRate?: SortOrder
+    rateSource?: SortOrder
     createdAt?: SortOrder
   }
 
   export type SaleRefundAvgOrderByAggregateInput = {
     total?: SortOrder
+    exchangeRate?: SortOrder
   }
 
   export type SaleRefundMaxOrderByAggregateInput = {
@@ -53800,6 +54100,8 @@ export namespace Prisma {
     cashierId?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
+    exchangeRate?: SortOrder
+    rateSource?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -53818,11 +54120,14 @@ export namespace Prisma {
     cashierId?: SortOrder
     shiftId?: SortOrder
     shiftNumber?: SortOrder
+    exchangeRate?: SortOrder
+    rateSource?: SortOrder
     createdAt?: SortOrder
   }
 
   export type SaleRefundSumOrderByAggregateInput = {
     total?: SortOrder
+    exchangeRate?: SortOrder
   }
 
   export type EnumRefundMethodWithAggregatesFilter<$PrismaModel = never> = {
@@ -53850,6 +54155,8 @@ export namespace Prisma {
     unitPrice?: SortOrder
     cost?: SortOrder
     total?: SortOrder
+    saleLineId?: SortOrder
+    batchAllocations?: SortOrder
   }
 
   export type RefundItemAvgOrderByAggregateInput = {
@@ -53870,6 +54177,7 @@ export namespace Prisma {
     unitPrice?: SortOrder
     cost?: SortOrder
     total?: SortOrder
+    saleLineId?: SortOrder
   }
 
   export type RefundItemMinOrderByAggregateInput = {
@@ -53882,6 +54190,7 @@ export namespace Prisma {
     unitPrice?: SortOrder
     cost?: SortOrder
     total?: SortOrder
+    saleLineId?: SortOrder
   }
 
   export type RefundItemSumOrderByAggregateInput = {
@@ -54428,29 +54737,6 @@ export namespace Prisma {
     _min?: NestedEnumShiftStatusFilter<$PrismaModel>
     _max?: NestedEnumShiftStatusFilter<$PrismaModel>
   }
-  export type JsonNullableFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-  }
 
   export type AuditEventCountOrderByAggregateInput = {
     id?: SortOrder
@@ -54487,32 +54773,6 @@ export namespace Prisma {
     userName?: SortOrder
     userRole?: SortOrder
     createdAt?: SortOrder
-  }
-  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedJsonNullableFilter<$PrismaModel>
-    _max?: NestedJsonNullableFilter<$PrismaModel>
   }
 
   export type ExpenseTenantIdExpenseNumberCompoundUniqueInput = {
@@ -58556,6 +58816,29 @@ export namespace Prisma {
     _min?: NestedEnumSaleStatusFilter<$PrismaModel>
     _max?: NestedEnumSaleStatusFilter<$PrismaModel>
   }
+  export type NestedJsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    path?: string[]
+    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
+    string_contains?: string | StringFieldRefInput<$PrismaModel>
+    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
+    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
+    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+  }
 
   export type NestedEnumRefundMethodFilter<$PrismaModel = never> = {
     equals?: $Enums.RefundMethod | EnumRefundMethodFieldRefInput<$PrismaModel>
@@ -58623,29 +58906,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumShiftStatusFilter<$PrismaModel>
     _max?: NestedEnumShiftStatusFilter<$PrismaModel>
-  }
-  export type NestedJsonNullableFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<NestedJsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
   }
 
   export type NestedEnumInventoryBatchStatusFilter<$PrismaModel = never> = {
@@ -58857,6 +59117,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
     items?: SaleItemCreateNestedManyWithoutSaleInput
     refunds?: SaleRefundCreateNestedManyWithoutSaleInput
@@ -58882,6 +59143,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
     items?: SaleItemUncheckedCreateNestedManyWithoutSaleInput
     refunds?: SaleRefundUncheckedCreateNestedManyWithoutSaleInput
@@ -58911,6 +59173,8 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    exchangeRate?: Decimal | DecimalJsLike | number | string | null
+    rateSource?: string | null
     createdAt?: Date | string
     sale: SaleCreateNestedOneWithoutRefundsInput
     items?: RefundItemCreateNestedManyWithoutRefundInput
@@ -58930,6 +59194,8 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    exchangeRate?: Decimal | DecimalJsLike | number | string | null
+    rateSource?: string | null
     createdAt?: Date | string
     items?: RefundItemUncheckedCreateNestedManyWithoutRefundInput
   }
@@ -59929,6 +60195,7 @@ export namespace Prisma {
     shiftNumber?: StringNullableFilter<"Sale"> | string | null
     payableLbp?: DecimalNullableFilter<"Sale"> | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFilter<"Sale"> | $Enums.SaleStatus
+    refundVersion?: IntFilter<"Sale"> | number
     createdAt?: DateTimeFilter<"Sale"> | Date | string
   }
 
@@ -59966,6 +60233,8 @@ export namespace Prisma {
     cashierId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftId?: StringNullableFilter<"SaleRefund"> | string | null
     shiftNumber?: StringNullableFilter<"SaleRefund"> | string | null
+    exchangeRate?: DecimalNullableFilter<"SaleRefund"> | Decimal | DecimalJsLike | number | string | null
+    rateSource?: StringNullableFilter<"SaleRefund"> | string | null
     createdAt?: DateTimeFilter<"SaleRefund"> | Date | string
   }
 
@@ -62225,6 +62494,9 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
+    lineId?: string | null
+    lineIndex?: number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SaleItemUncheckedCreateWithoutSaleInput = {
@@ -62236,6 +62508,9 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
+    lineId?: string | null
+    lineIndex?: number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SaleItemCreateOrConnectWithoutSaleInput = {
@@ -62261,6 +62536,8 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    exchangeRate?: Decimal | DecimalJsLike | number | string | null
+    rateSource?: string | null
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutRefundsInput
     items?: RefundItemCreateNestedManyWithoutRefundInput
@@ -62280,6 +62557,8 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    exchangeRate?: Decimal | DecimalJsLike | number | string | null
+    rateSource?: string | null
     createdAt?: Date | string
     items?: RefundItemUncheckedCreateNestedManyWithoutRefundInput
   }
@@ -62463,6 +62742,9 @@ export namespace Prisma {
     unitPrice?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
     total?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalFilter<"SaleItem"> | Decimal | DecimalJsLike | number | string
+    lineId?: StringNullableFilter<"SaleItem"> | string | null
+    lineIndex?: IntNullableFilter<"SaleItem"> | number | null
+    batchAllocations?: JsonNullableFilter<"SaleItem">
   }
 
   export type SaleRefundUpsertWithWhereUniqueWithoutSaleInput = {
@@ -62537,6 +62819,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSalesInput
     refunds?: SaleRefundCreateNestedManyWithoutSaleInput
@@ -62563,6 +62846,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
     refunds?: SaleRefundUncheckedCreateNestedManyWithoutSaleInput
     tender?: SaleTenderUncheckedCreateNestedOneWithoutSaleInput
@@ -62603,6 +62887,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSalesNestedInput
     refunds?: SaleRefundUpdateManyWithoutSaleNestedInput
@@ -62629,6 +62914,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     refunds?: SaleRefundUncheckedUpdateManyWithoutSaleNestedInput
     tender?: SaleTenderUncheckedUpdateOneWithoutSaleNestedInput
@@ -62653,6 +62939,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSalesInput
     items?: SaleItemCreateNestedManyWithoutSaleInput
@@ -62679,6 +62966,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
     items?: SaleItemUncheckedCreateNestedManyWithoutSaleInput
     refunds?: SaleRefundUncheckedCreateNestedManyWithoutSaleInput
@@ -62719,6 +63007,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSalesNestedInput
     items?: SaleItemUpdateManyWithoutSaleNestedInput
@@ -62745,6 +63034,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: SaleItemUncheckedUpdateManyWithoutSaleNestedInput
     refunds?: SaleRefundUncheckedUpdateManyWithoutSaleNestedInput
@@ -62872,6 +63162,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutSalesInput
     items?: SaleItemCreateNestedManyWithoutSaleInput
@@ -62898,6 +63189,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
     items?: SaleItemUncheckedCreateNestedManyWithoutSaleInput
     tender?: SaleTenderUncheckedCreateNestedOneWithoutSaleInput
@@ -62917,6 +63209,8 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string | null
     total: Decimal | DecimalJsLike | number | string
+    saleLineId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type RefundItemUncheckedCreateWithoutRefundInput = {
@@ -62928,6 +63222,8 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string | null
     total: Decimal | DecimalJsLike | number | string
+    saleLineId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type RefundItemCreateOrConnectWithoutRefundInput = {
@@ -63079,6 +63375,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutSalesNestedInput
     items?: SaleItemUpdateManyWithoutSaleNestedInput
@@ -63105,6 +63402,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: SaleItemUncheckedUpdateManyWithoutSaleNestedInput
     tender?: SaleTenderUncheckedUpdateOneWithoutSaleNestedInput
@@ -63139,6 +63437,8 @@ export namespace Prisma {
     unitPrice?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
     cost?: DecimalNullableFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string | null
     total?: DecimalFilter<"RefundItem"> | Decimal | DecimalJsLike | number | string
+    saleLineId?: StringNullableFilter<"RefundItem"> | string | null
+    batchAllocations?: JsonNullableFilter<"RefundItem">
   }
 
   export type SaleRefundCreateWithoutItemsInput = {
@@ -63154,6 +63454,8 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    exchangeRate?: Decimal | DecimalJsLike | number | string | null
+    rateSource?: string | null
     createdAt?: Date | string
     tenant: TenantCreateNestedOneWithoutRefundsInput
     sale: SaleCreateNestedOneWithoutRefundsInput
@@ -63174,6 +63476,8 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    exchangeRate?: Decimal | DecimalJsLike | number | string | null
+    rateSource?: string | null
     createdAt?: Date | string
   }
 
@@ -63206,6 +63510,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutRefundsNestedInput
     sale?: SaleUpdateOneRequiredWithoutRefundsNestedInput
@@ -63226,6 +63532,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -69771,6 +70079,7 @@ export namespace Prisma {
     shiftNumber?: string | null
     payableLbp?: Decimal | DecimalJsLike | number | string | null
     status?: $Enums.SaleStatus
+    refundVersion?: number
     createdAt?: Date | string
   }
 
@@ -69788,6 +70097,8 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    exchangeRate?: Decimal | DecimalJsLike | number | string | null
+    rateSource?: string | null
     createdAt?: Date | string
   }
 
@@ -70256,6 +70567,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: SaleItemUpdateManyWithoutSaleNestedInput
     refunds?: SaleRefundUpdateManyWithoutSaleNestedInput
@@ -70281,6 +70593,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: SaleItemUncheckedUpdateManyWithoutSaleNestedInput
     refunds?: SaleRefundUncheckedUpdateManyWithoutSaleNestedInput
@@ -70306,6 +70619,7 @@ export namespace Prisma {
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
     payableLbp?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     status?: EnumSaleStatusFieldUpdateOperationsInput | $Enums.SaleStatus
+    refundVersion?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -70322,6 +70636,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     sale?: SaleUpdateOneRequiredWithoutRefundsNestedInput
     items?: RefundItemUpdateManyWithoutRefundNestedInput
@@ -70341,6 +70657,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: RefundItemUncheckedUpdateManyWithoutRefundNestedInput
   }
@@ -70359,6 +70677,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -72008,6 +72328,9 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     total: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string
+    lineId?: string | null
+    lineIndex?: number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SaleRefundCreateManySaleInput = {
@@ -72024,6 +72347,8 @@ export namespace Prisma {
     cashierId?: string | null
     shiftId?: string | null
     shiftNumber?: string | null
+    exchangeRate?: Decimal | DecimalJsLike | number | string | null
+    rateSource?: string | null
     createdAt?: Date | string
   }
 
@@ -72036,6 +72361,9 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    lineId?: NullableStringFieldUpdateOperationsInput | string | null
+    lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SaleItemUncheckedUpdateWithoutSaleInput = {
@@ -72047,6 +72375,9 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    lineId?: NullableStringFieldUpdateOperationsInput | string | null
+    lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SaleItemUncheckedUpdateManyWithoutSaleInput = {
@@ -72058,6 +72389,9 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    lineId?: NullableStringFieldUpdateOperationsInput | string | null
+    lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type SaleRefundUpdateWithoutSaleInput = {
@@ -72073,6 +72407,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     tenant?: TenantUpdateOneRequiredWithoutRefundsNestedInput
     items?: RefundItemUpdateManyWithoutRefundNestedInput
@@ -72092,6 +72428,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     items?: RefundItemUncheckedUpdateManyWithoutRefundNestedInput
   }
@@ -72110,6 +72448,8 @@ export namespace Prisma {
     cashierId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftId?: NullableStringFieldUpdateOperationsInput | string | null
     shiftNumber?: NullableStringFieldUpdateOperationsInput | string | null
+    exchangeRate?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    rateSource?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -72122,6 +72462,8 @@ export namespace Prisma {
     unitPrice: Decimal | DecimalJsLike | number | string
     cost?: Decimal | DecimalJsLike | number | string | null
     total: Decimal | DecimalJsLike | number | string
+    saleLineId?: string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type RefundItemUpdateWithoutRefundInput = {
@@ -72133,6 +72475,8 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    saleLineId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type RefundItemUncheckedUpdateWithoutRefundInput = {
@@ -72144,6 +72488,8 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    saleLineId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type RefundItemUncheckedUpdateManyWithoutRefundInput = {
@@ -72155,6 +72501,8 @@ export namespace Prisma {
     unitPrice?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     cost?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     total?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    saleLineId?: NullableStringFieldUpdateOperationsInput | string | null
+    batchAllocations?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type DebtSaleCreateManyCustomerInput = {

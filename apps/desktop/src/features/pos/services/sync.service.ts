@@ -72,6 +72,20 @@ async function isServerReachable(): Promise<boolean> {
   return _reachInflight
 }
 
+// REFUND-INTEGRITY-1: this client understands sale line ids, sale lot
+// allocations and refund rates; servers omit them for older clients.
+const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "2" }
+
+/**
+ * A rejected refund (or void) is a money conflict: the customer may already
+ * have been paid. Its queue entry is the durable record of the conflict and
+ * must survive "clear stuck"/"remove" until a manager settles it
+ * (refundConflict.service), so it is never silently discarded.
+ */
+export function isMoneyConflictOperation(op: Pick<SyncOperation, "entity" | "action" | "status">) {
+  return op.status === "Rejected" && ((op.entity === "refund" && op.action === "create") || (op.entity === "sale" && op.action === "void"))
+}
+
 const PULL_TARGETS: Record<string, { key: string; event: string }> = {
   products:         { key: "lebanonpos.products.v1",              event: "lebanonpos-products-changed" },
   sales:            { key: "lebanonpos.sales.v1",                 event: "lebanonpos-sales-changed" },
@@ -756,8 +770,13 @@ export function retrySingleSyncOperation(id: string) {
 }
 
 export function removeRejectedOperation(id: string) {
-  const queue = readQueue().filter((op) => op.id !== id || op.status !== "Rejected")
+  const queue = readQueue().filter((op) => op.id !== id || op.status !== "Rejected" || isMoneyConflictOperation(op))
   writeQueue(queue)
+}
+
+/** Only for refundConflict.service, after a manager has recorded how the conflict was settled. */
+export function removeSettledConflictOperation(id: string) {
+  writeQueue(readQueue().filter((op) => op.id !== id))
 }
 
 export function exportSyncDiagnostics() {
@@ -1188,6 +1207,35 @@ const FULL_PULL_ENTITY_MAP: Record<string, string> = {
   cashMovements: "cash-movements",
 }
 
+/**
+ * REFUND-INTEGRITY-1: a full pull replaces a collection with the server's
+ * copy. Sales and refunds that exist only on this device — still waiting to
+ * sync, rejected by the server (a money conflict), or settled after a
+ * rejection — must survive it, or an issued refund would silently vanish.
+ */
+const LOCAL_ONLY_PRESERVED: Record<string, string> = {
+  "lebanonpos.sales.v1": "sale",
+  "lebanonpos.refunds.v1": "refund",
+}
+export function preserveLocalOnlyRecords(key: string, serverRows: any[]): any[] {
+  const entity = LOCAL_ONLY_PRESERVED[key]
+  if (!entity || typeof window === "undefined") return serverRows
+  const unsynced = new Set(
+    readQueue()
+      .filter((op) => op.entity === entity && op.action === "create" && op.status !== "Synced")
+      .map((op) => (op.payload as { id?: string } | undefined)?.id)
+      .filter(Boolean) as string[]
+  )
+  let local: any[] = []
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(key) ?? "[]")
+    local = Array.isArray(parsed) ? parsed : []
+  } catch { /* corrupt local copy — nothing to preserve */ }
+  const onServer = new Set(serverRows.map((row) => row?.id))
+  const keep = local.filter((row) => row?.id && !onServer.has(row.id) && (unsynced.has(row.id) || row.conflict))
+  return keep.length > 0 ? [...keep, ...serverRows] : serverRows
+}
+
 async function pullFullEntity(apiUrl: string, token: string, entityPath: string, target: { key: string; event: string }): Promise<void> {
   let cursor: string | undefined
   const all: any[] = []
@@ -1195,7 +1243,7 @@ async function pullFullEntity(apiUrl: string, token: string, entityPath: string,
     const params = new URLSearchParams({ limit: "5000" })
     if (cursor) params.set("cursor", cursor)
     const res = await fetch(`${apiUrl}/api/sync/pull/full/${entityPath}?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS },
     })
     if (!res.ok) throw new Error(`Pull ${entityPath} failed: ${res.status}`)
     const raw = await res.text()
@@ -1209,7 +1257,7 @@ async function pullFullEntity(apiUrl: string, token: string, entityPath: string,
     cursor = page.nextCursor ? String(page.nextCursor) : undefined
     if (!cursor) break
   }
-  writeLocalWithIndexedDB(target.key, all)
+  writeLocalWithIndexedDB(target.key, preserveLocalOnlyRecords(target.key, all))
   window.dispatchEvent(new Event(target.event))
 }
 
@@ -1357,7 +1405,7 @@ async function _incrementalPull(apiUrl: string, token: string): Promise<void> {
     ? `${apiUrl}/api/sync/pull?since=${encodeURIComponent(sinceParam)}`
     : `${apiUrl}/api/sync/pull`
 
-  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS } })
   if (!response.ok) throw new Error(`Sync pull failed: ${response.status}`)
 
   const data = await response.json()
@@ -1452,7 +1500,7 @@ export function retryFailedSync() {
  */
 export function clearSyncQueue() {
   const queue = readQueue().filter(
-    (op) => op.status !== "Synced" && op.attempts < MAX_ATTEMPTS
+    (op) => (op.status !== "Synced" && op.attempts < MAX_ATTEMPTS) || isMoneyConflictOperation(op)
   )
   writeQueue(queue)
 }
@@ -1462,7 +1510,9 @@ export function clearSyncQueue() {
  */
 export function clearAllSyncOperations() {
   if (canUseStorage()) {
-    window.localStorage.removeItem(SYNC_QUEUE_KEY)
+    const conflicts = readQueue().filter(isMoneyConflictOperation)
+    if (conflicts.length > 0) writeQueue(conflicts)
+    else window.localStorage.removeItem(SYNC_QUEUE_KEY)
   }
   dispatchSyncChanged()
 }

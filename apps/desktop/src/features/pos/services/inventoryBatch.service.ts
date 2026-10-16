@@ -41,7 +41,7 @@ export function getStockMovements(): StockMovement[] {
   return getMovements()
 }
 
-function recordStockMovement(params: {
+export function recordStockMovement(params: {
   productId: number; productName: string; type: MovementType;
   quantity: number; reference: string; note?: string; userId?: string; userName?: string;
 }) {
@@ -492,6 +492,32 @@ export function adjustInventoryBatches(input: InventoryBatchAdjustmentInput) {
   })
 
   return allocations
+}
+
+/**
+ * REFUND-INTEGRITY-1 — apply a refund/void lot plan to this device's lots
+ * (sign 1), or undo it (sign -1) when a refund is rolled back.
+ *
+ * Local only: the server restores lots itself from the sale's recorded
+ * allocations, so nothing is enqueued here (the old path pushed this device's
+ * whole lot table as absolute quantities, clobbering other devices' changes).
+ * Untracked slices (batchId null) and lots this device doesn't know are
+ * skipped; the next pull brings the server's lot balances.
+ */
+export function applyLotRestoration(slices: Array<{ batchId: string | null; quantity: number }>, sign: 1 | -1 = 1) {
+  const batches = getInventoryBatches()
+  let changed = false
+  for (const slice of slices) {
+    if (!slice.batchId || !(slice.quantity > 0)) continue
+    const batch = batches.find((candidate) => candidate.id === slice.batchId)
+    if (!batch) continue
+    batch.quantityRemaining = Math.max(0, Math.round((batch.quantityRemaining + sign * slice.quantity) * 1e6) / 1e6)
+    if (batch.quantityRemaining > 0) batch.status = "Open"
+    updateBatchStatus(batch)
+    changed = true
+  }
+  if (changed) writeBatches(batches)
+  return changed
 }
 
 export function restoreInventoryBatches(items: ConsumeBatchInput[]) {

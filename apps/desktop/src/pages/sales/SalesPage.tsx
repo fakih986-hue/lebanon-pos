@@ -21,7 +21,9 @@ import {
   getRefunds,
   getSales,
   getSalesMetrics,
-  recordRefund,
+  previewRefund,
+  processRefund,
+  refundLineKeyOf,
   subscribeRefunds,
   subscribeSales,
   voidSale,
@@ -30,9 +32,6 @@ import {
   type SaleRefund,
   type RefundItem,
 } from "../../features/pos/services/sales.service"
-import { recordDebtPayment } from "../../features/pos/services/customer.service"
-import { restoreInventoryBatches } from "../../features/pos/services/inventoryBatch.service"
-import { increaseProductStock } from "../../features/pos/services/product.service"
 import { userCan } from "../../features/pos/services/security.service"
 import {
   getRefundMethod,
@@ -47,6 +46,7 @@ import InsightsPanel from "../../features/pos/components/InsightsPanel"
 import ReceiptList from "../../features/pos/components/ReceiptList"
 import ReceiptPreview from "../../features/pos/components/ReceiptPreview"
 import SalesKpiCards from "../../features/pos/components/SalesKpiCards"
+import MoneyConflictsPanel from "../../features/pos/components/MoneyConflictsPanel"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 import { useI18n } from "@lebanonpos/shared"
@@ -151,6 +151,7 @@ export default function SalesPage() {
     refundTotal: number
     refundItems: RefundItem[]
     refundReason: string
+    quantities: Record<string, number>
   } | null>(null)
   const [voidSaleId, setVoidSaleId] = useState<string | null>(null)
 
@@ -239,51 +240,72 @@ export default function SalesPage() {
     printSaleReceipt(sale, settings.usdToLbpRate, refunds)
   }
 
-  function handleRefundQuantityChange(itemId: number, value: string) {
-    setRefundQuantities((q) => ({ ...q, [String(itemId)]: value }))
+  function handleRefundQuantityChange(lineKey: string, value: string) {
+    setRefundQuantities((q) => ({ ...q, [lineKey]: value }))
+  }
+
+  /** Requested quantities per sale-line key, capped at what remains refundable. */
+  function requestedQuantities(sale: Sale) {
+    const quantities: Record<string, number> = {}
+    for (const item of sale.items) {
+      const key = refundLineKeyOf(item)
+      if (key in quantities) continue // legacy lines of one product share a pooled key
+      const qty = Math.min(parseReturnQuantity(refundQuantities[key] ?? ""), getRefundableQuantity(sale, item, refunds))
+      if (qty > 0) quantities[key] = qty
+    }
+    return quantities
   }
 
   function handleRecordRefund(sale: Sale) {
     if (!canRefund) { setRefundStatus(t("pos.permission_required")); return }
-    const saleRefunds = getSaleRefunds(refunds, sale.id)
-    const refundItems = sale.items.map((item) => {
-      const available = getRefundableQuantity(sale, item, refunds)
-      const qty = Math.min(parseReturnQuantity(refundQuantities[String(item.id)] ?? ""), available)
-      let batchAllocations: typeof item.batchAllocations = undefined
-      if (item.batchAllocations && qty > 0) {
-        let remaining = qty
-        batchAllocations = []
-        for (const alloc of item.batchAllocations) {
-          if (remaining <= 0) break
-          const taken = Math.min(remaining, alloc.quantity)
-          batchAllocations.push({ ...alloc, quantity: taken })
-          remaining -= taken
-        }
-      }
-      return { ...item, quantity: qty, total: item.unitPrice * qty, batchAllocations }
-    }).filter((item) => item.quantity > 0)
-
-    if (refundItems.length === 0) { setRefundStatus(t("pos.sales.choose_item_qty")); return }
-    const alreadyRefunded = saleRefunds.reduce((s, r) => s + r.total, 0)
-    const refundTotal = Math.min(Math.max(0, sale.total - alreadyRefunded), getRefundTotal(sale, refundItems))
-    if (refundTotal <= 0) { setRefundStatus(t("pos.sales.no_refundable_balance")); return }
-    setPendingRefund({ sale, refundTotal, refundItems, refundReason })
+    const quantities = requestedQuantities(sale)
+    if (Object.keys(quantities).length === 0) { setRefundStatus(t("pos.sales.choose_item_qty")); return }
+    try {
+      // REFUND-INTEGRITY-1: the amount shown is exactly what will be recorded.
+      const preview = previewRefund({ saleId: sale.id, quantities, reason: refundReason })
+      if (preview.total <= 0) { setRefundStatus(t("pos.sales.no_refundable_balance")); return }
+      const refundItems: RefundItem[] = preview.planned.map((line) => {
+        const item = preview.itemFor(line.key)!
+        return { id: line.productId, name: item.name, barcode: item.barcode, quantity: line.quantity, unitPrice: item.unitPrice, total: item.unitPrice * line.quantity, saleLineId: line.key }
+      })
+      setPendingRefund({ sale, refundTotal: preview.total, refundItems, refundReason, quantities })
+    } catch (error) {
+      setRefundStatus(describeRefundError(error))
+    }
   }
 
   function executeRefund() {
     if (!pendingRefund) return
-    const { sale, refundTotal, refundItems, refundReason } = pendingRefund
-    const refund = recordRefund({ saleId: sale.id, saleNumber: sale.saleNumber, customerId: sale.customerId, customerName: sale.customerName, method: getRefundMethod(sale), reason: refundReason, total: refundTotal, items: refundItems })
-    increaseProductStock(refundItems.map((i) => ({ productId: i.id, quantity: i.quantity })))
-    restoreInventoryBatches(refundItems.map((i) => ({ productId: i.id, productName: i.name, barcode: i.barcode, quantity: i.quantity, fallbackUnitCost: i.cost ?? 0 })))
-    if (sale.paymentMethod === "Debt" && sale.customerId) {
-      recordDebtPayment({ customerId: sale.customerId, amount: refundTotal, method: "Refund Credit", reference: `${refund.refundNumber} return for ${sale.saleNumber}` })
+    const { sale, refundReason, quantities } = pendingRefund
+    try {
+      const refund = processRefund({ saleId: sale.id, quantities, reason: refundReason })
+      setRefunds(getRefunds())
+      setRefundQuantities({})
+      setRefundReason("")
+      setRefundStatus(t("pos.sales.refund_recorded", { refund: refund.refundNumber }))
+    } catch (error) {
+      // Nothing was issued: the refund rolled back, so no money should change hands.
+      setRefundStatus(describeRefundError(error))
+    } finally {
+      setPendingRefund(null)
     }
-    setRefunds(getRefunds())
-    setRefundQuantities({})
-    setRefundReason("")
-    setPendingRefund(null)
-    setRefundStatus(t("pos.sales.refund_recorded", { refund: refund.refundNumber }))
+  }
+
+  function executeVoid(saleId: string) {
+    try {
+      voidSale(saleId)
+    } catch (error) {
+      setRefundStatus(describeRefundError(error))
+    }
+    setVoidSaleId(null)
+  }
+
+  function describeRefundError(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.startsWith("VOID_HAS_REFUNDS")) return t("pos.refund.error_void_has_refunds")
+    if (message.startsWith("REFUND_EXCEEDS")) return t("pos.refund.error_exceeds")
+    if (message.startsWith("REFUND_SALE_VOIDED")) return t("pos.refund.error_sale_voided")
+    return message
   }
 
   const dateRangeOptions: { key: DateRange; label: string }[] = [
@@ -517,6 +539,9 @@ export default function SalesPage() {
         </div>
       )}
 
+      {/* REFUND-INTEGRITY-1: server-rejected refunds stay visible until settled */}
+      <MoneyConflictsPanel />
+
       {/* ── Content ── */}
       {activeTab === "Receipts" ? (
         <section className="mt-4">
@@ -646,7 +671,7 @@ export default function SalesPage() {
         title={t("pos.sales.void_sale_title")}
         confirmLabel={t("pos.void")}
         confirmDestructive
-        onConfirm={() => { if (voidSaleId) { voidSale(voidSaleId); setVoidSaleId(null) } }}
+        onConfirm={() => { if (voidSaleId) executeVoid(voidSaleId) }}
         onCancel={() => setVoidSaleId(null)}
       >
         <p>{t("pos.sales.void_sale_message")}</p>

@@ -1,0 +1,119 @@
+{
+  "description": "REFUND-INTEGRITY-1 shared vectors. Run by apps/api and apps/desktop against their copy of refundAllocation.ts. Steps in a sequence accumulate: each successful plan becomes a prior refund for the next step.",
+  "sequences": [
+    {
+      "name": "repeated partial refunds restore the exact lots, never the same lot twice",
+      "items": [{ "lineId": "L1", "productId": 1, "quantity": 10, "allocations": [{ "batchId": "A", "quantity": 6, "unitCost": 2 }, { "batchId": "B", "quantity": 4, "unitCost": 3 }] }],
+      "steps": [
+        { "request": [{ "key": "L1", "productId": 1, "quantity": 6 }], "expect": [{ "key": "L1", "productId": 1, "quantity": 6, "allocations": [{ "batchId": "A", "quantity": 6, "unitCost": 2 }] }] },
+        { "request": [{ "key": "L1", "productId": 1, "quantity": 4 }], "expect": [{ "key": "L1", "productId": 1, "quantity": 4, "allocations": [{ "batchId": "B", "quantity": 4, "unitCost": 3 }] }] },
+        { "request": [{ "key": "L1", "productId": 1, "quantity": 1 }], "error": "REFUND_EXCEEDS_REFUNDABLE" }
+      ]
+    },
+    {
+      "name": "partial refund that splits across lots mid-slice",
+      "items": [{ "lineId": "L1", "productId": 1, "quantity": 10, "allocations": [{ "batchId": "A", "quantity": 6 }, { "batchId": "B", "quantity": 4 }] }],
+      "steps": [
+        { "request": [{ "key": "L1", "productId": 1, "quantity": 3 }], "expect": [{ "key": "L1", "productId": 1, "quantity": 3, "allocations": [{ "batchId": "A", "quantity": 3 }] }] },
+        { "request": [{ "key": "L1", "productId": 1, "quantity": 5 }], "expect": [{ "key": "L1", "productId": 1, "quantity": 5, "allocations": [{ "batchId": "A", "quantity": 3 }, { "batchId": "B", "quantity": 2 }] }] },
+        { "request": [{ "key": "L1", "productId": 1, "quantity": 2 }], "expect": [{ "key": "L1", "productId": 1, "quantity": 2, "allocations": [{ "batchId": "B", "quantity": 2 }] }] },
+        { "request": [{ "key": "L1", "productId": 1, "quantity": 0.5 }], "error": "REFUND_EXCEEDS_REFUNDABLE" }
+      ]
+    },
+    {
+      "name": "two tracked lines of the same product keep separate refundable quantities",
+      "items": [
+        { "lineId": "L1", "productId": 5, "quantity": 2, "allocations": [{ "batchId": "A", "quantity": 2 }] },
+        { "lineId": "L2", "productId": 5, "quantity": 3, "allocations": [{ "batchId": "B", "quantity": 3 }] }
+      ],
+      "steps": [
+        { "request": [{ "key": "L2", "productId": 5, "quantity": 3 }], "expect": [{ "key": "L2", "productId": 5, "quantity": 3, "allocations": [{ "batchId": "B", "quantity": 3 }] }] },
+        { "request": [{ "key": "L2", "productId": 5, "quantity": 1 }], "error": "REFUND_EXCEEDS_REFUNDABLE" },
+        { "request": [{ "key": "L1", "productId": 5, "quantity": 2 }], "expect": [{ "key": "L1", "productId": 5, "quantity": 2, "allocations": [{ "batchId": "A", "quantity": 2 }] }] }
+      ]
+    },
+    {
+      "name": "legacy sale (no line ids) pools per product and restores product stock only",
+      "items": [
+        { "productId": 9, "quantity": 3, "allocations": [{ "batchId": "A", "quantity": 3 }] },
+        { "productId": 9, "quantity": 2 }
+      ],
+      "steps": [
+        { "request": [{ "productId": 9, "quantity": 4 }], "expect": [{ "key": "legacy-product:9", "productId": 9, "quantity": 4, "allocations": null }] },
+        { "request": [{ "key": "legacy-product:9", "productId": 9, "quantity": 1 }], "expect": [{ "key": "legacy-product:9", "productId": 9, "quantity": 1, "allocations": null }] },
+        { "request": [{ "productId": 9, "quantity": 1 }], "error": "REFUND_EXCEEDS_REFUNDABLE" }
+      ]
+    },
+    {
+      "name": "untracked legacy-stock slice restores product stock only",
+      "items": [{ "lineId": "L1", "productId": 2, "quantity": 5, "allocations": [{ "batchId": "A", "quantity": 2 }, { "batchId": "legacy-stock", "quantity": 3 }] }],
+      "steps": [
+        { "request": [{ "key": "L1", "productId": 2, "quantity": 4 }], "expect": [{ "key": "L1", "productId": 2, "quantity": 4, "allocations": [{ "batchId": "A", "quantity": 2 }, { "batchId": null, "quantity": 2 }] }] },
+        { "request": [{ "key": "L1", "productId": 2, "quantity": 1 }], "expect": [{ "key": "L1", "productId": 2, "quantity": 1, "allocations": [{ "batchId": null, "quantity": 1 }] }] }
+      ]
+    },
+    {
+      "name": "allocations that cover less than the sold quantity leave an explicit untracked remainder",
+      "items": [{ "lineId": "L1", "productId": 3, "quantity": 5, "allocations": [{ "batchId": "A", "quantity": 2 }] }],
+      "steps": [
+        { "request": [{ "key": "L1", "productId": 3, "quantity": 5 }], "expect": [{ "key": "L1", "productId": 3, "quantity": 5, "allocations": [{ "batchId": "A", "quantity": 2 }, { "batchId": null, "quantity": 3 }] }] }
+      ]
+    },
+    {
+      "name": "a request without a line key spreads across the product's lines in sale order",
+      "items": [
+        { "lineId": "L1", "productId": 7, "quantity": 2, "allocations": [{ "batchId": "A", "quantity": 2 }] },
+        { "lineId": "L2", "productId": 7, "quantity": 3, "allocations": [{ "batchId": "B", "quantity": 3 }] }
+      ],
+      "steps": [
+        { "request": [{ "productId": 7, "quantity": 4 }], "expect": [
+          { "key": "L1", "productId": 7, "quantity": 2, "allocations": [{ "batchId": "A", "quantity": 2 }] },
+          { "key": "L2", "productId": 7, "quantity": 2, "allocations": [{ "batchId": "B", "quantity": 2 }] }
+        ] },
+        { "request": [{ "productId": 7, "quantity": 2 }], "error": "REFUND_EXCEEDS_REFUNDABLE" }
+      ]
+    },
+    {
+      "name": "a stale or unknown line key falls back to the product, never crosses products",
+      "items": [{ "lineId": "L1", "productId": 4, "quantity": 2, "allocations": [{ "batchId": "A", "quantity": 2 }] }],
+      "steps": [
+        { "request": [{ "key": "no-such-line", "productId": 4, "quantity": 1 }], "expect": [{ "key": "L1", "productId": 4, "quantity": 1, "allocations": [{ "batchId": "A", "quantity": 1 }] }] },
+        { "request": [{ "productId": 99, "quantity": 1 }], "error": "REFUND_LINE_NOT_IN_SALE" },
+        { "request": [{ "key": "L1", "productId": 4, "quantity": -1 }], "error": "REFUND_INVALID_QUANTITY" },
+        { "request": [{ "key": "L1", "productId": 4, "quantity": 0 }], "error": "REFUND_EMPTY" }
+      ]
+    }
+  ],
+  "voids": [
+    {
+      "name": "void restores every recorded lot in full",
+      "items": [
+        { "lineId": "L1", "productId": 1, "quantity": 10, "allocations": [{ "batchId": "A", "quantity": 6 }, { "batchId": "B", "quantity": 4 }] },
+        { "productId": 2, "quantity": 1 }
+      ],
+      "prior": [],
+      "expect": [
+        { "key": "L1", "productId": 1, "quantity": 10, "allocations": [{ "batchId": "A", "quantity": 6 }, { "batchId": "B", "quantity": 4 }] },
+        { "key": "legacy-product:2", "productId": 2, "quantity": 1, "allocations": null }
+      ]
+    },
+    {
+      "name": "void is refused once any refund exists",
+      "items": [{ "lineId": "L1", "productId": 1, "quantity": 10, "allocations": [{ "batchId": "A", "quantity": 10 }] }],
+      "prior": [{ "key": "L1", "quantity": 4, "allocations": [{ "batchId": "A", "quantity": 4 }] }],
+      "error": "VOID_HAS_REFUNDS"
+    }
+  ],
+  "amounts": [
+    { "name": "within remaining", "saleTotal": 20, "prior": [5], "amount": 15, "ok": true },
+    { "name": "rounding tolerance", "saleTotal": 20, "prior": [5], "amount": 15.004, "ok": true },
+    { "name": "exceeds remaining", "saleTotal": 20, "prior": [5], "amount": 15.01, "error": "REFUND_EXCEEDS_SALE_TOTAL" },
+    { "name": "negative", "saleTotal": 20, "prior": [], "amount": -1, "error": "REFUND_INVALID_AMOUNT" }
+  ],
+  "rates": [
+    { "name": "recorded sale rate", "input": 89500, "expect": { "exchangeRate": 89500, "rateSource": "sale_tender" } },
+    { "name": "decimal string from database", "input": "89500.0000", "expect": { "exchangeRate": 89500, "rateSource": "sale_tender" } },
+    { "name": "legacy sale without tender", "input": null, "expect": { "exchangeRate": null, "rateSource": "unavailable" } },
+    { "name": "zero is not a rate", "input": 0, "expect": { "exchangeRate": null, "rateSource": "unavailable" } }
+  ]
+}

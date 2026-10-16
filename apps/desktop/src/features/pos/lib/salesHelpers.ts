@@ -2,6 +2,8 @@ import type { LucideIcon } from "lucide-react"
 import { Banknote, CreditCard, HandCoins, WalletCards } from "lucide-react"
 
 import type { Sale, SaleItem, SaleRefund, SalePaymentMethod } from "../services/sales.service"
+import { getLineRefundableQuantity, priorRefundLinesOf, refundLineKeyOf } from "../services/sales.service"
+import { refundedQuantity } from "./refundAllocation"
 
 export const paymentIcons: Record<SalePaymentMethod, LucideIcon> = {
   Cash: Banknote,
@@ -55,16 +57,17 @@ export function getSaleRefundTotal(refunds: SaleRefund[], saleId: string) {
   )
 }
 
+/**
+ * Quantity already refunded on this sale line (REFUND-INTEGRITY-1: per line,
+ * not per product — two lines of the same product are tracked separately;
+ * legacy lines without a line id are pooled per product).
+ */
 export function getRefundedQuantity(
   refunds: SaleRefund[],
   saleId: string,
-  itemId: number
+  item: Pick<SaleItem, "id" | "lineId">
 ) {
-  return getSaleRefunds(refunds, saleId).reduce((sum, refund) => {
-    const refundedItem = refund.items.find((item) => item.id === itemId)
-
-    return sum + (refundedItem?.quantity ?? 0)
-  }, 0)
+  return refundedQuantity(refundLineKeyOf(item), priorRefundLinesOf(refunds, saleId))
 }
 
 export function getRefundableQuantity(
@@ -72,10 +75,7 @@ export function getRefundableQuantity(
   item: SaleItem,
   refunds: SaleRefund[]
 ) {
-  return Math.max(
-    0,
-    item.quantity - getRefundedQuantity(refunds, sale.id, item.id)
-  )
+  return getLineRefundableQuantity(sale, item, refunds)
 }
 
 export function getRefundMethod(sale: Sale): "Cash" | "Card" | "Wallet" | "Debt_Credit" {

@@ -18,6 +18,7 @@ import {
 } from "../lib/salesHelpers"
 import { userCan } from "../services/security.service"
 import type { Sale, SaleItem, SaleRefund } from "../services/sales.service"
+import { refundLineKeyOf } from "../services/sales.service"
 import { usdToLbp } from "../lib/currency"
 
 const ReceiptPreview = memo(function ReceiptPreview({
@@ -44,7 +45,8 @@ const ReceiptPreview = memo(function ReceiptPreview({
   canRefund: boolean
   onClose?: () => void
   onPrint: (sale: Sale) => void
-  onRefundQuantityChange: (itemId: number, value: string) => void
+  /** Keyed by sale-line key (refundLineKeyOf), not product id. */
+  onRefundQuantityChange: (lineKey: string, value: string) => void
   onRefundReasonChange: (value: string) => void
   onRecordRefund: (sale: Sale) => void
   onVoid: (saleId: string) => void
@@ -76,7 +78,7 @@ const ReceiptPreview = memo(function ReceiptPreview({
   const refundDraftItems = sale.items
     .map((item) => {
       const quantity = Math.min(
-        parseReturnQuantity(refundQuantities[String(item.id)] ?? ""),
+        parseReturnQuantity(refundQuantities[refundLineKeyOf(item)] ?? ""),
         getRefundableQuantity(sale, item, refunds)
       )
 
@@ -164,9 +166,9 @@ const ReceiptPreview = memo(function ReceiptPreview({
             <span className="text-end" style={{ minWidth: 70 }}>{t("pos.total_header")}</span>
           </div>
 
-          {sale.items.map((item) => (
+          {sale.items.map((item, index) => (
             <div
-              key={`${sale.id}-${item.id}`}
+              key={`${sale.id}-${item.lineId ?? item.id}-${index}`}
               className="grid grid-cols-[1fr_auto_auto] gap-x-2 border-t border-zinc-100 px-3 py-2 text-sm"
             >
               <div className="min-w-0">
@@ -299,12 +301,12 @@ const ReceiptPreview = memo(function ReceiptPreview({
 
             {canRefund && hasRefundableItems && (
               <div className="space-y-2">
-                {sale.items.map((item) => {
-                  const refundedQuantity = getRefundedQuantity(refunds, sale.id, item.id)
+                {sale.items.map((item, index) => {
+                  const refundedQuantity = getRefundedQuantity(refunds, sale.id, item)
                   const availableQuantity = getRefundableQuantity(sale, item, refunds)
 
                   return (
-                    <div key={`return-${sale.id}-${item.id}`} className="grid grid-cols-[minmax(0,1fr)_72px] gap-2 rounded-lg px-3 py-2 text-[12px]" style={{ background: "var(--surface)" }}>
+                    <div key={`return-${sale.id}-${refundLineKeyOf(item)}-${index}`} className="grid grid-cols-[minmax(0,1fr)_72px] gap-2 rounded-lg px-3 py-2 text-[12px]" style={{ background: "var(--surface)" }}>
                       <div className="min-w-0">
                         <p className="truncate font-bold" style={{ color: "var(--text)" }}>{item.name}</p>
                         <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
@@ -314,8 +316,8 @@ const ReceiptPreview = memo(function ReceiptPreview({
                       <input
                         type="number" min="0" max={availableQuantity} step="1"
                         disabled={availableQuantity === 0}
-                        value={refundQuantities[String(item.id)] ?? ""}
-                        onChange={(event) => onRefundQuantityChange(item.id, event.target.value)}
+                        value={refundQuantities[refundLineKeyOf(item)] ?? ""}
+                        onChange={(event) => onRefundQuantityChange(refundLineKeyOf(item), event.target.value)}
                         className="h-8 w-full rounded-lg border px-2 text-end text-[12px] font-bold outline-none"
                         style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text)" }}
                       />

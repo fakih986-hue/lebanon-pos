@@ -238,6 +238,9 @@ model Sale {
   shiftNumber   String?
   payableLbp    Decimal?         @db.Decimal(18, 4)
   status        SaleStatus       @default(Completed)
+  /// REFUND-INTEGRITY-1: bumped inside every refund/void transaction so concurrent
+  /// refunds of the same sale serialize on this row's lock.
+  refundVersion Int              @default(0)
   createdAt     DateTime         @default(now())
 
   items      SaleItem[]
@@ -261,7 +264,13 @@ model SaleItem {
   unitPrice Decimal @db.Decimal(18, 4)
   total     Decimal @db.Decimal(18, 4)
   cost      Decimal @default(0) @db.Decimal(18, 4)
+  /// REFUND-INTEGRITY-1: client-stamped line identity (null = legacy line, pooled per product).
+  lineId    String?
+  lineIndex Int?
+  /// Lots actually consumed by the server for this line: [{batchId|null, quantity, unitCost?}].
+  batchAllocations Json?
 
+  @@unique([saleId, lineId])
   @@index([productId])
 }
 
@@ -297,6 +306,9 @@ model SaleRefund {
   cashierId    String?
   shiftId      String?
   shiftNumber  String?
+  /// REFUND-INTEGRITY-1: original sale rate (null when the sale recorded none — never invented).
+  exchangeRate Decimal?     @db.Decimal(18, 4)
+  rateSource   String?
   createdAt    DateTime     @default(now())
 
   items RefundItem[]
@@ -316,6 +328,9 @@ model RefundItem {
   unitPrice   Decimal    @db.Decimal(18, 4)
   cost        Decimal?   @db.Decimal(18, 4)
   total       Decimal    @db.Decimal(18, 4)
+  /// REFUND-INTEGRITY-1: sale line refunded (lineId or legacy-product:<id>) and lots restored.
+  saleLineId       String?
+  batchAllocations Json?
 }
 
 model Customer {

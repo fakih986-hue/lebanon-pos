@@ -14,6 +14,48 @@ import { effectivePermissions, requiredPermissionForOp } from "../lib/permission
 import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
 import { broadcastToTenant } from "../ws/index.js"
+import {
+  buildRefundableLines, planRefund, planVoidRestoration, assertRefundAmount, resolveRefundRate,
+  legacyLineKey, isLegacyLineKey, normalizeAllocations, roundQty, RefundRuleError,
+  type AllocationSlice, type PriorRefundLine,
+} from "../lib/refundAllocation.js"
+
+/** A persisted RefundItem as a prior-refund line (pre-migration rows → legacy pool). */
+function toPriorRefundLine(it: any): PriorRefundLine {
+  const key = typeof it?.saleLineId === "string" && it.saleLineId ? it.saleLineId : legacyLineKey(Number(it?.productId))
+  return {
+    key,
+    quantity: Number(it?.quantity) || 0,
+    allocations: isLegacyLineKey(key) ? null : normalizeAllocations(it?.batchAllocations),
+  }
+}
+
+/**
+ * REFUND-INTEGRITY-1 compatibility gate. Hubs older than this release re-insert
+ * pulled sale/refund rows verbatim, so unknown columns would make every new sale
+ * fail to import ("Unknown argument lineId"). Only clients that declare sync
+ * schema >= 2 receive the new fields.
+ */
+export const SYNC_SCHEMA_HEADER = "x-titan-sync-schema"
+function clientSyncSchema(req: { headers?: Record<string, unknown> }): number {
+  const value = Number(req.headers?.[SYNC_SCHEMA_HEADER])
+  return Number.isFinite(value) ? value : 1
+}
+export function shapeSalesForSchema(rows: any[], schema: number): any[] {
+  if (schema >= 2) return rows
+  return rows.map(({ refundVersion: _v, ...sale }: any) => ({
+    ...sale,
+    ...(Array.isArray(sale.items) ? { items: sale.items.map(({ lineId: _l, lineIndex: _i, batchAllocations: _b, ...item }: any) => item) } : {}),
+  }))
+}
+export function shapeRefundsForSchema(rows: any[], schema: number): any[] {
+  if (schema >= 2) return rows
+  return rows.map(({ exchangeRate: _r, rateSource: _s, ...refund }: any) => ({
+    ...refund,
+    ...(Array.isArray(refund.items) ? { items: refund.items.map(({ saleLineId: _l, batchAllocations: _b, ...item }: any) => item) } : {}),
+  }))
+}
+
 const router = Router()
 
 const syncOperationSchema = z.object({
@@ -232,6 +274,9 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
 
       // Classify rejection errors — these are non-retryable business conflicts
       const isRejected =
+        // REFUND-INTEGRITY-1: refund/void rule violations are business
+        // conflicts with a stable code prefix (e.g. "REFUND_EXCEEDS_REFUNDABLE: …").
+        err instanceof RefundRuleError ||
         errorMessage.includes("Insufficient stock") ||
         errorMessage.includes("was voided") ||
         errorMessage.includes("Insufficient stock in batch") ||
@@ -485,7 +530,7 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
 
   json(res, {
     serverTime: new Date().toISOString(),
-    products, sales, refunds, customers, debtSales, debtPayments,
+    products, sales: shapeSalesForSchema(sales, clientSyncSchema(req as any)), refunds: shapeRefundsForSchema(refunds, clientSyncSchema(req as any)), customers, debtSales, debtPayments,
     suppliers, purchaseOrders, supplierPayments, users, shifts,
     auditEvents, settings: settings ? [settings] : [], expenses, batches,
     adjustments, stockCounts: counts, dailyCloses, deliveryOrders,
@@ -620,7 +665,9 @@ router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest,
 
     json(res, {
       entity,
-      items,
+      items: entity === "sales" ? shapeSalesForSchema(items, clientSyncSchema(req as any))
+        : entity === "refunds" ? shapeRefundsForSchema(items, clientSyncSchema(req as any))
+        : items,
       hasMore,
       nextCursor: nextCursor ?? null,
     })
@@ -859,18 +906,41 @@ async function processOperation(
             include: { items: true },
           })
 
+          // REFUND-INTEGRITY-1: serialize with refunds of this sale, refuse to
+          // void a sale that already has refunds (the void would restore the
+          // refunded quantity a second time), and restore the recorded lots.
+          let planned: ReturnType<typeof planVoidRestoration> = []
+          if (sale) {
+            await db.sale.update({ where: { id: sale.id }, data: { refundVersion: { increment: 1 } } as any })
+            const priorRefunds = await db.saleRefund.findMany({
+              where: { tenantId, saleId: sale.id },
+              include: { items: true },
+            })
+            const lines = buildRefundableLines(sale.items.map((it: any) => ({
+              lineId: it.lineId, productId: it.productId, quantity: Number(it.quantity), allocations: it.batchAllocations,
+            })))
+            planned = planVoidRestoration(lines, priorRefunds.flatMap((r: any) => (r.items ?? []).map((it: any) => toPriorRefundLine(it))))
+          }
+
           await db.sale.updateMany({
             where: { id, tenantId },
             data: { status: "Voided" },
           })
 
-          for (const item of sale?.items ?? []) {
+          for (const p of planned) {
             await db.product.updateMany({
-              where: { tenantId, id: item.productId },
-              data: { stock: { increment: item.quantity }, updatedAt: new Date() },
+              where: { tenantId, id: p.productId },
+              data: { stock: { increment: p.quantity }, updatedAt: new Date() },
             })
             // Record the void as a Refund movement (stock comes back)
-            await recordMovement(item.productId, "Refund", item.quantity, `void:${id}`, `Void sale ${saleNumber ?? id}`)
+            await recordMovement(p.productId, "Refund", p.quantity, `void:${id}`, `Void sale ${saleNumber ?? id}`)
+            for (const slice of p.allocations ?? []) {
+              if (!slice.batchId) continue
+              await db.inventoryBatch.updateMany({
+                where: { id: slice.batchId, tenantId },
+                data: { quantityRemaining: { increment: slice.quantity }, status: "Open" } as any,
+              })
+            }
           }
 
           // Clean up tender record to prevent stale tender data in reports
@@ -926,26 +996,24 @@ async function processOperation(
           break
         }
 
-        await db.sale.create({
-          data: {
-            ...saleData,
-            tenantId,
-            items: { create: prismaItems },
-            tender: hasTender ? { create: prismaTender } : undefined,
-          } as any,
-        })
-
         // Decrement product stock
         await decrementProductStock(db, tenantId, prismaItems.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
-        // Atomic batch decrement — updateMany with quantityRemaining >= quantity is atomic
+        // Atomic batch decrement — updateMany with quantityRemaining >= quantity is atomic.
+        // REFUND-INTEGRITY-1: record the lots ACTUALLY consumed per line (including
+        // FEFO-fallback lots the client never knew about, and any untracked
+        // remainder as batchId null) so refunds and voids restore from the
+        // server's own record instead of trusting client-supplied allocations.
         const touchedBatchIds = new Set<string>()
         const rawItems = data.items ?? []
+        const appliedByLine: AllocationSlice[][] = rawItems.map(() => [])
         for (let i = 0; i < rawItems.length; i++) {
           const item = rawItems[i]
           const resolvedProductId = prismaItems[i]?.productId
+          const applied = appliedByLine[i]
           for (const allocation of item.batchAllocations ?? []) {
             const quantity = Number(allocation.quantity ?? 0)
             if (quantity <= 0) continue
+            const sliceCost = Number.isFinite(Number(allocation.unitCost)) ? Number(allocation.unitCost) : undefined
 
             if (!allocation.batchId || allocation.batchId === "legacy-stock") {
               // The client's local batch cache didn't think any real batch
@@ -964,7 +1032,7 @@ async function processOperation(
                 const openBatches = await db.inventoryBatch.findMany({
                   where: { tenantId, productId: resolvedProductId, status: "Open", quantityRemaining: { gt: 0 } },
                   orderBy: [{ expiryDate: "asc" }, { receivedAt: "asc" }],
-                  select: { id: true, quantityRemaining: true },
+                  select: { id: true, quantityRemaining: true, unitCost: true },
                 })
                 for (const batch of openBatches) {
                   if (remaining <= 0) break
@@ -977,12 +1045,16 @@ async function processOperation(
                   if (result.count > 0) {
                     remaining -= take
                     touchedBatchIds.add(batch.id)
+                    applied.push({ batchId: batch.id, quantity: roundQty(take), unitCost: Number(batch.unitCost ?? 0) })
                   }
                 }
               }
               // Whatever's left (remaining > 0) is genuinely untracked
               // legacy stock — no real batch exists to decrement, matching
               // the prior behavior for that portion.
+              if (remaining > 0) {
+                applied.push({ batchId: null, quantity: roundQty(remaining), ...(sliceCost !== undefined ? { unitCost: sliceCost } : {}) })
+              }
               continue
             }
 
@@ -994,8 +1066,28 @@ async function processOperation(
               throw new Error(`Insufficient stock in batch ${allocation.batchId}`)
             }
             touchedBatchIds.add(allocation.batchId)
+            applied.push({ batchId: allocation.batchId, quantity: roundQty(quantity), ...(sliceCost !== undefined ? { unitCost: sliceCost } : {}) })
           }
         }
+
+        // Persist the sale with line identity + applied allocations. A lineId is
+        // only stored when the client stamped one (and only once per sale);
+        // lines without one remain legacy lines (pooled per product on refund).
+        const seenLineIds = new Set<string>()
+        const itemsToCreate = prismaItems.map((it: any, i: number) => {
+          const rawLineId = rawItems[i]?.lineId
+          const lineId = typeof rawLineId === "string" && rawLineId && !seenLineIds.has(rawLineId) ? rawLineId : null
+          if (lineId) seenLineIds.add(lineId)
+          return { ...it, lineId, lineIndex: i, batchAllocations: appliedByLine[i] }
+        })
+        await db.sale.create({
+          data: {
+            ...saleData,
+            tenantId,
+            items: { create: itemsToCreate },
+            tender: hasTender ? { create: prismaTender } : undefined,
+          } as any,
+        })
         // Update status for any batches that were exhausted (both
         // client-specified and server-side FEFO-fallback-consumed ones)
         for (const batchId of touchedBatchIds) {
@@ -1013,72 +1105,110 @@ async function processOperation(
     }
     case "refund": {
       if (action === "create") {
+        // REFUND-INTEGRITY-1 — the server decides what a refund restores:
+        // quantities are checked against the persisted sale minus every prior
+        // refund, lots come from the sale's recorded allocations (client
+        // allocations are ignored), and the rate is the ORIGINAL sale's rate.
         const data = payload as any
+        const refundId = typeof data?.id === "string" ? data.id : ""
+        const saleId = typeof data?.saleId === "string" ? data.saleId : ""
+        if (!refundId || !saleId) throw new Error("Refund sync requires an id and saleId")
 
-        // Idempotency guard: if refund already exists, skip stock changes
-        const existing = await db.saleRefund.findUnique({
-          where: { id: data.id as string },
-          select: { id: true },
-        })
+        // Idempotency: a retried refund never re-applies stock, lots, or money.
+        const existing = await db.saleRefund.findUnique({ where: { id: refundId }, select: { id: true } })
         if (existing) break
 
-        const methodMap: Record<string, string> = {
-          "Debt Credit": "Debt_Credit",
-          "Refund Credit": "Debt_Credit",
+        const sale = await db.sale.findFirst({
+          where: { id: saleId, tenantId },
+          include: { items: true, tender: true },
+        })
+        // Retryable (not rejected): the sale may still be on its way.
+        if (!sale) throw new Error(`Refund ${refundId}: sale ${saleId} not found yet`)
+        if (sale.status === "Voided") {
+          throw new RefundRuleError("REFUND_SALE_VOIDED", `Sale ${sale.saleNumber} was already voided`)
         }
-        const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => {
-          return {
-            productId: await resolveProductId(item),
-            productName: item.name,
-            barcode: item.barcode,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            total: item.total,
-            cost: item.cost ?? 0,
-          }
-        }))
-        const { items: _i, ...refundData } = data
-        await db.saleRefund.upsert({
-          where: { id: refundData.id as string },
-          update: refundData,
-          create: {
-            ...refundData,
-            method: methodMap[refundData.method as string] ?? refundData.method,
+
+        // Serialize concurrent refunds/voids of this sale: the row lock taken by
+        // this update is held until commit, and the prior-refund read below
+        // (a new statement under READ COMMITTED) sees anything committed by a
+        // transaction we waited on.
+        await db.sale.update({ where: { id: sale.id }, data: { refundVersion: { increment: 1 } } as any })
+        const priorRefunds = await db.saleRefund.findMany({
+          where: { tenantId, saleId: sale.id },
+          include: { items: true },
+        })
+
+        const lines = buildRefundableLines(sale.items.map((it: any) => ({
+          lineId: it.lineId, productId: it.productId, quantity: Number(it.quantity), allocations: it.batchAllocations,
+        })))
+        const prior = priorRefunds.flatMap((r: any) => (r.items ?? []).map((it: any) => toPriorRefundLine(it)))
+        const request = await Promise.all((data.items ?? []).map(async (item: any) => ({
+          key: typeof item?.saleLineId === "string" ? item.saleLineId : null,
+          productId: await resolveProductId(item),
+          quantity: Number(item?.quantity),
+        })))
+        const planned = planRefund(lines, prior, request)
+        const total = Number(data.total)
+        assertRefundAmount(Number(sale.total), priorRefunds.map((r: any) => Number(r.total)), total)
+        const rate = resolveRefundRate(sale.tender?.exchangeRate ?? null)
+
+        const saleItemFor = (key: string) =>
+          sale.items.find((it: any) => it.lineId === key) ??
+          sale.items.find((it: any) => !it.lineId && legacyLineKey(it.productId) === key)
+        const methodMap: Record<string, string> = { "Debt Credit": "Debt_Credit", "Refund Credit": "Debt_Credit" }
+
+        await db.saleRefund.create({
+          data: {
+            id: refundId,
             tenantId,
-            items: { create: prismaItems },
+            refundNumber: String(data.refundNumber ?? refundId),
+            saleId: sale.id,
+            saleNumber: sale.saleNumber,
+            customerId: data.customerId ?? sale.customerId ?? null,
+            customerName: data.customerName ?? sale.customerName ?? null,
+            method: methodMap[data.method as string] ?? data.method,
+            reason: String(data.reason ?? "Customer return"),
+            total,
+            cashier: String(data.cashier ?? ""),
+            cashierId: data.cashierId ?? null,
+            shiftId: data.shiftId ?? null,
+            shiftNumber: data.shiftNumber ?? null,
+            exchangeRate: rate.exchangeRate,
+            rateSource: rate.rateSource,
+            ...(data.createdAt ? { createdAt: data.createdAt } : {}),
+            items: {
+              create: planned.map((p) => {
+                const si: any = saleItemFor(p.key)
+                return {
+                  productId: p.productId,
+                  productName: si?.productName ?? "",
+                  barcode: si?.barcode ?? "",
+                  quantity: p.quantity,
+                  unitPrice: si?.unitPrice ?? 0,
+                  cost: si?.cost ?? 0,
+                  total: Number(si?.unitPrice ?? 0) * p.quantity,
+                  saleLineId: p.key,
+                  ...(p.allocations ? { batchAllocations: p.allocations } : {}),
+                }
+              }),
+            },
           } as any,
         })
-        // Restore product stock + batch quantities for refunded items
-        for (const item of prismaItems) {
-          const originalItem = (data.items ?? []).find((i: any) => i.barcode === item.barcode)
+
+        for (const p of planned) {
           await db.product.updateMany({
-            where: { tenantId, id: item.productId },
-            data: { stock: { increment: item.quantity }, updatedAt: new Date() },
+            where: { tenantId, id: p.productId },
+            data: { stock: { increment: p.quantity }, updatedAt: new Date() },
           })
-          await recordMovement(item.productId, "Refund", item.quantity, data.id as string)
-          // Restore batch quantities from original sale allocations if available
-          if (originalItem?.batchAllocations && Array.isArray(originalItem.batchAllocations)) {
-            for (const alloc of originalItem.batchAllocations) {
-              if (alloc.batchId && alloc.batchId !== "legacy-stock") {
-                await db.inventoryBatch.updateMany({
-                  where: { id: alloc.batchId, tenantId },
-                  data: { quantityRemaining: { increment: alloc.quantity }, status: "Open" } as any,
-                })
-              }
-            }
-          } else {
-            // Fallback: restore to newest open batch for this product
-            const newestBatch = await db.inventoryBatch.findFirst({
-              where: { tenantId, productId: item.productId },
-              orderBy: { receivedAt: "desc" },
+          await recordMovement(p.productId, "Refund", p.quantity, refundId)
+          // Lots only from the sale's own record. Legacy lines and untracked
+          // slices restore product stock only — no lot is guessed.
+          for (const slice of p.allocations ?? []) {
+            if (!slice.batchId) continue
+            await db.inventoryBatch.updateMany({
+              where: { id: slice.batchId, tenantId },
+              data: { quantityRemaining: { increment: slice.quantity }, status: "Open" } as any,
             })
-            if (newestBatch) {
-              await db.inventoryBatch.updateMany({
-                where: { id: newestBatch.id, tenantId },
-                data: { quantityRemaining: { increment: item.quantity }, status: "Open" } as any,
-              })
-            }
-            console.log(`[sync] Refund ${data.id}: no batchAllocations — restored ${item.quantity} to newest batch ${newestBatch?.id ?? "N/A"} for product ${item.productId}`)
           }
         }
       }

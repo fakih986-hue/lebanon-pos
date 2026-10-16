@@ -801,9 +801,23 @@ async function upsertPulledData(
         update: { ...saleData }           as any,
       })
       if (Array.isArray(items) && items.length > 0) {
+        // REFUND-INTEGRITY-1: inventory is hub-authoritative, so the lots this
+        // hub recorded for a line win over the cloud's own computation when the
+        // items are re-created from the pull.
+        const localLots = new Map<string, unknown>()
+        for (const local of await prisma.saleItem.findMany({
+          where: { saleId: saleData.id },
+          select: { lineId: true, batchAllocations: true },
+        })) {
+          if (local.lineId && local.batchAllocations != null) localLots.set(local.lineId, local.batchAllocations)
+        }
         await prisma.saleItem.deleteMany({ where: { saleId: saleData.id } })
         await prisma.saleItem.createMany({
-          data: items.map((it: any) => ({ ...it, saleId: saleData.id })),
+          data: items.map((it: any) => ({
+            ...it,
+            saleId: saleData.id,
+            ...(it.lineId && localLots.has(it.lineId) ? { batchAllocations: localLots.get(it.lineId) } : {}),
+          })),
         })
       }
       if (tender) {
@@ -1059,6 +1073,9 @@ function fetchCloud(urlPath: string, init: RequestInit = {}): Promise<Response> 
       "Content-Type":  "application/json",
       "x-cloud-key":   CLOUD_API_KEY!,
       "x-tenant-id":   CLOUD_TENANT!,
+      // REFUND-INTEGRITY-1: this hub understands sale line ids, sale lot
+      // allocations and refund rates (schema 2), so the cloud may send them.
+      "x-titan-sync-schema": "2",
       ...(init.headers as Record<string, string> | undefined),
     },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),

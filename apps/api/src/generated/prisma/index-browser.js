@@ -232,6 +232,7 @@ exports.Prisma.SaleScalarFieldEnum = {
   shiftNumber: 'shiftNumber',
   payableLbp: 'payableLbp',
   status: 'status',
+  refundVersion: 'refundVersion',
   createdAt: 'createdAt'
 };
 
@@ -244,7 +245,10 @@ exports.Prisma.SaleItemScalarFieldEnum = {
   quantity: 'quantity',
   unitPrice: 'unitPrice',
   total: 'total',
-  cost: 'cost'
+  cost: 'cost',
+  lineId: 'lineId',
+  lineIndex: 'lineIndex',
+  batchAllocations: 'batchAllocations'
 };
 
 exports.Prisma.SaleTenderScalarFieldEnum = {
@@ -276,6 +280,8 @@ exports.Prisma.SaleRefundScalarFieldEnum = {
   cashierId: 'cashierId',
   shiftId: 'shiftId',
   shiftNumber: 'shiftNumber',
+  exchangeRate: 'exchangeRate',
+  rateSource: 'rateSource',
   createdAt: 'createdAt'
 };
 
@@ -288,7 +294,9 @@ exports.Prisma.RefundItemScalarFieldEnum = {
   quantity: 'quantity',
   unitPrice: 'unitPrice',
   cost: 'cost',
-  total: 'total'
+  total: 'total',
+  saleLineId: 'saleLineId',
+  batchAllocations: 'batchAllocations'
 };
 
 exports.Prisma.CustomerScalarFieldEnum = {
