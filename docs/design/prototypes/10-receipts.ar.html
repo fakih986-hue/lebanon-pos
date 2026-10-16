@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>البيع · الإيصالات</title>
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/tailwind.css">
+<style>
+:root,[data-theme=dark]{color-scheme:dark;--page-bg:#0B0E14;--surface:#12161F;--surface-2:#171C27;--surface-3:#1E2430;--surface-hover:#1A2029;
+--border:rgba(148,163,184,.10);--border-strong:rgba(148,163,184,.22);--text:#F4F6FA;--text-2:#9AA4B8;--text-3:#7C879B;
+--brand:#D4A843;--brand-hover:#E4BC5C;--brand-soft:rgba(212,168,67,.12);--brand-border:rgba(212,168,67,.40);--brand-contrast:#2C1F05;--brand-text:#E4BC5C;
+--ok:#34D399;--ok-soft:rgba(52,211,153,.12);--ok-money:#34D399;--warn:#FB923C;--warn-soft:rgba(251,146,60,.12);--err:#F87171;--err-soft:rgba(248,113,113,.12);--info:#60A5FA;--info-soft:rgba(96,165,250,.12);
+--rail-bg:linear-gradient(180deg,#0A0F18,#05070D);--rail-text:#C4CBD8;--plate:#05070D;
+--border-input:rgba(148,163,184,.60);--pay-bg:#D4A843;--pay-hover:#E4BC5C;--pay-text:#2C1F05;--disabled-bg:#1A2029;--disabled-text:#7C879B;
+--chart-1:#5CB894;--chart-2:#7D8CD9;--chart-3:#A186C9;--chart-4:#D97A8C;--chart-hi:#C4CBD8;
+--elev-1:0 1px 2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);--elev-3:0 16px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);--scrim:rgba(5,7,13,.78)}
+[data-theme=light]{color-scheme:light;--page-bg:#F7F5F1;--surface:#FFFFFF;--surface-2:#F6F4EF;--surface-3:#ECE8E1;--surface-hover:#F4F1EB;
+--border:#E8E4DC;--border-strong:#D3CCC0;--text:#1C1917;--text-2:#57534E;--text-3:#635D55;
+--brand:#996d14;--brand-hover:#7E5A10;--brand-soft:rgba(156,111,20,.10);--brand-border:rgba(156,111,20,.40);--brand-contrast:#FFFFFF;--brand-text:#6B4C0A;
+--ok:#137639;--ok-soft:rgba(22,163,74,.10);--ok-money:#0A5428;--warn:#a44c09;--warn-soft:rgba(180,83,9,.10);--err:#b91c1c;--err-soft:rgba(220,38,38,.09);--info:#0e6d93;--info-soft:rgba(14,122,165,.10);
+--rail-bg:linear-gradient(180deg,#0A0F18,#05070D);--rail-text:#C4CBD8;--plate:#05070D;
+--border-input:#857C70;--pay-bg:#D4A843;--pay-hover:#C99A32;--pay-text:#2C1F05;--disabled-bg:#ECE8E1;--disabled-text:#635D55;
+--chart-1:#2E8B62;--chart-2:#4F5FB8;--chart-3:#7B5BA8;--chart-4:#B5475E;--chart-hi:#57534E;
+--elev-1:0 1px 2px rgba(28,25,23,.06);--elev-3:0 16px 40px rgba(28,25,23,.16);--scrim:rgba(28,25,23,.45)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inter","IBM Plex Sans Arabic",system-ui,sans-serif;font-size:14px;line-height:20px}
+[dir=rtl] body,[dir=rtl] .root{font-family:"IBM Plex Sans Arabic","Inter",system-ui,sans-serif;line-height:22px}
+[dir=rtl] .ic.dir{transform:scaleX(-1)}
+.ic{flex-shrink:0;display:inline-block;vertical-align:middle}
+.num{font-variant-numeric:tabular-nums;unicode-bidi:isolate}
+.cap{font-size:12px;line-height:16px;font-weight:500;color:var(--text-2)}
+.meta{color:var(--text-3)}
+.sub{font-size:16px;line-height:24px;font-weight:600}
+.title{font-size:20px;line-height:28px;font-weight:600}
+.stat{font-size:28px;line-height:34px;font-weight:600}
+.total{font-size:44px;line-height:48px;font-weight:700;letter-spacing:-.01em}
+.hero{font-size:64px;line-height:68px;font-weight:700;letter-spacing:-.02em}
+[dir=rtl] .total,[dir=rtl] .hero{letter-spacing:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--elev-1)}
+.inset{background:var(--surface-2);border:1px solid var(--border);border-radius:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font:inherit;font-weight:600;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);white-space:nowrap;cursor:pointer}
+.btn-sm{min-height:32px;padding:0 12px;font-size:13px}
+.skip{position:absolute;inset-inline-start:8px;top:-60px;z-index:100;background:var(--surface);color:var(--text);border:2px solid var(--brand);border-radius:8px;padding:8px 14px;font-weight:600;text-decoration:none}
+.skip:focus{top:8px}
+.btn-touch{min-height:48px}
+.btn-primary{background:var(--brand);border-color:var(--brand);color:var(--brand-contrast)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+.btn-danger{background:var(--err-soft);border-color:transparent;color:var(--err)}
+.btn-pay{width:100%;min-height:64px;border-radius:12px;background:var(--pay-bg);color:var(--pay-text);font:inherit;font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;cursor:pointer}
+.btn[disabled]{background:var(--disabled-bg);border-color:var(--border);color:var(--disabled-text);cursor:not-allowed}
+.btn:focus-visible,.btn-pay:focus-visible,.field:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.field{width:100%;min-height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-input);color:var(--text);padding:8px 12px;font:inherit}
+.field-row{display:flex;align-items:center;gap:8px}
+.focus{outline:2px solid var(--brand);outline-offset:2px}
+.label{display:block;font-size:12px;line-height:16px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+.help{font-size:12px;line-height:16px;color:var(--text-3);margin-top:6px}
+.error{font-size:12px;line-height:16px;color:var(--err);margin-top:6px;display:flex;gap:6px;align-items:center}
+.invalid{border-color:var(--err)!important}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:4px;min-height:20px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.t-ok{background:var(--ok-soft);color:var(--ok)}.t-warn{background:var(--warn-soft);color:var(--warn)}.t-err{background:var(--err-soft);color:var(--err)}.t-info{background:var(--info-soft);color:var(--info)}.t-gold{background:var(--brand-soft);color:var(--brand-text)}.t-mute{background:var(--surface-3);color:var(--text-2)}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:12px;font-weight:600;color:var(--text-2);background:var(--surface-2);text-align:start;padding:10px 16px;white-space:nowrap}
+.tbl td{padding:10px 16px;border-top:1px solid var(--border);vertical-align:middle}
+.tbl .r{text-align:end}
+.scroll-x{overflow-x:auto;position:relative}
+.sel{background:var(--brand-soft);box-shadow:inset 3px 0 0 var(--brand)}
+[dir=rtl] .sel{box-shadow:inset -3px 0 0 var(--brand)}
+.tab{min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap;text-decoration:none}
+.tab:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+.tab.on{color:var(--text);border-color:var(--brand)}
+.kbd{font-size:12px;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface-2)}
+.banner{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 16px;flex-wrap:wrap}
+.banner > .grow{flex:1;min-width:220px}
+.plate{background:var(--plate);display:inline-grid;place-items:center;border:1px solid rgba(212,168,67,.25)}
+.seg{display:grid;gap:4px;padding:4px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-input);margin:0;min-width:0}
+.seg > label{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:8px;font-weight:600;color:var(--text-2);cursor:pointer;padding:0 6px;text-align:center}
+.seg input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.seg > label:has(input:checked){background:var(--brand-soft);color:var(--text);box-shadow:inset 0 -2px 0 var(--brand)}
+.seg > label:has(input:focus-visible){outline:2px solid var(--brand);outline-offset:2px}
+.seg .chk{display:none}.seg > label:has(input:checked) .chk{display:inline-block}.seg > label:has(input:checked) .ic:not(.chk){display:none}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--brand-soft);border-color:var(--brand-border);color:var(--text)}
+.chip:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.money-in{min-height:48px;padding:0 12px;gap:6px}
+.money-in input{flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:18px;font-weight:600;text-align:end;outline:none;font-variant-numeric:tabular-nums}
+.money-in .adorn{color:var(--text-2);font-weight:600}
+.money-in:focus-within{outline:2px solid var(--brand);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ── Shell (§2): 232px sidebar ≥1200 · 64px rail 768–1199 · bottom nav <768 ── */
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+.side{background-color:#05070D;background-image:var(--rail-bg);border-inline-end:1px solid rgba(148,163,184,.12);display:flex;flex-direction:column;gap:4px;padding:16px 12px;color:var(--rail-text);position:sticky;top:0;height:100vh}
+.side .nav{display:flex;align-items:center;gap:12px;min-height:44px;border-radius:8px;padding:0 12px;font-weight:600;color:var(--rail-text);text-decoration:none}
+.side .nav:focus-visible{outline:2px solid #D4A843;outline-offset:2px}
+.side .nav.on{background:rgba(212,168,67,.14);box-shadow:inset 3px 0 0 #D4A843;color:#F4F6FA}
+[dir=rtl] .side .nav.on{box-shadow:inset -3px 0 0 #D4A843}
+.side .who{margin-top:auto}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{min-height:64px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:10px 24px;border-bottom:1px solid var(--border);background:var(--page-bg);position:sticky;top:0;z-index:30}
+.topbar .tools{display:flex;align-items:center;gap:8px;margin-inline-start:auto;flex-wrap:wrap}
+.tabs{display:flex;gap:24px;padding:0 24px;border-bottom:1px solid var(--border);overflow-x:auto}
+.content{padding:24px;display:flex;flex-direction:column;gap:16px}
+.bottom-nav{display:none}
+@media (max-width:1199px){
+  .shell{grid-template-columns:64px minmax(0,1fr)}
+  .side{padding:16px 8px;align-items:center}
+  .side .lbl,.side .brand-text,.side .who .who-text{display:none}
+  .side .nav{padding:0;justify-content:center;width:44px}
+}
+@media (max-width:767px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{display:none}
+  .topbar{padding:10px 16px}
+  .topbar .hide-sm{display:none}
+  .tabs{padding:0 16px;gap:18px}
+  .content{padding:16px 16px 88px}
+  .bottom-nav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;inset-inline:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);z-index:40;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--text-2);text-decoration:none;min-height:48px;justify-content:center}
+  .bottom-nav a.on{color:var(--brand-text)}
+}
+/* ── Layout helpers ── */
+.cols-2{display:grid;grid-template-columns:minmax(0,1fr) 480px;gap:16px;align-items:start}
+.cols-2b{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+.cols-side{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.stack{display:flex;flex-direction:column;gap:16px}
+@media (max-width:1199px){.cols-2,.cols-2b,.cols-side{grid-template-columns:minmax(0,1fr)}}
+/* ── Register (§8) ── */
+.register{display:grid;grid-template-columns:minmax(0,1fr) 440px;min-height:calc(100vh - 60px)}
+.strip{--brand-text:#E4BC5C;--brand-soft:rgba(212,168,67,.16);--ok:#34D399;--ok-soft:rgba(52,211,153,.14);--warn:#FB923C;--warn-soft:rgba(251,146,60,.14);--err:#F87171;--err-soft:rgba(248,113,113,.14);--border:rgba(148,163,184,.18);--surface-3:#1E2430;--text-2:#9AA4B8;min-height:60px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:6px 16px;border-bottom:1px solid rgba(148,163,184,.14);background:#05070D;color:#F4F6FA}
+.strip .tools{display:flex;align-items:center;gap:8px;margin-inline-start:auto}
+.strip .btn-ghost{color:#C4CBD8}
+.strip .btn,.register .btn,.register .chip{min-height:48px}
+.register .cap,.register .label{font-size:14px;line-height:20px}
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tile{border-radius:16px;padding:14px;min-height:124px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);box-shadow:var(--elev-1);text-align:start;font:inherit;color:inherit;cursor:pointer}
+.rail{background:var(--surface);border-inline-start:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.paybar{display:none}
+.register.simple{grid-template-columns:minmax(0,1fr) 420px}
+@media (max-width:1199px){.register,.register.simple{grid-template-columns:minmax(0,1fr) 380px}}
+@media (max-width:899px){
+  .register,.register.simple{grid-template-columns:minmax(0,1fr)}
+  .rail{border-inline-start:0;border-top:1px solid var(--border)}
+  .strip .hide-sm{display:none}
+  .paybar{display:flex;position:fixed;inset-inline:0;bottom:0;z-index:40;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);box-shadow:var(--elev-3)}
+  .register .with-paybar{padding-bottom:96px}
+  .hide-sm{display:none}
+}
+@media (max-width:479px){.total{font-size:36px;line-height:40px}.hero{font-size:48px;line-height:52px}}
+</style>
+<script>(function(){var m=/[?&]theme=(light|dark)/.exec(location.search);document.documentElement.dataset.theme=m?m[1]:'dark'})();</script>
+</head>
+<body>
+<div class="root">
+<a class="skip" href="#main-content">انتقل إلى المحتوى</a><div class="shell">
+  <aside class="side" aria-label="التنقل الرئيسي">
+    <div class="flex items-center gap-3 px-2 pb-4"><span class="plate" style="width:36px;height:36px;border-radius:8px"><img src="assets/titan-logo.png" alt="Titan POS" width="30" height="30" style="object-fit:contain"></span><div class="brand-text"><div class="font-semibold" style="font-size:15px;color:#F4F6FA">Titan POS</div><div class="cap" style="color:#9AA4B8">سوبرماركت فقيه · الحمرا</div></div></div>
+    <a href="#sell" id="nav-sell" class="nav on" aria-label="البيع" aria-current="page"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4A843" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg><span class="lbl">البيع</span></a><a href="#stock" id="nav-stock" class="nav" aria-label="المخزون"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></svg><span class="lbl">المخزون</span></a><a href="#money" id="nav-money" class="nav" aria-label="المال"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg><span class="lbl">المال</span></a><a href="#delivery" id="nav-delivery" class="nav" aria-label="التوصيل"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg><span class="lbl">التوصيل</span></a><a href="#admin" id="nav-admin" class="nav" aria-label="الإدارة"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg><span class="lbl">الإدارة</span></a>
+    <div class="who flex items-center gap-3" style="padding:10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(148,163,184,.12)">
+      <span style="width:32px;height:32px;border-radius:999px;background:#1E2430;display:grid;place-items:center;color:#F4F6FA" class="font-semibold">RF</span>
+      <div class="who-text min-w-0"><div class="font-semibold" style="font-size:13px;color:#F4F6FA">رامي فقيه</div><div class="cap" style="color:#9AA4B8">المالك</div></div>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="min-w-0"><div class="cap meta">البيع</div><h1 class="title" style="margin:0">الإيصالات</h1></div>
+      <div class="tools">
+        <button class="pill t-err" style="min-height:32px;padding:0 12px;border:1px solid var(--border)" aria-label="المزامنة والحالة: مرتجع بحاجة لمراجعة"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16h.01"/><path d="M12 8v4"/><path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z"/></svg><span>مرتجع بحاجة لمراجعة</span></button>
+        <span class="pill t-mute hide-sm" style="min-height:32px"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>الوردية #42 · مفتوحة منذ 08:02</span>
+        <button class="btn btn-ghost btn-sm hide-sm"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>EN</button>
+        <button class="btn btn-ghost btn-sm" aria-label="المظهر"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg></button>
+        <button class="btn btn-ghost btn-sm" aria-label="قفل"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
+        
+      </div>
+    </header>
+    <nav class="tabs" aria-label="الأقسام"><a class="tab" href="?tab=reg">الصندوق</a><a class="tab on" href="?tab=rec" aria-current="page">الإيصالات<span class="badge t-mute num">128</span></a><a class="tab" href="?tab=held">المبيعات المعلقة<span class="badge t-mute num">2</span></a></nav>
+    <div class="content" id="main-content" tabindex="-1">
+      
+      
+      <div class="flex items-center gap-2" style="flex-wrap:wrap"><label class="field-row field" style="width:min(340px,100%)"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><span class="sr-only">بحث</span><input style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;outline:none" placeholder="رقم الإيصال أو الزبون أو الصنف…"></label><div class="flex gap-2" style="flex-wrap:wrap" role="group" aria-label="تصفية"><button class="chip" type="button" aria-pressed="true">اليوم<span class="badge t-mute num">128</span></button><button class="chip" type="button" aria-pressed="false">مرتجعة<span class="badge t-mute num">6</span></button><button class="chip" type="button" aria-pressed="false">ملغاة<span class="badge t-mute num">2</span></button><button class="chip" type="button" aria-pressed="false">بانتظار الإرسال<span class="badge t-warn num">1</span></button></div></div>
+      <div class="cols-2">
+        <div class="card scroll-x" style="overflow-y:hidden">
+          <table class="tbl" style="min-width:640px"><thead><tr><th>الإيصال</th><th>الكاشير</th><th>الدفع</th><th class="r">المجموع</th><th>الحالة</th></tr></thead><tbody>
+          <tr class="sel"><td><div class="font-semibold num" style="white-space:nowrap">S-482911</div><div class="cap num">اليوم 14:32</div></td><td style="color:var(--text-2)">مايا</td><td style="color:var(--text-2)">نقداً</td><td class="r"><div class="num font-semibold">$21.81</div><div class="cap num" style="white-space:nowrap">1,955,000 ل.ل</div></td><td><span class="badge t-info"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>مرتجع جزئياً</span></td></tr><tr class=""><td><div class="font-semibold num" style="white-space:nowrap">S-482910</div><div class="cap num">اليوم 14:27</div></td><td style="color:var(--text-2)">مايا</td><td style="color:var(--text-2)">بطاقة</td><td class="r"><div class="num font-semibold">$9.50</div><div class="cap num" style="white-space:nowrap">850,000 ل.ل</div></td><td><span class="badge t-ok"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>مكتمل</span></td></tr><tr class=""><td><div class="font-semibold num" style="white-space:nowrap">S-482907</div><div class="cap num">اليوم 14:05</div></td><td style="color:var(--text-2)">علي</td><td style="color:var(--text-2)">دين · مخبز رامي</td><td class="r"><div class="num font-semibold">$64.20</div><div class="cap num" style="white-space:nowrap">5,746,000 ل.ل</div></td><td><span class="badge t-warn"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17"/><path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9"/><path d="m2 16 6 6"/><circle cx="16" cy="9" r="2.9"/><circle cx="6" cy="5" r="3"/></svg>دين</span></td></tr><tr class=""><td><div class="font-semibold num" style="white-space:nowrap">S-482903</div><div class="cap num">اليوم 13:48</div></td><td style="color:var(--text-2)">مايا</td><td style="color:var(--text-2)">نقداً</td><td class="r"><div class="num font-semibold">$3.60</div><div class="cap num" style="white-space:nowrap">325,000 ل.ل</div></td><td><span class="badge t-mute"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M4.929 4.929 19.07 19.071"/></svg>ملغى</span></td></tr><tr class=""><td><div class="font-semibold num" style="white-space:nowrap">S-7Q2K-0091</div><div class="cap num">اليوم 13:40</div></td><td style="color:var(--text-2)">الصندوق 2</td><td style="color:var(--text-2)">نقداً</td><td class="r"><div class="num font-semibold">$12.75</div><div class="cap num" style="white-space:nowrap">1,145,000 ل.ل</div></td><td><span class="badge t-warn"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/></svg>بانتظار الإرسال</span></td></tr><tr class=""><td><div class="font-semibold num" style="white-space:nowrap">S-482899</div><div class="cap num">اليوم 13:22</div></td><td style="color:var(--text-2)">علي</td><td style="color:var(--text-2)">محفظة</td><td class="r"><div class="num font-semibold">$18.40</div><div class="cap num" style="white-space:nowrap">1,647,000 ل.ل</div></td><td><span class="badge t-ok"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>مكتمل</span></td></tr>
+          </tbody></table>
+        </div>
+        <section class="card" style="box-shadow:var(--elev-3)" aria-labelledby="rc-title">
+          <div class="flex items-start gap-3" style="padding:16px 20px;border-bottom:1px solid var(--border)"><div style="flex:1;min-width:0"><h2 class="sub" style="margin:0"><span id="rc-title" class="num">S-482911</span></h2><div class="cap num">اليوم 14:32 · مايا · الصندوق 1 · الوردية #42</div></div><button class="btn btn-ghost btn-sm" aria-label="إغلاق"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></div>
+          <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+            <div class="flex gap-2" style="flex-wrap:wrap"><span class="badge t-info"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>مرتجع جزئياً</span><span class="badge t-mute num">السعر 89,500 ل.ل / 1$</span></div>
+            <div class="flex items-center gap-3" style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="flex:1;min-width:0"><div class="font-semibold">لبن المراعي 1 ل</div><div class="num" style="color:var(--text-2)">2 × $1.85 · <span style="color:var(--info)">أُرجع 1</span></div></div><span class="num font-semibold">$3.70</span></div><div class="flex items-center gap-3" style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="flex:1;min-width:0"><div class="font-semibold">آرييل كبسولات 22</div><div class="num" style="color:var(--text-2)">1 × $9.50</div></div><span class="num font-semibold">$9.50</span></div><div class="flex items-center gap-3" style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="flex:1;min-width:0"><div class="font-semibold">خبز عربي</div><div class="num" style="color:var(--text-2)">3 × $0.95</div></div><span class="num font-semibold">$2.85</span></div><div class="flex items-center gap-3" style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="flex:1;min-width:0"><div class="font-semibold">بيبسي 330 مل</div><div class="num" style="color:var(--text-2)">6 × $0.60</div></div><span class="num font-semibold">$3.60</span></div>
+            <div class="flex justify-between gap-3" style="flex-wrap:wrap"><span style="color:var(--text-2)">المدفوع</span><span class="num font-semibold ">$21.81 · 1,955,000 ل.ل</span></div><div class="flex justify-between gap-3" style="flex-wrap:wrap"><span style="color:var(--text-2)">المرتجع</span><span class="num font-semibold ">−$1.85 · R-7Q2K-LZ4M1B</span></div><div class="flex justify-between gap-3" style="flex-wrap:wrap"><span style="color:var(--text-2)">الصافي</span><span class="num font-semibold ">$19.96</span></div>
+            <div class="flex gap-2" style="flex-wrap:wrap"><button class="btn btn-sm"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>إعادة طباعة</button><button class="btn btn-sm"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/></svg>WhatsApp</button><button class="btn btn-sm" disabled aria-describedby="void-why"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M4.929 4.929 19.07 19.071"/></svg>إلغاء</button><button class="btn btn-primary btn-sm" style="margin-inline-start:auto"><svg class="ic dir" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/></svg>إرجاع أصناف</button></div>
+            <span id="void-why" class="cap">الإلغاء متوقف لأن لهذا الإيصال مرتجعاً. أرجِع الأصناف المتبقية بدلاً منه.</span>
+          </div>
+        </section>
+      </div>
+      <section aria-labelledby="states-title" style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+      <div><h2 id="states-title" class="title" style="margin:0">حالات هذه الصفحة</h2><p class="cap" style="margin:2px 0 0">النوافذ والأخطاء والحالات الفارغة والصلاحيات، معروضة للمراجعة.</p></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:16px;align-items:start"><section class="card" style="display:flex;flex-direction:column;box-shadow:var(--elev-3);" aria-label="نافذة: إرجاع أصناف · S-482911">
+      <div class="flex items-center gap-2" style="padding:14px 18px;border-bottom:1px solid var(--border)"><span class="badge t-info"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 4v4"/><path d="M2 8h20"/><path d="M6 4v4"/></svg>نافذة</span><h3 class="sub" style="margin:0;font-size:15px">إرجاع أصناف · S-482911</h3></div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;flex:1">
+          <div class="cap">اختر كمية كل سطر. الحدود تشمل المرتجعات السابقة.</div>
+          <div class="flex items-center gap-3" style="flex-wrap:wrap"><div style="flex:1;min-width:140px"><div class="font-semibold">لبن المراعي 1 ل</div><div class="cap">بقي 1 من 1</div></div><span class="field-row field" style="width:120px;min-height:44px" dir="ltr"><input inputmode="numeric" value="1" aria-label="كمية الإرجاع لبن المراعي 1 ل"  style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-weight:600;text-align:end;outline:none"></span></div><div class="flex items-center gap-3" style="flex-wrap:wrap"><div style="flex:1;min-width:140px"><div class="font-semibold">آرييل كبسولات 22</div><div class="cap">بقي 1 من 1</div></div><span class="field-row field" style="width:120px;min-height:44px" dir="ltr"><input inputmode="numeric" value="0" aria-label="كمية الإرجاع آرييل كبسولات 22"  style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-weight:600;text-align:end;outline:none"></span></div><div class="flex items-center gap-3" style="flex-wrap:wrap"><div style="flex:1;min-width:140px"><div class="font-semibold">بيبسي 330 مل</div><div class="cap">بقي 6 من 6</div><span id="rq-2" class="error"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>بقي 6 فقط للإرجاع في هذا السطر</span></div><span class="field-row field" style="width:120px;min-height:44px;border-color:var(--err)" dir="ltr"><input inputmode="numeric" value="7" aria-label="كمية الإرجاع بيبسي 330 مل" aria-invalid="true" aria-describedby="rq-2" style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-weight:600;text-align:end;outline:none"></span></div>
+          <div class="seg" role="radiogroup" aria-label="طريقة الإرجاع" style="grid-template-columns:repeat(2,minmax(0,1fr));"><label><input type="radio" name="rf-method" value="0" checked><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg><span>نقداً</span><svg class="ic chk" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></label><label><input type="radio" name="rf-method" value="1"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg><span>بطاقة</span><svg class="ic chk" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></label></div>
+          <label style="display:block"><span class="label">السبب</span><select class="field"><option selected>صنف تالف</option><option>غيّر الزبون رأيه</option><option>صنف خاطئ</option></select></label>
+          <div class="inset" style="padding:12px"><div class="flex justify-between gap-3" style="flex-wrap:wrap"><span style="color:var(--text-2)">المرتجع</span><span class="num font-semibold ">$1.85</span></div><div class="flex justify-between gap-3" style="flex-wrap:wrap"><span style="color:var(--text-2)">بالليرة بسعر البيع</span><span class="num font-semibold ">165,575 ل.ل</span></div><div class="flex justify-between gap-3" style="flex-wrap:wrap"><span style="color:var(--text-2)">يُدفع نقداً</span><span class="num font-semibold ">170,000 ل.ل</span></div><div class="cap" style="margin-top:6px">يستخدم السعر الأصلي (89,500) لا سعر اليوم.</div></div></div>
+      <div class="flex gap-2" style="padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap;justify-content:flex-end"><button class="btn">إلغاء</button><button class="btn btn-primary">إرجاع 1.85$</button></div>
+    </section><section class="card" style="display:flex;flex-direction:column;" aria-label="خطأ: رفض الخادم المرتجع">
+      <div class="flex items-center gap-2" style="padding:14px 18px;border-bottom:1px solid var(--border)"><span class="badge t-err"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>خطأ</span><h3 class="sub" style="margin:0;font-size:15px">رفض الخادم المرتجع</h3></div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;flex:1">
+          <div class="banner t-err" role="alert"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16h.01"/><path d="M12 8v4"/><path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z"/></svg><div class="grow"><div class="font-semibold" style="color:var(--text)">R-30412 · $18.40</div><div class="cap" style="color:var(--text-2)">صدر دون اتصال. أرجع الصندوق 1 الأصناف نفسها، فرفضه الخادم. خرج النقد من الصندوق بالفعل.</div></div></div>
+          <div class="cap">يبقى على هذا الإيصال وفي المال حتى يسوّيه مدير.</div></div>
+      <div class="flex gap-2" style="padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap;justify-content:flex-end"><button class="btn btn-primary btn-sm">تسوية المرتجع</button></div>
+    </section><section class="card" style="display:flex;flex-direction:column;" aria-label="فارغ: لا إيصالات مطابقة">
+      <div class="flex items-center gap-2" style="padding:14px 18px;border-bottom:1px solid var(--border)"><span class="badge t-mute"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>فارغ</span><h3 class="sub" style="margin:0;font-size:15px">لا إيصالات مطابقة</h3></div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;flex:1"><div class="inset" style="padding:24px;text-align:center;border-style:dashed;display:flex;flex-direction:column;align-items:center;gap:6px"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m13.5 8.5-5 5"/><path d="m8.5 8.5 5 5"/><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><div class="font-semibold">لا إيصالات تطابق "تايد" اليوم</div><div class="cap" style="max-width:300px">جرّب كلمة أخرى أو اعرض كل التواريخ.</div><button class="btn btn-sm">مسح التصفية</button></div></div>
+      
+    </section><section class="card" style="display:flex;flex-direction:column;" aria-label="صلاحية: كاشير بلا صلاحية الإرجاع">
+      <div class="flex items-center gap-2" style="padding:14px 18px;border-bottom:1px solid var(--border)"><span class="badge t-mute"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 2 20 20"/><path d="M5 5a1 1 0 0 0-1 1v7c0 5 3.5 7.5 7.67 8.94a1 1 0 0 0 .67.01c2.35-.82 4.48-1.97 5.9-3.71"/><path d="M9.309 3.652A12.252 12.252 0 0 0 11.24 2.28a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1v7a9.784 9.784 0 0 1-.08 1.264"/></svg>صلاحية</span><h3 class="sub" style="margin:0;font-size:15px">كاشير بلا صلاحية الإرجاع</h3></div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;flex:1">
+          <div class="flex items-center gap-2" style="flex-wrap:wrap"><button class="btn btn-sm" disabled aria-describedby="rf-perm"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>إرجاع أصناف</button><span id="rf-perm" class="cap">يتطلب صلاحية الإرجاع.</span></div>
+          <button class="btn btn-sm" style="align-self:flex-start"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>موافقة المدير برمز PIN</button></div>
+      
+    </section></div>
+    </section>
+    </div>
+  </main>
+  <nav class="bottom-nav" aria-label="التنقل الرئيسي"><a href="#sell" id="bnav-sell" class="on" aria-current="page"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg><span>البيع</span></a><a href="#stock" id="bnav-stock" class=""><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></svg><span>المخزون</span></a><a href="#money" id="bnav-money" class=""><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg><span>المال</span></a><a href="#delivery" id="bnav-delivery" class=""><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg><span>التوصيل</span></a><a href="#admin" id="bnav-admin" class=""><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg><span>الإدارة</span></a></nav>
+</div>
+</div>
+<script>
+(function(){
+  if(!/[?&]qa=1/.test(location.search))return;
+  function lum(c){var m=c.match(/[\d.]+/g);if(!m)return null;var a=m[3]===undefined?1:+m[3];var v=[m[0],m[1],m[2]].map(function(x){x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});return {l:.2126*v[0]+.7152*v[1]+.0722*v[2],a:a,rgb:[+m[0],+m[1],+m[2]]}}
+  function bgOf(el){var stack=[];while(el&&el.nodeType===1){var c=getComputedStyle(el).backgroundColor;var p=lum(c);if(p&&p.a>0){stack.push(p);if(p.a>=1)break}el=el.parentElement}var base=[11,14,20];var root=lum(getComputedStyle(document.body).backgroundColor);if(root)base=root.rgb;for(var i=stack.length-1;i>=0;i--){var s=stack[i];base=base.map(function(b,k){return s.rgb[k]*s.a+b*(1-s.a)})}return base}
+  function L(rgb){var v=rgb.map(function(x){x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});return .2126*v[0]+.7152*v[1]+.0722*v[2]}
+  setTimeout(function(){document.fonts.ready.then(function(){
+    var low=[];var seen=0;
+    document.querySelectorAll('.root *').forEach(function(el){
+      if(!el.childNodes.length)return;var own=[].some.call(el.childNodes,function(n){return n.nodeType===3&&n.textContent.trim()});if(!own)return;
+      var r=el.getBoundingClientRect();if(!r.width||!r.height)return;var cs=getComputedStyle(el);if(cs.visibility==='hidden'||+cs.opacity===0)return;
+      seen++;var fg=lum(cs.color);if(!fg)return;var bg=bgOf(el);var fgc=fg.rgb.map(function(x,k){return x*fg.a+bg[k]*(1-fg.a)});
+      var a=L(fgc),b=L(bg);var ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);var size=parseFloat(cs.fontSize);var bold=+cs.fontWeight>=600;
+      var need=(size>=24||(size>=18.66&&bold))?3:4.5;if(el.closest('[disabled]'))need=0;
+      if(ratio<need)low.push({text:el.textContent.trim().slice(0,40),ratio:Math.round(ratio*100)/100,need:need});
+    });
+    var unnamed=[].filter.call(document.querySelectorAll('button,a,input,select,textarea'),function(el){if(el.type==='hidden')return false;var n=(el.getAttribute('aria-label')||el.textContent||'').trim();if(n)return false;if(el.id&&document.querySelector('label[for="'+el.id+'"]'))return false;return !el.closest('label')}).map(function(el){return el.outerHTML.slice(0,60)});
+    var lang=document.documentElement.lang;
+    var report={screen:document.title,theme:document.documentElement.dataset.theme,lang:lang,dir:document.documentElement.dir,viewport:innerWidth+'x'+innerHeight,
+      overflowX:document.documentElement.scrollWidth>innerWidth+1?document.documentElement.scrollWidth:0,
+      overflowBy:(function(){var w=null;document.querySelectorAll('.root *').forEach(function(el){var r=el.getBoundingClientRect();if(r.right>innerWidth+1||r.left<-1){if(!w||r.width<w.width)w={tag:el.tagName,cls:typeof el.className==='string'?el.className.slice(0,40):'',width:Math.round(r.width)}}});return w})(),
+      brokenImages:[].filter.call(document.images,function(i){return !i.complete||!i.naturalWidth}).length,
+      icons:document.querySelectorAll('svg.ic').length,
+      fontLatin:document.fonts.check('600 16px Inter'),fontArabic:document.fonts.check('600 16px "IBM Plex Sans Arabic"'),
+      textNodesChecked:seen,lowContrast:low.slice(0,12),lowContrastCount:low.length,unnamedControls:unnamed.slice(0,8)};
+    var pre=document.createElement('pre');pre.id='qa-report';pre.textContent=JSON.stringify(report);document.body.appendChild(pre);
+  })},300);
+})();</script>
+</body>
+</html>

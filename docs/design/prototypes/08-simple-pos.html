@@ -10,14 +10,18 @@
 :root,[data-theme=dark]{color-scheme:dark;--page-bg:#0B0E14;--surface:#12161F;--surface-2:#171C27;--surface-3:#1E2430;--surface-hover:#1A2029;
 --border:rgba(148,163,184,.10);--border-strong:rgba(148,163,184,.22);--text:#F4F6FA;--text-2:#9AA4B8;--text-3:#7C879B;
 --brand:#D4A843;--brand-hover:#E4BC5C;--brand-soft:rgba(212,168,67,.12);--brand-border:rgba(212,168,67,.40);--brand-contrast:#2C1F05;--brand-text:#E4BC5C;
---ok:#34D399;--ok-soft:rgba(52,211,153,.12);--warn:#FBBF24;--warn-soft:rgba(251,191,36,.12);--err:#F87171;--err-soft:rgba(248,113,113,.12);--info:#60A5FA;--info-soft:rgba(96,165,250,.12);
+--ok:#34D399;--ok-soft:rgba(52,211,153,.12);--ok-money:#34D399;--warn:#FB923C;--warn-soft:rgba(251,146,60,.12);--err:#F87171;--err-soft:rgba(248,113,113,.12);--info:#60A5FA;--info-soft:rgba(96,165,250,.12);
 --rail-bg:linear-gradient(180deg,#0A0F18,#05070D);--rail-text:#C4CBD8;--plate:#05070D;
+--border-input:rgba(148,163,184,.60);--pay-bg:#D4A843;--pay-hover:#E4BC5C;--pay-text:#2C1F05;--disabled-bg:#1A2029;--disabled-text:#7C879B;
+--chart-1:#5CB894;--chart-2:#7D8CD9;--chart-3:#A186C9;--chart-4:#D97A8C;--chart-hi:#C4CBD8;
 --elev-1:0 1px 2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);--elev-3:0 16px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);--scrim:rgba(5,7,13,.78)}
 [data-theme=light]{color-scheme:light;--page-bg:#F7F5F1;--surface:#FFFFFF;--surface-2:#F6F4EF;--surface-3:#ECE8E1;--surface-hover:#F4F1EB;
 --border:#E8E4DC;--border-strong:#D3CCC0;--text:#1C1917;--text-2:#57534E;--text-3:#635D55;
 --brand:#996d14;--brand-hover:#7E5A10;--brand-soft:rgba(156,111,20,.10);--brand-border:rgba(156,111,20,.40);--brand-contrast:#FFFFFF;--brand-text:#6B4C0A;
---ok:#137639;--ok-soft:rgba(22,163,74,.10);--warn:#a44c09;--warn-soft:rgba(180,83,9,.10);--err:#b91c1c;--err-soft:rgba(220,38,38,.09);--info:#0e6d93;--info-soft:rgba(14,122,165,.10);
+--ok:#137639;--ok-soft:rgba(22,163,74,.10);--ok-money:#0A5428;--warn:#a44c09;--warn-soft:rgba(180,83,9,.10);--err:#b91c1c;--err-soft:rgba(220,38,38,.09);--info:#0e6d93;--info-soft:rgba(14,122,165,.10);
 --rail-bg:linear-gradient(180deg,#0A0F18,#05070D);--rail-text:#C4CBD8;--plate:#05070D;
+--border-input:#857C70;--pay-bg:#D4A843;--pay-hover:#C99A32;--pay-text:#2C1F05;--disabled-bg:#ECE8E1;--disabled-text:#635D55;
+--chart-1:#2E8B62;--chart-2:#4F5FB8;--chart-3:#7B5BA8;--chart-4:#B5475E;--chart-hi:#57534E;
 --elev-1:0 1px 2px rgba(28,25,23,.06);--elev-3:0 16px 40px rgba(28,25,23,.16);--scrim:rgba(28,25,23,.45)}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inter","IBM Plex Sans Arabic",system-ui,sans-serif;font-size:14px;line-height:20px}
@@ -37,14 +41,16 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
 .inset{background:var(--surface-2);border:1px solid var(--border);border-radius:8px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font:inherit;font-weight:600;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);white-space:nowrap;cursor:pointer}
 .btn-sm{min-height:32px;padding:0 12px;font-size:13px}
+.skip{position:absolute;inset-inline-start:8px;top:-60px;z-index:100;background:var(--surface);color:var(--text);border:2px solid var(--brand);border-radius:8px;padding:8px 14px;font-weight:600;text-decoration:none}
+.skip:focus{top:8px}
 .btn-touch{min-height:48px}
 .btn-primary{background:var(--brand);border-color:var(--brand);color:var(--brand-contrast)}
 .btn-ghost{background:transparent;border-color:transparent;color:var(--text-2)}
 .btn-danger{background:var(--err-soft);border-color:transparent;color:var(--err)}
-.btn-pay{width:100%;min-height:64px;border-radius:12px;background:var(--brand);color:var(--brand-contrast);font:inherit;font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;cursor:pointer}
-.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn-pay{width:100%;min-height:64px;border-radius:12px;background:var(--pay-bg);color:var(--pay-text);font:inherit;font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;cursor:pointer}
+.btn[disabled]{background:var(--disabled-bg);border-color:var(--border);color:var(--disabled-text);cursor:not-allowed}
 .btn:focus-visible,.btn-pay:focus-visible,.field:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.field{width:100%;min-height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);padding:8px 12px;font:inherit}
+.field{width:100%;min-height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-input);color:var(--text);padding:8px 12px;font:inherit}
 .field-row{display:flex;align-items:center;gap:8px}
 .focus{outline:2px solid var(--brand);outline-offset:2px}
 .label{display:block;font-size:12px;line-height:16px;font-weight:600;color:var(--text-2);margin-bottom:6px}
@@ -62,21 +68,33 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
 .scroll-x{overflow-x:auto;position:relative}
 .sel{background:var(--brand-soft);box-shadow:inset 3px 0 0 var(--brand)}
 [dir=rtl] .sel{box-shadow:inset -3px 0 0 var(--brand)}
-.tab{min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap}
+.tab{min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap;text-decoration:none}
+.tab:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
 .tab.on{color:var(--text);border-color:var(--brand)}
-.kbd{font-size:11px;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface-2)}
+.kbd{font-size:12px;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface-2)}
 .banner{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 16px;flex-wrap:wrap}
 .banner > .grow{flex:1;min-width:220px}
 .plate{background:var(--plate);display:inline-grid;place-items:center;border:1px solid rgba(212,168,67,.25)}
-.seg{display:grid;gap:4px;padding:4px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border)}
-.seg > *{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:8px;font-weight:600;color:var(--text-2)}
-.seg > .on{background:var(--surface);box-shadow:var(--elev-1);color:var(--text)}
+.seg{display:grid;gap:4px;padding:4px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-input);margin:0;min-width:0}
+.seg > label{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:8px;font-weight:600;color:var(--text-2);cursor:pointer;padding:0 6px;text-align:center}
+.seg input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.seg > label:has(input:checked){background:var(--brand-soft);color:var(--text);box-shadow:inset 0 -2px 0 var(--brand)}
+.seg > label:has(input:focus-visible){outline:2px solid var(--brand);outline-offset:2px}
+.seg .chk{display:none}.seg > label:has(input:checked) .chk{display:inline-block}.seg > label:has(input:checked) .ic:not(.chk){display:none}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--brand-soft);border-color:var(--brand-border);color:var(--text)}
+.chip:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.money-in{min-height:48px;padding:0 12px;gap:6px}
+.money-in input{flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:18px;font-weight:600;text-align:end;outline:none;font-variant-numeric:tabular-nums}
+.money-in .adorn{color:var(--text-2);font-weight:600}
+.money-in:focus-within{outline:2px solid var(--brand);outline-offset:2px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 /* ── Shell (§2): 232px sidebar ≥1200 · 64px rail 768–1199 · bottom nav <768 ── */
 .shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
 .side{background-color:#05070D;background-image:var(--rail-bg);border-inline-end:1px solid rgba(148,163,184,.12);display:flex;flex-direction:column;gap:4px;padding:16px 12px;color:var(--rail-text);position:sticky;top:0;height:100vh}
-.side .nav{display:flex;align-items:center;gap:12px;min-height:44px;border-radius:8px;padding:0 12px;font-weight:600;color:var(--rail-text)}
+.side .nav{display:flex;align-items:center;gap:12px;min-height:44px;border-radius:8px;padding:0 12px;font-weight:600;color:var(--rail-text);text-decoration:none}
+.side .nav:focus-visible{outline:2px solid #D4A843;outline-offset:2px}
 .side .nav.on{background:rgba(212,168,67,.14);box-shadow:inset 3px 0 0 #D4A843;color:#F4F6FA}
 [dir=rtl] .side .nav.on{box-shadow:inset -3px 0 0 #D4A843}
 .side .who{margin-top:auto}
@@ -100,7 +118,7 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
   .tabs{padding:0 16px;gap:18px}
   .content{padding:16px 16px 88px}
   .bottom-nav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;inset-inline:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);z-index:40;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
-  .bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--text-2);text-decoration:none;min-height:48px;justify-content:center}
+  .bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--text-2);text-decoration:none;min-height:48px;justify-content:center}
   .bottom-nav a.on{color:var(--brand-text)}
 }
 /* ── Layout helpers ── */
@@ -111,10 +129,12 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
 .stack{display:flex;flex-direction:column;gap:16px}
 @media (max-width:1199px){.cols-2,.cols-2b,.cols-side{grid-template-columns:minmax(0,1fr)}}
 /* ── Register (§8) ── */
-.register{display:grid;grid-template-columns:minmax(0,1fr) 440px;min-height:calc(100vh - 48px)}
-.strip{--brand-text:#E4BC5C;--brand-soft:rgba(212,168,67,.16);--ok:#34D399;--ok-soft:rgba(52,211,153,.14);--warn:#FBBF24;--warn-soft:rgba(251,191,36,.14);--err:#F87171;--err-soft:rgba(248,113,113,.14);--border:rgba(148,163,184,.18);min-height:48px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:6px 16px;border-bottom:1px solid rgba(148,163,184,.14);background:#05070D;color:#F4F6FA}
+.register{display:grid;grid-template-columns:minmax(0,1fr) 440px;min-height:calc(100vh - 60px)}
+.strip{--brand-text:#E4BC5C;--brand-soft:rgba(212,168,67,.16);--ok:#34D399;--ok-soft:rgba(52,211,153,.14);--warn:#FB923C;--warn-soft:rgba(251,146,60,.14);--err:#F87171;--err-soft:rgba(248,113,113,.14);--border:rgba(148,163,184,.18);--surface-3:#1E2430;--text-2:#9AA4B8;min-height:60px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:6px 16px;border-bottom:1px solid rgba(148,163,184,.14);background:#05070D;color:#F4F6FA}
 .strip .tools{display:flex;align-items:center;gap:8px;margin-inline-start:auto}
 .strip .btn-ghost{color:#C4CBD8}
+.strip .btn,.register .btn,.register .chip{min-height:48px}
+.register .cap,.register .label{font-size:14px;line-height:20px}
 .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .tile{border-radius:16px;padding:14px;min-height:124px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);box-shadow:var(--elev-1);text-align:start;font:inherit;color:inherit;cursor:pointer}
 .rail{background:var(--surface);border-inline-start:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
@@ -141,17 +161,17 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
     <div class="tools">
       <button class="pill t-warn" style="min-height:32px;padding:0 12px;border:1px solid var(--border)" aria-label="Sync and status: Offline · 3 waiting"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.94 5.274A7 7 0 0 1 15.71 10h1.79a4.5 4.5 0 0 1 4.222 6.057"/><path d="M18.796 18.81A4.5 4.5 0 0 1 17.5 19H9A7 7 0 0 1 5.79 5.78"/><path d="m2 2 20 20"/></svg><span>Offline · 3 waiting</span></button>
       <button class="btn btn-ghost btn-sm hide-sm"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>عربي</button>
-      <span class="pill t-gold hide-sm"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>Simple mode</span>
+      <span class="pill t-mute hide-sm"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>Simple mode</span>
       <button class="btn btn-ghost btn-sm" aria-label="Lock"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
     </div>
   </div>
   <div class="register simple">
     <section class="with-paybar" style="padding:24px;display:flex;flex-direction:column;gap:16px;min-width:0" aria-label="Scan and cart">
-      <label class="field-row field focus" style="min-height:72px;border-radius:16px;border-color:var(--brand-border);padding:0 20px"><svg class="ic" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M17 7v10"/></svg><span class="sr-only">Scan</span><input style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:20px;outline:none" placeholder="Scan the next item"></label>
+      <label class="field-row field focus" style="min-height:72px;border-radius:16px;border-color:var(--brand-border);padding:0 20px"><svg class="ic" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M17 7v10"/></svg><span class="sr-only">Scan</span><input style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:20px;outline:none" placeholder="Scan the next item"></label>
       <div class="banner t-ok" role="status" style="font-size:15px"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><span><span class="font-semibold">Pepsi 330 ml</span> × 6 · $3.60</span><button class="btn btn-sm" style="margin-inline-start:auto"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Undo</button></div>
       <div class="card" style="padding:4px 20px">
       <div class="flex items-center gap-3" style="padding:14px 0;border-bottom:1px solid var(--border)">
-        <div class="min-w-0" style="flex:1"><div class="font-semibold" style="font-size:16px">Almarai Laban 1 L</div><div class="cap num">2 × $1.85</div></div>
+        <div class="min-w-0" style="flex:1"><div class="font-semibold" style="font-size:16px">Almarai Laban 1 L</div><div class="num" style="color:var(--text-2)">2 × $1.85</div></div>
         <div class="flex items-center inset" style="border-radius:10px">
           <button class="btn btn-ghost" style="min-height:48px;width:48px;padding:0" aria-label="Decrease Almarai Laban 1 L"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
           <span class="num font-semibold" style="width:28px;text-align:center">2</span>
@@ -160,7 +180,7 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
         <div class="num font-semibold" style="width:64px;text-align:end">$3.70</div>
       </div>
       <div class="flex items-center gap-3" style="padding:14px 0;border-bottom:1px solid var(--border)">
-        <div class="min-w-0" style="flex:1"><div class="font-semibold" style="font-size:16px">Ariel Pods 22</div><div class="cap num">1 × $9.50</div></div>
+        <div class="min-w-0" style="flex:1"><div class="font-semibold" style="font-size:16px">Ariel Pods 22</div><div class="num" style="color:var(--text-2)">1 × $9.50</div></div>
         <div class="flex items-center inset" style="border-radius:10px">
           <button class="btn btn-ghost" style="min-height:48px;width:48px;padding:0" aria-label="Decrease Ariel Pods 22"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
           <span class="num font-semibold" style="width:28px;text-align:center">1</span>
@@ -169,7 +189,7 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
         <div class="num font-semibold" style="width:64px;text-align:end">$9.50</div>
       </div>
       <div class="flex items-center gap-3" style="padding:14px 0;border-bottom:1px solid var(--border)">
-        <div class="min-w-0" style="flex:1"><div class="font-semibold" style="font-size:16px">Arabic bread</div><div class="cap num">3 × $0.95</div></div>
+        <div class="min-w-0" style="flex:1"><div class="font-semibold" style="font-size:16px">Arabic bread</div><div class="num" style="color:var(--text-2)">3 × $0.95</div></div>
         <div class="flex items-center inset" style="border-radius:10px">
           <button class="btn btn-ghost" style="min-height:48px;width:48px;padding:0" aria-label="Decrease Arabic bread"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
           <span class="num font-semibold" style="width:28px;text-align:center">3</span>
@@ -178,7 +198,7 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
         <div class="num font-semibold" style="width:64px;text-align:end">$2.85</div>
       </div>
       <div class="flex items-center gap-3" style="padding:14px 0;border-bottom:1px solid var(--border)">
-        <div class="min-w-0" style="flex:1"><div class="font-semibold" style="font-size:16px">Pepsi 330 ml</div><div class="cap num">6 × $0.60</div></div>
+        <div class="min-w-0" style="flex:1"><div class="font-semibold" style="font-size:16px">Pepsi 330 ml</div><div class="num" style="color:var(--text-2)">6 × $0.60</div></div>
         <div class="flex items-center inset" style="border-radius:10px">
           <button class="btn btn-ghost" style="min-height:48px;width:48px;padding:0" aria-label="Decrease Pepsi 330 ml"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
           <span class="num font-semibold" style="width:28px;text-align:center">6</span>
@@ -189,7 +209,7 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
       <div class="flex gap-2 cap meta" style="flex-wrap:wrap"><span><span class="kbd">Enter</span> pay</span><span><span class="kbd">+</span>/<span class="kbd">−</span> quantity of last item</span><span><span class="kbd">Del</span> remove last item</span></div>
     </section>
     <aside class="rail" aria-label="Payment" style="padding:24px;gap:16px">
-      <div><div class="cap" style="font-size:13px">Total due · 12 items</div><div class="hero num">$21.81</div><div class="sub num" style="color:var(--text-2)">1,952,000 LBP</div></div>
+      <div><div class="sub" style="color:var(--text-2)">Total due · 4 lines · 12 units</div><div class="hero num">$21.81</div><div class="sub num">1,955,000 LBP cash</div><div class="cap">Rounded up from 1,952,000 (nearest 5,000 note)</div></div>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
         <button class="btn btn-touch" style="min-height:72px;flex-direction:column;gap:2px"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg><span>Exact $</span><span class="cap num">$21.81</span></button>
         <button class="btn btn-touch" style="min-height:72px;flex-direction:column;gap:2px"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg><span>Exact LBP</span><span class="cap num">1,955,000</span></button>
@@ -197,11 +217,11 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
         <button class="btn btn-touch" style="min-height:72px;flex-direction:column;gap:2px"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg><span>Other amount</span><span class="cap">change calculated</span></button>
       </div>
       <label class="flex items-center gap-3 inset" style="padding:12px 14px;cursor:pointer"><input type="checkbox" checked style="width:20px;height:20px;accent-color:var(--brand)"><span><span class="font-semibold" style="display:block">Print receipt</span><span class="cap">80 mm · Arabic + English · both currencies</span></span></label>
-      <button class="btn-pay hide-sm" style="margin-top:auto"><span>Pay</span><span class="num">$21.81</span><span class="kbd" style="background:rgba(0,0,0,.12);color:var(--brand-contrast);border-color:rgba(0,0,0,.2)">Enter</span></button>
-      <button class="btn btn-ghost btn-sm hide-sm" style="align-self:center"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>Switch to full register</button>
+      <button class="btn-pay hide-sm" style="margin-top:auto"><span>Pay</span><span class="num">$21.81 · 1,955,000 LBP</span><span class="kbd" style="background:rgba(0,0,0,.12);color:var(--pay-text);border-color:rgba(0,0,0,.2)">Enter</span></button>
+      <button class="btn btn-ghost hide-sm" style="align-self:center"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>Switch to full register</button>
     </aside>
   </div>
-  <div class="paybar"><button class="btn-pay"><span>Pay</span><span class="num">$21.81</span><span class="num cap" style="color:inherit">1,952,000 LBP</span></button></div>
+  <div class="paybar"><button class="btn-pay"><span>Pay</span><span class="num">$21.81</span><span class="num" style="font-size:14px">1,955,000 LBP</span></button></div>
 </div>
 <script>
 (function(){

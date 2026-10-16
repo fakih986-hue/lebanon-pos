@@ -1,12 +1,12 @@
 # Midnight Gold v2 — design review record
 
-Round 2: 2026-10-16. Prototypes in `docs/design/prototypes/`. Rendered QA in `docs/design/qa/`.
+Round 3: 2026-10-16. Prototypes in `docs/design/prototypes/` (17 surfaces × EN/AR). Rendered QA in `docs/design/qa/`.
 
 ## Tools: what contributed, what was unavailable
 
 | Tool | Status | Contribution |
 |---|---|---|
-| **Better Design** | **Unavailable.** No plugin or skill by that name exists in the installed plugins, the configured marketplaces or the claude.ai plugin catalog. | None. The closest catalog matches (Anthropic **Design** — critique, accessibility review, design system, UX copy — and **frontend-design**) were offered for install but are not installed in this session. |
+| **Better Design** (`marvkr/better-design`, MCP server 0.44.0) | **Used in round 3**, through its MCP endpoint (verified: handshake, 42 tools). Skill installed in `.claude/skills/better-design`. **Quota now exhausted** (HTTP 402 after 25 free anonymous queries); a free account is needed to continue. Not yet loaded as native tools in this Claude Code session (see "Better Design integration" below) | Review rules, UI principles (hierarchy, color, typography, spacing, accessibility, depth), UX principles (navigation, forms, microcopy, errors, onboarding), `check-comprehension` on screens 01–09. Its findings drove round 3 (below) and §12 of the design system |
 | Superdesign CLI 0.14 (skill 0.6.0) | Available. **Generation credits exhausted**; nothing purchased. | Repo init (`.superdesign/init/`), project + Brand Asset (logo), canvas hosting of hand-authored drafts via `import-design-draft` (no credits) |
 | Hand authoring (Claude, `claude-opus-5-5`) | Used | All draft HTML, through `docs/design/build-prototypes.cjs` |
 | Headless Chrome, network blocked | Used | 108 renders (9 screens × EN/AR × dark/light × 1440/1024/390) with screenshots; per-page self-check (overflow, broken images, loaded fonts, unnamed controls, rendered text contrast) |
@@ -15,6 +15,41 @@ Round 2: 2026-10-16. Prototypes in `docs/design/prototypes/`. Rendered QA in `do
 | Local Tailwind compiler (`@tailwindcss/node` + oxide) | Used | Compiles exactly the utilities the prototypes use, so there is no CDN |
 | `@fontsource/inter`, `@fontsource/ibm-plex-sans-arabic` (OFL-1.1) | Installed in `apps/desktop` | Bundled woff2 fonts (Latin + Arabic, 400–700) |
 | `lucide-react` (already a dependency, ISC) | Used | Icons inlined as SVG, so there is no icon CDN |
+
+## Better Design integration: exact state
+
+| Step | State |
+|---|---|
+| Skill `better-design` | Installed (`npx skills add marvkr/better-design --skill better-design`), project copy in `.claude/skills/better-design` |
+| Installer `npx better-design --project` | Ran. It did **not** configure Claude Code (no `claude` CLI on PATH). It wrote `opencode.json` (holds the agent key), `.codex/hooks.json`, `skills-lock.json` and a block in `AGENTS.md`. The first three are git-ignored |
+| Claude Code MCP entry | Added as a git-ignored project `.mcp.json` (`better-design`, remote HTTP, same key). Verified from this machine with that exact entry: handshake OK, 42 tools, `check-comprehension` answered |
+| Native tools in this session | **Not loaded.** Remaining step: restart Claude Code in this folder and approve the project MCP server `better-design` when prompted |
+| Quota | **Exhausted** (HTTP 402 `AGENT_QUOTA_EXHAUSTED`). Remaining step: create a free Better Design account with the claim link saved in the git-ignored `.better-design-claim.local.txt`; the key and history carry over |
+| Not run | `inspect-spacing` and `check-comprehension` for 10–17 (quota); `finalize-dashboard-review` (needs a public deploy, not authorised) |
+
+**Not followed from the installer's AGENTS.md block:**
+- **"Deploy dashboards to a public HTTPS preview".** Deployment is not authorised.
+- **"Start UI builds with `find-design-system`".** The product keeps its own Midnight Gold system, and the block's own first rule says the same.
+
+## Round 3: Better Design findings and what changed
+
+| Severity | Finding (Better Design rule) | Change |
+|---|---|---|
+| Critical | Cash total shown two ways: 1,952,000 on the total and pay button, but change computed from 1,955,000 (`numbers-carry-a-reference`) | The LBP line, pay button, pay bar and review show the **payable** cash amount, with "Rounded up from 1,952,000" directly under it (01, 02, 08, 10, 17) |
+| Critical | Tender and segmented selectors not keyboard-operable (`no-click-on-non-interactive`) | One SegmentedControl on native radios in a named radiogroup; F2–F5 for tender |
+| Serious | Light money below the system's own 7:1 | Pay button uses the dark gold recipe in both themes (7.26:1); `--ok-money` light `#0A5428`; the checker now tests 7:1 money pairs |
+| Serious | Input borders 1.6:1 (non-text 3:1) | `--border-input` (3.3 / 4.1:1) |
+| Serious | Selected segment 1.06:1 | Gold tint + 2 px gold edge + check glyph |
+| Serious | Gold and warning amber share a hue in dark mode | Dark `--warn` → `#FB923C` |
+| Serious | Register controls 32–40 px | Every register and strip control ≥ 48 px |
+| Serious | POS text under 14 px, including money | Register captions, labels and money lines at 14 px; key hints 12 px |
+| Serious | Two primaries per view (03, 05) | 03 header action secondary; 05 "Review & settle" primary, "Close the day" disabled with "Settle 2 refunds first" |
+| Serious | Stock badges color-only | "6 · Low" / "0 · Out" with icons |
+| Serious | Tabs were not links | `<a href="?tab=…" aria-current>` |
+| Serious | Arabic: the money input flipped ("20 $") | Money inputs `dir=ltr`, `inputmode=decimal`, end-aligned, separate currency adornment |
+| Serious | Comprehension: acronyms, engineering words | "Supplier invoice no.", "Purchase order PO-118", "Changes waiting to send", "Last full download", "Other devices on this Wi-Fi"; the dense-screen exception is documented (DESIGN-SYSTEM §12 K7) |
+| Moderate | Gold used for non-actions; Save pre-disabled; trends without a reference; underlined nav; two focus rings; em dashes; units; vague buttons; Arabic coinages; no skip link; mobile cart hidden | All addressed (chart tokens, Save enabled, "vs yesterday", one focus, no em dashes, "4 lines · 12 units", Retry/Discard split, Arabic copy, skip links, pay bar with cart button) |
+| Found on visual review after the fixes | "Total due" wrapped; check glyph overflowed the tender cell; receipt-list LBP not the cash-payable value; Arabic PIN dots filled right-to-left | Fixed |
 
 ## Principles applied
 
@@ -62,7 +97,7 @@ The principles come from the design system (`DESIGN-SYSTEM.md`) and general acce
 
 ### Final matrix
 
-- **108 / 108 renders clean.** 9 screens × EN/AR × dark/light × 1440×900 / 1024×768 / 390×844.
+- **204 / 204 renders clean.** 17 surfaces × EN/AR × dark/light × 1440×900 / 1024×768 / 390×844.
 - **All exact viewports.**
 - **Network blocked** for every render.
 
@@ -77,7 +112,7 @@ The principles come from the design system (`DESIGN-SYSTEM.md`) and general acce
 
 ### Token contrast
 
-- All 22 pairs pass AA in both themes, including tints over the page and over insets (`contrast.json`).
+- All 32 pairs pass in both themes (`contrast.json`): AA text, tints over the page and over insets, **7:1 money**, and **3:1 non-text UI**.
 
 ### Negative control
 
@@ -91,6 +126,7 @@ The principles come from the design system (`DESIGN-SYSTEM.md`) and general acce
 
 ### Not covered by these checks
 
-- The checks find defects, not design quality. They don't judge visual hierarchy, Arabic copy quality or interaction behavior. Those still need your review on the canvas or in the browser.
+- The checks find defects, not design quality. They don't judge visual hierarchy, Arabic copy quality or interaction behavior. **They are not design approval**: that is yours, on the previews.
+- Arabic copy was revised but has not had a native-speaker review.
 - Screen-reader output itself was not tested; only accessible names were.
 - Real devices were not tested.

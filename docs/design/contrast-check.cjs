@@ -8,14 +8,14 @@ const themes = {
   dark: {
     "page-bg": "#0B0E14", surface: "#12161F", "surface-2": "#171C27", "surface-3": "#1E2430", rail: "#05070D",
     text: "#F4F6FA", "text-2": "#9AA4B8", "text-3": "#7C879B", brand: "#D4A843", "brand-text": "#E4BC5C", "brand-contrast": "#2C1F05", "rail-text": "#C4CBD8",
-    ok: "#34D399", warn: "#FBBF24", err: "#F87171", info: "#60A5FA",
-    "ok-soft": [52, 211, 153, 0.12], "warn-soft": [251, 191, 36, 0.12], "err-soft": [248, 113, 113, 0.12], "info-soft": [96, 165, 250, 0.12], "brand-soft": [212, 168, 67, 0.12],
+    ok: "#34D399", warn: "#FB923C", err: "#F87171", info: "#60A5FA", "ok-money": "#34D399", "pay-bg": "#D4A843", "pay-text": "#2C1F05", "chart-hi": "#C4CBD8", "disabled-bg": "#1A2029", "disabled-text": "#7C879B",
+    "border-input": [148, 163, 184, 0.60], "ok-soft": [52, 211, 153, 0.12], "warn-soft": [251, 146, 60, 0.12], "err-soft": [248, 113, 113, 0.12], "info-soft": [96, 165, 250, 0.12], "brand-soft": [212, 168, 67, 0.12],
   },
   light: {
     "page-bg": "#F7F5F1", surface: "#FFFFFF", "surface-2": "#F6F4EF", "surface-3": "#ECE8E1", rail: "#05070D",
     text: "#1C1917", "text-2": "#57534E", "text-3": "#635D55", brand: "#996d14", "brand-text": "#6B4C0A", "brand-contrast": "#FFFFFF", "rail-text": "#C4CBD8",
-    ok: "#137639", warn: "#a44c09", err: "#b91c1c", info: "#0e6d93",
-    "ok-soft": [22, 163, 74, 0.10], "warn-soft": [180, 83, 9, 0.10], "err-soft": [220, 38, 38, 0.09], "info-soft": [14, 122, 165, 0.10], "brand-soft": [156, 111, 20, 0.10],
+    ok: "#137639", warn: "#a44c09", err: "#b91c1c", info: "#0e6d93", "ok-money": "#0A5428", "pay-bg": "#D4A843", "pay-text": "#2C1F05", "chart-hi": "#57534E", "disabled-bg": "#ECE8E1", "disabled-text": "#635D55",
+    "border-input": "#857C70", "ok-soft": [22, 163, 74, 0.10], "warn-soft": [180, 83, 9, 0.10], "err-soft": [220, 38, 38, 0.09], "info-soft": [14, 122, 165, 0.10], "brand-soft": [156, 111, 20, 0.10],
   },
 }
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
@@ -44,6 +44,14 @@ const pairs = [
   ["Error text on tint over page", "err", "err-soft@page-bg", 4.5], ["Info text on tint over page", "info", "info-soft@page-bg", 4.5],
   ["Warning text on tint over inset", "warn", "warn-soft@surface-2", 4.5], ["Gold text on tint over page", "brand-text", "brand-soft@page-bg", 4.5],
   ["Sidebar text on rail", "rail-text", "rail", 4.5],
+  // Better Design reconciliation (DESIGN-SYSTEM §3): money is held to 7:1.
+  ["MONEY Total / amounts on surface", "text", "surface", 7], ["MONEY Total on inset", "text", "surface-2", 7],
+  ["MONEY Pay button text", "pay-text", "pay-bg", 7],
+  ["MONEY Change due on success tint", "ok-money", "ok-soft", 7], ["MONEY Change due on tint over inset", "ok-money", "ok-soft@surface-2", 7],
+  // Non-text UI: 3:1 (WCAG 1.4.11).
+  ["UI Input border vs surface", "border-input@surface", "surface", 3], ["UI Input border vs input fill", "border-input@surface-2", "surface-2", 3],
+  ["UI Selected segment edge vs its tint", "brand", "brand-soft@surface-2", 3], ["UI Chart highlight bar vs surface", "chart-hi", "surface", 3],
+  ["Disabled label on disabled fill (informational)", "disabled-text", "disabled-bg", 3],
 ]
 const out = {}
 for (const [name, t] of Object.entries(themes)) {

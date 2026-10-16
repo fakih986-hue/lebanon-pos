@@ -33,3 +33,8 @@ apps/electron/assets/titan-source.png
 .superdesign/tmp/
 # Prototype QA screenshots (regenerate with docs/design/qa-prototypes.cjs)
 docs/design/qa/shots/
+opencode.json
+.codex/
+skills-lock.json
+.mcp.json
+.better-design-claim.local.txt

@@ -38,14 +38,18 @@ const TOKENS = `
 :root,[data-theme=dark]{color-scheme:dark;--page-bg:#0B0E14;--surface:#12161F;--surface-2:#171C27;--surface-3:#1E2430;--surface-hover:#1A2029;
 --border:rgba(148,163,184,.10);--border-strong:rgba(148,163,184,.22);--text:#F4F6FA;--text-2:#9AA4B8;--text-3:#7C879B;
 --brand:#D4A843;--brand-hover:#E4BC5C;--brand-soft:rgba(212,168,67,.12);--brand-border:rgba(212,168,67,.40);--brand-contrast:#2C1F05;--brand-text:#E4BC5C;
---ok:#34D399;--ok-soft:rgba(52,211,153,.12);--warn:#FBBF24;--warn-soft:rgba(251,191,36,.12);--err:#F87171;--err-soft:rgba(248,113,113,.12);--info:#60A5FA;--info-soft:rgba(96,165,250,.12);
+--ok:#34D399;--ok-soft:rgba(52,211,153,.12);--ok-money:#34D399;--warn:#FB923C;--warn-soft:rgba(251,146,60,.12);--err:#F87171;--err-soft:rgba(248,113,113,.12);--info:#60A5FA;--info-soft:rgba(96,165,250,.12);
 --rail-bg:linear-gradient(180deg,#0A0F18,#05070D);--rail-text:#C4CBD8;--plate:#05070D;
+--border-input:rgba(148,163,184,.60);--pay-bg:#D4A843;--pay-hover:#E4BC5C;--pay-text:#2C1F05;--disabled-bg:#1A2029;--disabled-text:#7C879B;
+--chart-1:#5CB894;--chart-2:#7D8CD9;--chart-3:#A186C9;--chart-4:#D97A8C;--chart-hi:#C4CBD8;
 --elev-1:0 1px 2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);--elev-3:0 16px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);--scrim:rgba(5,7,13,.78)}
 [data-theme=light]{color-scheme:light;--page-bg:#F7F5F1;--surface:#FFFFFF;--surface-2:#F6F4EF;--surface-3:#ECE8E1;--surface-hover:#F4F1EB;
 --border:#E8E4DC;--border-strong:#D3CCC0;--text:#1C1917;--text-2:#57534E;--text-3:#635D55;
 --brand:#996d14;--brand-hover:#7E5A10;--brand-soft:rgba(156,111,20,.10);--brand-border:rgba(156,111,20,.40);--brand-contrast:#FFFFFF;--brand-text:#6B4C0A;
---ok:#137639;--ok-soft:rgba(22,163,74,.10);--warn:#a44c09;--warn-soft:rgba(180,83,9,.10);--err:#b91c1c;--err-soft:rgba(220,38,38,.09);--info:#0e6d93;--info-soft:rgba(14,122,165,.10);
+--ok:#137639;--ok-soft:rgba(22,163,74,.10);--ok-money:#0A5428;--warn:#a44c09;--warn-soft:rgba(180,83,9,.10);--err:#b91c1c;--err-soft:rgba(220,38,38,.09);--info:#0e6d93;--info-soft:rgba(14,122,165,.10);
 --rail-bg:linear-gradient(180deg,#0A0F18,#05070D);--rail-text:#C4CBD8;--plate:#05070D;
+--border-input:#857C70;--pay-bg:#D4A843;--pay-hover:#C99A32;--pay-text:#2C1F05;--disabled-bg:#ECE8E1;--disabled-text:#635D55;
+--chart-1:#2E8B62;--chart-2:#4F5FB8;--chart-3:#7B5BA8;--chart-4:#B5475E;--chart-hi:#57534E;
 --elev-1:0 1px 2px rgba(28,25,23,.06);--elev-3:0 16px 40px rgba(28,25,23,.16);--scrim:rgba(28,25,23,.45)}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inter","IBM Plex Sans Arabic",system-ui,sans-serif;font-size:14px;line-height:20px}
@@ -65,14 +69,16 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
 .inset{background:var(--surface-2);border:1px solid var(--border);border-radius:8px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font:inherit;font-weight:600;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);white-space:nowrap;cursor:pointer}
 .btn-sm{min-height:32px;padding:0 12px;font-size:13px}
+.skip{position:absolute;inset-inline-start:8px;top:-60px;z-index:100;background:var(--surface);color:var(--text);border:2px solid var(--brand);border-radius:8px;padding:8px 14px;font-weight:600;text-decoration:none}
+.skip:focus{top:8px}
 .btn-touch{min-height:48px}
 .btn-primary{background:var(--brand);border-color:var(--brand);color:var(--brand-contrast)}
 .btn-ghost{background:transparent;border-color:transparent;color:var(--text-2)}
 .btn-danger{background:var(--err-soft);border-color:transparent;color:var(--err)}
-.btn-pay{width:100%;min-height:64px;border-radius:12px;background:var(--brand);color:var(--brand-contrast);font:inherit;font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;cursor:pointer}
-.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn-pay{width:100%;min-height:64px;border-radius:12px;background:var(--pay-bg);color:var(--pay-text);font:inherit;font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;cursor:pointer}
+.btn[disabled]{background:var(--disabled-bg);border-color:var(--border);color:var(--disabled-text);cursor:not-allowed}
 .btn:focus-visible,.btn-pay:focus-visible,.field:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-.field{width:100%;min-height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);padding:8px 12px;font:inherit}
+.field{width:100%;min-height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-input);color:var(--text);padding:8px 12px;font:inherit}
 .field-row{display:flex;align-items:center;gap:8px}
 .focus{outline:2px solid var(--brand);outline-offset:2px}
 .label{display:block;font-size:12px;line-height:16px;font-weight:600;color:var(--text-2);margin-bottom:6px}
@@ -90,21 +96,33 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
 .scroll-x{overflow-x:auto;position:relative}
 .sel{background:var(--brand-soft);box-shadow:inset 3px 0 0 var(--brand)}
 [dir=rtl] .sel{box-shadow:inset -3px 0 0 var(--brand)}
-.tab{min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap}
+.tab{min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap;text-decoration:none}
+.tab:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
 .tab.on{color:var(--text);border-color:var(--brand)}
-.kbd{font-size:11px;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface-2)}
+.kbd{font-size:12px;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface-2)}
 .banner{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 16px;flex-wrap:wrap}
 .banner > .grow{flex:1;min-width:220px}
 .plate{background:var(--plate);display:inline-grid;place-items:center;border:1px solid rgba(212,168,67,.25)}
-.seg{display:grid;gap:4px;padding:4px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border)}
-.seg > *{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:8px;font-weight:600;color:var(--text-2)}
-.seg > .on{background:var(--surface);box-shadow:var(--elev-1);color:var(--text)}
+.seg{display:grid;gap:4px;padding:4px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border-input);margin:0;min-width:0}
+.seg > label{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:8px;font-weight:600;color:var(--text-2);cursor:pointer;padding:0 6px;text-align:center}
+.seg input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.seg > label:has(input:checked){background:var(--brand-soft);color:var(--text);box-shadow:inset 0 -2px 0 var(--brand)}
+.seg > label:has(input:focus-visible){outline:2px solid var(--brand);outline-offset:2px}
+.seg .chk{display:none}.seg > label:has(input:checked) .chk{display:inline-block}.seg > label:has(input:checked) .ic:not(.chk){display:none}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);font:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--brand-soft);border-color:var(--brand-border);color:var(--text)}
+.chip:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.money-in{min-height:48px;padding:0 12px;gap:6px}
+.money-in input{flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:18px;font-weight:600;text-align:end;outline:none;font-variant-numeric:tabular-nums}
+.money-in .adorn{color:var(--text-2);font-weight:600}
+.money-in:focus-within{outline:2px solid var(--brand);outline-offset:2px}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 /* ── Shell (§2): 232px sidebar ≥1200 · 64px rail 768–1199 · bottom nav <768 ── */
 .shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
 .side{background-color:#05070D;background-image:var(--rail-bg);border-inline-end:1px solid rgba(148,163,184,.12);display:flex;flex-direction:column;gap:4px;padding:16px 12px;color:var(--rail-text);position:sticky;top:0;height:100vh}
-.side .nav{display:flex;align-items:center;gap:12px;min-height:44px;border-radius:8px;padding:0 12px;font-weight:600;color:var(--rail-text)}
+.side .nav{display:flex;align-items:center;gap:12px;min-height:44px;border-radius:8px;padding:0 12px;font-weight:600;color:var(--rail-text);text-decoration:none}
+.side .nav:focus-visible{outline:2px solid #D4A843;outline-offset:2px}
 .side .nav.on{background:rgba(212,168,67,.14);box-shadow:inset 3px 0 0 #D4A843;color:#F4F6FA}
 [dir=rtl] .side .nav.on{box-shadow:inset -3px 0 0 #D4A843}
 .side .who{margin-top:auto}
@@ -128,7 +146,7 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
   .tabs{padding:0 16px;gap:18px}
   .content{padding:16px 16px 88px}
   .bottom-nav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;inset-inline:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);z-index:40;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
-  .bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--text-2);text-decoration:none;min-height:48px;justify-content:center}
+  .bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--text-2);text-decoration:none;min-height:48px;justify-content:center}
   .bottom-nav a.on{color:var(--brand-text)}
 }
 /* ── Layout helpers ── */
@@ -139,10 +157,12 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
 .stack{display:flex;flex-direction:column;gap:16px}
 @media (max-width:1199px){.cols-2,.cols-2b,.cols-side{grid-template-columns:minmax(0,1fr)}}
 /* ── Register (§8) ── */
-.register{display:grid;grid-template-columns:minmax(0,1fr) 440px;min-height:calc(100vh - 48px)}
-.strip{--brand-text:#E4BC5C;--brand-soft:rgba(212,168,67,.16);--ok:#34D399;--ok-soft:rgba(52,211,153,.14);--warn:#FBBF24;--warn-soft:rgba(251,191,36,.14);--err:#F87171;--err-soft:rgba(248,113,113,.14);--border:rgba(148,163,184,.18);min-height:48px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:6px 16px;border-bottom:1px solid rgba(148,163,184,.14);background:#05070D;color:#F4F6FA}
+.register{display:grid;grid-template-columns:minmax(0,1fr) 440px;min-height:calc(100vh - 60px)}
+.strip{--brand-text:#E4BC5C;--brand-soft:rgba(212,168,67,.16);--ok:#34D399;--ok-soft:rgba(52,211,153,.14);--warn:#FB923C;--warn-soft:rgba(251,146,60,.14);--err:#F87171;--err-soft:rgba(248,113,113,.14);--border:rgba(148,163,184,.18);--surface-3:#1E2430;--text-2:#9AA4B8;min-height:60px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:6px 16px;border-bottom:1px solid rgba(148,163,184,.14);background:#05070D;color:#F4F6FA}
 .strip .tools{display:flex;align-items:center;gap:8px;margin-inline-start:auto}
 .strip .btn-ghost{color:#C4CBD8}
+.strip .btn,.register .btn,.register .chip{min-height:48px}
+.register .cap,.register .label{font-size:14px;line-height:20px}
 .prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .tile{border-radius:16px;padding:14px;min-height:124px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);box-shadow:var(--elev-1);text-align:start;font:inherit;color:inherit;cursor:pointer}
 .rail{background:var(--surface);border-inline-start:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
@@ -233,8 +253,8 @@ function makeScreens(lang) {
   function shell({ active, crumb, page, tabs = [], activeTab, actions = "", capsuleHtml, banner = "", content }) {
     const nav = NAV.map(([id, ic, label]) => `<a href="#${id}" id="nav-${id}" class="nav${id === active ? " on" : ""}" aria-label="${label}"${id === active ? ' aria-current="page"' : ""}>${icon(ic, 20, id === active ? "#D4A843" : "currentColor")}<span class="lbl">${label}</span></a>`).join("")
     const bottom = NAV.map(([id, ic, label]) => `<a href="#${id}" id="bnav-${id}" class="${id === active ? "on" : ""}"${id === active ? ' aria-current="page"' : ""}>${icon(ic, 20)}<span>${label}</span></a>`).join("")
-    const tabBar = tabs.length ? `<nav class="tabs" aria-label="${T("Sections", "الأقسام")}">${tabs.map(([v, l, c]) => `<span class="tab${v === activeTab ? " on" : ""}"${v === activeTab ? ' aria-current="page"' : ""}>${l}${c ? `<span class="badge t-mute num">${c}</span>` : ""}</span>`).join("")}</nav>` : ""
-    return `<div class="shell">
+    const tabBar = tabs.length ? `<nav class="tabs" aria-label="${T("Sections", "الأقسام")}">${tabs.map(([v, l, c]) => `<a class="tab${v === activeTab ? " on" : ""}" href="?tab=${v}"${v === activeTab ? ' aria-current="page"' : ""}>${l}${c ? `<span class="badge t-mute num">${c}</span>` : ""}</a>`).join("")}</nav>` : ""
+    return `<a class="skip" href="#main-content">${T("Skip to content", "انتقل إلى المحتوى")}</a><div class="shell">
   <aside class="side" aria-label="${T("Main navigation", "التنقل الرئيسي")}">
     <div class="flex items-center gap-3 px-2 pb-4">${logo(36)}<div class="brand-text"><div class="font-semibold" style="font-size:15px;color:#F4F6FA">Titan POS</div><div class="cap" style="color:#9AA4B8">${T("Fakih Market · Hamra", "سوبرماركت فقيه · الحمرا")}</div></div></div>
     ${nav}
@@ -256,7 +276,7 @@ function makeScreens(lang) {
       </div>
     </header>
     ${tabBar}
-    <div class="content">
+    <div class="content" id="main-content" tabindex="-1">
       ${banner}
       ${content}
     </div>
@@ -282,9 +302,9 @@ function makeScreens(lang) {
     [T("Almarai Laban 1 L", "لبن المراعي 1 ل"), 2, 1.85], [T("Ariel Pods 22", "آرييل كبسولات 22"), 1, 9.5],
     [T("Arabic bread", "خبز عربي"), 3, 0.95], [T("Pepsi 330 ml", "بيبسي 330 مل"), 6, 0.6],
   ]
-  const lineRow = ([n, q, p], big = false) => `
+  const lineRow = ([n, q, p], big = true) => `
       <div class="flex items-center gap-3" style="padding:${big ? "14px" : "12px"} 0;border-bottom:1px solid var(--border)">
-        <div class="min-w-0" style="flex:1"><div class="font-semibold"${big ? ' style="font-size:16px"' : ""}>${n}</div><div class="cap num">${q} × ${usd(p)}</div></div>
+        <div class="min-w-0" style="flex:1"><div class="font-semibold"${big ? ' style="font-size:16px"' : ""}>${n}</div><div class="num" style="color:var(--text-2)">${q} × ${usd(p)}</div></div>
         <div class="flex items-center inset" style="border-radius:10px">
           <button class="btn btn-ghost" style="min-height:${big ? 48 : 40}px;width:${big ? 48 : 40}px;padding:0" aria-label="${T("Decrease", "إنقاص")} ${n}">${icon("minus", 16)}</button>
           <span class="num font-semibold" style="width:28px;text-align:center">${q}</span>
@@ -295,6 +315,13 @@ function makeScreens(lang) {
   // Money: subtotal 19.65, VAT 11% 2.16, total 21.81 → 1,951,995 ≈ 1,952,000 LBP; cash payable rounded up 1,955,000.
   // Paid $20 + 200,000 LBP = 1,990,000 LBP → change 35,000 LBP.
 
+  // C2: one SegmentedControl on native radios (arrow keys move and select).
+  const seg = (name, label, options, checked = 0, cols = options.length, style = "") =>
+    `<div class="seg" role="radiogroup" aria-label="${label}" style="grid-template-columns:repeat(${cols},minmax(0,1fr));${style}">${options.map(([text, ic, hint], i) => `<label><input type="radio" name="${name}" value="${i}"${i === checked ? " checked" : ""}>${ic ? icon(ic, 16) : ""}<span>${text}</span>${hint ? `<span class="kbd hide-sm">${hint}</span>` : ""}${icon("check", 14).replace('class="ic"', 'class="ic chk"')}</label>`).join("")}</div>`
+  // S10: money inputs stay LTR, currency is an adornment, aligned to the end.
+  const moneyIn = (label, cur, value, pre = true) =>
+    `<label style="display:block"><span class="label">${label}</span><span class="field-row field money-in" dir="ltr">${pre ? `<span class="adorn">${cur}</span>` : ""}<input inputmode="decimal" value="${value}" aria-label="${label}">${pre ? "" : `<span class="adorn">${cur}</span>`}</span></label>`
+  const chips = (items, pressed = 0) => items.map(([text, count, tone], i) => `<button class="chip" type="button" aria-pressed="${i === pressed}">${text}${count !== undefined ? `<span class="badge ${tone ? `t-${tone}` : "t-mute"} num">${count}</span>` : ""}</button>`).join("")
   const S = {}
 
   // 01 — Register checkout
@@ -304,13 +331,13 @@ function makeScreens(lang) {
     [T("Bonjus Orange 1 L", "بونجوس برتقال 1 ل"), 1.1, T("Drinks", "مشروبات"), 0], [T("Kitkat 4 finger", "كيت كات 4 أصابع"), 0.75, T("Snacks", "تسالي"), 1], [T("Arabic bread", "خبز عربي"), 0.95, T("Bakery", "مخبوزات"), 0],
   ]
   S["01-register-checkout"] = {
-    title: T("Register — checkout", "الصندوق — الدفع"),
+    title: T("Register · checkout", "الصندوق · الدفع"),
     body: `${strip(capsule("ok", T("Synced 1 min ago", "تمت المزامنة منذ دقيقة")), `<button class="btn btn-ghost btn-sm hide-sm">${icon("layout-dashboard", 16)}${T("Back office", "الإدارة")}</button>`)}
   <div class="register">
     <section class="with-paybar" style="padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0" aria-label="${T("Products", "المنتجات")}">
-      <label class="field-row field focus" style="min-height:56px;border-radius:12px;border-color:var(--brand-border)">${icon("scan-barcode", 22, "var(--brand)")}<span class="sr-only">${T("Scan or search", "امسح أو ابحث")}</span><input class="num" style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:16px;outline:none" placeholder="${T("Scan a barcode or type a product name…", "امسح الباركود أو اكتب اسم المنتج…")}"><span class="hide-sm flex gap-2 items-center"><span class="kbd">Enter</span><span class="cap">${T("pay when empty", "للدفع عند الفراغ")}</span></span></label>
+      <label class="field-row field focus" style="min-height:56px;border-radius:12px;border-color:var(--brand-border)">${icon("scan-barcode", 22, "var(--text-2)")}<span class="sr-only">${T("Scan or search", "امسح أو ابحث")}</span><input class="num" style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:16px;outline:none" placeholder="${T("Scan a barcode or type a product name…", "امسح الباركود أو اكتب اسم المنتج…")}"><span class="hide-sm flex gap-2 items-center"><span class="kbd">Enter</span><span class="cap">${T("pay when empty", "للدفع عند الفراغ")}</span></span></label>
       <div class="flex items-center gap-2 cap" role="status" style="color:var(--ok);flex-wrap:wrap">${icon("circle-check", 16)}<span class="font-semibold" style="color:var(--text)">${T("Almarai Laban 1 L", "لبن المراعي 1 ل")}</span> ${T("added · only 3 left in lot L-0812 (exp 19 Oct)", "أُضيف · بقي 3 فقط في الدفعة L-0812 (تنتهي 19 تشرين الأول)")}</div>
-      <div class="flex gap-2" style="overflow-x:auto">${[T("All", "الكل"), T("Favorites", "المفضلة"), T("Drinks", "مشروبات"), T("Dairy", "ألبان"), T("Snacks", "تسالي"), T("Bakery", "مخبوزات"), T("Household", "منزلية")].map((c, i) => `<span class="pill ${i === 0 ? "t-gold" : "t-mute"}" style="min-height:40px;padding:0 14px;font-size:13px">${c}</span>`).join("")}</div>
+      <div class="flex gap-2" style="overflow-x:auto" role="group" aria-label="${T("Departments", "الأقسام")}">${chips([[T("All", "الكل")], [T("Favorites", "المفضلة")], [T("Drinks", "مشروبات")], [T("Dairy", "ألبان")], [T("Snacks", "تسالي")], [T("Bakery", "مخبوزات")], [T("Household", "منزلية")]])}</div>
       <div class="prod-grid">
         ${products.map(([n, p, c, low]) => `<button class="tile"><span class="cap meta">${c}</span><span class="font-semibold" style="font-size:15px;margin-top:4px">${n}</span><span class="flex items-end justify-between" style="margin-top:auto;width:100%"><span class="num" style="font-size:18px;font-weight:700">${usd(p)}</span>${low ? `<span class="badge t-warn">${icon("triangle-alert", 12)}${T("Low", "قليل")}</span>` : ""}</span></button>`).join("")}
       </div>
@@ -319,33 +346,32 @@ function makeScreens(lang) {
     <aside class="rail" aria-label="${T("Current sale", "البيع الحالي")}">
       <div class="flex items-center gap-3" style="padding:16px 20px;border-bottom:1px solid var(--border)">
         <span class="pill t-mute" style="min-height:32px">${icon("user", 14)}${T("Walk-in customer", "زبون عابر")}</span>
-        <span class="flex gap-1" style="margin-inline-start:auto"><button class="btn btn-ghost btn-sm">${icon("pause", 14)}${T("Hold", "تعليق")}</button><button class="btn btn-ghost btn-sm">${icon("trash-2", 14)}${T("Clear", "مسح")}</button></span>
+        <span class="flex gap-1" style="margin-inline-start:auto"><button class="btn btn-ghost">${icon("pause", 16)}${T("Hold", "تعليق")}</button><button class="btn btn-ghost">${icon("trash-2", 16)}${T("Clear", "مسح")}</button></span>
       </div>
       <div style="padding:8px 20px;flex:1">${cartLines.map((l) => lineRow(l)).join("")}</div>
       <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:12px">
-        <div class="flex justify-between cap num"><span>${T("Subtotal", "المجموع الفرعي")}</span><span>$19.65</span></div>
-        <div class="flex justify-between cap num"><span>${T("VAT 11%", "ضريبة القيمة المضافة 11%")}</span><span>$2.16</span></div>
-        <div class="flex items-end justify-between"><span class="cap" style="font-size:13px">${T("Total due", "المبلغ المستحق")}</span><div class="num" style="text-align:end"><div class="total">$21.81</div><div class="sub" style="color:var(--text-2)">${lbp(1952000)}</div></div></div>
-        <div class="seg" style="grid-template-columns:repeat(4,minmax(0,1fr))" role="radiogroup" aria-label="${T("Payment method", "طريقة الدفع")}">${[["banknote", T("Cash", "نقداً")], ["credit-card", T("Card", "بطاقة")], ["wallet", T("Wallet", "محفظة")], ["hand-coins", T("Debt", "دين")]].map(([ic, m], i) => `<span role="radio" aria-checked="${i === 0}" class="${i === 0 ? "on" : ""}">${icon(ic, 16)}<span class="hide-xs">${m}</span></span>`).join("")}</div>
+        <div class="flex justify-between num" style="color:var(--text)"><span>${T("Subtotal", "المجموع الفرعي")}</span><span>$19.65</span></div>
+        <div class="flex justify-between num" style="color:var(--text)"><span>${T("VAT 11%", "ضريبة القيمة المضافة 11%")}</span><span>$2.16</span></div>
+        <div class="flex items-start justify-between" style="gap:12px"><span class="sub" style="color:var(--text-2);line-height:48px;white-space:nowrap;flex-shrink:0">${T("Total due", "المبلغ المستحق")}</span><div class="num" style="text-align:end"><div class="total">$21.81</div><div class="sub">${lbp(1955000)} ${T("cash", "نقداً")}</div><div class="cap">${T("Rounded up from 1,952,000", "مدوّر للأعلى من 1,952,000")}</div></div></div>
+        ${seg("tender", T("Payment method", "طريقة الدفع"), [[T("Cash", "نقداً"), "banknote", "F2"], [T("Card", "بطاقة"), "credit-card", "F3"], [T("Wallet", "محفظة"), "wallet", "F4"], [T("Debt", "دين"), "hand-coins", "F5"]], 0, 4)}
         <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
-          <label><span class="label">${T("Paid USD", "المدفوع بالدولار")}</span><input class="field num" style="min-height:48px;font-size:18px;font-weight:600" value="$ 20"></label>
-          <label><span class="label">${T("Paid LBP", "المدفوع بالليرة")}</span><input class="field num focus" style="min-height:48px;font-size:18px;font-weight:600" value="200,000"></label>
+          ${moneyIn(T("Paid USD", "المدفوع بالدولار"), "$", "20.00")}
+          ${moneyIn(T("Paid LBP", "المدفوع بالليرة"), T("LBP", "ل.ل"), "200,000", false)}
         </div>
-        <div class="flex gap-2" style="flex-wrap:wrap">${[T("Exact $", "بالضبط $"), T("Exact LBP", "بالضبط ل.ل"), "$20", "$50", "100,000"].map((c) => `<button class="pill t-mute num" style="min-height:36px;border:0">${c}</button>`).join("")}</div>
-        <div class="banner t-ok" role="status"><span class="cap" style="color:inherit">${T("Change due", "الباقي للزبون")}</span><span class="num font-semibold" style="margin-inline-start:auto;font-size:22px">${lbp(35000)}</span></div>
-        <button class="btn-pay hide-sm"><span>${T("Pay", "ادفع")}</span><span class="num">$21.81 · ${lbp(1952000)}</span><span class="kbd" style="background:rgba(0,0,0,.12);color:var(--brand-contrast);border-color:rgba(0,0,0,.2)">Enter</span></button>
-        <div class="cap meta">${T("Cash payable rounded up to 1,955,000 LBP (nearest 5,000 note).", "المبلغ النقدي مدوّر إلى 1,955,000 ل.ل (أقرب ورقة 5,000).")}</div>
+        <div class="flex gap-2" style="flex-wrap:wrap">${[T("Exact $", "بالضبط $"), T("Exact LBP", "بالضبط ل.ل"), "$20", "$50", "100,000"].map((c) => `<button class="btn num" style="padding:0 14px">${c}</button>`).join("")}</div>
+        <div class="banner t-ok" role="status"><span style="color:inherit">${T("Change due", "الباقي للزبون")}</span><span class="num font-semibold" style="margin-inline-start:auto;font-size:22px;color:var(--ok-money)">${lbp(35000)}</span></div>
+        <button class="btn-pay hide-sm"><span>${T("Pay", "ادفع")}</span><span class="num">$21.81 · ${lbp(1955000)}</span><span class="kbd" style="background:rgba(0,0,0,.12);color:var(--pay-text);border-color:rgba(0,0,0,.2)">Enter</span></button>
       </div>
     </aside>
   </div>
-  <div class="paybar"><button class="btn-pay"><span>${T("Pay", "ادفع")}</span><span class="num">$21.81</span><span class="num cap" style="color:inherit">${lbp(1952000)}</span></button></div>`,
+  <div class="paybar" style="gap:8px"><button class="btn" style="min-height:64px;flex-direction:column;gap:0;padding:0 14px" aria-label="${T("Open cart, 4 lines", "فتح السلة، 4 أسطر")}">${icon("shopping-basket", 18)}<span class="num" style="font-size:13px">${T("4 lines", "4 أسطر")}</span></button><button class="btn-pay"><span>${T("Pay", "ادفع")}</span><span class="num">$21.81</span><span class="num" style="font-size:14px">${lbp(1955000)}</span></button></div>`,
   }
 
   // 02 — Payment review (offline)
   S["02-register-review-offline"] = {
-    title: T("Register — payment review (offline)", "الصندوق — مراجعة الدفع (غير متصل)"),
-    body: `${strip(capsule("warn", T("Offline — saved on this device · 7", "غير متصل — محفوظ على هذا الجهاز · 7")))}
-  <div style="position:relative;min-height:calc(100vh - 48px)">
+    title: T("Register · payment review (offline)", "الصندوق · مراجعة الدفع (غير متصل)"),
+    body: `${strip(capsule("warn", T("Offline: saved on this device · 7", "غير متصل: محفوظ على هذا الجهاز · 7")))}
+  <div style="position:relative;min-height:calc(100vh - 60px)">
     <div class="banner t-warn" role="status" style="margin:16px">${icon("cloud-off", 18)}<div class="grow"><div class="font-semibold">${T("You are offline", "أنت غير متصل بالإنترنت")}</div><div class="cap" style="color:inherit">${T("Keep selling. Work is saved here and sent automatically when the connection returns (7 waiting).", "يمكنك متابعة البيع. تُحفظ العمليات هنا وتُرسل تلقائياً عند عودة الاتصال (7 بانتظار المزامنة).")}</div></div></div>
     <div role="dialog" aria-modal="true" aria-labelledby="review-title" style="position:absolute;inset:0;background:var(--scrim);display:grid;place-items:center;padding:16px">
       <div class="card" style="width:min(640px,100%);border-radius:16px;box-shadow:var(--elev-3);padding:28px;display:flex;flex-direction:column;gap:18px">
@@ -353,17 +379,17 @@ function makeScreens(lang) {
         <div class="inset" style="padding:20px;text-align:center;border-radius:12px">
           <div class="cap">${T("Amount due", "المبلغ المستحق")}</div>
           <div class="hero num" style="margin-top:6px">$21.81</div>
-          <div class="sub num" style="color:var(--text-2)">${lbp(1952000)}</div>
-          <div class="cap meta" style="margin-top:6px">${T("Cash payable rounded up to 1,955,000 LBP (nearest 5,000 note)", "المبلغ النقدي مدوّر إلى 1,955,000 ل.ل (أقرب ورقة 5,000)")}</div>
+          <div class="sub num">${lbp(1955000)} ${T("cash", "نقداً")}</div>
+          <div class="cap" style="margin-top:4px">${T("Rounded up from 1,952,000 (nearest 5,000 note)", "مدوّر للأعلى من 1,952,000 (أقرب ورقة 5,000)")}</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
           <div class="inset" style="padding:14px"><div class="cap">${T("Paid", "المدفوع")}</div><div class="num font-semibold" style="font-size:18px">$20 + ${lbp(200000)}</div></div>
-          <div class="inset t-ok" style="padding:14px;border-color:transparent"><div class="cap" style="color:inherit">${T("Change to give", "الباقي للزبون")}</div><div class="num font-semibold" style="font-size:22px">${lbp(35000)}</div></div>
+          <div class="inset t-ok" style="padding:14px;border-color:transparent"><div class="cap" style="color:inherit">${T("Change to give", "الباقي للزبون")}</div><div class="num font-semibold" style="font-size:22px;color:var(--ok-money)">${lbp(35000)}</div></div>
         </div>
-        <div class="cap">${T("4 items · Cash · Shift #42 · Maya", "4 أصناف · نقداً · الوردية #42 · مايا")}</div>
+        <div class="cap">${T("4 lines · 12 units · Cash · Shift #42 · Maya", "4 أسطر · 12 وحدة · نقداً · الوردية #42 · مايا")}</div>
         <div class="flex gap-3" style="flex-wrap:wrap">
           <button class="btn btn-touch" style="flex:1;min-height:56px">${dirIcon("arrow-left", 18)}${T("Back", "رجوع")} <span class="kbd">Esc</span></button>
-          <button class="btn btn-primary" style="flex:2;min-height:56px;font-size:17px">${T("Confirm and pay", "تأكيد ودفع")} <span class="num">$21.81</span> <span class="kbd" style="background:rgba(0,0,0,.12);color:var(--brand-contrast)">Enter</span></button>
+          <button class="btn-pay" style="flex:2;min-height:56px;font-size:17px;width:auto">${T("Confirm and pay", "تأكيد ودفع")} <span class="num">$21.81 · ${lbp(1955000)}</span> <span class="kbd" style="background:rgba(0,0,0,.12);color:var(--pay-text)">Enter</span></button>
         </div>
       </div>
     </div>
@@ -380,21 +406,21 @@ function makeScreens(lang) {
     [T("Arabic bread", "خبز عربي"), "—", T("Bakery", "مخبوزات"), 0.95, 0.6, "37%", "60", "", T("untracked", "غير متتبَّع")],
   ]
   S["03-products-lots"] = {
-    title: T("Stock — products & lots", "المخزون — المنتجات والدفعات"),
+    title: T("Stock · products & lots", "المخزون · المنتجات والدفعات"),
     body: shell({
       active: "stock", crumb: T("Stock", "المخزون"), page: T("Products", "المنتجات"),
       tabs: [["p", T("Products", "المنتجات"), "1,284"], ["l", T("Lots & counts", "الدفعات والجرد")], ["r", T("Receiving", "الاستلام")], ["s", T("Suppliers", "الموردون")]], activeTab: "p",
-      actions: `<button class="btn btn-primary btn-sm">${icon("plus", 16)}${T("Add product", "إضافة منتج")}</button>`,
+      actions: `<button class="btn btn-sm">${icon("plus", 16)}${T("Add product", "إضافة منتج")}</button>`,
       capsuleHtml: capsule("warn", T("12 waiting to sync", "12 بانتظار المزامنة"), "cloud-upload"),
       content: `
       <div class="flex items-center gap-2" style="flex-wrap:wrap">
         <label class="field-row field" style="width:min(360px,100%)">${icon("search", 16, "var(--text-3)")}<span class="sr-only">${T("Search", "بحث")}</span><input style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;outline:none" placeholder="${T("Search name, barcode or alias…", "ابحث بالاسم أو الباركود…")}"></label>
-        ${[[T("All 1,284", "الكل 1,284"), "t-gold"], [T("Low stock 23", "مخزون قليل 23"), "t-warn"], [T("Expiring 9", "تنتهي 9"), "t-err"], [T("No barcode 14", "بلا باركود 14"), "t-mute"]].map(([f, t]) => `<button class="pill ${t}" style="min-height:32px;border:0">${f}</button>`).join("")}
+        <div class="flex gap-2" style="flex-wrap:wrap" role="group" aria-label="${T("Filter", "تصفية")}">${chips([[T("All", "الكل"), "1,284"], [T("Low stock", "مخزون قليل"), "23", "warn"], [T("Expiring", "تنتهي قريباً"), "9", "err"], [T("No barcode", "بلا باركود"), "14"]])}</div>
       </div>
       <div class="cols-2">
         <div class="card scroll-x" style="overflow-y:hidden">
           <table class="tbl" style="min-width:640px"><thead><tr><th>${T("Product", "المنتج")}</th><th>${T("Category", "الفئة")}</th><th class="r">${T("Price", "السعر")}</th><th class="r">${T("Cost", "الكلفة")}</th><th class="r">${T("Margin", "الهامش")}</th><th class="r">${T("Stock", "المخزون")}</th><th class="r">${T("Lots", "الدفعات")}</th></tr></thead><tbody>
-          ${productRows.map((r, i) => `<tr class="${i === 0 ? "sel" : ""}"><td><div class="font-semibold">${r[0]}</div><div class="cap num">${r[1]}</div></td><td style="color:var(--text-2)">${r[2]}</td><td class="r num">${usd(r[3])}</td><td class="r num" style="color:var(--text-2)">${usd(r[4])}</td><td class="r num" style="color:var(--text-2)">${r[5]}</td><td class="r">${r[7] ? `<span class="badge t-${r[7]} num">${r[6]}</span>` : `<span class="num">${r[6]}</span>`}</td><td class="r cap">${r[8]}</td></tr>`).join("")}
+          ${productRows.map((r, i) => `<tr class="${i === 0 ? "sel" : ""}"><td><div class="font-semibold">${r[0]}</div><div class="cap num">${r[1]}</div></td><td style="color:var(--text-2)">${r[2]}</td><td class="r num">${usd(r[3])}</td><td class="r num" style="color:var(--text-2)">${usd(r[4])}</td><td class="r num" style="color:var(--text-2)">${r[5]}</td><td class="r">${r[7] ? `<span class="badge t-${r[7]} num">${icon(r[7] === "err" ? "circle-x" : "triangle-alert", 12)}${r[6]} · ${r[7] === "err" ? T("Out", "نفد") : T("Low", "قليل")}</span>` : `<span class="num">${r[6]}</span>`}</td><td class="r cap">${r[8]}</td></tr>`).join("")}
           </tbody></table>
         </div>
         <section class="card" style="box-shadow:var(--elev-3)" aria-labelledby="drawer-title">
@@ -408,9 +434,9 @@ function makeScreens(lang) {
             ${[["L-0812", T("received 02 Oct", "استُلمت 02 تشرين الأول"), T("exp 19 Oct · 3 days", "تنتهي 19 تشرين الأول · 3 أيام"), "err", 3, 24], ["L-0839", T("received 11 Oct", "استُلمت 11 تشرين الأول"), T("exp 08 Nov · 23 days", "تنتهي 08 تشرين الثاني · 23 يوماً"), "warn", 24, 24]].map(([id, r, e, t, left, init]) => `
             <div class="inset" style="padding:12px">
               <div class="flex items-center gap-2" style="flex-wrap:wrap"><span class="font-semibold num">${id}</span><span class="cap">${r}</span><span class="badge t-${t}" style="margin-inline-start:auto">${icon("calendar-clock", 12)}${e}</span></div>
-              <div class="flex items-center gap-3 mt-2"><div style="flex:1;height:6px;border-radius:999px;background:var(--surface-3)" role="progressbar" aria-valuenow="${left}" aria-valuemax="${init}" aria-label="${id}"><div style="width:${(left / init) * 100}%;height:6px;border-radius:999px;background:var(--brand)"></div></div><span class="cap num">${T(`${left} of ${init} left`, `بقي ${left} من ${init}`)}</span></div>
+              <div class="flex items-center gap-3 mt-2"><div style="flex:1;height:6px;border-radius:999px;background:var(--surface-3)" role="progressbar" aria-valuenow="${left}" aria-valuemax="${init}" aria-label="${id}"><div style="width:${(left / init) * 100}%;height:6px;border-radius:999px;background:var(--${t})"></div></div><span class="cap num">${T(`${left} of ${init} left`, `بقي ${left} من ${init}`)}</span></div>
             </div>`).join("")}
-            <div class="banner t-info" style="font-size:13px">${icon("info", 16)}<span>${T("Stock matches lots and the movement ledger.", "المخزون مطابق للدفعات وسجل الحركات.")}</span></div>
+            <span class="badge t-ok" style="align-self:flex-start">${icon("check", 12)}${T("Stock matches lots", "المخزون مطابق للدفعات")}</span>
             <div class="flex gap-2" style="flex-wrap:wrap"><button class="btn btn-sm">${icon("sliders-horizontal", 14)}${T("Adjust", "تعديل")}</button><button class="btn btn-sm">${icon("clipboard-check", 14)}${T("Count", "جرد")}</button><button class="btn btn-ghost btn-sm" style="margin-inline-start:auto">${icon("archive", 14)}${T("Archive", "أرشفة")}</button><button class="btn btn-primary btn-sm">${T("Save", "حفظ")}</button></div>
           </div>
         </section>
@@ -420,7 +446,7 @@ function makeScreens(lang) {
 
   // 04 — Receiving
   S["04-receiving"] = {
-    title: T("Stock — receiving", "المخزون — الاستلام"),
+    title: T("Stock · receiving", "المخزون · الاستلام"),
     body: shell({
       active: "stock", crumb: T("Stock", "المخزون"), page: T("Receiving", "الاستلام"),
       tabs: [["p", T("Products", "المنتجات")], ["l", T("Lots & counts", "الدفعات والجرد")], ["r", T("Receiving", "الاستلام")], ["s", T("Suppliers", "الموردون")]], activeTab: "r",
@@ -429,7 +455,7 @@ function makeScreens(lang) {
       <div class="cols-side">
         <div class="card" style="overflow:hidden">
           <div class="flex items-center gap-3" style="padding:16px;flex-wrap:wrap">
-            <label class="field-row field focus" style="flex:1;min-width:220px;min-height:48px;border-color:var(--brand-border)">${icon("scan-barcode", 20, "var(--brand)")}<span class="sr-only">${T("Scan items", "امسح الأصناف")}</span><input style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;outline:none" placeholder="${T("Scan items into this delivery…", "امسح الأصناف في هذه الشحنة…")}"></label>
+            <label class="field-row field focus" style="flex:1;min-width:220px;min-height:48px;border-color:var(--brand-border)">${icon("scan-barcode", 20, "var(--text-2)")}<span class="sr-only">${T("Scan items", "امسح الأصناف")}</span><input style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;outline:none" placeholder="${T("Scan items into this delivery…", "امسح الأصناف في هذه الشحنة…")}"></label>
             <button class="btn">${icon("clipboard-paste", 16)}${T("Paste sheet", "لصق جدول")}</button>
           </div>
           <div class="scroll-x"><table class="tbl" style="min-width:720px"><thead><tr><th>${T("Item", "الصنف")}</th><th class="r">${T("Qty", "الكمية")}</th><th class="r">${T("Unit cost", "كلفة الوحدة")}</th><th class="r">${T("Sell price", "سعر البيع")}</th><th>${T("Lot", "الدفعة")}</th><th>${T("Expiry", "الانتهاء")}</th><th><span class="sr-only">${T("Remove", "إزالة")}</span></th></tr></thead><tbody>
@@ -448,16 +474,16 @@ function makeScreens(lang) {
           <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
             <h2 class="sub" style="margin:0">${T("Supplier & invoice", "المورد والفاتورة")}</h2>
             <label><span class="label">${T("Supplier", "المورد")}</span><select class="field"><option>${T("Malia Group", "مجموعة ماليا")}</option></select></label>
-            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><label><span class="label">${T("Invoice", "الفاتورة")}</span><input class="field num" value="INV-77431"></label><label><span class="label">${T("Purchase order", "أمر الشراء")}</span><input class="field num" value="${T("PO-118 · partial", "PO-118 · جزئي")}"></label></div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><label><span class="label">${T("Supplier invoice no.", "رقم فاتورة المورد")}</span><input class="field num" value="INV-77431"></label><label><span class="label">${T("Purchase order", "أمر الشراء")}</span><input class="field num" value="${T("PO-118 · partial", "PO-118 · جزئي")}"></label></div>
             <span class="label" style="margin:0">${T("Payment", "الدفع")}</span>
-            <div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))">${[T("On account", "على الحساب"), T("Cash", "نقداً"), T("Transfer", "تحويل")].map((m, i) => `<span class="${i === 0 ? "on" : ""}">${m}</span>`).join("")}</div>
-            <div class="cap meta">${T("Adds $87.56 to Malia Group's balance. PO-118 already recorded $40.80 — only the difference is added.", "يضيف 87.56$ إلى رصيد مجموعة ماليا. سُجّل في PO-118 مبلغ 40.80$ — يُضاف الفرق فقط.")}</div>
+            ${seg("pay-supplier", T("Payment", "الدفع"), [[T("On account", "على الحساب")], [T("Cash", "نقداً")], [T("Transfer", "تحويل")]], 0, 3)}
+            <div class="cap meta">${T("Adds $87.56 to Malia Group's balance. Purchase order PO-118 already recorded $40.80, so only the difference is added.", "يضيف 87.56$ إلى رصيد مجموعة ماليا. سُجّل في أمر الشراء PO-118 مبلغ 40.80$، لذا يُضاف الفرق فقط.")}</div>
           </div>
           <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px">
             <h2 class="sub" style="margin:0">${T("Summary", "الملخص")}</h2>
             ${[[T("Ready rows", "أسطر جاهزة"), T("3 of 4", "3 من 4")], [T("Units", "الوحدات"), "84"], [T("Cost", "الكلفة"), "$87.56"], [T("Labels to print", "ملصقات للطباعة"), "84"]].map(([k, v]) => `<div class="flex justify-between"><span style="color:var(--text-2)">${k}</span><span class="num font-semibold">${v}</span></div>`).join("")}
-            <button class="btn btn-primary" style="min-height:48px;margin-top:6px" disabled>${icon("check", 16)}${T("Save delivery", "حفظ الشحنة")}</button>
-            <div class="cap meta">${T("Resolve 1 row to save. Rows stay here if you leave this page.", "حلّ سطراً واحداً للحفظ. تبقى الأسطر هنا إن غادرت الصفحة.")}</div>
+            <button class="btn btn-primary" style="min-height:48px;margin-top:6px">${icon("check", 16)}${T("Save delivery", "حفظ الشحنة")}</button>
+            <div class="cap meta">${T("1 row still needs a decision; saving takes you to it. Rows stay here if you leave this page.", "سطر واحد يحتاج قراراً؛ الحفظ ينقلك إليه. تبقى الأسطر هنا إن غادرت الصفحة.")}</div>
           </div>
         </div>
       </div>`,
@@ -465,28 +491,28 @@ function makeScreens(lang) {
   }
 
   // 05 — Money › Today
-  const bars = [42, 55, 38, 61, 70, 66, 48, 59, 73, 81, 64, 77, 88, 72]
+  const bars = [42, 55, 38, 61, 70, 66, 48, 59, 73, 81, 64, 77, 82, 92]
   S["05-money-today"] = {
-    title: T("Money — today", "المال — اليوم"),
+    title: T("Money · today", "المال · اليوم"),
     body: shell({
       active: "money", crumb: T("Money", "المال"), page: T("Today", "اليوم"),
       tabs: [["t", T("Today", "اليوم")], ["s", T("Shift & drawer", "الوردية والصندوق")], ["e", T("Expenses", "المصاريف")], ["c", T("Customers & debt", "الزبائن والديون")], ["r", T("Reports", "التقارير")]], activeTab: "t",
-      actions: `<button class="btn btn-primary btn-sm">${icon("lock-keyhole", 16)}${T("Close the day", "إقفال اليوم")}</button>`,
+      actions: `<button class="btn btn-sm" disabled aria-describedby="close-why">${icon("lock-keyhole", 16)}${T("Close the day", "إقفال اليوم")}</button><span id="close-why" class="cap hide-sm">${T("Settle 2 refunds first", "سوِّ المرتجعَين أولاً")}</span>`,
       capsuleHtml: capsule("err", T("2 refunds need review", "مرتجعان بحاجة لمراجعة"), "octagon-alert"),
-      banner: `<div class="banner t-err" role="alert">${icon("octagon-alert", 20)}<div class="grow"><div class="font-semibold" style="color:var(--text)">${T("2 refunds were rejected by the server", "رفض الخادم مرتجعَين")}</div><div class="cap" style="color:var(--text-2)">${T("Issued offline on Register 2, but another register had already refunded the same items. $32.40 left the drawer and is not on the server's books.", "صدرا دون اتصال على الصندوق 2 بينما أرجع صندوق آخر الأصناف نفسها. خرج 32.40$ من الصندوق وليس في دفاتر الخادم.")}</div></div><button class="btn btn-sm">${T("Review & settle", "مراجعة وتسوية")}</button></div>`,
+      banner: `<div class="banner t-err" role="alert">${icon("octagon-alert", 20)}<div class="grow"><div class="font-semibold" style="color:var(--text)">${T("2 refunds were rejected by the server", "رفض الخادم مرتجعَين")}</div><div class="cap" style="color:var(--text-2)">${T("Issued offline on Register 2, but another register had already refunded the same items. $32.40 left the drawer and is not on the server's books.", "صدرا دون اتصال على الصندوق 2 بينما أرجع صندوق آخر الأصناف نفسها. خرج 32.40$ من الصندوق وليس في دفاتر الخادم.")}</div></div><button class="btn btn-primary btn-sm">${T("Review & settle", "مراجعة وتسوية")}</button></div>`,
       content: `
-      <div class="kpis">${[[T("Net sales", "صافي المبيعات"), "$1,842.30", T("164.9M LBP", "164.9 مليون ل.ل"), "+12%", "ok"], [T("Gross profit", "إجمالي الربح"), "$486.10", T("26.4% margin", "هامش 26.4%"), "+4%", "ok"], [T("Cash in drawer", "النقد في الصندوق"), "$612.00", T("expected $618.50", "المتوقع 618.50$"), "−$6.50", "warn"], [T("Outstanding debt", "الديون المستحقة"), "$2,310.00", T("14 customers · 3 overdue", "14 زبوناً · 3 متأخرون"), "+$85", "err"]].map(([l, v, f, d, t]) => `
+      <div class="kpis">${[[T("Net sales", "صافي المبيعات"), "$1,842.30", T("164.9M LBP · +12% vs yesterday", "164.9 مليون ل.ل · +12% عن أمس"), "+12%", "ok"], [T("Gross profit", "إجمالي الربح"), "$486.10", T("26.4% margin · +4% vs yesterday", "هامش 26.4% · +4% عن أمس"), "+4%", "ok"], [T("Cash in drawer", "النقد في الصندوق"), "$612.00", T("expected $618.50", "المتوقع 618.50$"), "−$6.50", "warn"], [T("Outstanding debt", "الديون المستحقة"), "$2,310.00", T("14 customers · 3 overdue · +$85 vs yesterday", "14 زبوناً · 3 متأخرون · +85$ عن أمس"), "+$85", "err"]].map(([l, v, f, d, t]) => `
         <div class="card" style="padding:16px"><div class="flex items-center justify-between"><span class="cap">${l}</span><span class="badge t-${t} num">${d}</span></div><div class="stat num" style="margin-top:6px">${v}</div><div class="cap num meta">${f}</div></div>`).join("")}</div>
       <div class="cols-2b">
         <div class="card" style="padding:16px">
-          <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:8px"><h2 class="sub" style="margin:0">${T("Sales · last 14 days", "المبيعات · آخر 14 يوماً")}</h2><div class="flex gap-1">${[T("Day", "يوم"), T("Week", "أسبوع"), T("Month", "شهر")].map((x, i) => `<button class="pill ${i === 0 ? "t-gold" : "t-mute"}" style="border:0;min-height:28px">${x}</button>`).join("")}</div></div>
-          <div style="height:200px;display:flex;align-items:flex-end;gap:8px;margin-top:16px;padding-bottom:4px;border-bottom:1px solid var(--border)" role="img" aria-label="${T("Daily sales bar chart, rising to today", "مخطط المبيعات اليومية")}">${bars.map((h, i) => `<div style="flex:1;height:${h * 2}px;border-radius:6px 6px 2px 2px;background:${i === bars.length - 1 ? "var(--brand)" : "var(--surface-3)"}"></div>`).join("")}</div>
-          <div class="flex justify-between cap num meta" style="margin-top:8px"><span>${T("03 Oct", "03 تشرين الأول")}</span><span>${T("Today", "اليوم")}</span></div>
-          <div class="flex gap-4 mt-4" style="flex-wrap:wrap">${[[T("Cash", "نقداً"), "68%", "#5CB894"], [T("Card", "بطاقة"), "14%", "#7D8CD9"], [T("Wallet", "محفظة"), "6%", "#A186C9"], [T("Debt", "دين"), "12%", "#C9A25C"]].map(([m, p, c]) => `<span class="flex items-center gap-2 cap"><span class="dot" style="background:${c}"></span>${m} <span class="num" style="color:var(--text)">${p}</span></span>`).join("")}</div>
+          <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:8px"><h2 class="sub" style="margin:0">${T("Sales · last 14 days", "المبيعات · آخر 14 يوماً")}</h2><div class="flex gap-1">${seg("range", T("Range", "المدى"), [[T("Day", "يوم")], [T("Week", "أسبوع")], [T("Month", "شهر")]], 0, 3, "min-width:220px")}</div></div>
+          <div style="height:200px;display:flex;align-items:flex-end;gap:8px;margin-top:16px;padding-bottom:4px;border-bottom:1px solid var(--border)" role="img" aria-label="${T("Daily sales, last 14 days. Today $1,842, the highest of the period; yesterday $1,645.", "المبيعات اليومية لآخر 14 يوماً. اليوم 1,842$، الأعلى في الفترة؛ أمس 1,645$.")}">${bars.map((h, i) => `<div style="flex:1;height:${h * 2}px;border-radius:6px 6px 2px 2px;background:${i === bars.length - 1 ? "var(--chart-hi)" : "var(--surface-3)"}"></div>`).join("")}</div>
+          <div class="flex justify-between cap num meta" style="margin-top:8px"><span>${T("03 Oct", "03 تشرين الأول")}</span><span>${T("Today · $1,842", "اليوم · 1,842$")}</span></div>
+          <div class="flex gap-4 mt-4" style="flex-wrap:wrap">${[[T("Cash", "نقداً"), "68%", "var(--chart-1)"], [T("Card", "بطاقة"), "14%", "var(--chart-2)"], [T("Wallet", "محفظة"), "6%", "var(--chart-3)"], [T("Debt", "دين"), "12%", "var(--chart-4)"]].map(([m, p, c]) => `<span class="flex items-center gap-2 cap"><span class="dot" style="background:${c}"></span>${m} <span class="num" style="color:var(--text)">${p}</span></span>`).join("")}</div>
         </div>
         <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
           <h2 class="sub" style="margin:0">${T("Needs attention · by money at risk", "يحتاج انتباهاً · حسب المبلغ المعرّض")}</h2>
-          ${[["octagon-alert", "err", T("2 rejected refunds", "مرتجعان مرفوضان"), T("$32.40 · settle before closing", "32.40$ · سوِّها قبل الإقفال")], ["hand-coins", "err", T("3 overdue customers", "3 زبائن متأخرون"), T("$940 over 60 days", "940$ لأكثر من 60 يوماً")], ["calendar-clock", "warn", T("9 lots expire this week", "9 دفعات تنتهي هذا الأسبوع"), T("$118 at cost", "118$ بسعر الكلفة")], ["wallet", "warn", T("Drawer short $6.50", "نقص في الصندوق 6.50$"), T("Shift #42 · Maya", "الوردية #42 · مايا")], ["package-search", "warn", T("23 products below reorder", "23 منتجاً تحت حد الطلب"), T("draft PO ready", "مسودة أمر شراء جاهزة")]].map(([ic, t, a, b]) => `
+          ${[["octagon-alert", "err", T("2 rejected refunds", "مرتجعان مرفوضان"), T("$32.40 · settle before closing", "32.40$ · تُسوّى قبل الإقفال")], ["hand-coins", "err", T("3 overdue customers", "3 زبائن متأخرون"), T("$940 over 60 days", "940$ لأكثر من 60 يوماً")], ["calendar-clock", "warn", T("9 lots expire this week", "9 دفعات تنتهي هذا الأسبوع"), T("$118 at cost", "118$ بسعر الكلفة")], ["wallet", "warn", T("Drawer short $6.50", "نقص في الصندوق 6.50$"), T("Shift #42 · Maya", "الوردية #42 · مايا")], ["package-search", "warn", T("23 products below reorder", "23 منتجاً تحت حد الطلب"), T("draft PO ready", "مسودة أمر شراء جاهزة")]].map(([ic, t, a, b]) => `
           <button class="inset flex items-center gap-3" style="padding:10px 12px;font:inherit;color:inherit;text-align:start;cursor:pointer"><span class="badge t-${t}" style="min-height:28px;width:28px;justify-content:center;padding:0">${icon(ic, 14)}</span><span style="flex:1"><span class="font-semibold" style="display:block">${a}</span><span class="cap num">${b}</span></span>${dirIcon("chevron-right", 16, "var(--text-3)")}</button>`).join("")}
         </div>
       </div>`,
@@ -495,33 +521,33 @@ function makeScreens(lang) {
 
   // 06 — Admin › Devices & sync
   S["06-admin-devices-sync"] = {
-    title: T("Admin — devices & sync", "الإدارة — الأجهزة والمزامنة"),
+    title: T("Admin · devices & sync", "الإدارة · الأجهزة والمزامنة"),
     body: shell({
       active: "admin", crumb: T("Admin", "الإدارة"), page: T("Devices & sync", "الأجهزة والمزامنة"),
       tabs: [["t", T("Team & permissions", "الفريق والصلاحيات")], ["s", T("Store settings", "إعدادات المتجر")], ["d", T("Devices & sync", "الأجهزة والمزامنة"), "3"], ["b", T("Backup & recovery", "النسخ والاستعادة")], ["a", T("About & updates", "حول والتحديثات")]], activeTab: "d",
       capsuleHtml: capsule("err", T("3 changes rejected", "3 تغييرات مرفوضة"), "file-x"),
-      banner: `<div class="banner t-warn" role="status">${icon("badge-alert", 20)}<div class="grow"><div class="font-semibold" style="color:var(--text)">${T("Licence renewal due in 4 days", "تجديد الترخيص خلال 4 أيام")}</div><div class="cap" style="color:var(--text-2)">${T("After that this store becomes read-only: selling stops, but reports and exports keep working. Offline registers keep selling until their 7-day lease ends.", "بعدها يصبح المتجر للقراءة فقط: يتوقف البيع وتبقى التقارير والتصدير متاحة. تتابع الصناديق غير المتصلة البيع حتى انتهاء مهلة 7 أيام.")}</div></div><button class="btn btn-sm">${T("Renew", "تجديد")}</button></div>`,
+      banner: `<div class="banner t-warn" role="status">${icon("badge-alert", 20)}<div class="grow"><div class="font-semibold" style="color:var(--text)">${T("Licence renewal due in 4 days", "تجديد الترخيص خلال 4 أيام")}</div><div class="cap" style="color:var(--text-2)">${T("Then the store becomes read-only. Selling stops; reports and exports keep working. Offline registers keep selling for up to 7 days.", "بعدها يصبح المتجر للقراءة فقط. يتوقف البيع وتبقى التقارير والتصدير متاحة. تتابع الصناديق غير المتصلة البيع حتى 7 أيام.")}</div></div><button class="btn btn-sm">${T("Renew", "تجديد")}</button></div>`,
       content: `
       <div class="cols-2b">
         <div class="stack">
           <div class="card" style="padding:16px">
-            <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:8px"><h2 class="sub" style="margin:0">${T("Sync queue", "قائمة المزامنة")}</h2><div class="flex gap-2"><button class="btn btn-sm">${icon("refresh-cw", 14)}${T("Sync now", "زامن الآن")}</button><button class="btn btn-sm">${icon("file-down", 14)}${T("Diagnostics", "تشخيص")}</button></div></div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:12px">${[[T("Waiting", "بانتظار"), "12", "warn"], [T("Retrying", "إعادة محاولة"), "1", "warn"], [T("Rejected", "مرفوضة"), "3", "err"], [T("Synced today", "زومنت اليوم"), "418", "ok"]].map(([l, v, t]) => `<div class="inset" style="padding:12px"><div class="cap">${l}</div><div class="num" style="font-size:22px;font-weight:600;line-height:30px;color:var(--${t})">${v}</div></div>`).join("")}</div>
+            <div class="flex items-center justify-between" style="flex-wrap:wrap;gap:8px"><h2 class="sub" style="margin:0">${T("Changes waiting to send", "تغييرات بانتظار الإرسال")}</h2><div class="flex gap-2"><button class="btn btn-sm">${icon("refresh-cw", 14)}${T("Sync now", "زامن الآن")}</button><button class="btn btn-sm">${icon("file-down", 14)}${T("Diagnostics", "تشخيص")}</button></div></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:12px">${[[T("Waiting", "بانتظار"), "12", "warn"], [T("Retrying", "إعادة محاولة"), "1", "warn"], [T("Rejected", "مرفوضة"), "3", "err"], [T("Sent today", "أُرسلت اليوم"), "418", "ok"]].map(([l, v, t]) => `<div class="inset" style="padding:12px"><div class="cap">${l}</div><div class="num" style="font-size:22px;font-weight:600;line-height:30px;color:var(--${t})">${v}</div></div>`).join("")}</div>
           </div>
           <div class="card" style="overflow:hidden">
             <div class="flex items-center" style="padding:14px 16px;flex-wrap:wrap;gap:6px"><h2 class="sub" style="margin:0">${T("Rejected changes", "التغييرات المرفوضة")}</h2><span class="cap" style="margin-inline-start:auto">${T("Nothing here is deleted until it is resolved", "لا يُحذف شيء هنا قبل حلّه")}</span></div>
-            ${[[T("Refund R-30412 · $18.40", "مرتجع R-30412 · 18.40$"), T("Already refunded on Register 1", "أُرجع مسبقاً على الصندوق 1"), true, T("Settle in Money", "سوِّه في المال")], [T("Refund R-30417 · $14.00", "مرتجع R-30417 · 14.00$"), T("Already refunded on Register 1", "أُرجع مسبقاً على الصندوق 1"), true, T("Settle in Money", "سوِّه في المال")], [T("Price update · Tide 3 kg", "تحديث سعر · تايد 3 كغ"), T("Product was archived on another device", "أُرشف المنتج على جهاز آخر"), false, T("Retry or discard", "إعادة أو تجاهل")]].map(([a, b, money, act]) => `
+            ${[[T("Refund R-30412 · $18.40", "مرتجع R-30412 · 18.40$"), T("Already refunded on Register 1", "أُرجع مسبقاً على الصندوق 1"), true, T("Settle refund", "تسوية المرتجع")], [T("Refund R-30417 · $14.00", "مرتجع R-30417 · 14.00$"), T("Already refunded on Register 1", "أُرجع مسبقاً على الصندوق 1"), true, T("Settle refund", "تسوية المرتجع")], [T("Price update · Tide 3 kg", "تحديث سعر · تايد 3 كغ"), T("Product was archived on another device", "أُرشف المنتج على جهاز آخر"), false, ""]].map(([a, b, money, act]) => `
             <div class="flex items-center gap-3" style="padding:10px 16px;border-top:1px solid var(--border);flex-wrap:wrap">
               <span class="badge ${money ? "t-err" : "t-mute"}" style="min-height:28px;width:28px;justify-content:center;padding:0">${icon(money ? "hand-coins" : "file-x", 14)}</span>
               <div style="flex:1;min-width:200px"><div class="font-semibold num">${a}</div><div class="cap">${b}${money ? ` · <span style="color:var(--err)">${T("money already changed hands", "المال سُلِّم بالفعل")}</span>` : ""}</div></div>
-              <button class="btn btn-sm">${act}</button></div>`).join("")}
+              ${act ? `<button class="btn btn-sm">${act}</button>` : `<span class="flex gap-2"><button class="btn btn-sm">${T("Retry", "إعادة المحاولة")}</button><button class="btn btn-ghost btn-sm">${T("Discard", "تجاهل")}</button></span>`}</div>`).join("")}
           </div>
         </div>
         <div class="stack">
           <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
             <h2 class="sub" style="margin:0">${T("This device", "هذا الجهاز")}</h2>
-            <div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))" role="radiogroup" aria-label="${T("Connection mode", "نمط الاتصال")}">${[T("Store hub", "خادم المتجر"), T("Connect to hub", "اتصال بالخادم"), T("Cloud", "السحابة")].map((m, i) => `<span role="radio" aria-checked="${i === 0}" class="${i === 0 ? "on" : ""}" style="font-size:13px">${m}</span>`).join("")}</div>
-            ${[[T("Hub address", "عنوان الخادم"), "192.168.1.20:3015"], [T("LAN access", "الوصول المحلي"), T("On — 3 paired devices", "مفعّل — 3 أجهزة مقترنة")], [T("Cloud", "السحابة"), T("pos.titan-suite.net · reachable", "pos.titan-suite.net · متاحة")], [T("Last full pull", "آخر سحب كامل"), T("Today 07:58", "اليوم 07:58")]].map(([k, v]) => `<div class="flex justify-between gap-3" style="flex-wrap:wrap"><span style="color:var(--text-2)">${k}</span><span class="num font-semibold">${v}</span></div>`).join("")}
+            ${seg("mode", T("Connection mode", "نمط الاتصال"), [[T("Store hub", "خادم المتجر")], [T("Connect to hub", "اتصال بالخادم")], [T("Cloud", "السحابة")]], 0, 3)}
+            ${[[T("Hub address", "عنوان الخادم"), "192.168.1.20:3015"], [T("Other devices on this Wi-Fi", "أجهزة أخرى على هذه الشبكة"), T("Allowed · 3 paired", "مسموح · 3 مقترنة")], [T("Cloud", "السحابة"), T("pos.titan-suite.net · reachable", "pos.titan-suite.net · متاحة")], [T("Last full download", "آخر تنزيل كامل"), T("Today 07:58", "اليوم 07:58")]].map(([k, v]) => `<div class="flex justify-between gap-3" style="flex-wrap:wrap"><span style="color:var(--text-2)">${k}</span><span class="num font-semibold">${v}</span></div>`).join("")}
           </div>
           <div class="card" style="overflow:hidden">
             <div class="flex items-center" style="padding:14px 16px"><h2 class="sub" style="margin:0">${T("Paired devices", "الأجهزة المقترنة")}</h2><button class="btn btn-sm" style="margin-inline-start:auto">${icon("qr-code", 14)}${T("Pair a device", "إقران جهاز")}</button></div>
@@ -534,19 +560,19 @@ function makeScreens(lang) {
 
   // 07 — System states board
   const states = [
-    ["1", "err", "lock", T("Read-only — contact support", "للقراءة فقط — تواصل مع الدعم"), T("Licence blocked. Selling and edits are off; reports and exports still work.", "الترخيص موقوف. البيع والتعديل متوقفان؛ التقارير والتصدير متاحة.")],
+    ["1", "err", "lock", T("Read-only. Contact support", "للقراءة فقط. تواصل مع الدعم"), T("Licence blocked. Selling and edits are off; reports and exports still work.", "الترخيص موقوف. البيع والتعديل متوقفان؛ التقارير والتصدير متاحة.")],
     ["2", "err", "hand-coins", T("2 refunds need review", "مرتجعان بحاجة لمراجعة"), T("Server rejected offline refunds. Never hidden; a manager settles each one.", "رفض الخادم مرتجعات دون اتصال. لا تُخفى أبداً؛ يسوّيها المدير.")],
     ["3", "err", "file-x", T("3 changes rejected", "3 تغييرات مرفوضة"), T("Other rejected operations. Review, retry or discard (never for money).", "عمليات مرفوضة أخرى. راجِع أو أعد أو تجاهل (ليس للمال).")],
     ["4", "info", "life-buoy", T("Recovered 1 interrupted refund", "استُعيد مرتجع متوقف"), T("Shown once after restart, with what happened.", "يظهر مرة بعد إعادة التشغيل مع ما حدث.")],
-    ["5", "warn", "cloud-off", T("Offline — saved on this device", "غير متصل — محفوظ على هذا الجهاز"), T("Selling continues. Nothing blocks.", "البيع مستمر. لا شيء يتوقف.")],
-    ["6", "warn", "cloud-upload", T("12 waiting to sync", "12 بانتظار المزامنة"), T("Counts only — pending is not an error.", "عدد فقط — الانتظار ليس خطأ.")],
+    ["5", "warn", "cloud-off", T("Offline: saved on this device", "غير متصل: محفوظ على هذا الجهاز"), T("Selling continues. Nothing blocks.", "البيع مستمر. لا شيء يتوقف.")],
+    ["6", "warn", "cloud-upload", T("12 waiting to sync", "12 بانتظار المزامنة"), T("A count only. Waiting is not an error.", "عدد فقط. الانتظار ليس خطأ.")],
     ["7", "warn", "badge-alert", T("Licence: 4 days left", "الترخيص: بقي 4 أيام"), T("Owner pages only, with a renew action.", "في صفحات المالك فقط مع زر تجديد.")],
     ["9", "ok", "check", T("Synced 2 min ago", "تمت المزامنة منذ دقيقتين"), T("Quiet: a dot, no colour wash.", "هادئ: نقطة فقط بلا تلوين.")],
   ]
   S["07-system-states"] = {
     title: T("System states", "حالات النظام"),
     body: `<div class="content" style="max-width:1440px;margin:0 auto">
-  <div><div class="cap meta">${T("Design system v2 · §6", "نظام التصميم v2 · §6")}</div><h1 class="title" style="margin:0">${T("System states — one model everywhere", "حالات النظام — نموذج واحد في كل مكان")}</h1><p style="color:var(--text-2);margin:4px 0 0">${T("Status capsule (always visible) → inline banner (only when the page is affected) → row badge (on the exact item).", "كبسولة الحالة (ظاهرة دائماً) ← شريط تنبيه (عند تأثر الصفحة فقط) ← شارة على العنصر نفسه.")}</p></div>
+  <div><div class="cap meta">${T("Design system v2 · §6", "نظام التصميم v2 · §6")}</div><h1 class="title" style="margin:0">${T("System states: one model everywhere", "حالات النظام: نموذج واحد في كل مكان")}</h1><p style="color:var(--text-2);margin:4px 0 0">${T("Status capsule (always visible) → inline banner (only when the page is affected) → row badge (on the exact item).", "كبسولة الحالة (ظاهرة دائماً) ← شريط تنبيه (عند تأثر الصفحة فقط) ← شارة على العنصر نفسه.")}</p></div>
   <div class="cols-2b">
     <div class="card scroll-x">
       <table class="tbl" style="min-width:560px"><thead><tr><th>${T("Priority", "الأولوية")}</th><th>${T("Capsule", "الكبسولة")}</th><th>${T("Behaviour", "السلوك")}</th></tr></thead><tbody>
@@ -563,7 +589,7 @@ function makeScreens(lang) {
       </div>
       <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
         <h2 class="sub" style="margin:0">${T("Permission", "الصلاحيات")}</h2>
-        <div class="flex items-center gap-2" style="flex-wrap:wrap"><button class="btn btn-sm" disabled aria-describedby="perm-note">${icon("lock", 14)}${T("Refund", "إرجاع")}</button><span id="perm-note" class="cap">${T("Needs: Refunds — ask a manager", "يتطلب: صلاحية الإرجاع — اطلب من المدير")}</span></div>
+        <div class="flex items-center gap-2" style="flex-wrap:wrap"><button class="btn btn-sm" disabled aria-describedby="perm-note">${icon("lock", 14)}${T("Refund", "إرجاع")}</button><span id="perm-note" class="cap">${T("Needs the Refunds permission. Ask a manager.", "يتطلب صلاحية الإرجاع. اطلب من المدير.")}</span></div>
         <div class="inset" style="padding:20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px">
           <span class="badge t-mute" style="min-height:40px;width:40px;justify-content:center;padding:0;border-radius:12px">${icon("shield-off", 20)}</span>
           <div class="sub">${T("Accounting is for managers", "المحاسبة للمدراء")}</div>
@@ -573,7 +599,7 @@ function makeScreens(lang) {
       </div>
       <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
         <h2 class="sub" style="margin:0">${T("Empty & loading", "فارغ وجارٍ التحميل")}</h2>
-        <div class="inset" style="padding:20px;text-align:center;border-style:dashed"><div class="font-semibold">${T("No receipts today", "لا إيصالات اليوم")}</div><div class="cap">${T("Sales you ring up appear here.", "تظهر هنا المبيعات التي تسجلها.")}</div></div>
+        <div class="inset" style="padding:20px;text-align:center;border-style:dashed;display:flex;flex-direction:column;align-items:center;gap:6px">${icon("receipt", 22, "var(--text-2)")}<div class="font-semibold">${T("No receipts today", "لا إيصالات اليوم")}</div><div class="cap">${T("Sales you ring up appear here.", "تظهر هنا المبيعات التي تسجلها.")}</div><button class="btn btn-sm">${T("Open the register", "افتح الصندوق")}</button></div>
         <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px" aria-hidden="true">${[1, 2, 3].map(() => `<div class="inset" style="height:64px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2))"></div>`).join("")}</div>
       </div>
     </div>
@@ -584,16 +610,16 @@ function makeScreens(lang) {
   // 08 — Simple POS (scan → cart → pay → receipt)
   S["08-simple-pos"] = {
     title: T("Simple POS", "نقطة البيع المبسطة"),
-    body: `${strip(capsule("warn", T("Offline · 3 waiting", "غير متصل · 3 بانتظار")), `<span class="pill t-gold hide-sm">${icon("zap", 14)}${T("Simple mode", "الوضع المبسط")}</span>`)}
+    body: `${strip(capsule("warn", T("Offline · 3 waiting", "غير متصل · 3 بانتظار")), `<span class="pill t-mute hide-sm">${icon("zap", 14)}${T("Simple mode", "الوضع المبسط")}</span>`)}
   <div class="register simple">
     <section class="with-paybar" style="padding:24px;display:flex;flex-direction:column;gap:16px;min-width:0" aria-label="${T("Scan and cart", "المسح والسلة")}">
-      <label class="field-row field focus" style="min-height:72px;border-radius:16px;border-color:var(--brand-border);padding:0 20px">${icon("scan-barcode", 28, "var(--brand)")}<span class="sr-only">${T("Scan", "امسح")}</span><input style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:20px;outline:none" placeholder="${T("Scan the next item", "امسح الصنف التالي")}"></label>
+      <label class="field-row field focus" style="min-height:72px;border-radius:16px;border-color:var(--brand-border);padding:0 20px">${icon("scan-barcode", 28, "var(--text-2)")}<span class="sr-only">${T("Scan", "امسح")}</span><input style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:20px;outline:none" placeholder="${T("Scan the next item", "امسح الصنف التالي")}"></label>
       <div class="banner t-ok" role="status" style="font-size:15px">${icon("circle-check", 20)}<span><span class="font-semibold">${T("Pepsi 330 ml", "بيبسي 330 مل")}</span> × 6 · $3.60</span><button class="btn btn-sm" style="margin-inline-start:auto">${icon("rotate-ccw", 14)}${T("Undo", "تراجع")}</button></div>
       <div class="card" style="padding:4px 20px">${cartLines.map((l) => lineRow(l, true)).join("")}</div>
       <div class="flex gap-2 cap meta" style="flex-wrap:wrap"><span><span class="kbd">Enter</span> ${T("pay", "ادفع")}</span><span><span class="kbd">+</span>/<span class="kbd">−</span> ${T("quantity of last item", "كمية آخر صنف")}</span><span><span class="kbd">Del</span> ${T("remove last item", "حذف آخر صنف")}</span></div>
     </section>
     <aside class="rail" aria-label="${T("Payment", "الدفع")}" style="padding:24px;gap:16px">
-      <div><div class="cap" style="font-size:13px">${T("Total due · 12 items", "المستحق · 12 صنفاً")}</div><div class="hero num">$21.81</div><div class="sub num" style="color:var(--text-2)">${lbp(1952000)}</div></div>
+      <div><div class="sub" style="color:var(--text-2)">${T("Total due · 4 lines · 12 units", "المستحق · 4 أسطر · 12 وحدة")}</div><div class="hero num">$21.81</div><div class="sub num">${lbp(1955000)} ${T("cash", "نقداً")}</div><div class="cap">${T("Rounded up from 1,952,000 (nearest 5,000 note)", "مدوّر للأعلى من 1,952,000 (أقرب ورقة 5,000)")}</div></div>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
         <button class="btn btn-touch" style="min-height:72px;flex-direction:column;gap:2px">${icon("banknote", 22)}<span>${T("Exact $", "بالضبط $")}</span><span class="cap num">$21.81</span></button>
         <button class="btn btn-touch" style="min-height:72px;flex-direction:column;gap:2px">${icon("banknote", 22)}<span>${T("Exact LBP", "بالضبط ل.ل")}</span><span class="cap num">1,955,000</span></button>
@@ -601,17 +627,17 @@ function makeScreens(lang) {
         <button class="btn btn-touch" style="min-height:72px;flex-direction:column;gap:2px">${icon("calculator", 22)}<span>${T("Other amount", "مبلغ آخر")}</span><span class="cap">${T("change calculated", "يُحسب الباقي")}</span></button>
       </div>
       <label class="flex items-center gap-3 inset" style="padding:12px 14px;cursor:pointer"><input type="checkbox" checked style="width:20px;height:20px;accent-color:var(--brand)"><span><span class="font-semibold" style="display:block">${T("Print receipt", "طباعة الإيصال")}</span><span class="cap">${T("80 mm · Arabic + English · both currencies", "80 مم · عربي + إنكليزي · بالعملتين")}</span></span></label>
-      <button class="btn-pay hide-sm" style="margin-top:auto"><span>${T("Pay", "ادفع")}</span><span class="num">$21.81</span><span class="kbd" style="background:rgba(0,0,0,.12);color:var(--brand-contrast);border-color:rgba(0,0,0,.2)">Enter</span></button>
-      <button class="btn btn-ghost btn-sm hide-sm" style="align-self:center">${icon("layout-grid", 14)}${T("Switch to full register", "التبديل إلى الصندوق الكامل")}</button>
+      <button class="btn-pay hide-sm" style="margin-top:auto"><span>${T("Pay", "ادفع")}</span><span class="num">$21.81 · ${lbp(1955000)}</span><span class="kbd" style="background:rgba(0,0,0,.12);color:var(--pay-text);border-color:rgba(0,0,0,.2)">Enter</span></button>
+      <button class="btn btn-ghost hide-sm" style="align-self:center">${icon("layout-grid", 14)}${T("Switch to full register", "التبديل إلى الصندوق الكامل")}</button>
     </aside>
   </div>
-  <div class="paybar"><button class="btn-pay"><span>${T("Pay", "ادفع")}</span><span class="num">$21.81</span><span class="num cap" style="color:inherit">${lbp(1952000)}</span></button></div>`,
+  <div class="paybar"><button class="btn-pay"><span>${T("Pay", "ادفع")}</span><span class="num">$21.81</span><span class="num" style="font-size:14px">${lbp(1955000)}</span></button></div>`,
   }
 
   // 09 — Settings form (Admin › Store settings)
   const field = (label, value, opts = {}) => `<label style="display:block"><span class="label">${label}</span>${opts.select ? `<select class="field">${opts.select.map((o) => `<option${o === value ? " selected" : ""}>${o}</option>`).join("")}</select>` : `<input class="field${opts.num ? " num" : ""}${opts.error ? " invalid" : ""}" value="${value}"${opts.dir ? ` dir="${opts.dir}"` : ""}${opts.error ? ` aria-invalid="true" aria-describedby="${opts.id}-err"` : ""}>`}${opts.help ? `<span class="help" style="display:block">${opts.help}</span>` : ""}${opts.error ? `<span id="${opts.id}-err" class="error">${icon("circle-alert", 14)}${opts.error}</span>` : ""}</label>`
   S["09-settings-form"] = {
-    title: T("Admin — store settings", "الإدارة — إعدادات المتجر"),
+    title: T("Admin · store settings", "الإدارة · إعدادات المتجر"),
     body: shell({
       active: "admin", crumb: T("Admin", "الإدارة"), page: T("Store settings", "إعدادات المتجر"),
       tabs: [["t", T("Team & permissions", "الفريق والصلاحيات")], ["s", T("Store settings", "إعدادات المتجر")], ["d", T("Devices & sync", "الأجهزة والمزامنة")], ["b", T("Backup & recovery", "النسخ والاستعادة")], ["a", T("About & updates", "حول والتحديثات")]], activeTab: "s",
@@ -642,8 +668,8 @@ function makeScreens(lang) {
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
               ${field(T("Printer", "الطابعة"), "Xprinter XP-80C", { select: ["Xprinter XP-80C", T("Browser print", "طباعة المتصفح")] })}
               ${field(T("Paper width", "عرض الورق"), "80 mm", { select: ["80 mm", "58 mm"] })}
-              ${field(T("Footer (English)", "التذييل (إنكليزي)"), "Thank you — exchanges within 7 days", { dir: "ltr" })}
-              ${field(T("Footer (Arabic)", "التذييل (عربي)"), "شكراً لزيارتكم — الاستبدال خلال 7 أيام", { dir: "rtl" })}
+              ${field(T("Footer (English)", "التذييل (إنكليزي)"), "Thank you. Exchanges within 7 days", { dir: "ltr" })}
+              ${field(T("Footer (Arabic)", "التذييل (عربي)"), "شكراً لزيارتكم. الاستبدال خلال 7 أيام", { dir: "rtl" })}
             </div>
             <div class="flex gap-6" style="flex-wrap:wrap">${[[T("Show both currencies", "إظهار العملتين"), true], [T("Print cash-rounding line", "طباعة سطر التدوير"), true], [T("Open drawer on cash sale", "فتح الدرج عند البيع النقدي"), false]].map(([l, on]) => `<label class="flex items-center gap-2" style="cursor:pointer;min-height:44px"><input type="checkbox"${on ? " checked" : ""} style="width:20px;height:20px;accent-color:var(--brand)"><span>${l}</span></label>`).join("")}</div>
             <div class="flex gap-2"><button class="btn btn-sm" type="button">${icon("printer", 14)}${T("Print test receipt", "طباعة إيصال تجريبي")}</button></div>
@@ -662,7 +688,7 @@ function makeScreens(lang) {
               <div class="flex justify-between" style="font-weight:700"><span>Total · المجموع</span><span class="num">$21.81</span></div>
               <div class="flex justify-between"><span>LBP @ 89,500</span><span class="num">1,952,000</span></div>
               <div class="flex justify-between" style="color:#555"><span>Cash payable · مدوّر</span><span class="num">1,955,000</span></div>
-              <div style="text-align:center;margin-top:8px;color:#555">Thank you — exchanges within 7 days<br>شكراً لزيارتكم — الاستبدال خلال 7 أيام</div>
+              <div style="text-align:center;margin-top:8px;color:#555">Thank you. Exchanges within 7 days<br>شكراً لزيارتكم. الاستبدال خلال 7 أيام</div>
             </div>
           </div>
           <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:6px">
@@ -672,12 +698,14 @@ function makeScreens(lang) {
         </div>
         <div class="card" style="grid-column:1/-1;position:sticky;bottom:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:var(--elev-3)" role="region" aria-label="${T("Unsaved changes", "تغييرات غير محفوظة")}">
           <span class="badge t-warn">${icon("circle-dot", 12)}${T("3 unsaved changes", "3 تغييرات غير محفوظة")}</span>
-          <span class="cap">${T("Fix 1 error before saving.", "صحّح خطأً واحداً قبل الحفظ.")}</span>
-          <span style="margin-inline-start:auto" class="flex gap-2"><button class="btn btn-sm" type="button">${T("Discard", "تجاهل")}</button><button class="btn btn-primary btn-sm" type="submit" disabled>${T("Save changes", "حفظ التغييرات")}</button></span>
+          <span class="cap">${T("1 field needs fixing; saving takes you to it.", "حقل واحد يحتاج تصحيحاً؛ الحفظ ينقلك إليه.")}</span>
+          <span style="margin-inline-start:auto" class="flex gap-2"><button class="btn btn-sm" type="button">${T("Discard changes", "تجاهل التغييرات")}</button><button class="btn btn-primary btn-sm" type="submit">${T("Save changes", "حفظ التغييرات")}</button></span>
         </div>
       </form>`,
     }),
   }
+  // 10–17: receipts, customers & debt, suppliers, delivery, team, about, lock, first setup
+  Object.assign(S, require("./screens-ops.cjs")({ T, lbp, usd, icon, dirIcon, capsule, shell, strip, seg, moneyIn, chips, logo }))
   return S
 }
 
@@ -710,12 +738,20 @@ function buildAssets(htmlFiles) {
   })()
 }
 
+// Superdesign draft contract: links are https:// or #hash, and every <a> has a unique id.
+function canvasLinks(body, name) {
+  let n = 0
+  return body
+    .replace(/href="\?([a-z]+)=([^"]*)"/g, (_m, k, v) => `href="#${k}-${v}"`)
+    .replace(/<a (?![^>]*\bid=)/g, () => `<a id="${name}-link-${++n}" `)
+}
+
 // ── Build ──────────────────────────────────────────────────────────────────
 const written = []
 for (const lang of ["en", "ar"]) {
   for (const [name, screen] of Object.entries(makeScreens(lang))) {
     const file = path.join(OUT, `${name}${lang === "ar" ? ".ar" : ""}.html`)
-    fs.writeFileSync(file, doc({ title: screen.title, lang, body: screen.body }))
+    fs.writeFileSync(file, doc({ title: screen.title, lang, body: MODE === "canvas" ? canvasLinks(screen.body, name) : screen.body }))
     written.push(file)
   }
 }

@@ -92,7 +92,7 @@
       "label": "Warning text on warning tint",
       "fg": "warn",
       "bg": "warn-soft",
-      "ratio": 8.55,
+      "ratio": 6.61,
       "need": 4.5,
       "pass": true
     },
@@ -132,7 +132,7 @@
       "label": "Warning text on tint over page",
       "fg": "warn",
       "bg": "warn-soft@page-bg",
-      "ratio": 9.36,
+      "ratio": 7.21,
       "need": 4.5,
       "pass": true
     },
@@ -156,7 +156,7 @@
       "label": "Warning text on tint over inset",
       "fg": "warn",
       "bg": "warn-soft@surface-2",
-      "ratio": 7.95,
+      "ratio": 6.17,
       "need": 4.5,
       "pass": true
     },
@@ -174,6 +174,86 @@
       "bg": "rail",
       "ratio": 12.35,
       "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "MONEY Total / amounts on surface",
+      "fg": "text",
+      "bg": "surface",
+      "ratio": 16.73,
+      "need": 7,
+      "pass": true
+    },
+    {
+      "label": "MONEY Total on inset",
+      "fg": "text",
+      "bg": "surface-2",
+      "ratio": 15.76,
+      "need": 7,
+      "pass": true
+    },
+    {
+      "label": "MONEY Pay button text",
+      "fg": "pay-text",
+      "bg": "pay-bg",
+      "ratio": 7.26,
+      "need": 7,
+      "pass": true
+    },
+    {
+      "label": "MONEY Change due on success tint",
+      "fg": "ok-money",
+      "bg": "ok-soft",
+      "ratio": 7.57,
+      "need": 7,
+      "pass": true
+    },
+    {
+      "label": "MONEY Change due on tint over inset",
+      "fg": "ok-money",
+      "bg": "ok-soft@surface-2",
+      "ratio": 7.04,
+      "need": 7,
+      "pass": true
+    },
+    {
+      "label": "UI Input border vs surface",
+      "fg": "border-input@surface",
+      "bg": "surface",
+      "ratio": 3.33,
+      "need": 3,
+      "pass": true
+    },
+    {
+      "label": "UI Input border vs input fill",
+      "fg": "border-input@surface-2",
+      "bg": "surface-2",
+      "ratio": 3.25,
+      "need": 3,
+      "pass": true
+    },
+    {
+      "label": "UI Selected segment edge vs its tint",
+      "fg": "brand",
+      "bg": "brand-soft@surface-2",
+      "ratio": 6.23,
+      "need": 3,
+      "pass": true
+    },
+    {
+      "label": "UI Chart highlight bar vs surface",
+      "fg": "chart-hi",
+      "bg": "surface",
+      "ratio": 11.1,
+      "need": 3,
+      "pass": true
+    },
+    {
+      "label": "Disabled label on disabled fill (informational)",
+      "fg": "disabled-text",
+      "bg": "disabled-bg",
+      "ratio": 4.52,
+      "need": 3,
       "pass": true
     }
   ],
@@ -352,6 +432,86 @@
       "bg": "rail",
       "ratio": 12.35,
       "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "MONEY Total / amounts on surface",
+      "fg": "text",
+      "bg": "surface",
+      "ratio": 17.49,
+      "need": 7,
+      "pass": true
+    },
+    {
+      "label": "MONEY Total on inset",
+      "fg": "text",
+      "bg": "surface-2",
+      "ratio": 15.91,
+      "need": 7,
+      "pass": true
+    },
+    {
+      "label": "MONEY Pay button text",
+      "fg": "pay-text",
+      "bg": "pay-bg",
+      "ratio": 7.26,
+      "need": 7,
+      "pass": true
+    },
+    {
+      "label": "MONEY Change due on success tint",
+      "fg": "ok-money",
+      "bg": "ok-soft",
+      "ratio": 8.13,
+      "need": 7,
+      "pass": true
+    },
+    {
+      "label": "MONEY Change due on tint over inset",
+      "fg": "ok-money",
+      "bg": "ok-soft@surface-2",
+      "ratio": 7.44,
+      "need": 7,
+      "pass": true
+    },
+    {
+      "label": "UI Input border vs surface",
+      "fg": "border-input@surface",
+      "bg": "surface",
+      "ratio": 4.11,
+      "need": 3,
+      "pass": true
+    },
+    {
+      "label": "UI Input border vs input fill",
+      "fg": "border-input@surface-2",
+      "bg": "surface-2",
+      "ratio": 3.74,
+      "need": 3,
+      "pass": true
+    },
+    {
+      "label": "UI Selected segment edge vs its tint",
+      "fg": "brand",
+      "bg": "brand-soft@surface-2",
+      "ratio": 3.73,
+      "need": 3,
+      "pass": true
+    },
+    {
+      "label": "UI Chart highlight bar vs surface",
+      "fg": "chart-hi",
+      "bg": "surface",
+      "ratio": 7.63,
+      "need": 3,
+      "pass": true
+    },
+    {
+      "label": "Disabled label on disabled fill (informational)",
+      "fg": "disabled-text",
+      "bg": "disabled-bg",
+      "ratio": 5.33,
+      "need": 3,
       "pass": true
     }
   ]
