@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { ChevronDown, CircleDollarSign, Clock, HandCoins, Landmark, Lock } from "lucide-react"
-import { getActiveShift, getCurrentUser, getShifts, openShift, closeShift, subscribeSecurity, userCan, type Shift } from "../services/security.service"
+import { canCloseShift, canOpenShift, getActiveShift, getShifts, openShift, closeShift, subscribeSecurity, userCan, type Shift } from "../services/security.service"
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../lib/currency"
 import { getSettings } from "../services/settings.service"
 import { showToast } from "../services/toast.service"
@@ -34,9 +34,8 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
 
   const expectedCash = shift ? computeExpectedCash(shift) : 0
   // Permission rules (DESIGN-SYSTEM §6: visible, disabled with the reason).
-  const me = getCurrentUser()
-  const canOpen = userCan("sales.checkout") || userCan("shifts.manage")
-  const canClose = Boolean(shift) && (shift?.openedById === me?.id || userCan("shifts.manage"))
+  const canOpen = canOpenShift()
+  const canClose = canCloseShift(shift)
   const canDraw = userCan("cash.manage")
   const countedVal = parseFloat(countedCash)
   const diff = countedCash && !isNaN(countedVal) ? countedVal - expectedCash : 0
@@ -59,12 +58,12 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
 
   function handleCloseShift() {
     if (!shift || !canClose) return
-    closeShift({
+    try { closeShift({
       shiftId: shift.id,
       expectedCashUsd: expectedCash,
       closingCashUsd: isNaN(countedVal) ? expectedCash : countedVal,
       notes: note || undefined,
-    })
+    }) } catch (err) { showToast(t("pos.drawer.action_failed", { reason: String((err as Error)?.message ?? err) }), "error"); return }
     setShift(undefined)
     setCountedCash("")
     setNote("")

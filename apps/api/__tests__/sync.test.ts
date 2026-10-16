@@ -801,6 +801,8 @@ describe("POST /api/sync/push — sale stock integrity", () => {
   it("refuses to write an existing row whose owning tenant cannot be established", async () => {
     // A row with no readable tenant is never treated as writable (no fail-open).
     vi.mocked(prisma.shift.findUnique).mockResolvedValue({ id: "shift-x" } as any)
+    // The recorded opener (openedById "u1") is a tenant staff user allowed to open shifts.
+    vi.mocked(prisma.staffUser.findFirst).mockResolvedValue({ role: "Cashier", permissions: [] } as any)
     vi.mocked(prisma.shift.upsert).mockClear()
     const res = await request("POST", "/api/sync/push", {
       token,

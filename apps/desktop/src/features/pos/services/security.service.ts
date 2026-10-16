@@ -858,6 +858,20 @@ export function userCan(permission: Permission, user = getCurrentUser()) {
   return effectivePermissions(user).includes(permission)
 }
 
+/** Thrown by a service when the signed-in user lacks the permission; the message is shown as-is. */
+export class PermissionError extends Error {
+  constructor(message: string) { super(message); this.name = "PermissionError" }
+}
+
+/** Shift rules, shared by the services and the UI (the server mirrors them in apps/api/src/lib/permissions.ts). */
+export function canOpenShift(user = getCurrentUser()) {
+  return userCan("sales.checkout", user) || userCan("shifts.manage", user)
+}
+export function canCloseShift(shift: Pick<Shift, "openedById"> | undefined, user = getCurrentUser()) {
+  if (!shift || !user) return false
+  return shift.openedById === user.id || userCan("shifts.manage", user)
+}
+
 // ── Simple POS Mode ──────────────────────────────────────────────────
 // Cashiers are always in simple mode. Manager/Admin can toggle.
 // When active: sidebar hides advanced nav, POS strips owner/admin actions.
@@ -949,6 +963,7 @@ export function openShift(openingFloatUsd: number) {
   assertCanWrite("open shift")
   if (typeof openingFloatUsd !== "number" || openingFloatUsd < 0) return null
   const user = getCurrentUser()
+  if (!canOpenShift(user)) throw new PermissionError("Opening a shift needs the Checkout or Shifts permission.")
   const shifts = getShifts()
   const openShiftNow = shifts.find((shift) => shift.status === "Open")
 
@@ -1004,6 +1019,7 @@ export function closeShift(input: {
   const existing = shifts.find(s => s.id === input.shiftId)
   if (!existing) return null
   if (existing.status === "Closed") return existing
+  if (!canCloseShift(existing, user)) throw new PermissionError("Only the person who opened this shift or a manager can close it.")
   if (typeof input.closingCashUsd !== "number" || input.closingCashUsd < 0) return null
 
   const differenceUsd = input.closingCashUsd - input.expectedCashUsd

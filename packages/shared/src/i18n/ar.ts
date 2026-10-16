@@ -1352,6 +1352,6 @@ export const ar = {
   "pos.expense.need_vendor": "أدخل المورد أو الوصف.",
   "pos.expense.need_amount": "أدخل مبلغاً صحيحاً.",
   "pos.expense.recorded": "سُجّل المصروف: {amount}",
-  "pos.expense.need_permission": "تسجيل المصاريف يتطلب صلاحية المحاسبة أو النقد.",
+  "pos.expense.need_permission": "تسجيل المصاريف يتطلب صلاحية المحاسبة.",
   "pos.expense.need_shift": "افتح وردية أولاً: المصاريف النقدية تتبع وردية.",
 }

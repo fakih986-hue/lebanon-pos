@@ -18,7 +18,8 @@ export default function ExpensePanel({ expanded, onToggle }: { expanded: boolean
   const [amount, setAmount] = useState("")
   const [category, setCategory] = useState<ExpenseCategory>("Other")
   const [payment, setPayment] = useState<ExpensePaymentMethod>("Cash")
-  const allowed = userCan("accounting.manage") || userCan("cash.manage")
+  // Same rule as expense.service and the server push: accounting.manage.
+  const allowed = userCan("accounting.manage")
   const hasShift = Boolean(getActiveShift())
 
   function handleSubmit() {
@@ -28,7 +29,8 @@ export default function ExpensePanel({ expanded, onToggle }: { expanded: boolean
     try {
       createExpense({ vendor: vendor.trim(), amount: amt, category, paymentMethod: payment, invoiceNumber: "", note: "" })
     } catch (err) {
-      showToast(/shift/i.test(String((err as Error)?.message)) ? t("pos.expense.need_shift") : t("pos.drawer.action_failed", { reason: String((err as Error)?.message ?? err) }), "error")
+      const message = String((err as Error)?.message ?? err)
+      showToast((err as Error)?.name === "PermissionError" ? t("pos.expense.need_permission") : /shift/i.test(message) ? t("pos.expense.need_shift") : t("pos.drawer.action_failed", { reason: message }), "error")
       return
     }
     showToast(t("pos.expense.recorded", { amount: formatCurrency(amt) }))

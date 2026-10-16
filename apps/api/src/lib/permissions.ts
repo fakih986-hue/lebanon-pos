@@ -37,6 +37,34 @@ export function effectivePermissions(perms: Permission[] | null | undefined, rol
   return expandLegacyPermissions(base)
 }
 
+/**
+ * Shift rules (mirror of the desktop canOpenShift / canCloseShift):
+ * open needs sales.checkout or shifts.manage; close needs shifts.manage or
+ * being the user who opened the shift.
+ */
+export function shiftOpAllowed(action: string, perms: Permission[], userId: string, openedById: string | null | undefined): boolean {
+  if (action === "open") return perms.includes("sales.checkout") || perms.includes("shifts.manage")
+  if (action === "close") return perms.includes("shifts.manage") || (!!openedById && openedById === userId)
+  return true
+}
+
+/**
+ * The staff user a pushed record names as acting (closedById, recordedById…)
+ * and what that user must be allowed to do. The sync token belongs to the
+ * store/device account, so this is the only place the cashier who actually
+ * did it is visible to the server. null = the op names no acting user.
+ */
+export function recordedActorRule(entity: string, action: string, payload: unknown):
+  { userId: string; kind: "shift-open" | "shift-close" | "permission"; permission?: Permission } | null {
+  const p = (payload ?? {}) as Record<string, unknown>
+  const id = (k: string) => (typeof p[k] === "string" && p[k] ? (p[k] as string) : null)
+  if (entity === "shift" && action === "open" && id("openedById")) return { userId: id("openedById")!, kind: "shift-open" }
+  if (entity === "shift" && action === "close" && id("closedById")) return { userId: id("closedById")!, kind: "shift-close" }
+  if (entity === "cash-movement" && id("recordedById")) return { userId: id("recordedById")!, kind: "permission", permission: "cash.manage" }
+  if (entity === "expense" && id("recordedById")) return { userId: id("recordedById")!, kind: "permission", permission: "accounting.manage" }
+  return null
+}
+
 /** The permission a sync op requires, or null if it isn't in the enforced subset.
  *  Deliberately limited to money/admin-sensitive operations to bound blast radius;
  *  everyday operational ops (sale-create, product/inventory/customer edits, shifts)

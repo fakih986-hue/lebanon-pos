@@ -1,7 +1,9 @@
 import {
   getActiveShift,
   getCurrentUser,
+  PermissionError,
   recordAuditEvent,
+  userCan,
 } from "./security.service"
 import { enqueueSyncOperation, assertCanWrite, getDeviceId, nextDocumentReference } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
@@ -96,6 +98,8 @@ export function getExpenses() {
 
 export function createExpense(input: CreateExpenseInput) {
   assertCanWrite("create expense")
+  // Same rule as the server push (requiredPermissionForOp: expense → accounting.manage).
+  if (!userCan("accounting.manage")) throw new PermissionError("Recording expenses needs the Accounting permission.")
   const user = getCurrentUser()
   const shift = getActiveShift()
 

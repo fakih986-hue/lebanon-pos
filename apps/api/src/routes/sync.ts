@@ -10,7 +10,7 @@ const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
-import { effectivePermissions, requiredPermissionForOp } from "../lib/permissions.js"
+import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
 import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
 import { broadcastToTenant } from "../ws/index.js"
@@ -205,6 +205,45 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
     if (actor) actorPermissions = effectivePermissions(actor.permissions, actor.role)
   } catch { actorPermissions = null }
 
+  // Returns a refusal message, or null when the op may run. Two checks:
+  //  1. the pushing account (actorPermissions, when it is a staff user);
+  //  2. the staff user the record names as acting (closedById, recordedById…),
+  //     because the sync token is the store/device account, not the cashier's
+  //     PIN session. An acting user the server cannot find fails closed
+  //     ("error", retried later — e.g. once that staff record has synced).
+  const permsOf = new Map<string, string[] | null>()
+  async function staffPermissions(userId: string) {
+    if (!permsOf.has(userId)) {
+      const u = await prisma.staffUser.findFirst({ where: { id: userId, tenantId }, select: { role: true, permissions: true } })
+      permsOf.set(userId, u ? effectivePermissions(u.permissions, u.role) : null)
+    }
+    return permsOf.get(userId)!
+  }
+  async function shiftOpener(payload: any) {
+    const existing = payload?.id ? await prisma.shift.findFirst({ where: { id: String(payload.id), tenantId }, select: { openedById: true } }) : null
+    return existing?.openedById ?? (typeof payload?.openedById === "string" ? payload.openedById : null)
+  }
+  async function authorizeOp(op: { entity: string; action: string; payload?: unknown }): Promise<string | null> {
+    if (actorPermissions) {
+      const required = requiredPermissionForOp(op.entity, op.action, op.payload)
+      if (required && !actorPermissions.includes(required)) return `You don't have permission to ${op.action} ${op.entity}`
+      if (op.entity === "shift" && !shiftOpAllowed(op.action, actorPermissions, req.auth!.userId, op.action === "close" ? await shiftOpener(op.payload) : null)) {
+        return op.action === "close" ? "Only the person who opened this shift or a manager can close it" : "Opening a shift needs the Checkout or Shifts permission"
+      }
+    }
+    const rule = recordedActorRule(op.entity, op.action, op.payload)
+    if (rule) {
+      const perms = await staffPermissions(rule.userId)
+      if (!perms) return "The staff member recorded on this operation is not known to the server yet"
+      if (rule.kind === "shift-open" && !shiftOpAllowed("open", perms, rule.userId, null)) return "The recorded staff member cannot open a shift"
+      if (rule.kind === "shift-close" && !shiftOpAllowed("close", perms, rule.userId, await shiftOpener(op.payload))) {
+        return "Only the person who opened this shift or a manager can close it"
+      }
+      if (rule.kind === "permission" && rule.permission && !perms.includes(rule.permission)) return `The recorded staff member lacks ${rule.permission}`
+    }
+    return null
+  }
+
   const results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string }> = []
   const activities: Array<{ entity: string; action: string; summary: string }> = []
 
@@ -226,22 +265,20 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
       // tampered client can't bypass in-app limits. Only fires for a real staff
       // actor (actorPermissions != null) and only for mapped ops; everything
       // else passes through unchanged.
-      if (actorPermissions) {
-        const required = requiredPermissionForOp(op.entity, op.action, op.payload)
-        if (required && !actorPermissions.includes(required)) {
-          try {
-            await prisma.auditEvent.create({
-              data: {
-                tenantId, action: "security.permission.denied", entity: op.entity,
-                summary: `Blocked ${op.action} ${op.entity}: missing ${required}`,
-                metadata: { required, userId: req.auth!.userId },
-                userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
-              },
-            })
-          } catch { /* best-effort audit */ }
-          results.push({ id: op.id, status: "error", error: `You don't have permission to ${op.action} ${op.entity}` })
-          continue
-        }
+      const denial = await authorizeOp(op)
+      if (denial) {
+        try {
+          await prisma.auditEvent.create({
+            data: {
+              tenantId, action: "security.permission.denied", entity: op.entity,
+              summary: `Blocked ${op.action} ${op.entity}: ${denial}`,
+              metadata: { reason: denial, userId: req.auth!.userId },
+              userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
+            },
+          })
+        } catch { /* best-effort audit */ }
+        results.push({ id: op.id, status: "error", error: denial })
+        continue
       }
 
       await prisma.$transaction(async (tx) => {
@@ -1623,9 +1660,11 @@ async function processOperation(
           create: { ...payload, tenantId } as any,
         })
       } else if (action === "close") {
+        // A close records the closing figures; it never rewrites who opened the shift or its float.
+        const { openedById: _ob, openedByName: _on, openedAt: _oa, openingFloatUsd: _of, tenantId: _t, ...closeData } = (payload ?? {}) as Record<string, unknown>
         await db.shift.updateMany({
           where: { id: payload?.id as string, tenantId },
-          data: { ...payload, status: "Closed", closedAt: new Date() } as any,
+          data: { ...closeData, status: "Closed", closedAt: new Date() } as any,
         })
       }
       break

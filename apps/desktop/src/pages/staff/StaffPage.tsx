@@ -490,7 +490,8 @@ export default function StaffPage() {
   }
 
   function handleOpenShift() {
-    const shift = openShift(parseMoney(openingFloat))
+    let shift: ReturnType<typeof openShift> = null
+    try { shift = openShift(parseMoney(openingFloat)) } catch (e) { showToast(e instanceof Error ? e.message : String(e), "error"); return }
     if (!shift) return
 
     showToast(t("pos.staff.shift_opened", { shift: shift.shiftNumber }))
@@ -507,7 +508,8 @@ export default function StaffPage() {
       confirmLabel: t("pos.staff.close_shift"),
       confirmDestructive: true,
       onConfirm: () => {
-        const closedShift = closeShift({
+        let closedShift: ReturnType<typeof closeShift> = null
+        try { closedShift = closeShift({
           shiftId: activeShift.id,
           cashSalesUsd: cashSales,
           cashRefundsUsd: cashRefunds,
@@ -516,7 +518,7 @@ export default function StaffPage() {
           expectedCashUsd: expectedCash,
           closingCashUsd: parseMoney(closingCash),
           notes: shiftNotes,
-        })
+        }) } catch (e) { showToast(e instanceof Error ? e.message : String(e), "error"); return }
         if (closedShift) {
           setClosingCash("")
           setShiftNotes("")

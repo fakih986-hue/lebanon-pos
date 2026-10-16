@@ -1352,6 +1352,6 @@ export const en = {
   "pos.expense.need_vendor": "Enter a vendor or description.",
   "pos.expense.need_amount": "Enter a valid amount.",
   "pos.expense.recorded": "Expense recorded: {amount}",
-  "pos.expense.need_permission": "Recording expenses needs the Accounting or Cash permission.",
+  "pos.expense.need_permission": "Recording expenses needs the Accounting permission.",
   "pos.expense.need_shift": "Open a shift first: cash expenses belong to a shift.",
 }
