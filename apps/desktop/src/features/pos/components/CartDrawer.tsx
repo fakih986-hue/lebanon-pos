@@ -58,7 +58,7 @@ interface Props {
   onHold: () => void
   onClean: () => void
   onCompleteSale: () => void
-  onTenderEnter?: () => void
+  onTenderEnter?: (field: "usd" | "lbp") => void
   itemCount: number
   grossSubtotal: number
   discountTotal: number

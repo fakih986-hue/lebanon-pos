@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react"
+import { useEffect, type ReactNode, useId } from "react"
 import { X } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
@@ -15,6 +15,7 @@ type Props = {
 }
 
 export default function ConfirmDialog({ open, title, children, confirmLabel, confirmDestructive, confirmDisabled, onConfirm, onCancel }: Props) {
+  const titleId = useId()
   const { t } = useI18n()
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export default function ConfirmDialog({ open, title, children, confirmLabel, con
   }, [open, onCancel])
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${open ? "" : "pointer-events-none"}`}>
+    <div className={`fixed inset-0 z-[300] flex items-center justify-center p-4 ${open ? "" : "pointer-events-none"}`}>
       <div
         className={`fixed inset-0 transition-opacity duration-200 ${open ? "opacity-100" : "opacity-0"}`}
         style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
@@ -35,9 +36,10 @@ export default function ConfirmDialog({ open, title, children, confirmLabel, con
         className={`relative w-full max-w-sm rounded-2xl border transition-all duration-200 ${open ? "scale-100 opacity-100 animate-scale-in" : "scale-95 opacity-0"}`}
         style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "var(--shadow-xl)" }}
         onClick={(e) => e.stopPropagation()}
+        role={open ? "alertdialog" : undefined} aria-modal={open || undefined} aria-labelledby={open ? titleId : undefined} aria-hidden={open ? undefined : true}
       >
         <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "var(--border)" }}>
-          <h2 className="text-[15px] font-bold" style={{ color: "var(--text)" }}>{title}</h2>
+          <h2 id={titleId} className="text-[15px] font-bold" style={{ color: "var(--text)" }}>{title}</h2>
           <button
             type="button"
             onClick={onCancel}

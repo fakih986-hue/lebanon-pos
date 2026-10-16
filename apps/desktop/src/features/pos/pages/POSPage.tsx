@@ -134,16 +134,21 @@ export default function POSPage() {
 
   const productListRef = useRef<HTMLDivElement | null>(null)
 
-  // v2: the review dialog takes focus itself; when it closes (back, or after
-  // confirming) the scan field gets focus back so the next barcode lands there.
-  const reviewWasOpen = useRef(false)
-  useEffect(() => {
-    if (showReview) { reviewWasOpen.current = true; return }
-    if (reviewWasOpen.current) {
-      reviewWasOpen.current = false
-      window.requestAnimationFrame(() => scanInputRef.current?.focus())
-    }
-  }, [showReview])
+  // v2: the review dialog takes focus itself. Back returns focus to where the
+  // cashier was (scan field or a tender field, in either mode); after a confirm
+  // the scan field gets it so the next barcode lands there.
+  const reviewReturnFocus = useRef<HTMLElement | null>(null)
+  // The status line said "still due"; once the tender covers it, say so instead of leaving a stale amount.
+  const stillDueShown = useRef(false)
+  function closeReview(after: "back" | "confirm") {
+    setShowReview(false)
+    const back = reviewReturnFocus.current
+    reviewReturnFocus.current = null
+    window.requestAnimationFrame(() => {
+      if (after === "back" && back && back.isConnected && back.offsetParent !== null) back.focus()
+      else scanInputRef.current?.focus()
+    })
+  }
 
   // --- Auto-select first customer for Debt ---
   useEffect(() => {
@@ -374,25 +379,7 @@ export default function POSPage() {
       // Enter on an empty scan box = "I'm done adding — take payment". The scan
       // input is auto-focused and keeps focus through the sale, so this is how a
       // cashier naturally reaches for checkout from the keyboard.
-      if (items.length > 0) {
-        // A sale is already being completed (e.g. waiting for the store hub): say so, open nothing.
-        if (checkoutLock.current) { setScannerStatus(t("pos.status.completing")); return }
-        if (checkoutBlocked) {
-          setScannerStatus(
-            paymentMethod === "Cash" && !cashTenderValid
-              ? t("pos.status.still_due", { amount: formatCurrency(cashStillDueUsd) })
-              : paymentMethod === "Debt" && !selectedCustomer
-                ? t("pos.status.select_customer")
-                : creditLimitExceeded
-                  ? t("pos.status.credit_exceeded")
-                  : t("pos.status.cannot_checkout")
-          )
-        } else if (!checkoutLock.current) {
-          setShowReview(true)
-        }
-        return
-      }
-      setScannerStatus(t("pos.status.choose_item"))
+      requestReview()
       return
     }
     const barcode = value.trim().replace(/\s+/g, "")
@@ -411,7 +398,7 @@ export default function POSPage() {
       setScannerStatus(t("pos.status.not_found", { query: value.trim() }))
       return
     }
-    addProductToSale(product, exactProduct ? "barcode" : "quick add")
+    addProductToSale(product, productHasBarcode(product, barcode) ? "barcode" : "quick add")
   }
 
   const toggleFavorite = useCallback(function toggleFavorite(product: Product) {
@@ -598,14 +585,65 @@ export default function POSPage() {
     })
   }, [])
 
-  function handleReview() {
-    if (checkoutBlocked || checkoutLock.current) return
-    if (!getActiveShift()) {
-      setScannerStatus(t("pos.status.no_shift"))
+  useEffect(() => {
+    if (stillDueShown.current && items.length > 0 && !checkoutBlocked) {
+      stillDueShown.current = false
+      setScannerStatus(t("pos.status.payment_covered"))
+    }
+  }, [checkoutBlocked, items.length, setScannerStatus, t])
+
+  /** Focus a tender field (Paid USD / Paid LBP). On a phone the tender lives in the cart sheet: open it first. */
+  function focusTender(field: "usd" | "lbp") {
+    const go = () => {
+      const el = [...document.querySelectorAll<HTMLInputElement>(`input[data-tender="${field}"]`)].find((x) => x.offsetParent !== null)
+      el?.focus(); el?.select()
+    }
+    const phoneRegister = !quickMode && window.matchMedia("(max-width: 1023px)").matches
+    if (phoneRegister && !isCartOpen) { setIsCartOpen(true); window.setTimeout(go, 400) }
+    else window.requestAnimationFrame(go)
+  }
+
+  /**
+   * The one gate to payment review, for both modes and every entry point (Enter in an
+   * empty scan field, Enter in a tender field, the Pay buttons). Never opens while a sale
+   * is being completed, and never skips the checkout validation.
+   */
+  function requestReview() {
+    if (checkoutLock.current) { setScannerStatus(t("pos.status.completing")); return }
+    if (items.length === 0) { setScannerStatus(t("pos.status.choose_item")); return }
+    if (!getActiveShift()) { setScannerStatus(t("pos.status.no_shift")); playErrorBuzz(); return }
+    if (checkoutBlocked) {
+      if (paymentMethod === "Cash" && !cashTenderValid) {
+        // Not enough paid: put the cashier in the field to complete — LBP if they were paying in LBP, else USD.
+        setScannerStatus(t("pos.status.still_due", { amount: formatCurrency(cashStillDueUsd) }))
+        stillDueShown.current = true
+        focusTender(paidLbpAmount > 0 && paidUsdAmount === 0 ? "lbp" : "usd")
+        return
+      }
+      setScannerStatus(paymentMethod === "Debt" && !selectedCustomer ? t("pos.status.select_customer")
+        : creditLimitExceeded ? t("pos.status.credit_exceeded") : t("pos.status.cannot_checkout"))
       playErrorBuzz()
       return
     }
+    reviewReturnFocus.current = document.activeElement as HTMLElement | null
     setShowReview(true)
+  }
+  const handleReview = requestReview
+
+  /** Enter in a tender field: review when payable; from Paid USD with too little, move on to Paid LBP. */
+  function handleTenderEnter(field: "usd" | "lbp") {
+    if (field === "usd" && !checkoutLock.current && paymentMethod === "Cash" && !cashTenderValid && items.length > 0) {
+      setScannerStatus(t("pos.status.still_due", { amount: formatCurrency(cashStillDueUsd) }))
+      stillDueShown.current = true
+      focusTender("lbp")
+      return
+    }
+    if (field === "lbp" && !checkoutLock.current && paymentMethod === "Cash" && !cashTenderValid && items.length > 0) {
+      setScannerStatus(t("pos.status.still_due", { amount: formatCurrency(cashStillDueUsd) }))
+      stillDueShown.current = true
+      return // stay in Paid LBP
+    }
+    requestReview()
   }
 
   useEffect(() => {
@@ -855,6 +893,8 @@ export default function POSPage() {
                 scanCode={scanCode}
                 onScanCodeChange={setScanCode}
                 onQuickAdd={quickAddProduct}
+                onTenderEnter={handleTenderEnter}
+                onRequestReview={requestReview}
                 scannerStatus={scannerStatus}
                 cameraActive={cameraActive}
                 cameraEngine={cameraEngine}
@@ -894,7 +934,6 @@ export default function POSPage() {
                 cashStillDueUsd={cashStillDueUsd}
                 cashTenderValid={cashTenderValid}
                 checkoutBlocked={checkoutBlocked}
-          onCompleteSale={completeSale}
                 recentSales={recentSales}
                 onPrintReceipt={(s) => printLastSaleReceipt(s, settings)}
                 onWhatsAppReceipt={(s) => {
@@ -1046,7 +1085,7 @@ export default function POSPage() {
           onHold={holdCurrentSale}
           onClean={cleanSale}
           onCompleteSale={handleReview}
-          onTenderEnter={handleReview}
+          onTenderEnter={handleTenderEnter}
           itemCount={itemCount}
           grossSubtotal={grossSubtotal}
           discountTotal={discountTotal}
@@ -1108,7 +1147,7 @@ export default function POSPage() {
           onHold={holdCurrentSale}
           onClean={cleanSale}
           onCompleteSale={handleReview}
-          onTenderEnter={handleReview}
+          onTenderEnter={handleTenderEnter}
           itemCount={itemCount}
           grossSubtotal={grossSubtotal}
           discountTotal={discountTotal}
@@ -1183,8 +1222,8 @@ export default function POSPage() {
           offline={!getSyncStatus().online}
           customerName={selectedCustomer?.name}
           shiftLabel={getActiveShift()?.shiftNumber}
-          onBack={() => setShowReview(false)}
-          onConfirm={() => { setShowReview(false); completeSale() }}
+          onBack={() => closeReview("back")}
+          onConfirm={() => { closeReview("confirm"); completeSale() }}
         />
       )}
 

@@ -119,6 +119,7 @@ export default function TenderPanel({
                   ref={usdInputRef}
                   type="number" min="0" step="0.01" inputMode="decimal"
                   aria-label={t("pos.paid_usd")}
+                  data-tender="usd"
                   value={paidUsd}
                   onChange={(e) => onPaidUsdChange(e.target.value)}
                   onKeyDown={onUsdEnter ? (e) => { if (e.key === "Enter") { e.preventDefault(); onUsdEnter() } } : undefined}
@@ -132,6 +133,7 @@ export default function TenderPanel({
                   ref={lbpInputRef}
                   type="number" min="0" step="1000" inputMode="decimal"
                   aria-label={t("pos.paid_lbp")}
+                  data-tender="lbp"
                   value={paidLbp}
                   onChange={(e) => onPaidLbpChange(e.target.value)}
                   onKeyDown={onLbpEnter ? (e) => { if (e.key === "Enter") { e.preventDefault(); onLbpEnter() } } : undefined}

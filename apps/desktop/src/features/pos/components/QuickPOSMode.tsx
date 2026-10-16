@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type RefObject } from "react"
+import { useRef, useState, type ChangeEvent, type RefObject } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 const MotionDiv = motion.div as any
 const MotionSpan = motion.span as any
@@ -20,7 +20,6 @@ import {
 import LastSaleBanner from "./LastSaleBanner"
 import TenderPanel from "../components/TenderPanel"
 import MoneyDue from "./MoneyDue"
-import PaymentReviewDialog from "./PaymentReviewDialog"
 import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatNumber } from "../lib/currency"
 import type { Product } from "../types/product"
@@ -76,7 +75,10 @@ type Props = {
   cashStillDueUsd: number
   cashTenderValid: boolean
   checkoutBlocked: boolean
-  onCompleteSale: () => void
+  /** Enter in Paid USD / Paid LBP (same rule as the full register). */
+  onTenderEnter?: (field: "usd" | "lbp") => void
+  /** Pay: the register's single review gate (validation, shift, checkout lock). */
+  onRequestReview: () => void
   recentSales: { number: string; total: number; totalLbp: number; items: any[] }[]
   onPrintReceipt: (sale: any) => void
   onWhatsAppReceipt: (sale: any) => void
@@ -105,7 +107,7 @@ export default function QuickPOSMode({
   paidUsd, paidLbp, onPaidUsdChange, onPaidLbpChange, onFillExactTender,
   customers, selectedCustomerId, onSelectCustomer, selectedCustomer, creditLimitExceeded,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
-  cashTenderValid, checkoutBlocked, onCompleteSale,
+  cashTenderValid, checkoutBlocked, onTenderEnter, onRequestReview,
   recentSales, onPrintReceipt, onWhatsAppReceipt,
   sellAtCost, onToggleSellAtCost,
   saleNote, onSaleNoteChange,
@@ -116,8 +118,6 @@ export default function QuickPOSMode({
   const { t, dir } = useI18n()
   const usdRef = useRef<HTMLInputElement>(null)
   const lbpRef = useRef<HTMLInputElement>(null)
-  const reviewRef = useRef<HTMLElement>(null)
-  const [showReview, setShowReview] = useState(false)
   const [discountOpen, setDiscountOpen] = useState(false)
   const [saleNoteOpen, setSaleNoteOpen] = useState(false)
   const hasInput = scanCode.trim().length > 0
@@ -126,56 +126,16 @@ export default function QuickPOSMode({
     if (e.key === "Escape" && scanCode) { e.preventDefault(); onScanCodeChange(""); return }
     if (e.key !== "Enter") return
     e.preventDefault()
-    if (scanCode.trim()) {
-      onQuickAdd(scanCode)
-    } else if (items.length > 0) {
-      usdRef.current?.focus()
-    }
-  }
-
-  function handleCompleteSale() {
-    setShowReview(false)
-    onCompleteSale()
-  }
-
-  // Auto-focus review screen so Enter works
-  useEffect(() => {
-    if (showReview) setTimeout(() => reviewRef.current?.focus(), 50)
-  }, [showReview])
-
-  if (showReview) {
-    return (
-      <PaymentReviewDialog
-        lines={items.length}
-        units={itemCount}
-        total={total}
-        totalLbp={totalLbp}
-        payableLbp={payableLbp}
-        payableUsd={payableUsd}
-        paymentMethod={paymentMethod}
-        paidUsd={parseFloat(paidUsd) || 0}
-        paidLbp={parseFloat(paidLbp) || 0}
-        changeUsd={cashChangeUsd}
-        changeLbp={cashChangeLbp}
-        stillDueUsd={paymentMethod === "Cash" ? cashStillDueUsd : 0}
-        blockedReason={!checkoutBlocked ? null
-          : items.length === 0 ? t("pos.v2.blocked_empty")
-          : paymentMethod === "Cash" && !cashTenderValid ? t("pos.v2.blocked_cash", { amount: formatCurrency(cashStillDueUsd) })
-          : paymentMethod === "Debt" && !selectedCustomer ? t("pos.select_customer_hint")
-          : creditLimitExceeded ? t("pos.credit_exceeded") : t("pos.v2.blocked_other")}
-        customerName={selectedCustomer?.name}
-        onBack={() => setShowReview(false)}
-        onConfirm={handleCompleteSale}
-      />
-    )
+    // Same rule as the full register: text → scan/search; empty → payment review
+    // (or the tender field to complete when not enough is paid).
+    onQuickAdd(scanCode)
   }
 
   // NOTE: never add .pos-quick-shell to this root — its position:relative
   // overrides Tailwind's `fixed` (index.css loads after utilities) and breaks
   // the fullscreen worker mode.
   return (
-    <section className="mg2 bg-page fixed inset-0 z-[200] flex flex-col overflow-y-auto lg:overflow-hidden"
-      onKeyDown={(e) => { if (e.key === "Escape" && showReview) setShowReview(false) }}>
+    <section className="mg2 bg-page fixed inset-0 z-[200] flex flex-col overflow-y-auto lg:overflow-hidden">
       {/* ── Header ─────────────────────────────────────── */}
       <div className="flex shrink-0 items-center gap-2 border-b px-3 py-2.5 sm:gap-3 sm:px-4"
         style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
@@ -486,13 +446,13 @@ export default function QuickPOSMode({
             creditLimitExceeded={creditLimitExceeded}
             usdInputRef={usdRef}
             lbpInputRef={lbpRef}
-            onUsdEnter={() => lbpRef.current?.focus()}
-            onLbpEnter={() => setShowReview(true)}
+            onUsdEnter={() => (onTenderEnter ? onTenderEnter("usd") : lbpRef.current?.focus())}
+            onLbpEnter={() => onTenderEnter?.("lbp")}
           />
 
           {/* Complete sale */}
           <div className="mt-auto">
-            <button type="button" onClick={() => setShowReview(true)}
+            <button type="button" onClick={onRequestReview}
               disabled={items.length === 0 || checkoutBlocked}
               className="mg2-pay">
               <span>{t("pos.pay")}</span>

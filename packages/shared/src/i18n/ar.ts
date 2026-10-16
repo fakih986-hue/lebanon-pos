@@ -1364,4 +1364,5 @@ export const ar = {
   "settings.printer.test": "طباعة إيصال تجريبي",
   "settings.printer.saved": "حُفظت إعدادات الطابعة على هذا الجهاز.",
   "pos.v2.sales_history": "سجل المبيعات",
+  "pos.status.payment_covered": "المبلغ مغطّى: اضغط Enter للمراجعة.",
 }

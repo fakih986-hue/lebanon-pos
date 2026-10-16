@@ -1364,4 +1364,5 @@ export const en = {
   "settings.printer.test": "Print test receipt",
   "settings.printer.saved": "Printer settings saved on this device.",
   "pos.v2.sales_history": "Sales history",
+  "pos.status.payment_covered": "Payment covered: press Enter to review.",
 }
