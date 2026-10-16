@@ -51,6 +51,8 @@ export type CreateExpenseInput = {
   paymentMethod: ExpensePaymentMethod
   invoiceNumber: string
   note: string
+  /** Caller-chosen id (idempotent settlement entries). */
+  id?: string
 }
 
 
@@ -104,7 +106,7 @@ export function createExpense(input: CreateExpenseInput) {
 
   const amount = Math.max(0, input.amount)
   const expense: Expense = {
-    id: createId(),
+    id: input.id ?? createId(),
     expenseNumber: `EXP-${Date.now().toString().slice(-6)}`,
     vendor: cleanText(input.vendor) || "Unknown vendor",
     category: input.category,

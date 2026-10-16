@@ -105,11 +105,14 @@ afterAll(async () => {
   await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())))
   await prisma.stockMovement.deleteMany({ where: { tenantId: TENANT_ID } })
   await prisma.syncOperation.deleteMany({ where: { tenantId: TENANT_ID } })
+  await prisma.debtPayment.deleteMany({ where: { tenantId: TENANT_ID } })
+  await prisma.debtSale.deleteMany({ where: { tenantId: TENANT_ID } })
   await prisma.saleRefund.deleteMany({ where: { tenantId: TENANT_ID } })
   await prisma.sale.deleteMany({ where: { tenantId: TENANT_ID } })
   await prisma.inventoryBatch.deleteMany({ where: { tenantId: TENANT_ID } })
   await prisma.auditEvent.deleteMany({ where: { tenantId: TENANT_ID } })
   await prisma.device.deleteMany({ where: { tenantId: TENANT_ID } })
+  await prisma.customer.deleteMany({ where: { tenantId: TENANT_ID } })
   await prisma.product.deleteMany({ where: { tenantId: TENANT_ID } })
   await prisma.staffUser.deleteMany({ where: { tenantId: TENANT_ID } })
   await prisma.tenant.deleteMany({ where: { id: TENANT_ID } })
@@ -176,6 +179,44 @@ describe("REFUND-INTEGRITY-1 against real Postgres", () => {
     expect(Number(refunds[0].total)).toBe(50)
   })
 
+  it("refund and void of the same sale at the same moment: exactly one wins, stock restored once", async () => {
+    for (let round = 0; round < 5; round++) {
+      const lots = await makeLots(6, 4)
+      const { saleId, lineId } = await sellTracked(10, lots, [6, 4])
+      const stock0 = await stockOf()
+      const [refund, voided] = await Promise.all([
+        push("refund", "create", refundPayload(saleId, lineId, 10, 50)),
+        push("sale", "void", { id: saleId }),
+      ])
+      const sale = await prisma.sale.findUnique({ where: { id: saleId } })
+      const refunds = await prisma.saleRefund.count({ where: { saleId } })
+      // Either the void won (sale voided, refund rejected) or the refund won (void rejected).
+      if (sale!.status === "Voided") {
+        expect(refund.status).toBe("rejected")
+        expect(refund.error).toMatch(/^REFUND_SALE_VOIDED/)
+        expect(refunds).toBe(0)
+      } else {
+        expect(voided.status).toBe("rejected")
+        expect(voided.error).toMatch(/^VOID_HAS_REFUNDS/)
+        expect(refunds).toBe(1)
+      }
+      expect(await stockOf()).toBe(stock0 + 10)
+      expect(await lotOf(lots.a)).toBe(6)
+      expect(await lotOf(lots.b)).toBe(4)
+    }
+  })
+
+  it("two voids of the same sale at the same moment restore stock once", async () => {
+    const lots = await makeLots(6, 4)
+    const { saleId } = await sellTracked(10, lots, [6, 4])
+    const stock0 = await stockOf()
+    const results = await Promise.all([push("sale", "void", { id: saleId }), push("sale", "void", { id: saleId })])
+    expect(results.map((r) => r.status)).not.toContain("rejected")
+    expect(await stockOf()).toBe(stock0 + 10)
+    expect(await lotOf(lots.a)).toBe(6)
+    expect(await lotOf(lots.b)).toBe(4)
+  })
+
   it("a retried refund (same id) is idempotent", async () => {
     const lots = await makeLots(5, 0)
     const { saleId, lineId } = await sellTracked(5, lots, [5, 0])
@@ -230,6 +271,80 @@ describe("REFUND-INTEGRITY-1 against real Postgres", () => {
     expect(await stockOf()).toBe(stock0 + 10)
     expect(await lotOf(lots2.a)).toBe(6)
     expect(await lotOf(lots2.b)).toBe(4)
+  })
+
+  it("a debt refund's customer credit is created with the refund, once — even if an old client also sends it", async () => {
+    const lots = await makeLots(5, 0)
+    const customer = await prisma.customer.create({ data: { tenantId: TENANT_ID, name: "Debt IT", mobile: `d-${randomUUID().slice(0, 8)}`, creditLimit: 500 } })
+    const saleId = randomUUID()
+    const lineId = randomUUID()
+    expect((await push("sale", "create", {
+      id: saleId, saleNumber: `D-${saleId.slice(0, 8)}`, paymentMethod: "Debt", customerId: customer.id, customerName: "Debt IT",
+      subtotal: 25, tax: 0, total: 25, cost: 0, profit: 0, cashier: "IT", status: "Debt",
+      items: [{ id: productId, lineId, name: "Refund IT Widget", barcode: BARCODE, quantity: 5, unitPrice: 5, total: 25, cost: 2, batchAllocations: [{ batchId: lots.a, quantity: 5, unitCost: 2 }] }],
+    })).status).toBe("ok")
+    const refund = refundPayload(saleId, lineId, 2, 10, { method: "Debt_Credit", customerId: customer.id })
+    expect((await push("refund", "create", refund)).status).toBe("ok")
+    const credits = () => prisma.debtPayment.findMany({ where: { tenantId: TENANT_ID, customerId: customer.id } })
+    expect((await credits()).map((c) => [c.id, Number(c.amount), c.method])).toEqual([[`refund-credit:${refund.id}`, 10, "Refund Credit"]])
+
+    // An older client sends the credit separately, with its own id.
+    expect((await push("debt", "payment", { id: randomUUID(), customerId: customer.id, amount: 10, method: "Refund Credit", reference: `${refund.refundNumber} return for D-${saleId.slice(0, 8)}` })).status).toBe("ok")
+    expect(await credits()).toHaveLength(1)
+
+    // A credit whose refund never reached the server is not applied (it waits / retries visibly).
+    const orphan = await push("debt", "payment", { id: randomUUID(), customerId: customer.id, amount: 10, method: "Refund Credit", reference: `R-NEVER return for D-${saleId.slice(0, 8)}` })
+    expect(orphan.status).toBe("error")
+    expect(await credits()).toHaveLength(1)
+  })
+
+  it("a rejected void of a debt sale does not erase the customer's debt", async () => {
+    const lots = await makeLots(5, 0)
+    const customer = await prisma.customer.create({ data: { tenantId: TENANT_ID, name: "Void IT", mobile: `v-${randomUUID().slice(0, 8)}`, creditLimit: 500 } })
+    const saleId = randomUUID()
+    const lineId = randomUUID()
+    const saleNumber = `V-${saleId.slice(0, 8)}`
+    await push("sale", "create", {
+      id: saleId, saleNumber, paymentMethod: "Debt", customerId: customer.id, subtotal: 25, tax: 0, total: 25, cost: 0, profit: 0, cashier: "IT", status: "Debt",
+      items: [{ id: productId, lineId, name: "Refund IT Widget", barcode: BARCODE, quantity: 5, unitPrice: 5, total: 25, cost: 2, batchAllocations: [{ batchId: lots.a, quantity: 5, unitCost: 2 }] }],
+    })
+    const debtId = randomUUID()
+    await push("debt", "create", { id: debtId, customerId: customer.id, saleNumber, subtotal: 25, discountTotal: 0, tax: 0, total: 25 })
+    expect((await push("refund", "create", refundPayload(saleId, lineId, 1, 5, { method: "Debt_Credit" }))).status).toBe("ok")
+    // The till sends the debt delete just before the void (voidSale → reverseDebtSale).
+    expect((await push("debt", "delete", { id: debtId, saleNumber })).status).toBe("ok")
+    expect((await push("sale", "void", { id: saleId, saleNumber })).status).toBe("rejected")
+    expect(await prisma.debtSale.count({ where: { id: debtId } })).toBe(1)
+  })
+
+  it("a legacy refund's lot-less stock is an explained reconciliation exception, and later sales never drive lots negative", async () => {
+    // Fresh product so the report row is unambiguous.
+    const p = await prisma.product.create({ data: { tenantId: TENANT_ID, name: "Legacy IT", price: 5, cost: 2, stock: 4, barcode: `LEG-${randomUUID().slice(0, 8)}`, category: "Test" } })
+    const lotId = `leg-lot-${randomUUID()}`
+    await prisma.inventoryBatch.create({ data: { id: lotId, tenantId: TENANT_ID, batchNumber: "L", productId: p.id, productName: "Legacy IT", barcode: p.barcode, initialQuantity: 4, quantityRemaining: 4, unitCost: 2, unitPrice: 5 } })
+    const saleId = randomUUID()
+    await prisma.sale.create({ data: { id: saleId, tenantId: TENANT_ID, saleNumber: `LG-${saleId.slice(0, 8)}`, paymentMethod: "Cash", subtotal: 10, tax: 0, total: 10, cashier: "legacy",
+      items: { create: [{ productId: p.id, productName: "Legacy IT", barcode: p.barcode, quantity: 2, unitPrice: 5, total: 10 }] } } })
+    const refundId = randomUUID()
+    expect((await push("refund", "create", { id: refundId, refundNumber: `R-${refundId.slice(0, 10)}`, saleId, saleNumber: "LG", method: "Cash", reason: "IT", total: 10, cashier: "IT",
+      items: [{ id: p.id, barcode: p.barcode, quantity: 2 }] })).status).toBe("ok")
+    expect(Number((await prisma.product.findUnique({ where: { id: p.id } }))!.stock)).toBe(6)
+    expect(await lotOf(lotId)).toBe(4)
+
+    const report = await request("GET", "/api/inventory/reconciliation")
+    const row = report.body.rows.find((r: any) => r.productId === p.id)
+    expect(row).toMatchObject({ severity: "warn", unallocatedReturnQty: 2 })
+    expect(row.classification).toContain("unallocated_return")
+    expect(row.classification).not.toContain("stock_batch_mismatch")
+    expect(report.body.summary.unallocatedReturns).toBeGreaterThanOrEqual(1)
+
+    // Sell all 6: the till allocates 4 from the lot and 2 as untracked stock.
+    const sale2 = randomUUID()
+    expect((await push("sale", "create", { id: sale2, saleNumber: `LG2-${sale2.slice(0, 8)}`, paymentMethod: "Cash", subtotal: 30, tax: 0, total: 30, cost: 0, profit: 0, cashier: "IT", status: "Completed",
+      items: [{ id: p.id, lineId: randomUUID(), name: "Legacy IT", barcode: p.barcode, quantity: 6, unitPrice: 5, total: 30, cost: 2,
+        batchAllocations: [{ batchId: lotId, quantity: 4, unitCost: 2 }, { batchId: "legacy-stock", quantity: 2, unitCost: 2 }] }] })).status).toBe("ok")
+    expect(Number((await prisma.product.findUnique({ where: { id: p.id } }))!.stock)).toBe(0)
+    expect(await lotOf(lotId)).toBe(0)
   })
 
   it("old hubs (no schema header) do not receive the new columns; schema-2 clients do", async () => {

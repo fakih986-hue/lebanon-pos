@@ -49,7 +49,8 @@ describe("GET /api/inventory/reconciliation", () => {
       Promise.resolve(a?._count ? [{ productId: 1, _count: { _all: 1 } }, { productId: 3, _count: { _all: 1 } }]
                                  : [{ productId: 3, _sum: { quantityRemaining: 10 } }]))
     vi.mocked(prisma.stockMovement.groupBy as any).mockImplementation((a: any) =>
-      Promise.resolve(a?._count ? [{ productId: 1, _count: { _all: 1 } }, { productId: 3, _count: { _all: 2 } }]
+      // REFUND-REVIEW: the unallocated-return query (note filter) has no rows here.
+      Promise.resolve(a?.where?.note ? [] : a?._count ? [{ productId: 1, _count: { _all: 1 } }, { productId: 3, _count: { _all: 2 } }]
                                  : [{ productId: 1, _sum: { quantity: 20 } }, { productId: 3, _sum: { quantity: 10 } }]))
 
     const res = await request("GET", "/api/inventory/reconciliation", { token: admin })
@@ -84,7 +85,8 @@ describe("GET /api/inventory/reconciliation", () => {
     vi.mocked(prisma.inventoryBatch.groupBy as any).mockImplementation((a: any) =>
       Promise.resolve(a?._count ? [{ productId: 3, _count: { _all: 1 } }] : [{ productId: 3, _sum: { quantityRemaining: 10 } }]))
     vi.mocked(prisma.stockMovement.groupBy as any).mockImplementation((a: any) =>
-      Promise.resolve(a?._count ? [{ productId: 3, _count: { _all: 1 } }] : [{ productId: 3, _sum: { quantity: 10 } }]))
+      // REFUND-REVIEW: the unallocated-return query (note filter) has no rows here.
+      Promise.resolve(a?.where?.note ? [] : a?._count ? [{ productId: 3, _count: { _all: 1 } }] : [{ productId: 3, _sum: { quantity: 10 } }]))
 
     const res = await request("GET", "/api/inventory/reconciliation?includeOk=1", { token: admin })
     expect(res.body.rows.length).toBe(1)

@@ -244,67 +244,153 @@ describe("REFUND-INTEGRITY-1 — server-rejected refunds", () => {
   })
   afterEach(() => { vi.unstubAllGlobals() })
 
-  async function issueThenReject() {
-    window.localStorage.setItem(SALES_KEY, JSON.stringify([trackedSale()]))
+  /** Issue a $10 refund (2 × $5) offline, then have the server reject it. */
+  async function issueThenReject(sale = trackedSale()) {
+    window.localStorage.setItem(SALES_KEY, JSON.stringify([sale]))
     const s = await services()
-    const refund = s.sales.processRefund({ saleId: "sale-1", quantities: { L1: 2 }, reason: "" })
-    // The server later rejects it (another device already refunded these items).
-    window.localStorage.setItem(QUEUE_KEY, JSON.stringify(queue().map((op) => ({
+    const shift = await import("../features/pos/services/shift.service")
+    const customers = await import("../features/pos/services/customer.service")
+    const refund = s.sales.processRefund({ saleId: sale.id, quantities: { L1: 2 }, reason: "" })
+    window.localStorage.setItem(QUEUE_KEY, JSON.stringify(queue().map((op) => (op.entity === "refund" ? {
       ...op, status: "Rejected", attempts: 5, lastAttemptAt: "2026-10-02T00:00:00.000Z",
       error: "REFUND_EXCEEDS_REFUNDABLE: Line L1: requested 2, only 0 still refundable",
-    }))))
-    return { ...s, refund }
+    } : op))))
+    const opId = s.conflicts.getMoneyConflicts()[0].opId
+    const drawer = () => shift.computeExpectedCash(s.security.getActiveShift()!)
+    const counted = () => s.sales.getRefunds().reduce((sum, r) => sum + r.total, 0)
+    const expenses = () => read("lebanonpos.expenses.v1") as any[]
+    const movements = () => read("lebanonpos.cash-movements.v1") as any[]
+    const credits = () => customers.getDebtPayments().filter((p) => p.method === "Refund Credit")
+    return { ...s, refund, opId, drawer, counted, expenses, movements, credits }
   }
+  const pushedEntries = () => businessOps().filter((op) => op.entity !== "refund").map((op) => `${op.entity}:${op.payload?.id}`)
 
-  it("stays visible and survives 'clear stuck', remove, clear-all and a full pull", async () => {
+  it("stays visible and survives 'clear stuck', remove, clear-all, a full pull and a restart", async () => {
     seed()
-    const { sales, sync, conflicts, refund } = await issueThenReject()
-    const [conflict] = conflicts.getMoneyConflicts()
-    expect(conflict).toMatchObject({ kind: "refund", refundId: refund.id, amount: 10, code: "REFUND_EXCEEDS_REFUNDABLE" })
-
-    sync.clearSyncQueue()
-    sync.removeRejectedOperation(conflict.opId)
-    sync.clearAllSyncOperations()
-    expect(conflicts.getMoneyConflicts()).toHaveLength(1)
-
-    // A full pull of refunds from the server (which never accepted it) must not erase it.
-    expect(sync.preserveLocalOnlyRecords(REFUNDS_KEY, []).map((r: any) => r.id)).toEqual([refund.id])
-    // Until settled it still counts on this device (the cash really left).
-    expect(sales.getRefunds().map((r) => r.id)).toEqual([refund.id])
+    let s = await issueThenReject()
+    expect(s.conflicts.getMoneyConflicts()[0]).toMatchObject({ kind: "refund", refundId: s.refund.id, amount: 10, code: "REFUND_EXCEEDS_REFUNDABLE" })
+    s.sync.clearSyncQueue()
+    s.sync.removeRejectedOperation(s.opId)
+    s.sync.clearAllSyncOperations()
+    expect(s.sync.preserveLocalOnlyRecords(REFUNDS_KEY, []).map((r: any) => r.id)).toEqual([s.refund.id])
+    vi.resetModules()
+    const conflicts = await import("../features/pos/services/refundConflict.service")
+    expect(conflicts.getMoneyConflicts().map((c) => c.opId)).toEqual([s.opId])
   })
 
-  it("only a manager can settle it, a note is required, and 'loss' records the money", async () => {
+  it("is stashed on store switch and comes back when the device returns to that store", async () => {
+    seed()
+    window.localStorage.setItem("lebanonpos.settings.v1", JSON.stringify({ subdomain: "fakih" }))
+    const s = await issueThenReject()
+    await s.sync.clearStoreData()
+    expect(s.conflicts.getMoneyConflicts()).toEqual([])
+    // Another store: nothing of fakih's appears there.
+    window.localStorage.setItem("lebanonpos.settings.v1", JSON.stringify({ subdomain: "bendo2" }))
+    expect(s.sync.restoreStashedMoneyConflicts()).toBe(0)
+    expect(s.conflicts.getMoneyConflicts()).toEqual([])
+    // Back to fakih: the conflict and its refund are back.
+    window.localStorage.setItem("lebanonpos.settings.v1", JSON.stringify({ subdomain: "fakih" }))
+    expect(s.sync.restoreStashedMoneyConflicts()).toBe(1)
+    expect(s.conflicts.getMoneyConflicts().map((c) => c.opId)).toEqual([s.opId])
+    expect(s.sales.getAllRefunds().map((r) => r.id)).toContain(s.refund.id)
+  })
+
+  it("only a manager can settle; a note is required; 'recovered' requires how and a reference", async () => {
     seed({ role: "Cashier" })
     let s = await issueThenReject()
-    const opId = s.conflicts.getMoneyConflicts()[0].opId
-    expect(() => s.conflicts.settleMoneyConflict({ opId, resolution: "loss", note: "lost" })).toThrow(/manager/i)
-
+    expect(() => s.conflicts.settleMoneyConflict({ opId: s.opId, resolution: "loss", note: "lost" })).toThrow(/manager/i)
     window.localStorage.setItem(USERS_KEY, JSON.stringify([{ id: "u1", name: "Owner", role: "Admin", pin: "HASH", code: "OWN", active: true, permissions: [] }]))
     vi.resetModules()
-    s = { ...s, ...(await services()) }
-    expect(() => s.conflicts.settleMoneyConflict({ opId, resolution: "loss", note: " " })).toThrow(/note/i)
-
-    const settlement = s.conflicts.settleMoneyConflict({ opId, resolution: "loss", note: "Customer kept the cash" })
-    expect(settlement.expenseId).toBeTruthy()
-    const expenses = read("lebanonpos.expenses.v1")
-    expect(expenses).toHaveLength(1)
-    expect(expenses[0]).toMatchObject({ amount: 10, category: "Other", paymentMethod: "Cash" })
-
-    // Settled: no longer open, no longer counted, still in history, still preserved on pull.
-    expect(s.conflicts.getMoneyConflicts()).toEqual([])
-    expect(s.sales.getRefunds()).toEqual([])
-    expect(s.sales.getAllRefunds()[0].conflict).toMatchObject({ resolution: "loss", note: "Customer kept the cash", code: "REFUND_EXCEEDS_REFUNDABLE" })
-    expect(s.sync.preserveLocalOnlyRecords(REFUNDS_KEY, []).map((r: any) => r.id)).toEqual([s.refund.id])
+    const conflicts = await import("../features/pos/services/refundConflict.service")
+    expect(() => conflicts.settleMoneyConflict({ opId: s.opId, resolution: "loss", note: " " })).toThrow(/note/i)
+    expect(() => conflicts.settleMoneyConflict({ opId: s.opId, resolution: "recovered", note: "came back" })).toThrow(/how the money/i)
+    expect(() => conflicts.settleMoneyConflict({ opId: s.opId, resolution: "recovered", note: "came back", recovery: { method: "Cash", reference: "" } })).toThrow(/reference/i)
+    expect(read("lebanonpos.expenses.v1")).toEqual([])
+    expect(conflicts.getMoneyConflicts()).toHaveLength(1)
   })
 
-  it("'recovered' settles without any money entry", async () => {
+  // Cash refund of $10, server rejected. Drawer before settlement = float 100 − 10 = 90.
+  const cashCases: Array<{ name: string; resolution: "loss" | "recovered" | "not_paid"; recovery?: { method: "Cash" | "Bank Transfer"; reference: string }; drawer: number; expenses: number; entries: string[] }> = [
+    { name: "loss: one expense replaces the refund", resolution: "loss", drawer: 90, expenses: 10, entries: ["expense:settle-loss-OP"] },
+    { name: "recovered in cash: payout + recovery, net zero", resolution: "recovered", recovery: { method: "Cash", reference: "RCPT-17" }, drawer: 100, expenses: 0, entries: ["cash-movement:settle-out-OP", "cash-movement:settle-in-OP"] },
+    { name: "recovered by bank transfer: drawer keeps the payout", resolution: "recovered", recovery: { method: "Bank Transfer", reference: "TRX-889" }, drawer: 90, expenses: 0, entries: ["cash-movement:settle-out-OP"] },
+    { name: "never paid out: no money entry, drawer restored", resolution: "not_paid", drawer: 100, expenses: 0, entries: [] },
+  ]
+  for (const c of cashCases) {
+    it(`cash refund settled — ${c.name}; counted exactly once`, async () => {
+      seed()
+      const s = await issueThenReject()
+      expect(s.drawer()).toBe(90)
+      expect(s.counted()).toBe(10)
+      const settlement = s.conflicts.settleMoneyConflict({ opId: s.opId, resolution: c.resolution, note: "Settled by manager", recovery: c.recovery })
+      expect(s.drawer()).toBe(c.drawer)
+      expect(s.counted()).toBe(0) // the refund no longer counts...
+      expect(s.expenses().reduce((sum, e) => sum + e.amount, 0)).toBe(c.expenses) // ...only the settlement entry does
+      // What the cloud will receive (the refund op itself is gone).
+      expect(pushedEntries().sort()).toEqual(c.entries.map((e) => e.replace("OP", s.opId)).sort())
+      expect(businessOps().some((op) => op.entity === "refund")).toBe(false)
+      expect(s.sales.getAllRefunds()[0].conflict?.resolution).toBe(c.resolution)
+      const audit = read("lebanonpos.audit.v1").find((a: any) => a.action === "sale.refund.conflict_settled")
+      expect(audit?.metadata).toMatchObject({ resolution: c.resolution, amount: 10, recoveryReference: c.recovery?.reference ?? null })
+      expect(settlement.status).toBe("settled")
+    })
+  }
+
+  it("debt refund: its credit is never pushed on its own; 'keep' makes it real once, 'reverse' removes it", async () => {
     seed()
-    const { conflicts, sales } = await issueThenReject()
-    const opId = conflicts.getMoneyConflicts()[0].opId
-    const settlement = conflicts.settleMoneyConflict({ opId, resolution: "recovered", note: "Customer returned $10" })
-    expect(settlement.expenseId).toBeUndefined()
-    expect(read("lebanonpos.expenses.v1")).toEqual([])
-    expect(sales.getAllRefunds()[0].conflict?.resolution).toBe("recovered")
+    const debtSale = trackedSale({ paymentMethod: "Debt", status: "Debt", customerId: "c1", customerName: "Rami", tender: undefined })
+    let s = await issueThenReject(debtSale)
+    expect(s.credits()).toEqual([expect.objectContaining({ id: `refund-credit:${s.refund.id}`, amount: 10, localOnly: true })])
+    expect(businessOps().some((op) => op.entity === "debt")).toBe(false) // the server owns the refund credit
+    expect(s.conflicts.allowedResolutions(s.conflicts.getMoneyConflicts()[0])).toEqual(["loss", "not_paid"])
+    s.conflicts.settleMoneyConflict({ opId: s.opId, resolution: "loss", note: "Customer keeps the credit" })
+    expect(s.credits().map((p) => [p.id, p.amount])).toEqual([[`settle-credit-${s.opId}`, 10]]) // once, not twice
+    expect(pushedEntries()).toEqual([`debt:settle-credit-${s.opId}`])
+    expect(s.expenses()).toEqual([]) // a credit is not also an expense
+
+    vi.resetModules(); window.localStorage.clear(); seed()
+    s = await issueThenReject(debtSale)
+    s.conflicts.settleMoneyConflict({ opId: s.opId, resolution: "not_paid", note: "Credit reversed, customer informed" })
+    expect(s.credits()).toEqual([])
+    expect(pushedEntries()).toEqual([])
+  })
+
+  it("is idempotent across double clicks, an interrupted settlement, a restart and a rejected entry", async () => {
+    seed()
+    let s = await issueThenReject()
+    const first = s.conflicts.settleMoneyConflict({ opId: s.opId, resolution: "loss", note: "Lost" })
+    const again = s.conflicts.settleMoneyConflict({ opId: s.opId, resolution: "loss", note: "Lost" })
+    expect(again.settledAt).toBe(first.settledAt)
+    expect(s.expenses()).toHaveLength(1)
+
+    // Interrupted: the expense was written, then the app died before the rest.
+    vi.resetModules(); window.localStorage.clear(); seed()
+    s = await issueThenReject()
+    const settlements = await import("../features/pos/services/refundConflict.service")
+    const conflict = settlements.getMoneyConflicts()[0]
+    const expenseService = await import("../features/pos/services/expense.service")
+    expenseService.createExpense({ id: `settle-loss-${s.opId}`, vendor: "x", category: "Other", amount: 10, paymentMethod: "Cash", invoiceNumber: "", note: "" })
+    window.localStorage.setItem("lebanonpos.money-conflict-settlements.v1", JSON.stringify([{
+      opId: s.opId, conflict, resolution: "loss", note: "Lost", status: "settling", startedAt: "2026-10-03T00:00:00.000Z", settledBy: "Owner",
+      entries: { expenseId: `settle-loss-${s.opId}` }, steps: { money: false, refund: false, audit: false, op: false },
+    }]))
+    expect(settlements.getMoneyConflicts()).toEqual([]) // shown as "finishing", not as a fresh conflict
+    vi.resetModules() // restart
+    const resumed = await import("../features/pos/services/refundConflict.service")
+    expect(resumed.resumeMoneyConflictSettlements()).toBe(1)
+    expect(s.expenses()).toHaveLength(1)
+    expect(resumed.getSettledMoneyConflicts()).toHaveLength(1)
+    expect(businessOps().some((op) => op.entity === "refund")).toBe(false)
+
+    // The server rejects the settlement expense: it becomes a protected conflict, retried — never re-created.
+    window.localStorage.setItem(QUEUE_KEY, JSON.stringify(queue().map((op) => (op.entity === "expense" ? { ...op, status: "Rejected", attempts: 5, error: "Forbidden: accounting.manage" } : op))))
+    const sync = await import("../features/pos/services/sync.service")
+    sync.clearSyncQueue()
+    const entry = resumed.getMoneyConflicts()
+    expect(entry).toEqual([expect.objectContaining({ kind: "settlement_entry", amount: 10 })])
+    resumed.retrySettlementEntry(entry[0].opId)
+    expect(queue().filter((op) => op.entity === "expense").map((op) => op.status)).toEqual(["Pending"])
+    expect(s.expenses()).toHaveLength(1)
   })
 })
 

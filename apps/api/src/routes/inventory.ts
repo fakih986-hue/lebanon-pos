@@ -2,7 +2,7 @@ import { Router } from "express"
 import type { ServerResponse } from "node:http"
 import { randomUUID } from "node:crypto"
 import prisma from "../lib/prisma.js"
-import { recordStockMovement, recordStockMovementOnce } from "../lib/ledger.js"
+import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 
 /**
@@ -31,7 +31,7 @@ router.get("/reconciliation", requireAuth, async (req: AuthRequest, res: ServerR
     if (!isManager(req.auth!.role)) { json(res, { error: "Managers only" }, 403); return }
     const includeOk = req.query.includeOk === "1" || req.query.includeOk === "true"
 
-    const [products, openBatchSums, batchProductIds, ledgerSums, movementCounts] = await Promise.all([
+    const [products, openBatchSums, batchProductIds, ledgerSums, movementCounts, unallocatedSums] = await Promise.all([
       prisma.product.findMany({
         where: { tenantId, archived: false, isParent: false },
         select: { id: true, syncId: true, name: true, barcode: true, category: true, stock: true },
@@ -40,12 +40,15 @@ router.get("/reconciliation", requireAuth, async (req: AuthRequest, res: ServerR
       prisma.inventoryBatch.groupBy({ by: ["productId"], where: { tenantId }, _count: { _all: true } }),
       (prisma as any).stockMovement.groupBy({ by: ["productId"], where: { tenantId }, _sum: { quantity: true } }),
       (prisma as any).stockMovement.groupBy({ by: ["productId"], where: { tenantId }, _count: { _all: true } }),
+      // REFUND-REVIEW: refunds of legacy sale lines restore product stock without a lot.
+      (prisma as any).stockMovement.groupBy({ by: ["productId"], where: { tenantId, type: "Refund", note: { startsWith: UNALLOCATED_RETURN_NOTE } }, _sum: { quantity: true } }),
     ])
 
     const openByProd = new Map<number, number>(openBatchSums.map((r: any) => [r.productId, Number(r._sum.quantityRemaining ?? 0)]))
     const hasBatch = new Set<number>(batchProductIds.map((r: any) => r.productId))
     const ledgerByProd = new Map<number, number>(ledgerSums.map((r: any) => [r.productId, Number(r._sum.quantity ?? 0)]))
     const movesByProd = new Map<number, number>(movementCounts.map((r: any) => [r.productId, Number(r._count._all ?? 0)]))
+    const unallocatedByProd = new Map<number, number>(unallocatedSums.map((r: any) => [r.productId, Number(r._sum.quantity ?? 0)]))
 
     const rows = []
     for (const p of products) {
@@ -62,13 +65,26 @@ router.get("/reconciliation", requireAuth, async (req: AuthRequest, res: ServerR
       if (hasBatches && Math.abs(diffAB) > EPS) { classification.push("stock_batch_mismatch"); severity = "error" }
       if (nMoves > 0 && Math.abs(diffAL) > EPS) { classification.push("ledger_vs_aggregate"); if (severity !== "error") severity = "warn" }
       if (B < -EPS) { classification.push("negative_batch"); severity = "error" }
+      // Stock returned without a lot is an explained exception, not corruption:
+      // it is sellable (product stock) but not lot-tracked. When it fully
+      // explains the stock-vs-lots gap, show it as a warning with its own label.
+      const unallocatedReturnQty = round(unallocatedByProd.get(p.id) ?? 0)
+      if (unallocatedReturnQty > EPS) {
+        classification.push("unallocated_return")
+        const explained = hasBatches && diffAB > EPS && diffAB <= unallocatedReturnQty + EPS
+        if (explained) {
+          const i = classification.indexOf("stock_batch_mismatch")
+          if (i >= 0) classification.splice(i, 1)
+          if (!classification.includes("negative_batch")) severity = "warn"
+        } else if (severity === "ok") severity = "warn"
+      }
 
       if (severity === "ok" && !includeOk) continue
 
       rows.push({
         productId: p.id, syncId: p.syncId, name: p.name, barcode: p.barcode, category: p.category,
         aggregate: A, openBatchTotal: round(B), ledgerExpected: round(L), diffAB, diffAL, diffBL,
-        hasBatches, movementCount: nMoves, severity, classification,
+        hasBatches, movementCount: nMoves, severity, classification, unallocatedReturnQty,
         suggestedAction: suggest(classification, hasBatches),
       })
     }
@@ -82,6 +98,7 @@ router.get("/reconciliation", requireAuth, async (req: AuthRequest, res: ServerR
         error: rows.filter(r => r.severity === "error").length,
         warn: rows.filter(r => r.severity === "warn").length,
         needsBaseline: rows.filter(r => r.classification.includes("no_opening_baseline")).length,
+        unallocatedReturns: rows.filter(r => r.classification.includes("unallocated_return")).length,
       },
       rows,
     })
@@ -218,6 +235,7 @@ function sevRank(s: string): number { return s === "error" ? 2 : s === "warn" ? 
 function suggest(classification: string[], hasBatches: boolean): string {
   if (classification.includes("negative_batch")) return "Repair the negative batch (Control panel)."
   if (classification.includes("stock_batch_mismatch")) return hasBatches ? "Reconcile aggregate to open-batch total, or run a physical stock count." : "Run a physical stock count."
+  if (classification.includes("unallocated_return")) return "Refunded stock went back without a lot (sale made before lot tracking). Run a stock count, or receive it into a lot, to bring it back under lot tracking."
   if (classification.includes("no_opening_baseline")) return "Run Initialize ledger to anchor this product's baseline."
   if (classification.includes("ledger_vs_aggregate")) return "Investigate an unledgered stock change; a stock count will re-anchor."
   return "No action needed."

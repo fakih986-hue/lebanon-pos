@@ -70,3 +70,7 @@ export async function recordStockMovementOnce(db: Db, tenantId: string, m: Movem
   if (existing) return
   await recordStockMovement(db, tenantId, m)
 }
+
+/** Ledger note marking refunded stock that went back without a lot (legacy sale line / untracked slice).
+ *  The reconciliation report shows it as an explained exception. */
+export const UNALLOCATED_RETURN_NOTE = "UNALLOCATED_RETURN"

@@ -1229,12 +1229,15 @@ describe("POST /api/sync/push — refund integrity (REFUND-INTEGRITY-1)", () => 
     expect(vi.mocked(prisma.saleRefund.create)).toHaveBeenCalledTimes(1)
   })
 
-  it("serializes on the sale row before reading prior refunds", async () => {
+  it("takes the per-sale lock before reading the sale or its prior refunds", async () => {
     mockSaleForRefund({ id: "sale-1", total: 20, items: [trackedLine()] })
+    vi.mocked(prisma.sale.updateMany).mockResolvedValue({ count: 1 } as any)
     await request("POST", "/api/sync/push", { token, body: { operations: refundOp("ref-lock", [{ id: 1, saleLineId: "L1", quantity: 1 }], 2) } })
-    expect(vi.mocked(prisma.sale.update)).toHaveBeenCalledWith(expect.objectContaining({ data: { refundVersion: { increment: 1 } } }))
-    expect(vi.mocked(prisma.sale.update).mock.invocationCallOrder[0])
-      .toBeLessThan(vi.mocked(prisma.saleRefund.findMany).mock.invocationCallOrder[0])
+    const lock = vi.mocked(prisma.sale.updateMany).mock.calls.findIndex((c: any) => c[0]?.data?.refundVersion)
+    expect(lock).toBeGreaterThanOrEqual(0)
+    const lockOrder = vi.mocked(prisma.sale.updateMany).mock.invocationCallOrder[lock]
+    expect(lockOrder).toBeLessThan(vi.mocked(prisma.sale.findFirst).mock.invocationCallOrder[0])
+    expect(lockOrder).toBeLessThan(vi.mocked(prisma.saleRefund.findMany).mock.invocationCallOrder[0])
   })
 
   it("restores lots from the sale's recorded allocations and ignores client-sent allocations", async () => {

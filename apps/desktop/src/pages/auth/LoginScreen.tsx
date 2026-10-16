@@ -20,6 +20,7 @@ import {
   getKnownStores,
   getLocalApiUrl,
   pullFromServer,
+  restoreStashedMoneyConflicts,
   rememberStore,
   setApiUrl,
   setAuthToken,
@@ -262,6 +263,9 @@ export default function LoginScreen() {
 
       try {
         await pullFromServer(true)  // full pull → all data + users land locally
+        // REFUND-INTEGRITY-1: bring back any server-rejected refunds this device
+        // stashed when it last switched away from this store.
+        restoreStashedMoneyConflicts()
 
         // Client knows the plaintext PIN — replace the user's bcrypt PIN with SHA-256 for local unlock
         if (data.user?.id) {

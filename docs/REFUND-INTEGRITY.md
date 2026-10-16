@@ -1,129 +1,194 @@
-# REFUND-INTEGRITY-1 — refund and void rules
+# REFUND-INTEGRITY-1 — refund, void and settlement rules
 
-Status: implemented and tested locally (2026-10-16). Not yet deployed. See "Rollout".
+**Status:** implemented and tested locally. Not deployed.
 
-## What was wrong
-
-| # | Defect | Effect |
+| Round | Date | What |
 |---|---|---|
-| 1 | Each partial refund walked the sale's lots from the start | Lot A could be restored twice and lot B never; lot balances drifted from stock |
-| 2 | The server restored whatever lots the client named; `SaleItem` stored no lots | Lots could not be validated against the original sale |
-| 3 | Nothing on the server capped a refund at sold − already refunded | Two offline devices could each refund the full sale, restoring stock and paying money twice |
-| 4 | Refunds stored no exchange rate | "Refund at the original sale's rate" was unenforceable |
-| 5 | Desktop refunds and voids pushed the device's **entire lot table** as absolute quantities | One device's stale lots overwrote other devices' sales |
-| 6 | Server void restored the full sold quantity, even after partial refunds; it restored no lots | Sell 10, refund 4, void → stock +14 |
-| 7 | Refund quantities were tracked per product, not per sale line | Two lines of the same product shared one counter |
-| 8 | Sales pulled from the server were stored raw (item `id` = SaleItem UUID, Decimals as strings) | Refunding another device's sale restored the wrong product |
-| 9 | A full pull replaced the local refunds list; "Clear stuck" deleted rejected operations | A refund rejected by the server silently vanished from the device |
-| 10 | Local refund = three separate writes with no recovery | A crash mid-refund left partial stock/lot effects |
+| 1 | 2026-10-16 | Refund integrity |
+| 2 | 2026-10-16 | Pre-deployment review: points 1–8 below, plus two inventory-authority defects found while reviewing |
 
-## The rules (identical on the till and the server)
+## 1. What was wrong
 
-Implemented once in `refundAllocation.ts`, byte-identical in `apps/api/src/lib/` and `apps/desktop/src/features/pos/lib/`.
-Both test suites run the shared vectors in `packages/shared/test-vectors/refund-allocation.json`, and fail if the two copies differ.
+| # | Defect | Effect | Round |
+|---|---|---|---|
+| 1 | Each partial refund walked the sale's lots from the start | A lot restored twice, another never | 1 |
+| 2 | The server restored whatever lots the client named; `SaleItem` stored no lots | Lots unverifiable | 1 |
+| 3 | No server cap on sold − already refunded | Two offline devices could each refund in full | 1 |
+| 4 | Refunds stored no exchange rate | Original-rate policy unenforceable | 1 |
+| 5 | Refunds/voids pushed the device's whole lot table as absolute quantities | One device's stale lots overwrote others' sales | 1 |
+| 6 | Server void restored the full sold quantity after partial refunds | Sell 10, refund 4, void → +14 | 1 |
+| 7 | Refund quantities tracked per product, not per line | Two lines shared one counter | 1 |
+| 8 | Pulled sales/refunds stored raw (UUID item id, Decimal strings) | Refund of another device's sale restored the wrong product | 1 |
+| 9 | Full pull / "Clear stuck" erased rejected refunds | Issued refunds vanished | 1 |
+| 10 | Local refund was three unrecovered writes | Crash left partial effects | 1 |
+| 11 | **`inventory/update` applied absolute `quantityRemaining` from any client** (verified on Postgres: a lot set to 999). Old clients still send it after every sale/refund/void. | Old clients overwrite lots | 2 |
+| 12 | **Stock adjustments, counts and write-offs never changed server stock or lots** (verified: accepted "ok", stock unchanged). The handler also wrote a ledger row on every retry. | The next hub-authoritative pull silently reverted every adjustment | 2 |
+| 13 | Refund and void handlers **read the sale before taking the lock** | A refund could pass against a sale voided meanwhile (refund-vs-void race) | 2 |
+| 14 | A debt refund's customer credit was synced as its own operation | A rejected refund still credited the customer; settling it as a "loss" would count it twice | 2 |
+| 15 | Voiding a debt sale sends the debt delete **before** the void | A rejected void still erased the customer's debt | 2 |
+| 16 | Settlement used random ids and had no journal, and `createCashMovement` silently returned `null` on failure | A retry or crash could double an expense; failures went unnoticed | 2 |
+| 17 | Switching stores wiped the queue and refunds | Open money conflicts were lost | 2 |
 
-1. **Line identity.** Every sale line created from this release on carries a client-generated `lineId` (stamped in `buildSale`). The server stores it (`SaleItem.lineId`, unique per sale).
-2. **Recorded lots.** The server records the lots it **actually** consumed per line (`SaleItem.batchAllocations`). This includes lots chosen by its FEFO fallback; any untracked remainder is recorded as `batchId: null`. On the hub, the hub's record wins over the cloud's when items are re-created from a pull.
-3. **Cumulative limit.** A refund may not exceed `sold − already refunded`, per line, and in money it may not exceed `sale total − refunds so far` (±0.005).
-4. **Lot restoration.** Lots come back from the sale's recorded lots, in original consumption order, net of what earlier refunds of that line already restored. Client-sent allocations are ignored by the server.
-5. **Rate.** A refund records the original sale's tender rate (`SaleRefund.exchangeRate`, `rateSource: "sale_tender"`).
-6. **Voids.** A sale with any refund cannot be voided — refund the rest instead. A void restores every recorded lot in full.
-7. **Concurrency.** Every refund/void transaction first bumps `Sale.refundVersion`. This row lock serializes concurrent refunds of one sale, and the prior-refund read happens after it. Proven against real Postgres: two simultaneous full refunds → exactly one accepted. With the lock removed, the same test fails.
-8. **Idempotency.** A retried refund (same id) is a no-op. Concurrent retries are stopped by the refund primary key inside the transaction.
+## 2. The rules (identical on the till and the server)
 
-## Legacy fallback (sales made before this release)
+The rules live in `refundAllocation.ts`, byte-identical in `apps/api/src/lib/` and `apps/desktop/src/features/pos/lib/`. Both suites run the shared vectors in `packages/shared/test-vectors/refund-allocation.json` and assert the two copies are identical.
+
+1. **Line identity.** Every sale line created from this release carries a client-generated `lineId` (stamped in `buildSale`). The server stores it on `SaleItem`, unique per sale.
+2. **Recorded lots.** The server records the lots it actually consumed per line (`SaleItem.batchAllocations`), including FEFO-fallback lots; any untracked remainder has `batchId: null`. On a hub, the hub's record wins over the cloud's when pulled items are re-created.
+3. **Cumulative limit.** A refund cannot exceed sold − already refunded, per line. In money it cannot exceed sale total − refunds so far, with a 0.005 tolerance.
+4. **Lot restoration.** Lots are restored from the sale's recorded lots, in original consumption order, net of earlier refunds. Client allocations are ignored.
+5. **Rate.** Refunds record the original sale's tender rate (`SaleRefund.exchangeRate`, `rateSource`).
+6. **Voids.** A sale with any refund cannot be voided. A void restores every recorded lot.
+7. **Locking.** Every refund and every void first bumps `Sale.refundVersion` (`sync.ts` refund handler `const locked = await db.sale.updateMany(...)`; void handler, same statement at the top of the `void` branch), and only then reads the sale and its prior refunds. These two handlers are the only writers of refunds or voids.
+8. **Idempotency.** A retried refund is a no-op; concurrent duplicates are stopped by the primary key inside the transaction.
+9. **Customer credit.** A debt refund's customer credit is created by the refund handler in the same transaction (`refund-credit:<refundId>`). The till shows it locally under the same id (`localOnly`) and never pushes it as a separate operation.
+
+## 3. Legacy fallback (sales made before this release)
 
 No historical line identity, lot or rate is invented.
 
-- **Lines without a `lineId`** are pooled per product within the sale under the key `legacy-product:<productId>`. The cumulative limit applies to the pool.
-- **They restore product stock only — never a lot.** The previous code guessed "the newest batch"; that guess is removed. The stock-ledger reconciliation report will show such stock as product stock not covered by lots, which is accurate.
-- **Untracked slices** (`legacy-stock`, or allocations covering less than the sold quantity) also restore product stock only.
-- **No rate recorded** → `exchangeRate: null`, `rateSource: "unavailable"`. The UI says the rate is unknown rather than showing today's rate as if it were the original.
-- **Old clients** that send no `saleLineId` have their refund spread across that product's lines in sale order, under the same limits.
+- **Pooling.** Lines without a `lineId` are pooled per product within the sale (`legacy-product:<productId>`), and the cumulative limit applies to the pool.
+- **Stock only, tagged.** They restore product stock only, never a lot. That stock is tagged in the ledger: a `Refund` movement with note `UNALLOCATED_RETURN <sale>`.
+- **Untracked slices** behave the same way.
+- **Rate.** A sale with no recorded rate gives `exchangeRate: null`, `rateSource: "unavailable"`.
+- **Old clients.** A refund from an old client without `saleLineId` is spread across the product's lines in sale order.
 
-## Offline refunds the server later rejects
+## 4. Pre-deployment review — findings and evidence
 
-Server validation cannot stop two disconnected devices from each paying a refund. Once the second one syncs, the server rejects it with a stable code (`REFUND_EXCEEDS_REFUNDABLE`, `REFUND_SALE_VOIDED`, `VOID_HAS_REFUNDS`, …).
+### 4.1 Settlement cannot double-count a refund and its settlement entry
 
-The device then handles it like this:
+Settled refunds drop out of `getRefunds()` (`sales.service.ts`), which is the source for every cash, profit and report figure (`shift.service.ts` `computeShiftCashBreakdown`, metrics, accounting). `getAllRefunds()` keeps them for history. So before settlement the refund counts; after settlement only the settlement entries count.
 
-1. **Never silently reversed, discarded or hidden.**
-   - The rejected sync operation stays in the queue as the durable record. "Clear stuck", "remove", "clear all" and full pulls all preserve it.
-   - The local refund stays in history.
-2. **Until it is settled, it keeps counting on this device**, because the cash really left the drawer. The server's books don't include it. The Sales page shows it under **"Refunds rejected by the server"**, with the amount, the reason, who issued it and when.
-3. **Stock follows the server.** The server never applied the restore, and the next pull brings its stock and lot balances.
-4. **A manager with `accounting.manage` settles it, with a required note:**
-   - **"Money not recovered — record as a loss":** an expense of the same amount (category *Other*, "Refund conflict R-…") is recorded in the current shift and synced. The refund stops counting. Local and server books then agree.
-   - **"Customer returned the money":** the refund stops counting; no money entry is made.
+Example: a $10 cash refund issued offline and rejected by the server. The drawer opened with $100, so the expected drawer before settlement is $90. Tested in `refundIntegrity.test.ts`, "cash refund settled — …":
 
-   The settlement is audited (`sale.refund.conflict_settled`) and kept locally (`lebanonpos.money-conflict-settlements.v1`). Only after settlement does the rejected operation leave the queue.
+| Resolution | Expected drawer after | Profit effect | Customer balance | What the cloud receives |
+|---|---|---|---|---|
+| loss | $90 (expense replaces refund) | −$10 expense | — | 1 expense `settle-loss-<op>` |
+| recovered, cash back to drawer | $100 (payout −10, recovery +10) | none | — | 2 cash movements `settle-out-<op>`, `settle-in-<op>` |
+| recovered, by bank transfer | $90 (payout stays; money is in the bank) | none | — | 1 cash movement `settle-out-<op>` |
+| not paid out | $100 (nothing left the drawer) | none | — | nothing |
 
-A rejected void follows the same flow. The amount at stake is what the void returned (sale total − refunds).
+In every row the refund itself no longer counts (`counted() === 0`) and the rejected refund operation leaves the queue. The cloud never had the refund. After settlement, its books and the till's describe the same money.
 
-## Crash and restart safety (desktop)
+For a **debt refund**, the customer credit is the money (a test covers this case):
 
-`processRefund` keeps a journal (`lebanonpos.refund-journal.v1`):
+- **keep credit (loss).** One synced credit `settle-credit-<op>`. The local-only credit is removed, so the customer is credited once. No expense is recorded, because a credit is not also an expense.
+- **reverse credit (not_paid).** The local credit is removed and nothing is sent; the customer owes again.
 
-1. Write the journal entry.
-2. Restore lots locally.
-3. Restore stock locally.
-4. **Commit point:** write the refund record, and enqueue its sync operation.
-5. Add the debt credit (debt sales only), the stock-ledger entries and the audit event.
-6. Drop the journal entry.
+**Attribution limit.** Settlement entries land in the *current* shift. A shift or day already closed keeps its stored snapshot, which included the refund. The settlement day carries the correction. This is reported, not hidden: the audit event records the original shift.
 
-On failure:
+### 4.2 "Recovered" records the actual recovery and is distinct from "never paid out"
 
-- **Before the commit point,** the refund is rolled back immediately. No refund was issued, so the cashier hands over nothing.
-- **After the commit point,** the remaining steps are completed. `recoverRefundJournal()` runs at startup (`routes/index.tsx`):
-  - an uncommitted entry is rolled back;
-  - a committed one is completed;
-  - every step is idempotent, so running recovery twice changes nothing.
+- `recovered` requires a recovery method (Cash, Bank transfer, Card, Wallet) and a reference of at least 2 characters (`assertCanSettle`).
+- Cash recovered into the drawer records the payout **and** the recovery as two synced cash movements. Both carry `referenceEntity: "refund-conflict"`, the refund id, and the method and reference in the note.
+- A non-cash recovery keeps the evidence in the settlement record and the audit event (`recoveryMethod`, `recoveryReference`).
+- `not_paid` means the money never left: no entry, note required.
+- All three outcomes write the `sale.refund.conflict_settled` audit event (synced), with amount, method, code, resolution, evidence and entry ids. The refund's `conflict.resolution` keeps the true outcome (`loss | recovered | not_paid`).
 
-**Limitation:** this protects against exceptions and app restarts. It cannot make separate localStorage keys atomic against OS-level power loss mid-flush. That is the pre-existing storage-layer limitation noted in `SPRINT-PLAN.md`.
+### 4.3 Settlement survives retries, restart and sync rejection
 
-## Rollout, compatibility and rollback
+`refundConflict.service.ts`:
 
-**Migration** `20261016120000_refund_integrity` is additive:
+1. **Journal first.** A settlement record (`status: "settling"`) is written before any entry.
+2. **Idempotent steps.** The steps are money entries → mark refund → audit → remove the rejected op, and each records its completion.
+3. **Deterministic ids.** Every entry id derives from the conflict's operation id (`settlementIds`), and is checked for existence before creation. The server upserts expenses, cash movements and debt payments by id.
+4. **Retries.** A double click or retry returns the settled record. An interrupted record resumes with its *original* decision. `resumeMoneyConflictSettlements()` runs at startup (`routes/index.tsx`).
+5. **Rejected entries.** If the server rejects a settlement entry, the rejected operation is itself a protected money conflict (`isSettlementEntryOperation`), listed for **retry**. It is never re-created.
+6. **No silent failures.** `createCashMovement` returning `null` now aborts the step instead of being ignored. Preconditions are checked before anything is written: accounting permission, cash permission for drawer entries, an open shift, a customer for credits.
 
-- nullable columns;
-- one `INTEGER NOT NULL DEFAULT 0`;
-- a unique `(saleId, lineId)` index that cannot collide, because every existing `lineId` is NULL.
+Tested: double settle → one expense; an interrupted settlement plus restart → one expense; a rejected expense → protected from "Clear stuck", retried as Pending, never duplicated.
 
-It was verified by applying every migration from scratch to an empty database. The Electron hub applies it automatically at startup (it is in the API bundle).
+### 4.4 Legacy refunds without lots are a visible exception, not corruption
 
-**Order:**
+- **Ledger.** The server tags lot-less refunded stock `UNALLOCATED_RETURN`.
+- **Report.** `GET /api/inventory/reconciliation` (`routes/inventory.ts`) reports `unallocatedReturnQty` per product and the classification `unallocated_return`, with a suggested action and a summary count (`summary.unallocatedReturns`).
+  - When the stock-vs-lots gap is fully explained by unallocated returns, the row is a **warn**, not an unexplained `stock_batch_mismatch` error.
+  - Anything unexplained stays an error.
+- **Available stock is unaffected.** Selling uses product stock. Those units are sold as untracked stock, and lots never go negative.
 
-1. **Back up the Railway database.**
-2. Deploy the API + SPA to Railway (`prisma migrate deploy` runs at container start).
-3. Then publish the hub release.
+Real-Postgres test: legacy refund → stock 6, lot 4 → report warns `unallocated_return`, qty 2 → sell all 6 → stock 0, lot 0.
 
-**Compatibility:**
+### 4.5 Old-client writes, not only pulls
 
-- **Old hubs against the new cloud.** Pull responses omit the new columns unless the client sends `x-titan-sync-schema: 2`. This matters because old hubs re-insert pulled rows verbatim and would otherwise fail on unknown columns. Old hubs' pushes are accepted, via the legacy fallback.
-- **New hub against the old cloud: don't.** Deploy the cloud first. An old cloud would re-validate the new refund payloads under the old rules.
-- **Desktop web clients** load the SPA from the same deployment, so they upgrade together with the API.
-- **Behavior change for everyone:** refunds above the remaining refundable amount, and voids of refunded sales, are now rejected instead of silently over-applied.
-
-**Rollback:**
-
-- Redeploy the previous image. The new columns are ignored by old code.
-- Rolling back the schema is not required and not recommended. If ever needed, it is a manual `ALTER TABLE … DROP COLUMN` of the six new columns and the index.
-- Hubs on the new release keep working against a rolled-back cloud for sales. Their refunds are then validated by the old rules again.
-
-## Known follow-ups (not in this sprint)
-
-- Sales in DIRECT_RAILWAY mode still enqueue an absolute `inventory/update` of the touched lots after a local sale. The server's `inventory/update` handler still writes absolute `quantityRemaining`. Refunds and voids no longer use it. The sale path should move to the same server-authoritative model.
-- Server void of a sale that is not on the server yet remains a silent no-op (pre-existing).
-- Switching stores clears the store's local data, including open money conflicts. A warning before switching would make this safe.
-- `refundNumber` is unique per tenant but generated client-side; a collision makes a refund retry until it goes dead (pre-existing).
-
-## Tests
-
-| Suite | Count | What it proves |
+| Old-client write | New server behaviour | Test |
 |---|---|---|
-| `apps/api/__tests__/refundAllocation.test.ts` + desktop twin | 19 + 19 | Shared vectors; the two copies are identical; mutation-checked |
-| `apps/api/__tests__/sync.test.ts` | 11 new | Server contract: lock order, ignoring client lots, cumulative limits, rate, legacy, void guard |
-| `apps/api/__tests__/refund-integrity.test.ts` | 7 | **Real Postgres:** persisted lots, exact repeated partial refunds, simultaneous two-device refunds (8/8 runs green with the lock, fails without it), idempotent retry, legacy fallback, void guard, old-hub field gating |
-| `apps/desktop/src/__tests__/refundIntegrity.test.ts` | 12 | Line ids, exact local lots, rejection without side effects, rollback, restart recovery (applied once), legacy, server-row normalization, void guard without absolute lot push, rejected refunds surviving clear/remove/pull, manager-only settlement with note, loss vs recovered, EN/AR key parity |
+| Absolute lot table (`inventory/update`) after sale/refund/void | Quantities and Open/Consumed statuses ignored; only "Expired" accepted (`sync.ts` `item.status !== "Expired"`) | `inventory-authority.test.ts` |
+| Refund with its own lot allocations | Ignored; the server plans from the persisted sale | `refund-integrity.test.ts` |
+| Over-refund | Rejected | same |
+| Separate "Refund Credit" payment | Applied only if its refund exists, and only once (deduped by reference); otherwise retryable, never silently applied | same |
+| Debt delete sent before a void | Ignored until the sale is actually voided (the void handler removes the debt itself) | same |
+| Stock adjustment | Now applied to stock and lots exactly once (fixes defect 12 for every client) | `inventory-authority.test.ts` |
 
-The real-Postgres suites (`refund-integrity`, `sync-stress`) need `DATABASE_URL` pointing at a database with this migration applied.
+**Remaining old-client limits.** Old clients have none of the conflict UI. Their rejected refunds appear only as rejected sync items, in their existing Settings list. They still normalize nothing on pull, so defect 8 persists on old clients until they update.
+
+### 4.6 Refund-vs-refund, refund-vs-void, void-vs-void concurrency
+
+All three cases are verified on real Postgres in `refund-integrity.test.ts`:
+
+- **Two simultaneous full refunds:** exactly one accepted. 8 of 8 runs green; fails without the lock.
+- **Refund and void at the same moment, 5 rounds:** exactly one wins each round. Either the sale is voided and the refund is rejected (`REFUND_SALE_VOIDED`), or the refund stands and the void is rejected (`VOID_HAS_REFUNDS`). Stock and lots are restored exactly once. With the void's lock removed, it **failed 3 of 3 runs**.
+- **Two simultaneous voids:** stock restored once.
+
+The mocked contract test asserts that the lock precedes both the sale read and the prior-refund read.
+
+### 4.7 Conflicts survive store switching, full pulls and restart
+
+- **Full pulls.** `preserveLocalOnlyRecords` keeps local refunds that are unsynced, conflicted or settled, plus local-only refund credits.
+- **Restart.** Conflicts live in the persisted queue; settlements resume at startup.
+- **Store switch.** `clearStoreData` first stashes the open conflicts per store: the ops, their refunds, local credits and settlement records (`stashMoneyConflictsForStore`, keyed by the store subdomain). The connect flow restores them after the store's pull (`restoreStashedMoneyConflicts`, `LoginScreen.tsx`).
+- **Tested.** Switching to another store shows nothing of the first store's conflicts; switching back restores them. The same tests cover restart and full pull.
+
+### 4.8 Rollback limits once new refunds exist
+
+The migration is additive, but **code rollback is not free once this release has recorded data.**
+
+**Safe at any time, data-wise.** The old code ignores the new columns, so no data is corrupted by the presence of `lineId`, `batchAllocations`, `exchangeRate`, `rateSource`, `refundVersion` or `saleLineId`.
+
+**Rolling the cloud back re-opens the old defects:**
+- over-refunds accepted again;
+- voids of refunded sales double-restore stock;
+- client allocations trusted again;
+- absolute lot writes applied again;
+- adjustments ignored again.
+
+Refunds recorded under the new rules stay correct as history. New activity after the rollback is not protected.
+
+**Credits.** Credits the new server created as `refund-credit:<id>` stay correct after a rollback. But an **old cloud plus old clients** will again accept a separate credit for a refund it rejected.
+
+**After the hub release (1.0.49+) ships, the cloud must not be rolled back alone.**
+- **Refunds.** New hubs push refunds with `saleLineId`, `exchangeRate` and `rateSource`. The old cloud's refund handler spreads the payload into Prisma with a client generated *without* those fields, so it raises "Unknown argument". New hubs' refunds would then fail to sync until the cloud is rolled forward again. They would not be lost, but they would be stuck.
+- **Debt-refund credits.** The till no longer pushes the credit at all. The old cloud never creates it, so debt-refund credits from new hubs would be missing on an old cloud.
+
+**So: before the hub release, cloud rollback is the normal "redeploy previous image". After it, roll forward instead.**
+
+**Local data.** Settlement records, the refund journal and the conflict stash are new client-side keys. An older desktop build simply ignores them. Unsettled conflicts would then be invisible to that build, and its "Clear stuck" would delete them again.
+
+**Schema rollback.** Not recommended. It would drop the line/lot history that refunds of existing sales depend on.
+
+## 5. Rollout order
+
+1. Back up the Railway database.
+2. Deploy the cloud: API, SPA and migration `20261016120000_refund_integrity`, applied by `prisma migrate deploy` at start.
+3. Verify the existing sync.
+4. Publish the hub release.
+
+The Electron hub applies the same migration at startup. Old hubs keep working against the new cloud: new columns are sent only to `x-titan-sync-schema: 2`, and old-client writes are handled per §4.5.
+
+## 6. Known follow-ups (not in this sprint)
+
+- `StockAdjustment` is unique per `(tenantId, adjustmentNumber)`, and the number is generated per device (`ADJ-00001`). Two devices' first adjustments collide; the second retries until dead. This is pre-existing.
+- `refundNumber` is generated on the client; a collision makes that refund retry until dead. Pre-existing.
+- Server void of a sale not yet on the server is still a no-op. Pre-existing.
+- `reports.test.ts` "only one of two concurrent close requests succeeds" is flaky (1 of 5 runs in isolation). It is fully mocked and untouched by this work.
+
+## 7. Tests
+
+| Suite | Count | Proves |
+|---|---|---|
+| `refundAllocation.test.ts` (api + desktop) | 19 + 19 | Shared vectors; identical copies; mutation-checked |
+| `apps/api/__tests__/sync.test.ts` | 11 refund/void contract tests | Lock order, ignoring client lots, limits, rate, legacy, void guard |
+| `apps/api/__tests__/refund-integrity.test.ts` (real Postgres) | 12 | Persisted lots; exact repeated refunds; refund-vs-refund, refund-vs-void, void-vs-void; idempotent retry; legacy exception; debt credit once and old-client dedupe; rejected void keeps the debt; old-hub field gating |
+| `apps/api/__tests__/inventory-authority.test.ts` (real Postgres) | 2 | Adjustments applied once with retries; absolute lot writes ignored |
+| `apps/desktop/src/__tests__/refundIntegrity.test.ts` | 18 | Line ids, exact lots, rollback/restart, legacy, normalization, void guard; conflicts survive clear, pull, restart and store switch; manager + note + evidence; the four cash outcomes (drawer, counted refunds, cloud entries, audit); debt keep/reverse; idempotency, resume, rejected-entry retry; EN/AR parity |
+
+Real-Postgres suites need `DATABASE_URL` pointing at a migrated **scratch** database.

@@ -65,7 +65,7 @@ export type RefundItem = Pick<Product, "id" | "name" | "barcode"> & {
 export type RefundConflictResolution = {
   code: string
   message: string
-  resolution: "loss" | "recovered"
+  resolution: "loss" | "recovered" | "not_paid"
   note: string
   resolvedAt: string
   resolvedBy: string
@@ -463,6 +463,11 @@ export function finalizeCommittedSale(sale: Sale) {
 // pooled per product with product-stock-only restoration, and the original
 // sale's exchange rate. See docs/REFUND-INTEGRITY.md.
 
+/** Id of a debt refund's customer credit — identical on the till and the server. */
+export function refundCreditId(refundId: string) {
+  return `refund-credit:${refundId}`
+}
+
 /** The key a sale line is refunded under: its lineId, or the legacy per-product pool. */
 export function refundLineKeyOf(item: Pick<SaleItem, "id" | "lineId">): string {
   return item.lineId ? item.lineId : legacyLineKey(item.id)
@@ -580,9 +585,17 @@ function rollbackRefundEntry(entry: RefundJournalEntry) {
 /** Post-commit effects; each is idempotent so a restart can safely resume. */
 function finishRefundEntry(entry: RefundJournalEntry) {
   if (entry.debt && !entry.steps.debt) {
-    const reference = entry.debt.reference
-    if (!getDebtPayments().some((payment) => payment.reference === reference)) {
-      recordDebtPayment({ customerId: entry.debt.customerId, amount: entry.debt.amount, method: "Refund Credit", reference })
+    // The server creates this credit itself as part of the refund (same
+    // transaction, id refund-credit:<refundId>), so a refund the server
+    // rejects can never leave its credit behind. Locally it is shown at once
+    // under the same id and never pushed as its own operation; the next pull
+    // replaces it with the server's copy.
+    const creditId = refundCreditId(entry.refundId)
+    if (!getDebtPayments().some((payment) => payment.id === creditId)) {
+      recordDebtPayment(
+        { id: creditId, customerId: entry.debt.customerId, amount: entry.debt.amount, method: "Refund Credit", reference: entry.debt.reference },
+        { localOnly: true }
+      )
     }
     entry.steps.debt = true
     saveJournalEntry(entry)

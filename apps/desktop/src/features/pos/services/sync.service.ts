@@ -82,8 +82,98 @@ const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "2" }
  * must survive "clear stuck"/"remove" until a manager settles it
  * (refundConflict.service), so it is never silently discarded.
  */
-export function isMoneyConflictOperation(op: Pick<SyncOperation, "entity" | "action" | "status">) {
-  return op.status === "Rejected" && ((op.entity === "refund" && op.action === "create") || (op.entity === "sale" && op.action === "void"))
+export function isMoneyConflictOperation(op: Pick<SyncOperation, "entity" | "action" | "status" | "payload">) {
+  if (op.status !== "Rejected") return false
+  if ((op.entity === "refund" && op.action === "create") || (op.entity === "sale" && op.action === "void")) return true
+  // A rejected settlement entry (the expense / cash movement / credit that
+  // settles a conflict) is just as important: the conflict is not settled on
+  // the server until it is accepted.
+  return isSettlementEntryOperation(op)
+}
+
+/** Operations created by refundConflict.service when settling a conflict. */
+export function isSettlementEntryOperation(op: Pick<SyncOperation, "payload">) {
+  const id = (op.payload as { id?: unknown } | undefined)?.id
+  return typeof id === "string" && id.startsWith("settle-")
+}
+
+// ── Money conflicts across store switches ─────────────────────────────────
+// Switching stores wipes the previous store's local data. Open money
+// conflicts (and settlement entries not yet accepted, settlement records and
+// local-only refund credits) are stashed per store first and restored when
+// this device connects to that store again, so they are never lost.
+const MONEY_CONFLICT_STASH_KEY = "lebanonpos.money-conflict-stash.v1"
+const MONEY_CONFLICT_SETTLEMENTS_KEY = "lebanonpos.money-conflict-settlements.v1"
+
+function currentStoreStashKey(): string {
+  try {
+    const raw = localStorage.getItem("lebanonpos.settings.v1")
+    const settings = raw ? JSON.parse(raw) : null
+    const subdomain = (Array.isArray(settings) ? settings[0]?.subdomain : settings?.subdomain) ?? ""
+    if (subdomain) return `store:${String(subdomain).toLowerCase()}`
+  } catch { /* fall through */ }
+  return `url:${(getApiUrl() ?? "none").toLowerCase()}`
+}
+
+type MoneyConflictStash = { ops: SyncOperation[]; refunds: any[]; debtCredits: any[]; settlements: any[]; stashedAt: string }
+
+function readJsonArray(key: string): any[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) ?? "[]")
+    return Array.isArray(parsed) ? parsed : []
+  } catch { return [] }
+}
+
+function readStash(): Record<string, MoneyConflictStash> {
+  try { return JSON.parse(localStorage.getItem(MONEY_CONFLICT_STASH_KEY) ?? "{}") ?? {} } catch { return {} }
+}
+
+/** Called by clearStoreData before it wipes the store's local data. */
+export function stashMoneyConflictsForStore(): number {
+  const ops = readQueue().filter((op) => isMoneyConflictOperation(op) || (op.status !== "Synced" && isSettlementEntryOperation(op)))
+  const refundIds = new Set(ops.filter((op) => op.entity === "refund").map((op) => (op.payload as { id?: string })?.id))
+  const refunds = readJsonArray("lebanonpos.refunds.v1").filter((r) => refundIds.has(r?.id) || r?.conflict)
+  const debtCredits = readJsonArray("lebanonpos.debt-payments.v1").filter((p) => p?.localOnly)
+  const settlements = readJsonArray(MONEY_CONFLICT_SETTLEMENTS_KEY)
+  if (ops.length + refunds.length + debtCredits.length + settlements.length === 0) return 0
+  const stash = readStash()
+  const key = currentStoreStashKey()
+  const prior = stash[key]
+  const byId = (a: any[], b: any[]) => [...b, ...a.filter((x) => !b.some((y) => y?.id === x?.id || (y?.opId && y.opId === x?.opId)))]
+  stash[key] = {
+    ops: byId(prior?.ops ?? [], ops),
+    refunds: byId(prior?.refunds ?? [], refunds),
+    debtCredits: byId(prior?.debtCredits ?? [], debtCredits),
+    settlements: byId(prior?.settlements ?? [], settlements),
+    stashedAt: new Date().toISOString(),
+  }
+  localStorage.setItem(MONEY_CONFLICT_STASH_KEY, JSON.stringify(stash))
+  localStorage.removeItem(MONEY_CONFLICT_SETTLEMENTS_KEY)
+  return ops.length
+}
+
+/** Call after connecting to a store (settings pulled). Returns open conflicts restored. */
+export function restoreStashedMoneyConflicts(): number {
+  const stash = readStash()
+  const key = currentStoreStashKey()
+  const entry = stash[key]
+  if (!entry) return 0
+  const queue = readQueue()
+  writeQueue([...queue, ...entry.ops.filter((op) => !queue.some((q) => q.id === op.id))])
+  const merge = (storageKey: string, rows: any[]) => {
+    if (rows.length === 0) return
+    const current = readJsonArray(storageKey)
+    localStorage.setItem(storageKey, JSON.stringify([...rows.filter((r) => !current.some((c) => c?.id === r?.id)), ...current]))
+  }
+  merge("lebanonpos.refunds.v1", entry.refunds)
+  merge("lebanonpos.debt-payments.v1", entry.debtCredits)
+  const settlements = readJsonArray(MONEY_CONFLICT_SETTLEMENTS_KEY)
+  localStorage.setItem(MONEY_CONFLICT_SETTLEMENTS_KEY, JSON.stringify([...entry.settlements.filter((s) => !settlements.some((c) => c?.opId === s?.opId)), ...settlements]))
+  delete stash[key]
+  localStorage.setItem(MONEY_CONFLICT_STASH_KEY, JSON.stringify(stash))
+  dispatchSyncChanged()
+  window.dispatchEvent(new Event("lebanonpos-refunds-changed"))
+  return entry.ops.filter(isMoneyConflictOperation).length
 }
 
 const PULL_TARGETS: Record<string, { key: string; event: string }> = {
@@ -283,6 +373,8 @@ export function rememberStore(store: KnownStore) {
  * Used when switching stores so store B's data never mixes with store A's.
  */
 export async function clearStoreData() {
+  // Never lose an open money conflict to a store switch.
+  stashMoneyConflictsForStore()
   for (const { key } of Object.values(PULL_TARGETS)) {
     localStorage.removeItem(key)
   }
@@ -1216,6 +1308,7 @@ const FULL_PULL_ENTITY_MAP: Record<string, string> = {
 const LOCAL_ONLY_PRESERVED: Record<string, string> = {
   "lebanonpos.sales.v1": "sale",
   "lebanonpos.refunds.v1": "refund",
+  "lebanonpos.debt-payments.v1": "debt",
 }
 export function preserveLocalOnlyRecords(key: string, serverRows: any[]): any[] {
   const entity = LOCAL_ONLY_PRESERVED[key]
@@ -1232,7 +1325,7 @@ export function preserveLocalOnlyRecords(key: string, serverRows: any[]): any[] 
     local = Array.isArray(parsed) ? parsed : []
   } catch { /* corrupt local copy — nothing to preserve */ }
   const onServer = new Set(serverRows.map((row) => row?.id))
-  const keep = local.filter((row) => row?.id && !onServer.has(row.id) && (unsynced.has(row.id) || row.conflict))
+  const keep = local.filter((row) => row?.id && !onServer.has(row.id) && (unsynced.has(row.id) || row.conflict || row.localOnly))
   return keep.length > 0 ? [...keep, ...serverRows] : serverRows
 }
 

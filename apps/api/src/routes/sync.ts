@@ -9,7 +9,7 @@ import prisma from "../lib/prisma.js"
 const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
-import { recordStockMovement, recordStockMovementOnce } from "../lib/ledger.js"
+import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { effectivePermissions, requiredPermissionForOp } from "../lib/permissions.js"
 import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
@@ -901,17 +901,19 @@ async function processOperation(
         const id = payload?.id as string
         const saleNumber = payload?.saleNumber as string
         if (id) {
+          // REFUND-INTEGRITY-1: take the same per-sale lock as refunds FIRST,
+          // then read the sale, so a concurrent void or refund that committed
+          // while we waited is visible (no double void, no void over a refund).
+          await db.sale.updateMany({ where: { id, tenantId }, data: { refundVersion: { increment: 1 } } as any })
           const sale = await db.sale.findFirst({
             where: { id, tenantId, status: { not: "Voided" } },
             include: { items: true },
           })
 
-          // REFUND-INTEGRITY-1: serialize with refunds of this sale, refuse to
-          // void a sale that already has refunds (the void would restore the
-          // refunded quantity a second time), and restore the recorded lots.
+          // Refuse to void a sale that already has refunds (the void would
+          // restore the refunded quantity a second time); restore recorded lots.
           let planned: ReturnType<typeof planVoidRestoration> = []
           if (sale) {
-            await db.sale.update({ where: { id: sale.id }, data: { refundVersion: { increment: 1 } } as any })
             const priorRefunds = await db.saleRefund.findMany({
               where: { tenantId, saleId: sale.id },
               include: { items: true },
@@ -1118,21 +1120,26 @@ async function processOperation(
         const existing = await db.saleRefund.findUnique({ where: { id: refundId }, select: { id: true } })
         if (existing) break
 
+        // Serialize concurrent refunds/voids of this sale BEFORE reading it: the
+        // row lock taken by this update is held until commit, and every read
+        // below is a new statement (READ COMMITTED), so it sees whatever a
+        // transaction we waited on committed — a void, or an earlier refund.
+        // Reading first and locking second let a refund proceed against a
+        // sale that had just been voided.
+        const locked = await db.sale.updateMany({
+          where: { id: saleId, tenantId },
+          data: { refundVersion: { increment: 1 } } as any,
+        })
+        // Retryable (not rejected): the sale may still be on its way.
+        if (locked.count === 0) throw new Error(`Refund ${refundId}: sale ${saleId} not found yet`)
         const sale = await db.sale.findFirst({
           where: { id: saleId, tenantId },
           include: { items: true, tender: true },
         })
-        // Retryable (not rejected): the sale may still be on its way.
         if (!sale) throw new Error(`Refund ${refundId}: sale ${saleId} not found yet`)
         if (sale.status === "Voided") {
           throw new RefundRuleError("REFUND_SALE_VOIDED", `Sale ${sale.saleNumber} was already voided`)
         }
-
-        // Serialize concurrent refunds/voids of this sale: the row lock taken by
-        // this update is held until commit, and the prior-refund read below
-        // (a new statement under READ COMMITTED) sees anything committed by a
-        // transaction we waited on.
-        await db.sale.update({ where: { id: sale.id }, data: { refundVersion: { increment: 1 } } as any })
         const priorRefunds = await db.saleRefund.findMany({
           where: { tenantId, saleId: sale.id },
           include: { items: true },
@@ -1200,9 +1207,16 @@ async function processOperation(
             where: { tenantId, id: p.productId },
             data: { stock: { increment: p.quantity }, updatedAt: new Date() },
           })
-          await recordMovement(p.productId, "Refund", p.quantity, refundId)
-          // Lots only from the sale's own record. Legacy lines and untracked
-          // slices restore product stock only — no lot is guessed.
+          // Legacy lines and untracked slices restore product stock only — no
+          // lot is guessed. That stock is tagged so the reconciliation report
+          // shows it as an explained exception ("unallocated return") instead
+          // of an unexplained stock-vs-lots mismatch.
+          const unallocated = p.allocations === null
+            ? p.quantity
+            : roundQty(p.allocations.filter((s) => !s.batchId).reduce((sum, s) => sum + s.quantity, 0))
+          const allocated = roundQty(p.quantity - unallocated)
+          if (allocated > 0) await recordMovement(p.productId, "Refund", allocated, refundId)
+          if (unallocated > 0) await recordMovement(p.productId, "Refund", unallocated, refundId, `${UNALLOCATED_RETURN_NOTE} ${sale.saleNumber}`)
           for (const slice of p.allocations ?? []) {
             if (!slice.batchId) continue
             await db.inventoryBatch.updateMany({
@@ -1210,6 +1224,17 @@ async function processOperation(
               data: { quantityRemaining: { increment: slice.quantity }, status: "Open" } as any,
             })
           }
+        }
+
+        // The customer credit of a debt refund is part of the refund itself.
+        if ((methodMap[data.method as string] ?? data.method) === "Debt_Credit" && sale.customerId && total > 0) {
+          await db.debtPayment.create({
+            data: {
+              id: `refund-credit:${refundId}`, tenantId, customerId: sale.customerId, amount: total,
+              method: "Refund Credit", reference: `${String(data.refundNumber ?? refundId)} return for ${sale.saleNumber}`,
+              ...(data.createdAt ? { createdAt: data.createdAt } : {}),
+            } as any,
+          })
         }
       }
       break
@@ -1304,6 +1329,20 @@ async function processOperation(
           create: { ...debtData, tenantId } as any,
         })
       } else if (action === "payment") {
+        // REFUND-REVIEW: a refund's customer credit is created by the refund
+        // handler itself (same transaction), so a rejected refund can never
+        // leave its credit behind. Older clients still send the credit as a
+        // separate "Refund Credit" payment referencing "<R-number> return for
+        // <S-number>": apply it only once its refund exists, and never twice.
+        const refundRef = typeof payload?.reference === "string" ? /^(\S+) return for /.exec(payload.reference) : null
+        if (payload?.method === "Refund Credit" && refundRef) {
+          const refund = await db.saleRefund.findFirst({ where: { tenantId, refundNumber: refundRef[1] }, select: { id: true } })
+          // Retryable: the refund may still be syncing. If it was rejected, this
+          // credit is never applied (it exhausts its retries visibly instead).
+          if (!refund) throw new Error(`Refund credit ${refundRef[1]} waits for its refund to be accepted`)
+          const already = await db.debtPayment.findFirst({ where: { tenantId, reference: String(payload.reference) }, select: { id: true } })
+          if (already) break
+        }
         await db.debtPayment.upsert({
           where: { id: payload?.id as string },
           update: payload as any,
@@ -1312,6 +1351,16 @@ async function processOperation(
       } else if (action === "delete") {
         const id = payload?.id as string
         const saleNumber = payload?.saleNumber as string
+        // REFUND-REVIEW: voiding a debt sale also sends this delete, BEFORE the
+        // void itself. The void handler removes the debt when it accepts the
+        // void, so only honour the delete once the sale is actually voided —
+        // a rejected void must not erase the customer's debt.
+        const debtRow = id ? await db.debtSale.findFirst({ where: { id, tenantId }, select: { saleNumber: true } }) : null
+        const linkedSaleNumber = saleNumber ?? debtRow?.saleNumber
+        if (linkedSaleNumber) {
+          const linkedSale = await db.sale.findFirst({ where: { tenantId, saleNumber: linkedSaleNumber }, select: { status: true } })
+          if (linkedSale && linkedSale.status !== "Voided") break
+        }
         if (id) {
           await db.debtSale.deleteMany({ where: { id, tenantId } })
         } else if (saleNumber) {
@@ -1358,15 +1407,19 @@ async function processOperation(
           }
         }
       } else if (action === "update") {
+        // REFUND-REVIEW: clients used to push their whole lot table here as
+        // ABSOLUTE quantities (after sales, refunds and voids). Applying them let
+        // one device's stale copy overwrite every other device's sales. Lot
+        // quantities now move only through server-authoritative handlers
+        // (sale, refund, void, receive, adjust), so absolute quantities and
+        // Open/Consumed statuses sent here are ignored — including from older
+        // clients. The only accepted change is marking a lot Expired.
         const items = Array.isArray(payload) ? payload : [payload]
         for (const item of items) {
-          if (!item?.id) continue
+          if (!item?.id || item.status !== "Expired") continue
           await db.inventoryBatch.updateMany({
-            where: { id: item.id as string, tenantId },
-            data: {
-              quantityRemaining: item.quantityRemaining,
-              status: item.status,
-            } as any,
+            where: { id: item.id as string, tenantId, status: "Open" },
+            data: { status: "Expired" } as any,
           })
         }
       } else if (action === "adjust") {
@@ -1376,11 +1429,63 @@ async function processOperation(
         const resolvedPid = await resolveProductId(adj)
         const { productSyncId: _ps, ...adjData } = adj as Record<string, unknown>
         const persisted = { ...adjData, ...(resolvedPid > 0 ? { productId: resolvedPid } : {}) }
-        await db.stockAdjustment.upsert({
-          where: { id: payload?.id as string },
-          update: persisted as any,
-          create: { ...persisted, tenantId } as any,
-        })
+        // REFUND-REVIEW: adjustments (counts, write-offs, corrections) used to be
+        // recorded here without ever changing server stock or lots — the next
+        // hub-authoritative pull then silently reverted them on every device.
+        // The adjustment id is the idempotency anchor: stock, lots and the
+        // ledger move only when the adjustment is first created. A concurrent
+        // duplicate fails on the primary key and rolls back.
+        const existingAdjustment = await db.stockAdjustment.findUnique({ where: { id: payload?.id as string }, select: { id: true } })
+        if (existingAdjustment) {
+          await db.stockAdjustment.update({ where: { id: payload?.id as string }, data: persisted as any })
+          break
+        }
+        await db.stockAdjustment.create({ data: { ...persisted, tenantId } as any })
+        const delta = Number(adj.quantityChange ?? 0)
+        if (resolvedPid > 0 && Number.isFinite(delta) && delta !== 0) {
+          await db.product.updateMany({
+            where: { tenantId, id: resolvedPid },
+            data: { stock: { increment: delta }, updatedAt: new Date() } as any,
+          })
+          // Allocations carry magnitudes; the direction is the sign of quantityChange.
+          for (const slice of normalizeAllocations(adj.batchAllocations) ?? []) {
+            if (!slice.batchId) continue
+            if (delta > 0) {
+              const known = await db.inventoryBatch.findUnique({ where: { id: slice.batchId }, select: { id: true } })
+              if (known) {
+                await db.inventoryBatch.updateMany({
+                  where: { id: slice.batchId, tenantId },
+                  data: { quantityRemaining: { increment: slice.quantity }, initialQuantity: { increment: slice.quantity }, status: "Open" } as any,
+                })
+              } else {
+                const raw = (adj.batchAllocations as any[]).find((a: any) => a?.batchId === slice.batchId) ?? {}
+                await db.inventoryBatch.create({
+                  data: {
+                    id: slice.batchId, tenantId, batchNumber: String(raw.batchNumber ?? slice.batchId), productId: resolvedPid,
+                    productName: String(adj.productName ?? ""), barcode: String(adj.barcode ?? ""),
+                    initialQuantity: slice.quantity, quantityRemaining: slice.quantity, unitCost: slice.unitCost ?? 0, unitPrice: 0,
+                    ...(raw.expiryDate ? { expiryDate: raw.expiryDate } : {}),
+                  } as any,
+                })
+              }
+            } else {
+              const taken = await db.inventoryBatch.updateMany({
+                where: { id: slice.batchId, tenantId, quantityRemaining: { gte: slice.quantity } },
+                data: { quantityRemaining: { decrement: slice.quantity } },
+              })
+              if (taken.count === 0) {
+                // The server's lot holds less than the device thought: take what
+                // is there rather than going negative. The reconciliation report
+                // shows the remainder as stock not covered by lots.
+                await db.inventoryBatch.updateMany({ where: { id: slice.batchId, tenantId }, data: { quantityRemaining: 0 } })
+              }
+              await db.inventoryBatch.updateMany({
+                where: { id: slice.batchId, tenantId, quantityRemaining: { lte: 0 } },
+                data: { status: "Consumed" },
+              })
+            }
+          }
+        }
         await recordMovement(resolvedPid || Number(adj.productId ?? adj.id), "Adjustment", Number(adj.quantityChange ?? 0), adj.id as string, adj.reason ?? "")
       } else if (action === "count") {
         const data = payload as any

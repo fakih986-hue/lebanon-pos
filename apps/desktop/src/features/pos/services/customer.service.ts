@@ -45,6 +45,9 @@ export type DebtPayment = {
   method: "Cash" | "Card" | "Wallet" | "Bank Transfer" | "Refund Credit"
   reference: string
   createdAt: string
+  /** REFUND-INTEGRITY-1: a refund credit shown locally but created on the
+   *  server by the refund itself — never pushed as its own operation. */
+  localOnly?: boolean
 }
 
 export type DebtAging = {
@@ -122,6 +125,8 @@ export type RecordDebtPaymentInput = {
   amount: number
   method: DebtPayment["method"]
   reference: string
+  /** Caller-chosen id (idempotent refund credits / settlements). */
+  id?: string
 }
 
 
@@ -331,10 +336,19 @@ export function reverseDebtSale(saleNumber: string) {
   return match
 }
 
-export function recordDebtPayment(input: RecordDebtPaymentInput) {
+/** Remove a local-only debt payment (a refund credit the server never received). */
+export function removeLocalDebtPayment(id: string) {
+  const payments = getDebtPayments()
+  const target = payments.find((payment) => payment.id === id)
+  if (!target || !target.localOnly) return false
+  writeCollection(DEBT_PAYMENTS_KEY, payments.filter((payment) => payment.id !== id))
+  return true
+}
+
+export function recordDebtPayment(input: RecordDebtPaymentInput, opts?: { localOnly?: boolean }) {
   assertCanWrite("record debt payment")
   const payment: DebtPayment = {
-    id: createId(),
+    id: input.id ?? createId(),
     customerId: input.customerId,
     amount: Math.max(0, input.amount),
     method: input.method,
@@ -346,7 +360,9 @@ export function recordDebtPayment(input: RecordDebtPaymentInput) {
     throw new Error("Choose a customer and enter a payment amount.")
   }
 
+  if (opts?.localOnly) payment.localOnly = true
   writeCollection(DEBT_PAYMENTS_KEY, [payment, ...getDebtPayments()])
+  if (opts?.localOnly) return payment
   enqueueSyncOperation({
     entity: "debt",
     action: "payment",

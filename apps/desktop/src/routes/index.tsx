@@ -5,6 +5,7 @@ import TitanIntro from "../components/TitanIntro"
 
 import { runMigration } from "../features/pos/services/migration.service"
 import { recoverRefundJournal } from "../features/pos/services/sales.service"
+import { resumeMoneyConflictSettlements } from "../features/pos/services/refundConflict.service"
 import { showToast } from "../features/pos/services/toast.service"
 import { useI18n } from "@lebanonpos/shared"
 import AppLayout from "../layouts/AppLayout"
@@ -75,6 +76,8 @@ function Shell({ children }: { children: ReactNode }) {
   // or restart before the till is used again.
   useEffect(() => {
     const { rolledBack, completed } = recoverRefundJournal()
+    // Finish any conflict settlement interrupted mid-way (idempotent).
+    resumeMoneyConflictSettlements()
     if (completed > 0) showToast(t("pos.refund.recovered_completed", { count: completed }), "info")
     if (rolledBack > 0) showToast(t("pos.refund.recovered_rolled_back", { count: rolledBack }), "warning")
   }, [])

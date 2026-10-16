@@ -45,6 +45,8 @@ export interface CreateCashMovementInput {
   referenceEntity?: string
   referenceId?: string
   direction?: CashDirection
+  /** Caller-chosen id (idempotent settlement entries). */
+  id?: string
 }
 
 export function getCashMovements(): CashMovement[] {
@@ -74,7 +76,7 @@ export function createCashMovement(input: CreateCashMovementInput): CashMovement
   const direction = input.direction ?? TYPE_DIRECTION[input.type] ?? "Out"
 
   const movement: CashMovement = {
-    id: createId("cashmv"),
+    id: input.id ?? createId("cashmv"),
     shiftId: shift.id,
     shiftNumber: shift.shiftNumber,
     registerId: getRegisterId(),
