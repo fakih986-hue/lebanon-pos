@@ -311,6 +311,14 @@ export function printLastSaleReceipt(lastSale: LastSaleSummary, settings: AppSet
           <tr><td>Total LBP</td><td>${formatLbpCurrency(
             lastSale.totalLbp
           )}</td></tr>
+          ${
+            // Same lines as the reprint (printSaleReceipt): what the cash customer actually paid,
+            // so total, paid and change reconcile on paper. Display only; the calculation is unchanged.
+            lastSale.payableLbp && lastSale.payableLbp !== lastSale.totalLbp
+              ? `<tr><td>Cash rounding</td><td>+${formatLbpCurrency(lastSale.payableLbp - lastSale.totalLbp)}</td></tr>
+          <tr><td><strong>Cash payable</strong></td><td><strong>${formatLbpCurrency(lastSale.payableLbp)}${lastSale.payableUsd ? ` · ${formatUsdCurrency(lastSale.payableUsd)}` : ""}</strong></td></tr>`
+              : ""
+          }
           <tr><td>Payment</td><td>${lastSale.paymentMethod}</td></tr>
           <tr><td>Rate</td><td>1 USD = ${formatNumber(
             lastSale.exchangeRate

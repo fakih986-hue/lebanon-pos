@@ -38,7 +38,8 @@ Every row is the same $6.72 cash sale.
 |---|---|---|
 | Register total (v2 slice) | $6.72, then "605,000 LBP cash · $6.76", then "Rounded up from 601,440" | Yes. The payable line is what the cashier takes |
 | Pay button / review / receipt panel (v2) | Payable amount ($6.76 · 605,000 LBP) and the change, led by the currency actually handed back | Yes |
-| Printed receipt (`printReceipt.ts`) | Total $6.72, "Total LBP 601,440", "Cash rounding +3,560", "Cash payable 605,000", Paid, Change USD and Change LBP | Yes, but it prints **both** change lines, although only one currency is handed back |
+| Printed receipt, Sales-page reprint (`printSaleReceipt`) | Total $6.72, "Total LBP 601,440", "Cash rounding +3,560", "Cash payable 605,000", Paid, Change USD and Change LBP | Yes, but it prints **both** change lines, although only one currency is handed back |
+| Printed receipt, register **Print receipt** (`printLastSaleReceipt`) | Until 2026-10-16 it printed **no** rounding or payable line, so total, paid and change did not add up on paper (found during the visual review). It now prints the same "Cash rounding" and "Cash payable" lines | Yes, since the fix; both change lines are still printed (decision 4) |
 | Shift expected cash (`shift.service.ts`), drawer widget, daily close | Opening float + Σ **sale totals** of cash sales − cash refunds − cash expenses − cash supplier payments ± cash in/out | **No.** The rounding kept on each cash sale is not counted |
 | Server Z-report (`reports.ts`) | The same formula, server side | **No**, for the same reason |
 
