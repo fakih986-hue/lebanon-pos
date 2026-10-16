@@ -1,96 +1,172 @@
-// PROPOSED cash rounding policy vs the CURRENT rules, on the same sales.
-// Nothing here is wired into the app: it is the arithmetic the proposal in
-// docs/CASH-ROUNDING-POLICY-PROPOSAL.md asks to approve.
+// Cash rounding policy proposal, revision 2: the arithmetic behind
+// docs/CASH-ROUNDING-POLICY-PROPOSAL.md. Nothing here is wired into the app.
 // Run: npx tsx ../../docs/evidence/cash-rounding-policy-proposal.ts  (from apps/desktop)
+//
+// Every amount is kept per currency: USD in cents, LBP in whole pounds. A
+// "value" (LBP at the sale's own rate) is used only to compare and allocate;
+// the drawer is never balanced on it.
 import { ceilLbp, computeCashChange, lbpToUsd, roundMoney, usdToLbp } from "../../apps/desktop/src/features/pos/lib/currency"
 
-type ChangeCurrency = "USD" | "LBP"
-type Tender = { paidUsd: number; paidLbp: number; changeIn?: ChangeCurrency }
+type Mode = "none" | "up" | "nearest" | "down"
+/** Snapshot stored on every cash sale: the server validates against this, never against today's settings. */
+type CashPolicy = {
+  version: 1
+  due: { mode: "none" | "up" | "nearest"; denomLbp: number }      // rounding of an amount still due in LBP
+  change: { mode: "none" | "down" | "nearest"; denomLbp: number }  // rounding of LBP change actually handed back
+  usdChange: "cents" | "dollars"                                   // dollars: whole dollars in USD, the rest in LBP
+}
+type Tender = { paidUsd: number; paidLbp: number; changeIn: "USD" | "LBP" }
 
-/** Current rules (POSPage + currency.ts): LBP payable rounded up to 5,000, USD and mixed charged its USD equivalent. */
-function current(total: number, rate: number, t: Tender) {
-  const payableLbp = ceilLbp(usdToLbp(total, rate), 5000)
-  const payableUsd = lbpToUsd(payableLbp, rate)
-  const { changeUsd, changeLbp } = computeCashChange({ paidUsd: t.paidUsd, paidLbp: t.paidLbp, totalUsd: payableUsd, totalLbp: payableLbp, exchangeRate: rate })
-  const lbpOnly = t.paidLbp > 0 && t.paidUsd === 0
-  const keptLbp = lbpOnly ? t.paidLbp - changeLbp : t.paidLbp
-  const keptUsd = lbpOnly ? 0 : roundMoney(t.paidUsd - changeUsd)
-  const keptValueLbp = keptLbp + Math.round(keptUsd * rate)
-  return { change: lbpOnly ? `${changeLbp} LBP` : `$${changeUsd.toFixed(2)}`, keptValueLbp, expectedCreditLbp: Math.round(total * rate) }
+const cents = (usd: number) => Math.round(usd * 100)
+function roundTo(v: number, denom: number, mode: Mode) {
+  if (mode === "none" || denom <= 0) return Math.round(v)
+  const q = v / denom
+  return (mode === "up" ? Math.ceil(q - 1e-9) : mode === "down" ? Math.floor(q + 1e-9) : Math.round(q)) * denom
+}
+
+/** One cash sale under a policy snapshot. USD first and exact; any LBP remainder rounded per `due`. */
+function settle(totalUsd: number, rate: number, t: Tender, p: CashPolicy) {
+  const totalLbp = Math.round(totalUsd * rate)
+  const remainingCents = Math.max(0, cents(totalUsd) - cents(t.paidUsd))
+  const dueLbp = remainingCents > 0 ? roundTo((remainingCents / 100) * rate, p.due.denomLbp, p.due.mode) : 0
+  // Value tendered above what is due, in LBP at the sale rate (exact integer at an integer rate).
+  const overLbp = remainingCents > 0 ? t.paidLbp - dueLbp : t.paidLbp + Math.round(((cents(t.paidUsd) - cents(totalUsd)) / 100) * rate)
+  if (overLbp < 0) return { short: `still due ${-overLbp} LBP` as const }
+  let changeUsdCents = 0
+  let changeLbp = 0
+  if (t.changeIn === "LBP") {
+    changeLbp = roundTo(overLbp, p.change.denomLbp, p.change.mode)
+  } else {
+    // The cashier chose USD: the whole excess in USD at the sale rate (cents, or whole dollars),
+    // and only what USD cannot express comes back in LBP, rounded per the change policy.
+    const usdCents = Math.floor(overLbp / rate * 100 + 1e-9)
+    changeUsdCents = p.usdChange === "dollars" ? Math.floor(usdCents / 100) * 100 : usdCents
+    changeLbp = roundTo(overLbp - Math.round((changeUsdCents / 100) * rate), p.change.denomLbp, p.change.mode)
+  }
+  const keptUsdCents = cents(t.paidUsd) - changeUsdCents
+  const keptLbp = t.paidLbp - changeLbp
+  const valueLbp = Math.round((keptUsdCents / 100) * rate) + keptLbp
+  return {
+    dueLbp, changeUsd: changeUsdCents / 100, changeLbp,
+    keptUsd: keptUsdCents / 100, keptLbp,          // the drawer movements, per currency
+    roundingLbp: valueLbp - totalLbp,              // recorded separately; total is untouched
+    valueLbp,                                      // = totalLbp + roundingLbp, at the sale rate
+  }
 }
 
 /**
- * Proposed rules.
- *  1. USD is exact: dollars pay the total to the cent.
- *  2. Only an amount still due in LBP is rounded, UP to `denom` (0 = no rounding).
- *  3. USD is applied first; the rest is due in LBP. Change currency is explicit
- *     (default: LBP if any LBP was tendered, else USD). LBP change rounds DOWN to `denom`.
- *  4. rounding = value kept − sale total, recorded on the sale in LBP (exact integer); total untouched.
+ * Refunds, allocated CUMULATIVELY. The refund rules (unchanged) give each
+ * refund's USD amount from sale.total. The cash to give back after k refunds
+ * is valueLbp × (Σ amounts / total), never more than the cash the sale kept.
+ * Each payout is that cumulative target minus what was already paid out,
+ * rounded once in the payout currency — rounding never compounds, and the
+ * last refund takes whatever remains.
  */
-function proposed(total: number, rate: number, denom: number, t: Tender) {
-  const totalLbp = Math.round(total * rate)
-  const remainingUsd = roundMoney(Math.max(0, total - t.paidUsd))
-  const dueLbp = remainingUsd > 0 ? (denom > 0 ? ceilLbp(Math.round(remainingUsd * rate), denom) : Math.round(remainingUsd * rate)) : 0
-  const changeIn: ChangeCurrency = t.changeIn ?? (t.paidLbp > 0 ? "LBP" : "USD")
-  let changeUsd = 0
-  let changeLbp = 0
-  if (remainingUsd === 0) {
-    // USD covered the total: all LBP comes back, plus the USD excess in the chosen currency.
-    const excessUsd = roundMoney(t.paidUsd - total)
-    if (changeIn === "USD") { changeUsd = excessUsd; changeLbp = t.paidLbp }
-    else { const raw = Math.round(excessUsd * rate) + t.paidLbp; changeLbp = denom > 0 ? Math.floor(raw / denom) * denom : raw }
-  } else {
-    if (t.paidLbp < dueLbp) return { short: `still due ${dueLbp - t.paidLbp} LBP` }
-    const raw = t.paidLbp - dueLbp
-    if (changeIn === "LBP") changeLbp = denom > 0 ? Math.floor(raw / denom) * denom : raw
-    else { changeUsd = Math.floor(raw / rate * 100) / 100; changeLbp = 0 }
+function refundSequence(sale: { totalUsd: number; rate: number; valueLbp: number }, p: CashPolicy, refunds: Array<{ amountUsd: number; payIn: "USD" | "LBP" }>) {
+  let refundedCents = 0
+  let paidValue = 0
+  const rows = []
+  for (const r of refunds) {
+    refundedCents += cents(r.amountUsd)
+    const targetValue = Math.round(sale.valueLbp * refundedCents / cents(sale.totalUsd))
+    const owed = Math.min(targetValue, sale.valueLbp) - paidValue
+    const final = refundedCents >= cents(sale.totalUsd)
+    let usd = 0, lbp = 0
+    if (r.payIn === "USD") usd = Math.floor(owed / sale.rate * 100) / 100
+    else {
+      lbp = roundTo(owed, p.change.denomLbp, p.change.mode === "none" ? "none" : "nearest")
+      if (paidValue + lbp > sale.valueLbp) lbp = roundTo(owed, p.change.denomLbp, "down") // cap: never above what was kept
+      // The last refund settles what LBP notes cannot: the leftover in USD cents (floor, so still within the cap).
+      if (final) usd = Math.floor((owed - lbp) / sale.rate * 100) / 100
+    }
+    const value = Math.round(usd * sale.rate) + lbp
+    paidValue += value
+    rows.push({ refundUsd: r.amountUsd, payIn: r.payIn, targetValue, payout: [lbp ? `${lbp.toLocaleString("en")} LBP` : "", usd ? `$${usd.toFixed(2)}` : ""].filter(Boolean).join(" + ") || "none", payoutUsd: usd, payoutLbp: lbp,
+      refundRoundingLbp: value - Math.round(r.amountUsd * sale.rate), carried: targetValue - paidValue, paidSoFar: paidValue })
   }
-  const keptUsd = roundMoney(t.paidUsd - changeUsd)
-  const keptLbp = t.paidLbp - changeLbp
-  const keptValueLbp = keptLbp + Math.round(keptUsd * rate)
-  const roundingLbp = keptValueLbp - totalLbp
-  return {
-    dueLbp, change: [changeUsd ? `$${changeUsd.toFixed(2)}` : "", changeLbp ? `${changeLbp} LBP` : ""].filter(Boolean).join(" + ") || "none",
-    keptUsd, keptLbp, roundingLbp, expectedCreditLbp: totalLbp + roundingLbp, reconciles: keptValueLbp === totalLbp + roundingLbp,
-  }
+  return { rows, paidValue, cap: sale.valueLbp, withinCap: paidValue <= sale.valueLbp }
 }
 
-/** Proposed refund payout: amount from the refund rules (sale.total based, unchanged); an LBP payout rounds UP to `denom`. */
-function refundPayout(refundUsd: number, rate: number, denom: number, payIn: ChangeCurrency) {
-  if (payIn === "USD") return { payout: `$${refundUsd.toFixed(2)}`, roundingLbp: 0 }
-  const raw = Math.round(refundUsd * rate)
-  const paid = denom > 0 ? ceilLbp(raw, denom) : raw
-  return { payout: `${paid} LBP`, roundingLbp: -(paid - raw) } // negative: extra cash out, recorded on the refund
+/** The naive rule the proposal rejects: every partial refund rounded up on its own. */
+function naiveRefunds(rate: number, denom: number, amounts: number[]) {
+  return amounts.reduce((s, a) => s + ceilLbp(Math.round(a * rate), denom), 0)
 }
 
+// ── Inputs ──
 const rate = 89_500
 const total = 6.72
+const P = (dueMode: CashPolicy["due"]["mode"], changeMode: CashPolicy["change"]["mode"], denom = 5000, usdChange: CashPolicy["usdChange"] = "cents"): CashPolicy =>
+  ({ version: 1, due: { mode: dueMode, denomLbp: denom }, change: { mode: changeMode, denomLbp: denom }, usdChange })
+
+console.log(`rate ${rate}; sale total $${total} = ${Math.round(total * rate).toLocaleString("en")} LBP\n`)
+
+console.log("── 1. Amount-due rounding: up vs nearest (pure LBP) ──")
+for (const t of [6.72, 6.70, 3.15, 1.10]) for (const mode of ["up", "nearest"] as const) for (const d of [5000, 1000]) {
+  const s = settle(t, rate, { paidUsd: 0, paidLbp: 10_000_000, changeIn: "LBP" }, P(mode, "none", d))
+  if ("short" in s) continue
+  console.log(JSON.stringify({ totalUsd: t, totalLbp: Math.round(t * rate), mode, denom: d, dueLbp: s.dueLbp, roundingLbp: s.roundingLbp }))
+}
+
+console.log("\n── 2. Change rounding: down vs nearest (USD paid, change in LBP) ──")
+for (const [paid, label] of [[10, "$10"], [7, "$7"], [20, "$20"]] as const) for (const mode of ["down", "nearest"] as const) {
+  const s = settle(total, rate, { paidUsd: paid, paidLbp: 0, changeIn: "LBP" }, P("nearest", mode))
+  if ("short" in s) continue
+  console.log(JSON.stringify({ tender: label, changeMode: mode, exactChangeLbp: Math.round((paid - total) * rate), changeLbp: s.changeLbp, roundingLbp: s.roundingLbp }))
+}
+
+console.log("\n── 3. Every tender, recommended policy (due nearest, change nearest, 5,000) ──")
+const rec = P("nearest", "nearest")
 const cases: Array<[string, Tender]> = [
-  ["Exact USD $6.72", { paidUsd: 6.72, paidLbp: 0 }],
-  ["$10", { paidUsd: 10, paidLbp: 0 }],
-  ["Exact LBP", { paidUsd: 0, paidLbp: 605_000 }],
-  ["1,000,000 LBP", { paidUsd: 0, paidLbp: 1_000_000 }],
-  ["$5 + 200,000 LBP (change LBP)", { paidUsd: 5, paidLbp: 200_000 }],
-  ["$5 + 200,000 LBP (change USD)", { paidUsd: 5, paidLbp: 200_000, changeIn: "USD" }],
-  ["$20 + 200,000 LBP (change USD)", { paidUsd: 20, paidLbp: 200_000, changeIn: "USD" }],
-  ["$20 + 200,000 LBP (change LBP)", { paidUsd: 20, paidLbp: 200_000, changeIn: "LBP" }],
+  ["Exact USD $6.72", { paidUsd: 6.72, paidLbp: 0, changeIn: "USD" }],
+  ["$10, change USD", { paidUsd: 10, paidLbp: 0, changeIn: "USD" }],
+  ["$10, change LBP", { paidUsd: 10, paidLbp: 0, changeIn: "LBP" }],
+  ["$10, change whole dollars + LBP", { paidUsd: 10, paidLbp: 0, changeIn: "USD" }],
+  ["Exact LBP", { paidUsd: 0, paidLbp: 600_000, changeIn: "LBP" }],
+  ["1,000,000 LBP", { paidUsd: 0, paidLbp: 1_000_000, changeIn: "LBP" }],
+  ["$5 + 200,000 LBP, change LBP", { paidUsd: 5, paidLbp: 200_000, changeIn: "LBP" }],
+  ["$5 + 200,000 LBP, change USD", { paidUsd: 5, paidLbp: 200_000, changeIn: "USD" }],
+  ["$20 + 200,000 LBP, change USD", { paidUsd: 20, paidLbp: 200_000, changeIn: "USD" }],
 ]
-console.log(`rate ${rate}, sale total $${total} = ${Math.round(total * rate)} LBP`)
-for (const denom of [5000, 1000]) {
-  console.log(`\n── LBP denomination ${denom} ──`)
-  for (const [label, t] of cases) {
-    const c = current(total, rate, t)
-    const p = proposed(total, rate, denom, t)
-    console.log(JSON.stringify({ label, current: { change: c.change, overLbp: c.keptValueLbp - c.expectedCreditLbp }, proposed: p }))
-  }
+for (const [label, t] of cases) {
+  const pol = label.includes("whole dollars") ? P("nearest", "nearest", 5000, "dollars") : rec
+  const s = settle(total, rate, t, pol)
+  const cur = (() => { // current rules, for comparison
+    const payableLbp = ceilLbp(usdToLbp(total, rate), 5000); const payableUsd = lbpToUsd(payableLbp, rate)
+    const { changeUsd, changeLbp } = computeCashChange({ paidUsd: t.paidUsd, paidLbp: t.paidLbp, totalUsd: payableUsd, totalLbp: payableLbp, exchangeRate: rate })
+    return t.paidUsd === 0 ? `${changeLbp} LBP` : `$${roundMoney(changeUsd).toFixed(2)}`
+  })()
+  console.log(JSON.stringify({ label, currentChange: cur, ...s }))
 }
-console.log("\n── refunds (sale paid in LBP, 605,000 kept, rounding +3,560) ──")
-for (const [label, usd] of [["full refund $6.72", 6.72], ["partial refund $1.50", 1.5]] as const) {
-  for (const denom of [5000, 1000]) console.log(JSON.stringify({ label, denom, LBP: refundPayout(usd, rate, denom, "LBP"), USD: refundPayout(usd, rate, denom, "USD") }))
+
+console.log("\n── 4. Refunds, cumulative allocation (recommended policy) ──")
+const lbpSale = settle(total, rate, { paidUsd: 0, paidLbp: 600_000, changeIn: "LBP" }, rec) as ReturnType<typeof settle> & { valueLbp: number }
+const upSale = settle(total, rate, { paidUsd: 0, paidLbp: 605_000, changeIn: "LBP" }, P("up", "nearest")) as ReturnType<typeof settle> & { valueLbp: number }
+const mixSale = settle(total, rate, { paidUsd: 5, paidLbp: 200_000, changeIn: "LBP" }, rec) as ReturnType<typeof settle> & { valueLbp: number }
+const show = (label: string, sale: { valueLbp: number }, pol: CashPolicy, rs: Array<{ amountUsd: number; payIn: "USD" | "LBP" }>) => {
+  const out = refundSequence({ totalUsd: total, rate, valueLbp: sale.valueLbp }, pol, rs)
+  console.log(label, JSON.stringify({ keptValueLbp: out.cap, paidBackValueLbp: out.paidValue, withinCap: out.withinCap }))
+  for (const r of out.rows) console.log("   ", JSON.stringify(r))
 }
-// Shift: float $100 + the sale paid exact LBP, then a full LBP refund.
-const s = proposed(total, rate, 5000, { paidUsd: 0, paidLbp: 605_000 })
-const r = refundPayout(total, rate, 5000, "LBP")
-if (!("roundingLbp" in s)) throw new Error("unexpected short tender")
-const expectedLbp = 0 + (Math.round(total * rate) + s.roundingLbp) - (Math.round(total * rate) - r.roundingLbp)
-console.log("\nshift after sale + full refund, LBP drawer expected change:", expectedLbp, "(customer got back exactly the 605,000 paid)")
+show("A. full refund, LBP sale (kept 600,000)", lbpSale, rec, [{ amountUsd: 6.72, payIn: "LBP" }])
+show("B. full refund, sale rounded UP (kept 605,000)", upSale, P("up", "nearest"), [{ amountUsd: 6.72, payIn: "LBP" }])
+show("C. partial $1.50 then the rest", lbpSale, rec, [{ amountUsd: 1.5, payIn: "LBP" }, { amountUsd: 5.22, payIn: "LBP" }])
+show("D. four repeated partials of $1.68", upSale, P("up", "nearest"), [1, 2, 3, 4].map(() => ({ amountUsd: 1.68, payIn: "LBP" as const })))
+show("E. mixed sale ($5 + 155,000 LBP kept), refund half in USD then half in LBP", mixSale, rec, [{ amountUsd: 3.36, payIn: "USD" }, { amountUsd: 3.36, payIn: "LBP" }])
+const usdSale = settle(total, rate, { paidUsd: 6.72, paidLbp: 0, changeIn: "USD" }, rec) as ReturnType<typeof settle> & { valueLbp: number }
+show("F. USD sale ($6.72 kept) refunded in LBP", usdSale, rec, [{ amountUsd: 6.72, payIn: "LBP" }])
+console.log("naive rule for D (each partial rounded up):", naiveRefunds(rate, 5000, [1.68, 1.68, 1.68, 1.68]).toLocaleString("en"), "LBP paid back vs 605,000 received")
+
+console.log("\n── 5. Drawer per currency (one shift) ──")
+// Float $100 + 0 LBP. Sales: exact LBP; $10 change USD; $5 + 200,000 change LBP. Then refund C (partial $1.50 in LBP).
+const shiftSales = [
+  settle(total, rate, { paidUsd: 0, paidLbp: 600_000, changeIn: "LBP" }, rec),
+  settle(total, rate, { paidUsd: 10, paidLbp: 0, changeIn: "USD" }, rec),
+  settle(total, rate, { paidUsd: 5, paidLbp: 200_000, changeIn: "LBP" }, rec),
+] as Array<{ keptUsd: number; keptLbp: number; roundingLbp: number; valueLbp: number }>
+const refund = refundSequence({ totalUsd: total, rate, valueLbp: shiftSales[0].valueLbp }, rec, [{ amountUsd: 1.5, payIn: "LBP" }]).rows[0]
+const expectedUsd = roundMoney(100 + shiftSales.reduce((s, x) => s + x.keptUsd, 0) - refund.payoutUsd)
+const expectedLbp = shiftSales.reduce((s, x) => s + x.keptLbp, 0) - refund.payoutLbp
+console.log(JSON.stringify({ expectedUsd, expectedLbp, salesRoundingLbp: shiftSales.reduce((s, x) => s + x.roundingLbp, 0), refundRoundingLbp: refund.refundRoundingLbp }))
+for (const closingRate of [89_500, 90_000]) {
+  console.log(JSON.stringify({ reportingOnly: `USD-equivalent at closing rate ${closingRate}`, totalUsdEq: roundMoney(expectedUsd + expectedLbp / closingRate) }))
+}
