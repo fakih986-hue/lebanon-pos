@@ -1505,8 +1505,14 @@ async function processOperation(
               deviceId: source.deviceId ?? null, userId: source.userId ?? null, userName: cashier ?? null,
             })
           } else {
-            // Metadata correction for an already-received batch — NEVER re-increment stock.
-            await db.inventoryBatch.updateMany({ where: { id: batchId as string, tenantId }, data: batchData as any })
+            // Metadata correction for an already-received batch — NEVER re-increment stock, and
+            // never rewrite its quantities: a resent receive (uncertain response, a retried
+            // delivery) carries the quantities as received, and writing them back would undo
+            // every sale, refund and adjustment applied to this lot since.
+            const { quantityRemaining: _qr, initialQuantity: _iq, status: _st, productId: _pid, tenantId: _tid, ...meta } = batchData as Record<string, unknown>
+            if (Object.keys(meta).length > 0) {
+              await db.inventoryBatch.updateMany({ where: { id: batchId as string, tenantId }, data: meta as any })
+            }
           }
         }
       } else if (action === "update") {

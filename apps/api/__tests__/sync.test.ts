@@ -469,6 +469,13 @@ describe("POST /api/sync/push — server-authoritative receiving (POS-SYNC-RECEI
     const res = await receive([{ id: "batch-1", productSyncId: "ps-5", batchNumber: "BN1", quantityRemaining: 12, initialQuantity: 12 }])
     expect(res.status).toBe(200)
     expect(vi.mocked(prisma.inventoryBatch.updateMany)).toHaveBeenCalledTimes(1) // metadata only, tenant-scoped
+    // A resend carries the quantities as received: they must never overwrite the lot's current
+    // quantities (sales applied since would be undone).
+    const data = vi.mocked(prisma.inventoryBatch.updateMany).mock.calls[0][0].data as Record<string, unknown>
+    expect(data).not.toHaveProperty("quantityRemaining")
+    expect(data).not.toHaveProperty("initialQuantity")
+    expect(data).not.toHaveProperty("status")
+    expect(data).toMatchObject({ batchNumber: "BN1" })
     expect(vi.mocked(prisma.inventoryBatch.create)).not.toHaveBeenCalled()
     expect(vi.mocked(prisma.product.updateMany)).not.toHaveBeenCalled()      // NO re-increment
     expect(vi.mocked(prisma.stockMovement.create)).not.toHaveBeenCalled()    // NO duplicate movement
