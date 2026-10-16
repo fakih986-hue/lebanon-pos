@@ -1,1031 +1,607 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { ChangeEvent } from "react"
+import { Link, useSearchParams } from "react-router"
 import {
-  Banknote, Barcode, Building2, Camera, CheckCircle2, ClipboardCheck,
-  Copy, CreditCard, ImagePlus, Landmark, LoaderCircle, PackagePlus, Plus, Printer,
-  RotateCcw, Search, Trash2, WalletCards,
+  Barcode, Camera, CheckCircle2, ChevronDown, ChevronUp, ClipboardPaste, Copy, ImagePlus, LoaderCircle, Plus, Printer,
+  RotateCcw, ScanLine, Trash2,
 } from "lucide-react"
-import { Link } from "react-router"
-import Spinner from "../../components/ui/Spinner"
+import { useI18n } from "@lebanonpos/shared"
+
+import { Badge, Drawer, PageHeader, SkeletonRows, StockNav, type Tone } from "../../features/pos/components/backoffice/BackOffice"
 import { renderCode128Svg } from "../../features/pos/lib/barcode"
-import type { PurchasePaymentMethod } from "../../features/pos/services/supplier.service"
 import {
-  createBarcodeDetector, createHtml5Qrcode, detectBarcodeFromImageFile,
-  getCameraErrorMessage, getHtml5QrcodeFormatCodes, getLiveCameraIssue,
-  getPreferredCameraConstraints,
-  type BrowserBarcodeDetector, type Html5QrcodeInstance,
+  createBarcodeDetector, createHtml5Qrcode, detectBarcodeFromImageFile, getCameraErrorMessage, getHtml5QrcodeFormatCodes,
+  getLiveCameraIssue, getPreferredCameraConstraints, type BrowserBarcodeDetector, type Html5QrcodeInstance,
 } from "../../features/pos/lib/cameraScanner"
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
-import {
-  findProductByBarcode, findProductsByExactName, generateProductBarcode,
-  getProducts, parseSpreadsheetPaste, productMatchesSearch,
-} from "../../features/pos/services/product.service"
 import { fileToCompressedDataUrl } from "../../features/pos/lib/image"
+import {
+  addScan, applySaveResult, createRow, fillRowFromBarcode, isBlankRow, isRowReady, normalizeCode, parseDraft,
+  RECEIVE_DRAFT_KEY, rowProblems, serializeDraft, toReceiveEntry, type BatchRow, type RowProblem,
+} from "../../features/pos/lib/receiveRows"
+import {
+  findProductByBarcode, findProductsByExactName, generateProductBarcode, getProducts, parseSpreadsheetPaste, productMatchesSearch,
+  subscribeProducts,
+} from "../../features/pos/services/product.service"
 import { recordAuditEvent } from "../../features/pos/services/security.service"
 import { getSettings } from "../../features/pos/services/settings.service"
 import {
-  getSupplierLedger, subscribeSuppliers,
-  recordPurchaseOrder,
-  receiveAndRecord,
-  type SupplierLedger,
-  type ReceivingSummary,
+  getSupplierLedger, receiveAndRecord, subscribeSuppliers, type PurchasePaymentMethod, type ReceivingSummary, type SupplierLedger,
 } from "../../features/pos/services/supplier.service"
-import type { Product } from "../../features/pos/types/product"
 import { showToast } from "../../features/pos/services/toast.service"
-import { useI18n } from "@lebanonpos/shared"
+import type { Product } from "../../features/pos/types/product"
 
-import {
-  applySaveResult, createRow, fillRowFromBarcode as fillRowFromProduct, isBlankRow, isRowReady, toReceiveEntry,
-  type BatchRow,
-} from "../../features/pos/lib/receiveRows"
+// Midnight Gold v2 — Receiving (DESIGN-SYSTEM §8, prototype 04-receiving). One scan field for the
+// delivery, a row grid where every row always shows its state, supplier/invoice/payment, a summary,
+// and a draft that survives leaving the page. Rules: lib/receiveRows (unit-tested); writes only via
+// receiveAndRecord on Save; a saved row leaves the grid (it can never be received twice).
 type LabelSize = "40x25" | "50x30" | "58x35"
-
-const purchasePaymentMethods: PurchasePaymentMethod[] = [
-  "On Account", "Cash", "Card", "Bank Transfer", "Wallet",
-]
-const labelSizes: Record<LabelSize, { label: string; width: string; height: string }> = {
-  "40x25": { label: "40×25", width: "40mm", height: "25mm" },
-  "50x30": { label: "50×30", width: "50mm", height: "30mm" },
-  "58x35": { label: "58×35", width: "58mm", height: "35mm" },
+const LABEL_SIZES: Record<LabelSize, { width: string; height: string }> = {
+  "40x25": { width: "40mm", height: "25mm" }, "50x30": { width: "50mm", height: "30mm" }, "58x35": { width: "58mm", height: "35mm" },
 }
-const pmIcons: Record<string, typeof Banknote> = {
-  Cash: Banknote, Card: CreditCard, Wallet: WalletCards,
-  "Bank Transfer": Landmark, "On Account": ClipboardCheck,
+const PAYMENTS: PurchasePaymentMethod[] = ["On Account", "Cash", "Card", "Bank Transfer", "Wallet"]
+const PAY_KEY: Record<string, string> = { "On Account": "on_account", Cash: "cash", Card: "card", "Bank Transfer": "bank_transfer", Wallet: "wallet" }
+const CAMERA_READER_ID = "lebanonpos-receive-camera-reader"
+const PROBLEM_KEY: Record<RowProblem, string> = {
+  needs_decision: "inv.rcv.p.needs_decision", missing_name: "inv.rcv.p.missing_name", missing_barcode: "inv.rcv.p.missing_barcode",
+  missing_quantity: "inv.rcv.p.missing_quantity", missing_target: "inv.rcv.p.missing_target", missing_variant_name: "inv.rcv.p.missing_variant_name",
+  negative_money: "inv.rcv.p.negative_money",
 }
-const RECEIVE_CAMERA_READER_ID = "lebanonpos-receive-camera-reader"
+function escapeHtml(v: string) { return v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;") }
+const num = (v: string) => { const n = Number(v); return Number.isFinite(n) ? n : 0 }
+type SavedInfo = ReceivingSummary & { units: number; labels: Array<{ name: string; price: number; barcode: string; n: number }> }
 
-function escapeHtml(v: string) { return v.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;") }
-function normalizeNumber(v: string) { const n = Number(v); return Number.isFinite(n) ? n : 0 }
 export default function ProductReceivePage() {
   const { t } = useI18n()
+  const [params, setParams] = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [suppliers, setSuppliers] = useState<SupplierLedger[]>(getSupplierLedger())
-  const [rows, setRows] = useState<BatchRow[]>([createRow()])
-  const [activeRowId, setActiveRowId] = useState(rows[0].id)
-  // POS-RECEIVE-UX-1A: searchable "add to existing product" picker (per row).
-  // pickerMode: 'alias' = attach barcode to picked product; 'variant' = make a
-  // variant of the picked parent (POS-RECEIVE-VARIANT-1B).
+  const [loading, setLoading] = useState(true)
+  const [suppliers, setSuppliers] = useState<SupplierLedger[]>(() => getSupplierLedger())
+  const initialDraft = useMemo(() => { try { return parseDraft(localStorage.getItem(RECEIVE_DRAFT_KEY)) } catch { return null } }, [])
+  const [rows, setRows] = useState<BatchRow[]>(() => initialDraft?.rows ?? [createRow()])
+  const [draftRestored, setDraftRestored] = useState(!!initialDraft)
+  const [activeRowId, setActiveRowId] = useState<string>(() => (initialDraft?.rows ?? [])[0]?.id ?? "")
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [scan, setScan] = useState("")
+  const [scanStatus, setScanStatus] = useState("")
   const [pickerRowId, setPickerRowId] = useState<string | null>(null)
   const [pickerQuery, setPickerQuery] = useState("")
   const [pickerMode, setPickerMode] = useState<"alias" | "variant">("alias")
-  const [cameraStatus, setCameraStatus] = useState("")
-  const [cameraEngine, setCameraEngine] = useState<"native" | "html5" | null>(null)
-  const [labelSize, setLabelSize] = useState<LabelSize>("50x30")
-  const [lastReceivedTotal, setLastReceivedTotal] = useState(0)
-  const [selectedSupplierId, setSelectedSupplierId] = useState("")
-  const [purchasePaymentMethod, setPurchasePaymentMethod] = useState<PurchasePaymentMethod>("On Account")
-  const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState("")
-  const [supplierNote, setSupplierNote] = useState("")
-  // One save at a time: a second click while saving (or after) can never receive the same delivery twice.
+  const [supplierId, setSupplierId] = useState(initialDraft?.supplierId ?? "")
+  const [payment, setPayment] = useState<PurchasePaymentMethod>((initialDraft?.paymentMethod as PurchasePaymentMethod) || "On Account")
+  const [invoice, setInvoice] = useState(initialDraft?.invoiceNumber ?? "")
+  const [note, setNote] = useState(initialDraft?.note ?? "")
   const [saving, setSaving] = useState(false)
-  const [barcodeSuggestions, setBarcodeSuggestions] = useState<Record<string, { name: string; category: string } | null>>({})
-
+  const [lastSaved, setLastSaved] = useState<SavedInfo | null>(null)
+  const [problemBanner, setProblemBanner] = useState(false)
+  const [pasteOpen, setPasteOpen] = useState(false)
+  const [pasteText, setPasteText] = useState("")
+  const [labelSize, setLabelSize] = useState<LabelSize>("50x30")
+  const [suggestions, setSuggestions] = useState<Record<string, { name: string; category: string } | null | false>>({})
+  const [cameraEngine, setCameraEngine] = useState<"native" | "html5" | null>(null)
+  const [cameraStatus, setCameraStatus] = useState("")
+  const scanRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  const scanCaptureInputRef = useRef<HTMLInputElement | null>(null)
+  const captureRef = useRef<HTMLInputElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const frameRef = useRef<number | null>(null)
   const detectorRef = useRef<BrowserBarcodeDetector | null>(null)
-  const html5ScannerRef = useRef<Html5QrcodeInstance | null>(null)
-  // Per-row barcode input refs — USB scanner fires into the active row's barcode field
-  const barcodeRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const html5Ref = useRef<Html5QrcodeInstance | null>(null)
+  const settings = getSettings()
 
   useEffect(() => {
-    let active = true
-    getProducts().then((data) => { if (active) { setProducts(data); setIsLoading(false) } })
-    const unsub = subscribeSuppliers(() => setSuppliers(getSupplierLedger()))
-    return () => { active = false; unsub(); stopCamera() }
+    let alive = true
+    getProducts().then((d) => { if (alive) { setProducts(d); setLoading(false) } })
+    const un1 = subscribeProducts((d) => { if (alive) setProducts(d) })
+    const un2 = subscribeSuppliers(() => { if (alive) setSuppliers(getSupplierLedger()) })
+    return () => { alive = false; un1(); un2(); stopCamera() }
   }, [])
 
-  // Auto-focus the barcode field of the active row so USB scanners fire into it
+  // Deep link from a product: /products/new?barcode=… starts the delivery with that product.
   useEffect(() => {
-    const el = barcodeRefs.current[activeRowId]
-    if (el) el.focus()
-  }, [activeRowId])
+    const code = params.get("barcode")
+    if (!code || loading) return
+    scanCode(code)
+    const next = new URLSearchParams(params); next.delete("barcode"); setParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading])
 
-  const categories = useMemo(() => Array.from(new Set(products.map((p) => p.category))), [products])
-  const readyRows = rows.filter(isRowReady)
-  const totalUnits = readyRows.reduce((s, r) => s + r.quantity, 0)
-  const totalCost = readyRows.reduce((s, r) => s + r.quantity * r.cost, 0)
-  const labelsToPrint = rows.reduce((s, r) => s + (r.barcode.trim() ? Math.max(0, r.labels) : 0), 0)
-  const selectedSupplier = suppliers.find((s) => s.id === selectedSupplierId)
+  // Draft: saved as you go (images excluded); removed when the delivery is empty.
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      try {
+        const begun = rows.some((r) => !isBlankRow(r))
+        if (!begun && !invoice.trim() && !note.trim()) localStorage.removeItem(RECEIVE_DRAFT_KEY)
+        else localStorage.setItem(RECEIVE_DRAFT_KEY, serializeDraft({ rows, supplierId, invoiceNumber: invoice, paymentMethod: payment, note }))
+      } catch { /* storage unavailable: nothing to persist */ }
+    }, 300)
+    return () => window.clearTimeout(id)
+  }, [rows, supplierId, invoice, payment, note])
 
-  function updateRow(id: string, patch: Partial<BatchRow>) {
-    setRows((rows) => rows.map((r) => r.id === id ? { ...r, ...patch } : r))
+  const byId = (id?: number) => (id == null ? undefined : products.find((p) => p.id === id))
+  const productFor = (r: BatchRow) => (r.mode === "matched" ? findProductByBarcode(r.barcode) ?? undefined : r.mode === "alias" ? byId(r.targetProductId) : undefined)
+  const started = rows.filter((r) => !isBlankRow(r))
+  const ready = started.filter(isRowReady)
+  const problemRows = started.filter((r) => !isRowReady(r))
+  const units = ready.reduce((s, r) => s + r.quantity, 0)
+  const cost = ready.reduce((s, r) => s + r.quantity * r.cost, 0)
+  const labelsCount = rows.reduce((s, r) => s + (r.barcode.trim() && r.name.trim() ? Math.max(0, r.labels) : 0), 0)
+  const supplier = suppliers.find((s) => s.id === supplierId)
+  const categories = useMemo(() => Array.from(new Set(products.map((p) => p.category))).filter(Boolean), [products])
+  const pasteResult = useMemo(() => parseSpreadsheetPaste(pasteText), [pasteText])
+
+  function update(id: string, patch: Partial<BatchRow>) {
+    setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch, saveError: undefined } : r)))
   }
-  function addRow(defaults?: Partial<BatchRow>) {
-    const row = createRow(defaults)
-    setRows((rows) => [...rows, row])
-    setActiveRowId(row.id)
+  function focusRow(id: string) {
+    setActiveRowId(id)
+    setExpanded((e) => new Set(e).add(id))
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(`[data-row="${id}"]`)?.scrollIntoView({ block: "center" })
+      const target = document.querySelector<HTMLElement>(`[data-row-detail="${id}"] [data-first], [data-row="${id}"] input:not([disabled])`)
+      target?.focus()
+    })
+  }
+  function scanCode(raw: string) {
+    const code = normalizeCode(raw)
+    if (!code) return
+    const product = findProductByBarcode(code) ?? undefined
+    const res = addScan(rows, code, product)
+    setRows(res.rows)
+    setActiveRowId(res.rowId)
+    setLastSaved(null)
+    if (product) setScanStatus(t(res.merged ? "inv.rcv.scan_more" : "inv.rcv.scan_matched", { name: product.name, n: formatNumber(res.rows.find((r) => r.id === res.rowId)?.quantity ?? 1) }))
+    else { setScanStatus(t("inv.rcv.scan_unknown", { code })); setExpanded((e) => new Set(e).add(res.rowId)); void lookup(code) }
+  }
+  function onScanKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter") return
+    e.preventDefault()
+    scanCode(scan)
+    setScan("")
+  }
+  // Typing or scanning into a row's own barcode field keeps the previous row behaviour.
+  function rowBarcode(row: BatchRow, value: string) {
+    const clean = normalizeCode(value)
+    const product = clean ? findProductByBarcode(clean) : undefined
+    setRows((rs) => rs.map((r) => {
+      if (r.id !== row.id) return r
+      if (product) return { ...fillRowFromBarcode(r, clean, product), quantity: r.quantity, saveError: undefined }
+      return { ...r, barcode: value, scannedBarcode: clean, mode: r.mode === "alias" || r.mode === "variant" ? r.mode : "new", saveError: undefined }
+    }))
+    if (clean && !product) void lookup(clean)
+  }
+  async function lookup(code: string) {
+    // External product-name lookup for unknown codes (unchanged behaviour: UPCitemdb, then Open *Facts).
+    if (code.length < 8 || suggestions[code] !== undefined) return
+    setSuggestions((s) => ({ ...s, [code]: null }))
+    try {
+      const res = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(code)}`, { signal: AbortSignal.timeout(6000) })
+      if (res.ok) {
+        const item = (await res.json())?.items?.[0]
+        const name = (item?.title || item?.description || "").trim()
+        if (name) { setSuggestions((s) => ({ ...s, [code]: { name, category: item.category || "General" } })); return }
+      }
+    } catch { /* next */ }
+    for (const base of ["https://world.openfoodfacts.org", "https://world.openbeautyfacts.org", "https://world.openproductsfacts.org"]) {
+      try {
+        const res = await fetch(`${base}/api/v2/product/${encodeURIComponent(code)}.json`, { signal: AbortSignal.timeout(6000) })
+        if (!res.ok) continue
+        const p = (await res.json())?.product
+        if (p?.product_name) {
+          const category = (p.categories_tags?.[0] || "").replace("en:", "").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "General"
+          setSuggestions((s) => ({ ...s, [code]: { name: p.product_name as string, category } })); return
+        }
+      } catch { /* next */ }
+    }
+    setSuggestions((s) => ({ ...s, [code]: false }))
+  }
+  function chooseNew(id: string) { update(id, { mode: "new", targetProductId: undefined, decisionConfirmed: true }) }
+  function stageAlias(id: string, target: Product) {
+    setRows((rs) => rs.map((r) => {
+      if (r.id !== id) return r
+      const alias = normalizeCode(r.scannedBarcode || r.barcode)
+      return { ...r, mode: "alias", targetProductId: target.id, decisionConfirmed: true, scannedBarcode: alias, barcode: alias, name: target.name, category: target.category, price: target.price, cost: r.cost || target.cost, accent: target.accent, saveError: undefined }
+    }))
+    setPickerRowId(null); setPickerQuery("")
+  }
+  function stageVariant(id: string, parent: Product) {
+    setRows((rs) => rs.map((r) => {
+      if (r.id !== id) return r
+      const code = normalizeCode(r.scannedBarcode || r.barcode)
+      return { ...r, mode: "variant", parentProductId: parent.id, targetProductId: undefined, decisionConfirmed: true, scannedBarcode: code, barcode: code, variantName: r.variantName ?? "", name: parent.name, category: parent.category, accent: parent.accent, saveError: undefined }
+    }))
+    setPickerRowId(null); setPickerQuery("")
+  }
+  function setVariantName(id: string, value: string) {
+    setRows((rs) => rs.map((r) => {
+      if (r.id !== id) return r
+      const parent = byId(r.parentProductId)
+      return { ...r, variantName: value, name: parent ? `${parent.name}${value.trim() ? ` - ${value.trim()}` : ""}` : r.name, saveError: undefined }
+    }))
+  }
+  function undoDecision(id: string) {
+    setRows((rs) => rs.map((r) => (r.id !== id ? r : { ...r, mode: "new", targetProductId: undefined, parentProductId: undefined, variantName: undefined, decisionConfirmed: false, barcode: r.scannedBarcode || r.barcode, name: "", category: "Pantry", price: 0, cost: 0 })))
   }
   function removeRow(id: string) {
-    setRows((rows) => {
-      const next = rows.filter((r) => r.id !== id)
-      if (next.length === 0) { const row = createRow(); setActiveRowId(row.id); return [row] }
-      if (activeRowId === id) setActiveRowId(next[0].id)
-      return next
+    setRows((rs) => { const next = rs.filter((r) => r.id !== id); return next.length ? next : [createRow()] })
+  }
+  function duplicateRow(r: BatchRow) {
+    // A duplicate is a new-product row without the barcode (a code belongs to one product only).
+    const copy = createRow({ name: r.name, category: r.category, cost: r.cost, price: r.price, quantity: r.quantity, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, labels: r.labels, accent: r.accent, decisionConfirmed: !!r.name })
+    setRows((rs) => [...rs, copy]); focusRow(copy.id)
+  }
+  function addPasted() {
+    const added = pasteResult.rows.map((p) => {
+      const product = findProductByBarcode(p.barcode)
+      return product
+        ? { ...fillRowFromBarcode(createRow(), p.barcode, product), quantity: p.quantity, cost: p.cost || product.cost, price: p.price || product.price }
+        : createRow({ name: p.name, barcode: p.barcode, scannedBarcode: p.barcode, category: p.category, quantity: p.quantity, cost: p.cost, price: p.price, decisionConfirmed: true })
     })
-  }
-  function fillRowFromBarcode(row: BatchRow, barcode: string): BatchRow {
-    return fillRowFromProduct(row, barcode, findProductByBarcode(barcode) ?? undefined)
-  }
-  function applyBarcodeToActiveRow(barcode: string) {
-    const clean = barcode.trim().replace(/\s+/g, "")
-    if (!clean) return
-    setRows((rows) => rows.map((r) => r.id !== activeRowId ? r : fillRowFromBarcode(r, clean)))
-    const product = findProductByBarcode(clean)
-    showToast(product ? `Loaded: ${product.name}` : `New barcode: ${clean}`)
-  }
-  function handleBarcodeInput(rowId: string, value: string) {
-    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, barcode: value, scannedBarcode: value }))
-    if (activeRowId !== rowId) return
-    const clean = value.trim().replace(/\s+/g, "")
-    if (!clean) return
-    const product = findProductByBarcode(clean)
-    if (product) {
-      setRows((rows) => rows.map((r) => r.id !== rowId ? r : fillRowFromBarcode(r, clean)))
-      return
-    }
-    // Unknown barcode — keep it as a new-product decision (unless the user has
-    // already staged an alias for this row) and try an external catalog lookup.
-    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, scannedBarcode: clean, mode: (r.mode === "alias" || r.mode === "variant") ? r.mode : "new" }))
-    lookupBarcode(rowId, clean)
-  }
-  // POS-RECEIVE-UX-1A decision helpers — all staged, no writes until Save Batch.
-  function chooseNewProduct(rowId: string) {
-    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, mode: "new", targetProductId: undefined, decisionConfirmed: true }))
-  }
-  function stageAlias(rowId: string, target: Product) {
-    setRows((rows) => rows.map((r) => {
-      if (r.id !== rowId) return r
-      const alias = (r.scannedBarcode || r.barcode).trim().replace(/\s+/g, "")
-      return {
-        ...r,
-        mode: "alias",
-        targetProductId: target.id,
-        decisionConfirmed: true,
-        scannedBarcode: alias,
-        barcode: alias,
-        name: target.name,
-        category: target.category,
-        price: target.price,
-        cost: target.cost,
-        accent: target.accent,
-      }
-    }))
-    setPickerRowId(null)
-    setPickerQuery("")
-    showToast(`Will add ${(target.barcode && "barcode ") || "alias "}to ${target.name} on Save`)
-  }
-  function undoDecision(rowId: string) {
-    setRows((rows) => rows.map((r) => {
-      if (r.id !== rowId) return r
-      const code = r.scannedBarcode || r.barcode
-      return { ...r, mode: "new", targetProductId: undefined, parentProductId: undefined, variantName: undefined, decisionConfirmed: false, barcode: code, name: "", category: "Pantry", price: 0, cost: 0 }
-    }))
-  }
-  // POS-RECEIVE-VARIANT-1B: stage a variant of an existing parent. The row keeps
-  // its own scanned barcode / price / cost / qty (independent). Category+accent
-  // copy from the parent for grouping; the parent's price/stock are untouched.
-  function stageVariant(rowId: string, parent: Product) {
-    setRows((rows) => rows.map((r) => {
-      if (r.id !== rowId) return r
-      const barcode = (r.scannedBarcode || r.barcode).trim().replace(/\s+/g, "")
-      return {
-        ...r,
-        mode: "variant",
-        parentProductId: parent.id,
-        targetProductId: undefined,
-        decisionConfirmed: true,
-        scannedBarcode: barcode,
-        barcode,
-        variantName: r.variantName ?? "",
-        name: parent.name,
-        category: parent.category,
-        accent: parent.accent,
-      }
-    }))
-    setPickerRowId(null)
-    setPickerQuery("")
-    showToast(`Creating a variant of ${parent.name}`)
-  }
-  function setVariantName(rowId: string, value: string) {
-    setRows((rows) => rows.map((r) => {
-      if (r.id !== rowId) return r
-      const parent = r.parentProductId != null ? products.find((p) => p.id === r.parentProductId) : undefined
-      const name = parent ? `${parent.name}${value.trim() ? ` - ${value.trim()}` : ""}` : r.name
-      return { ...r, variantName: value, name }
-    }))
-  }
-  function skipRowBarcode(rowId: string) {
-    setRows((rows) => rows.map((r) => r.id !== rowId ? r : { ...r, barcode: "", scannedBarcode: "", mode: "new", targetProductId: undefined, parentProductId: undefined, variantName: undefined, decisionConfirmed: false, name: "", category: "", price: 0, cost: 0 }))
-  }
-  // POS-PRODUCT-IMAGE-1: stage an optional image on a NEW-product row (compressed,
-  // never written until Save Batch). Existing products' images are never touched.
-  function handleRowImageFile(rowId: string, file: File) {
-    fileToCompressedDataUrl(file).then((dataUrl) => updateRow(rowId, { image: dataUrl })).catch(() => undefined)
+    setRows((rs) => [...rs.filter((r) => !isBlankRow(r)), ...added])
+    showToast(pasteResult.rejected.length ? t("inv.rcv.paste_partial", { n: added.length, r: pasteResult.rejected.length }) : t("inv.rcv.paste_done", { n: added.length }), pasteResult.rejected.length ? "error" : "success")
+    setPasteOpen(false); setPasteText("")
   }
 
-  async function lookupBarcode(rowId: string, barcode: string) {
-    if (barcode.length < 8) return
-    if (barcodeSuggestions[barcode] !== undefined) {
-      setBarcodeSuggestions((prev) => ({ ...prev, [barcode]: prev[barcode] }))
-      return
-    }
-    setBarcodeSuggestions((prev) => ({ ...prev, [barcode]: null }))
-
-    // 1. UPCitemdb — 707M products, free tier (100/day), no key needed
-    try {
-      const res = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(barcode)}`)
-      if (res.ok) {
-        const data = await res.json()
-        if (data?.items?.[0]) {
-          const item = data.items[0]
-          const suggestion = {
-            name: (item.title || item.description || "").trim(),
-            category: (item.category || "General"),
-          }
-          if (suggestion.name) {
-            setBarcodeSuggestions((prev) => ({ ...prev, [barcode]: suggestion }))
-            return
-          }
-        }
-      }
-    } catch { /* try next */ }
-
-    // 2. Open Food Facts — food, beverages
-    // 3. Open Beauty Facts — cosmetics, personal care
-    // 4. Open Products Facts — general consumer goods
-    const fallbacks = [
-      { url: "https://world.openfoodfacts.org" },
-      { url: "https://world.openbeautyfacts.org" },
-      { url: "https://world.openproductsfacts.org" },
-    ]
-
-    for (const db of fallbacks) {
-      try {
-        const res = await fetch(`${db.url}/api/v2/product/${encodeURIComponent(barcode)}.json`)
-        if (!res.ok) continue
-        const data = await res.json()
-        if (data?.product?.product_name) {
-          const suggestion = {
-            name: data.product.product_name as string,
-            category: (data.product.categories_tags?.[0] || "").replace("en:", "").replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "General",
-          }
-          setBarcodeSuggestions((prev) => ({ ...prev, [barcode]: suggestion }))
-          return
-        }
-      } catch { /* try next */ }
-    }
-  }
-
-  function applySuggestion(rowId: string, barcode: string) {
-    const suggestion = barcodeSuggestions[barcode]
-    if (!suggestion) return
-    updateRow(rowId, {
-      name: suggestion.name,
-      category: suggestion.category,
-      barcode,
-    })
-    setBarcodeSuggestions((prev) => { const next = { ...prev }; delete next[barcode]; return next })
-  }
-  function generateBarcodeForRow(id: string) {
-    updateRow(id, { barcode: generateProductBarcode() })
-    setActiveRowId(id)
-    showToast(t("pos.receive.barcode_generated"))
-  }
-  function duplicateRow(row: BatchRow) {
-    // A duplicate starts fresh as a new-product row (no barcode/alias carried).
-    addRow({ name: row.name, category: row.category, cost: row.cost, price: row.price, quantity: row.quantity, reorderPoint: row.reorderPoint, reorderQuantity: row.reorderQuantity, expiryDate: row.expiryDate, labels: row.labels, accent: row.accent, barcode: "", scannedBarcode: "", mode: "new", targetProductId: undefined, parentProductId: undefined, variantName: undefined, decisionConfirmed: false })
-  }
-  function saveBatch() {
+  function save(readyOnly = false) {
     if (saving) return
-    const startedRows = rows.filter((r) => !isBlankRow(r))
-    const unready = startedRows.filter((r) => !isRowReady(r))
-    if (readyRows.length === 0) {
+    if (ready.length === 0) {
       showToast(t("pos.receive.no_ready_rows"), "error")
-      if (unready[0]) setActiveRowId(unready[0].id)
+      if (problemRows[0]) focusRow(problemRows[0].id)
       return
     }
-    const sent = readyRows
-    const supplierId = selectedSupplier?.id
+    // Fixable problems never disable Save: Save takes the user to the first one, unless they chose
+    // to save only the ready rows (the others stay in the grid).
+    if (problemRows.length > 0 && !readyOnly) { setProblemBanner(true); focusRow(problemRows[0].id); return }
+    const sent = ready
+    const sentUnits = units
+    const sentCost = cost
+    const labels = sent.filter((r) => r.barcode.trim() && r.name.trim() && r.labels > 0).map((r) => ({ name: r.name, price: r.price, barcode: r.mode === "alias" ? r.scannedBarcode : r.barcode, n: r.labels }))
     setSaving(true)
-    receiveAndRecord(
-      sent.map(toReceiveEntry),
-      supplierId ? {
-        supplierId,
-        supplierName: selectedSupplier!.name,
-        invoiceNumber: supplierInvoiceNumber,
-        paymentMethod: purchasePaymentMethod,
-        note: supplierNote,
-      } : undefined
-    ).then(summary => {
-      // Accepted rows leave the grid so pressing Save again cannot receive them twice;
-      // rejected rows stay with their reason; rows that were not ready stay as they were.
-      const after = applySaveResult(rows, sent, summary.errors)
-      setRows(after.rows)
-      setActiveRowId(after.rows[0].id)
-      getProducts().then(setProducts)
-      setLastReceivedTotal(totalUnits)
-      setSuppliers(getSupplierLedger())
-      recordAuditEvent({ action: "inventory.receive", entity: "inventory", summary: `${totalUnits} units received.`, metadata: { rows: sent.length, totalUnits, totalCost, poNumber: summary.poNumber } })
-      if (summary.errors.length > 0) {
-        showToast(`${summary.acceptedCount} products · ${summary.batchesCreated} batches · ${summary.rejectedCount} rejected`, "error")
-        for (const err of summary.errors.slice(0, 3)) showToast(err, "error")
-      } else {
-        const parts = [`${summary.productsCreated} new`, `${summary.productsUpdated} updated`, `${summary.batchesCreated} batches`]
-        if (summary.poNumber) parts.push(`PO ${summary.poNumber}`)
-        if (summary.paymentRecorded) parts.push("paid")
-        showToast(parts.join(" · "), "success")
-      }
-      if (unready.length > 0) showToast(t("pos.receive.rows_not_saved", { n: unready.length }), "error")
-    }).catch((err) => {
-      // Nothing was received (the service threw before or while writing): keep every row.
-      showToast(String((err as Error)?.message ?? err), "error")
-    }).finally(() => setSaving(false))
+    receiveAndRecord(sent.map(toReceiveEntry), supplier ? { supplierId: supplier.id, supplierName: supplier.name, invoiceNumber: invoice, paymentMethod: payment, note } : undefined)
+      .then((summary) => {
+        const after = applySaveResult(rows, sent, summary.errors)
+        setRows(after.rows)
+        setProblemBanner(false)
+        setDraftRestored(false)
+        getProducts().then(setProducts)
+        setSuppliers(getSupplierLedger())
+        recordAuditEvent({ action: "inventory.receive", entity: "inventory", summary: `${sentUnits} units received.`, metadata: { rows: sent.length, totalUnits: sentUnits, totalCost: sentCost, poNumber: summary.poNumber } })
+        setLastSaved({ ...summary, units: sentUnits, labels })
+        if (after.rows.every(isBlankRow)) { setInvoice(""); setNote("") }
+        for (const err of after.unmatchedErrors.slice(0, 3)) showToast(err, "error")
+        showToast(summary.errors.length ? t("inv.rcv.saved_partial", { ok: summary.acceptedCount, bad: summary.rejectedCount }) : t("inv.rcv.saved", { units: formatNumber(sentUnits) }), summary.errors.length ? "error" : "success")
+        window.requestAnimationFrame(() => scanRef.current?.focus())
+      })
+      .catch((err) => showToast(String((err as Error)?.message ?? err), "error")) // nothing received: every row stays
+      .finally(() => setSaving(false))
   }
-  function pasteFromSpreadsheet() {
-    const text = prompt("Paste spreadsheet data (Name, Barcode, Category, Qty, Cost, Price):")
-    if (!text?.trim()) return
-    const { rows: parsed, rejected } = parseSpreadsheetPaste(text)
-    parsed.forEach(r => {
-      const product = findProductByBarcode(r.barcode)
-      const row = product ? { ...fillRowFromBarcode(createRow(), r.barcode), quantity: r.quantity, cost: r.cost || product.cost, price: r.price || product.price } : null
-      addRow(row ?? { name: r.name, barcode: r.barcode, scannedBarcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, decisionConfirmed: true })
-    })
-    if (rejected.length > 0) {
-      showToast(`${parsed.length} rows added · ${rejected.length} rejected: ${rejected.map(r => `Row ${r.index}: ${r.reason}`).join("; ")}`, "error")
-    } else {
-      showToast(`${parsed.length} rows imported.`)
-    }
-    if (parsed.length > 0) setActiveRowId("")
+  function clearDelivery() {
+    setRows([createRow()]); setInvoice(""); setNote(""); setLastSaved(null); setProblemBanner(false); setDraftRestored(false)
+    try { localStorage.removeItem(RECEIVE_DRAFT_KEY) } catch { /* ignore */ }
+    showToast(t("pos.receive.batch_cleared"))
   }
-  function resetBatch() {
-    const row = createRow()
-    setRows([row]); setActiveRowId(row.id); setLastReceivedTotal(0)
-    setSupplierInvoiceNumber(""); setSupplierNote(""); showToast(t("pos.receive.batch_cleared"))
-  }
-
-  async function startCamera() {
-    if (cameraEngine) { stopCamera(); setCameraStatus(""); return }
-    const issue = getLiveCameraIssue()
-    if (issue) { setCameraStatus(issue); scanCaptureInputRef.current?.click(); return }
-    try {
-      const detector = await createBarcodeDetector()
-      if (!detector) {
-        setCameraEngine("html5"); setCameraStatus("Starting…")
-        await new Promise<void>((r) => window.requestAnimationFrame(() => r()))
-        const scanner = await createHtml5Qrcode(RECEIVE_CAMERA_READER_ID)
-        if (!scanner) { stopCamera(); setCameraStatus(t("pos.receive.camera_engine_failed")); return }
-        html5ScannerRef.current = scanner
-        await scanner.start({ facingMode: "environment" }, { fps: 12, qrbox: { width: 260, height: 160 }, formatsToSupport: getHtml5QrcodeFormatCodes() }, (text) => { applyBarcodeToActiveRow(text); setCameraStatus(""); stopCamera() })
-        setCameraStatus("Camera ready — point at barcode"); return
-      }
-      const stream = await navigator.mediaDevices.getUserMedia(getPreferredCameraConstraints())
-      streamRef.current = stream
-      if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.muted = true; videoRef.current.setAttribute("playsinline", "true"); await videoRef.current.play() }
-      detectorRef.current = detector; setCameraEngine("native"); setCameraStatus("Camera ready"); void scanCameraFrame()
-    } catch (err) { stopCamera(); setCameraStatus(getCameraErrorMessage(err)) }
-  }
-  async function handleScanCapture(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.currentTarget.files?.[0]; e.currentTarget.value = ""
-    if (!file) return
-    try { const bc = await detectBarcodeFromImageFile(file); if (!bc) { showToast("No barcode found", "error"); return } applyBarcodeToActiveRow(bc) }
-    catch { showToast("Scan failed", "error") }
-  }
-  function stopCamera() {
-    if (frameRef.current) { window.cancelAnimationFrame(frameRef.current); frameRef.current = null }
-    streamRef.current?.getTracks().forEach((t) => t.stop()); streamRef.current = null; detectorRef.current = null
-    const s = html5ScannerRef.current; html5ScannerRef.current = null
-    if (s) void s.stop().catch(() => undefined).finally(() => s.clear())
-    if (videoRef.current) videoRef.current.srcObject = null
-    setCameraEngine(null)
-  }
-  async function scanCameraFrame() {
-    const d = detectorRef.current; const v = videoRef.current
-    if (!d || !v) return
-    try { const r = await d.detect(v); const bc = r[0]?.rawValue; if (bc) { applyBarcodeToActiveRow(bc); setCameraStatus(""); stopCamera(); return } }
-    catch { }
-    frameRef.current = window.requestAnimationFrame(() => void scanCameraFrame())
-  }
-  function printLabels() {
-    const labels = rows.filter((r) => r.barcode.trim() && r.name.trim()).flatMap((r) => Array.from({ length: Math.max(0, r.labels) }, () => ({ name: r.name, price: r.price, barcode: r.barcode })))
-    if (labels.length === 0) { showToast(t("pos.receive.print_labels_incomplete"), "error"); return }
-    const size = labelSizes[labelSize]
+  function printLabels(list: Array<{ name: string; price: number; barcode: string; n: number }>) {
+    const labels = list.flatMap((l) => Array.from({ length: Math.max(0, l.n) }, () => l))
+    if (!labels.length) { showToast(t("pos.receive.print_labels_incomplete"), "error"); return }
+    const size = LABEL_SIZES[labelSize]
     const html = labels.map((l) => `<section class="label"><div class="name">${escapeHtml(l.name)}</div><div class="barcode">${renderCode128Svg(l.barcode, 54, 2)}</div><div class="meta"><span>${escapeHtml(l.barcode)}</span><strong>${escapeHtml(formatCurrency(l.price))}</strong></div></section>`).join("")
     const win = window.open("", "print-labels")
     if (!win) { showToast(t("pos.receive.popup_blocked"), "error"); return }
     win.document.write(`<!doctype html><html><head><style>@page{size:${size.width} ${size.height};margin:0}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#000}.label{width:${size.width};height:${size.height};page-break-after:always;padding:2mm;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}.name{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.barcode{height:14mm}.barcode svg{width:100%;height:100%;display:block}.meta{display:flex;align-items:center;justify-content:space-between;font-size:8px;gap:2mm}</style></head><body>${html}</body></html>`)
     win.document.close(); win.focus(); window.setTimeout(() => win.print(), 250)
-    showToast(`${labels.length} labels sent to printer.`)
+    showToast(t("inv.rcv.labels_sent", { n: labels.length }))
   }
 
-  if (isLoading) return (
-    <main className="flex min-h-0 flex-1 items-center justify-center bg-page">
-      <Spinner label={t("pos.loading_products")} />
-    </main>
-  )
+  // Camera: a scan goes into the delivery like the scan field (unchanged engines).
+  async function startCamera() {
+    if (cameraEngine) { stopCamera(); setCameraStatus(""); return }
+    const issue = getLiveCameraIssue()
+    if (issue) { setCameraStatus(issue); captureRef.current?.click(); return }
+    try {
+      const detector = await createBarcodeDetector()
+      if (!detector) {
+        setCameraEngine("html5"); setCameraStatus(t("pos.receive.camera_ready"))
+        await new Promise<void>((r) => window.requestAnimationFrame(() => r()))
+        const scanner = await createHtml5Qrcode(CAMERA_READER_ID)
+        if (!scanner) { stopCamera(); setCameraStatus(t("pos.receive.camera_engine_failed")); return }
+        html5Ref.current = scanner
+        await scanner.start({ facingMode: "environment" }, { fps: 12, qrbox: { width: 260, height: 160 }, formatsToSupport: getHtml5QrcodeFormatCodes() }, (text) => { scanCode(text); setCameraStatus(""); stopCamera() })
+        return
+      }
+      const stream = await navigator.mediaDevices.getUserMedia(getPreferredCameraConstraints())
+      streamRef.current = stream
+      if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.muted = true; videoRef.current.setAttribute("playsinline", "true"); await videoRef.current.play() }
+      detectorRef.current = detector; setCameraEngine("native"); setCameraStatus(t("pos.receive.camera_ready")); void cameraFrame()
+    } catch (err) { stopCamera(); setCameraStatus(getCameraErrorMessage(err)) }
+  }
+  async function onCapture(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.currentTarget.files?.[0]; e.currentTarget.value = ""
+    if (!file) return
+    try { const bc = await detectBarcodeFromImageFile(file); if (!bc) { showToast(t("pos.receive.no_barcode_found"), "error"); return } scanCode(bc) }
+    catch { showToast(t("pos.receive.scan_failed"), "error") }
+  }
+  function stopCamera() {
+    if (frameRef.current) { window.cancelAnimationFrame(frameRef.current); frameRef.current = null }
+    streamRef.current?.getTracks().forEach((tr) => tr.stop()); streamRef.current = null; detectorRef.current = null
+    const s = html5Ref.current; html5Ref.current = null
+    if (s) void s.stop().catch(() => undefined).finally(() => s.clear())
+    if (videoRef.current) videoRef.current.srcObject = null
+    setCameraEngine(null)
+  }
+  async function cameraFrame() {
+    const d = detectorRef.current; const v = videoRef.current
+    if (!d || !v) return
+    try { const r = await d.detect(v); const bc = r[0]?.rawValue; if (bc) { scanCode(bc); setCameraStatus(""); stopCamera(); return } } catch { /* keep scanning */ }
+    frameRef.current = window.requestAnimationFrame(() => void cameraFrame())
+  }
+
+  function rowState(r: BatchRow): { tone: Tone; text: string } {
+    if (r.saveError) return { tone: "err", text: t("inv.rcv.not_saved", { reason: r.saveError }) }
+    const { problems } = rowProblems(r, productFor(r))
+    if (problems.length) return { tone: "warn", text: problems.map((p) => t(PROBLEM_KEY[p])).join(" · ") }
+    if (r.mode === "matched") return { tone: "ok", text: t("inv.rcv.s.matched", { code: r.scannedBarcode || r.barcode }) }
+    if (r.mode === "alias") return { tone: "info", text: t("inv.rcv.s.alias", { name: byId(r.targetProductId)?.name ?? "" }) }
+    if (r.mode === "variant") return { tone: "info", text: t("inv.rcv.s.variant", { name: byId(r.parentProductId)?.name ?? "" }) }
+    return { tone: "info", text: t("inv.rcv.s.new") }
+  }
+
+  if (loading) return <main className="mg2 mg2-bo min-h-0 flex-1 overflow-y-auto"><div className="mg2-wrap"><SkeletonRows /></div></main>
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-page">
-      <div className="mx-auto max-w-7xl p-4 sm:p-6 space-y-5">
+    <main className="mg2 mg2-bo min-h-0 flex-1 overflow-y-auto">
+      <div className="mg2-wrap">
+        <PageHeader eyebrow={t("inv.eyebrow")} title={t("inv.rcv.title")} actions={
+          <button type="button" className="mg2-btn mg2-btn-ghost" onClick={clearDelivery} disabled={started.length === 0 && !invoice}><RotateCcw size={16} />{t("inv.rcv.clear")}</button>
+        } />
+        <StockNav counts={{ receiving: started.length || undefined }} />
 
-        {/* ── Page header ───────────────────────────────── */}
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--text)" }}>
-              Receive Inventory
-            </h1>
-            <p className="text-[13px] mt-0.5" style={{ color: "var(--text-3)" }}>
-              Scan or enter products to add to stock
-            </p>
+        {draftRestored && started.length > 0 && (
+          <div className="mg2-banner mg2-t-info" role="status" style={{ marginBottom: 12 }}>
+            <span style={{ flex: 1 }}>{t("inv.rcv.draft_restored", { n: started.length })}</span>
+            <button type="button" className="mg2-btn" onClick={() => setDraftRestored(false)}>{t("inv.rcv.keep")}</button>
+            <button type="button" className="mg2-btn mg2-btn-ghost" onClick={clearDelivery}>{t("inv.rcv.discard")}</button>
           </div>
+        )}
+        {lastSaved && (
+          <div className="mg2-banner mg2-t-ok" role="status" style={{ marginBottom: 12 }}>
+            <CheckCircle2 size={18} aria-hidden="true" />
+            <span style={{ flex: 1, color: "var(--text)" }}>{t("inv.rcv.saved_summary", { units: formatNumber(lastSaved.units), created: lastSaved.productsCreated, updated: lastSaved.productsUpdated, lots: lastSaved.batchesCreated })}{lastSaved.poNumber ? ` · ${lastSaved.poNumber}` : ""}{lastSaved.paymentRecorded ? ` · ${t("inv.rcv.paid")}` : ""}</span>
+            {lastSaved.labels.length > 0 && <button type="button" className="mg2-btn" onClick={() => printLabels(lastSaved.labels)}><Printer size={16} />{t("inv.rcv.print_saved_labels")}</button>}
+            <Link to="/stock" className="mg2-btn" style={{ textDecoration: "none" }}>{t("inv.rcv.view_lots")}</Link>
+          </div>
+        )}
 
-          {/* KPI chips */}
-          <div className="flex flex-wrap items-center gap-2">
-            {[
-              { label: "Ready",  value: readyRows.length,         accent: readyRows.length > 0 },
-              { label: "Units",  value: formatNumber(totalUnits),  accent: false },
-              { label: "Cost",   value: formatCurrency(totalCost), accent: false },
-              { label: "Labels", value: formatNumber(labelsToPrint), accent: false },
-            ].map((k) => (
-              <div
-                key={k.label}
-                className="rounded-xl px-3 py-1.5"
-                style={k.accent
-                  ? { background: "var(--brand-soft)", border: "1px solid var(--brand-border)" }
-                  : { background: "var(--surface)", border: "1px solid var(--border)" }
-                }
-              >
-                <span className="text-[10px] font-semibold uppercase tracking-wide me-1.5" style={{ color: "var(--text-3)" }}>{k.label}</span>
-                <span className="text-[14px] font-bold tabular-nums" style={{ color: k.accent ? "var(--brand)" : "var(--text)" }}>{k.value}</span>
+        <div className="mg2-layout">
+          <section className="mg2-card" aria-label={t("inv.rcv.delivery")}>
+            <div style={{ padding: 12, display: "flex", gap: 8, flexWrap: "wrap", borderBottom: "1px solid var(--border)" }}>
+              <div className="mg2-search" style={{ maxWidth: "none", flex: "1 1 320px" }}>
+                <ScanLine size={18} aria-hidden="true" />
+                <input ref={scanRef} className="mg2-input" style={{ minHeight: 48, fontSize: 16, borderColor: "var(--brand-border)" }} value={scan} onChange={(e) => setScan(e.target.value)} onKeyDown={onScanKey}
+                  placeholder={t("inv.rcv.scan")} aria-label={t("inv.rcv.scan")} autoFocus />
               </div>
-            ))}
-
-            <div className="flex gap-2 ms-1">
-              <button type="button" onClick={() => addRow()}
-                aria-label="Add receiving row"
-                className="btn btn-default h-9 gap-1.5 text-[13px]">
-                <Plus size={14} /> Add Row
-              </button>
-              <button type="button" onClick={pasteFromSpreadsheet}
-                aria-label="Paste rows from spreadsheet"
-                className="btn btn-default h-9 gap-1.5 text-[13px]" title="Paste from spreadsheet">
-                Paste
-              </button>
-              <button type="button" onClick={saveBatch} disabled={readyRows.length === 0 || saving} aria-busy={saving || undefined}
-                aria-label="Save and receive all ready rows"
-                className="btn btn-primary h-9 gap-1.5 text-[13px] disabled:opacity-40">
-                <CheckCircle2 size={14} /> Save Batch
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-
-          {/* ── Left: Product rows ──────────────────────── */}
-          <section className="space-y-3">
-
-            {rows.map((row, idx) => {
-              const active = activeRowId === row.id
-              const ready = isRowReady(row)
-              const matched = row.mode === "matched" && row.barcode ? findProductByBarcode(row.barcode) : null
-              const aliasTarget = row.mode === "alias" && row.targetProductId != null ? products.find((p) => p.id === row.targetProductId) : undefined
-              const variantParent = row.mode === "variant" && row.parentProductId != null ? products.find((p) => p.id === row.parentProductId) : undefined
-              const scannedAlias = matched && row.scannedBarcode && row.scannedBarcode !== matched.barcode ? row.scannedBarcode : ""
-              const pickerResults = pickerRowId === row.id ? products.filter((p) => !p.archived && productMatchesSearch(p, pickerQuery)).slice(0, 20) : []
-              // POS-RECEIVE-UX-1C: a new-product row whose name matches an existing
-              // active product → nudge to add the barcode to it instead (soft).
-              const nameMatches = row.mode === "new" && row.name.trim().length > 0 ? findProductsByExactName(row.name, products) : []
-              const showNameNudge = nameMatches.length > 0 && !row.decisionConfirmed
-
-              return (
-                <div
-                  key={row.id}
-                  className="rounded-2xl overflow-hidden transition-all duration-150"
-                  style={{
-                    background: "var(--surface)",
-                    border: "1.5px solid",
-                    borderColor: active ? "var(--brand)" : "var(--border)",
-                    boxShadow: active ? "0 0 0 3px var(--brand-soft)" : "var(--shadow-xs)",
-                  }}
-                  onClick={() => setActiveRowId(row.id)}
-                >
-                  {/* Row header */}
-                  <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                    {/* Row number / ready indicator */}
-                    <span
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-                      style={ready
-                        ? { background: "var(--brand-soft)", color: "var(--brand)" }
-                        : { background: "var(--surface-2)", color: "var(--text-3)" }
-                      }
-                    >
-                      {ready ? "✓" : idx + 1}
-                    </span>
-
-                    {/* Barcode input — USB scanner fires here when row is active */}
-                    <div className="flex min-w-0 flex-1 items-center gap-2">
-                      <Barcode size={14} className="shrink-0" style={{ color: "var(--text-3)" }} />
-                      <input
-                        ref={(el) => { barcodeRefs.current[row.id] = el }}
-                        value={row.barcode}
-                        onChange={(e) => handleBarcodeInput(row.id, e.target.value)}
-                        onFocus={() => setActiveRowId(row.id)}
-                        placeholder="Barcode — scan or type"
-                        className="min-w-0 flex-1 bg-transparent text-[13px] font-mono outline-none placeholder:text-[var(--text-3)]"
-                        style={{ color: "var(--text)" }}
-                      />
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); generateBarcodeForRow(row.id) }}
-                        className="shrink-0 flex items-center gap-1 h-7 rounded-lg border px-2.5 text-[11px] font-semibold transition hover:opacity-80"
-                        style={{ borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface-2)" }}
-                        title="Generate barcode"
-                        aria-label="Generate barcode for row"
-                      >
-                        <Barcode size={11} /> Gen
-                      </button>
-                      {/* Camera scan button — for this specific row */}
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setActiveRowId(row.id); startCamera() }}
-                        className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg border transition"
-                        style={active && cameraEngine
-                          ? { background: "rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.28)", color: "var(--danger)" }
-                          : { borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface-2)" }
-                        }
-                        title="Scan via camera"
-                        aria-label="Scan barcode via camera"
-                      >
-                        <Camera size={11} />
-                      </button>
-                    </div>
-
-                    {/* Row actions */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button type="button" onClick={(e) => { e.stopPropagation(); duplicateRow(row) }}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border transition hover:opacity-80"
-                        style={{ borderColor: "var(--border)", color: "var(--text-3)" }} title="Duplicate"
-                        aria-label="Duplicate row"
-                      >
-                        <Copy size={12} />                      
-                      </button>
-                      <button type="button" onClick={(e) => { e.stopPropagation(); removeRow(row.id) }}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
-                        style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--rose)"; e.currentTarget.style.borderColor = "var(--rose)" }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-3)"; e.currentTarget.style.borderColor = "var(--border)" }}
-                        title="Remove"
-                        aria-label="Remove row">
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Match / decision banner */}
-                  {matched ? (
-                    <div className="flex flex-wrap items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
-                      <CheckCircle2 size={12} />
-                      Restocking: <strong className="ms-0.5">{matched.name}</strong>
-                      {scannedAlias && <span className="opacity-70">· scanned alias {scannedAlias}</span>}
-                      <span className="ms-auto opacity-60">Stock {matched.stock} → {matched.stock + row.quantity}</span>
-                    </div>
-                  ) : aliasTarget ? (
-                    <div className="flex flex-wrap items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
-                      <CheckCircle2 size={12} />
-                      Add barcode <strong className="font-mono">{row.scannedBarcode}</strong> to <strong>{aliasTarget.name}</strong>
-                      <span className="opacity-60">Stock {aliasTarget.stock} → {aliasTarget.stock + row.quantity}</span>
-                      <button type="button" onClick={(e) => { e.stopPropagation(); undoDecision(row.id) }}
-                        className="ms-auto underline opacity-70 hover:opacity-100">Undo</button>
-                    </div>
-                  ) : variantParent ? (
-                    <div className="flex flex-col gap-1.5 px-4 py-2 text-[11px] font-semibold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <CheckCircle2 size={12} />
-                        Creating variant of <strong>{variantParent.name}</strong>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); undoDecision(row.id) }}
-                          className="ms-auto underline opacity-70 hover:opacity-100">Undo</button>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="shrink-0 uppercase tracking-wide" style={{ fontSize: 10 }}>Variant name</span>
-                        <input
-                          value={row.variantName ?? ""}
-                          onChange={(e) => setVariantName(row.id, e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                          placeholder="e.g. 1L, 6-pack, Large"
-                          className="input flex-1 text-[12px]" style={{ height: 28 }}
-                        />
-                      </div>
-                      <span className="font-normal opacity-70" style={{ fontSize: 10 }}>
-                        Variant has its own price and stock. Barcode <span className="font-mono">{row.scannedBarcode}</span>.
-                      </span>
-                    </div>
-                  ) : row.barcode && (row.decisionConfirmed || row.name.trim().length > 0) ? (
-                    <div className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold" style={{ background: "var(--amber-soft)", color: "var(--amber)" }}>
-                      <PackagePlus size={12} /> New product
-                    </div>
-                  ) : null}
-
-                  {/* Unknown-barcode decision strip — explicit choice, staged only.
-                      Typing a name is itself the "new product" choice, so the strip
-                      steps aside once a name exists or the choice is confirmed. */}
-                  {row.mode === "new" && row.barcode.trim().length > 0 && !row.decisionConfirmed && !row.name.trim() && (
-                    <div className="flex flex-wrap items-center gap-2 px-4 py-2 text-[11px]" style={{ background: "var(--surface-2)", borderTop: "1px solid var(--border)" }}>
-                      <span className="font-semibold shrink-0" style={{ color: "var(--text-2)" }}>Unknown barcode — choose:</span>
-                      <div className="flex flex-wrap items-center gap-1.5 ms-auto">
-                        <button type="button" onClick={(e) => { e.stopPropagation(); chooseNewProduct(row.id) }}
-                          className="btn btn-primary h-7 gap-1 text-[11px]"><PackagePlus size={11} /> New product</button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setActiveRowId(row.id); setPickerMode("alias"); setPickerRowId(row.id); setPickerQuery("") }}
-                          className="btn btn-default h-7 gap-1 text-[11px]">↳ Add to existing</button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setActiveRowId(row.id); setPickerMode("variant"); setPickerRowId(row.id); setPickerQuery("") }}
-                          className="btn btn-default h-7 gap-1 text-[11px]">⧉ Create variant</button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); skipRowBarcode(row.id) }}
-                          className="btn btn-ghost h-7 text-[11px]">Skip</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Name-collision nudge — soft guardrail against duplicate products */}
-                  {showNameNudge && (
-                    <div className="flex flex-wrap items-center gap-2 px-4 py-2 text-[11px]" style={{ background: "var(--amber-soft)", borderTop: "1px solid var(--border)", color: "var(--amber)" }}>
-                      <span className="font-semibold">
-                        “{nameMatches[0].name}” already exists
-                        {" "}({nameMatches[0].barcode ? `barcode ${nameMatches[0].barcode}, ` : ""}{formatCurrency(nameMatches[0].price)}, stock {formatNumber(nameMatches[0].stock)})
-                        {nameMatches.length > 1 ? ` +${nameMatches.length - 1} more` : ""} — add this barcode to it?
-                      </span>
-                      <div className="flex items-center gap-1.5 ms-auto">
-                        <button type="button"
-                          onClick={(e) => { e.stopPropagation(); if (nameMatches.length === 1) { stageAlias(row.id, nameMatches[0]) } else { setActiveRowId(row.id); setPickerMode("alias"); setPickerRowId(row.id); setPickerQuery(row.name) } }}
-                          className="btn btn-primary h-7 text-[11px]">Add barcode to existing</button>
-                        <button type="button"
-                          onClick={(e) => { e.stopPropagation(); chooseNewProduct(row.id) }}
-                          className="btn btn-default h-7 text-[11px]">Keep as new product</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Searchable "add to existing product" picker */}
-                  {pickerRowId === row.id && (
-                    <div className="px-4 py-2 space-y-1.5" style={{ background: "var(--surface-2)", borderTop: "1px solid var(--border)" }}
-                      onClick={(e) => e.stopPropagation()}>
-                      <span className="block text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
-                        {pickerMode === "variant" ? "Choose the parent product" : "Add barcode to which product?"}
-                      </span>
-                      <input
-                        autoFocus
-                        value={pickerQuery}
-                        onChange={(e) => setPickerQuery(e.target.value)}
-                        placeholder="Search product by name or barcode…"
-                        className="input w-full text-[12px]" style={{ height: 32 }}
-                      />
-                      <div className="max-h-48 overflow-y-auto rounded-lg border" style={{ borderColor: "var(--border)" }}>
-                        {pickerResults.length === 0 ? (
-                          <div className="px-3 py-4 text-center text-[11px]" style={{ color: "var(--text-3)" }}>
-                            {pickerQuery.trim() ? "No matching products." : "Type to search your products…"}
-                          </div>
-                        ) : (
-                          pickerResults.map((p) => (
-                            <button key={p.id} type="button" onClick={(e) => { e.stopPropagation(); pickerMode === "variant" ? stageVariant(row.id, p) : stageAlias(row.id, p) }}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-start transition hover:opacity-80"
-                              style={{ borderBottom: "1px solid var(--border)" }}>
-                              <span className="font-semibold text-[12px] truncate" style={{ color: "var(--text)" }}>{p.name}</span>
-                              <span className="ms-auto shrink-0 text-[10px] font-mono" style={{ color: "var(--text-3)" }}>
-                                {p.barcode || "no barcode"} · {formatCurrency(p.price)} · stock {formatNumber(p.stock)}
-                              </span>
-                            </button>
-                          ))
-                        )}
-                      </div>
-                      <button type="button" onClick={(e) => { e.stopPropagation(); setPickerRowId(null); setPickerQuery("") }}
-                        className="btn btn-ghost h-7 text-[11px]">Cancel</button>
-                    </div>
-                  )}
-
-                  {/* Open Food Facts suggestion (new-product accelerator) */}
-                  {row.mode === "new" && barcodeSuggestions[row.barcode] && !row.name && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); applySuggestion(row.id, row.barcode) }}
-                      className="flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold transition hover:opacity-80 w-full text-start"
-                      style={{ background: "rgba(59,130,246,0.08)", color: "var(--blue)" }}
-                    >
-                      <Search size={12} className="shrink-0" />
-                      <span className="truncate">
-                        <strong className="text-white">{barcodeSuggestions[row.barcode]!.name}</strong>
-                      </span>
-                      <span className="ms-auto shrink-0 text-[10px] opacity-60">Tap to use</span>
-                    </button>
-                  )}
-
-                  {row.mode === "new" && barcodeSuggestions[row.barcode] === null && row.barcode.length >= 8 && (
-                    <div className="flex items-center gap-2 px-4 py-1 text-[10px] opacity-40" style={{ color: "var(--text-3)" }}>
-                      <LoaderCircle size={10} className="animate-spin shrink-0" />
-                      Looking up barcode...
-                    </div>
-                  )}
-
-                  {/* Camera preview — only on active row */}
-                  {active && cameraEngine && (
-                    <div className="px-4 py-2">
-                      <div className="relative overflow-hidden rounded-xl" style={{ border: "1.5px solid var(--brand)", boxShadow: "0 0 0 3px var(--brand-soft)" }}>
-                        <video ref={videoRef} muted playsInline className={`aspect-video w-full bg-zinc-950 object-cover ${cameraEngine === "native" ? "block" : "hidden"}`} />
-                        <div id={RECEIVE_CAMERA_READER_ID} className={`overflow-hidden bg-zinc-950 ${cameraEngine === "html5" ? "block" : "hidden"}`} />
-                        {cameraStatus && (
-                          <div className="absolute bottom-2 left-2 right-2 rounded-lg bg-black/60 px-2 py-1 text-center text-[11px] font-semibold text-white">
-                            {cameraStatus}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Fields grid */}
-                  <div className="grid grid-cols-2 gap-3 px-4 py-3 sm:grid-cols-3 lg:grid-cols-6">
-                    {[
-                      { label: "Name",     value: row.name,     key: "name",     disabled: !!matched || row.mode === "alias" || row.mode === "variant", type: "text",   colSpan: "lg:col-span-2" },
-                      { label: "Category", value: row.category, key: "category", disabled: !!matched || row.mode === "alias" || row.mode === "variant", type: "text",   colSpan: "" },
-                    ].map((f) => (
-                      <label key={f.key} className={`block ${f.colSpan}`}>
-                        <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>{f.label}</span>
-                        <input
-                          value={f.value}
-                          disabled={f.disabled}
-                          onChange={(e) => updateRow(row.id, { [f.key]: e.target.value } as any)}
-                          list={f.key === "category" ? "product-categories" : undefined}
-                          className="input w-full"
-                          style={{ height: 34, fontSize: 13, fontWeight: 600, opacity: f.disabled ? 0.55 : 1 }}
-                        />
-                      </label>
-                    ))}
-
-                    {(() => {
-                      const settings = getSettings()
-                      const applyProfit = (pct: number) => {
-                        const price = Math.round(row.cost * (1 + pct / 100) * 100) / 100
-                        updateRow(row.id, { price })
-                      }
-                      return (
-                        <>
-                          {/* Cost + profit buttons */}
-                          <label className="block">
-                            <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Cost $</span>
-                            <div className="flex items-center gap-0.5">
-                              <input
-                                type="number" min="0" step="0.01" value={row.cost || ""}
-                                onChange={(e) => updateRow(row.id, { cost: normalizeNumber(e.target.value) } as any)}
-                                className="input text-end"
-                                style={{ height: 34, fontSize: 13, fontWeight: 600, width: 60, minWidth: 60, flex: "0 0 auto" }}
-                              />
-                              {row.cost > 0 && (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => applyProfit(settings.profitPercent1)}
-                                    className="shrink-0 rounded px-1 py-0 text-[9px] font-bold transition active:opacity-70"
-                                    style={{ background: "var(--brand-soft)", color: "var(--brand-text)", height: 34 }}
-                                  >
-                                    +{settings.profitPercent1}%
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => applyProfit(settings.profitPercent2)}
-                                    className="shrink-0 rounded px-1 py-0 text-[9px] font-bold transition active:opacity-70"
-                                    style={{ background: "var(--brand-soft)", color: "var(--brand-text)", height: 34 }}
-                                  >
-                                    +{settings.profitPercent2}%
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </label>
-                          <label className="block">
-                            <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Price $</span>
-                            <input
-                              type="number" min="0" step="0.01" value={row.price || ""}
-                              disabled={row.mode === "alias"}
-                              title={row.mode === "alias" ? "Aliases share the existing product's price" : undefined}
-                              onChange={(e) => updateRow(row.id, { price: normalizeNumber(e.target.value) } as any)}
-                              className="input w-full text-end"
-                              style={{ height: 34, fontSize: 13, fontWeight: 600, opacity: row.mode === "alias" ? 0.55 : 1 }}
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--text-3)" }}>Qty</span>
-                            <input
-                              type="number" min="0" step="1" value={row.quantity || ""}
-                              onChange={(e) => updateRow(row.id, { quantity: normalizeNumber(e.target.value) } as any)}
-                              className="input w-full text-end"
-                              style={{ height: 34, fontSize: 13, fontWeight: 600 }}
-                            />
-                          </label>
-                        </>
-                      )
-                    })()}
-                  </div>
-
-                  {/* Expiry + barcode preview — compact footer */}
-                  <div className="flex items-center gap-3 border-t px-4 py-2" style={{ borderColor: "var(--border)" }}>
-                    {/* POS-PRODUCT-IMAGE-1: optional image for new rows; existing image (read-only) for matched/alias */}
-                    {row.mode === "new" ? (
-                      <label className="flex items-center gap-2 shrink-0 cursor-pointer" title="Add product image (optional)">
-                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Image</span>
-                        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border" style={{ borderColor: "var(--border)", background: "var(--surface-2)", color: "var(--text-3)" }}>
-                          {row.image ? <img src={row.image} alt="" className="h-full w-full object-cover" /> : <ImagePlus size={15} />}
-                        </span>
-                        <input type="file" accept="image/*" className="hidden"
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleRowImageFile(row.id, f); e.target.value = "" }} />
-                        {row.image && (
-                          <button type="button" onClick={(e) => { e.stopPropagation(); updateRow(row.id, { image: undefined }) }}
-                            className="text-[10px] font-semibold" style={{ color: "var(--text-3)" }}>Remove</button>
-                        )}
-                      </label>
-                    ) : (matched?.image || aliasTarget?.image) ? (
-                      <div className="flex items-center gap-2 shrink-0" title="Existing product image (unchanged)">
-                        <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Image</span>
-                        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg border" style={{ borderColor: "var(--border)" }}>
-                          <img src={(matched?.image || aliasTarget?.image) as string} alt="" className="h-full w-full object-cover" />
-                        </span>
-                      </div>
-                    ) : null}
-                    <label className="flex items-center gap-2 min-w-0">
-                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Expiry</span>
-                      <input
-                        type="date" value={row.expiryDate}
-                        onChange={(e) => updateRow(row.id, { expiryDate: e.target.value })}
-                        className="input"
-                        style={{ height: 28, fontSize: 11, width: 130 }}
-                      />
-                    </label>
-                    <label className="flex items-center gap-2 ms-auto">
-                      <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Labels</span>
-                      <input
-                        type="number" min="0" step="1" value={row.labels || ""}
-                        onChange={(e) => updateRow(row.id, { labels: normalizeNumber(e.target.value) })}
-                        className="input text-center"
-                        style={{ height: 28, fontSize: 11, width: 52 }}
-                      />
-                    </label>
-                    {row.barcode && (
-                      <div className="shrink-0 overflow-hidden rounded-lg" style={{ background: "#fff" }}
-                        dangerouslySetInnerHTML={{ __html: renderCode128Svg(row.barcode, 28, 1) }} />
-                    )}
-                  </div>
+              <button type="button" className="mg2-btn" style={{ minHeight: 48 }} onClick={() => void startCamera()} aria-pressed={!!cameraEngine} aria-label={t("pos.scan")}><Camera size={18} /></button>
+              <button type="button" className="mg2-btn" style={{ minHeight: 48 }} onClick={() => setPasteOpen(true)}><ClipboardPaste size={16} />{t("inv.rcv.paste")}</button>
+              <button type="button" className="mg2-btn" style={{ minHeight: 48 }} onClick={() => { const r = createRow(); setRows((rs) => [...rs, r]); focusRow(r.id) }}><Plus size={16} />{t("inv.rcv.add_row")}</button>
+              {scanStatus && <p className="mg2-cap" role="status" style={{ margin: 0, flexBasis: "100%" }}>{scanStatus}</p>}
+              {cameraStatus && <p className="mg2-cap" style={{ margin: 0, flexBasis: "100%" }}>{cameraStatus}</p>}
+              {cameraEngine && (
+                <div style={{ flexBasis: "100%", borderRadius: 12, overflow: "hidden", border: "1.5px solid var(--brand)" }}>
+                  <video ref={videoRef} muted playsInline className={`aspect-video w-full bg-zinc-950 object-cover ${cameraEngine === "native" ? "block" : "hidden"}`} />
+                  <div id={CAMERA_READER_ID} className={cameraEngine === "html5" ? "block" : "hidden"} />
                 </div>
-              )
-            })}
+              )}
+            </div>
 
-            {/* Add row */}
-            <button
-              type="button" onClick={() => addRow()}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed py-3 text-[13px] font-semibold transition hover:opacity-70"
-              style={{ borderColor: "var(--border)", color: "var(--text-3)" }}
-            >
-              <Plus size={15} /> Add another product
-            </button>
+            <div style={{ overflowX: "auto" }}>
+              <table className="mg2-table mg2-rgrid" style={{ minWidth: 860 }} aria-label={t("inv.rcv.rows")}>
+                <thead>
+                  <tr>
+                    <th>{t("inv.rcv.col.item")}</th>
+                    <th className="num" style={{ width: 80 }}>{t("inv.rcv.col.qty")}</th>
+                    <th className="num" style={{ width: 104 }}>{t("inv.rcv.col.cost")}</th>
+                    <th className="num" style={{ width: 104 }}>{t("inv.rcv.col.price")}</th>
+                    <th style={{ width: 156 }}>{t("inv.rcv.col.expiry")}</th>
+                    <th className="num" style={{ width: 72 }}>{t("inv.rcv.col.labels")}</th>
+                    <th style={{ width: 136 }}><span className="sr-only">{t("inv.rcv.col.actions")}</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.flatMap((r) => {
+                    const st = isBlankRow(r) ? null : rowState(r)
+                    const { notices } = rowProblems(r, productFor(r))
+                    const open = expanded.has(r.id) || pickerRowId === r.id
+                    const fixed = r.mode === "matched" || r.mode === "alias" || r.mode === "variant"
+                    const nameMatches = r.mode === "new" && r.name.trim() ? findProductsByExactName(r.name, products) : []
+                    const code = r.scannedBarcode || r.barcode
+                    const label = r.name || code || ""
+                    const pickerResults = pickerRowId === r.id ? products.filter((p) => !p.archived && productMatchesSearch(p, pickerQuery)).slice(0, 20) : []
+                    const main = (
+                      <tr key={r.id} data-row={r.id} aria-selected={activeRowId === r.id} className={r.saveError ? "row-error" : st?.tone === "warn" ? "row-problem" : undefined} onFocus={() => setActiveRowId(r.id)}>
+                        <td>
+                          {fixed
+                            ? <strong>{r.name}</strong>
+                            : <input className="mg2-input" value={r.name} onChange={(e) => update(r.id, { name: e.target.value, decisionConfirmed: r.decisionConfirmed || !!e.target.value })} aria-label={t("inv.field.name")} placeholder={code ? t("inv.rcv.name_for", { code }) : t("inv.field.name")} />}
+                          <span className="sub" style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", marginTop: 4 }}>
+                            {st ? <Badge tone={st.tone}>{st.text}</Badge> : <span className="mg2-cap">{t("inv.rcv.empty_row")}</span>}
+                            {notices.map((n) => <Badge key={n.key} tone={n.key === "cost_over_price" ? "warn" : "info"}>{t(`inv.rcv.n.${n.key}`, { pct: Math.abs(n.pct ?? 0) })}</Badge>)}
+                          </span>
+                        </td>
+                        <td><input className="mg2-input num" type="number" min="0" step="1" inputMode="numeric" dir="ltr" value={r.quantity || ""} onChange={(e) => update(r.id, { quantity: num(e.target.value) })} aria-label={t("inv.rcv.qty_for", { name: label })} aria-invalid={!isBlankRow(r) && !(r.quantity > 0) ? true : undefined} /></td>
+                        <td><input className="mg2-input num" type="number" min="0" step="0.01" inputMode="decimal" dir="ltr" value={r.cost || ""} onChange={(e) => update(r.id, { cost: num(e.target.value) })} aria-label={t("inv.rcv.cost_for", { name: label })} /></td>
+                        <td><input className="mg2-input num" type="number" min="0" step="0.01" inputMode="decimal" dir="ltr" value={r.price || ""} disabled={r.mode === "alias"} title={r.mode === "alias" ? t("inv.rcv.alias_price") : undefined} onChange={(e) => update(r.id, { price: num(e.target.value) })} aria-label={t("inv.rcv.price_for", { name: label })} /></td>
+                        <td><input className="mg2-input" type="date" dir="ltr" value={r.expiryDate} onChange={(e) => update(r.id, { expiryDate: e.target.value })} aria-label={t("inv.rcv.expiry_for", { name: label })} /></td>
+                        <td><input className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={r.labels || ""} onChange={(e) => update(r.id, { labels: num(e.target.value) })} aria-label={t("inv.rcv.labels_for", { name: label })} /></td>
+                        <td>
+                          <div style={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
+                            <button type="button" className="mg2-btn mg2-btn-ghost" style={{ width: 40, padding: 0 }} onClick={() => setExpanded((e) => { const n = new Set(e); if (n.has(r.id)) n.delete(r.id); else n.add(r.id); return n })} aria-expanded={open} aria-label={t("inv.rcv.details_for", { name: label })}>{open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
+                            <button type="button" className="mg2-btn mg2-btn-ghost" style={{ width: 40, padding: 0 }} onClick={() => duplicateRow(r)} aria-label={t("inv.rcv.duplicate")}><Copy size={15} /></button>
+                            <button type="button" className="mg2-btn mg2-btn-ghost" style={{ width: 40, padding: 0 }} onClick={() => removeRow(r.id)} aria-label={t("inv.rcv.remove_row")}><Trash2 size={15} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                    if (!open) return [main]
+                    const detail = (
+                      <tr key={`${r.id}-d`} className="detail" data-row-detail={r.id}>
+                        <td colSpan={7}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "6px 2px" }}>
+                            {r.mode === "new" && code && !r.decisionConfirmed && !r.name.trim() && (
+                              <div className="mg2-banner mg2-t-warn" style={{ padding: "8px 12px" }}>
+                                <span style={{ flex: 1, color: "var(--text)" }}>{t("inv.rcv.unknown_choose", { code })}</span>
+                                <button type="button" className="mg2-btn mg2-btn-primary" data-first onClick={() => chooseNew(r.id)}>{t("inv.rcv.new_product")}</button>
+                                <button type="button" className="mg2-btn" onClick={() => { setPickerMode("alias"); setPickerRowId(r.id); setPickerQuery("") }}>{t("inv.rcv.add_to_existing")}</button>
+                                <button type="button" className="mg2-btn" onClick={() => { setPickerMode("variant"); setPickerRowId(r.id); setPickerQuery("") }}>{t("inv.rcv.make_variant")}</button>
+                              </div>
+                            )}
+                            {nameMatches.length > 0 && !r.decisionConfirmed && (
+                              <div className="mg2-banner mg2-t-warn" style={{ padding: "8px 12px" }}>
+                                <span style={{ flex: 1, color: "var(--text)" }}>{t("inv.rcv.name_exists", { name: nameMatches[0].name, code: nameMatches[0].barcode || "—" })}</span>
+                                <button type="button" className="mg2-btn" onClick={() => { if (nameMatches.length === 1) stageAlias(r.id, nameMatches[0]); else { setPickerMode("alias"); setPickerRowId(r.id); setPickerQuery(r.name) } }}>{t("inv.rcv.add_to_existing")}</button>
+                                <button type="button" className="mg2-btn mg2-btn-ghost" onClick={() => chooseNew(r.id)}>{t("inv.rcv.keep_new")}</button>
+                              </div>
+                            )}
+                            {(r.mode === "alias" || r.mode === "variant") && (
+                              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                <Badge tone="info">{r.mode === "alias" ? t("inv.rcv.s.alias", { name: byId(r.targetProductId)?.name ?? "" }) : t("inv.rcv.s.variant", { name: byId(r.parentProductId)?.name ?? "" })}</Badge>
+                                {r.mode === "variant" && <input className="mg2-input" data-first value={r.variantName ?? ""} onChange={(e) => setVariantName(r.id, e.target.value)} placeholder={t("inv.field.variant_name")} aria-label={t("inv.field.variant_name")} />}
+                                <button type="button" className="mg2-btn mg2-btn-ghost" onClick={() => undoDecision(r.id)}>{t("inv.rcv.undo")}</button>
+                              </div>
+                            )}
+                            {pickerRowId === r.id && (
+                              <div className="mg2-card" style={{ padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                                <span className="mg2-label" style={{ margin: 0 }}>{pickerMode === "variant" ? t("inv.rcv.pick_parent") : t("inv.rcv.pick_target")}</span>
+                                <input className="mg2-input" data-first autoFocus value={pickerQuery} onChange={(e) => setPickerQuery(e.target.value)} placeholder={t("inv.products.search")} aria-label={t("inv.products.search")} />
+                                <div style={{ maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+                                  {pickerResults.length === 0 ? <p className="mg2-cap" style={{ margin: 0, padding: 8 }}>{pickerQuery ? t("inv.products.no_match") : t("inv.rcv.type_to_search")}</p> : pickerResults.map((p) => (
+                                    <button key={p.id} type="button" className="mg2-btn mg2-btn-ghost" style={{ justifyContent: "space-between" }} onClick={() => (pickerMode === "variant" ? stageVariant(r.id, p) : stageAlias(r.id, p))}>
+                                      <span>{p.name}</span><span className="mg2-cap num" dir="ltr">{p.barcode || "—"} · {formatCurrency(p.price)} · {formatNumber(p.stock)}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                                <button type="button" className="mg2-btn mg2-btn-ghost" style={{ alignSelf: "flex-start" }} onClick={() => setPickerRowId(null)}>{t("inv.cancel")}</button>
+                              </div>
+                            )}
+                            {(() => { const sug = suggestions[code]; return sug && r.mode === "new" && !r.name && (
+                              <button type="button" className="mg2-btn" style={{ alignSelf: "flex-start" }} onClick={() => update(r.id, { name: sug.name, category: sug.category, decisionConfirmed: true })}>
+                                {t("inv.rcv.use_suggestion", { name: sug.name })}
+                              </button>
+                            ) })()}
+                            {suggestions[code] === null && r.mode === "new" && code.length >= 8 && <span className="mg2-cap" role="status" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><LoaderCircle size={13} className="animate-spin" aria-hidden="true" />{t("inv.rcv.looking_up")}</span>}
+                            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", alignItems: "end" }}>
+                              <label className="mg2-field"><span className="lbl">{t("inv.field.barcode")}</span>
+                                <span style={{ display: "flex", gap: 6 }}>
+                                  <input className="mg2-input num" dir="ltr" style={{ flex: 1 }} value={r.mode === "alias" || r.mode === "variant" ? r.scannedBarcode : r.barcode} disabled={r.mode === "alias" || r.mode === "variant"} onChange={(e) => rowBarcode(r, e.target.value)} />
+                                  {r.mode === "new" && <button type="button" className="mg2-btn" style={{ padding: "0 10px" }} onClick={() => { update(r.id, { barcode: generateProductBarcode(), decisionConfirmed: true }); showToast(t("pos.receive.barcode_generated")) }} aria-label={t("inv.generate")}><Barcode size={16} /></button>}
+                                </span>
+                              </label>
+                              {!fixed && <label className="mg2-field"><span className="lbl">{t("inv.field.category")}</span><input className="mg2-input" list="rcv-categories" value={r.category} onChange={(e) => update(r.id, { category: e.target.value })} /></label>}
+                              <label className="mg2-field"><span className="lbl">{t("inv.field.reorder_point")}</span><input className="mg2-input num" type="number" min="0" dir="ltr" value={r.reorderPoint} onChange={(e) => update(r.id, { reorderPoint: num(e.target.value) })} /></label>
+                              <label className="mg2-field"><span className="lbl">{t("inv.field.reorder_qty")}</span><input className="mg2-input num" type="number" min="0" dir="ltr" value={r.reorderQuantity} onChange={(e) => update(r.id, { reorderQuantity: num(e.target.value) })} /></label>
+                              {r.cost > 0 && r.mode !== "alias" && (
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  {[settings.profitPercent1, settings.profitPercent2].map((pct) => (
+                                    <button key={pct} type="button" className="mg2-btn" onClick={() => update(r.id, { price: Math.round(r.cost * (1 + pct / 100) * 100) / 100 })}>{t("inv.rcv.price_plus", { pct })}</button>
+                                  ))}
+                                </div>
+                              )}
+                              {r.mode === "new" && (
+                                <div className="mg2-field"><span className="lbl">{t("inv.rcv.image")}</span>
+                                  <label className="mg2-btn" style={{ gap: 8, overflow: "hidden", minWidth: 0, justifyContent: "flex-start", paddingInlineStart: r.image ? 0 : undefined }}>
+                                    {r.image ? <img src={r.image} alt="" style={{ width: 40, height: 40, objectFit: "cover", flex: "none" }} /> : <ImagePlus size={16} aria-hidden="true" style={{ flex: "none" }} />}<span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t("inv.image_pick")}</span>
+                                    <input type="file" accept="image/*" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) fileToCompressedDataUrl(f).then((d) => update(r.id, { image: d })).catch(() => undefined); e.target.value = "" }} />
+                                  </label>
+                                </div>
+                              )}
+                              {(r.mode === "alias" ? r.scannedBarcode : r.barcode) && <span style={{ background: "#fff", borderRadius: 6, padding: 4, display: "inline-flex", justifySelf: "start" }} dangerouslySetInnerHTML={{ __html: renderCode128Svg(r.mode === "alias" ? r.scannedBarcode : r.barcode, 28, 1) }} />}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                    return [main, detail]
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <datalist id="rcv-categories">{categories.map((c) => <option key={c} value={c} />)}</datalist>
 
-            <datalist id="product-categories">
-              {categories.map((c) => <option key={c} value={c} />)}
-            </datalist>
+            {problemRows.length > 0 && (problemBanner || ready.length > 0) && (
+              <div className="mg2-banner mg2-t-warn" role={problemBanner ? "alert" : "status"} style={{ margin: 12 }}>
+                <span style={{ flex: 1, color: "var(--text)" }}>{t("inv.rcv.problems", { n: problemRows.length })}</span>
+                <button type="button" className="mg2-btn" onClick={() => focusRow(problemRows[0].id)}>{t("inv.rcv.go_to_row")}</button>
+                {ready.length > 0 && <button type="button" className="mg2-btn" onClick={() => save(true)} disabled={saving}>{t("inv.rcv.save_ready_only", { n: ready.length })}</button>}
+              </div>
+            )}
           </section>
 
-          {/* ── Right: Supplier + Labels ─────────────────── */}
-          <aside className="space-y-4">
-
-            {/* Supplier */}
-            <div className="rounded-2xl border p-4 space-y-3" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
-              <div className="flex items-center gap-2">
-                <Building2 size={14} style={{ color: "var(--brand)" }} />
-                <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>Supplier & Purchase</h3>
-              </div>
-
+          <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <section className="mg2-card mg2-card-body" style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-label={t("inv.rcv.supplier_invoice")}>
+              <h2 className="mg2-section-title">{t("inv.rcv.supplier_invoice")}</h2>
               {suppliers.length > 0 ? (
-                <select value={selectedSupplierId} onChange={(e) => setSelectedSupplierId(e.target.value)} className="input w-full"
-                  aria-label="Select supplier">
-                  <option value="">No supplier</option>
-                  {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name} — {formatCurrency(s.balance)}</option>)}
-                </select>
-              ) : (
-                <Link to="/suppliers" className="btn btn-primary w-full justify-center text-[13px]">Add a supplier first</Link>
-              )}
-
-              <input
-                value={supplierInvoiceNumber} onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
-                placeholder="Invoice number"
-                className="input w-full" style={{ fontSize: 13 }}
-              />
-
-              {/* Payment method */}
+                <label className="mg2-field"><span className="lbl">{t("inv.field.supplier")}</span>
+                  <select className="mg2-select" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+                    <option value="">{t("inv.no_supplier")}</option>
+                    {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </label>
+              ) : <Link to="/suppliers" className="mg2-btn" style={{ textDecoration: "none" }}>{t("inv.rcv.add_supplier")}</Link>}
+              <label className="mg2-field"><span className="lbl">{t("inv.rcv.invoice")}</span><input className="mg2-input" dir="ltr" value={invoice} onChange={(e) => setInvoice(e.target.value)} /></label>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-3)" }}>Payment</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {purchasePaymentMethods.map((method) => {
-                    const Icon = pmIcons[method] ?? ClipboardCheck
-                    const active = purchasePaymentMethod === method
-                    return (
-                      <button key={method} type="button" onClick={() => setPurchasePaymentMethod(method)}
-                        aria-pressed={active}
-                        className="flex items-center justify-center gap-1.5 h-8 rounded-xl border text-[11px] font-bold transition"
-                        style={active
-                          ? { background: "var(--surface-3)", borderColor: "var(--border-strong)", color: "var(--text)" }
-                          : { borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface-2)" }
-                        }>
-                        <Icon size={12} />
-                        {method === "On Account" ? "Account" : method === "Bank Transfer" ? "Bank" : method}
-                      </button>
-                    )
-                  })}
+                <span className="mg2-label" id="rcv-pay-label">{t("inv.rcv.payment")}</span>
+                <div className="mg2-seg" role="radiogroup" aria-labelledby="rcv-pay-label" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))" }}>
+                  {PAYMENTS.map((m) => (
+                    <label key={m}><input type="radio" name="rcv-pay" checked={payment === m} disabled={!supplier} onChange={() => setPayment(m)} /><CheckCircle2 size={14} className="mg2-chk" aria-hidden="true" />{t(`inv.rcv.pay.${PAY_KEY[m]}`)}</label>
+                  ))}
                 </div>
               </div>
+              <p className="mg2-cap" style={{ margin: 0 }}>
+                {!supplier ? t("inv.rcv.no_supplier_help") : payment === "On Account" ? t("inv.rcv.on_account_help", { amount: formatCurrency(cost), name: supplier.name }) : t("inv.rcv.paid_now_help", { amount: formatCurrency(cost), method: t(`inv.rcv.pay.${PAY_KEY[payment]}`) })}
+              </p>
+              <label className="mg2-field"><span className="lbl">{t("inv.rcv.note")}</span><textarea className="mg2-input" rows={2} style={{ paddingBlock: 8 }} value={note} onChange={(e) => setNote(e.target.value)} /></label>
+            </section>
 
-              <textarea
-                value={supplierNote} onChange={(e) => setSupplierNote(e.target.value)}
-                placeholder="Note (optional)" rows={2}
-                className="input w-full resize-none py-2 text-[13px]"
-                style={{ height: "auto" }}
-              />
+            <section className="mg2-card mg2-card-body" aria-label={t("inv.rcv.summary")}>
+              <h2 className="mg2-section-title" style={{ marginBottom: 8 }}>{t("inv.rcv.summary")}</h2>
+              <div className="mg2-sum"><span>{t("inv.rcv.ready_rows")}</span><strong>{t("inv.rcv.x_of_y", { x: ready.length, y: started.length })}</strong></div>
+              <div className="mg2-sum"><span>{t("inv.rcv.units")}</span><strong>{formatNumber(units)}</strong></div>
+              <div className="mg2-sum"><span>{t("inv.field.cost")}</span><strong>{formatCurrency(cost)}</strong></div>
+              <div className="mg2-sum"><span>{t("inv.rcv.labels_to_print")}</span><strong>{formatNumber(labelsCount)}</strong></div>
+              <button type="button" className="mg2-btn mg2-btn-primary" style={{ width: "100%", minHeight: 52, marginTop: 10 }} onClick={() => save(false)} aria-busy={saving || undefined} disabled={saving}>
+                {saving ? <LoaderCircle size={18} className="animate-spin" aria-hidden="true" /> : <CheckCircle2 size={18} aria-hidden="true" />}{saving ? t("inv.rcv.saving") : t("inv.rcv.save")}
+              </button>
+              <p className="mg2-cap" style={{ margin: "8px 0 0" }}>{problemRows.length ? t("inv.rcv.save_help_problems", { n: problemRows.length }) : t("inv.rcv.save_help")}</p>
+            </section>
 
-              {/* Summary */}
-              <div className="rounded-xl px-3 py-2.5 space-y-1" style={{ background: "var(--surface-2)" }}>
-                <div className="flex justify-between text-[12px]">
-                  <span style={{ color: "var(--text-3)" }}>Products</span>
-                  <span className="font-bold" style={{ color: "var(--text)" }}>{readyRows.length}</span>
-                </div>
-                <div className="flex justify-between text-[12px]">
-                  <span style={{ color: "var(--text-3)" }}>Total units</span>
-                  <span className="font-bold" style={{ color: "var(--text)" }}>{formatNumber(totalUnits)}</span>
-                </div>
-                <div className="flex justify-between text-[13px] border-t pt-1.5 mt-1" style={{ borderColor: "var(--border)" }}>
-                  <span className="font-semibold" style={{ color: "var(--text-3)" }}>Total cost</span>
-                  <span className="text-[16px] font-bold" style={{ color: "var(--text)" }}>{formatCurrency(totalCost)}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={saveBatch} disabled={readyRows.length === 0 || saving} aria-busy={saving || undefined}
-                  aria-label="Save and receive batch"
-                  className="btn btn-primary h-10 gap-2 justify-center text-[13px] disabled:opacity-40">
-                  <CheckCircle2 size={14} /> Save
-                </button>
-                <button type="button" onClick={resetBatch}
-                  aria-label="Clear all receiving rows"
-                  className="btn btn-default h-10 gap-2 justify-center text-[13px]">
-                  <RotateCcw size={14} /> Clear
-                </button>
-              </div>
-
-              {lastReceivedTotal > 0 && (
-                <Link to="/products" className="btn btn-ghost w-full justify-center text-[13px] border" style={{ borderColor: "var(--border)" }}>
-                  View inventory →
-                </Link>
-              )}
-            </div>
-
-            {/* Labels */}
-            <div className="rounded-2xl border p-4 space-y-3" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
-              <div className="flex items-center gap-2">
-                <Printer size={14} style={{ color: "var(--brand)" }} />
-                <h3 className="text-[13px] font-bold" style={{ color: "var(--text)" }}>Print Labels</h3>
-                <span className="ms-auto rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
-                  {labelsToPrint} labels
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-1.5">
-                {(Object.keys(labelSizes) as LabelSize[]).map((size) => (
-                  <button key={size} type="button" onClick={() => setLabelSize(size)}
-                    className="rounded-xl border py-2 text-[11px] font-bold transition"
-                    style={labelSize === size
-                      ? { background: "var(--surface-3)", borderColor: "var(--border-strong)", color: "var(--text)" }
-                      : { borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface-2)" }
-                    }>
-                    {labelSizes[size].label}
-                  </button>
+            <section className="mg2-card mg2-card-body" style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-label={t("inv.rcv.labels")}>
+              <h2 className="mg2-section-title">{t("inv.rcv.labels")}</h2>
+              <div className="mg2-seg" role="radiogroup" aria-label={t("inv.rcv.label_size")} style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
+                {(Object.keys(LABEL_SIZES) as LabelSize[]).map((s) => (
+                  <label key={s}><input type="radio" name="rcv-label" checked={labelSize === s} onChange={() => setLabelSize(s)} /><span className="num" dir="ltr">{t(`pos.receive.label_${s}`)}</span></label>
                 ))}
               </div>
-
-              {/* Preview */}
-              {(() => { const r = rows.find((r) => r.id === activeRowId); return r?.barcode ? (
-                <div className="flex flex-col items-center gap-1 rounded-xl p-3" style={{ background: "#fff" }}>
-                  <p className="text-[10px] font-bold text-zinc-800 truncate max-w-full">{r.name || "—"}</p>
-                  <div dangerouslySetInnerHTML={{ __html: renderCode128Svg(r.barcode, 60, 1.4) }} />
-                  <p className="text-[9px] text-zinc-500 font-mono">{r.barcode}</p>
-                </div>
-              ) : null })()}
-
-              <button type="button" onClick={printLabels} disabled={labelsToPrint === 0}
-                className="btn btn-default w-full justify-center gap-2 h-10 text-[13px] disabled:opacity-40">
-                <Printer size={14} /> Print {labelsToPrint > 0 ? `${labelsToPrint} labels` : ""}
+              <button type="button" className="mg2-btn" disabled={labelsCount === 0} onClick={() => printLabels(rows.filter((r) => r.barcode.trim() && r.name.trim()).map((r) => ({ name: r.name, price: r.price, barcode: r.mode === "alias" ? r.scannedBarcode : r.barcode, n: r.labels })))}>
+                <Printer size={16} />{t("inv.rcv.print_labels", { n: labelsCount })}
               </button>
-            </div>
-
+            </section>
           </aside>
         </div>
       </div>
 
-      <input ref={scanCaptureInputRef} type="file" accept="image/*" capture="environment" onChange={handleScanCapture} className="hidden" />
+      <input ref={captureRef} type="file" accept="image/*" capture="environment" onChange={onCapture} hidden />
+      <Drawer open={pasteOpen} title={t("inv.rcv.paste_title")} onClose={() => setPasteOpen(false)}
+        footer={<>
+          <button type="button" className="mg2-btn mg2-btn-primary" disabled={!pasteResult.rows.length} onClick={addPasted}>{t("inv.rcv.paste_add", { n: pasteResult.rows.length })}</button>
+          <button type="button" className="mg2-btn mg2-btn-ghost" onClick={() => setPasteOpen(false)}>{t("inv.cancel")}</button>
+        </>}>
+        <p className="mg2-cap" style={{ margin: 0 }}>{t("inv.rcv.paste_help")}</p>
+        <textarea className="mg2-input" dir="ltr" rows={10} style={{ paddingBlock: 8, fontFamily: "ui-monospace, monospace" }} value={pasteText} onChange={(e) => setPasteText(e.target.value)} aria-label={t("inv.rcv.paste_title")} data-autofocus />
+        {pasteText.trim() && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <Badge tone="ok">{t("inv.rcv.paste_preview", { n: pasteResult.rows.length, known: pasteResult.rows.filter((p) => findProductByBarcode(p.barcode)).length, fresh: pasteResult.rows.filter((p) => !findProductByBarcode(p.barcode)).length })}</Badge>
+            {pasteResult.rejected.map((x) => <Badge key={x.index} tone="err">{t("inv.rcv.paste_rejected", { row: x.index, reason: x.reason })}</Badge>)}
+          </div>
+        )}
+      </Drawer>
     </main>
   )
 }

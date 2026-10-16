@@ -41,7 +41,7 @@ window.__t = {
   key(el, key) { el.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })); el.dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true })) },
 }`
 
-async function scene(cdp, name, { w, h, mobile = false, theme = "dark", lang = "en", steps, setup = "" }) {
+async function scene(cdp, name, { w, h, mobile = false, theme = "dark", lang = "en", steps, setup = "", path: route = "/" }) {
   const { browserContextId } = await cdp.send("Target.createBrowserContext")
   const { targetId } = await cdp.send("Target.createTarget", { url: "about:blank", browserContextId })
   const { sessionId } = await cdp.send("Target.attachToTarget", { targetId, flatten: true })
@@ -56,7 +56,7 @@ async function scene(cdp, name, { w, h, mobile = false, theme = "dark", lang = "
     await cdp.send("Page.navigate", { url: `${BASE}/?dev` }, sessionId)
     await sleep(2500)
     await ev(`localStorage.setItem("lebanonpos.theme", ${JSON.stringify(theme)}); localStorage.setItem("lebanonpos.locale", ${JSON.stringify(lang)}); localStorage.setItem("lebanonpos.locale.v1", ${JSON.stringify(lang)}); localStorage.setItem("lebanonpos.intro-seen.v1","1");${setup}`)
-    await cdp.send("Page.navigate", { url: `${BASE}/?dev` }, sessionId)
+    await cdp.send("Page.navigate", { url: `${BASE}${route}?dev` }, sessionId)
     await sleep(3000)
     const log = []
     for (const [label, js, wait = 600] of steps) {
@@ -397,6 +397,63 @@ const FIVE = [
   ["five-clear.ar.light.mobile-360", { w: 360, h: 780, mobile: true, theme: "light", lang: "ar", steps: [openSheetFromChip, openShift, escSheet, addTiles, quick, clearFits, tapClear] }],
 ]
 
+// Stock workspace (Products, Lots, Receiving). Each scene opens its route directly in a fresh profile.
+// seedStock: a real delivery through the app's own services (dev data): three lots with
+// different expiries (5 days, 20 days, expired 2 days ago) from one supplier.
+const seedStock = ["seed a delivery", `
+  const ps = await import("/src/features/pos/services/product.service.ts")
+  const sup = await import("/src/features/pos/services/supplier.service.ts")
+  const sec = await import("/src/features/pos/services/security.service.ts")
+  const sales = await import("/src/features/pos/services/sales.service.ts")
+  if (!sec.getActiveShift()) sec.openShift(100)
+  if (!sup.getSupplierLedger().length) sup.createSupplier({ name: "Malia Group", mobile: "01 000 000", contact: "Karim", address: "Dora", notes: "" })
+  const sp = sup.getSupplierLedger()[0]
+  const d = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10)
+  const all = await ps.getProducts(); const by = (n) => all.find((p) => p.name === n)
+  await sup.receiveAndRecord([
+    { name: "Pepsi Can", barcode: by("Pepsi Can").barcode, category: "Drinks", quantity: 24, cost: 0.55, price: 0.9, expiryDate: d(5) },
+    { name: "Labneh 500g", barcode: by("Labneh 500g").barcode, category: "Pantry", quantity: 10, cost: 1.6, price: 2.4, expiryDate: d(20) },
+    { name: "Chips", barcode: by("Chips").barcode, category: "Snacks", quantity: 30, cost: 0.42, price: 0.75, expiryDate: d(-2) },
+  ], sp ? { supplierId: sp.id, supplierName: sp.name, invoiceNumber: "INV-77431", paymentMethod: "On Account" } : undefined)
+  return "received; supplier " + (sp ? sp.name : "none")`, 800]
+const reloadStep = ["reload", "setTimeout(() => location.reload(), 50); return 1", 3500]
+// Receiving behaviour: scan merge, unknown code, Save with problems, save-ready-only (double-clicked),
+// no double receive, and the draft surviving a reload. Each step reports what it observed.
+const rcvStock = (label) => [label, `const ps = await import("/src/features/pos/services/product.service.ts"); const p = (await ps.getProducts()).find((x) => x.name === "Pepsi Can"); window.__pepsi = p.barcode; const lots = (await import("/src/features/pos/services/inventoryBatch.service.ts")).getInventoryBatches().filter((b) => b.productId === p.id); return "Pepsi stock " + p.stock + "; lots " + lots.length + " (" + lots.map((b) => b.initialQuantity).join("+") + ")"`, 100]
+const rcvScan = (code) => ["scan " + code + " + Enter", `const i = document.querySelector("input[aria-label^='Scan items' i], input[aria-label^='امسح' i]"); i.focus(); __t.type(i, ${code === "PEPSI" ? "window.__pepsi" : JSON.stringify(code)}); await new Promise((r) => setTimeout(r, 50)); i.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })); await new Promise((r) => setTimeout(r, 300)); const rows = [...document.querySelectorAll("tr[data-row]")]; return rows.length + " row(s): " + rows.map((r) => (r.querySelector("td")?.textContent.trim().slice(0, 40) || "?") + " qty " + (r.querySelector("input[type=number]")?.value || "-")).join(" | ") + "; status: " + ([...document.querySelectorAll("[role=status]")].map((x) => x.textContent.trim()).find(Boolean) || "").slice(0, 80)`, 300]
+const rcvSave = ["press Save delivery", `const b = __t.textBtn(/^(Save delivery|حفظ الشحنة)/); if (!b) return "Save not found/disabled"; b.click(); await new Promise((r) => setTimeout(r, 500)); const a = document.activeElement; return "focus: " + (a?.getAttribute("aria-label") || a?.getAttribute("placeholder") || a?.tagName) + " in row " + (a?.closest("[data-row],[data-row-detail]") ? "yes" : "no") + "; banner: " + (document.querySelector(".mg2-banner")?.textContent.trim().slice(0, 70) || "-")`, 300]
+const rcvReadyOnly = ["Save ready rows only (clicked twice in one tick)", `const b = __t.textBtn(/^(Save the|حفظ الأسطر الجاهزة)/); if (!b) return "no ready-only button"; b.click(); b.click(); await new Promise((r) => setTimeout(r, 1500)); const rows = [...document.querySelectorAll("tr[data-row]")]; return "rows left " + rows.length + ": " + rows.map((r) => r.querySelector("td")?.textContent.trim().slice(0, 30)).join(" | ") + "; banner: " + (document.querySelector(".mg2-t-ok")?.textContent.trim().slice(0, 80) || "-")`, 300]
+const rcvSaveAgain = ["press Save again", `const b = [...document.querySelectorAll("button")].find((x) => /^(Save delivery|حفظ الشحنة)/.test(x.textContent.trim())); b?.click(); await new Promise((r) => setTimeout(r, 800)); return "Save " + (b?.disabled ? "disabled" : "enabled") + "; focus: " + (document.activeElement?.getAttribute("aria-label") || document.activeElement?.tagName)`, 300]
+const rcvDraft = ["after reload", `await new Promise((r) => setTimeout(r, 300)); const rows = [...document.querySelectorAll("tr[data-row]")]; return "draft banner: " + ([...document.querySelectorAll(".mg2-banner")].map((x) => x.textContent.trim()).find((x) => /unsaved|غير المحفوظة/.test(x))?.slice(0, 60) || "NONE") + "; rows " + rows.length + ": " + rows.map((r) => r.querySelector("td")?.textContent.trim().slice(0, 30)).join(" | ")`, 100]
+const RCV_FLOW = [rcvStock("before"), rcvScan("PEPSI"), rcvScan("PEPSI"), rcvScan("6291000999001"), rcvSave]
+// Products behaviour: search, view chip, bulk archive, editor validation, delete guard, Cashier permissions.
+const prodRows = `[...document.querySelectorAll("table[aria-label] tbody tr")].filter((r) => r.querySelector("input[type=checkbox]"))`
+const prodSearch = (q) => ["search " + JSON.stringify(q), `const i = document.querySelector("input[type=search]"); __t.type(i, ${JSON.stringify(q)}); await new Promise((r) => setTimeout(r, 500)); const rows = ${prodRows}; return rows.length + " row(s): " + rows.map((r) => r.querySelector("td:nth-child(2)")?.textContent.trim().slice(0, 20)).join(", ")`, 100]
+const prodChip = (re) => ["view chip " + re, `const b = __t.byText(".mg2-chips button", ${re}); b.click(); await new Promise((r) => setTimeout(r, 300)); const rows = ${prodRows}; return (b.getAttribute("aria-pressed") === "true" ? "pressed" : "NOT pressed") + "; url " + location.search + "; " + rows.length + " row(s): " + rows.map((r) => r.querySelector("td:nth-child(2)")?.textContent.trim().slice(0, 20)).join(", ")`, 100]
+const prodBulkArchive = ["select 2 rows + bulk Archive", `const rows = ${prodRows}; rows[0].querySelector("input").click(); rows[1].querySelector("input").click(); await new Promise((r) => setTimeout(r, 200)); const bar = document.querySelector(".mg2-bulkbar"); const b = [...bar.querySelectorAll("button")].find((x) => /^(Archive|أرشفة)$/.test(x.textContent.trim())); if (b.disabled) return "bar: " + bar.querySelector("strong").textContent + "; Archive DISABLED"; b.click(); await new Promise((r) => setTimeout(r, 400)); const c = __t.textBtn(/^(Archive|أرشفة)/); if (c && c.closest("[role=alertdialog],[role=dialog]")) { c.click(); await new Promise((r) => setTimeout(r, 400)) } const archived = __t.byText(".mg2-chips button", /Archived|مؤرشف/); return "archived chip: " + archived.textContent.trim() + "; rows now " + ${prodRows}.length`, 100]
+const prodEditorEmpty = ["Add product + Save empty", `const b = __t.textBtn(/^(Add product|إضافة منتج)$/); if (!b) return "Add product DISABLED: " + ([...document.querySelectorAll("button")].find((x) => /Add product|إضافة منتج/.test(x.textContent))?.getAttribute("aria-describedby") ? "with reason" : "no reason"); b.click(); await new Promise((r) => setTimeout(r, 500)); const d = document.querySelector("[role=dialog]"); const s = [...d.querySelectorAll("button")].find((x) => /^(Save|حفظ|Create|إنشاء)/.test(x.textContent.trim())); s.click(); await new Promise((r) => setTimeout(r, 300)); const a = document.activeElement; return "focus: " + (a?.getAttribute("aria-label") || a?.closest("label")?.textContent.trim().slice(0, 20) || a?.tagName) + " invalid=" + a?.getAttribute("aria-invalid") + "; errors: " + [...d.querySelectorAll("[aria-invalid=true]")].length`, 200]
+const prodDetail = (name) => ["open " + name + " details", `const r = ${prodRows}.find((x) => x.textContent.includes(${JSON.stringify(name)})); r.querySelector("td:nth-child(2)").click(); await new Promise((r) => setTimeout(r, 500)); const d = document.querySelector("[role=dialog]"); const btns = [...d.querySelectorAll("button, a")].map((x) => x.getAttribute("aria-label") || x.textContent.trim().slice(0, 24)).filter(Boolean); return "actions: " + btns.slice(0, 12).join(" | ") + "; lots shown " + d.querySelectorAll(".mg2-lot").length`, 200]
+const STOCK = [
+  ["products.en.dark.desktop", { w: 1440, h: 900, path: "/products", steps: [seedStock, reloadStep] }],
+  ["products.ar.light.desktop", { w: 1440, h: 900, path: "/products", theme: "light", lang: "ar", steps: [seedStock, reloadStep] }],
+  ["products.en.dark.mobile", { w: 390, h: 844, mobile: true, path: "/products", steps: [seedStock, reloadStep] }],
+  ["lots.en.dark.desktop", { w: 1440, h: 900, path: "/stock", steps: [seedStock, reloadStep] }],
+  ["lots.en.dark.mobile", { w: 390, h: 844, mobile: true, path: "/stock", steps: [seedStock, reloadStep] }],
+  ["receiving.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [] }],
+  ["receiving.ar.dark.desktop", { w: 1440, h: 900, path: "/products/new", lang: "ar", steps: [] }],
+  ["receiving.en.dark.mobile", { w: 390, h: 844, mobile: true, path: "/products/new", steps: [] }],
+  ["receiving-problems.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: RCV_FLOW }],
+  ["receiving-saved.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [...RCV_FLOW, rcvReadyOnly, rcvStock("after"), rcvSaveAgain, rcvStock("after second Save")] }],
+  ["receiving-draft.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [...RCV_FLOW, reloadStep, rcvDraft] }],
+  ["products-flow.en.dark.desktop", { w: 1440, h: 900, path: "/products", steps: [seedStock, reloadStep, prodSearch("pep"), prodSearch(""), prodChip("/Expiring|قارب/"), prodChip("/(All|الكل)[0-9]/"), prodBulkArchive] }],
+  ["products-editor.en.dark.desktop", { w: 1440, h: 900, path: "/products", steps: [prodEditorEmpty] }],
+  ["products-detail.en.dark.desktop", { w: 1440, h: 900, path: "/products", steps: [seedStock, reloadStep, prodDetail("Pepsi Can")] }],
+  ["products-detail-fresh.en.dark.desktop", { w: 1440, h: 900, path: "/products", steps: [prodDetail("Cheese Saj"), ["Cheese Saj history", `const ps = await import("/src/features/pos/services/product.service.ts"); const p = (await ps.getProducts()).find((x) => x.name === "Cheese Saj"); return JSON.stringify(ps.getProductHistory(p.id))`, 50], ["new product: create + open", `const ps = await import("/src/features/pos/services/product.service.ts"); await ps.createProduct({ name: "QA Fresh Item", barcode: "6291000555001", category: "Snacks", price: 1, cost: 0.5, stock: 0 }); return "created"`, 300], reloadStep, prodDetail("QA Fresh Item")] }],
+  ["products-cashier.en.dark.desktop", { w: 1440, h: 900, path: "/products", setup: asCashier, steps: [prodEditorEmpty, prodBulkArchive] }],
+  ["lots-cashier.en.dark.desktop", { w: 1440, h: 900, path: "/stock", setup: asCashier, steps: [seedStock, reloadStep, ["header actions", `return [...document.querySelectorAll("main a, main button")].slice(0, 6).map((x) => x.textContent.trim() || x.getAttribute("aria-label")).join(" | ")`, 50]] }],
+  ["receiving-problems.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", path: "/products/new", steps: RCV_FLOW }],
+]
+
 const SCENES = [
   ["register-cash.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid] }],
   ["register-cash.en.light.desktop", { w: 1440, h: 900, theme: "light", steps: [openShift, addTiles, cashPaid] }],
@@ -419,7 +476,7 @@ const SCENES = [
     const cdp = new CDP(ws); await cdp.open()
     const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null
     const results = []
-    for (const [name, opts] of (process.env.QA_FIVE ? FIVE : process.env.QA_PAY ? PAY : process.env.QA_RECEIPT ? RECEIPT : process.env.QA_REVIEW ? REVIEW : process.env.QA_NAMES ? NAMES : process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL, ...NAMES])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
+    for (const [name, opts] of (process.env.QA_STOCK ? STOCK : process.env.QA_FIVE ? FIVE : process.env.QA_PAY ? PAY : process.env.QA_RECEIPT ? RECEIPT : process.env.QA_REVIEW ? REVIEW : process.env.QA_NAMES ? NAMES : process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL, ...NAMES])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
     fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify({ base: BASE, at: new Date().toISOString(), results }, null, 2))
   } finally { chrome.kill() }
 })().catch((e) => { console.error(e); process.exit(1) })

@@ -1,204 +1,164 @@
 import { useEffect, useState } from "react"
-import { useSearchParams } from "react-router"
+import { Link, useSearchParams } from "react-router"
+import { Download, PackagePlus } from "lucide-react"
+import { useI18n } from "@lebanonpos/shared"
 
 import type { Product } from "../../features/pos/types/product"
 import StockControlPanel from "../../features/pos/components/StockControlPanel"
-import BatchesPanel from "../../features/pos/components/BatchesPanel"
 import OpeningInventoryPanel from "../../features/pos/components/OpeningInventoryPanel"
 import LedgerReconciliationPanel from "../../features/pos/components/LedgerReconciliationPanel"
-import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
-import Spinner from "../../components/ui/Spinner"
+import LotsPanel from "../../features/pos/components/backoffice/LotsPanel"
+import { PageHeader, SkeletonRows, StockNav } from "../../features/pos/components/backoffice/BackOffice"
+import { downloadCsv } from "../../features/pos/lib/csv"
+import { getInventoryBatches, type InventoryBatch } from "../../features/pos/services/inventoryBatch.service"
 import { getProducts, subscribeProducts } from "../../features/pos/services/product.service"
 import { subscribeSales } from "../../features/pos/services/sales.service"
+import { userCan } from "../../features/pos/services/security.service"
 import { useStockControl } from "../../features/pos/hooks/useStockControl"
 
-// POS-UX-IA-2B.3: Dedicated Stock & Batches workspace (/stock). This is the
-// destination the ProductsPage → Stock tools / Batches views will eventually
-// move to. For now it lives alongside Products (Products keeps its own copies).
-// All stock behavior is reused from useStockControl + the existing panels — no
-// business logic here, no logic/service files touched.
-
-type StockWorkspaceView = "Control" | "Lots" | "Opening" | "Recon"
-
-const stockViews: Array<{
-  value?: StockWorkspaceView
-  label: string
-  count?: number
-}> = [
-  { value: "Control", label: "Adjust & count" },
-  { value: "Lots", label: "Batches" },
-  { value: "Opening", label: "Opening inventory" },
-  { value: "Recon", label: "Reconciliation" },
-]
-
-const isStockView = (v: string | null): v is StockWorkspaceView =>
-  v === "Control" || v === "Lots" || v === "Opening" || v === "Recon"
+// Midnight Gold v2 — Lots & counts (/stock). Lots is the default view (lot list + movement trace);
+// Adjust & count, Opening inventory and Reconciliation are the existing panels and services, unchanged.
+// Views are links (?view=…) so they survive reload; ?lot=<id> opens a lot, ?product=<id> scopes to a product.
+type StockView = "Lots" | "Control" | "Opening" | "Recon"
+const VIEWS: StockView[] = ["Lots", "Control", "Opening", "Recon"]
+const isView = (v: string | null): v is StockView => VIEWS.includes(v as StockView)
 
 export default function StockPage() {
+  const { t } = useI18n()
+  const [params, setParams] = useSearchParams()
   const [products, setProducts] = useState<Product[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [selectedProductId] = useState<number | null>(null)
-  const [searchParams] = useSearchParams()
-  const initialView = searchParams.get("view")
-  const [activeView, setActiveView] = useState<StockWorkspaceView>(isStockView(initialView) ? initialView : "Control")
+  const [loading, setLoading] = useState(true)
+  const view: StockView = isView(params.get("view")) ? (params.get("view") as StockView) : "Lots"
+  const productParam = params.get("product") ? Number(params.get("product")) : null
+  const canReceive = userCan("inventory.receive")
+  const canAdjust = userCan("inventory.adjust")
 
   useEffect(() => {
-    let active = true
-
-    getProducts()
-      .then((data) => {
-        if (active) {
-          setProducts(data)
-          setIsLoading(false)
-        }
-      })
-      .catch(() => {
-        if (active) setIsLoading(false)
-      })
-
-    const unsubscribeProducts = subscribeProducts((data) => {
-      if (active) setProducts(data)
-    })
-    const unsubscribeSales = subscribeSales(() => {
-      if (active) setProducts((current) => [...current])
-    })
-
-    return () => {
-      active = false
-      unsubscribeProducts()
-      unsubscribeSales()
-    }
+    let alive = true
+    getProducts().then((d) => { if (alive) { setProducts(d); setLoading(false) } }).catch(() => { if (alive) setLoading(false) })
+    const un1 = subscribeProducts((d) => { if (alive) setProducts(d) })
+    const un2 = subscribeSales(() => { if (alive) setProducts((c) => [...c]) })
+    return () => { alive = false; un1(); un2() }
   }, [])
 
-  const selectedProduct =
-    products.find((product) => product.id === selectedProductId) ?? products[0]
+  const selectedProduct = (productParam !== null ? products.find((p) => p.id === productParam) : undefined) ?? products[0]
   const stock = useStockControl(products, selectedProduct)
+  const { setAdjustmentProductId } = stock
+  // Deep link: /stock?view=Control&product=<id> preselects that product in the adjustment form.
+  useEffect(() => {
+    if (view === "Control" && productParam !== null && products.some((p) => p.id === productParam)) setAdjustmentProductId(productParam)
+  }, [view, productParam, products, setAdjustmentProductId])
+
+  function go(v: StockView, extra?: Record<string, string>) {
+    const next = new URLSearchParams()
+    if (v !== "Lots") next.set("view", v)
+    for (const [k, val] of Object.entries(extra ?? {})) next.set(k, val)
+    setParams(next)
+  }
+  function adjustLot(lot: InventoryBatch) {
+    stock.setAdjustmentProductId(lot.productId)
+    stock.setAdjustmentBatchId(lot.id)
+    go("Control")
+  }
+  function exportLots() {
+    downloadCsv(`lots-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["Lot", "Product", "Barcode", "Received", "Supplier", "PO", "Received qty", "Remaining", "Expiry", "Unit cost", "Value"],
+      getInventoryBatches().map((b) => [b.batchNumber, b.productName, b.barcode, b.receivedAt.slice(0, 10), b.supplierName ?? "", b.purchaseOrderNumber ?? "", b.initialQuantity, b.quantityRemaining, b.expiryDate ?? "", b.unitCost, Math.round(b.quantityRemaining * b.unitCost * 100) / 100]))
+  }
+  const tab = (v: StockView, label: string) => (
+    <Link to={v === "Lots" ? "/stock" : `/stock?view=${v}`} aria-current={view === v ? "page" : undefined}>{label}</Link>
+  )
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto app-page">
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Spinner />
-        </div>
-      ) : (
-        <>
-          <div className="mb-6">
-            <h1 className="text-[22px] font-bold tracking-tight" style={{ color: "var(--text)" }}>
-              Stock &amp; Batches
-            </h1>
-            <p className="text-[13px] mt-1" style={{ color: "var(--text-3)" }}>
-              Adjust and count stock, review received batches, and reconcile aggregate vs batches vs ledger. To add new stock, use Receive stock in the sidebar.
-            </p>
+    <main className="mg2 mg2-bo min-h-0 flex-1 overflow-y-auto">
+      <div className="mg2-wrap">
+        <PageHeader eyebrow={t("inv.eyebrow")} title={t("inv.lots.title")} actions={<>
+          <button type="button" className="mg2-btn" onClick={exportLots} aria-label={t("inv.lots.export")}><Download size={16} /><span className="hidden sm:inline">{t("inv.lots.export")}</span></button>
+          {canReceive && <Link to="/products/new" className="mg2-btn mg2-btn-primary" style={{ textDecoration: "none" }}><PackagePlus size={16} />{t("inv.receive")}</Link>}
+        </>} />
+        <StockNav />
+        <nav className="mg2-nav" aria-label={t("inv.lots.sections")} style={{ marginTop: -8 }}>
+          {tab("Lots", t("inv.lots.tab.lots"))}
+          {tab("Control", t("inv.lots.tab.control"))}
+          {tab("Opening", t("inv.lots.tab.opening"))}
+          {tab("Recon", t("inv.lots.tab.recon"))}
+        </nav>
+        {productParam !== null && view === "Lots" && (
+          <div className="mg2-banner mg2-t-info" style={{ marginBottom: 12 }}>
+            <span style={{ flex: 1 }}>{t("inv.lots.scoped", { name: products.find((p) => p.id === productParam)?.name ?? `#${productParam}` })}</span>
+            <button type="button" className="mg2-btn" onClick={() => go("Lots")}>{t("inv.lots.show_all")}</button>
           </div>
+        )}
 
-          <WorkspaceTabs<StockWorkspaceView>
-            active={activeView}
-            onChange={setActiveView}
-            tabs={stockViews}
+        {loading ? <SkeletonRows /> : view === "Lots" ? (
+          <LotsPanel initialLotId={params.get("lot")} productFilter={productParam} canAdjust={canAdjust} onAdjustLot={adjustLot} />
+        ) : view === "Control" ? (
+          <StockControlPanel
+            products={products}
+            adjustmentProduct={stock.adjustmentProduct}
+            adjustmentProductId={stock.adjustmentProductId}
+            onAdjustmentProductIdChange={stock.setAdjustmentProductId}
+            adjustmentMode={stock.adjustmentMode}
+            onAdjustmentModeChange={stock.setAdjustmentMode}
+            adjustmentQuantity={stock.adjustmentQuantity}
+            onAdjustmentQuantityChange={stock.setAdjustmentQuantity}
+            adjustmentReason={stock.adjustmentReason}
+            onAdjustmentReasonChange={stock.setAdjustmentReason}
+            adjustmentBatchId={stock.adjustmentBatchId}
+            onAdjustmentBatchIdChange={stock.setAdjustmentBatchId}
+            adjustmentNote={stock.adjustmentNote}
+            onAdjustmentNoteChange={stock.setAdjustmentNote}
+            selectedProductBatches={stock.selectedProductBatches}
+            recentAdjustments={stock.recentAdjustments}
+            activeStockCount={stock.activeStockCount}
+            countProductId={stock.countProductId}
+            onCountProductIdChange={stock.setCountProductId}
+            countedQuantity={stock.countedQuantity}
+            onCountedQuantityChange={stock.setCountedQuantity}
+            countSearch={stock.countSearch}
+            onCountSearchChange={stock.setCountSearch}
+            countLines={stock.countLines}
+            onSaveStockAdjustment={stock.saveStockAdjustment}
+            onBeginStockCount={stock.beginStockCount}
+            onSaveCountLine={stock.saveCountLine}
+            onPostStockCount={stock.postStockCount}
           />
-
-          {activeView === "Control" ? (
-            <div className="mt-5">
-              <StockControlPanel
-                products={products}
-                adjustmentProduct={stock.adjustmentProduct}
-                adjustmentProductId={stock.adjustmentProductId}
-                onAdjustmentProductIdChange={stock.setAdjustmentProductId}
-                adjustmentMode={stock.adjustmentMode}
-                onAdjustmentModeChange={stock.setAdjustmentMode}
-                adjustmentQuantity={stock.adjustmentQuantity}
-                onAdjustmentQuantityChange={stock.setAdjustmentQuantity}
-                adjustmentReason={stock.adjustmentReason}
-                onAdjustmentReasonChange={stock.setAdjustmentReason}
-                adjustmentBatchId={stock.adjustmentBatchId}
-                onAdjustmentBatchIdChange={stock.setAdjustmentBatchId}
-                adjustmentNote={stock.adjustmentNote}
-                onAdjustmentNoteChange={stock.setAdjustmentNote}
-                selectedProductBatches={stock.selectedProductBatches}
-                recentAdjustments={stock.recentAdjustments}
-                activeStockCount={stock.activeStockCount}
-                countProductId={stock.countProductId}
-                onCountProductIdChange={stock.setCountProductId}
-                countedQuantity={stock.countedQuantity}
-                onCountedQuantityChange={stock.setCountedQuantity}
-                countSearch={stock.countSearch}
-                onCountSearchChange={stock.setCountSearch}
-                countLines={stock.countLines}
-                onSaveStockAdjustment={stock.saveStockAdjustment}
-                onBeginStockCount={stock.beginStockCount}
-                onSaveCountLine={stock.saveCountLine}
-                onPostStockCount={stock.postStockCount}
-              />
-            </div>
-          ) : null}
-
-          {activeView === "Lots" ? <BatchesPanel /> : null}
-
-          {activeView === "Opening" ? <OpeningInventoryPanel /> : null}
-
-          {activeView === "Recon" ? (
-            <>
-              {/* Reconciliation section (identical to ProductsPage Stock tools) */}
-              <section className="card mt-5 overflow-hidden">
-                <div className="flex items-center justify-between border-b px-5 py-4" style={{ borderColor: "var(--border)" }}>
-                  <div>
-                    <h2 className="text-[16px] font-bold" style={{ color: "var(--text)" }}>Inventory Reconciliation</h2>
-                    <p className="text-[12px] mt-0.5" style={{ color: "var(--text-3)" }}>
-                      Detect stock vs batch mismatches, orphan batches, and data integrity issues.
-                    </p>
-                  </div>
-                  <button onClick={stock.runReconScan}
-                    className="btn btn-default btn-sm" disabled={stock.reconLoading}>
-                    {stock.reconLoading ? "Scanning..." : stock.reconIssues.length > 0 ? `Refresh` : "Run Scan"}
-                  </button>
+        ) : view === "Opening" ? (
+          <OpeningInventoryPanel />
+        ) : (
+          <>
+            <section className="mg2-card">
+              <div className="mg2-card-head">
+                <div>
+                  <h2 className="mg2-section-title">{t("inv.recon.title")}</h2>
+                  <p className="mg2-cap" style={{ margin: 0 }}>{t("inv.recon.help")}</p>
                 </div>
-
-                {stock.reconIssues.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full border-separate border-spacing-0 text-[13px]">
-                      <thead>
-                        <tr>
-                          {["Product","Issue","Detail","Suggested Action"].map(h => (
-                            <th key={h} className="border-b px-4 py-3 text-start text-[10px] font-bold uppercase tracking-[0.14em]"
-                              style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>{h}</th>
-                          ))}
+                <button type="button" className="mg2-btn" onClick={stock.runReconScan} disabled={stock.reconLoading}>
+                  {stock.reconLoading ? t("inv.recon.running") : stock.reconIssues.length > 0 ? t("inv.recon.refresh") : t("inv.recon.run")}
+                </button>
+              </div>
+              {stock.reconIssues.length > 0 ? (
+                <div className="mg2-table-wrap" style={{ border: 0, borderRadius: 0 }}>
+                  <table className="mg2-table" aria-label={t("inv.recon.title")}>
+                    <thead><tr><th>{t("inv.col.product")}</th><th>{t("inv.recon.issue")}</th><th className="p3">{t("inv.recon.detail")}</th><th className="p4">{t("inv.recon.action")}</th></tr></thead>
+                    <tbody>
+                      {stock.reconIssues.map((issue, i) => (
+                        <tr key={i} style={{ cursor: "default" }}>
+                          <td>{issue.productName}</td>
+                          <td><span className={`mg2-badge ${issue.severity === "error" ? "t-err" : "t-warn"}`}>{issue.type.replace(/_/g, " ")}</span></td>
+                          <td className="p3" style={{ color: "var(--text-2)" }}>{issue.detail}</td>
+                          <td className="p4" style={{ color: "var(--text-2)" }}>{issue.suggestedAction}</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {stock.reconIssues.map((issue, i) => (
-                          <tr key={i} className="t-row">
-                            <td className="border-b px-4 py-3 font-semibold" style={{ borderColor: "var(--border)", color: "var(--text)" }}>
-                              {issue.productName}
-                            </td>
-                            <td className="border-b px-4 py-3">
-                              <span className="chip text-[10px] px-2 py-0.5 rounded font-bold" style={{
-                                background: issue.severity === "error" ? "var(--danger-soft)" : "var(--warning-soft)",
-                                color: issue.severity === "error" ? "var(--danger-text)" : "var(--warning-text)",
-                              }}>{issue.type.replace(/_/g, " ")}</span>
-                            </td>
-                            <td className="border-b px-4 py-3 text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-2)" }}>
-                              {issue.detail}
-                            </td>
-                            <td className="border-b px-4 py-3 text-[12px]" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
-                              {issue.suggestedAction}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : stock.reconIssues.length === 0 && !stock.reconLoading ? (
-                  <div className="px-5 py-12 text-center text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
-                    Click 'Run Scan' to check inventory integrity.
-                  </div>
-                ) : null}
-              </section>
-              {/* POS-SYNC-AUTHORITY-2C-1: ledger-aware reconciliation (aggregate vs batches vs ledger) */}
-              <LedgerReconciliationPanel />
-            </>
-          ) : null}
-        </>
-      )}
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : !stock.reconLoading ? <p className="mg2-cap" style={{ padding: 16, margin: 0 }}>{t("inv.recon.idle")}</p> : null}
+            </section>
+            <div style={{ marginTop: 16 }}><LedgerReconciliationPanel /></div>
+          </>
+        )}
+      </div>
     </main>
   )
 }

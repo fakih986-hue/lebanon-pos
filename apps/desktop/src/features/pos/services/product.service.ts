@@ -943,8 +943,7 @@ export function mergeCategories(from: string, to: string): CleanupResult {
  * another, as an alias on two products, or as primary on two products. Each
  * conflicting product is returned exactly once (a Set of ids per barcode makes
  * self-references and 3+-way groups immune to count inflation). */
-export function detectDuplicateBarcodes() {
-  const products = getProductsSync()
+export function detectDuplicateBarcodes(products: Product[] = getProductsSync()) {
 
   // Map every barcode (primary + aliases) → the set of product ids using it.
   const productIdsByBarcode = new Map<string, Set<number>>()

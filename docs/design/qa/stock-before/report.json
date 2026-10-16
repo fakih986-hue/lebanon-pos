@@ -1,0 +1,163 @@
+{
+  "base": "http://localhost:5174",
+  "at": "2026-10-16T20:33:57.412Z",
+  "results": [
+    {
+      "name": "products.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed a delivery",
+          "received; supplier Malia Group"
+        ],
+        [
+          "reload",
+          1
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "products.ar.light.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "light",
+      "lang": "ar",
+      "log": [
+        [
+          "seed a delivery",
+          "received; supplier Malia Group"
+        ],
+        [
+          "reload",
+          1
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "light",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "products.en.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed a delivery",
+          "received; supplier Malia Group"
+        ],
+        [
+          "reload",
+          1
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "lots.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed a delivery",
+          "received; supplier Malia Group"
+        ],
+        [
+          "reload",
+          1
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "lots.en.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed a delivery",
+          "received; supplier Malia Group"
+        ],
+        [
+          "reload",
+          1
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receiving.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receiving.ar.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receiving.en.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "en",
+      "log": [],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    }
+  ]
+}

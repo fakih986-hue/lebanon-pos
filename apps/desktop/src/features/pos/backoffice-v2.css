@@ -1,0 +1,146 @@
+/* Midnight Gold v2 — back office (Products, Lots, Receiving). Spec:
+   docs/design/DESIGN-SYSTEM.md §6–§8. Scoped under .mg2.mg2-bo; reuses the
+   register tokens (register-v2.css / index.css). Controls are 40 px on pointer
+   devices and 48 px on touch (§7). Logical properties only (RTL mirrors). */
+
+.mg2.mg2-bo { --mg2-ctl: 40px; min-height: 100%; background: var(--page-bg); color: var(--text); }
+@media (pointer: coarse) { .mg2.mg2-bo { --mg2-ctl: 48px; } }
+.mg2.mg2-bo .mg2-wrap { max-width: 1440px; margin-inline: auto; padding: 16px; }
+@media (min-width: 768px) { .mg2.mg2-bo .mg2-wrap { padding: 20px 24px 32px; } }
+
+/* Page header + workspace nav (links, aria-current; not a tablist) */
+.mg2-bo .mg2-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.mg2-bo .mg2-eyebrow { font-size: 13px; font-weight: 600; color: var(--text-2); margin: 0; }
+.mg2-bo .mg2-title { font-size: 24px; line-height: 32px; font-weight: 700; margin: 0; color: var(--text); }
+.mg2-bo .mg2-head-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.mg2-bo .mg2-nav { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); margin-block: 12px 16px; scrollbar-width: none; }
+.mg2-bo .mg2-nav::-webkit-scrollbar { display: none; }
+.mg2-bo .mg2-nav a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; font-size: 15px; font-weight: 600; color: var(--text-2); text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.mg2-bo .mg2-nav a[aria-current="page"] { color: var(--text); border-bottom-color: var(--brand); }
+.mg2-bo .mg2-nav a:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; border-radius: 6px; }
+.mg2-bo .mg2-count { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-2); }
+
+/* Toolbar: search + filter chips + selects */
+.mg2-bo .mg2-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.mg2-bo .mg2-search { position: relative; flex: 1 1 280px; min-width: 0; max-width: 420px; }
+.mg2-bo .mg2-search svg { position: absolute; inset-inline-start: 12px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+.mg2-bo .mg2-search input { padding-inline-start: 38px; width: 100%; }
+.mg2-bo .mg2-input, .mg2-bo .mg2-select { min-height: var(--mg2-ctl); border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border-input); color: var(--text); font: inherit; font-size: 15px; padding: 0 12px; min-width: 0; }
+.mg2-bo .mg2-input::placeholder { color: var(--text-3); }
+.mg2-bo .mg2-input:focus-visible, .mg2-bo .mg2-select:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.mg2-bo .mg2-input[aria-invalid="true"], .mg2-bo .mg2-select[aria-invalid="true"] { border-color: var(--v2-err); }
+.mg2-bo .mg2-input[disabled] { background: var(--disabled-bg); color: var(--disabled-text); }
+.mg2-bo .mg2-input.num, .mg2-bo .mg2-num-in { text-align: end; font-variant-numeric: tabular-nums; }
+.mg2-bo .mg2-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-block: 2px; }
+.mg2-bo .mg2-chips::-webkit-scrollbar { display: none; }
+.mg2-bo .mg2-chip { display: inline-flex; align-items: center; gap: 8px; min-height: var(--mg2-ctl); padding: 0 14px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); font: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.mg2-bo .mg2-chip[aria-pressed="true"] { background: var(--brand-soft); border-color: var(--brand-border); color: var(--text); }
+.mg2-bo .mg2-chip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.mg2-bo .mg2-chip .mg2-count.t-warn { background: var(--v2-warn-soft); color: var(--v2-warn); }
+.mg2-bo .mg2-chip .mg2-count.t-err { background: var(--v2-err-soft); color: var(--v2-err); }
+
+/* Card / panel */
+.mg2-bo .mg2-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.mg2-bo .mg2-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.mg2-bo .mg2-card-body { padding: 16px; }
+
+/* Table (§7): 44 px rows, sticky header, numbers end-aligned, selected row gold bar */
+.mg2-bo .mg2-table-wrap { overflow: auto; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); }
+.mg2-bo table.mg2-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+.mg2-bo .mg2-table th { text-transform: none; letter-spacing: 0; position: sticky; top: 0; z-index: 1; background: var(--surface-2); color: var(--text-2); font-size: 13px; font-weight: 600; text-align: start; padding: 0 12px; height: 40px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.mg2-bo .mg2-table td { padding: 8px 12px; min-height: 44px; border-bottom: 1px solid var(--border-soft, var(--border)); vertical-align: middle; color: var(--text); }
+.mg2-bo .mg2-table tr:last-child td { border-bottom: 0; }
+.mg2-bo .mg2-table .end { text-align: end; }
+.mg2-bo .mg2-table td.num, .mg2-bo .mg2-table th.num { text-align: end; font-variant-numeric: tabular-nums; }
+.mg2-bo .mg2-table tbody tr { cursor: pointer; }
+.mg2-bo .mg2-table tbody tr:hover td { background: var(--surface-hover); }
+.mg2-bo .mg2-table tbody tr[aria-selected="true"] td { background: var(--brand-soft); }
+.mg2-bo .mg2-table tbody tr[aria-selected="true"] td:first-child { box-shadow: inset 2px 0 0 var(--brand); }
+[dir="rtl"] .mg2-bo .mg2-table tbody tr[aria-selected="true"] td:first-child { box-shadow: inset -2px 0 0 var(--brand); }
+.mg2-bo .mg2-table .sub { display: block; font-size: 13px; color: var(--text-2); margin-top: 2px; }
+.mg2-bo .mg2-table .code { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 13px; color: var(--text-2); unicode-bidi: isolate; direction: ltr; }
+.mg2-bo .mg2-table input[type="checkbox"], .mg2-bo .mg2-check { width: 20px; height: 20px; accent-color: var(--brand); cursor: pointer; }
+.mg2-bo .mg2-sort { display: inline-flex; align-items: center; gap: 4px; background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 0; }
+.mg2-bo .mg2-sort:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+/* Column prioritisation on phones (§8): low-priority columns drop out */
+@media (max-width: 767px) { .mg2-bo .mg2-table .p3 { display: none; } }
+@media (min-width: 768px) { .mg2-bo .phone-only { display: none; } }
+@media (max-width: 767px) {
+  .mg2-bo .mg2-table td, .mg2-bo .mg2-table th { padding-inline: 8px; }
+  .mg2-bo .mg2-table td .mg2-badge { white-space: normal; align-items: flex-start; }
+}
+@media (max-width: 1023px) { .mg2-bo .mg2-table .p4 { display: none; } }
+
+/* Bulk bar replaces the toolbar while rows are selected */
+.mg2-bo .mg2-bulkbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--brand-soft); border: 1px solid var(--brand-border); margin-bottom: 12px; }
+.mg2-bo .mg2-bulkbar strong { font-weight: 700; }
+
+/* Badges (§7): soft background, word + icon, never colour alone */
+.mg2-bo .mg2-badge svg { flex: none; }
+.mg2-bo .mg2-badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.mg2-bo .mg2-badge.t-ok { background: var(--v2-ok-soft); color: var(--v2-ok); }
+.mg2-bo .mg2-badge.t-warn { background: var(--v2-warn-soft); color: var(--v2-warn); }
+.mg2-bo .mg2-badge.t-err { background: var(--v2-err-soft); color: var(--v2-err); }
+.mg2-bo .mg2-badge.t-info { background: var(--v2-info-soft); color: var(--v2-info); }
+.mg2-bo .mg2-badge.t-muted { background: var(--surface-3); color: var(--text-2); }
+
+/* Stat tiles */
+.mg2-bo .mg2-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.mg2-bo .mg2-stat { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.mg2-bo .mg2-stat .l { font-size: 13px; color: var(--text-2); }
+.mg2-bo .mg2-stat .v { font-size: 22px; line-height: 28px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* Remaining-quantity bar for lots */
+.mg2-bo .mg2-bar { height: 6px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.mg2-bo .mg2-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--v2-ok); }
+.mg2-bo .mg2-bar.t-warn > span { background: var(--v2-warn); }
+.mg2-bo .mg2-bar.t-err > span { background: var(--v2-err); }
+
+/* Empty state + skeleton */
+.mg2-bo .mg2-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 48px 16px; color: var(--text-2); }
+.mg2-bo .mg2-empty h3 { margin: 4px 0 0; font-size: 16px; font-weight: 600; color: var(--text); }
+.mg2-bo .mg2-empty p { margin: 0; max-width: 440px; font-size: 14px; }
+.mg2-bo .mg2-skel { height: 44px; border-radius: 8px; background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2)); background-size: 200% 100%; animation: mg2-skel 1.4s ease-in-out infinite; }
+@keyframes mg2-skel { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+@media (prefers-reduced-motion: reduce) { .mg2-bo .mg2-skel { animation: none; } }
+
+/* Fields */
+.mg2-bo .mg2-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mg2-bo .mg2-field > span.lbl { font-size: 14px; font-weight: 600; color: var(--text-2); }
+.mg2-bo .mg2-field .help { font-size: 13px; color: var(--text-2); margin: 0; }
+.mg2-bo .mg2-field .err { font-size: 13px; color: var(--v2-err); margin: 0; font-weight: 600; }
+.mg2-bo .mg2-grid2 { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 560px) { .mg2-bo .mg2-grid2 { grid-template-columns: 1fr 1fr; } }
+
+/* Drawer (§7): inline-end side, 480 / 640 px, header · scroll body · sticky footer; full screen on phones */
+.mg2.mg2-drawer-layer { position: fixed; inset: 0; z-index: 260; display: flex; justify-content: flex-end; background: rgba(5,7,13,.6); }
+.mg2 .mg2-drawer { width: min(480px, 100%); height: 100%; background: var(--surface); border-inline-start: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: -16px 0 40px rgba(0,0,0,.4); outline: none; }
+.mg2 .mg2-drawer.wide { width: min(640px, 100%); }
+.mg2 .mg2-drawer-head { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-bottom: 1px solid var(--border); }
+.mg2 .mg2-drawer-head h2 { margin: 0; font-size: 18px; line-height: 26px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+.mg2 .mg2-drawer-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.mg2 .mg2-drawer-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); background: var(--surface); }
+.mg2 .mg2-section-title { font-size: 15px; font-weight: 700; color: var(--text); margin: 0; }
+
+/* Lot row inside a product drawer */
+.mg2-bo .mg2-lot { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--surface-2); display: flex; flex-direction: column; gap: 8px; }
+.mg2-bo .mg2-lot .top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; }
+
+/* Receiving grid (data-entry: scrolls horizontally on phones, §8) */
+.mg2-bo .mg2-rgrid td { padding: 6px 8px; }
+.mg2-bo .mg2-rgrid { table-layout: fixed; }
+.mg2-bo .mg2-rgrid td:first-child .mg2-badge { white-space: normal; height: auto; min-height: 22px; line-height: 1.3; padding-block: 2px; }
+.mg2-bo .mg2-rgrid input[type=date] { padding-inline: 8px; }
+.mg2-bo .mg2-rgrid .mg2-input { width: 100%; min-width: 0; }
+.mg2-bo .mg2-rgrid .mg2-input.num { padding-inline: 8px; }
+.mg2-bo .mg2-rgrid .mg2-input.num::-webkit-inner-spin-button { display: none; }
+.mg2-bo .mg2-rgrid tr.row-problem td:first-child { box-shadow: inset 3px 0 0 var(--v2-warn); }
+[dir="rtl"] .mg2-bo .mg2-rgrid tr.row-problem td:first-child { box-shadow: inset -3px 0 0 var(--v2-warn); }
+.mg2-bo .mg2-rgrid tr.row-error td:first-child { box-shadow: inset 3px 0 0 var(--v2-err); }
+[dir="rtl"] .mg2-bo .mg2-rgrid tr.row-error td:first-child { box-shadow: inset -3px 0 0 var(--v2-err); }
+.mg2-bo .mg2-rgrid tbody tr { cursor: default; }
+.mg2-bo .mg2-rgrid tbody tr.detail td { background: var(--surface-2); }
+.mg2-bo .mg2-layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 1200px) { .mg2-bo .mg2-layout { grid-template-columns: minmax(0, 1fr) 360px; } }
+.mg2-bo .mg2-sum { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; padding-block: 4px; }
+.mg2-bo .mg2-sum strong { font-variant-numeric: tabular-nums; }

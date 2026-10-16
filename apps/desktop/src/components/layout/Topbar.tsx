@@ -48,14 +48,16 @@ export default function Topbar() {
   useEffect(() => subscribeSecurity(() => setSecurityVersion((version) => version + 1)), [])
 
   const isPosRoute = location.pathname === "/"
+  // Midnight Gold v2 pages carry their own page header (eyebrow + title + workspace nav); the bar shows only the date there.
+  const ownsHeader = ["/products", "/stock", "/products/new"].includes(location.pathname)
 
   return (
     <header className={`topbar-shell flex shrink-0 items-center justify-between gap-2 border-b px-3 sm:gap-3 sm:px-6 ${isPosRoute ? "min-h-[56px]" : "min-h-[64px]"}`}>
       {!isPosRoute && (
         <div className="min-w-0">
-          <h2 className="truncate text-lg font-bold leading-tight tracking-tight sm:text-xl" style={{ color: "var(--text)" }}>
+          {!ownsHeader && <h2 className="truncate text-lg font-bold leading-tight tracking-tight sm:text-xl" style={{ color: "var(--text)" }}>
             {t(page.titleKey)}
-          </h2>
+          </h2>}
           <p className="hidden text-[12px] font-semibold sm:block" style={{ color: "var(--text-3)" }}>
             {today}
           </p>

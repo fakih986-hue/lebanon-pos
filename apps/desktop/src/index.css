@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./features/pos/register-v2.css";
+@import "./features/pos/backoffice-v2.css";
 
 :root,
 [data-theme="light"] {
