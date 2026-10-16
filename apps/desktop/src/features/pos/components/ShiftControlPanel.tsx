@@ -44,7 +44,7 @@ export default function ShiftControlPanel() {
   const difference = active ? parseMoney(closingCash) - expected : 0
 
   const doOpen = () => {
-    let s: ReturnType<typeof openShift> = null
+    let s: ReturnType<typeof openShift>
     try { s = openShift(parseMoney(openingFloat)) } catch (e) { showToast(e instanceof Error ? e.message : String(e), "error"); return }
     if (s) { showToast("Shift opened.", "success"); setTick((n) => n + 1) }
     else showToast("Could not open shift — enter a valid opening float.", "error")
@@ -52,7 +52,7 @@ export default function ShiftControlPanel() {
 
   const doClose = () => {
     if (!active || !breakdown) return
-    let closed: ReturnType<typeof closeShift> = null
+    let closed: ReturnType<typeof closeShift>
     try { closed = closeShift({
       shiftId: active.id,
       expectedCashUsd: expected,

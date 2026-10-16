@@ -490,7 +490,7 @@ export default function StaffPage() {
   }
 
   function handleOpenShift() {
-    let shift: ReturnType<typeof openShift> = null
+    let shift: ReturnType<typeof openShift>
     try { shift = openShift(parseMoney(openingFloat)) } catch (e) { showToast(e instanceof Error ? e.message : String(e), "error"); return }
     if (!shift) return
 
@@ -508,7 +508,7 @@ export default function StaffPage() {
       confirmLabel: t("pos.staff.close_shift"),
       confirmDestructive: true,
       onConfirm: () => {
-        let closedShift: ReturnType<typeof closeShift> = null
+        let closedShift: ReturnType<typeof closeShift>
         try { closedShift = closeShift({
           shiftId: activeShift.id,
           cashSalesUsd: cashSales,
