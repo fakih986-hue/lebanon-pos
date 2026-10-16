@@ -60,6 +60,22 @@ async function scene(cdp, name, { w, h, mobile = false, theme = "dark", lang = "
     await sleep(3000)
     const log = []
     for (const [label, js, wait = 600] of steps) {
+      if (typeof js === "string" && js.startsWith("@key:")) {
+        // Real key presses (CDP) so the browser moves focus itself.
+        const [, key, times = "1", shift] = js.split(":")
+        const codes = { Tab: 9, Escape: 27, Enter: 13 }
+        for (let i = 0; i < Number(times); i++) {
+          for (const type of ["rawKeyDown", "keyUp"]) await cdp.send("Input.dispatchKeyEvent", { type, key, code: key, windowsVirtualKeyCode: codes[key], modifiers: shift ? 8 : 0 }, sessionId)
+          await sleep(80)
+        }
+        log.push([label, await ev(`const d=document.querySelector("[role=dialog][aria-modal=true]"); const a=document.activeElement; return (d ? (d.contains(a) ? "inside dialog: " : "OUTSIDE dialog: ") : "no dialog, ") + (a ? (a.getAttribute("aria-label") || a.textContent.trim().slice(0,30) || a.tagName) : "none")`)])
+        await sleep(wait); continue
+      }
+      if (typeof js === "string" && js.startsWith("@resize:")) {
+        const [, rw, rh] = js.split(":")
+        await cdp.send("Emulation.setDeviceMetricsOverride", { width: Number(rw), height: Number(rh), deviceScaleFactor: 1, mobile: Number(rw) < 768 }, sessionId)
+        log.push([label, `viewport ${rw}x${rh}`]); await sleep(wait); continue
+      }
       if (js === "@offline") {
         await cdp.send("Network.enable", {}, sessionId)
         await cdp.send("Network.emulateNetworkConditions", { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1 }, sessionId)
@@ -119,17 +135,36 @@ const focusScan = ["focus scan", `const i = document.querySelector("input[aria-l
 const dialogState = ["dialog open?", `return document.querySelector("[role=dialog][aria-modal=true]") ? "review dialog open" : "no dialog"`, 100]
 const capsule = ["status capsule", `const b = [...document.querySelectorAll("button[aria-label]")].find((x) => /Sync and status|المزامنة والحالة/.test(x.getAttribute("aria-label"))); return b ? b.getAttribute("aria-label") : "no capsule"`, 100]
 const queued = ["sync queue", `const q = JSON.parse(localStorage.getItem("lebanonpos.sync-queue.v1") || "[]"); return q.filter((o) => o.entity === "sale").map((o) => o.status + " " + (o.payload && o.payload.saleNumber)).join(", ") || "no sale ops"`, 100]
-const exactCash = ["exact LBP", `__t.textBtn(/^(Exact LBP|بالضبط)/i).click(); return "ok"`, 400]
+const exactCash = ["exact LBP", `__t.textBtn(/^(Exact LBP|المبلغ بالليرة|بالضبط)/i).click(); return "ok"`, 400]
 const permState = ["permission state", `
   const sac = __t.textBtn(/Sell at Cost|البيع بسعر الكلفة/i); const disc = __t.textBtn(/^(Discount|الخصم)/i); if (disc) disc.click(); await new Promise(r=>setTimeout(r,250))
   return "sell-at-cost " + (sac ? "SHOWN" : "hidden") + "; discount: " + ((document.body.innerText.match(/permission required|تتطلب صلاحية|يتطلب صلاحية|Permission required/i) || ["no permission note"])[0])`, 200]
 const asCashier = `(()=>{ const u = JSON.parse(localStorage.getItem("lebanonpos.users.v1") || "[]"); if (u[0]) { u[0].role = "Cashier"; u[0].permissions = []; localStorage.setItem("lebanonpos.users.v1", JSON.stringify(u)) } })()`
 
+const trapSteps = [["Tab ×7", "@key:Tab:7", 150], ["Shift+Tab ×5", "@key:Tab:5:shift", 150], ["Esc (real key)", "@key:Escape:1", 400]]
 const BEHAVIOUR = [
+  ["behaviour-focus-trap.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, exactCash, review, ...trapSteps] }],
+  ["behaviour-focus-trap-simple.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, quick, exactCash, review, ...trapSteps] }],
   ["behaviour-keys.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, focusScan, keyOnFocus("F3"), tenderChecked, keyOnFocus("F2"), tenderChecked, exactCash, focusScan, keyOnFocus("Enter"), dialogState, keyOnFocus("Escape"), dialogState, ["focus after Esc", `return ${focusName}`, 100], keyOnFocus("Escape"), ["focus after Esc in scan field", `return ${focusName}`, 100]] }],
   ["behaviour-offline.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, ["go offline", "@offline", 800], capsule, addTiles, exactCash, review, confirm, queued, capsule, ["focus after sale", `return ${focusName}`, 100]] }],
   ["behaviour-cashier.en.dark.desktop", { w: 1440, h: 900, setup: asCashier, steps: [openShift, addTiles, permState] }],
   ["behaviour-cashier-simple.en.dark.desktop", { w: 1440, h: 900, setup: asCashier, steps: [openShift, addTiles, quick, ["sell-at-cost in Simple POS", `return __t.textBtn(/Sell at Cost/i) ? "SHOWN" : "hidden"`, 100]] }],
+]
+
+const toPhone = ["switch to phone", "@resize:390:844", 900]
+const openCartSheet = ["open cart sheet", `const b = [...document.querySelectorAll(".mg2-paybar button")][0]; if (!b) throw new Error("no paybar"); b.click(); return "ok"`, 700]
+const payInSheet = ["pay (cart sheet)", `const p = [...document.querySelectorAll(".mg2-pay")].filter((x) => x.offsetParent !== null && !x.closest(".mg2-paybar")).pop(); if (!p) throw new Error("no pay in sheet"); p.click(); return p.textContent.trim().slice(0, 60)`, 800]
+const MORE = [
+  ["payment-review.ar.light.desktop", { w: 1440, h: 900, theme: "light", lang: "ar", steps: [openShift, addTiles, cashPaid, review] }],
+  ["sale-complete.ar.dark.desktop", { w: 1440, h: 900, lang: "ar", steps: [openShift, addTiles, cashPaid, review, confirm] }],
+  ["sale-complete.en.light.desktop", { w: 1440, h: 900, theme: "light", steps: [openShift, addTiles, exactCash, review, confirm] }],
+  ["simple-pos.en.light.desktop", { w: 1440, h: 900, theme: "light", steps: [openShift, addTiles, quick, exactCash] }],
+  ["register.ar.light.mobile", { w: 1440, h: 900, theme: "light", lang: "ar", steps: [openShift, toPhone, addTiles] }],
+  ["cart-sheet.en.dark.mobile", { w: 1440, h: 900, steps: [openShift, toPhone, addTiles, openCartSheet, exactCash] }],
+  ["payment-review.en.dark.mobile", { w: 1440, h: 900, steps: [openShift, toPhone, addTiles, openCartSheet, exactCash, payInSheet] }],
+  ["sale-complete.en.dark.mobile", { w: 1440, h: 900, steps: [openShift, toPhone, addTiles, openCartSheet, exactCash, payInSheet, confirm] }],
+  ["payment-review.ar.light.mobile", { w: 1440, h: 900, theme: "light", lang: "ar", steps: [openShift, toPhone, addTiles, openCartSheet, exactCash, payInSheet] }],
+  ["simple-pos.en.dark.mobile", { w: 1440, h: 900, steps: [openShift, toPhone, addTiles, quick, exactCash] }],
 ]
 
 const SCENES = [
@@ -154,7 +189,7 @@ const SCENES = [
     const cdp = new CDP(ws); await cdp.open()
     const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null
     const results = []
-    for (const [name, opts] of (process.env.BEHAVIOUR ? BEHAVIOUR : SCENES)) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
+    for (const [name, opts] of (process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
     fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify({ base: BASE, at: new Date().toISOString(), results }, null, 2))
   } finally { chrome.kill() }
 })().catch((e) => { console.error(e); process.exit(1) })

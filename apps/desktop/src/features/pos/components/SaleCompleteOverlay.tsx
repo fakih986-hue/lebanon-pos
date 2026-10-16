@@ -13,7 +13,7 @@ type Props = {
     payableLbp?: number
     payableUsd?: number
     paymentMethod?: string
-    tender?: { changeUsd?: number; changeLbp?: number; paidUsd?: number; paidLbp?: number }
+    tender?: { changeUsd?: number; changeLbp?: number; paidUsd?: number; paidLbp?: number; changeCurrency?: string }
     profit?: number
   } | null
   /** True once the cashier starts the next sale (an item is in the cart). */
@@ -52,6 +52,7 @@ export default function SaleCompleteOverlay({ sale, nextSaleStarted = false, onV
   const isCash = snapshot.paymentMethod === "Cash"
   const changeLbp = snapshot.tender?.changeLbp ?? 0
   const changeUsd = snapshot.tender?.changeUsd ?? 0
+  const changeInLbp = snapshot.tender?.changeCurrency === "LBP"
   const paidLbp = isCash && snapshot.payableLbp ? snapshot.payableLbp : snapshot.totalLbp
   const paidUsd = isCash && snapshot.payableUsd ? snapshot.payableUsd : snapshot.total
 
@@ -76,8 +77,8 @@ export default function SaleCompleteOverlay({ sale, nextSaleStarted = false, onV
           <div className="mg2-banner mg2-t-ok">
             <span className="mg2-sub" style={{ color: "inherit" }}>{t("pos.v2.change_to_give")}</span>
             <span className="num" style={{ marginInlineStart: "auto", textAlign: "end" }}>
-              <span className="block font-semibold" style={{ fontSize: 24, lineHeight: 1.2, color: "var(--ok-money)" }}>{formatNumber(Math.round(changeLbp))} {lbp}</span>
-              <span className="mg2-cap block" style={{ color: "inherit" }}>{formatCurrency(changeUsd)}</span>
+              <span className="block font-semibold" style={{ fontSize: 24, lineHeight: 1.2, color: "var(--ok-money)" }}>{changeInLbp ? `${formatNumber(Math.round(changeLbp))} ${lbp}` : formatCurrency(changeUsd)}</span>
+              <span className="mg2-cap block" style={{ color: "inherit" }}>{changeInLbp ? formatCurrency(changeUsd) : `${formatNumber(Math.round(changeLbp))} ${lbp}`}</span>
             </span>
           </div>
         )}

@@ -13,7 +13,7 @@
 | **1. Static preview** | The screen and its states are drawn in v2, in EN and AR, dark and light, at desktop, tablet and phone sizes | Rendered offline. `qa/report.json` shows **204/204 clean**: exact viewports, no overflow, fonts loaded, labelled controls, rendered text at AA |
 | **2. Interactions prototyped** | The flow can be clicked through: open a dialog, submit, see the error and recover | Only the slice below, which went straight to level 3. The static previews have working native controls (radios, chips, links, the focus order) but no flow logic |
 | **3. Production implementation** | Built in `apps/desktop` with v2 tokens and components, connected to the existing services | **Register and Simple POS** (slice). Business logic unchanged: `POSPage` state, `completeSale`, services |
-| **4. Runtime validation** | The built v2 screen is exercised in the running app | **Partial, for the slice only:** the Vite dev server in local dev mode, scripted in headless Chrome (`docs/design/qa-app.cjs`): keyboard, offline checkout, permissions, focus, EN/AR, dark/light, phone and desktop. **Not yet:** the Electron hub, a LAN till, a real receipt printer, a real scanner, a touch device |
+| **4. Runtime validation** | The built v2 screen is exercised in the running app | **Partial, for the slice only:** the Vite dev server in local dev mode, scripted in headless Chrome (`docs/design/qa-app.cjs`): keyboard, focus trap and focus return with real key presses, offline checkout, **offline restart and queued-sale recovery against the real API on the scratch database** (`docs/design/qa-offline-recovery.cjs`, 12/12), permissions, EN/AR, dark/light, phone and desktop. **Not yet:** the Electron hub, a LAN till, a real receipt printer, a real scanner, a touch device |
 
 **Not covered by any of these levels: design approval.**
 - The automated checks (rendering, contrast, Better Design review) find defects. They do not approve a design.
@@ -104,5 +104,5 @@ The application shell (topbar and status capsule) is restyled on every route as 
 ## Still missing before migration
 
 1. **Runtime validation of the slice** on the Electron hub, a LAN till, a receipt printer, a barcode scanner and a touch screen.
-2. **Register strings** set by `POSPage` (scanner status, checkout errors) and the Cash Drawer widget are still English-only.
+2. ~~Register strings~~: scanner statuses and the Cash Drawer are localized (EN/AR). The Record Expense widget in the empty cart rail is still English-only.
 3. **Interaction prototypes / implementation** for the other 20 surfaces, after the slice is accepted.

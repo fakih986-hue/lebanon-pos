@@ -86,6 +86,9 @@ export default function TenderPanel({
   }, [customers, customerSearch])
 
   const noItems = itemsCount === 0
+  // Change is given in LBP only for a pure-LBP tender; USD and mixed tenders give USD change
+  // (POSPage tender.changeCurrency). The display leads with the currency actually handed back.
+  const changeInLbp = (parseFloat(paidLbp) || 0) > 0 && !(parseFloat(paidUsd) || 0)
   const lbp = t("pos.v2.lbp")
 
   return (
@@ -163,8 +166,8 @@ export default function TenderPanel({
             <div className="mg2-banner mg2-t-ok" role="status" aria-live="polite">
               <span className="mg2-sub" style={{ color: "inherit" }}>{t("pos.v2.change_due")}</span>
               <span className="num" style={{ marginInlineStart: "auto", textAlign: "end" }}>
-                <span className="block font-semibold" style={{ fontSize: quick ? 32 : 22, lineHeight: 1.2, color: "var(--ok-money)" }}>{formatNumber(Math.round(cashChangeLbp))} {lbp}</span>
-                <span className="mg2-cap block" style={{ color: "inherit" }}>{formatCurrency(cashChangeUsd)} · {t("pos.v2.paid")} {formatCurrency(paidTotalUsd)} / {formatNumber(Math.round(paidTotalLbp))} {lbp}</span>
+                <span className="block font-semibold" style={{ fontSize: quick ? 32 : 22, lineHeight: 1.2, color: "var(--ok-money)" }}>{cashChangeUsd <= 0 && cashChangeLbp <= 0 ? t("pos.v2.no_change") : changeInLbp ? `${formatNumber(Math.round(cashChangeLbp))} ${lbp}` : formatCurrency(cashChangeUsd)}</span>
+                <span className="mg2-cap block" style={{ color: "inherit" }}>{changeInLbp ? formatCurrency(cashChangeUsd) : `${formatNumber(Math.round(cashChangeLbp))} ${lbp}`} · {t("pos.v2.paid")} {formatCurrency(paidTotalUsd)} / {formatNumber(Math.round(paidTotalLbp))} {lbp}</span>
               </span>
             </div>
           ) : paidTotalUsd > 0 ? (

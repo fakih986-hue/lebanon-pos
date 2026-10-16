@@ -1,7 +1,227 @@
 {
   "base": "http://localhost:5174",
-  "at": "2026-10-16T13:04:53.153Z",
+  "at": "2026-10-16T15:48:56.745Z",
   "results": [
+    {
+      "name": "register-cash.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "register-cash.en.light.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "light",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "light",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "register-cash.ar.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "امسح الباركود أو اكتب اسم الصنف",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "register-scan-focus.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "scan pepsi",
+          "focus kept on scan"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "payment-review.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ],
+        [
+          "open payment review",
+          "Pay$6.76 · 605,000 LBPEnter"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "sale-complete.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ],
+        [
+          "open payment review",
+          "Pay$6.76 · 605,000 LBPEnter"
+        ],
+        [
+          "confirm payment",
+          "Confirm and pay$6.76 · 605,000 LBPEnter"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "simple-pos.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "enter Simple POS",
+          "ok"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan the next item",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "register.en.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "no float field (shift may already be open)"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
     {
       "name": "simple-pos.ar.light.mobile",
       "w": 390,
@@ -26,6 +246,356 @@
         "dir": "rtl",
         "theme": "light",
         "active": "امسح الصنف التالي",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "payment-review.ar.light.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "light",
+      "lang": "ar",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ],
+        [
+          "open payment review",
+          "ادفع$6.76 · 605,000 ل.لEnter"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "light",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "sale-complete.ar.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ],
+        [
+          "open payment review",
+          "ادفع$6.76 · 605,000 ل.لEnter"
+        ],
+        [
+          "confirm payment",
+          "تأكيد ودفع$6.76 · 605,000 ل.لEnter"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "امسح الباركود أو اكتب اسم الصنف",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "sale-complete.en.light.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "light",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ],
+        [
+          "open payment review",
+          "Pay$6.76 · 605,000 LBPEnter"
+        ],
+        [
+          "confirm payment",
+          "Confirm and pay$6.76 · 605,000 LBPEnter"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "light",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "simple-pos.en.light.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "light",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "enter Simple POS",
+          "ok"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "light",
+        "active": "Scan the next item",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "register.ar.light.mobile",
+      "w": 1440,
+      "h": 900,
+      "theme": "light",
+      "lang": "ar",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "switch to phone",
+          "viewport 390x844"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "light",
+        "active": "امسح الباركود أو اكتب اسم الصنف",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "cart-sheet.en.dark.mobile",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "switch to phone",
+          "viewport 390x844"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "open cart sheet",
+          "ok"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "payment-review.en.dark.mobile",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "switch to phone",
+          "viewport 390x844"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "open cart sheet",
+          "ok"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ],
+        [
+          "pay (cart sheet)",
+          "Pay$6.76 · 605,000 LBPEnter"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "sale-complete.en.dark.mobile",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "switch to phone",
+          "viewport 390x844"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "open cart sheet",
+          "ok"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ],
+        [
+          "pay (cart sheet)",
+          "Pay$6.76 · 605,000 LBPEnter"
+        ],
+        [
+          "confirm payment",
+          "Confirm and pay$6.76 · 605,000 LBPEnter"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "payment-review.ar.light.mobile",
+      "w": 1440,
+      "h": 900,
+      "theme": "light",
+      "lang": "ar",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "switch to phone",
+          "viewport 390x844"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "open cart sheet",
+          "ok"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ],
+        [
+          "pay (cart sheet)",
+          "ادفع$6.76 · 605,000 ل.لEnter"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "light",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "simple-pos.en.dark.mobile",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "switch to phone",
+          "viewport 390x844"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "enter Simple POS",
+          "ok"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan the next item",
         "overflowX": false
       }
     }

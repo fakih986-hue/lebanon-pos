@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { useI18n } from "@lebanonpos/shared"
 import type { ChangeEvent } from "react"
 import { playErrorBuzz } from "../lib/sound"
 import { normalizeBarcode } from "../lib/pos.constants"
@@ -27,7 +28,8 @@ function useBarcodeScanner(
   onScannedProduct: (product: Product, source: string) => void
 ) {
   const [scanCode, setScanCode] = useState("")
-  const [scannerStatus, setScannerStatus] = useState("Scanner ready.")
+  const { t } = useI18n()
+  const [scannerStatus, setScannerStatus] = useState(() => t("pos.status.ready"))
   const [cameraActive, setCameraActive] = useState(false)
   const [cameraEngine, setCameraEngine] = useState<"native" | "html5" | null>(null)
   const scanInputRef = useRef<HTMLInputElement>(null)
@@ -53,11 +55,11 @@ function useBarcodeScanner(
 
   function handleScannedBarcode(value: string) {
     const barcode = normalizeBarcode(value)
-    if (!barcode) { setScannerStatus("Scan a barcode first."); return }
+    if (!barcode) { setScannerStatus(t("pos.status.scan_first")); return }
     const product = findProductByBarcode(barcode)
-    if (!product) { playErrorBuzz(); setScannerStatus(`Barcode ${barcode} not found.`); return }
+    if (!product) { playErrorBuzz(); setScannerStatus(t("pos.status.barcode_not_found", { barcode })); return }
     onScannedProduct(product, "barcode")
-    setScannerStatus(`${product.name} added.`)
+    setScannerStatus(t("pos.status.added", { name: product.name }))
     setScanCode("")
     scanInputRef.current?.focus()
   }
@@ -66,7 +68,7 @@ function useBarcodeScanner(
     if (cameraActive) { stopCameraScanner(); return }
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setScannerStatus("📷 Camera not available. Tap to capture barcode photo.")
+      setScannerStatus(t("pos.status.camera_unavailable"))
       scanCaptureInputRef.current?.click()
       return
     }
@@ -75,7 +77,7 @@ function useBarcodeScanner(
     loadHtml5Qrcode().catch(() => {})
 
     // Try Native BarcodeDetector first (fastest, works on Chrome/Android)
-    setScannerStatus("Starting camera…")
+    setScannerStatus(t("pos.status.camera_starting"))
     try {
       const detector = await createBarcodeDetector()
       if (!isMountedRef.current) return
@@ -94,7 +96,7 @@ function useBarcodeScanner(
         if (!isMountedRef.current) { stream.getTracks().forEach((t) => t.stop()); return }
         setCameraEngine("native")
         setCameraActive(true)
-        setScannerStatus("📱 Live scanner active — point at barcode")
+        setScannerStatus(t("pos.status.camera_live"))
 
         const scanFrame = async () => {
           if (!videoRef.current || !scannerStreamRef.current) return
@@ -115,7 +117,7 @@ function useBarcodeScanner(
     } catch (e) {
       stopCameraScanner()
       if (e instanceof DOMException && (e.name === "SecurityError" || e.name === "NotAllowedError")) {
-        setScannerStatus("❌ Camera permission denied. Allow camera access in browser settings.")
+        setScannerStatus(t("pos.status.camera_denied"))
         return
       }
       // Fall through to html5-qrcode
@@ -125,7 +127,7 @@ function useBarcodeScanner(
     if (!isMountedRef.current) return
     setCameraActive(true)
     setCameraEngine("html5")
-    setScannerStatus("Starting camera scanner…")
+    setScannerStatus(t("pos.status.camera_scanner_starting"))
     await new Promise<void>((r) => window.requestAnimationFrame(() => r()))
     if (!isMountedRef.current) return
 
@@ -133,7 +135,7 @@ function useBarcodeScanner(
     if (!isMountedRef.current) return
     if (!scanner) {
       stopCameraScanner()
-      setScannerStatus("❌ Camera scanner could not load. Try photo capture instead.")
+      setScannerStatus(t("pos.status.camera_load_failed"))
       scanCaptureInputRef.current?.click()
       return
     }
@@ -152,15 +154,15 @@ function useBarcodeScanner(
           }
         }
       )
-      setScannerStatus("📱 Live scanner active — point at barcode")
+      setScannerStatus(t("pos.status.camera_live"))
     } catch (e) {
       stopCameraScanner()
       if (e instanceof DOMException && (e.name === "SecurityError" || e.name === "NotAllowedError")) {
-        setScannerStatus("❌ Live camera blocked. Tap to capture barcode photo instead.")
+        setScannerStatus(t("pos.status.camera_blocked"))
         scanCaptureInputRef.current?.click()
         return
       }
-      setScannerStatus(`⚠️ ${getCameraErrorMessage(e)} — try photo capture`)
+      setScannerStatus(t("pos.status.camera_error", { error: getCameraErrorMessage(e) }))
       scanCaptureInputRef.current?.click()
     }
   }
@@ -170,15 +172,15 @@ function useBarcodeScanner(
     event.currentTarget.value = ""
     if (!file) return
     try {
-      setScannerStatus("🔍 Scanning barcode from photo…")
+      setScannerStatus(t("pos.status.photo_scanning"))
       const barcode = await detectBarcodeFromImageFile(file)
       if (!barcode) {
-        setScannerStatus("❌ No barcode detected. Center the barcode and try again.")
+        setScannerStatus(t("pos.status.photo_none"))
         return
       }
       handleScannedBarcode(barcode)
     } catch {
-      setScannerStatus("❌ Could not scan photo. Try better lighting or move closer.")
+      setScannerStatus(t("pos.status.photo_failed"))
     }
   }
 

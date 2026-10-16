@@ -1,7 +1,97 @@
 {
   "base": "http://localhost:5174",
-  "at": "2026-10-16T13:03:33.925Z",
+  "at": "2026-10-16T15:44:40.634Z",
   "results": [
+    {
+      "name": "behaviour-focus-trap.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ],
+        [
+          "open payment review",
+          "Pay$6.76 · 605,000 LBPEnter"
+        ],
+        [
+          "Tab ×7",
+          "inside dialog: Back Esc"
+        ],
+        [
+          "Shift+Tab ×5",
+          "inside dialog: Confirm and pay$6.76 · 605,000"
+        ],
+        [
+          "Esc (real key)",
+          "no dialog, Scan barcode or type item name"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "behaviour-focus-trap-simple.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "enter Simple POS",
+          "ok"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ],
+        [
+          "open payment review",
+          "Pay$6.76 · 605,000 LBPEnter"
+        ],
+        [
+          "Tab ×7",
+          "inside dialog: Back Esc"
+        ],
+        [
+          "Shift+Tab ×5",
+          "inside dialog: Confirm and pay$6.76 · 605,000"
+        ],
+        [
+          "Esc (real key)",
+          "no dialog, Scan the next item"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan the next item",
+        "overflowX": false
+      }
+    },
     {
       "name": "behaviour-keys.en.dark.desktop",
       "w": 1440,
@@ -118,7 +208,7 @@
         ],
         [
           "sync queue",
-          "Pending S-K6EJ-000001"
+          "Pending S-MELB-000001"
         ],
         [
           "status capsule",

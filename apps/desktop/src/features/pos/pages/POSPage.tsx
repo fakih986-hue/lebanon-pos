@@ -144,6 +144,13 @@ export default function POSPage() {
     }
   }, [customers, paymentMethod, selectedCustomerId])
 
+  // How an item was added, in the cashier's language (scanner status line).
+  const sourceLabel = (source: string) => {
+    const key = `pos.status.src_${source.replace(/\s+/g, "_")}`
+    const label = t(key)
+    return label === key ? source : label
+  }
+
   // --- Hotkeys ---
   useHotkeys([
     {
@@ -171,7 +178,7 @@ export default function POSPage() {
   useEffect(() => {
     const onRejected = (e: Event) => {
       const op = (e as CustomEvent).detail
-      const msg = op?.error ? `⚠️ ${op.error}` : "⚠️ Sale was not completed by server"
+      const msg = op?.error ? t("pos.status.server_rejected", { error: op.error }) : t("pos.status.server_rejected_generic")
       setScannerStatus(msg)
     }
     window.addEventListener("sync:operation-rejected", onRejected)
@@ -338,19 +345,19 @@ export default function POSPage() {
     const cartItem = items.find((item) => item.id === product.id)
     if (product.stock <= 0) {
       playErrorBuzz()
-      setScannerStatus(`${product.name} is out of stock.`)
+      setScannerStatus(t("pos.status.out_of_stock", { name: product.name }))
       return
     }
     if (cartItem && cartItem.quantity >= product.stock) {
       playErrorBuzz()
-      setScannerStatus(`${product.name} reached available stock.`)
+      setScannerStatus(t("pos.status.reached_stock", { name: product.name }))
       return
     }
     addItem(product)
     playScanBlip()
     setScanCode("")
     setSearch("")
-    setScannerStatus(`${product.name} added by ${source}.`)
+    setScannerStatus(t("pos.status.added_by", { name: product.name, source: sourceLabel(source) }))
   }, [products, items])
 
   function quickAddProduct(value: string) {
@@ -363,19 +370,19 @@ export default function POSPage() {
         if (checkoutBlocked) {
           setScannerStatus(
             paymentMethod === "Cash" && !cashTenderValid
-              ? `Enter payment — still due ${formatCurrency(cashStillDueUsd)}`
+              ? t("pos.status.still_due", { amount: formatCurrency(cashStillDueUsd) })
               : paymentMethod === "Debt" && !selectedCustomer
-                ? "Select a customer for this debt sale."
+                ? t("pos.status.select_customer")
                 : creditLimitExceeded
-                  ? "Credit limit exceeded — cannot checkout."
-                  : "Cannot checkout yet."
+                  ? t("pos.status.credit_exceeded")
+                  : t("pos.status.cannot_checkout")
           )
         } else {
           setShowReview(true)
         }
         return
       }
-      setScannerStatus("Type, scan, or choose an item first.")
+      setScannerStatus(t("pos.status.choose_item"))
       return
     }
     const barcode = value.trim().replace(/\s+/g, "")
@@ -391,7 +398,7 @@ export default function POSPage() {
     })
     const product = exactProduct ?? matchingProducts[0]
     if (!product) {
-      setScannerStatus(`No item found for ${value.trim()}.`)
+      setScannerStatus(t("pos.status.not_found", { query: value.trim() }))
       return
     }
     addProductToSale(product, exactProduct ? "barcode" : "quick add")
@@ -401,8 +408,8 @@ export default function POSPage() {
     toggleProductFavorite(product.id)
     setScannerStatus(
       product.favorite
-        ? `${product.name} removed from favorites.`
-        : `${product.name} added to favorites.`
+        ? t("pos.status.fav_removed", { name: product.name })
+        : t("pos.status.fav_added", { name: product.name })
     )
   }, [])
 
@@ -489,7 +496,7 @@ export default function POSPage() {
       setSearch("")
       setScanCode("")
       setIsCartOpen(false)
-      setScannerStatus("Scanner ready for the next sale.")
+      setScannerStatus(t("pos.status.ready_next"))
       return
     }
     setConfirmAction({
@@ -510,14 +517,14 @@ export default function POSPage() {
         setScanCode("")
         setRecentSales([])
         setIsCartOpen(false)
-        setScannerStatus("Scanner ready for the next sale.")
+        setScannerStatus(t("pos.status.ready_next"))
       },
     })
   }, [items, itemCount, grossSubtotal, discountTotal, t])
 
   const holdCurrentSale = useCallback(function holdCurrentSale() {
     if (items.length === 0) {
-      setScannerStatus("Add items before holding a sale.")
+      setScannerStatus(t("pos.status.hold_empty"))
       return
     }
     const heldSale = holdSale({
@@ -537,12 +544,12 @@ export default function POSPage() {
     setSelectedCustomerId(customers[0]?.id ?? "")
     setPaymentMethod("Cash")
     setIsCartOpen(false)
-    setScannerStatus(`${heldSale.holdNumber} held.`)
+    setScannerStatus(t("pos.status.held", { hold: heldSale.holdNumber }))
   }, [items, itemCount, discountTotal, total, paymentMethod, selectedCustomerId, discountMode, discountValue, selectedCustomer, customers])
 
   const resumeHeldSale = useCallback(function resumeHeldSale(heldSale: HeldSale) {
     if (items.length > 0) {
-      setScannerStatus("Hold or clear the current sale before resuming another.")
+      setScannerStatus(t("pos.status.resume_blocked"))
       return
     }
     setItems(heldSale.items)
@@ -559,7 +566,7 @@ export default function POSPage() {
       metadata: { heldSaleId: heldSale.id },
     })
     setIsCartOpen(true)
-    setScannerStatus(`${heldSale.holdNumber} resumed.`)
+    setScannerStatus(t("pos.status.resumed", { hold: heldSale.holdNumber }))
   }, [items])
 
   const discardHeldSale = useCallback(function discardHeldSale(heldSale: HeldSale) {
@@ -576,7 +583,7 @@ export default function POSPage() {
           summary: `${heldSale.holdNumber} was discarded.`,
           metadata: { heldSaleId: heldSale.id },
         })
-        setScannerStatus(`${heldSale.holdNumber} discarded.`)
+        setScannerStatus(t("pos.status.discarded", { hold: heldSale.holdNumber }))
       },
     })
   }, [])
@@ -584,7 +591,7 @@ export default function POSPage() {
   function handleReview() {
     if (checkoutBlocked) return
     if (!getActiveShift()) {
-      setScannerStatus("⚠️ No open shift — open one in Accounting → Shift before selling.")
+      setScannerStatus(t("pos.status.no_shift"))
       playErrorBuzz()
       return
     }
@@ -611,7 +618,7 @@ export default function POSPage() {
     // message instead of the generic "Checkout failed" the throw would produce.
     if (!getActiveShift()) {
       setShowReview(false)
-      setScannerStatus("⚠️ No open shift — open one in Accounting → Shift before selling.")
+      setScannerStatus(t("pos.status.no_shift"))
       playErrorBuzz()
       return
     }
@@ -690,20 +697,20 @@ export default function POSPage() {
       // (instant, same-machine); for CONNECT_TO_HUB it's the LAN hub.
       if (writeThrough) {
         setIsValidatingStock(true)
-        setScannerStatus(mode === "STORE_HUB" ? "Completing sale…" : "Completing sale on hub…")
+        setScannerStatus(mode === "STORE_HUB" ? t("pos.status.completing") : t("pos.status.completing_hub"))
         let result
         try { result = await commitSaleToHub(sale) }
         finally { setIsValidatingStock(false) }
         if (result.status === "rejected") {
           setScannerStatus(/Insufficient stock/i.test(result.error)
-            ? "⚠️ Out of stock — sale not completed. Refresh cart."
-            : `⚠️ Sale not completed: ${result.error}`)
+            ? t("pos.status.hub_out_of_stock")
+            : t("pos.status.hub_rejected", { error: result.error }))
           playErrorBuzz(); pullFromServer().catch(() => {}); return
         }
         if (result.status === "unreachable") {
           setScannerStatus(mode === "STORE_HUB"
-            ? "⚠️ Local server not responding — sale not completed. Try again."
-            : "⚠️ Cannot reach hub — sale not completed. Try again.")
+            ? t("pos.status.local_down")
+            : t("pos.status.hub_down"))
           playErrorBuzz(); return
         }
         // committed → fall through to local finalize (enqueues suppressed)
@@ -757,7 +764,7 @@ export default function POSPage() {
       setSearch("")
       setSaleNote("")
       setIsCartOpen(false)
-      setScannerStatus("Sale completed. Scanner ready for the next sale.")
+      setScannerStatus(t("pos.status.sale_completed"))
       window.requestAnimationFrame(() => scanInputRef.current?.focus())
       // Reconcile local stock/batches with the hub's authoritative numbers.
       if (writeThrough) pullFromServer().catch(() => {})
@@ -783,7 +790,7 @@ export default function POSPage() {
       }
       const reason = (err as Error)?.message?.trim()
       console.error("[checkout] sale failed:", err)
-      setScannerStatus(reason ? `Checkout failed: ${reason}` : "Checkout failed. Cart preserved, try again.")
+      setScannerStatus(reason ? t("pos.status.checkout_failed", { reason }) : t("pos.status.checkout_failed_generic"))
     }
   }, [checkoutBlocked, isValidatingStock, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal, sellAtCost, payableLbp, payableUsd])
 

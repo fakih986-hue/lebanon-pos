@@ -167,8 +167,8 @@ export default function SyncStatus() {
         aria-expanded={open}
         style={{ background: pillBg, borderColor: pillBorder, color: pillColor }}
       >
-        <Icon size={15} />
-        <span>{label}</span>
+        <Icon size={15} className="shrink-0" />
+        <span className="max-w-[120px] truncate whitespace-nowrap sm:max-w-none">{label}</span>
       </button>
 
       {open && createPortal(

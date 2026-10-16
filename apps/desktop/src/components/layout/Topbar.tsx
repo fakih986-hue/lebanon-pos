@@ -62,7 +62,7 @@ export default function Topbar() {
 
       {isPosRoute && (
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full px-3 text-[13px] font-semibold"
+          <span className="inline-flex max-w-[150px] items-center gap-2 truncate whitespace-nowrap rounded-full px-3 text-[13px] font-semibold sm:max-w-none"
             style={{ minHeight: 32, background: activeShift ? "var(--surface-3)" : "var(--v2-warn-soft)", color: activeShift ? "var(--text-2)" : "var(--v2-warn)" }}>
             <span className="h-2 w-2 rounded-full" style={{ background: activeShift ? "var(--v2-ok)" : "var(--v2-warn)" }} />
             {activeShift?.shiftNumber ?? t("desktop.no_shift")}

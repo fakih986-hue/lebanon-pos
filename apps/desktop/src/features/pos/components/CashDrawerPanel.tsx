@@ -9,8 +9,10 @@ import { subscribeExpenses } from "../services/expense.service"
 import { subscribeSuppliers } from "../services/supplier.service"
 import { createCashMovement, subscribeCashMovements } from "../services/cashMovement.service"
 import { computeExpectedCash } from "../services/shift.service"
+import { useI18n } from "@lebanonpos/shared"
 
 export default function CashDrawerPanel({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
+  const { t } = useI18n()
   const [shift, setShift] = useState<Shift | undefined>(getActiveShift())
   const [floatInput, setFloatInput] = useState("")
   const [countedCash, setCountedCash] = useState("")
@@ -41,12 +43,12 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
 
   function handleOpenShift() {
     const f = parseFloat(floatInput)
-    if (!f || f <= 0) { showToast("Enter a valid float amount", "error"); return }
+    if (!f || f <= 0) { showToast(t("pos.drawer.invalid_float"), "error"); return }
     const s = openShift(f)
     if (!s) return
     setShift(s)
     setFloatInput("")
-    showToast(`${s.shiftNumber} opened with $${f.toFixed(2)}`)
+    showToast(t("pos.drawer.opened", { shift: s.shiftNumber, amount: formatCurrency(f) }))
   }
 
   function handleCloseShift() {
@@ -60,13 +62,13 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
     setShift(undefined)
     setCountedCash("")
     setNote("")
-    showToast("Shift closed")
+    showToast(t("pos.drawer.closed"))
   }
 
   function handleOwnerDraw() {
     if (!shift) return
     const amount = parseFloat(drawerNote)
-    if (!amount || amount <= 0) { showToast("Enter a valid amount", "error"); return }
+    if (!amount || amount <= 0) { showToast(t("pos.drawer.invalid_amount"), "error"); return }
     const result = createCashMovement({
       type: "OwnerDraw",
       amountUsd: amount,
@@ -75,7 +77,7 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
     })
     if (result) {
       setDrawerNote("")
-      showToast(`Owner draw $${amount.toFixed(2)} recorded`)
+      showToast(t("pos.drawer.draw_recorded", { amount: formatCurrency(amount) }))
     }
   }
 
@@ -86,7 +88,7 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
         <span className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full shrink-0" style={{ background: shift ? "var(--success)" : "var(--rose)" }} />
           <Landmark size={14} style={{ color: shift ? "var(--success)" : "var(--text-3)" }} />
-          Cash Drawer
+          {t("pos.drawer.title")}
           {shift && <span className="text-[10px] opacity-50">{shift.shiftNumber}</span>}
           {shift?.registerId && <span className="text-[10px] opacity-40">({shift.registerId})</span>}
         </span>
@@ -97,22 +99,23 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
         <div className="px-4 pb-3 space-y-2">
           {!shift ? (
             <div className="space-y-2">
-              <label className="block text-[11px] font-bold" style={{ color: "var(--text-3)" }}>Opening Float (USD)</label>
+              <label className="block text-[11px] font-bold" style={{ color: "var(--text-3)" }}>{t("pos.drawer.opening_float")}</label>
               <div className="flex gap-2">
                 <input type="number" min="0" step="0.01" value={floatInput}
                   onChange={(e) => setFloatInput(e.target.value)}
-                  placeholder="e.g. 250"
+                  placeholder={t("pos.drawer.float_example")}
+                  aria-label={t("pos.drawer.opening_float")}
                   className="input flex-1" style={{ height: 36, fontSize: 14, fontWeight: 700 }} />
                 <button onClick={handleOpenShift}
                   className="flex items-center gap-1 rounded-lg px-3 text-[12px] font-bold text-white" style={{ background: "var(--brand)" }}>
-                  <Lock size={13} /> Open
+                  <Lock size={13} /> {t("pos.drawer.open")}
                 </button>
               </div>
             </div>
           ) : (
             <div className="space-y-1.5">
               <div className="flex justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
-                <span>Expected in drawer</span>
+                <span>{t("pos.drawer.expected")}</span>
                 <span className="font-bold tabular-nums">{formatCurrency(expectedCash)}</span>
               </div>
               <div className="flex justify-between text-[10px]" style={{ color: "var(--text-3)" }}>
@@ -123,6 +126,7 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
                 <input type="number" min="0" step="0.01" value={countedCash}
                   onChange={(e) => setCountedCash(e.target.value)}
                   placeholder={`${expectedCash.toFixed(2)}`}
+                  aria-label={t("pos.drawer.counted")}
                   className="input flex-1" style={{ height: 34, fontSize: 13, fontWeight: 600 }} />
                 <span className="px-2 text-[11px] font-bold rounded tabular-nums"
                   style={{
@@ -137,22 +141,22 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
                 </span>
               </div>
               <div className="flex gap-2">
-                <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)"
+                <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("pos.drawer.note")} aria-label={t("pos.drawer.note")}
                   className="input flex-1" style={{ height: 30, fontSize: 11 }} />
                 <button onClick={handleCloseShift}
                   className="flex items-center gap-1 rounded-lg px-3 text-[12px] font-bold text-white" style={{ background: "var(--ink)" }}>
-                  <CircleDollarSign size={13} /> Close
+                  <CircleDollarSign size={13} /> {t("pos.drawer.close")}
                 </button>
               </div>
 
               {/* Owner Draw */}
               <div className="flex gap-2 pt-1">
-                <input value={drawerNote} onChange={(e) => setDrawerNote(e.target.value)} placeholder="Owner draw amount"
+                <input value={drawerNote} onChange={(e) => setDrawerNote(e.target.value)} placeholder={t("pos.drawer.owner_draw")} aria-label={t("pos.drawer.owner_draw")}
                   type="number" min="0" step="0.01"
                   className="input flex-1" style={{ height: 30, fontSize: 11 }} />
                 <button onClick={handleOwnerDraw}
                   className="flex items-center gap-1 rounded-lg px-3 text-[12px] font-bold text-white" style={{ background: "var(--amber)" }}>
-                  <HandCoins size={13} /> Draw
+                  <HandCoins size={13} /> {t("pos.drawer.draw")}
                 </button>
               </div>
             </div>
@@ -168,7 +172,7 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
                 style={{ color: "var(--text-3)" }}
               >
                 <Clock size={10} />
-                History
+                {t("pos.drawer.history")}
                 <ChevronDown size={10} className={`transition ${showHistory ? "rotate-180" : ""}`} />
               </button>
               {showHistory && (

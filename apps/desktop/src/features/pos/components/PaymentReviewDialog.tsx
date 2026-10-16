@@ -44,6 +44,7 @@ export default function PaymentReviewDialog({
   const dialogRef = useRef<HTMLDivElement>(null)
   const confirmRef = useRef<HTMLButtonElement>(null)
   const isCash = paymentMethod === "Cash"
+  const changeInLbp = paidLbp > 0 && paidUsd === 0 // USD and mixed tenders give USD change
   const amountLabel = isCash && payableLbp !== totalLbp
     ? `${formatCurrency(payableUsd)} · ${formatNumber(Math.round(payableLbp))} ${t("pos.v2.lbp")}`
     : `${formatCurrency(total)} · ${formatNumber(Math.round(totalLbp))} ${t("pos.v2.lbp")}`
@@ -62,8 +63,18 @@ export default function PaymentReviewDialog({
         aria-labelledby="mg2-review-title"
         tabIndex={-1}
         className="w-full outline-none"
-        style={{ maxWidth: 640, borderRadius: 16, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 16px 40px rgba(0,0,0,.45)", padding: 28, display: "flex", flexDirection: "column", gap: 18 }}
+        style={{ maxWidth: 640, maxHeight: "calc(100dvh - 32px)", overflowY: "auto", borderRadius: 16, background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 16px 40px rgba(0,0,0,.45)", padding: "clamp(16px, 4vw, 28px)", display: "flex", flexDirection: "column", gap: 16 }}
         onKeyDown={(e) => {
+          // Focus trap: Tab / Shift+Tab cycle inside the dialog (aria-modal).
+          if (e.key === "Tab") {
+            const focusables = [...(dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex='-1'])") ?? [])]
+            if (focusables.length === 0) { e.preventDefault(); return }
+            const first = focusables[0], last = focusables[focusables.length - 1]
+            const active = document.activeElement as HTMLElement | null
+            if (e.shiftKey && (active === first || active === dialogRef.current)) { e.preventDefault(); last.focus() }
+            else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus() }
+            return
+          }
           if (e.key === "Escape") { e.preventDefault(); onBack() }
           if (e.key === "Enter" && !blockedReason) { e.preventDefault(); onConfirm() }
         }}
@@ -79,11 +90,11 @@ export default function PaymentReviewDialog({
         </div>
 
         {isCash ? (
-          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))" }}>
+          <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))" }}>
             <div className="rounded-lg p-3.5" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
               <div className="mg2-cap">{t("pos.v2.paid")}</div>
               <div className="num font-semibold" style={{ fontSize: 18, color: "var(--text)" }}>
-                {formatCurrency(paidUsd)}{paidLbp > 0 ? ` + ${formatNumber(Math.round(paidLbp))} ${t("pos.v2.lbp")}` : ""}
+                {[paidUsd > 0 ? formatCurrency(paidUsd) : "", paidLbp > 0 ? `${formatNumber(Math.round(paidLbp))} ${t("pos.v2.lbp")}` : ""].filter(Boolean).join(" + ") || formatCurrency(0)}
               </div>
             </div>
             {stillDueUsd > 0 ? (
@@ -95,9 +106,9 @@ export default function PaymentReviewDialog({
               <div className="mg2-t-ok rounded-lg p-3.5">
                 <div className="mg2-cap" style={{ color: "inherit" }}>{t("pos.v2.change_to_give")}</div>
                 <div className="num font-semibold" style={{ fontSize: 22, color: "var(--ok-money)" }}>
-                  {formatNumber(Math.round(changeLbp))} {t("pos.v2.lbp")}
+                  {changeUsd <= 0 && changeLbp <= 0 ? t("pos.v2.no_change") : changeInLbp ? `${formatNumber(Math.round(changeLbp))} ${t("pos.v2.lbp")}` : formatCurrency(changeUsd)}
                 </div>
-                <div className="mg2-cap num" style={{ color: "inherit" }}>{formatCurrency(changeUsd)}</div>
+                <div className="mg2-cap num" style={{ color: "inherit" }}>{changeUsd <= 0 && changeLbp <= 0 ? "" : changeInLbp ? formatCurrency(changeUsd) : `${formatNumber(Math.round(changeLbp))} ${t("pos.v2.lbp")}`}</div>
               </div>
             )}
           </div>
@@ -114,11 +125,11 @@ export default function PaymentReviewDialog({
           <button type="button" className="mg2-btn" style={{ flex: "0 0 auto", minHeight: 56 }} onClick={onBack}>
             <ArrowLeft size={18} className="mg2-dir" />{t("pos.v2.back")} <span className="mg2-kbd">Esc</span>
           </button>
-          <button ref={confirmRef} type="button" className="mg2-pay" style={{ flex: "1 1 0", minHeight: 56, width: "auto", fontSize: 17, whiteSpace: "nowrap" }}
+          <button ref={confirmRef} type="button" className="mg2-pay" style={{ flex: "1 1 240px", minHeight: 56, width: "auto", fontSize: 17, flexWrap: "wrap", justifyContent: "space-between" }}
             disabled={!!blockedReason} onClick={onConfirm}>
             <span>{paymentMethod === "Debt" ? t("pos.record_debt") : t("pos.v2.confirm_and_pay")}</span>
-            <span className="num">{amountLabel}</span>
-            <span className="mg2-kbd">Enter</span>
+            <span className="num" style={{ whiteSpace: "nowrap" }}>{amountLabel}</span>
+            <span className="mg2-kbd hidden sm:inline">Enter</span>
           </button>
         </div>
       </div>
