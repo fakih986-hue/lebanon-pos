@@ -450,6 +450,16 @@ const recSetup = (committed) => ["simulate a save " + (committed ? "that finishe
 const recState = ["after reopening", `await new Promise((r) => setTimeout(r, 300)); const ps = await import("/src/features/pos/services/product.service.ts"); const stock = (await ps.getProducts()).find((x) => x.name === "Pepsi Can").stock; const rows = [...document.querySelectorAll("tr[data-row]")].map((r) => r.querySelector("td")?.textContent.trim().slice(0, 44)); const save = [...document.querySelectorAll("button")].find((x) => /^(Save delivery|حفظ الشحنة)/.test(x.textContent.trim())); return "banners: " + [...document.querySelectorAll(".mg2-banner")].map((b) => b.textContent.trim().slice(0, 90)).join(" || ") + "; rows: " + rows.join(" | ") + "; Save " + (save?.disabled ? "DISABLED" : "enabled") + "; Pepsi stock " + stock`, 100]
 const recRetry = ["press Save (retry)", `const b = [...document.querySelectorAll("button")].find((x) => /^(Save delivery|حفظ الشحنة)/.test(x.textContent.trim())); b.click(); await new Promise((r) => setTimeout(r, 1200)); const ps = await import("/src/features/pos/services/product.service.ts"); const ib = await import("/src/features/pos/services/inventoryBatch.service.ts"); const p = (await ps.getProducts()).find((x) => x.name === "Pepsi Can"); return "Pepsi stock " + p.stock + "; Pepsi lots " + ib.getInventoryBatches().filter((x) => x.productId === p.id).map((x) => x.initialQuantity).join("+")`, 100]
 const recResolve = ["choose: it was not received", `const b = __t.textBtn(/not received|لم يُستلم/); b.click(); await new Promise((r) => setTimeout(r, 400)); const save = [...document.querySelectorAll("button")].find((x) => /^(Save delivery|حفظ الشحنة)/.test(x.textContent.trim())); return "alerts left " + document.querySelectorAll("[role=alert]").length + "; Save " + (save?.disabled ? "DISABLED" : "enabled") + "; rows " + document.querySelectorAll("tr[data-row]").length`, 100]
+// Lot details drawer: a lot with a received entry and a damaged-stock adjustment, opened from the list.
+const lotSetup = ["adjust the Pepsi lot", `
+  const ps = await import("/src/features/pos/services/product.service.ts")
+  const ib = await import("/src/features/pos/services/inventoryBatch.service.ts")
+  const adj = await import("/src/features/pos/services/inventoryAdjustment.service.ts")
+  const p = (await ps.getProducts()).find((x) => x.name === "Pepsi Can")
+  const lot = ib.getInventoryBatches().find((b) => b.productId === p.id)
+  adj.recordStockAdjustment({ productId: p.id, quantityChange: -2, reason: "Damage", batchId: lot.id, note: "Dented cans" })
+  return "lot " + lot.batchNumber + " now " + ib.getInventoryBatches().find((b) => b.id === lot.id).quantityRemaining`, 300]
+const openLot = ["open the Pepsi lot", `const b = [...document.querySelectorAll("tr button.mg2-sort")].find((x) => /Pepsi/.test(x.textContent)); b.click(); await new Promise((r) => setTimeout(r, 600)); const d = document.querySelector("[role=dialog]"); return d ? "drawer: " + d.querySelector("h2")?.textContent + "; trace rows " + d.querySelectorAll("tbody tr").length + ": " + [...d.querySelectorAll("tbody tr")].map((r) => r.textContent.trim().slice(0, 60)).join(" | ") : "NO drawer"`, 300]
 const STOCK = [
   ["products.en.dark.desktop", { w: 1440, h: 900, path: "/products", steps: [seedStock, reloadStep] }],
   ["products.ar.light.desktop", { w: 1440, h: 900, path: "/products", theme: "light", lang: "ar", steps: [seedStock, reloadStep] }],
@@ -472,6 +482,10 @@ const STOCK = [
   ["receiving-unknown.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup(false), reloadStep, recState] }],
   ["receiving-unknown.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/products/new", steps: [recSetup(false), reloadStep, recState] }],
   ["receiving-unknown-resolved.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup(false), reloadStep, recResolve] }],
+  ["lot-drawer.en.dark.desktop", { w: 1440, h: 900, path: "/stock", steps: [seedStock, lotSetup, reloadStep, openLot] }],
+  ["lot-drawer.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/stock", steps: [seedStock, lotSetup, reloadStep, openLot] }],
+  ["lot-drawer.ar.light.desktop", { w: 1440, h: 900, theme: "light", lang: "ar", path: "/stock", steps: [seedStock, lotSetup, reloadStep, openLot] }],
+  ["products.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/products", steps: [seedStock, reloadStep] }],
   ["receiving-problems.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", path: "/products/new", steps: RCV_FLOW }],
 ]
 

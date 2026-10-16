@@ -64,7 +64,9 @@
 .mg2-bo .mg2-sort:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
 /* Column prioritisation on phones (§8): low-priority columns drop out */
 @media (max-width: 767px) { .mg2-bo .mg2-table .p3 { display: none; } }
-@media (min-width: 768px) { .mg2-bo .phone-only { display: none; } }
+@media (min-width: 768px) { .mg2-bo .phone-only, .mg2-bo .mg2-table .phone-only { display: none; } }
+@media (max-width: 767px) { .mg2-bo .phone-only { display: block; } }
+.mg2-bo .mg2-trace th { white-space: normal; }
 @media (max-width: 767px) {
   .mg2-bo .mg2-table td, .mg2-bo .mg2-table th { padding-inline: 8px; }
   .mg2-bo .mg2-table td .mg2-badge { white-space: normal; align-items: flex-start; }

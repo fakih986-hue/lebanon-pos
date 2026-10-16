@@ -31,6 +31,8 @@ export default function LotsPanel({ initialLotId, productFilter, canAdjust, onAd
   onAdjustLot: (lot: InventoryBatch) => void
 }) {
   const { t, locale } = useI18n()
+  // Adjustment movements store the reason in English (e.g. "Damage"); show it in the page's language.
+  const reasonLabel = (r: string) => { const key = `pos.stock.reason.${r.trim().toLowerCase().replace(/\s+/g, "_")}`; const label = t(key); return label === key ? "" : label }
   const [batches, setBatches] = useState<InventoryBatch[]>(() => getInventoryBatches())
   const [version, setVersion] = useState(0)
   const [view, setView] = useState<LotView>("open")
@@ -45,6 +47,9 @@ export default function LotsPanel({ initialLotId, productFilter, canAdjust, onAd
     return () => { un1(); un2() }
   }, [])
 
+  const refText = (e: { kind: string; reference: string; note?: string }) => ({ ref: (e.kind === "adjustment" && reasonLabel(e.reference)) || e.reference || "—", note: e.note })
+  // Movement dates: the year only when it is not this year (keeps the trace on one line on phones).
+  const shortDate = (iso: string) => { const d = new Date(iso); return new Intl.DateTimeFormat(locale === "ar" ? "ar-LB" : "en-GB", { day: "2-digit", month: "short", ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: "numeric" }) }).format(d) }
   const date = (iso?: string) => (iso ? new Intl.DateTimeFormat(locale === "ar" ? "ar-LB" : "en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(iso)) : "—")
   const scoped = productFilter ? batches.filter((b) => b.productId === productFilter) : batches
   const counts = Object.fromEntries(LOT_VIEWS.map((v) => [v, v === "all" ? scoped.length : v === "open" ? scoped.filter((b) => b.quantityRemaining > 0).length : scoped.filter((b) => viewOf(b) === v).length])) as Record<LotView, number>
@@ -121,7 +126,7 @@ export default function LotsPanel({ initialLotId, productFilter, canAdjust, onAd
                   <tr key={b.id} aria-selected={openId === b.id} onClick={() => setOpenId(b.id)}>
                     <td>
                       <button type="button" className="mg2-sort" style={{ fontWeight: 600, textAlign: "start" }} onClick={(e) => { e.stopPropagation(); setOpenId(b.id) }}>{b.productName}</button>
-                      <span className="sub code">{b.barcode}<span className="phone-only" dir="ltr" style={{ display: "block", whiteSpace: "nowrap" }}>{b.batchNumber}</span></span>
+                      <span className="sub code">{b.barcode}<span className="phone-only" dir="ltr">{b.batchNumber}</span></span>
                     </td>
                     <td className="p3" style={{ whiteSpace: "nowrap" }}>
                       <span className="num" dir="ltr">{b.batchNumber}</span>
@@ -163,15 +168,19 @@ export default function LotsPanel({ initialLotId, productFilter, canAdjust, onAd
           <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <h3 className="mg2-section-title">{t("inv.lots.trace")}</h3>
             <div className="mg2-table-wrap">
-              <table className="mg2-table" aria-label={t("inv.lots.trace")}>
-                <thead><tr><th>{t("inv.lots.col.when")}</th><th>{t("inv.lots.col.what")}</th><th>{t("inv.lots.col.ref")}</th><th className="num">{t("inv.lots.col.qty")}</th><th className="num">{t("inv.lots.col.balance")}</th></tr></thead>
+              <table className="mg2-table mg2-trace" aria-label={t("inv.lots.trace")}>
+                <thead><tr><th>{t("inv.lots.col.when")}</th><th>{t("inv.lots.col.what")}</th><th className="p3">{t("inv.lots.col.ref")}</th><th className="num">{t("inv.lots.col.qty")}</th><th className="num">{t("inv.lots.col.balance")}</th></tr></thead>
                 <tbody>
                   {trace.entries.map((e, i) => (
                     <tr key={i} style={{ cursor: "default" }}>
-                      <td style={{ color: "var(--text-2)" }}>{e.at ? date(e.at) : t("inv.lots.time_unknown")}</td>
-                      <td><Badge tone={TRACE_TONE[e.kind]}>{t(`inv.lots.kind.${e.kind}`)}</Badge></td>
-                      <td><span className="num" dir="ltr">{e.reference || "—"}</span>{e.note && <span className="sub">{e.note}</span>}</td>
-                      <td className="num" style={{ color: e.quantity < 0 ? "var(--v2-err)" : "var(--v2-ok)" }}>{e.quantity > 0 ? "+" : "−"}{formatNumber(Math.abs(e.quantity))}</td>
+                      <td style={{ color: "var(--text-2)", whiteSpace: "nowrap" }}>{e.at ? shortDate(e.at) : t("inv.lots.time_unknown")}</td>
+                      <td>
+                        <Badge tone={TRACE_TONE[e.kind]}>{t(`inv.lots.kind.${e.kind}`)}</Badge>
+                        {/* Phones: the reference column is hidden, so it sits under the movement type. */}
+                        <span className="sub phone-only"><span dir="ltr" style={{ whiteSpace: "nowrap" }}>{refText(e).ref}</span>{refText(e).note && <span style={{ display: "block" }}>{refText(e).note}</span>}</span>
+                      </td>
+                      <td className="p3">{e.kind === "adjustment" && reasonLabel(e.reference) ? <span>{reasonLabel(e.reference)}</span> : <span className="num" dir="ltr">{e.reference || "—"}</span>}{e.note && <span className="sub">{e.note}</span>}</td>
+                      <td className="num" style={{ color: e.quantity < 0 ? "var(--v2-err)" : "var(--v2-ok)" }}><bdi dir="ltr">{e.quantity > 0 ? "+" : "−"}{formatNumber(Math.abs(e.quantity))}</bdi></td>
                       <td className="num">{formatNumber(e.balance)}</td>
                     </tr>
                   ))}
