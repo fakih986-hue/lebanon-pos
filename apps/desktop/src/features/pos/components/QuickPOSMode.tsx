@@ -177,21 +177,22 @@ export default function QuickPOSMode({
     <section className="mg2 bg-page fixed inset-0 z-[200] flex flex-col overflow-y-auto lg:overflow-hidden"
       onKeyDown={(e) => { if (e.key === "Escape" && showReview) setShowReview(false) }}>
       {/* ── Header ─────────────────────────────────────── */}
-      <div className="flex shrink-0 items-center gap-3 border-b px-4 py-2.5"
+      <div className="flex shrink-0 items-center gap-2 border-b px-3 py-2.5 sm:gap-3 sm:px-4"
         style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
         <button type="button" onClick={onExit} className="mg2-btn mg2-btn-ghost" aria-label={t("pos.v2.exit_simple")}>
           <ArrowLeft size={18} className="mg2-dir" /><span className="hidden sm:inline">{t("pos.v2.full_register")}</span>
         </button>
-        <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3 text-[14px] font-semibold" style={{ minHeight: 32, background: "var(--surface-3)", color: "var(--text-2)" }}>
-          <Zap size={14} />{t("pos.v2.simple_mode")}
+        <span className="inline-flex min-w-0 items-center gap-2 whitespace-nowrap rounded-full px-3 text-[14px] font-semibold" style={{ minHeight: 32, background: "var(--surface-3)", color: "var(--text-2)" }}>
+          <Zap size={14} className="shrink-0" /><span className="truncate">{t("pos.v2.simple_mode")}</span>
         </span>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ms-auto flex shrink-0 items-center gap-2">
           <button type="button" onClick={onStartCamera} className="mg2-btn" style={{ width: 48, padding: 0, ...(cameraActive ? { background: "var(--v2-err-soft)", color: "var(--v2-err)" } : {}) }}
             aria-label={cameraActive ? t("pos.stop") : t("pos.scan")} aria-pressed={cameraActive}>
             <Camera size={18} />
           </button>
-          <button type="button" onClick={onCleanSale} disabled={items.length === 0} className="mg2-btn mg2-btn-ghost">
-            <Eraser size={16} />{t("pos.clean")}
+          <button type="button" onClick={onCleanSale} disabled={items.length === 0} className="mg2-btn mg2-btn-ghost"
+            aria-label={t("pos.clean")} title={t("pos.clean")}>
+            <Eraser size={16} /><span className="hidden sm:inline">{t("pos.clean")}</span>
           </button>
         </div>
       </div>

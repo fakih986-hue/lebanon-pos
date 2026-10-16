@@ -1,4 +1,5 @@
-import { CheckCircle2, Eraser, MessageCircle, Printer } from "lucide-react"
+import { CheckCircle2, Eraser, History, MessageCircle, Printer } from "lucide-react"
+import { Link } from "react-router"
 import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency } from "../lib/currency"
 
@@ -13,11 +14,12 @@ export default function LastSaleBanner({ sales, onNewSale, onPrintReceipt, onWha
   const { t } = useI18n()
   if (sales.length === 0) return null
 
-  // Midnight Gold v2: recent receipts as a quiet row (neutral, 14px, 44px
-  // secondary actions with accessible names). The gold primary stays the Pay button.
+  // Midnight Gold v2: ONE latest-sale row (neutral, 14px, 44px secondary actions
+  // with accessible names), replaced after each sale. Older receipts live in
+  // Sales history. The gold primary stays the Pay button.
   return (
     <div className="flex flex-col gap-1" aria-label={t("pos.v2.recent_receipts")}>
-      {sales.map((sale, i) => (
+      {sales.slice(0, 1).map((sale, i) => (
         <div key={sale.number} className="flex items-center gap-2 rounded-lg border px-3"
           style={{ minHeight: 48, background: "var(--surface)", borderColor: "var(--border)" }}>
           <CheckCircle2 size={16} className="shrink-0" style={{ color: i === 0 ? "var(--v2-ok)" : "var(--text-3)" }} aria-hidden="true" />
@@ -41,6 +43,10 @@ export default function LastSaleBanner({ sales, onNewSale, onPrintReceipt, onWha
               <MessageCircle size={16} />
             </button>
           )}
+          <Link to="/sales" className="mg2-btn mg2-btn-ghost" style={{ minHeight: 44, width: 44, padding: 0 }}
+            aria-label={t("pos.v2.sales_history")} title={t("pos.v2.sales_history")}>
+            <History size={16} />
+          </Link>
         </div>
       ))}
     </div>

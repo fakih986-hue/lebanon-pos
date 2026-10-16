@@ -1363,4 +1363,5 @@ export const ar = {
   "settings.printer.margin": "هامش أمان لكل جانب (مم)",
   "settings.printer.test": "طباعة إيصال تجريبي",
   "settings.printer.saved": "حُفظت إعدادات الطابعة على هذا الجهاز.",
+  "pos.v2.sales_history": "سجل المبيعات",
 }

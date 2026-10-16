@@ -1363,4 +1363,5 @@ export const en = {
   "settings.printer.margin": "Safe margin each side (mm)",
   "settings.printer.test": "Print test receipt",
   "settings.printer.saved": "Printer settings saved on this device.",
+  "pos.v2.sales_history": "Sales history",
 }
