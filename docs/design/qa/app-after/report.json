@@ -1,6 +1,6 @@
 {
   "base": "http://localhost:5174",
-  "at": "2026-10-16T15:48:56.745Z",
+  "at": "2026-10-16T16:11:12.973Z",
   "results": [
     {
       "name": "register-cash.en.dark.desktop",
@@ -596,6 +596,280 @@
         "dir": "ltr",
         "theme": "dark",
         "active": "Scan the next item",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shift-fresh.en.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "state",
+          "chip: Open shift (44px); banner: shown; viewport 390x844"
+        ],
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: Opening float (USD)"
+        ],
+        [
+          "sheet contents",
+          "sheet 390x237 fits=true; under-44px: none; disabled: none; reasons: none"
+        ],
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "state",
+          "chip: Shift & drawer: SHIFT-XVR7-001 (44px); banner: none; viewport 390x844"
+        ],
+        [
+          "Esc (real key)",
+          "no dialog, Shift & drawer: SHIFT-XVR7-001"
+        ],
+        [
+          "after close",
+          "sheet closed; focus: Shift & drawer: SHIFT-XVR7-001"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "open cart sheet",
+          "ok"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ],
+        [
+          "pay (cart sheet)",
+          "Pay$6.76 · 605,000 LBPEnter"
+        ],
+        [
+          "confirm payment",
+          "Confirm and pay$6.76 · 605,000 LBPEnter"
+        ],
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: Counted cash (USD)"
+        ],
+        [
+          "drawer after sale",
+          "Shift & drawer Cash Drawer SHIFT-XVR7-001 (REG-001) Expected in drawer $106.72 9,551,440 LBP Close Draw Record expense"
+        ],
+        [
+          "sheet contents",
+          "sheet 390x359 fits=true; under-44px: none; disabled: none; reasons: none"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Counted cash (USD)",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shift-fresh.ar.light.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "light",
+      "lang": "ar",
+      "log": [
+        [
+          "state",
+          "chip: فتح وردية (44px); banner: shown; viewport 390x844"
+        ],
+        [
+          "tap banner Open shift",
+          "sheet open"
+        ],
+        [
+          "sheet contents",
+          "sheet 390x238 fits=true; under-44px: none; disabled: none; reasons: none"
+        ],
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "state",
+          "chip: الوردية والدرج: SHIFT-UDHZ-001 (44px); banner: none; viewport 390x844"
+        ],
+        [
+          "Esc (real key)",
+          "no dialog, امسح الباركود أو اكتب اسم الصنف"
+        ],
+        [
+          "after close",
+          "sheet closed; focus: امسح الباركود أو اكتب اسم الصنف"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "light",
+        "active": "امسح الباركود أو اكتب اسم الصنف",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shift-fresh.en.dark.tablet",
+      "w": 768,
+      "h": 1024,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "state",
+          "chip: Open shift (44px); banner: shown; viewport 768x1024"
+        ],
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: Opening float (USD)"
+        ],
+        [
+          "sheet contents",
+          "sheet 768x237 fits=true; under-44px: none; disabled: none; reasons: none"
+        ],
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "state",
+          "chip: Shift & drawer: SHIFT-X52J-001 (44px); banner: none; viewport 768x1024"
+        ],
+        [
+          "Esc (real key)",
+          "no dialog, Shift & drawer: SHIFT-X52J-001"
+        ],
+        [
+          "after close",
+          "sheet closed; focus: Shift & drawer: SHIFT-X52J-001"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "open cart sheet",
+          "ok"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ],
+        [
+          "pay (cart sheet)",
+          "Pay$6.76 · 605,000 LBPEnter"
+        ],
+        [
+          "confirm payment",
+          "Confirm and pay$6.76 · 605,000 LBPEnter"
+        ],
+        [
+          "state",
+          "chip: Shift & drawer: SHIFT-X52J-001 (44px); banner: none; viewport 768x1024"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shift-cashier.en.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "state",
+          "chip: Open shift (44px); banner: shown; viewport 390x844"
+        ],
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: Opening float (USD)"
+        ],
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "sheet contents",
+          "sheet 390x336 fits=true; under-44px: none; disabled: none; reasons: Owner draws need the Cash permission."
+        ],
+        [
+          "expand Record expense",
+          "ok"
+        ],
+        [
+          "sheet contents",
+          "sheet 390x222 fits=true; under-44px: none; disabled: none; reasons: Recording expenses needs the Accounting or Cash permission."
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Close",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shift-sheet-open.en.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "state",
+          "chip: Open shift (44px); banner: shown; viewport 390x844"
+        ],
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: Opening float (USD)"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Opening float (USD)",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shift-sheet-cashier.ar.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: الرصيد الافتتاحي (بالدولار)"
+        ],
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "expand Record expense",
+          "ok"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "إغلاق",
         "overflowX": false
       }
     }
