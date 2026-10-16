@@ -1354,4 +1354,13 @@ export const ar = {
   "pos.expense.recorded": "سُجّل المصروف: {amount}",
   "pos.expense.need_permission": "تسجيل المصاريف يتطلب صلاحية المحاسبة.",
   "pos.expense.need_shift": "افتح وردية أولاً: المصاريف النقدية تتبع وردية.",
+
+  /* Receipt printer (per device) */
+  "settings.printer.title": "طابعة الإيصالات (هذا الصندوق)",
+  "settings.printer.help": "اضبطها حسب الطابعة الموصولة بهذا الجهاز. تحقّق بإيصال تجريبي على الطابعة نفسها: المعاينة على الشاشة ليست اختبار طباعة.",
+  "settings.printer.paper": "عرض اللفافة",
+  "settings.printer.printable": "عرض الطباعة (مم)",
+  "settings.printer.margin": "هامش أمان لكل جانب (مم)",
+  "settings.printer.test": "طباعة إيصال تجريبي",
+  "settings.printer.saved": "حُفظت إعدادات الطابعة على هذا الجهاز.",
 }

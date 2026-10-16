@@ -279,6 +279,50 @@ const REVIEW = [
   ["review-payment.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", steps: [...mobileShift, addTiles, openCartSheet, cashPaid, payInSheet] }],
 ]
 
+// Printed receipt fit: both receipts, long English and Arabic names, large totals and the rounding lines,
+// rendered at each roll's printable width in real Chrome. Every element must stay inside the body's
+// content box (printable width minus the safe margin). A browser render is not a printer test.
+const receiptFit = (configs) => ["receipt fit " + configs.map((c) => c.paperMm + "/" + c.printableMm + "/" + c.marginMm).join(", "), `
+  const m = await import("/src/features/pos/lib/printReceipt.ts")
+  const settings = { storeName: "متجر تيتان — Titan Mini Market Hamra", branchName: "Hamra Main Street Branch", phone: "+961 70 000 000", address: "Bliss Street, Hamra, Beirut, Lebanon", vatRate: 0.11, receiptFooter: "شكراً لزيارتكم — Thank you for shopping with us, see you again soon." }
+  const items = [
+    { id: 1, name: "Water Bottle 500ml Natural Mineral Spring, Family Pack of 6 Bottles", barcode: "5281001000031234", quantity: 12, price: 1234.5 },
+    { id: 2, name: "مياه معدنية طبيعية من الينابيع، عبوة عائلية من ست زجاجات سعة ٥٠٠ مل", barcode: "5281001000032", quantity: 1, price: 0.45 },
+    { id: 3, name: "Pepsi", barcode: "", quantity: 2, price: 0.9 },
+  ]
+  const total = 16467.26, rate = 89500
+  const tender = { paidUsd: 20000, paidLbp: 2500000, paidTotalUsd: 20027.93, paidTotalLbp: 1792500000, changeUsd: 3560.67, changeLbp: 318680000, changeCurrency: "USD", exchangeRate: rate, currency: "Mixed" }
+  const last = { number: "S-HAMRA2-000123", paymentMethod: "Cash", customerName: "عبد الرحمن الخطيب", grossSubtotal: 14837.25, subtotal: 14835.55, discountTotal: 1.7, tax: 1631.71, total, totalLbp: Math.round(total * rate), payableLbp: Math.ceil(total * rate / 5000) * 5000, payableUsd: 16467.32, exchangeRate: rate, tender, customerBalanceBefore: 1250, customerBalanceAfter: 1250, items }
+  const sale = { id: "s1", saleNumber: last.number, createdAt: new Date().toISOString(), cashier: "Omar Abdel-Rahman Al-Khatib", paymentMethod: "Cash", customerName: last.customerName, subtotal: last.subtotal, discountTotal: 1.7, tax: last.tax, total, payableLbp: last.payableLbp, tender, items: items.map((i) => ({ ...i, unitPrice: i.price, total: i.price * i.quantity })) }
+  const render = (fn) => { let html = ""; const open = window.open; window.open = () => ({ document: { write: (h) => { html += h }, close() {} }, focus() {}, print() {}, close() {} }); try { fn() } finally { window.open = open } return html }
+  const mmPx = 96 / 25.4
+  const wrap = document.createElement("div"); wrap.style.cssText = "position:fixed;inset:0;z-index:99999;background:#2a2d33;display:flex;gap:16px;padding:16px;overflow:auto;align-items:flex-start"
+  document.body.appendChild(wrap)
+  const out = []
+  for (const cfg of ${JSON.stringify(configs)}) {
+    localStorage.setItem("lebanonpos.receipt-printer.v1", JSON.stringify(cfg))
+    for (const [kind, html] of [["register", render(() => m.printLastSaleReceipt(last, settings))], ["reprint", render(() => m.printSaleReceipt(sale, rate, [], settings))]]) {
+      const box = document.createElement("div"); box.style.cssText = "display:flex;flex-direction:column;gap:4px;color:#ccc;font:12px system-ui"
+      const label = document.createElement("div"); label.textContent = kind + " · roll " + cfg.paperMm + " mm · printable " + cfg.printableMm + " mm · margin " + cfg.marginMm + " mm"
+      const frame = document.createElement("iframe"); frame.style.cssText = "border:0;background:#fff;width:" + Math.round(cfg.paperMm * mmPx) + "px;height:" + (innerHeight - 70) + "px"
+      box.append(label, frame); wrap.appendChild(box); frame.srcdoc = html
+      await new Promise((r) => frame.onload = r)
+      const d = frame.contentDocument, body = d.body, cs = d.defaultView.getComputedStyle(body)
+      const br = body.getBoundingClientRect(), left = br.left + parseFloat(cs.paddingLeft) - 0.5, right = br.right - parseFloat(cs.paddingRight) + 0.5
+      const outside = [...body.querySelectorAll("*")].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.left < left || r.right > right) }).map((e) => e.tagName + ":" + e.textContent.trim().slice(0, 24))
+      const clippedText = [...body.querySelectorAll("*")].filter((e) => e.scrollWidth > e.clientWidth + 1 && e.clientWidth > 0).map((e) => e.textContent.trim().slice(0, 24))
+      const has = ["Cash rounding", "Cash payable", "16,467.26", "Thank you"].filter((t) => !body.textContent.includes(t))
+      const arabicRtl = [...body.querySelectorAll("[dir=auto]")].some((e) => /[\u0600-\u06FF]/.test(e.textContent) && d.defaultView.getComputedStyle(e).direction === "rtl")
+      out.push(kind + " " + cfg.paperMm + "/" + cfg.printableMm + "/" + cfg.marginMm + ": body " + Math.round(br.width) + "px (" + (br.width / mmPx).toFixed(1) + " mm), outside=" + (outside.length ? outside.join("|") : "none") + ", clipped=" + (clippedText.length ? clippedText.join("|") : "none") + (has.length ? ", MISSING " + has.join("/") : "") + ", arabic rtl=" + arabicRtl + ", page overflow=" + (d.documentElement.scrollWidth > d.documentElement.clientWidth))
+    }
+  }
+  localStorage.removeItem("lebanonpos.receipt-printer.v1")
+  return out.join(" ;; ")`, 300]
+const RECEIPT = [
+  ["receipt-fit-80.desktop", { w: 1440, h: 1100, steps: [receiptFit([{ paperMm: 80, printableMm: 72, marginMm: 2 }, { paperMm: 80, printableMm: 72, marginMm: 0 }])] }],
+  ["receipt-fit-58.desktop", { w: 1440, h: 1100, steps: [receiptFit([{ paperMm: 58, printableMm: 48, marginMm: 2 }, { paperMm: 58, printableMm: 48, marginMm: 4 }])] }],
+]
+
 const SCENES = [
   ["register-cash.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid] }],
   ["register-cash.en.light.desktop", { w: 1440, h: 900, theme: "light", steps: [openShift, addTiles, cashPaid] }],
@@ -301,7 +345,7 @@ const SCENES = [
     const cdp = new CDP(ws); await cdp.open()
     const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null
     const results = []
-    for (const [name, opts] of (process.env.QA_REVIEW ? REVIEW : process.env.QA_NAMES ? NAMES : process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL, ...NAMES])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
+    for (const [name, opts] of (process.env.QA_RECEIPT ? RECEIPT : process.env.QA_REVIEW ? REVIEW : process.env.QA_NAMES ? NAMES : process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL, ...NAMES])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
     fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify({ base: BASE, at: new Date().toISOString(), results }, null, 2))
   } finally { chrome.kill() }
 })().catch((e) => { console.error(e); process.exit(1) })

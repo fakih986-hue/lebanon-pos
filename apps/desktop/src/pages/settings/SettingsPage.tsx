@@ -22,6 +22,7 @@ import {
 import Spinner from "../../components/ui/Spinner"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import FirstSetupWizard from "../../features/pos/components/FirstSetupWizard"
+import ReceiptPrinterSettings from "../../features/pos/components/ReceiptPrinterSettings"
 import {
   getSettings,
   saveSettings,
@@ -820,6 +821,8 @@ export default function SettingsPage() {
                 className="mt-2 w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 font-medium outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               />
             </label>
+
+            <ReceiptPrinterSettings />
           </div>
 
           <div className="flex justify-end border-t border-zinc-200 p-4">

@@ -1354,4 +1354,13 @@ export const en = {
   "pos.expense.recorded": "Expense recorded: {amount}",
   "pos.expense.need_permission": "Recording expenses needs the Accounting permission.",
   "pos.expense.need_shift": "Open a shift first: cash expenses belong to a shift.",
+
+  /* Receipt printer (per device) */
+  "settings.printer.title": "Receipt printer (this register)",
+  "settings.printer.help": "Set for the printer attached to this device. Check with a test receipt on the real printer: a screen preview is not a print test.",
+  "settings.printer.paper": "Paper roll",
+  "settings.printer.printable": "Printable width (mm)",
+  "settings.printer.margin": "Safe margin each side (mm)",
+  "settings.printer.test": "Print test receipt",
+  "settings.printer.saved": "Printer settings saved on this device.",
 }
