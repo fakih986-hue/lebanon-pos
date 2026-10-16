@@ -2,7 +2,7 @@ import { products } from "../data/products"
 import type { Product, ProductAccent } from "../types/product"
 import { receiveInventoryBatches, openingInventoryBatches, type ReceiveBatchInput } from "./inventoryBatch.service"
 import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
-import { recordAuditEvent } from "./security.service"
+import { PermissionError, recordAuditEvent, userCan } from "./security.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 
@@ -614,8 +614,48 @@ export function createProduct(input: {
   return product
 }
 
+// ── History guard: a product that sold, was refunded, has lots, stock movements or
+// purchase-order lines is part of the books and is archived, never deleted. Reads the
+// stored collections directly (no import of the sales/supplier services: no cycle).
+export type ProductHistory = { sales: number; refunds: number; lots: number; movements: number; purchaseOrders: number }
+type StoredRow = { id?: unknown; productId?: unknown; barcode?: unknown; items?: StoredRow[] }
+function readList(key: string): StoredRow[] {
+  if (!canUseStorage()) return []
+  try { const v = JSON.parse(window.localStorage.getItem(key) ?? "[]"); return Array.isArray(v) ? v : [] } catch { return [] }
+}
+export function getProductHistory(productId: number): ProductHistory {
+  const product = getProductsSync().find((p) => p.id === productId)
+  const codes = new Set([product?.barcode, ...(product?.barcodeAliases ?? [])].filter(Boolean) as string[])
+  const itemIs = (i: StoredRow) => !!i && (i.id === productId || i.productId === productId)
+  return {
+    sales: readList("lebanonpos.sales.v1").filter((s) => (s?.items ?? []).some(itemIs)).length,
+    refunds: readList("lebanonpos.refunds.v1").filter((r) => (r?.items ?? []).some(itemIs)).length,
+    lots: readList("lebanonpos.inventory-batches.v1").filter((b) => b?.productId === productId).length,
+    movements: readList("lebanonpos.stock-movements.v1").filter((m) => m?.productId === productId).length,
+    purchaseOrders: readList("lebanonpos.purchase-orders.v1").filter((o) => (o?.items ?? []).some((i) => i?.productId === productId || (typeof i?.barcode === "string" && codes.has(i.barcode)))).length,
+  }
+}
+export function productHasHistory(h: ProductHistory) {
+  return h.sales + h.refunds + h.lots + h.movements + h.purchaseOrders > 0
+}
+/** Thrown when deleting a product (or one of its variants) that has history: archive it instead. */
+export class ProductInUseError extends Error {
+  readonly productName: string
+  readonly history: ProductHistory
+  constructor(productName: string, history: ProductHistory) {
+    super(`${productName} has sales, lots or stock history: archive it instead of deleting it.`)
+    this.name = "ProductInUseError"
+    this.productName = productName
+    this.history = history
+  }
+}
+function assertCanManageCatalog(action: string) {
+  if (!userCan("inventory.manage")) throw new PermissionError(`${action} needs the Manage inventory permission.`)
+}
+
 export function archiveProduct(productId: number) {
   assertCanWrite("delete product")
+  assertCanManageCatalog("Archiving a product")
   const product = getProductsSync().find((item) => item.id === productId)
   if (!product) return
 
@@ -644,6 +684,7 @@ export function archiveProduct(productId: number) {
 
 export function restoreProduct(productId: number) {
   assertCanWrite("delete product")
+  assertCanManageCatalog("Restoring a product")
   const product = getProductsSync().find((item) => item.id === productId)
   if (!product) return
 
@@ -670,11 +711,17 @@ export function restoreProduct(productId: number) {
 
 export function deleteProduct(productId: number) {
   assertCanWrite("delete product")
+  assertCanManageCatalog("Deleting a product")
   const products = getProductsSync()
   const product = products.find((item) => item.id === productId)
   if (!product) return
 
   const idsToDelete = [productId, ...products.filter(p => p.parentId === productId).map(p => p.id)]
+  // Never delete what the books reference (sales lines, refunds, lots, ledger, purchase orders).
+  for (const id of idsToDelete) {
+    const h = getProductHistory(id)
+    if (productHasHistory(h)) throw new ProductInUseError(products.find((p) => p.id === id)?.name ?? product.name, h)
+  }
   const deleteSyncById = new Map(products.map(p => [p.id, p.syncId]))
   writeProducts(products.filter((item) => !idsToDelete.includes(item.id)))
   idsToDelete.forEach(id => {

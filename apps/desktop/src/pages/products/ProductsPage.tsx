@@ -938,7 +938,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
         confirmDestructive
         onConfirm={() => {
           if (deleteProductId !== null) {
-            deleteProduct(deleteProductId)
+            try { deleteProduct(deleteProductId) } catch (err) { showToast(String((err as Error)?.message ?? err), "error") }
             setDeleteProductId(null)
           }
         }}
@@ -954,7 +954,7 @@ export default function ProductsPage({ initialTab }: { initialTab?: ProductIniti
         confirmDestructive
         onConfirm={() => {
           if (deleteVariantId !== null) {
-            deleteProduct(deleteVariantId)
+            try { deleteProduct(deleteVariantId) } catch (err) { showToast(String((err as Error)?.message ?? err), "error") }
             setDeleteVariantId(null)
           }
         }}

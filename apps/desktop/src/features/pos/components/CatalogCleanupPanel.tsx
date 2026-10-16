@@ -81,7 +81,7 @@ export default function CatalogCleanupPanel({ products, onClose, onChanged, onEd
 
   function confirmArchive(p: Product) {
     if (pendingArchive !== p.id) { setPendingArchive(p.id); return }
-    archiveProduct(p.id)
+    try { archiveProduct(p.id) } catch (err) { showToast(String((err as Error)?.message ?? err), "error"); return }
     setPendingArchive(null)
     showToast(`${p.name} archived.`)
     onChanged()
