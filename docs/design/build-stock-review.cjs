@@ -1,5 +1,6 @@
 // Builds docs/design/qa/stock-review.html: Products, the lot drawer and Receiving for visual
-// review (desktop and Arabic/phone), plus the receiving recovery states.
+// review (desktop and Arabic/phone), plus the receiving recovery and payment states.
+// Images are embedded, so the page opens anywhere (also as a static snapshot).
 // Capture first: QA_STOCK=1 node docs/design/qa-app.cjs docs/design/qa/stock-after
 const fs = require("fs")
 const path = require("path")
@@ -13,10 +14,15 @@ const rows = [
   ["Receiving (Arabic)", "Arabic, dark", "receiving.ar.dark.desktop", "", null],
   ["Receiving: rows that need attention", "Two scans merged (qty 2), an unknown code waiting for a decision; Save went to that row", "receiving-problems.en.dark.desktop", "Phone, Arabic, light", "receiving-problems.ar.light.mobile"],
   ["Receiving: saved before a crash", "Reopened after the app closed mid-save: the received row is removed and the page says so", "receiving-recovered.en.dark.desktop", "", null],
-  ["Receiving: interrupted save", "Outcome unknown: rows kept and marked, Save blocked until someone checks Lots and decides", "receiving-unknown.en.dark.desktop", "Phone, Arabic", "receiving-unknown.ar.dark.mobile"],
+  ["Receiving: payment failed", "Saved through the page with the payment write failing: stock, purchase order and payment shown separately; the PO stays unpaid with Retry payment", "receiving-ui-payment-failed.en.dark.desktop", "Phone, Arabic", "receiving-ui-payment-failed.ar.dark.mobile"],
+  ["Receiving: interrupted save", "The lots failed to write after stock was written: rows kept and marked, Save blocked", "receiving-unknown.en.dark.desktop", "Phone, Arabic", "receiving-unknown.ar.dark.mobile"],
+  ["Review what was saved", "Effects found per row (stock before/now/expected, lot, movement), purchase order, payment, sync operations; Complete / Undo / Close by hand", "receiving-review.en.dark.desktop", "Phone, Arabic", "receiving-review.ar.dark.mobile"],
+  ["Review: repair not safe", "Three Pepsi sold from a lot whose receive was never sent: Complete and Undo refused with the reason; Close by hand remains", "receiving-review-blocked.en.dark.desktop", "", null],
+  ["Review: permission", "A user who may receive but not adjust stock: Complete allowed, Undo and Close by hand need inventory.adjust", "receiving-review-receiver.en.dark.desktop", "", null],
+  ["Review: completed", "After Complete: one lot of 6, one purchase order, one payment; stock not added twice", "receiving-review-completed.en.dark.desktop", "", null],
 ]
 const fig = (name, caption, w) => name && fs.existsSync(path.join(dir, "stock-after", `${name}.png`))
-  ? `<figure style="max-width:${w}px"><figcaption>${caption}</figcaption><img src="stock-after/${name}.png" alt="${name}"></figure>` : ""
+  ? `<figure style="max-width:${w}px"><figcaption>${caption}</figcaption><img src="data:image/png;base64,${fs.readFileSync(path.join(dir, "stock-after", `${name}.png`)).toString("base64")}" alt="${name}"></figure>` : ""
 const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Stock workspace review</title>
 <style>body{font-family:system-ui;background:#0B0E14;color:#F4F6FA;margin:24px}h1{font-size:20px;margin:0 0 4px}p.lead{color:#9AA4B8;font-size:14px;margin:0 0 20px;max-width:900px}h2{font-size:16px;margin:28px 0 10px}.row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}figure{margin:0;background:#12161F;border:1px solid #1E2430;border-radius:10px;padding:8px;flex:1 1 auto}figcaption{font-size:12px;color:#9AA4B8;margin-bottom:6px}img{width:100%;border-radius:6px;display:block}</style></head><body>
 <h1>Stock workspace: Products, Lots, Receiving</h1><p class="lead">Running app (Vite dev server, local dev mode, demo catalogue with a seeded delivery from Malia Group: Pepsi expiring in 5 days, Labneh in 20, Chips expired). Each capture is a fresh browser profile at its own size: desktop 1440×900, phone 390×844.</p>
