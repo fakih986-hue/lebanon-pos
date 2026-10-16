@@ -1,109 +1,55 @@
 {
   "base": "http://localhost:5174",
-  "at": "2026-10-16T21:10:47.029Z",
+  "at": "2026-10-16T21:11:29.031Z",
   "results": [
     {
-      "name": "products-flow.en.dark.desktop",
+      "name": "receiving-saved.en.dark.desktop",
       "w": 1440,
       "h": 900,
       "theme": "dark",
       "lang": "en",
       "log": [
         [
-          "seed a delivery",
-          "received; supplier Malia Group"
+          "before",
+          "Pepsi stock 126; lots 0 ()"
         ],
         [
-          "reload",
-          1
+          "scan PEPSI + Enter",
+          "1 row(s): Pepsi CanMatched · 528100100002 qty 1; status: Pepsi Can added (qty 1)."
         ],
         [
-          "search \"pep\"",
-          "1 row(s): Pepsi Can52810010000"
+          "scan PEPSI + Enter",
+          "1 row(s): Pepsi CanMatched · 528100100002 qty 2; status: Pepsi Can: qty now 2."
         ],
         [
-          "search \"\"",
-          "12 row(s): Cheese Saj5281001000, Chicken Shawarma5281, Chips528100100008, Chocolate Bar5281001, Falafel Wrap52810010, Labneh 500g528100100, Lebanese Coffee52810, Manoushe Zaatar52810, Mixed Nuts 250g52810, Olive Oil 1L52810010, Pepsi Can52810010000, Water Bottle 500ml52"
+          "scan 6291000999001 + Enter",
+          "2 row(s): Pepsi CanMatched · 528100100002 qty 2 | New product or barcode for an existing o qty 1; status: 6291000999001 is not in your products: choose new product or an existing one."
         ],
         [
-          "view chip /Expiring|قارب/",
-          "pressed; url ?dev=&view=expiring; 3 row(s): Chips528100100008, Labneh 500g528100100, Pepsi Can52810010000"
+          "press Save delivery",
+          "focus: Name in row yes; banner: Unknown barcode 6291000999001:New productAdd to existingCreate variant"
         ],
         [
-          "view chip /(All|الكل)[0-9]/",
-          "pressed; url ?dev=; 12 row(s): Cheese Saj5281001000, Chicken Shawarma5281, Chips528100100008, Chocolate Bar5281001, Falafel Wrap52810010, Labneh 500g528100100, Lebanese Coffee52810, Manoushe Zaatar52810, Mixed Nuts 250g52810, Olive Oil 1L52810010, Pepsi Can52810010000, Water Bottle 500ml52"
+          "Save ready rows only (clicked twice in one tick)",
+          "rows left 1: New product or barcode for an ; banner: Received 2 units · new 0 · updated 1 · lots 1Print labelsView lots"
         ],
         [
-          "select 2 rows + bulk Archive",
-          "archived chip: Archived2; rows now 10"
+          "after",
+          "Pepsi stock 128; lots 1 (2)"
+        ],
+        [
+          "press Save again",
+          "Save enabled; focus: Name"
+        ],
+        [
+          "after second Save",
+          "Pepsi stock 128; lots 1 (2)"
         ]
       ],
       "facts": {
         "dir": "ltr",
         "theme": "dark",
-        "active": "BODY",
-        "overflowX": false
-      }
-    },
-    {
-      "name": "products-detail.en.dark.desktop",
-      "w": 1440,
-      "h": 900,
-      "theme": "dark",
-      "lang": "en",
-      "log": [
-        [
-          "seed a delivery",
-          "received; supplier Malia Group"
-        ],
-        [
-          "reload",
-          1
-        ],
-        [
-          "open Pepsi Can details",
-          "actions: Close | POS favorite | Open lot LOT-5030996-57 | Edit | Receive | Adjust or count | Archive; lots shown 1"
-        ]
-      ],
-      "facts": {
-        "dir": "ltr",
-        "theme": "dark",
-        "active": "BUTTON",
-        "overflowX": false
-      }
-    },
-    {
-      "name": "products-detail-fresh.en.dark.desktop",
-      "w": 1440,
-      "h": 900,
-      "theme": "dark",
-      "lang": "en",
-      "log": [
-        [
-          "open Cheese Saj details",
-          "actions: Close | POS favorite | Edit | Receive | Adjust or count | Archive | Delete; lots shown 0"
-        ],
-        [
-          "Cheese Saj history",
-          "{\"sales\":0,\"refunds\":0,\"lots\":0,\"movements\":0,\"purchaseOrders\":0}"
-        ],
-        [
-          "new product: create + open",
-          "created"
-        ],
-        [
-          "reload",
-          1
-        ],
-        [
-          "open QA Fresh Item details",
-          "actions: Close | POS favorite | Edit | Receive | Adjust or count | Archive | Delete; lots shown 0"
-        ]
-      ],
-      "facts": {
-        "dir": "ltr",
-        "theme": "dark",
-        "active": "BUTTON",
+        "active": "Name",
         "overflowX": false
       }
     }

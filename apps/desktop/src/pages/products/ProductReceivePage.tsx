@@ -72,6 +72,9 @@ export default function ProductReceivePage() {
   const [invoice, setInvoice] = useState(initialDraft?.invoiceNumber ?? "")
   const [note, setNote] = useState(initialDraft?.note ?? "")
   const [saving, setSaving] = useState(false)
+  // The state above only changes after a re-render, so two clicks in one tick would both see
+  // saving=false and receive the delivery twice. The ref is the lock; the state drives the UI.
+  const savingRef = useRef(false)
   const [lastSaved, setLastSaved] = useState<SavedInfo | null>(null)
   const [problemBanner, setProblemBanner] = useState(false)
   const [pasteOpen, setPasteOpen] = useState(false)
@@ -243,7 +246,7 @@ export default function ProductReceivePage() {
   }
 
   function save(readyOnly = false) {
-    if (saving) return
+    if (savingRef.current) return
     if (ready.length === 0) {
       showToast(t("pos.receive.no_ready_rows"), "error")
       if (problemRows[0]) focusRow(problemRows[0].id)
@@ -256,6 +259,7 @@ export default function ProductReceivePage() {
     const sentUnits = units
     const sentCost = cost
     const labels = sent.filter((r) => r.barcode.trim() && r.name.trim() && r.labels > 0).map((r) => ({ name: r.name, price: r.price, barcode: r.mode === "alias" ? r.scannedBarcode : r.barcode, n: r.labels }))
+    savingRef.current = true
     setSaving(true)
     receiveAndRecord(sent.map(toReceiveEntry), supplier ? { supplierId: supplier.id, supplierName: supplier.name, invoiceNumber: invoice, paymentMethod: payment, note } : undefined)
       .then((summary) => {
@@ -273,7 +277,7 @@ export default function ProductReceivePage() {
         window.requestAnimationFrame(() => scanRef.current?.focus())
       })
       .catch((err) => showToast(String((err as Error)?.message ?? err), "error")) // nothing received: every row stays
-      .finally(() => setSaving(false))
+      .finally(() => { savingRef.current = false; setSaving(false) })
   }
   function clearDelivery() {
     setRows([createRow()]); setInvoice(""); setNote(""); setLastSaved(null); setProblemBanner(false); setDraftRestored(false)
