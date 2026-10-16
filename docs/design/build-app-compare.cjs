@@ -11,10 +11,13 @@ const NO_BEFORE = {
   shift: "Not possible in v1 below 1024 px: the Cash Drawer lived only in the desktop cart rail, so a phone or tablet could not open a shift.",
 }
 const sections = report.results.map((r) => {
-  const before = path.join(dir, "app-before", `${r.name}.png`)
+  // Shell scenes compare against the capture taken just before the top-bar fix (app-before-shell), not v1.
+  const fixDir = r.name.startsWith("shell-") && fs.existsSync(path.join(dir, "app-before-shell", `${r.name}.png`)) ? "app-before-shell" : null
+  const beforeDir = fixDir ?? "app-before"
+  const before = path.join(dir, beforeDir, `${r.name}.png`)
   const key = Object.keys(NO_BEFORE).find((k) => r.name.startsWith(k))
   const left = fs.existsSync(before)
-    ? `<figure><figcaption>Before (v1)</figcaption><img src="app-before/${r.name}.png" alt="before ${esc(r.name)}"></figure>`
+    ? `<figure><figcaption>${fixDir ? "Before the top-bar fix" : "Before (v1)"}</figcaption><img src="${beforeDir}/${r.name}.png" alt="before ${esc(r.name)}"></figure>`
     : `<figure class="none"><figcaption>Before (v1)</figcaption><p>${esc(key ? NO_BEFORE[key] : "No v1 capture for this scene.")}</p></figure>`
   const steps = r.log.map(([l, v]) => `<li><b>${esc(l)}</b>: ${esc(v)}</li>`).join("")
   return `<section><h2>${esc(r.name)} <small>${r.w}×${r.h}</small></h2><div class="pair">${left}<figure><figcaption>After (v2) · focus: ${esc(r.facts.active ?? "none")}${r.facts.overflowX ? " · HORIZONTAL OVERFLOW" : ""}</figcaption><img src="app-after/${r.name}.png" alt="after ${esc(r.name)}"></figure></div><details><summary>Scripted steps and results</summary><ol>${steps}</ol></details></section>`

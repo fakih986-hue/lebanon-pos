@@ -1,6 +1,6 @@
 {
   "base": "http://localhost:5174",
-  "at": "2026-10-16T16:11:12.973Z",
+  "at": "2026-10-16T16:40:35.554Z",
   "results": [
     {
       "name": "register-cash.en.dark.desktop",
@@ -624,15 +624,15 @@
         ],
         [
           "state",
-          "chip: Shift & drawer: SHIFT-XVR7-001 (44px); banner: none; viewport 390x844"
+          "chip: Shift & drawer: SHIFT-NE9E-001 (44px); banner: none; viewport 390x844"
         ],
         [
           "Esc (real key)",
-          "no dialog, Shift & drawer: SHIFT-XVR7-001"
+          "no dialog, Shift & drawer: SHIFT-NE9E-001"
         ],
         [
           "after close",
-          "sheet closed; focus: Shift & drawer: SHIFT-XVR7-001"
+          "sheet closed; focus: Shift & drawer: SHIFT-NE9E-001"
         ],
         [
           "add 3 products",
@@ -660,7 +660,7 @@
         ],
         [
           "drawer after sale",
-          "Shift & drawer Cash Drawer SHIFT-XVR7-001 (REG-001) Expected in drawer $106.72 9,551,440 LBP Close Draw Record expense"
+          "Shift & drawer Cash Drawer SHIFT-NE9E-001 (REG-001) Expected in drawer $106.72 9,551,440 LBP Close Draw Record expense"
         ],
         [
           "sheet contents",
@@ -699,7 +699,7 @@
         ],
         [
           "state",
-          "chip: الوردية والدرج: SHIFT-UDHZ-001 (44px); banner: none; viewport 390x844"
+          "chip: الوردية والدرج: SHIFT-KUO2-001 (44px); banner: none; viewport 390x844"
         ],
         [
           "Esc (real key)",
@@ -742,15 +742,15 @@
         ],
         [
           "state",
-          "chip: Shift & drawer: SHIFT-X52J-001 (44px); banner: none; viewport 768x1024"
+          "chip: Shift & drawer: SHIFT-LMVD-001 (44px); banner: none; viewport 768x1024"
         ],
         [
           "Esc (real key)",
-          "no dialog, Shift & drawer: SHIFT-X52J-001"
+          "no dialog, Shift & drawer: SHIFT-LMVD-001"
         ],
         [
           "after close",
-          "sheet closed; focus: Shift & drawer: SHIFT-X52J-001"
+          "sheet closed; focus: Shift & drawer: SHIFT-LMVD-001"
         ],
         [
           "add 3 products",
@@ -774,7 +774,7 @@
         ],
         [
           "state",
-          "chip: Shift & drawer: SHIFT-X52J-001 (44px); banner: none; viewport 768x1024"
+          "chip: Shift & drawer: SHIFT-LMVD-001 (44px); banner: none; viewport 768x1024"
         ]
       ],
       "facts": {
@@ -813,7 +813,7 @@
         ],
         [
           "sheet contents",
-          "sheet 390x222 fits=true; under-44px: none; disabled: none; reasons: Recording expenses needs the Accounting or Cash permission."
+          "sheet 390x222 fits=true; under-44px: none; disabled: none; reasons: Recording expenses needs the Accounting permission."
         ]
       ],
       "facts": {
@@ -870,6 +870,234 @@
         "dir": "rtl",
         "theme": "dark",
         "active": "إغلاق",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shell-topbar.en.dark.tablet",
+      "w": 768,
+      "h": 1024,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: Opening float (USD)"
+        ],
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "Esc (real key)",
+          "no dialog, Shift & drawer: SHIFT-PUO4-001"
+        ],
+        [
+          "top bar fit",
+          "header 712px, content 712px; overflow=false; clipped: none; truncated: none; page overflowX=false"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Shift & drawer: SHIFT-PUO4-001",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shell-topbar.ar.dark.tablet",
+      "w": 768,
+      "h": 1024,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: الرصيد الافتتاحي (بالدولار)"
+        ],
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "Esc (real key)",
+          "no dialog, الوردية والدرج: SHIFT-JT8G-001"
+        ],
+        [
+          "top bar fit",
+          "header 712px, content 712px; overflow=false; clipped: none; truncated: none; page overflowX=false"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "الوردية والدرج: SHIFT-JT8G-001",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shell-topbar.en.light.tablet-landscape",
+      "w": 1024,
+      "h": 768,
+      "theme": "light",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "top bar fit",
+          "header 968px, content 968px; overflow=false; clipped: none; truncated: none; page overflowX=false"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "light",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shell-topbar.en.dark.tablet-820",
+      "w": 820,
+      "h": 1180,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: Opening float (USD)"
+        ],
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "Esc (real key)",
+          "no dialog, Shift & drawer: SHIFT-5HMD-001"
+        ],
+        [
+          "top bar fit",
+          "header 764px, content 764px; overflow=false; clipped: none; truncated: none; page overflowX=false"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Shift & drawer: SHIFT-5HMD-001",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shell-topbar-noshift.en.dark.tablet",
+      "w": 768,
+      "h": 1024,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "top bar fit",
+          "header 712px, content 712px; overflow=false; clipped: none; truncated: none; page overflowX=false"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shell-topbar.en.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: Opening float (USD)"
+        ],
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "Esc (real key)",
+          "no dialog, Shift & drawer: SHIFT-04E2-001"
+        ],
+        [
+          "top bar fit",
+          "header 390px, content 390px; overflow=false; clipped: none; truncated: none; page overflowX=false"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Shift & drawer: SHIFT-04E2-001",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shell-topbar.ar.light.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "light",
+      "lang": "ar",
+      "log": [
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: الرصيد الافتتاحي (بالدولار)"
+        ],
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "Esc (real key)",
+          "no dialog, الوردية والدرج: SHIFT-3R0X-001"
+        ],
+        [
+          "top bar fit",
+          "header 390px, content 390px; overflow=false; clipped: none; truncated: none; page overflowX=false"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "light",
+        "active": "الوردية والدرج: SHIFT-3R0X-001",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "shell-topbar.en.dark.mobile-360",
+      "w": 360,
+      "h": 780,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "tap topbar shift chip",
+          "sheet open; focus inside: Opening float (USD)"
+        ],
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "Esc (real key)",
+          "no dialog, Shift & drawer: SHIFT-UZ00-001"
+        ],
+        [
+          "top bar fit",
+          "header 360px, content 360px; overflow=false; clipped: none; truncated: SHIFT-UZ00-001; page overflowX=false"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Shift & drawer: SHIFT-UZ00-001",
         "overflowX": false
       }
     }
