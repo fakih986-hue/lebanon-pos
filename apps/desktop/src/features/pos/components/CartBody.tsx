@@ -8,10 +8,11 @@ import {
 } from "lucide-react"
 
 import CartItemCard from "./CartItemCard"
+import MoneyDue from "./MoneyDue"
 import TenderPanel from "./TenderPanel"
 import {
   formatCurrency,
-  formatLbpCurrency,
+  formatNumber,
 } from "../lib/currency"
 import {
   formatVatRate,
@@ -60,6 +61,9 @@ interface Props {
   tax: number
   total: number
   totalLbp: number
+  /** Cash payable after LBP rounding (POSPage), and its USD equivalent. */
+  payableLbp?: number
+  payableUsd?: number
   exchangeRate: number
   paidTotalUsd: number
   paidTotalLbp: number
@@ -86,6 +90,7 @@ export default function CartBody({
   discountMode, discountValue, onDiscountModeChange, onDiscountValueChange,
   onHold, onClean, onCompleteSale, onTenderEnter,
   itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
+  payableLbp = totalLbp, payableUsd = total,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, canApplyDiscount,
   canOverridePrice = true,
@@ -95,14 +100,18 @@ export default function CartBody({
   const [saleNoteOpen, setSaleNoteOpen] = useState(false)
   const { t } = useI18n()
 
+  const isCash = paymentMethod === "Cash"
+  const lbp = t("pos.v2.lbp")
+  // The pay button names the amount the customer actually pays (§7 "pay").
+  const payAmount = isCash && payableLbp !== totalLbp
+    ? `${formatCurrency(payableUsd)} · ${formatNumber(Math.round(payableLbp))} ${lbp}`
+    : `${formatCurrency(total)} · ${formatNumber(Math.round(totalLbp))} ${lbp}`
   const checkoutLabel = creditLimitExceeded
     ? t("pos.credit_exceeded")
-    : paymentMethod === "Debt"
-      ? `${t("pos.record_debt")} — ${formatCurrency(total)}`
-      : `${t("pos.pay")} ${formatCurrency(total)}`
+    : paymentMethod === "Debt" ? t("pos.record_debt") : t("pos.pay")
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto p-3 space-y-3" style={{ background: "var(--surface-2)" }}>
+    <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-3" style={{ background: "var(--surface)" }}>
       {/* Items */}
       {items.length > 0 ? (
         <div className="space-y-2">
@@ -143,11 +152,11 @@ export default function CartBody({
         <button
           type="button"
           onClick={onToggleSellAtCost}
-          className="w-full flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12px] font-bold transition"
+          className="w-full flex items-center justify-center gap-2 rounded-lg border px-3 text-[14px] font-semibold transition"
           aria-pressed={sellAtCost}
           style={sellAtCost
-            ? { background: "var(--warning-soft)", borderColor: "var(--warning)", color: "var(--warning-text)" }
-            : { borderColor: "var(--border)", color: "var(--text-3)" }}
+            ? { minHeight: 48, background: "var(--v2-warn-soft)", borderColor: "var(--v2-warn)", color: "var(--v2-warn)" }
+            : { minHeight: 48, borderColor: "var(--border-strong)", color: "var(--text-2)" }}
         >
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: sellAtCost ? "var(--warning)" : "var(--text-3)" }} />
           {sellAtCost ? t("pos.sell_at_cost") + " — ON" : t("pos.sell_at_cost")}
@@ -161,10 +170,10 @@ export default function CartBody({
             <button
               type="button"
               onClick={() => setSaleNoteOpen(!saleNoteOpen)}
-              className="flex w-full items-center justify-between gap-3 px-3 py-2.5"
-              style={{ background: "var(--surface-2)" }}
+              className="flex w-full items-center justify-between gap-3 px-3"
+              style={{ minHeight: 48, background: "var(--surface-2)" }}
             >
-              <span className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: "var(--text-2)" }}>
+              <span className="flex items-center gap-2 text-[14px] font-semibold" style={{ color: "var(--text-2)" }}>
                 <MessageSquare size={14} />
                 {t("pos.sale_note")}
               </span>
@@ -193,10 +202,10 @@ export default function CartBody({
             <button
               type="button"
               onClick={() => setDiscountOpen(!discountOpen)}
-              className="flex w-full items-center justify-between gap-3 px-3 py-2.5"
-              style={{ background: "var(--surface-2)" }}
+              className="flex w-full items-center justify-between gap-3 px-3"
+              style={{ minHeight: 48, background: "var(--surface-2)" }}
             >
-              <span className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: "var(--text-2)" }}>
+              <span className="flex items-center gap-2 text-[14px] font-semibold" style={{ color: "var(--text-2)" }}>
                 <BadgePercent size={14} />
                 {t("pos.discount")}
               </span>
@@ -264,6 +273,39 @@ export default function CartBody({
           </div>
         </div>
 
+        {/* Totals (v2 money rule) */}
+        <div className="flex flex-col gap-2 pt-1">
+
+          {/* Secondary lines — subtotal, discount, vat */}
+          <div className="space-y-1 mb-2">
+            {hasDiscount && (
+              <>
+                <div className="flex justify-between text-[14px]" style={{ color: "var(--text)" }}>
+                  <span>{t("pos.items_subtotal")}</span>
+                  <span className="num">{formatCurrency(grossSubtotal)}</span>
+                </div>
+                <div className="flex justify-between text-[14px]" style={{ color: "var(--text)" }}>
+                  <span>{t("pos.discount")}</span>
+                  <span className="num">−{formatCurrency(discountTotal)}</span>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between text-[14px]" style={{ color: "var(--text)" }}>
+              <span>{t("pos.subtotal")}</span>
+              <span className="num">{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-[14px]" style={{ color: "var(--text)" }}>
+              <span>{t("pos.vat")} {formatVatRate(vatRate)}</span>
+              <span className="num">{formatCurrency(tax)}</span>
+            </div>
+          </div>
+
+          {/* THE number — total due, cash payable when rounding applies */}
+          <div className="border-t pt-2" style={{ borderColor: "var(--border)" }}>
+            <MoneyDue total={total} totalLbp={totalLbp} payableLbp={payableLbp} payableUsd={payableUsd} isCash={isCash} label={t("pos.v2.total_due")} />
+          </div>
+        </div>
+
         {/* TenderPanel */}
         <TenderPanel
           density="full"
@@ -292,63 +334,16 @@ export default function CartBody({
           onLbpEnter={onTenderEnter}
         />
 
-        {/* Totals */}
-        <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-
-          {/* Secondary lines — subtotal, discount, vat */}
-          <div className="space-y-1 mb-2">
-            {hasDiscount && (
-              <>
-                <div className="flex justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
-                  <span>{t("pos.items_subtotal")}</span>
-                  <span className="tabular-nums font-bold" style={{ color: "var(--text)" }}>{formatCurrency(grossSubtotal)}</span>
-                </div>
-                <div className="flex justify-between text-[11px]" style={{ color: "var(--brand-text)" }}>
-                  <span>{t("pos.discount")}</span>
-                  <span className="font-bold tabular-nums">-{formatCurrency(discountTotal)}</span>
-                </div>
-              </>
-            )}
-            <div className="flex justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
-              <span>{t("pos.subtotal")}</span>
-              <span className="tabular-nums font-bold" style={{ color: "var(--text)" }}>{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
-              <span>{t("pos.vat")} {formatVatRate(vatRate)}</span>
-              <span className="tabular-nums font-bold" style={{ color: "var(--text)" }}>{formatCurrency(tax)}</span>
-            </div>
-          </div>
-
-          {/* THE number — total */}
-          <div className="flex items-end justify-between border-t pt-2.5" style={{ borderColor: "var(--border)" }}>
-            <div>
-              <span className="block text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
-                {t("pos.total_usd")}
-              </span>
-              <span className="block text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
-                {formatLbpCurrency(totalLbp)}
-              </span>
-            </div>
-            <span className="text-[32px] font-black tabular-nums leading-none" style={{ color: "var(--text)" }}>
-              {formatCurrency(total)}
-            </span>
-          </div>
-
-          {hasDiscount && (
-            <div className="mt-2 rounded-lg px-2.5 py-1 text-center text-[10px] font-bold" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>
-              You save {formatCurrency(discountTotal)}
-            </div>
-          )}
-        </div>
-
         {/* Checkout button */}
         <button
           type="button"
           onClick={onCompleteSale}
           disabled={checkoutBlocked}
-          className="btn-checkout sticky bottom-0 z-10 w-full h-14 text-[16px] font-black tracking-tight"
+          className="mg2-pay sticky bottom-0 z-10"
         >
-          {checkoutLabel}
+          <span>{checkoutLabel}</span>
+          {!creditLimitExceeded && <span className="num">{payAmount}</span>}
+          <span className="mg2-kbd">Enter</span>
         </button>
 
       </>)}

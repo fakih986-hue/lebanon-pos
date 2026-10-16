@@ -117,23 +117,24 @@ export default function SyncStatus() {
   let pillBorder: string
   let pillColor: string
   let label: string
-  let Icon = Cloud
+  let Icon: typeof Cloud
 
-  if (!status.online) {
-    pillBg = "var(--rose-soft)"; pillBorder = "rgba(244,63,94,0.3)"; pillColor = "var(--rose-text)"
-    label = t("sync.offline", { n: pendingWork + status.dead })
-    Icon = CloudOff
-  } else if (hasDead) {
-    pillBg = "var(--rose-soft)"; pillBorder = "rgba(244,63,94,0.3)"; pillColor = "var(--rose-text)"
-    label = `${status.dead} stuck`
+  // Midnight Gold v2 capsule (DESIGN-SYSTEM §6): priority stuck > offline > waiting > synced.
+  if (hasDead) {
+    pillBg = "var(--v2-err-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-err)"
+    label = t("sync.v2.stuck", { n: status.dead })
     Icon = AlertTriangle
+  } else if (!status.online) {
+    pillBg = "var(--v2-warn-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-warn)"
+    label = t("sync.v2.offline", { n: pendingWork })
+    Icon = CloudOff
   } else if (pendingWork > 0) {
-    pillBg = "var(--amber-soft)"; pillBorder = "rgba(245,158,11,0.3)"; pillColor = "var(--amber-text)"
-    label = t("sync.pending", { n: pendingWork })
+    pillBg = "var(--v2-warn-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-warn)"
+    label = t("sync.v2.waiting", { n: pendingWork })
     Icon = RotateCw
   } else {
-    pillBg = "var(--brand-soft)"; pillBorder = "var(--brand-border)"; pillColor = "var(--brand-text)"
-    label = t("sync.synced")
+    pillBg = "var(--v2-ok-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-ok)"
+    label = t("sync.v2.synced")
     Icon = Cloud
   }
 
@@ -161,7 +162,9 @@ export default function SyncStatus() {
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 items-center gap-2 rounded-lg border px-3 text-[13px] font-semibold transition hover:opacity-80"
+        className="flex min-h-[40px] items-center gap-2 rounded-full border px-3 text-[13px] font-semibold transition hover:opacity-80"
+        aria-label={`${t("sync.v2.capsule")}: ${label}`}
+        aria-expanded={open}
         style={{ background: pillBg, borderColor: pillBorder, color: pillColor }}
       >
         <Icon size={15} />

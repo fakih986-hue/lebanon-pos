@@ -1,0 +1,86 @@
+/* Midnight Gold v2 — register vertical slice (shell → register → payment →
+   receipt, Simple POS). Spec: docs/design/DESIGN-SYSTEM.md §3, §7, §8.
+   Everything is scoped under .mg2 so screens outside the slice are untouched
+   until they are migrated. Tokens come from index.css (v2 tokens added there). */
+
+.mg2 { --mg2-ctl: 48px; font-variant-numeric: tabular-nums; }
+.mg2 .num { font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
+[dir="rtl"] .mg2, [dir="rtl"].mg2 { font-family: "IBM Plex Sans Arabic", Inter, system-ui, sans-serif; line-height: 1.55; }
+[dir="rtl"] .mg2 .mg2-dir { transform: scaleX(-1); }
+
+/* Type scale (§4): nothing in the register below 14px; key hints 12px. */
+.mg2 .mg2-cap   { font-size: 14px; line-height: 20px; font-weight: 500; color: var(--text-2); }
+.mg2 .mg2-sub   { font-size: 16px; line-height: 24px; font-weight: 600; }
+.mg2 .mg2-total { font-size: 44px; line-height: 48px; font-weight: 700; letter-spacing: -.01em; color: var(--text); }
+.mg2 .mg2-hero  { font-size: 64px; line-height: 68px; font-weight: 700; letter-spacing: -.02em; color: var(--text); }
+[dir="rtl"] .mg2 .mg2-total, [dir="rtl"] .mg2 .mg2-hero { letter-spacing: 0; }
+@media (max-width: 479px) { .mg2 .mg2-total { font-size: 36px; line-height: 40px } .mg2 .mg2-hero { font-size: 48px; line-height: 52px } }
+.mg2 .mg2-kbd { font-size: 12px; font-weight: 600; color: var(--text-2); border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; background: var(--surface-2); white-space: nowrap; }
+
+/* Buttons (§7) */
+.mg2 .mg2-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--mg2-ctl); padding: 0 16px; border-radius: 8px; font: inherit; font-weight: 600; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); white-space: nowrap; cursor: pointer; transition: background-color .14s; }
+.mg2 .mg2-btn:hover { background: var(--surface-hover); }
+.mg2 .mg2-btn-ghost { background: transparent; border-color: transparent; color: var(--text-2); }
+.mg2 .mg2-btn-primary { background: var(--brand); border-color: var(--brand); color: var(--brand-contrast, #2C1F05); }
+.mg2 .mg2-btn[disabled], .mg2 .mg2-pay[disabled] { background: var(--disabled-bg); border-color: var(--border); color: var(--disabled-text); cursor: not-allowed; box-shadow: none; }
+.mg2 .mg2-btn:focus-visible, .mg2 .mg2-pay:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.mg2 .mg2-pay { width: 100%; min-height: 64px; border-radius: 12px; background: var(--pay-bg); color: var(--pay-text); font: inherit; font-size: 18px; font-weight: 700; border: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 20px; cursor: pointer; }
+.mg2 .mg2-pay:hover:not([disabled]) { background: var(--pay-hover); }
+.mg2 .mg2-pay .mg2-kbd { background: rgba(0,0,0,.12); color: var(--pay-text); border-color: rgba(0,0,0,.2); }
+.mg2 .mg2-pay[disabled] .mg2-kbd { background: transparent; color: var(--disabled-text); border-color: var(--border-strong); }
+
+/* Status tones (§3 — one capsule model) */
+.mg2 .mg2-t-ok   { background: var(--v2-ok-soft);   color: var(--v2-ok); }
+.mg2 .mg2-t-warn { background: var(--v2-warn-soft); color: var(--v2-warn); }
+.mg2 .mg2-t-err  { background: var(--v2-err-soft);  color: var(--v2-err); }
+.mg2 .mg2-t-info { background: var(--v2-info-soft); color: var(--v2-info); }
+.mg2 .mg2-banner { display: flex; align-items: center; gap: 12px; border-radius: 12px; padding: 12px 16px; flex-wrap: wrap; }
+
+/* SegmentedControl (§7): native radios; selected = gold tint + gold edge + check */
+.mg2 .mg2-seg { display: grid; gap: 4px; padding: 4px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border-input); margin: 0; min-width: 0; }
+.mg2 .mg2-seg > label { position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; border-radius: 8px; font-weight: 600; color: var(--text-2); cursor: pointer; padding: 0 6px; text-align: center; font-size: 14px; }
+.mg2 .mg2-seg input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
+.mg2 .mg2-seg > label:has(input:checked) { background: var(--brand-soft); color: var(--text); box-shadow: inset 0 -2px 0 var(--brand); }
+.mg2 .mg2-seg > label:has(input:focus-visible) { outline: 2px solid var(--brand); outline-offset: 2px; }
+.mg2 .mg2-seg .mg2-chk { display: none; }
+.mg2 .mg2-seg > label:has(input:checked) .mg2-chk { display: inline-block; }
+.mg2 .mg2-seg > label:has(input:checked) .mg2-ico { display: none; }
+.mg2 .mg2-seg.mg2-seg-xl > label { min-height: 56px; font-size: 16px; }
+
+/* Money input (§7): LTR, end-aligned, separate adornment */
+.mg2 .mg2-money { display: flex; align-items: center; gap: 6px; min-height: var(--mg2-ctl); padding: 0 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border-input); }
+.mg2 .mg2-money:focus-within { outline: 2px solid var(--brand); outline-offset: 2px; }
+.mg2 .mg2-money input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--text); font: inherit; font-size: 18px; font-weight: 600; text-align: end; outline: none; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+.mg2 .mg2-money input::-webkit-outer-spin-button, .mg2 .mg2-money input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mg2 .mg2-money .mg2-adorn { color: var(--text-2); font-weight: 600; }
+.mg2 .mg2-money.mg2-money-xl { min-height: 56px; }
+.mg2 .mg2-money.mg2-money-xl input { font-size: 22px; }
+.mg2 .mg2-label { display: block; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
+
+/* ── Existing register components, re-skinned in place ── */
+.mg2.pos-workspace, .mg2 .pos-workspace { background: var(--page-bg); }
+.mg2.pos-workspace::before, .mg2.pos-workspace::after { display: none !important; }
+/* Department chips: 48px touch, gold only for the selected one */
+.mg2 [role="tablist"] { border-bottom: 0 !important; gap: 8px !important; padding-bottom: 2px; }
+.mg2 [role="tablist"] > [role="tab"] { min-height: 48px; height: auto !important; border-radius: 999px !important; border: 1px solid var(--border-strong) !important; background: var(--surface) !important; color: var(--text-2) !important; font-size: 14px !important; padding: 0 14px !important; }
+.mg2 [role="tablist"] > [role="tab"][aria-selected="true"] { background: var(--brand-soft) !important; border-color: var(--brand-border) !important; color: var(--text) !important; }
+.mg2 [role="tablist"] > [role="tab"] span[class*="rounded-full"] { background: var(--surface-3) !important; color: var(--text-2) !important; font-size: 12px !important; font-weight: 600 !important; }
+/* Product tiles */
+.mg2 .pos-product-tile, .mg2 article.pos-product-card { border-radius: 16px !important; background: var(--surface) !important; border: 1px solid var(--border) !important; }
+/* Cart rail */
+.mg2 .pos-cart-rail { background: var(--surface) !important; border-inline-start: 1px solid var(--border) !important; border-left-color: var(--border) !important; }
+.mg2 .pos-cart-header { background: var(--surface) !important; border-bottom: 1px solid var(--border); }
+
+/* Mobile pay bar (below 900px the rail becomes a sheet from this bar) */
+.mg2 .mg2-paybar { position: fixed; inset-inline: 0; bottom: 0; z-index: 40; display: none; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); box-shadow: 0 -8px 24px rgba(0,0,0,.18); }
+
+@media (max-width: 1023px) { .mg2 .mg2-paybar { display: flex; } }
+/* Phones: the app bottom navigation is visible, so the pay bar sits on top of it. */
+@media (max-width: 767px) { .mg2 .mg2-paybar { bottom: calc(76px + env(safe-area-inset-bottom)); } }
+/* Room for the pay bar (and the bottom nav on phones) under the product grid. */
+@media (max-width: 1023px) { .mg2 section.pb-24 { padding-bottom: 104px !important; } }
+@media (max-width: 767px) { .mg2 section.pb-24 { padding-bottom: 180px !important; } }
+
+/* Sale-complete receipt panel: non-modal, never takes focus from the scanner */
+.mg2-receipt { position: fixed; z-index: 120; inset-inline-end: 24px; bottom: 24px; width: min(420px, calc(100vw - 32px)); border-radius: 16px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 16px 40px rgba(0,0,0,.45); }
+@media (max-width: 899px) { .mg2-receipt { inset-inline: 16px; bottom: 96px; width: auto; } }

@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "framer-motion"
 const MotionDiv = motion.div as any
 const MotionSpan = motion.span as any
 const MotionButton = motion.button as any
-const MotionP = motion.p as any
 import {
   ArrowLeft,
   BadgePercent,
@@ -20,8 +19,10 @@ import {
 } from "lucide-react"
 import LastSaleBanner from "./LastSaleBanner"
 import TenderPanel from "../components/TenderPanel"
+import MoneyDue from "./MoneyDue"
+import PaymentReviewDialog from "./PaymentReviewDialog"
 import { useI18n } from "@lebanonpos/shared"
-import { formatCurrency, formatLbpCurrency, formatNumber, usdToLbp } from "../lib/currency"
+import { formatCurrency, formatNumber } from "../lib/currency"
 import type { Product } from "../types/product"
 
 type CartItem = Product & { quantity: number }
@@ -51,6 +52,10 @@ type Props = {
   itemCount: number
   total: number
   totalLbp: number
+  payableLbp?: number
+  payableUsd?: number
+  /** sales.price_override — gates sell-at-cost (it was shown to everyone). */
+  canOverridePrice?: boolean
   exchangeRate: number
   paymentMethod: PaymentMethod
   onSelectPayment: (method: PaymentMethod) => void
@@ -106,6 +111,7 @@ export default function QuickPOSMode({
   saleNote, onSaleNoteChange,
   discountMode, discountValue, onDiscountModeChange, onDiscountValueChange,
   hasDiscount, canApplyDiscount, discountTotal, grossSubtotal,
+  payableLbp = totalLbp, payableUsd = total, canOverridePrice = false,
 }: Props) {
   const { t, dir } = useI18n()
   const usdRef = useRef<HTMLInputElement>(null)
@@ -117,6 +123,7 @@ export default function QuickPOSMode({
   const hasInput = scanCode.trim().length > 0
 
   function handleBarcodeKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape" && scanCode) { e.preventDefault(); onScanCodeChange(""); return }
     if (e.key !== "Enter") return
     e.preventDefault()
     if (scanCode.trim()) {
@@ -137,130 +144,29 @@ export default function QuickPOSMode({
   }, [showReview])
 
   if (showReview) {
-    const hasItems = items.length > 0
     return (
-      <section ref={reviewRef} className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden p-4"
-        style={{ background: "rgba(5,7,13,0.92)", backdropFilter: "blur(16px)" }}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") { e.preventDefault(); setShowReview(false) }
-          if (e.key === "Enter") { e.preventDefault(); handleCompleteSale() }
-        }}
-        tabIndex={0}>
-
-        <div className="w-full max-w-md rounded-3xl overflow-hidden"
-          style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-
-          {/* Header */}
-          <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-black" style={{ color: "var(--text)" }}>Confirm Sale</h2>
-              <span className="rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ background: "var(--surface-2)", color: "var(--text-3)" }}>
-                {hasItems ? `${itemCount} item${itemCount > 1 ? "s" : ""}` : "Empty"}
-              </span>
-            </div>
-          </div>
-
-          {/* Items */}
-          {hasItems && (
-            <div className="max-h-[35vh] overflow-y-auto divide-y" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
-              {items.map((item, i) => (
-                <div key={item.id} className="flex items-center gap-3 px-5 py-2.5"
-                  style={{ background: i % 2 === 0 ? "var(--surface)" : "var(--surface-2)" }}>
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-black"
-                    style={{ background: "var(--surface-3)", color: "var(--text-3)" }}>
-                    {item.quantity}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: "var(--text)" }}>
-                    {item.name}
-                  </span>
-                  <span className="shrink-0 text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
-                    @{formatCurrency(item.price)}
-                  </span>
-                  <span className="shrink-0 w-16 text-right text-[14px] font-black tabular-nums" style={{ color: "var(--text)" }}>
-                    {formatCurrency(item.price * item.quantity)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Totals */}
-          <div className="px-5 py-4 space-y-2 border-t" style={{ borderColor: "var(--border)" }}>
-            {/* THE number */}
-            <div className="flex items-end justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Total</span>
-              <div className="text-right leading-none">
-                <div className="text-[32px] font-black tabular-nums" style={{ color: "var(--text)" }}>
-                  {formatCurrency(total)}
-                </div>
-                <div className="text-[12px] font-semibold tabular-nums mt-0.5" style={{ color: "var(--text-3)" }}>
-                  {formatLbpCurrency(totalLbp)}
-                </div>
-              </div>
-            </div>
-
-            {/* Payment info */}
-            <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: "var(--border)" }}>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
-                  {t("pos.payment." + paymentMethod.toLowerCase())}
-                </span>
-              </div>
-              {paymentMethod === "Cash" && (
-                <span className="text-[11px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
-                  USD {paidUsd || "0"} / LBP {paidLbp || "0"}
-                </span>
-              )}
-            </div>
-
-            {/* Change */}
-            {cashTenderValid && cashChangeUsd > 0 && (
-              <div className="rounded-2xl p-4 mt-2 text-center"
-                style={{ background: "rgba(34,197,94,0.10)", border: "1.5px solid rgba(34,197,94,0.25)" }}>
-                <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#22C55E" }}>{t("pos.change")}</span>
-                <div className="text-[36px] font-black tabular-nums leading-none mt-1" style={{ color: "#22C55E" }}>
-                  {formatCurrency(cashChangeUsd)}
-                </div>
-                <div className="text-[14px] font-bold tabular-nums mt-0.5" style={{ color: "rgba(34,197,94,0.7)" }}>
-                  {formatLbpCurrency(cashChangeLbp)}
-                </div>
-              </div>
-            )}
-
-            {/* Still due */}
-            {!cashTenderValid && paymentMethod === "Cash" && (paidUsd || paidLbp) && (
-              <div className="rounded-2xl p-4 mt-2 text-center"
-                style={{ background: "rgba(239,68,68,0.10)", border: "1.5px solid rgba(239,68,68,0.25)" }}>
-                <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#EF4444" }}>{t("pos.remaining")}</span>
-                <div className="text-[36px] font-black tabular-nums leading-none mt-1" style={{ color: "#EF4444" }}>
-                  {formatCurrency(cashStillDueUsd)}
-                </div>
-                <div className="text-[14px] font-bold tabular-nums mt-0.5" style={{ color: "rgba(239,68,68,0.7)" }}>
-                  {formatLbpCurrency(usdToLbp(cashStillDueUsd, exchangeRate))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="px-5 py-4 flex gap-3 border-t" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
-            <button type="button" onClick={() => setShowReview(false)}
-              className="flex-1 h-12 rounded-xl text-[13px] font-bold transition active:scale-[0.98]"
-              style={{ border: "1px solid var(--border)", color: "var(--text-2)", background: "var(--surface)" }}>
-              Esc
-            </button>
-            <button type="button" onClick={handleCompleteSale}
-              className="flex-[2.5] h-12 rounded-xl text-[15px] font-black text-white transition active:scale-[0.98]"
-              style={{ background: "var(--brand)" }}>
-              Enter — Pay {formatCurrency(total)}
-            </button>
-          </div>
-        </div>
-
-        <p className="mt-3 text-[10px] font-medium opacity-40" style={{ color: "var(--text-3)" }}>
-          Esc to edit · Enter to confirm
-        </p>
-      </section>
+      <PaymentReviewDialog
+        lines={items.length}
+        units={itemCount}
+        total={total}
+        totalLbp={totalLbp}
+        payableLbp={payableLbp}
+        payableUsd={payableUsd}
+        paymentMethod={paymentMethod}
+        paidUsd={parseFloat(paidUsd) || 0}
+        paidLbp={parseFloat(paidLbp) || 0}
+        changeUsd={cashChangeUsd}
+        changeLbp={cashChangeLbp}
+        stillDueUsd={paymentMethod === "Cash" ? cashStillDueUsd : 0}
+        blockedReason={!checkoutBlocked ? null
+          : items.length === 0 ? t("pos.v2.blocked_empty")
+          : paymentMethod === "Cash" && !cashTenderValid ? t("pos.v2.blocked_cash", { amount: formatCurrency(cashStillDueUsd) })
+          : paymentMethod === "Debt" && !selectedCustomer ? t("pos.select_customer_hint")
+          : creditLimitExceeded ? t("pos.credit_exceeded") : t("pos.v2.blocked_other")}
+        customerName={selectedCustomer?.name}
+        onBack={() => setShowReview(false)}
+        onConfirm={handleCompleteSale}
+      />
     )
   }
 
@@ -268,42 +174,25 @@ export default function QuickPOSMode({
   // overrides Tailwind's `fixed` (index.css loads after utilities) and breaks
   // the fullscreen worker mode.
   return (
-    <section className="bg-page fixed inset-0 z-[200] flex flex-col overflow-hidden"
+    <section className="mg2 bg-page fixed inset-0 z-[200] flex flex-col overflow-y-auto lg:overflow-hidden"
       onKeyDown={(e) => { if (e.key === "Escape" && showReview) setShowReview(false) }}>
       {/* ── Header ─────────────────────────────────────── */}
       <div className="flex shrink-0 items-center gap-3 border-b px-4 py-2.5"
         style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-        <button type="button" onClick={onExit}
-          aria-label="Exit Quick POS"
-          title="Exit Quick POS"
-          className="flex h-9 w-9 items-center justify-center rounded-lg border transition hover:opacity-70"
-          style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
-          <ArrowLeft size={15} />
+        <button type="button" onClick={onExit} className="mg2-btn mg2-btn-ghost" aria-label={t("pos.v2.exit_simple")}>
+          <ArrowLeft size={18} className="mg2-dir" /><span className="hidden sm:inline">{t("pos.v2.full_register")}</span>
         </button>
-        <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "var(--brand)", color: "#fff" }}>
-            <Zap size={14} />
-          </span>
-          <span className="text-[14px] font-black" style={{ color: "var(--text)" }}>
-            Quick POS
-            <span className="ml-2 text-[10px] font-semibold opacity-50" style={{ color: "var(--text-3)" }}>Enter = pay</span>
-          </span>
-        </div>
+        <span className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3 text-[14px] font-semibold" style={{ minHeight: 32, background: "var(--surface-3)", color: "var(--text-2)" }}>
+          <Zap size={14} />{t("pos.v2.simple_mode")}
+        </span>
         <div className="ml-auto flex items-center gap-2">
-          <MotionButton type="button" onClick={onStartCamera}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border transition"
-            style={cameraActive
-              ? { background: "rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.28)", color: "#ef4444" }
-              : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }}
-            whileTap={{ scale: 0.88 }}>
-            <Camera size={14} />
-          </MotionButton>
-          <MotionButton type="button" onClick={onCleanSale} disabled={items.length === 0}
-            className="flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[12px] font-bold transition disabled:opacity-30"
-            style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }}
-            whileTap={{ scale: 0.92 }}>
-            <Eraser size={13} /> Clear
-          </MotionButton>
+          <button type="button" onClick={onStartCamera} className="mg2-btn" style={{ width: 48, padding: 0, ...(cameraActive ? { background: "var(--v2-err-soft)", color: "var(--v2-err)" } : {}) }}
+            aria-label={cameraActive ? t("pos.stop") : t("pos.scan")} aria-pressed={cameraActive}>
+            <Camera size={18} />
+          </button>
+          <button type="button" onClick={onCleanSale} disabled={items.length === 0} className="mg2-btn mg2-btn-ghost">
+            <Eraser size={16} />{t("pos.clean")}
+          </button>
         </div>
       </div>
 
@@ -321,17 +210,18 @@ export default function QuickPOSMode({
           style={{
             background: "var(--surface)",
             border: "1.5px solid",
-            borderColor: hasInput ? "var(--brand)" : "var(--border)",
-            boxShadow: hasInput ? "0 0 0 3px var(--brand-soft)" : undefined,
+            borderColor: "var(--brand-border)",
+            borderRadius: 16,
           }}>
-          <div className="flex shrink-0 items-center justify-center" style={{ width: 52, color: hasInput ? "var(--brand)" : "var(--text-3)", transition: "color 0.2s" }}>
-            <Scan size={19} strokeWidth={2} />
+          <div className="flex shrink-0 items-center justify-center" style={{ width: 60, color: "var(--text-2)" }}>
+            <Scan size={26} strokeWidth={2} />
           </div>
-          <input ref={scanInputRef} autoFocus value={scanCode}
+          <input ref={scanInputRef} autoFocus value={scanCode} data-keep-focus="true"
             onChange={(e) => onScanCodeChange(e.target.value)}
             onKeyDown={handleBarcodeKey}
-            placeholder="Scan barcode… Enter to pay"
-            className="min-w-0 flex-1 bg-transparent py-3.5 text-[17px] font-black outline-none placeholder:font-medium placeholder:text-[15px]"
+            placeholder={t("pos.v2.scan_next_item")}
+            aria-label={t("pos.v2.scan_next_item")}
+            className="min-w-0 flex-1 bg-transparent py-5 text-[20px] font-semibold outline-none placeholder:font-medium"
             style={{ color: "var(--text)", caretColor: "var(--brand)" }} dir={dir} />
           <AnimatePresence>
             {hasInput && (
@@ -350,8 +240,8 @@ export default function QuickPOSMode({
             style={{ background: cameraActive ? "#ef4444" : "var(--brand)" }}
             animate={cameraActive ? { scale: [1, 1.6, 1], opacity: [1, 0.3, 1] } : {}}
             transition={cameraActive ? { duration: 1, repeat: Infinity } : {}} />
-          <span className="min-w-0 flex-1 truncate text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{scannerStatus}</span>
-          <span className="shrink-0 text-[11px] font-bold tabular-nums" style={{ color: "var(--text-3)" }}>{formatNumber(itemCount)} items</span>
+          <span className="mg2-cap min-w-0 flex-1 truncate" role="status">{scannerStatus}</span>
+          <span className="mg2-cap shrink-0 num">{t("pos.v2.lines_units", { lines: formatNumber(items.length), units: formatNumber(itemCount) })}</span>
         </div>
 
         <AnimatePresence>
@@ -373,11 +263,11 @@ export default function QuickPOSMode({
       </div>
 
       {/* ── Body ───────────────────────────────────────── */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row lg:overflow-hidden">
 
         {/* Items list */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
+        <div className="flex min-w-0 flex-1 flex-col lg:overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
             <AnimatePresence initial={false}>
               {items.length === 0 ? (
                 <MotionDiv key="empty" className="flex h-full min-h-[160px] flex-col items-center justify-center gap-3"
@@ -386,8 +276,8 @@ export default function QuickPOSMode({
                     <ShoppingCart size={28} style={{ color: "var(--text-3)" }} />
                   </div>
                   <div className="text-center">
-                    <p className="text-[13px] font-bold" style={{ color: "var(--text-2)" }}>Cart is empty</p>
-                    <p className="text-[11px]" style={{ color: "var(--text-3)" }}>Scan a barcode to start</p>
+                    <p className="mg2-sub" style={{ margin: 0, color: "var(--text)" }}>{t("pos.cart_empty")}</p>
+                    <p className="mg2-cap" style={{ margin: 0 }}>{t("pos.v2.scan_to_start")}</p>
                   </div>
                 </MotionDiv>
               ) : (
@@ -397,31 +287,32 @@ export default function QuickPOSMode({
                       initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 16, height: 0, marginBottom: 0 }}
                       transition={{ duration: 0.18, delay: i * 0.02 }}
-                      className="flex items-center gap-2 rounded-xl px-3 py-2.5"
+                      className="flex flex-wrap items-center gap-3 rounded-xl px-4 py-3 sm:flex-nowrap"
                       style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <p className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: "var(--text)" }}>{item.name}</p>
+                      <div className="min-w-0 flex-1 basis-full sm:basis-auto"><p className="truncate text-[16px] font-semibold" style={{ margin: 0, color: "var(--text)" }}>{item.name}</p><p className="num" style={{ margin: 0, color: "var(--text-2)" }}>{item.quantity} × {formatCurrency(item.price)}</p></div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button type="button" onClick={() => onDecreaseQty(item.id)}
                           aria-label={`Decrease ${item.name}`}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg transition active:scale-90"
+                          className="flex h-12 w-12 items-center justify-center rounded-lg transition active:scale-90"
                           style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
                           <Minus size={14} />
                         </button>
-                        <span className="w-7 text-center text-[13px] font-black tabular-nums" style={{ color: "var(--text)" }}>{item.quantity}</span>
+                        <span className="w-8 text-center text-[16px] font-semibold tabular-nums" style={{ color: "var(--text)" }}>{item.quantity}</span>
                         <button type="button" onClick={() => onIncreaseQty(item.id)}
                           aria-label={`Increase ${item.name}`}
-                          className="flex h-9 w-9 items-center justify-center rounded-lg transition active:scale-90"
+                          className="flex h-12 w-12 items-center justify-center rounded-lg transition active:scale-90"
                           style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
                           <Plus size={14} />
                         </button>
                       </div>
-                      <span className="w-16 shrink-0 text-right text-[13px] font-black tabular-nums" style={{ color: "var(--text)" }}>
+                      <span className="w-20 shrink-0 text-end text-[16px] font-semibold tabular-nums ms-auto sm:ms-0" style={{ color: "var(--text)" }}>
                         {formatCurrency(item.price * item.quantity)}
                       </span>
                       <button type="button" onClick={() => onRemoveItem(item.id)}
-                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition hover:opacity-70"
-                        style={{ color: "var(--text-3)" }}>
-                        <Trash2 size={13} />
+                        aria-label={t("pos.v2.remove_item", { name: item.name })}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition hover:opacity-70"
+                        style={{ color: "var(--text-2)" }}>
+                        <Trash2 size={16} />
                       </button>
                     </MotionDiv>
                   ))}
@@ -432,25 +323,21 @@ export default function QuickPOSMode({
         </div>
 
         {/* ── Payment rail ────────────────────────────── */}
-        <div className="flex shrink-0 flex-col overflow-y-auto border-l"
-          style={{ width: 585, borderColor: "var(--border)", background: "var(--surface)" }}>
+        <div className="flex w-full shrink-0 flex-col gap-4 p-5 lg:w-[480px] lg:overflow-y-auto"
+          style={{ borderInlineStart: "1px solid var(--border)", background: "var(--surface)" }}>
 
           {/* Total */}
-          <div className="border-b px-5 py-4" style={{ borderColor: "var(--border)" }}>
-            <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>Total</p>
-            <MotionP key={total} className="text-[36px] font-black tabular-nums leading-none mt-0.5" style={{ color: "var(--text)" }}
-              initial={{ scale: 1.06, color: "var(--brand)" }} animate={{ scale: 1, color: "var(--text)" }} transition={{ duration: 0.22 }}>
-              {formatCurrency(total)}
-            </MotionP>
-            <p className="mt-1 text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-3)" }}>{formatLbpCurrency(totalLbp)}</p>
+          <div>
+            <p className="mg2-sub" style={{ margin: 0, color: "var(--text-2)" }}>{t("pos.v2.total_due")} · {t("pos.v2.lines_units", { lines: formatNumber(items.length), units: formatNumber(itemCount) })}</p>
+            <MoneyDue total={total} totalLbp={totalLbp} payableLbp={payableLbp} payableUsd={payableUsd} isCash={paymentMethod === "Cash"} size="hero" />
           </div>
 
           {/* Sell at Cost toggle */}
-          {items.length > 0 && (
+          {items.length > 0 && canOverridePrice && (
             <button
               type="button"
               onClick={onToggleSellAtCost}
-              className="mx-4 flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12px] font-bold transition"
+              className="flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-[12px] font-bold transition"
               aria-pressed={sellAtCost}
               style={sellAtCost
                 ? { background: "var(--warning-soft)", borderColor: "var(--warning)", color: "var(--warning-text)" }
@@ -463,7 +350,7 @@ export default function QuickPOSMode({
 
           {/* Sale note + Discount — side by side */}
           {items.length > 0 && (
-            <div className="flex gap-2 mx-4">
+            <div className="flex gap-2">
               {/* Sale note */}
               <div className="flex-1 rounded-xl border overflow-hidden" style={{ borderColor: "var(--border)" }}>
                 <button
@@ -603,15 +490,16 @@ export default function QuickPOSMode({
           />
 
           {/* Complete sale */}
-          <div className="mt-auto p-4">
-            <MotionButton type="button" onClick={() => setShowReview(true)}
+          <div className="mt-auto">
+            <button type="button" onClick={() => setShowReview(true)}
               disabled={items.length === 0 || checkoutBlocked}
-              className="h-16 w-full rounded-2xl text-[16px] font-black text-white transition disabled:opacity-30"
-              style={{ background: "var(--brand)", boxShadow: "0 4px 16px var(--brand-soft)" }}
-              whileTap={{ scale: 0.96 }}>
-              {t("pos.complete_sale")}
-              <span className="ml-2 opacity-80 text-[14px]">— {formatCurrency(total)}</span>
-            </MotionButton>
+              className="mg2-pay">
+              <span>{t("pos.pay")}</span>
+              <span className="num">{paymentMethod === "Cash" && payableLbp !== totalLbp
+                ? `${formatCurrency(payableUsd)} · ${formatNumber(Math.round(payableLbp))} ${t("pos.v2.lbp")}`
+                : `${formatCurrency(total)} · ${formatNumber(Math.round(totalLbp))} ${t("pos.v2.lbp")}`}</span>
+              <span className="mg2-kbd">Enter</span>
+            </button>
           </div>
         </div>
       </div>

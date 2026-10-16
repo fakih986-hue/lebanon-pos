@@ -121,6 +121,23 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
   .bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--text-2);text-decoration:none;min-height:48px;justify-content:center}
   .bottom-nav a.on{color:var(--brand-text)}
 }
+/* ── Lists on phones (§8): chosen per task, never forced ──
+   .cards-sm  rows become cards (one decision per row: receipts, customers, team, drivers)
+   .prio      low-priority columns (.col-opt) drop out (scan-and-compare lists: products, suppliers, reconciliation)
+   plain .scroll-x keeps horizontal scrolling (data entry grids: receiving) */
+@media (max-width:767px){
+  .tbl.prio{min-width:0!important}
+  .tbl.prio .col-opt{display:none}
+  .tbl.cards-sm{min-width:0!important}
+  .tbl.cards-sm thead{display:none}
+  .tbl.cards-sm tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:12px 16px;border-top:1px solid var(--border)}
+  .tbl.cards-sm tr:first-child{border-top:0}
+  .tbl.cards-sm td{display:block;padding:0;border:0;text-align:start;min-width:0}
+  .tbl.cards-sm td:nth-child(even){text-align:end}
+  .tbl.cards-sm td:nth-child(n+3)::before{content:attr(data-label);display:block;font-size:12px;line-height:16px;font-weight:500;color:var(--text-2)}
+  .tbl.cards-sm tr.sel{box-shadow:inset 3px 0 0 var(--brand)}
+  [dir=rtl] .tbl.cards-sm tr.sel{box-shadow:inset -3px 0 0 var(--brand)}
+}
 /* ── Layout helpers ── */
 .cols-2{display:grid;grid-template-columns:minmax(0,1fr) 480px;gap:16px;align-items:start}
 .cols-2b{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
@@ -183,8 +200,8 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
       <div class="flex items-center gap-2" style="flex-wrap:wrap"><label class="field-row field" style="width:min(340px,100%)"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg><span class="sr-only">Search</span><input style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;outline:none" placeholder="Supplier name or phone…"></label><div class="flex gap-2" style="flex-wrap:wrap" role="group" aria-label="Filter"><button class="chip" type="button" aria-pressed="true">You owe<span class="badge t-mute num">6</span></button><button class="chip" type="button" aria-pressed="false">Open orders<span class="badge t-mute num">4</span></button><button class="chip" type="button" aria-pressed="false">All<span class="badge t-mute num">31</span></button><button class="chip" type="button" aria-pressed="false">Archived<span class="badge t-mute num">3</span></button></div></div>
       <div class="cols-2">
         <div class="card scroll-x" style="overflow-y:hidden">
-          <table class="tbl" style="min-width:600px"><thead><tr><th>Supplier</th><th class="r">You owe</th><th>Last delivery</th><th class="r">Open orders</th></tr></thead><tbody>
-          <tr class="sel"><td class="font-semibold">Malia Group</td><td class="r num font-semibold">$1,284.50</td><td class="cap">today</td><td class="r num">1</td></tr><tr class=""><td class="font-semibold">Gandour</td><td class="r num font-semibold">$412.00</td><td class="cap">6 days ago</td><td class="r num">2</td></tr><tr class=""><td class="font-semibold">Dairy Khoury</td><td class="r num font-semibold">$0.00</td><td class="cap">yesterday</td><td class="r num">0</td></tr><tr class=""><td class="font-semibold">Sohat Water</td><td class="r num font-semibold">$96.00</td><td class="cap">2 weeks ago</td><td class="r num">1</td></tr>
+          <table class="tbl prio" style="min-width:600px"><thead><tr><th>Supplier</th><th class="r">You owe</th><th class="col-opt">Last delivery</th><th class="r">Open orders</th></tr></thead><tbody>
+          <tr class="sel"><td class="font-semibold">Malia Group</td><td class="r num font-semibold">$1,284.50</td><td class="cap col-opt">today</td><td class="r num">1</td></tr><tr class=""><td class="font-semibold">Gandour</td><td class="r num font-semibold">$412.00</td><td class="cap col-opt">6 days ago</td><td class="r num">2</td></tr><tr class=""><td class="font-semibold">Dairy Khoury</td><td class="r num font-semibold">$0.00</td><td class="cap col-opt">yesterday</td><td class="r num">0</td></tr><tr class=""><td class="font-semibold">Sohat Water</td><td class="r num font-semibold">$96.00</td><td class="cap col-opt">2 weeks ago</td><td class="r num">1</td></tr>
           </tbody></table>
         </div>
         <section class="card" style="box-shadow:var(--elev-3)" aria-labelledby="su-title">

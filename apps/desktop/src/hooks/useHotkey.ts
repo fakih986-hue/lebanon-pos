@@ -26,7 +26,9 @@ export function useHotkeys(hotkeys: HotkeyDef[]) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
         const tag = (e.target as HTMLElement).tagName
         if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
-          if (e.key === "Escape") {
+          // Escape leaves a field — except the register scan fields, which must
+          // keep focus so the next barcode always lands there (data-keep-focus).
+          if (e.key === "Escape" && !(e.target as HTMLElement).dataset.keepFocus) {
             (e.target as HTMLElement).blur()
           }
           return

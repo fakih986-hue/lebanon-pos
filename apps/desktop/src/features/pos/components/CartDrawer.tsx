@@ -66,6 +66,8 @@ interface Props {
   tax: number
   total: number
   totalLbp: number
+  payableLbp?: number
+  payableUsd?: number
   exchangeRate: number
   paidTotalUsd: number
   paidTotalLbp: number
@@ -92,7 +94,7 @@ export default function CartDrawer({
   discountMode, discountValue, onDiscountModeChange, onDiscountValueChange,
   onSetQuantity, onSetPrice, saleNote, onSaleNoteChange,
   onHold, onClean, onCompleteSale, onTenderEnter,
-  itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, exchangeRate,
+  itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, payableLbp, payableUsd, exchangeRate,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
   cashTenderValid, creditLimitExceeded, checkoutBlocked, hasDiscount, canApplyDiscount, canOverridePrice,
   sellAtCost, onToggleSellAtCost,
@@ -272,6 +274,8 @@ export default function CartDrawer({
               tax={tax}
               total={total}
               totalLbp={totalLbp}
+              payableLbp={payableLbp}
+              payableUsd={payableUsd}
               exchangeRate={exchangeRate}
               paidTotalUsd={paidTotalUsd}
               paidTotalLbp={paidTotalLbp}

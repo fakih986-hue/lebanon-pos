@@ -13,67 +13,32 @@ export default function LastSaleBanner({ sales, onNewSale, onPrintReceipt, onWha
   const { t } = useI18n()
   if (sales.length === 0) return null
 
+  // Midnight Gold v2: recent receipts as a quiet row (neutral, 14px, 44px
+  // secondary actions with accessible names). The gold primary stays the Pay button.
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1" aria-label={t("pos.v2.recent_receipts")}>
       {sales.map((sale, i) => (
-        <div
-          key={sale.number}
-          className="flex items-center gap-2 rounded-lg border px-3 py-1.5"
-          style={{
-            background: i === 0 ? "var(--brand-soft)" : "var(--surface-2)",
-            borderColor: i === 0 ? "var(--brand-border)" : "var(--border)",
-          }}
-        >
-          <CheckCircle2 size={13} className="shrink-0" style={{ color: i === 0 ? "var(--brand)" : "var(--text-3)" }} />
-          <span className="text-[11px] font-semibold min-w-0 flex-1" style={{ color: "var(--text)" }}>
-            {sale.number}
-            <span className="ml-1.5 font-bold tabular-nums" style={{ color: i === 0 ? "var(--brand-text)" : "var(--text-2)" }}>
-              {formatCurrency(sale.total)}
-            </span>
-            {sale.customerName && (
-              <span className="ml-1 text-[10px] opacity-50" style={{ color: "var(--text-3)" }}>{sale.customerName}</span>
-            )}
+        <div key={sale.number} className="flex items-center gap-2 rounded-lg border px-3"
+          style={{ minHeight: 48, background: "var(--surface)", borderColor: "var(--border)" }}>
+          <CheckCircle2 size={16} className="shrink-0" style={{ color: i === 0 ? "var(--v2-ok)" : "var(--text-3)" }} aria-hidden="true" />
+          <span className="min-w-0 flex-1 truncate text-[14px]" style={{ color: "var(--text)" }}>
+            <span className="num font-semibold">{sale.number}</span>
+            <span className="num ms-2" style={{ color: "var(--text-2)" }}>{formatCurrency(sale.total)}</span>
+            {sale.customerName && <span className="ms-2" style={{ color: "var(--text-2)" }}>{sale.customerName}</span>}
           </span>
           {i === 0 && (
-            <div className="flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                onClick={onNewSale}
-                className="flex h-6 items-center gap-1 rounded-md px-2 text-[10px] font-bold text-white transition hover:opacity-90"
-                style={{ background: "var(--brand)" }}
-              >
-                <Eraser size={10} />
-                {t("pos.new_sale")}
-              </button>
-              <button
-                type="button"
-                onClick={() => onPrintReceipt(sale)}
-                className="flex h-6 items-center gap-1 rounded-md border px-2 text-[10px] font-bold transition hover:opacity-80"
-                style={{ borderColor: "var(--brand-border)", color: "var(--brand-text)", background: "var(--surface)" }}
-              >
-                <Printer size={10} />
-              </button>
-              {onWhatsApp && (
-                <button
-                  type="button"
-                  onClick={() => onWhatsApp(sale)}
-                  className="flex h-6 items-center gap-1 rounded-md border px-2 text-[10px] font-bold transition hover:opacity-80"
-                  style={{ borderColor: "var(--border)", color: "var(--text-3)", background: "var(--surface)" }}
-                >
-                  <MessageCircle size={10} />
-                </button>
-              )}
-            </div>
+            <button type="button" onClick={onNewSale} className="mg2-btn mg2-btn-ghost" style={{ minHeight: 44 }}>
+              <Eraser size={14} />{t("pos.new_sale")}
+            </button>
           )}
-          {i > 0 && (
-            <button
-              type="button"
-              onClick={() => onPrintReceipt(sale)}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-[10px] font-bold transition hover:opacity-80"
-              style={{ color: "var(--text-3)" }}
-              title={t("pos.print")}
-            >
-              <Printer size={10} />
+          <button type="button" onClick={() => onPrintReceipt(sale)} className="mg2-btn mg2-btn-ghost" style={{ minHeight: 44, width: 44, padding: 0 }}
+            aria-label={`${t("pos.print")} ${sale.number}`} title={t("pos.print")}>
+            <Printer size={16} />
+          </button>
+          {i === 0 && onWhatsApp && (
+            <button type="button" onClick={() => onWhatsApp(sale)} className="mg2-btn mg2-btn-ghost" style={{ minHeight: 44, width: 44, padding: 0 }}
+              aria-label={`WhatsApp ${sale.number}`} title="WhatsApp">
+              <MessageCircle size={16} />
             </button>
           )}
         </div>

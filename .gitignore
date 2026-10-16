@@ -38,3 +38,4 @@ opencode.json
 skills-lock.json
 .mcp.json
 .better-design-claim.local.txt
+docs/design/qa/app-*/*.png

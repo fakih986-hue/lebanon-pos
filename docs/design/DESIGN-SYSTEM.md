@@ -228,6 +228,7 @@ The register is two columns: the **scan and product column** (about 62%) and the
 
 - **Every page has the same anatomy:** page header (title, tabs, primary action), an optional inline banner, then content.
 - **List pages:** filters row, table, details drawer.
+- **Lists on phones (< 768 px) are chosen per task, never forced:** cards when each row is one decision (receipts, customers, team, drivers); column prioritization when people scan and compare (products, suppliers, reconciliation: low-priority columns drop out); horizontal scrolling only for data-entry grids (receiving).
 - **Dashboards:** the KPI tile row, then two columns: a trend chart, and an action queue sorted by money at risk. Every delta says what it compares with ("+12% vs yesterday"); the chart's text alternative is derived from its data.
 - **One primary per view.** A drawer's own primary is allowed only when the page header has none. While a blocking state exists (e.g. a money conflict before closing the day), the action that resolves it is the primary and the blocked action is disabled with its reason.
 - **Fixable form errors don't disable Save.** Save stays enabled; pressing it moves focus to the first problem. Disabling is reserved for what the user cannot fix here: permission, licence, no open shift (Better Design reconciliation K5).

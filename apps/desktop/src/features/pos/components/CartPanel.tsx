@@ -58,6 +58,8 @@ interface Props {
   tax: number
   total: number
   totalLbp: number
+  payableLbp?: number
+  payableUsd?: number
   exchangeRate: number
   paidTotalUsd: number
   paidTotalLbp: number
@@ -115,6 +117,8 @@ export default function CartPanel({
   tax,
   total,
   totalLbp,
+  payableLbp,
+  payableUsd,
   exchangeRate,
   paidTotalUsd,
   paidTotalLbp,
@@ -140,29 +144,20 @@ export default function CartPanel({
       <div className="pos-cart-header shrink-0 px-4 py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white" style={{ background: "var(--ink)" }}>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
               <ShoppingCart size={21} />
             </div>
             <div className="min-w-0">
               <p className="truncate text-[18px] font-bold leading-tight" style={{ color: "var(--text)" }}>
                 {t("pos.current_sale")}
               </p>
-              <p className="text-[12px] font-bold" style={{ color: "var(--text-3)" }}>
-                {formatNumber(itemCount)} {t("pos.items_short") || "items"}
+              <p className="mg2-cap" style={{ margin: 0 }}>
+                {t("pos.v2.lines_units", { lines: formatNumber(items.length), units: formatNumber(itemCount) })}
               </p>
             </div>
           </div>
 
-          {items.length > 0 && (
-            <div className="shrink-0 text-end">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-3)" }}>
-                Due now
-              </p>
-              <p className="text-[24px] font-bold leading-none tabular-nums" style={{ color: "var(--text)" }}>
-                {formatCurrency(total)}
-              </p>
-            </div>
-          )}
+
         </div>
 
         {items.length > 0 && (
@@ -170,17 +165,17 @@ export default function CartPanel({
             <button
               type="button"
               onClick={onHold}
-              className="btn btn-ghost h-9 text-[12px]"
+              className="mg2-btn mg2-btn-ghost"
             >
-              <PauseCircle size={14} />
+              <PauseCircle size={16} />
               {t("pos.hold")}
             </button>
             <button
               type="button"
               onClick={onClean}
-              className="btn btn-ghost h-9 text-[12px]"
+              className="mg2-btn mg2-btn-ghost"
             >
-              <Eraser size={14} />
+              <Eraser size={16} />
               {t("pos.clean")}
             </button>
           </div>
@@ -276,6 +271,8 @@ export default function CartPanel({
         tax={tax}
         total={total}
         totalLbp={totalLbp}
+        payableLbp={payableLbp}
+        payableUsd={payableUsd}
         exchangeRate={exchangeRate}
         paidTotalUsd={paidTotalUsd}
         paidTotalLbp={paidTotalLbp}

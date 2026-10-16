@@ -1,0 +1,198 @@
+{
+  "base": "http://localhost:5174",
+  "at": "2026-10-16T13:03:33.925Z",
+  "results": [
+    {
+      "name": "behaviour-keys.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "focus scan",
+          "Scan barcode or type item name"
+        ],
+        [
+          "press F3",
+          "focus: Scan barcode or type item name"
+        ],
+        [
+          "tender selected",
+          "Card"
+        ],
+        [
+          "press F2",
+          "focus: Scan barcode or type item name"
+        ],
+        [
+          "tender selected",
+          "Cash"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ],
+        [
+          "focus scan",
+          "Scan barcode or type item name"
+        ],
+        [
+          "press Enter",
+          "focus: BUTTON"
+        ],
+        [
+          "dialog open?",
+          "review dialog open"
+        ],
+        [
+          "press Escape",
+          "focus: Scan barcode or type item name"
+        ],
+        [
+          "dialog open?",
+          "no dialog"
+        ],
+        [
+          "focus after Esc",
+          "Scan barcode or type item name"
+        ],
+        [
+          "press Escape",
+          "focus: Scan barcode or type item name"
+        ],
+        [
+          "focus after Esc in scan field",
+          "Scan barcode or type item name"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "behaviour-offline.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "go offline",
+          "network offline"
+        ],
+        [
+          "status capsule",
+          "Sync and status: Offline: saved on this device · 1"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "exact LBP",
+          "ok"
+        ],
+        [
+          "open payment review",
+          "Pay$6.76 · 605,000 LBPEnter"
+        ],
+        [
+          "confirm payment",
+          "Confirm and pay$6.76 · 605,000 LBPEnter"
+        ],
+        [
+          "sync queue",
+          "Pending S-K6EJ-000001"
+        ],
+        [
+          "status capsule",
+          "Sync and status: Offline: saved on this device · 2"
+        ],
+        [
+          "focus after sale",
+          "Scan barcode or type item name"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "behaviour-cashier.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "permission state",
+          "sell-at-cost hidden; discount: permission required"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "behaviour-cashier-simple.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "enter Simple POS",
+          "ok"
+        ],
+        [
+          "sell-at-cost in Simple POS",
+          "hidden"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan the next item",
+        "overflowX": false
+      }
+    }
+  ]
+}

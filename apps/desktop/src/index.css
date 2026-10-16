@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./features/pos/register-v2.css";
 
 :root,
 [data-theme="light"] {
@@ -22,15 +23,27 @@
   /* Text */
   --text: #1C1917;
   --text-2: #57534E;
-  --text-3: #8C8578;
+  --text-3: #635D55; /* v2: was #8C8578 (~3.3:1) */
   --text-inverse: #FFFFFF;
 
   /* Brand (refined deep gold) */
-  --brand: #9C6F14;
+  --brand: #996d14; /* v2: white text passes 4.5:1 */
   --brand-hover: #7E5A10;
   --brand-soft: rgba(156,111,20,0.10);
   --brand-border: rgba(156,111,20,0.30);
   --brand-text: #6B4C0A;
+
+  /* Midnight Gold v2 (DESIGN-SYSTEM §3) */
+  --border-input: #857C70;
+  --pay-bg: #D4A843;
+  --pay-hover: #C99A32;
+  --pay-text: #2C1F05;
+  --ok-money: #0A5428;
+  --v2-ok: #137639; --v2-ok-soft: rgba(22,163,74,.10);
+  --v2-warn: #a44c09; --v2-warn-soft: rgba(180,83,9,.10);
+  --v2-err: #b91c1c; --v2-err-soft: rgba(220,38,38,.09);
+  --v2-info: #0e6d93; --v2-info-soft: rgba(14,122,165,.10);
+  --disabled-bg: #ECE8E1; --disabled-text: #635D55;
 
   /* Ink */
   --ink: #1C1917;
@@ -144,7 +157,7 @@
 
   --text: #F4F6FA;
   --text-2: #9AA4B8;
-  --text-3: #5F6B80;
+  --text-3: #7C879B; /* v2: was #5F6B80 (~3.3:1) */
   --text-inverse: #0B0E14;
 
   --brand: #D4A843;
@@ -152,6 +165,18 @@
   --brand-soft: rgba(212,168,67,0.12);
   --brand-border: rgba(212,168,67,0.35);
   --brand-text: #E4BC5C;
+
+  /* Midnight Gold v2 (DESIGN-SYSTEM §3) */
+  --border-input: rgba(148,163,184,.60);
+  --pay-bg: #D4A843;
+  --pay-hover: #E4BC5C;
+  --pay-text: #2C1F05;
+  --ok-money: #34D399;
+  --v2-ok: #34D399; --v2-ok-soft: rgba(52,211,153,.12);
+  --v2-warn: #FB923C; --v2-warn-soft: rgba(251,146,60,.12);
+  --v2-err: #F87171; --v2-err-soft: rgba(248,113,113,.12);
+  --v2-info: #60A5FA; --v2-info-soft: rgba(96,165,250,.12);
+  --disabled-bg: #1A2029; --disabled-text: #7C879B;
 
   --ink: #04060A;
   --ink-hover: #111827;
@@ -295,7 +320,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Inter, "IBM Plex Sans Arabic", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
   font-size: 14px;
   line-height: 1.45;

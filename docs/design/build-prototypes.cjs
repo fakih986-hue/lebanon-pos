@@ -149,6 +149,23 @@ html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inte
   .bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:600;color:var(--text-2);text-decoration:none;min-height:48px;justify-content:center}
   .bottom-nav a.on{color:var(--brand-text)}
 }
+/* ── Lists on phones (§8): chosen per task, never forced ──
+   .cards-sm  rows become cards (one decision per row: receipts, customers, team, drivers)
+   .prio      low-priority columns (.col-opt) drop out (scan-and-compare lists: products, suppliers, reconciliation)
+   plain .scroll-x keeps horizontal scrolling (data entry grids: receiving) */
+@media (max-width:767px){
+  .tbl.prio{min-width:0!important}
+  .tbl.prio .col-opt{display:none}
+  .tbl.cards-sm{min-width:0!important}
+  .tbl.cards-sm thead{display:none}
+  .tbl.cards-sm tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:12px 16px;border-top:1px solid var(--border)}
+  .tbl.cards-sm tr:first-child{border-top:0}
+  .tbl.cards-sm td{display:block;padding:0;border:0;text-align:start;min-width:0}
+  .tbl.cards-sm td:nth-child(even){text-align:end}
+  .tbl.cards-sm td:nth-child(n+3)::before{content:attr(data-label);display:block;font-size:12px;line-height:16px;font-weight:500;color:var(--text-2)}
+  .tbl.cards-sm tr.sel{box-shadow:inset 3px 0 0 var(--brand)}
+  [dir=rtl] .tbl.cards-sm tr.sel{box-shadow:inset -3px 0 0 var(--brand)}
+}
 /* ── Layout helpers ── */
 .cols-2{display:grid;grid-template-columns:minmax(0,1fr) 480px;gap:16px;align-items:start}
 .cols-2b{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
@@ -321,7 +338,7 @@ function makeScreens(lang) {
   // S10: money inputs stay LTR, currency is an adornment, aligned to the end.
   const moneyIn = (label, cur, value, pre = true) =>
     `<label style="display:block"><span class="label">${label}</span><span class="field-row field money-in" dir="ltr">${pre ? `<span class="adorn">${cur}</span>` : ""}<input inputmode="decimal" value="${value}" aria-label="${label}">${pre ? "" : `<span class="adorn">${cur}</span>`}</span></label>`
-  const chips = (items, pressed = 0) => items.map(([text, count, tone], i) => `<button class="chip" type="button" aria-pressed="${i === pressed}">${text}${count !== undefined ? `<span class="badge ${tone ? `t-${tone}` : "t-mute"} num">${count}</span>` : ""}</button>`).join("")
+  const chips = (items, pressed = 0) => items.map(([text, count, tone], i) => `<button class="chip" type="button" aria-pressed="${i === pressed}">${text}${count !== undefined ? `<span class="badge ${tone && i !== pressed ? `t-${tone}` : "t-mute"} num">${count}</span>` : ""}</button>`).join("")
   const S = {}
 
   // 01 — Register checkout
@@ -419,8 +436,8 @@ function makeScreens(lang) {
       </div>
       <div class="cols-2">
         <div class="card scroll-x" style="overflow-y:hidden">
-          <table class="tbl" style="min-width:640px"><thead><tr><th>${T("Product", "المنتج")}</th><th>${T("Category", "الفئة")}</th><th class="r">${T("Price", "السعر")}</th><th class="r">${T("Cost", "الكلفة")}</th><th class="r">${T("Margin", "الهامش")}</th><th class="r">${T("Stock", "المخزون")}</th><th class="r">${T("Lots", "الدفعات")}</th></tr></thead><tbody>
-          ${productRows.map((r, i) => `<tr class="${i === 0 ? "sel" : ""}"><td><div class="font-semibold">${r[0]}</div><div class="cap num">${r[1]}</div></td><td style="color:var(--text-2)">${r[2]}</td><td class="r num">${usd(r[3])}</td><td class="r num" style="color:var(--text-2)">${usd(r[4])}</td><td class="r num" style="color:var(--text-2)">${r[5]}</td><td class="r">${r[7] ? `<span class="badge t-${r[7]} num">${icon(r[7] === "err" ? "circle-x" : "triangle-alert", 12)}${r[6]} · ${r[7] === "err" ? T("Out", "نفد") : T("Low", "قليل")}</span>` : `<span class="num">${r[6]}</span>`}</td><td class="r cap">${r[8]}</td></tr>`).join("")}
+          <table class="tbl prio" style="min-width:640px"><thead><tr><th>${T("Product", "المنتج")}</th><th class="col-opt">${T("Category", "الفئة")}</th><th class="r">${T("Price", "السعر")}</th><th class="r col-opt">${T("Cost", "الكلفة")}</th><th class="r col-opt">${T("Margin", "الهامش")}</th><th class="r">${T("Stock", "المخزون")}</th><th class="r col-opt">${T("Lots", "الدفعات")}</th></tr></thead><tbody>
+          ${productRows.map((r, i) => `<tr class="${i === 0 ? "sel" : ""}"><td><div class="font-semibold">${r[0]}</div><div class="cap num">${r[1]}</div></td><td class="col-opt" style="color:var(--text-2)">${r[2]}</td><td class="r num">${usd(r[3])}</td><td class="r num col-opt" style="color:var(--text-2)">${usd(r[4])}</td><td class="r num col-opt" style="color:var(--text-2)">${r[5]}</td><td class="r">${r[7] ? `<span class="badge t-${r[7]} num">${icon(r[7] === "err" ? "circle-x" : "triangle-alert", 12)}${r[6]} · ${r[7] === "err" ? T("Out", "نفد") : T("Low", "قليل")}</span>` : `<span class="num">${r[6]}</span>`}</td><td class="r cap col-opt">${r[8]}</td></tr>`).join("")}
           </tbody></table>
         </div>
         <section class="card" style="box-shadow:var(--elev-3)" aria-labelledby="drawer-title">
@@ -705,7 +722,11 @@ function makeScreens(lang) {
     }),
   }
   // 10–17: receipts, customers & debt, suppliers, delivery, team, about, lock, first setup
-  Object.assign(S, require("./screens-ops.cjs")({ T, lbp, usd, icon, dirIcon, capsule, shell, strip, seg, moneyIn, chips, logo }))
+  const ctx = { T, lbp, usd, icon, dirIcon, capsule, shell, strip, seg, moneyIn, chips, logo }
+  const ops = require("./screens-ops.cjs")(ctx)
+  Object.assign(S, ops)
+  // 18–21: lots & reconciliation, daily close, drivers, backup & recovery
+  Object.assign(S, require("./screens-ops2.cjs")({ ...ctx, ...ops.__helpers }))
   return S
 }
 

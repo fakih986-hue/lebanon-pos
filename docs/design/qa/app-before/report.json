@@ -1,0 +1,253 @@
+{
+  "base": "http://localhost:5174",
+  "at": "2026-10-16T12:41:16.843Z",
+  "results": [
+    {
+      "name": "register-cash.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "register-cash.en.light.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "light",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "light",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "register-cash.ar.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "امسح الباركود أو اكتب اسم الصنف",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "register-scan-focus.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "scan pepsi",
+          "focus kept on scan"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "payment-review.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ],
+        [
+          "open payment review",
+          "Pay $6.72"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "SECTION",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "sale-complete.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "cash tender $20 + 200,000 LBP",
+          "usd lbp"
+        ],
+        [
+          "open payment review",
+          "Pay $6.72"
+        ],
+        [
+          "confirm payment",
+          "Confirm — Pay $6.72"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "simple-pos.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "shift opened"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "enter Simple POS",
+          "ok"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode… Enter to pay",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "register.en.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open shift",
+          "no float field (shift may already be open)"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "Scan barcode or type item name",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "simple-pos.ar.light.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "light",
+      "lang": "ar",
+      "log": [
+        [
+          "open shift",
+          "no float field (shift may already be open)"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "enter Simple POS",
+          "ok"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "light",
+        "active": "Scan barcode… Enter to pay",
+        "overflowX": false
+      }
+    }
+  ]
+}

@@ -37,6 +37,9 @@ export type LastSaleSummary = {
   tax: number
   total: number
   totalLbp: number
+  /** Cash payable after LBP rounding, when the sale was cash. */
+  payableLbp?: number
+  payableUsd?: number
   exchangeRate: number
   tender?: SaleTender
   profit?: number

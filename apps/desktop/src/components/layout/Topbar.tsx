@@ -48,7 +48,7 @@ export default function Topbar() {
   const isPosRoute = location.pathname === "/"
 
   return (
-    <header className={`topbar-shell flex shrink-0 items-center justify-between gap-3 border-b px-4 sm:px-6 ${isPosRoute ? "min-h-[44px]" : "min-h-[64px]"}`}>
+    <header className={`topbar-shell flex shrink-0 items-center justify-between gap-3 border-b px-4 sm:px-6 ${isPosRoute ? "min-h-[56px]" : "min-h-[64px]"}`}>
       {!isPosRoute && (
         <div className="min-w-0">
           <h2 className="truncate text-lg font-bold leading-tight tracking-tight sm:text-xl" style={{ color: "var(--text)" }}>
@@ -62,12 +62,12 @@ export default function Topbar() {
 
       {isPosRoute && (
         <div className="flex items-center gap-2">
-          <span className={`h-2 w-2 rounded-full ${activeShift ? "" : "bg-zinc-400"}`} style={activeShift ? { background: "var(--success)" } : undefined} />
-          <span className="text-[12px] font-bold" style={{ color: activeShift ? "var(--brand-text)" : "var(--text-3)" }}>
+          <span className="inline-flex items-center gap-2 rounded-full px-3 text-[13px] font-semibold"
+            style={{ minHeight: 32, background: activeShift ? "var(--surface-3)" : "var(--v2-warn-soft)", color: activeShift ? "var(--text-2)" : "var(--v2-warn)" }}>
+            <span className="h-2 w-2 rounded-full" style={{ background: activeShift ? "var(--v2-ok)" : "var(--v2-warn)" }} />
             {activeShift?.shiftNumber ?? t("desktop.no_shift")}
           </span>
-          <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>·</span>
-          <span className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{today}</span>
+          <span className="hidden text-[13px] font-medium sm:inline" style={{ color: "var(--text-2)" }}>{today}</span>
         </div>
       )}
 
@@ -110,8 +110,9 @@ export default function Topbar() {
         <button
           type="button"
           onClick={() => setLocale(locale === "en" ? "ar" : "en")}
-          className="btn btn-ghost btn-icon h-8 w-8 rounded-lg text-[12px] font-bold"
+          className={`btn btn-ghost btn-icon rounded-lg text-[13px] font-semibold ${isPosRoute ? "h-11 w-11" : "h-8 w-8"}`}
           title={locale === "en" ? "Arabic" : "English"}
+          aria-label={locale === "en" ? "العربية" : "English"}
         >
           {locale === "en" ? "AR" : "EN"}
         </button>
@@ -119,8 +120,9 @@ export default function Topbar() {
         <button
           type="button"
           onClick={toggleTheme}
-          className="btn btn-ghost btn-icon h-8 w-8 rounded-lg"
+          className={`btn btn-ghost btn-icon rounded-lg ${isPosRoute ? "h-11 w-11" : "h-8 w-8"}`}
           title={theme === "dark" ? t("theme.light") : t("theme.dark")}
+          aria-label={theme === "dark" ? t("theme.light") : t("theme.dark")}
         >
           {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
         </button>
@@ -128,7 +130,7 @@ export default function Topbar() {
         <button
           type="button"
           onClick={lockSession}
-          className="btn btn-ghost btn-icon h-8 w-8 rounded-lg"
+          className={`btn btn-ghost btn-icon rounded-lg ${isPosRoute ? "h-11 w-11" : "h-8 w-8"}`}
           aria-label={t("desktop.lock_register")}
           title={t("desktop.lock_register")}
         >

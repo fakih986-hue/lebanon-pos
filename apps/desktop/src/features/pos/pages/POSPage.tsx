@@ -21,12 +21,12 @@ import CartPanel from "../components/CartPanel"
 import VariantPicker from "../components/VariantPicker"
 import QuickPOSMode from "../components/QuickPOSMode"
 import KeyboardShortcutsModal from "../components/KeyboardShortcutsModal"
+import PaymentReviewDialog from "../components/PaymentReviewDialog"
 import { playErrorBuzz, playScanBlip } from "../lib/sound"
 import { openWhatsAppShare, receiptMessage } from "../lib/whatsapp"
 import {
   computeCashChange,
   formatCurrency,
-  formatLbpCurrency,
   formatNumber,
   lbpToUsd,
   roundMoney,
@@ -53,7 +53,7 @@ import {
 import { recordDebtSale } from "../services/customer.service"
 import { recordAuditEvent, userCan, getActiveShift } from "../services/security.service"
 import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
-import { getConnectionMode, pullFromServer, commitSaleToHub, nextDocumentReference } from "../services/sync.service"
+import { getConnectionMode, pullFromServer, commitSaleToHub, nextDocumentReference, getSyncStatus } from "../services/sync.service"
 import { createId } from "../lib/storage"
 
 import type { Product } from "../types/product"
@@ -125,12 +125,16 @@ export default function POSPage() {
   const [showReview, setShowReview] = useState(false)
 
   const productListRef = useRef<HTMLDivElement | null>(null)
-  const reviewRef = useRef<HTMLElement | null>(null)
 
-  // Move keyboard focus into the Confirm-Sale modal when it opens, so its
-  // Enter (confirm) and Escape (cancel) handlers actually receive the keys.
+  // v2: the review dialog takes focus itself; when it closes (back, or after
+  // confirming) the scan field gets focus back so the next barcode lands there.
+  const reviewWasOpen = useRef(false)
   useEffect(() => {
-    if (showReview) window.requestAnimationFrame(() => reviewRef.current?.focus())
+    if (showReview) { reviewWasOpen.current = true; return }
+    if (reviewWasOpen.current) {
+      reviewWasOpen.current = false
+      window.requestAnimationFrame(() => scanInputRef.current?.focus())
+    }
   }, [showReview])
 
   // --- Auto-select first customer for Debt ---
@@ -146,10 +150,6 @@ export default function POSPage() {
       key: "f",
       modifiers: ["ctrl"],
       handler: () => scanInputRef.current?.focus(),
-    },
-    {
-      key: "f8",
-      handler: () => { if (items.length > 0) setIsCartOpen(true) },
     },
     {
       key: "Escape",
@@ -591,6 +591,18 @@ export default function POSPage() {
     setShowReview(true)
   }
 
+  useEffect(() => {
+    const TENDER_KEYS: Record<string, PaymentMethod> = { F2: "Cash", F3: "Card", F4: "Wallet", F5: "Debt" }
+    function onRegisterKey(e: KeyboardEvent) {
+      if (showReview || e.ctrlKey || e.metaKey || e.altKey) return
+      const method = TENDER_KEYS[e.key]
+      if (method) { e.preventDefault(); setPaymentMethod(method); return }
+      if (e.key === "F8" && items.length > 0) { e.preventDefault(); holdCurrentSale() }
+    }
+    window.addEventListener("keydown", onRegisterKey)
+    return () => window.removeEventListener("keydown", onRegisterKey)
+  }, [showReview, items.length, holdCurrentSale])
+
   const completeSale = useCallback(async function completeSale() {
     if (checkoutBlocked || isValidatingStock) return
 
@@ -746,6 +758,7 @@ export default function POSPage() {
       setSaleNote("")
       setIsCartOpen(false)
       setScannerStatus("Sale completed. Scanner ready for the next sale.")
+      window.requestAnimationFrame(() => scanInputRef.current?.focus())
       // Reconcile local stock/batches with the hub's authoritative numbers.
       if (writeThrough) pullFromServer().catch(() => {})
     } catch (err) {
@@ -775,7 +788,7 @@ export default function POSPage() {
   }, [checkoutBlocked, isValidatingStock, items, settings, paymentMethod, tenderMode, paidUsd, paidLbp, discountMode, discountValue, selectedCustomer, customers, selectedCustomerId, exchangeRate, paidUsdAmount, paidLbpAmount, paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, subtotal, discountTotal, tax, total, totalLbp, grossSubtotal, sellAtCost, payableLbp, payableUsd])
 
   return (
-    <main className="pos-workspace relative min-h-0 flex-1 overflow-hidden">
+    <main className="mg2 pos-workspace relative min-h-0 flex-1 overflow-hidden">
       {/* Desktop: flex row with products + cart rail. Mobile: single column */}
       <div className="flex h-full min-h-0">
         {/* ── Left: Product area ── */}
@@ -820,6 +833,9 @@ export default function POSPage() {
                 itemCount={itemCount}
                 total={total}
                 totalLbp={totalLbp}
+                payableLbp={payableLbp}
+                payableUsd={payableUsd}
+                canOverridePrice={canOverridePrice}
                 exchangeRate={exchangeRate}
                 paymentMethod={paymentMethod}
                 onSelectPayment={setPaymentMethod}
@@ -931,65 +947,30 @@ export default function POSPage() {
                 </div>
 
                 {/* Keyboard shortcuts reference strip — desktop only */}
-                <div className="hidden md:flex flex-wrap gap-1.5 p-2 mt-auto" style={{ background: "var(--surface-2)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border)" }}>
-                  <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: "var(--text-3)" }}>
-                    <span className="rounded bg-black/5 px-1.5 py-0.5 font-mono">Ctrl+F</span>
-                    Search
-                  </span>
-                  <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: "var(--text-3)" }}>
-                    <span className="rounded bg-black/5 px-1.5 py-0.5 font-mono">F8</span>
-                    Cart
-                  </span>
-                  <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: "var(--text-3)" }}>
-                    <span className="rounded bg-black/5 px-1.5 py-0.5 font-mono">Esc</span>
-                    Close
-                  </span>
-                  <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: "var(--text-3)" }}>
-                    <span className="rounded bg-black/5 px-1.5 py-0.5 font-mono">?</span>
-                    Help
-                  </span>
+                <div className="mg2-cap hidden md:flex flex-wrap gap-4 mt-auto" aria-label={t("pos.v2.shortcuts")}>
+                  <span><span className="mg2-kbd">Enter</span> {t("pos.v2.key_pay")}</span>
+                  <span><span className="mg2-kbd">F2</span>–<span className="mg2-kbd">F5</span> {t("pos.v2.key_tender")}</span>
+                  <span><span className="mg2-kbd">F8</span> {t("pos.hold")}</span>
+                  <span><span className="mg2-kbd">Ctrl</span> <span className="mg2-kbd">F</span> {t("pos.v2.key_search")}</span>
+                  <span><span className="mg2-kbd">Esc</span> {t("pos.v2.back")}</span>
                 </div>
               </>
             )}
           </section>
 
           {/* ── Mobile floating cart button ── */}
-          <button
-            type="button"
-            onClick={() => setIsCartOpen(true)}
-            className={`lg:hidden fixed bottom-20 left-3 right-3 z-30 flex items-center justify-between gap-3 rounded-xl shadow-2xl transition active:scale-[0.98] md:bottom-6 md:left-auto md:right-5 md:min-w-64 md:max-w-sm`}
-            style={{
-              background: "var(--sidebar-bg)",
-              border: "1px solid var(--sidebar-border)",
-              color: "var(--sidebar-text)",
-              padding: "12px 16px",
-              paddingBottom: "max(12px, calc(env(safe-area-inset-bottom) + 4px))",
-            }}
-          >
-            <span className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500 text-white">
-                <ShoppingCart size={22} />
-              </span>
-              <span>
-                <span className="block text-sm font-semibold text-zinc-300">
-                  {t("pos.cart_checkout")}
-                </span>
-                <span className="block text-xl font-bold">
-                  {formatCurrency(total)}
-                </span>
-              </span>
-            </span>
-            <span className="flex shrink-0 items-center gap-2">
-              {heldSales.length > 0 ? (
-                <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-bold text-sky-900">
-                  {t("pos.held_count", { n: formatNumber(heldSales.length) })}
-                </span>
-              ) : null}
-              <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-zinc-950">
-                {formatNumber(itemCount)}
-              </span>
-            </span>
-          </button>
+          {!quickMode && <div className="mg2-paybar lg:hidden">
+            <button type="button" className="mg2-btn" style={{ minHeight: 64, flexDirection: "column", gap: 0, padding: "0 14px" }}
+              onClick={() => setIsCartOpen(true)} aria-label={t("pos.v2.open_cart", { lines: formatNumber(items.length) })}>
+              <ShoppingCart size={18} />
+              <span className="num" style={{ fontSize: 13 }}>{t("pos.v2.lines", { lines: formatNumber(items.length) })}</span>
+            </button>
+            <button type="button" className="mg2-pay" disabled={items.length === 0} onClick={() => setIsCartOpen(true)}>
+              <span>{t("pos.pay")}</span>
+              <span className="num">{formatCurrency(paymentMethod === "Cash" ? payableUsd : total)}</span>
+              <span className="num" style={{ fontSize: 14 }}>{formatNumber(Math.round(paymentMethod === "Cash" ? payableLbp : totalLbp))} {t("pos.v2.lbp")}</span>
+            </button>
+          </div>}
         </div>
 
         {/* ── Right: Persistent cart rail (desktop only) ── */}
@@ -1034,6 +1015,8 @@ export default function POSPage() {
           tax={tax}
           total={total}
           totalLbp={totalLbp}
+          payableLbp={payableLbp}
+          payableUsd={payableUsd}
           exchangeRate={exchangeRate}
           paidTotalUsd={paidTotalUsd}
           paidTotalLbp={paidTotalLbp}
@@ -1094,6 +1077,8 @@ export default function POSPage() {
           tax={tax}
           total={total}
           totalLbp={totalLbp}
+          payableLbp={payableLbp}
+          payableUsd={payableUsd}
           exchangeRate={exchangeRate}
           paidTotalUsd={paidTotalUsd}
           paidTotalLbp={paidTotalLbp}
@@ -1138,85 +1123,46 @@ export default function POSPage() {
       <KeyboardShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
       {showReview && (
-        <section ref={reviewRef} className="fixed inset-0 z-[200] flex items-center justify-center p-4 outline-none"
-          style={{ background: "rgba(5,7,13,0.92)", backdropFilter: "blur(16px)" }}
-          onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); setShowReview(false) }; if (e.key === "Enter" && !checkoutBlocked) { e.preventDefault(); setShowReview(false); completeSale() }}}
-          tabIndex={0}>
-          <div className="w-full max-w-md rounded-3xl overflow-hidden"
-            style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-            <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border)" }}>
-              <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>Confirm Sale</h2>
-            </div>
-            <div className="px-5 py-4 space-y-3">
-              {checkoutBlocked && (
-                <div className="rounded-xl p-3 text-[12px] font-bold" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>
-                  {items.length === 0 ? "Add items to the cart first." :
-                   paymentMethod === "Cash" && !cashTenderValid ? `Insufficient payment — still due ${formatCurrency(cashStillDueUsd)}` :
-                   paymentMethod === "Debt" && !selectedCustomer ? "Select a customer for debt sale." :
-                   creditLimitExceeded ? `Credit limit exceeded` : "Cannot complete sale."}
-                </div>
-              )}
-              {items.length > 0 && (
-                <div className="max-h-[35vh] overflow-y-auto divide-y -mx-5 -mt-3 mb-3" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
-                  {items.map((item, i) => (
-                    <div key={item.id} className="flex items-center gap-3 px-5 py-2.5"
-                      style={{ background: i % 2 === 0 ? "var(--surface)" : "var(--surface-2)" }}>
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-black"
-                        style={{ background: "var(--surface-3)", color: "var(--text-3)" }}>
-                        {item.quantity}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: "var(--text)" }}>
-                        {item.name}
-                      </span>
-                      <span className="shrink-0 text-[12px] font-semibold tabular-nums" style={{ color: "var(--text-2)" }}>
-                        @{formatCurrency(item.price)}
-                      </span>
-                      <span className="shrink-0 w-16 text-right text-[14px] font-black tabular-nums" style={{ color: "var(--text)" }}>
-                        {formatCurrency(item.price * item.quantity)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-end justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Total</span>
-                <div className="text-end">
-                  <div className="text-[32px] font-bold tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(total)}</div>
-                  <div className="text-[12px] font-semibold tabular-nums mt-0.5" style={{ color: "var(--text-3)" }}>{formatLbpCurrency(totalLbp)}</div>
-                </div>
-              </div>
-              {paymentMethod === "Cash" && payableLbp !== totalLbp && (
-                <div className="rounded-xl p-3 space-y-1" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
-                  <div className="flex justify-between text-[11px] font-semibold">
-                    <span style={{ color: "var(--text-3)" }}>Cash rounding</span>
-                    <span className="tabular-nums" style={{ color: "var(--brand-text)" }}>+{formatLbpCurrency(payableLbp - totalLbp)}</span>
-                  </div>
-                  <div className="flex justify-between text-[12px] font-bold">
-                    <span style={{ color: "var(--text-2)" }}>Cash payable</span>
-                    <span className="tabular-nums" style={{ color: "var(--text)" }}>{formatLbpCurrency(payableLbp)}</span>
-                  </div>
-                </div>
-              )}
-              {cashTenderValid && cashChangeUsd > 0 && (
-                <div className="rounded-xl p-3 text-center" style={{ background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.25)" }}>
-                  <span className="text-[11px] font-bold uppercase" style={{ color: "var(--success)" }}>Change</span>
-                  <div className="text-[28px] font-bold tabular-nums mt-1" style={{ color: "var(--success)" }}>{formatCurrency(cashChangeUsd)}</div>
-                </div>
-              )}
-            </div>
-            <div className="px-5 py-4 flex gap-3 border-t" style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}>
-              <button type="button" onClick={() => setShowReview(false)} className="flex-1 h-12 rounded-xl text-[13px] font-bold"
-                style={{ border: "1px solid var(--border)", color: "var(--text-2)", background: "var(--surface)" }}>Back</button>
-              <button type="button" onClick={() => { setShowReview(false); completeSale() }} disabled={checkoutBlocked}
-                className="flex-[2.5] h-12 rounded-xl text-[15px] font-bold disabled:opacity-40"
-                style={{ background: "var(--brand)", color: "var(--brand-contrast)" }}>Confirm — Pay {formatCurrency(total)}</button>
-            </div>
-          </div>
-        </section>
+        <PaymentReviewDialog
+          lines={items.length}
+          units={itemCount}
+          total={total}
+          totalLbp={totalLbp}
+          payableLbp={payableLbp}
+          payableUsd={payableUsd}
+          paymentMethod={paymentMethod}
+          paidUsd={paidUsdAmount}
+          paidLbp={paidLbpAmount}
+          changeUsd={cashChangeUsd}
+          changeLbp={cashChangeLbp}
+          stillDueUsd={paymentMethod === "Cash" ? cashStillDueUsd : 0}
+          blockedReason={!checkoutBlocked ? null
+            : items.length === 0 ? t("pos.v2.blocked_empty")
+            : paymentMethod === "Cash" && !cashTenderValid ? t("pos.v2.blocked_cash", { amount: formatCurrency(cashStillDueUsd) })
+            : paymentMethod === "Debt" && !selectedCustomer ? t("pos.select_customer_hint")
+            : creditLimitExceeded ? t("pos.credit_exceeded") : t("pos.v2.blocked_other")}
+          offline={!getSyncStatus().online}
+          customerName={selectedCustomer?.name}
+          shiftLabel={getActiveShift()?.shiftNumber}
+          onBack={() => setShowReview(false)}
+          onConfirm={() => { setShowReview(false); completeSale() }}
+        />
       )}
 
       <SaleCompleteOverlay sale={lastSale}
+        nextSaleStarted={items.length > 0}
         onViewReceipt={() => lastSale && printLastSaleReceipt(lastSale, settings)}
+        onWhatsApp={() => {
+          if (!lastSale) return
+          openWhatsAppShare(receiptMessage({
+            storeName: settings.storeName,
+            saleNumber: lastSale.number,
+            total: lastSale.total,
+            totalLbp: lastSale.totalLbp,
+            items: (lastSale.items ?? []).map((i: any) => ({ name: i.name, quantity: i.quantity, total: i.price * i.quantity })),
+            footer: settings.receiptFooter,
+          }))
+        }}
       />
 
     </main>

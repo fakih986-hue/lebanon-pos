@@ -75,12 +75,9 @@ export default function SearchToolbar({
         style={{
           background: "var(--surface)",
           border: "1.5px solid",
-          borderColor: scanError ? "var(--danger)" : hot ? "var(--brand)" : "var(--border)",
-          boxShadow: scanError
-            ? "0 0 0 3px var(--danger-soft)"
-            : hot
-              ? "0 0 0 3px var(--brand-soft), 0 8px 32px rgba(212,168,67,0.10)"
-              : "var(--shadow-xs)",
+          borderColor: scanError ? "var(--v2-err)" : hot ? "var(--brand)" : "var(--border-input)",
+          borderRadius: 12,
+          boxShadow: scanError ? "0 0 0 3px var(--v2-err-soft)" : hot ? "0 0 0 2px var(--brand-soft)" : "none",
         }}
       >
         {/* Colored scan icon — left side */}
@@ -88,7 +85,7 @@ export default function SearchToolbar({
           className="flex shrink-0 items-center justify-center"
           style={{
             width: 56,
-            color: scanError ? "var(--danger)" : hot ? "var(--brand)" : "var(--text-3)",
+            color: scanError ? "var(--v2-err)" : "var(--text-2)",
             transition: "color 0.2s",
           }}
         >
@@ -101,17 +98,20 @@ export default function SearchToolbar({
           autoFocus
           value={scanCode}
           onChange={(e) => onScanCodeChange(e.target.value)}
+          data-keep-focus="true"
           onKeyDown={(e) => {
             if (e.key === "Enter") { e.preventDefault(); onQuickAdd(scanCode) }
+            if (e.key === "Escape" && scanCode) { e.preventDefault(); onScanCodeChange("") }
           }}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder={t("pos.scan_placeholder")}
-          className="min-w-0 flex-1 bg-transparent py-4 font-bold outline-none placeholder:font-medium"
+          aria-label={t("pos.scan_placeholder")}
+          className="min-w-0 flex-1 bg-transparent py-4 font-semibold outline-none placeholder:font-medium"
           style={{
             color: "var(--text)",
             caretColor: "var(--brand)",
-            fontSize: 17,
+            fontSize: 16,
           }}
           dir={dir}
         />
@@ -119,19 +119,15 @@ export default function SearchToolbar({
         {/* Right side: clear (when text) or keyboard hint */}
         <div className="flex shrink-0 items-center gap-1 pe-3">
           {!hasInput && (
-            <span
-              className="hidden rounded-md border px-1.5 py-0.5 text-[10px] font-bold sm:inline"
-              style={{ borderColor: "var(--border-strong)", color: "var(--text-3)" }}
-            >
-              /
-            </span>
+              <span className="mg2-kbd hidden sm:inline">Enter</span>
           )}
           <AnimatePresence>
             {hasInput && (
               <MotionButton
                 type="button"
                 onClick={() => onScanCodeChange("")}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold transition hover:opacity-80"
+                aria-label={t("pos.v2.clear_search")}
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-xs font-bold transition hover:opacity-80"
                 style={{ background: "var(--surface-2)", color: "var(--text-3)" }}
                 initial={{ opacity: 0, scale: 0.7 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -147,10 +143,10 @@ export default function SearchToolbar({
       </div>
 
       {/* ── Status + small utilities ──────────────────────── */}
-      <div className="flex items-center gap-2 px-1">
+      <div className="flex flex-wrap items-center gap-2 px-1">
 
         {/* Status indicator */}
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="flex min-w-0 flex-1 basis-full items-center gap-2 sm:basis-auto">
           <MotionSpan
             className="h-[6px] w-[6px] shrink-0 rounded-full"
             style={{ background: scanError ? "var(--danger)" : cameraActive ? "var(--rose)" : "var(--brand)" }}
@@ -160,8 +156,8 @@ export default function SearchToolbar({
           <AnimatePresence mode="wait">
             <MotionSpan
               key={scannerStatus}
-              className="truncate text-[11px] font-semibold"
-              style={{ color: "var(--text-3)" }}
+              className="mg2-cap truncate"
+              role="status"
               initial={{ opacity: 0, y: 3 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -3 }}
@@ -172,8 +168,8 @@ export default function SearchToolbar({
           </AnimatePresence>
         </div>
 
-        <span className="shrink-0 text-[11px] font-bold tabular-nums" style={{ color: "var(--text-3)" }}>
-          {formatNumber(filteredProductsCount)} items
+        <span className="mg2-cap hidden shrink-0 num sm:inline">
+          {t("pos.v2.products_count", { n: formatNumber(filteredProductsCount) })}
         </span>
 
         {/* Divider */}
@@ -183,41 +179,37 @@ export default function SearchToolbar({
         <MotionButton
           type="button"
           onClick={onStartCamera}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
-          style={cameraActive
-            ? { background: "rgba(239,68,68,0.10)", borderColor: "rgba(239,68,68,0.30)", color: "var(--rose)" }
-            : { background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }
-          }
+          className="mg2-btn"
+          style={cameraActive ? { width: 48, padding: 0, background: "var(--v2-err-soft)", color: "var(--v2-err)" } : { width: 48, padding: 0 }}
+          aria-pressed={cameraActive}
           whileTap={{ scale: 0.88 }}
           aria-label={cameraActive ? t("pos.stop") : t("pos.scan")}
           title={cameraActive ? t("pos.stop") : t("pos.scan")}
         >
-          <Camera size={13} />
+          <Camera size={18} />
         </MotionButton>
 
         {/* Clear */}
         <MotionButton
           type="button"
           onClick={onCleanSale}
-          className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
-          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }}
+          className="mg2-btn"
+          style={{ width: 48, padding: 0 }}
           whileTap={{ scale: 0.88 }}
           aria-label={t("pos.clean_sale")}
           title={t("pos.clean_sale")}
         >
-          <Eraser size={13} />
+          <Eraser size={18} />
         </MotionButton>
 
         {/* Quick POS — always visible */}
         <MotionButton
           type="button"
           onClick={() => onToggleQuickMode()}
-          className="flex h-7 items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-bold transition"
-          style={{ background: "var(--brand-soft)", borderColor: "var(--brand-border)", color: "var(--brand-text)" }}
+          className="mg2-btn"
           whileTap={{ scale: 0.92 }}
-          title="Quick POS — full screen"
         >
-          <Zap size={12} /> Quick POS
+          <Zap size={16} /> {t("pos.v2.simple_mode")}
         </MotionButton>
 
         {/* More */}
@@ -225,12 +217,13 @@ export default function SearchToolbar({
           <MotionButton
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg border transition"
-            style={{ background: menuOpen ? "var(--surface-3)" : "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-3)" }}
+            className="mg2-btn"
+            style={{ width: 48, padding: 0 }}
             whileTap={{ scale: 0.88 }}
-            aria-label="More options"
+            aria-label={t("pos.v2.more_options")}
+            aria-expanded={menuOpen}
           >
-            <MoreVertical size={13} />
+            <MoreVertical size={18} />
           </MotionButton>
 
           <AnimatePresence>

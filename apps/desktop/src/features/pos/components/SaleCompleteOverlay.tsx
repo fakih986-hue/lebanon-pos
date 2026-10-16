@@ -1,153 +1,92 @@
 import { useEffect, useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
-import { Check, Printer, ShoppingCart } from "lucide-react"
-import { formatCurrency, formatLbpCurrency } from "../lib/currency"
-import { playSaleChime } from "../lib/sound"
+import { CircleCheck, MessageCircle, Printer, X } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
-const MotionDiv = motion.div as any
-const MotionP = motion.p as any
+
+import { formatCurrency, formatNumber } from "../lib/currency"
+import { playSaleChime } from "../lib/sound"
 
 type Props = {
-  sale: { number: string; total: number; totalLbp: number; profit?: number } | null
+  sale: {
+    number: string
+    total: number
+    totalLbp: number
+    payableLbp?: number
+    payableUsd?: number
+    paymentMethod?: string
+    tender?: { changeUsd?: number; changeLbp?: number; paidUsd?: number; paidLbp?: number }
+    profit?: number
+  } | null
+  /** True once the cashier starts the next sale (an item is in the cart). */
+  nextSaleStarted?: boolean
   onViewReceipt?: () => void
+  onWhatsApp?: () => void
 }
 
-export default function SaleCompleteOverlay({ sale, onViewReceipt }: Props) {
+/**
+ * Sale complete (Midnight Gold v2): a NON-modal receipt panel. It announces
+ * the result (role=status), shows the change to give in both currencies and
+ * offers Print / WhatsApp — but never takes focus, so the scan field keeps it
+ * and the next barcode simply starts the next sale (which closes the panel).
+ */
+export default function SaleCompleteOverlay({ sale, nextSaleStarted = false, onViewReceipt, onWhatsApp }: Props) {
   const { t } = useI18n()
-  const [visible,   setVisible]   = useState(false)
-  const [showCheck, setShowCheck] = useState(false)
-  const [snapshot,  setSnapshot]  = useState<Props["sale"]>(null)
+  // Visibility is derived: the latest sale, unless it was closed, timed out,
+  // or the next sale has started. No state is set synchronously in an effect.
+  const [closed, setClosed] = useState<Props["sale"]>(null)
 
   useEffect(() => {
     if (!sale) return
-    setSnapshot(sale)
-    setVisible(true)
-    setShowCheck(false)
     playSaleChime()
-
-    const t1 = setTimeout(() => setShowCheck(true), 420)
-    const t2 = setTimeout(() => setVisible(false), 3500)
-    return () => { clearTimeout(t1); clearTimeout(t2) }
+    const timer = window.setTimeout(() => setClosed(sale), 20000)
+    return () => window.clearTimeout(timer)
   }, [sale])
 
+  // Once the next sale starts this receipt is done, even if that cart is cleared
+  // again (React's "adjust state while rendering" pattern; guarded, runs once).
+  if (nextSaleStarted && sale && closed !== sale) setClosed(sale)
+  const snapshot = sale && sale !== closed && !nextSaleStarted ? sale : null
+  const close = () => setClosed(sale)
+
+  if (!snapshot) return null
+  const lbp = t("pos.v2.lbp")
+  const isCash = snapshot.paymentMethod === "Cash"
+  const changeLbp = snapshot.tender?.changeLbp ?? 0
+  const changeUsd = snapshot.tender?.changeUsd ?? 0
+  const paidLbp = isCash && snapshot.payableLbp ? snapshot.payableLbp : snapshot.totalLbp
+  const paidUsd = isCash && snapshot.payableUsd ? snapshot.payableUsd : snapshot.total
+
   return (
-    <AnimatePresence>
-      {visible && snapshot && (
-        <MotionDiv
-          className="fixed inset-0 z-[999] flex items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          onClick={() => setVisible(false)}
-        >
-          <MotionDiv
-            className="flex flex-col items-center gap-5 px-8 text-center"
-            initial={{ scale: 0.75, y: 24, opacity: 0 }}
-            animate={{ scale: 1,    y: 0,  opacity: 1 }}
-            exit={{    scale: 0.85, y: -12, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 380, damping: 26 }}
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-          >
-            {/* Icon circle */}
-            <div className="relative flex h-32 w-32 items-center justify-center">
-
-              {/* Pulse rings */}
-              {[0, 0.22, 0.44].map((delay) => (
-                <MotionDiv
-                  key={delay}
-                  className="absolute inset-0 rounded-full"
-                  style={{ border: "2px solid rgba(16,185,129,0.55)" }}
-                  initial={{ scale: 0.6, opacity: 0.9 }}
-                  animate={{ scale: 1.9, opacity: 0 }}
-                  transition={{ duration: 1.1, delay, repeat: Infinity, ease: "easeOut" }}
-                />
-              ))}
-
-              {/* Circle bg */}
-              <div
-                className="absolute inset-0 rounded-full"
-                style={{ background: "rgba(16,185,129,0.14)" }}
-              />
-
-              {/* Cart → Check swap */}
-              <AnimatePresence mode="wait">
-                {!showCheck ? (
-                  <MotionDiv
-                    key="cart"
-                    initial={{ scale: 0, rotate: -12 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    exit={{ scale: 0, rotate: 12, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                  >
-                    <ShoppingCart size={52} style={{ color: "var(--success)" }} strokeWidth={1.8} />
-                  </MotionDiv>
-                ) : (
-                  <MotionDiv
-                    key="check"
-                    initial={{ scale: 0, rotate: -20 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 22 }}
-                  >
-                    <Check size={56} strokeWidth={3} style={{ color: "var(--success)" }} />
-                  </MotionDiv>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Sale info */}
-            <MotionDiv
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.25 }}
-            >
-              <p className="mb-1 text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>
-                {t("pos.last_sale.completed", { number: snapshot.number })}
-              </p>
-              <p className="text-[42px] font-bold tabular-nums leading-none text-white">
-                {formatCurrency(snapshot.total)}
-              </p>
-              <p className="mt-1 text-[13px] font-semibold tabular-nums" style={{ color: "rgba(255,255,255,0.45)" }}>
-                {formatLbpCurrency(snapshot.totalLbp)}
-              </p>
-              {snapshot.profit !== undefined && (
-                <p className="mt-2 text-[12px] font-semibold tabular-nums" style={{ color: snapshot.profit >= 0 ? "rgba(16,185,129,0.8)" : "rgba(239,68,68,0.8)" }}>
-                  Margin: {formatCurrency(snapshot.profit)}
-                </p>
-              )}
-            </MotionDiv>
-
-            {/* View Receipt button */}
-            {onViewReceipt && (
-              <MotionDiv
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.25 }}
-              >
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); setVisible(false); onViewReceipt() }}
-                  className="flex items-center gap-2 rounded-xl bg-white/10 px-5 py-2.5 text-[13px] font-bold text-white transition hover:bg-white/20 active:scale-95"
-                >
-                  <Printer size={15} />
-                  {t("pos.receipt_view_print")}
-                </button>
-              </MotionDiv>
-            )}
-
-            <MotionP
-              className="text-[11px] font-semibold"
-              style={{ color: "rgba(255,255,255,0.3)" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.9 }}
-            >
-              {t("pos.tap_to_dismiss")}
-            </MotionP>
-          </MotionDiv>
-        </MotionDiv>
-      )}
-    </AnimatePresence>
+    <section className="mg2 mg2-receipt" role="status" aria-live="polite" aria-label={t("pos.last_sale.completed", { number: snapshot.number })}>
+      <div className="flex items-center gap-3" style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)" }}>
+        <CircleCheck size={22} style={{ color: "var(--v2-ok)" }} aria-hidden="true" />
+        <div className="min-w-0" style={{ flex: 1 }}>
+          <div className="mg2-sub" style={{ color: "var(--text)" }}>{t("pos.v2.sale_complete")}</div>
+          <div className="mg2-cap num">{snapshot.number}</div>
+        </div>
+        <button type="button" className="mg2-btn mg2-btn-ghost" style={{ minHeight: 44, width: 44, padding: 0 }} aria-label={t("pos.v2.close")} onClick={close}>
+          <X size={18} />
+        </button>
+      </div>
+      <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="flex justify-between gap-3">
+          <span className="mg2-cap">{t("pos.v2.paid")}</span>
+          <span className="num font-semibold" style={{ color: "var(--text)" }}>{formatCurrency(paidUsd)} · {formatNumber(Math.round(paidLbp))} {lbp}</span>
+        </div>
+        {isCash && (changeLbp > 0 || changeUsd > 0) && (
+          <div className="mg2-banner mg2-t-ok">
+            <span className="mg2-sub" style={{ color: "inherit" }}>{t("pos.v2.change_to_give")}</span>
+            <span className="num" style={{ marginInlineStart: "auto", textAlign: "end" }}>
+              <span className="block font-semibold" style={{ fontSize: 24, lineHeight: 1.2, color: "var(--ok-money)" }}>{formatNumber(Math.round(changeLbp))} {lbp}</span>
+              <span className="mg2-cap block" style={{ color: "inherit" }}>{formatCurrency(changeUsd)}</span>
+            </span>
+          </div>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {onViewReceipt && <button type="button" className="mg2-btn" onClick={onViewReceipt}><Printer size={16} />{t("pos.v2.print_receipt")}</button>}
+          {onWhatsApp && <button type="button" className="mg2-btn" onClick={onWhatsApp}><MessageCircle size={16} />WhatsApp</button>}
+        </div>
+        <p className="mg2-cap" style={{ margin: 0 }}>{t("pos.v2.scan_next")}</p>
+      </div>
+    </section>
   )
 }

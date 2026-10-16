@@ -1,0 +1,33 @@
+{
+  "base": "http://localhost:5174",
+  "at": "2026-10-16T13:04:53.153Z",
+  "results": [
+    {
+      "name": "simple-pos.ar.light.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "light",
+      "lang": "ar",
+      "log": [
+        [
+          "open shift",
+          "no float field (shift may already be open)"
+        ],
+        [
+          "add 3 products",
+          "12 products"
+        ],
+        [
+          "enter Simple POS",
+          "ok"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "light",
+        "active": "امسح الصنف التالي",
+        "overflowX": false
+      }
+    }
+  ]
+}
