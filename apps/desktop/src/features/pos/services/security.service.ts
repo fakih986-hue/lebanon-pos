@@ -1,4 +1,4 @@
-import { enqueueSyncOperation, getApiUrl, isSuspensionGracePeriodExpired, assertCanWrite, getDeviceId } from "./sync.service"
+import { enqueueSyncOperation, getApiUrl, isSuspensionGracePeriodExpired, assertCanWrite, getDeviceId, nextDocumentReference } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getSettings } from "./settings.service"
@@ -958,7 +958,7 @@ export function openShift(openingFloatUsd: number) {
 
   const shift: Shift = {
     id: createId("shift"),
-    shiftNumber: `SHIFT-${String(shifts.length + 1).padStart(3, "0")}`,
+    shiftNumber: nextDocumentReference("SHIFT", 3, () => shifts.map((s) => s.shiftNumber)),
     status: "Open",
     openedAt: new Date().toISOString(),
     openingFloatUsd,

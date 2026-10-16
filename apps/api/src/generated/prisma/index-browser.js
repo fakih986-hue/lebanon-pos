@@ -319,6 +319,7 @@ exports.Prisma.DebtSaleScalarFieldEnum = {
   tenantId: 'tenantId',
   customerId: 'customerId',
   saleNumber: 'saleNumber',
+  saleId: 'saleId',
   subtotal: 'subtotal',
   discountTotal: 'discountTotal',
   tax: 'tax',

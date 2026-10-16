@@ -621,10 +621,14 @@ async function upsertPulledData(
           break
         case "sale":
           {
-            const sale = await prisma.sale.findFirst({
+            // By id. A deletion carrying only a display number is applied only
+            // when exactly one sale has that number (numbers are not unique).
+            const candidates = await prisma.sale.findMany({
               where: id !== undefined ? { tenantId, id: String(id) } : { tenantId, saleNumber: String(saleNumber) },
               select: { id: true },
+              take: 2,
             })
+            const sale = candidates.length === 1 ? candidates[0] : null
             if (sale) {
               await prisma.saleTender.deleteMany({ where: { saleId: sale.id } })
               await prisma.saleItem.deleteMany({ where: { saleId: sale.id } })

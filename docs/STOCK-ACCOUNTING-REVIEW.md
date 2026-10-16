@@ -15,6 +15,7 @@ Date: 2026-10-16. This review covers the stock and money changes only. The desig
 | Refunds and voids | Server-authoritative, line-exact refunds. Lots are restored from the server's own record, at the original rate, with concurrency locks (REFUND-INTEGRITY-1) | `lib/refundAllocation.ts` (api and desktop copies), `routes/sync.ts`, `sales.service.ts` |
 | Money conflicts | Server-rejected refunds and voids stay visible. Managers settle them as loss / recovered / not paid | `refundConflict.service.ts`, `MoneyConflictsPanel.tsx` |
 | Inventory authority | `inventory/update` ignores absolute lot quantities; adjustments move stock, lots and the ledger once per adjustment id | `routes/sync.ts`, `inventoryBatch.service.ts` |
+| Document references (R7) | Sale, shift, expense and PO numbers are references: unique indexes dropped **after** the one lookup that assumed uniqueness (debt ↔ sale) moved to ids. Device-tagged sequential references. Tenant guard on every id-keyed write | migration `20261017090000_document_references`, `routes/sync.ts`, `services/cloudSync.ts`, desktop `sync.service.ts` `nextDocumentReference`, `customer.service.ts`, `POSPage.tsx`, `security` / `expense` / `supplier.service.ts` |
 | Reference numbers (R1) | Refund, adjustment and count numbers are references, not identities. The unique indexes are dropped, and new numbers carry a device tag | migration `20261016130000_reference_numbers_not_unique`, `sync.service.ts` `getDeviceTag`, `sales.service.ts`, `inventoryAdjustment.service.ts`, `stockCount.service.ts`, `routes/sync.ts` (refund-credit lookup) |
 | Tenant isolation, device (R2) | The store-switch stash, the refund journal and settlement records are bound to the immutable tenant id, never the subdomain. Interrupted refunds are resolved in their own store before a switch, and unsent work is kept per tenant | `sync.service.ts`, `sales.service.ts` |
 | Tenant isolation, server (R5) | `/api/reports/*` no longer accepts `?tenantId=` from any caller. `images/generate-all` uses the body tenant only for platform-admin tokens | `routes/reports.ts`, `routes/image.ts` |
@@ -47,12 +48,7 @@ Date: 2026-10-16. This review covers the stock and money changes only. The desig
 - `old-client-adjustments.test.ts`: a second device's `ADJ-00001` and `COUNT-00001` are accepted and applied.
 - `refund-integrity.test.ts`: two refunds with the same number on different sales are both accepted, and stock and lots are restored for each.
 
-**Not fixed: the same pattern on other numbers.** Each is still unique per tenant and generated on the client.
-- **`saleNumber`:** clock digits plus 2 random digits. By the birthday bound, a tenant has about a 50% chance of one collision somewhere in roughly 10,000 sales. A colliding sale would retry until dead, and its money would not reach the server.
-- **`shiftNumber`:** `SHIFT-<n>` from the local shift count.
-- **`expenseNumber`, `poNumber`:** clock digits only.
-- **Why not fixed here.** Unlike refunds, `saleNumber` is also used as a lookup key: void deletes, debt links and refund references. Making it non-unique needs those lookups moved to ids first.
-- **Recommendation:** a release blocker for multi-device stores. Do it as its own change.
+**Same pattern on sale, shift, expense and purchase-order numbers:** fixed separately, see **R7**.
 
 ### R2. Archived conflict data is isolated by immutable tenant identity: fixed
 
@@ -162,6 +158,76 @@ New suite: `apps/api/__tests__/old-client-adjustments.test.ts` (real Postgres).
 
 The admin web Reports page is the only caller. The response gains `cashSupplierPayments`, `cashIn` and `cashOut`; no field is removed.
 
+### R7. Sale, shift, expense and purchase-order references (release blocker): confirmed and fixed
+
+**Generators.** As they were before this fix, copied exactly into `docs/evidence/reference-collisions.cjs`:
+
+| Reference | Generator | What repeats it |
+|---|---|---|
+| Sale | `S-` + last 6 digits of the ms clock + a random 10–99 | Clock digits cycle every 1,000,000 ms (16 min 40 s). A repeat needs the same ms phase **and** the same random number. **This happens on one device too**, not only across devices |
+| Expense | `EXP-` + last 6 ms digits | Same ms phase, with no random part |
+| Purchase order | `PO-` + last 6 ms digits | Same as expense |
+| Shift | `SHIFT-` + (this device's local shift count + 1) | Deterministic: two registers that open shifts before syncing both issue `SHIFT-043` |
+
+**Collision evidence.** This replaces my earlier "about 50% within 10,000 sales", which was an unchecked estimate.
+- Timing model: one store, events uniform over 08:00–22:00, ms resolution.
+- The script reports a Monte-Carlo simulation (2,000 trials per row) next to the birthday closed form.
+
+| Reference | Records (tenant lifetime) | P(at least one duplicate), simulated | Closed form |
+|---|---|---|---|
+| Sale | 1,000 | 0.4% | 0.6% |
+| Sale | 5,000 | 11.8% | 13.0% |
+| Sale | 10,000 | **43.0%** | 42.6% |
+| Sale | 20,000 | 89.1% | 89.2% |
+| Expense | 500 | 12.0% | 11.7% |
+| Expense | 1,000 | 39.4% | 39.3% |
+| Purchase order | 1,000 | 39.5% | 39.3% |
+| Shift | 2 registers opening before sync | certain | n/a |
+
+A duplicate is not cosmetic. Under the tenant-wide UNIQUE index, the second record's push failed with `P2002` and was classed "error", so it retried until dead. **Reproduced on the unmigrated scratch database: 8 of 8 new tests failed.**
+
+**Lookups that assumed a sale number identifies exactly one record.** Fixed before any uniqueness was dropped:
+
+| Where | Before | Now |
+|---|---|---|
+| Server void (`sync.ts`) | Deleted **every** DebtSale with the void's sale number, even when the sale was not on the server | Deletes the debt of **this** sale (`saleId`). An unlinked older row is deleted only when it is the single match for number + customer (+ total), and never when the sale is unknown |
+| Server debt delete gate | "Is the sale voided?" was checked on `findFirst` by number, which could be another sale | Checks this debt's own sale by id. An unlinked debt is kept while **any** sale with its number and customer is live |
+| Server delete by number only (old clients) | `deleteMany` by number | Deletes only when exactly one unlinked debt has that number |
+| Hub cloud bridge (`cloudSync.ts`) | Deleted a sale by number when the deletion had no id | Only when exactly one sale has that number |
+| Desktop pulled deletions (`sync.service.ts`) | Matched id **or** number, so it deleted every local record sharing the number | Id when present; number only when no id was sent |
+| Desktop void (`reverseDebtSale`) | "The first debt with that number" | This sale's debt by `saleId`; an unlinked row only as the single number + customer match |
+
+**Display-only.** Shift, expense and PO numbers are not lookup keys anywhere: API, desktop, admin, owner, driver, ordering. Shift attribution uses `shiftId`, with a time fallback. Admin search by sale number is a substring search, unaffected.
+
+**The link.**
+- DebtSale gains `saleId`, the immutable link.
+- The migration backfills it **while the unique index still exists**, so each debt resolves to at most one sale, and only when the customer matches too.
+- Verified on the scratch DB before and after: a linkable debt was linked; a customer mismatch and a missing sale stayed NULL.
+- Clients do not send `saleId`, because a hub on the previous release would reject the unknown column. The server derives it from number + customer, only when exactly one sale matches.
+- Pull endpoints return `saleId` only to `x-titan-sync-schema: 2` clients.
+
+**New references.**
+- `nextDocumentReference` issues `S-7Q2K-000123`, `SHIFT-7Q2K-042`, `EXP-7Q2K-00012`, `PO-7Q2K-00034`.
+- They are sequential per device and carry the device tag (the last 4 characters of the device id), so staff can tell registers apart.
+- The counter survives store switches. If it is lost, it reseeds from local records, so a device never repeats itself.
+- Historical references are untouched.
+
+**Tenant scope (found while testing).**
+- **The defect.** Every id-keyed handler upserts by `id` alone: shift, expense, debt, purchase order, and others. On the old code, tenant B's push carrying tenant A's shift id **overwrote tenant A's shift**: opening float 9,999, number "HIJACK".
+  - Ids are random UUIDs, so this needs a leaked id.
+  - It is still a cross-tenant write.
+- **The fix.** Before any write, an id that belongs to another tenant is rejected (`TenantScopeError`, never retried).
+
+**Proof.**
+
+| Test | What it shows |
+|---|---|
+| `apps/api/__tests__/document-references.test.ts` (real Postgres, 9) | Same-number sales from two devices both accepted, both move stock, and a retry applies once. Concurrent same-number pushes both succeed. Voiding one of two same-numbered debt sales removes only its own customer's debt. An old client's debt (no `saleId`) is linked and voided correctly. An old client's debt delete is gated on its own sale. An ambiguous legacy debt is never removed by the other sale's void. Duplicate `SHIFT-001` / `EXP-…` / `PO-…` accepted, with retries applied once. Cross-tenant overwrite and void refused. `saleId` is gated in pulls |
+| Mutation checks | Disabling the tenant guard fails the tenant test. Restoring number-based debt deletion fails 3 tests |
+| `apps/desktop/src/__tests__/documentReferences.test.ts` (5) | Sequential, tagged and per-device references; survives a store switch and reseeds; a void reverses only its own debt; the wire payload omits `saleId`; an id deletion never removes same-number records |
+
+**Not addressed.** The server-generated delivery `orderNumber` uses a count + 1 with a random suffix, under a unique index. It is generated on the server, so concurrent orders contend there; the random suffix makes a clash unlikely. It is not an offline-client path.
+
 ### R6. Separate review, migration and mixed-version compatibility
 
 **Migrations in this release**, applied in this order by `prisma migrate deploy` on Railway, and by the Electron hub's raw-SQL runner at hub start:
@@ -170,10 +236,12 @@ The admin web Reports page is the only caller. The response gains `cashSupplierP
 |---|---|---|---|
 | `20261016120000_refund_integrity` | Additive: new nullable columns, `Sale.refundVersion` default 0, unique `(saleId, lineId)` | No. Existing `lineId` values are NULL, and NULLs are distinct | Existing rows are legacy lines |
 | `20261016130000_reference_numbers_not_unique` | Drops 3 unique indexes and adds 3 plain indexes (`IF EXISTS` / `IF NOT EXISTS`) | No. Dropping uniqueness cannot conflict | Re-runnable |
+| `20261017090000_document_references` | Adds `DebtSale.saleId` (nullable) and backfills it **before** dropping the sale/shift/expense/PO unique indexes; adds plain indexes | No. The backfill matches at most one sale while uniqueness still holds | Re-runnable (`IF NOT EXISTS` / `IS NULL` guard) |
 
 **Verified on the scratch database.**
-- Both migrations applied.
-- `prisma migrate diff --from-database --to-schema --exit-code` reported no drift.
+- All three migrations applied.
+- **Correction:** the "no drift" check reported in the previous round used a wrong flag name. The command printed its help text and exited 0, so it proved nothing.
+- The check now runs correctly (`prisma migrate diff --from-url <scratch> --to-schema-datamodel prisma/schema.prisma --exit-code`): **"No difference detected", exit 0**.
 - The dev database `lebanonpos` and production were not touched.
 
 **Mixed-version matrix.** "Old" means `origin/master` (43230e3).
@@ -185,6 +253,10 @@ The admin web Reports page is the only caller. The response gains `cashSupplierP
 | **New desktop → old hub** (a LAN till upgraded before its hub PC) | **Yes for sales and refunds**, with reduced protection | Refunds no longer carry `exchangeRate`/`rateSource`, which the old hub would reject as unknown columns; a test pins the refund and sale payloads to the old columns. The old hub applies its old, weaker rules (client allocations trusted) until it is upgraded. **Upgrade hubs before tills** |
 | Old hub → new cloud (bridge) | Yes | New pull columns are sent only with `x-titan-sync-schema: 2`; the hub's pushes are old-client payloads |
 | New hub → old cloud (cloud rolled back) | Mostly | Refunds sync, because the rate fields are no longer sent. **Debt-refund credits are missing**: the new till does not push them, and the old cloud does not create them. Do not roll the cloud back alone after the hub release; roll forward |
+| New desktop debt sale → old hub | Yes | The debt payload omits `saleId` (pinned by a test); the old hub keeps its number-based link |
+| Old hub ← new cloud pulls | Yes | `DebtSale.saleId` is sent only to schema-2 clients |
+| Old client debt / void → new server | Yes | The server derives `saleId`; gates and deletions never use "some sale with this number" (R7) |
+| Old and new references in one tenant | Yes | `S-48291177` / `SHIFT-001` and `S-7Q2K-000123` coexist; nothing treats them as unique |
 | Mixed numbers | Yes | Old `ADJ-00001` / `R-12345678` and new device-tagged numbers coexist; nothing looks them up as unique |
 
 **Rollout order.**
@@ -197,6 +269,7 @@ The admin web Reports page is the only caller. The response gains `cashSupplierP
 **Rollback.**
 - **Cloud, before the hub release:** redeploy the previous image. The data is readable by old code; the new columns and plain indexes are ignored.
 - **Re-adding the unique indexes:** fails if duplicate numbers were accepted in the meantime. Do not; the old code does not need them.
+- **Old server code over the new schema (R7):** the old void/debt handlers would go back to matching debts by number. That is harmless while numbers stay unique, but wrong for duplicates accepted after the migration. This is another reason to roll forward.
 - **After the hub release:** roll forward. The reasons are the debt credits above, and that an old cloud re-opens the refund defects.
 - **Local keys:** new client keys (`tenant-id`, the stash, the journal) are ignored by older desktop builds.
 
@@ -206,12 +279,14 @@ The admin web Reports page is the only caller. The response gains `cashSupplierP
 
 | Suite | Result | Kind |
 |---|---|---|
-| API, all | 17 files, 270 tests, pass | Real-Postgres suites ran against the scratch DB `lebanonpos_refund_it` |
+| API, all | 18 files, 279 tests, pass | Real-Postgres suites ran against the scratch DB `lebanonpos_refund_it` |
 | `old-client-adjustments.test.ts` | 8 / 8 | Real Postgres (new) |
 | `z-report-close.test.ts` | 3 / 3 | Real Postgres (new); on the old handler, 2 of 3 failed: cash arithmetic and cross-tenant close |
 | `refund-integrity.test.ts` | 13 / 13 | Real Postgres (+1: duplicate refund numbers) |
 | `reports.test.ts` | 15 / 15 repeated runs | Mocked (was 11 / 12) |
-| Desktop, all | 21 files, 295 tests, pass | jsdom |
+| `document-references.test.ts` | 9 / 9 | Real Postgres (R7); 8 of them failed on the old code |
+| Desktop, all | 22 files, 300 tests, pass | jsdom |
+| `documentReferences.test.ts` | 5 / 5 | R7 |
 | `refundIntegrity.test.ts` | 24 / 24 | +6: tenant-identity store switch ×4, legacy checkout, wire payloads ×2 |
 | Typecheck | `tsc` API and desktop: clean | |
 
@@ -219,7 +294,7 @@ The admin web Reports page is the only caller. The response gains `cashSupplierP
 
 ## 4. Open before release
 
-1. **Sale, shift, expense and PO number uniqueness** (R1, not fixed). This is a release blocker for multi-device stores. It needs id-based lookups first.
+1. ~~Sale, shift, expense and PO number uniqueness~~: fixed (R7).
 2. **A stashed "unbound" conflict has no UI yet.** It is kept and listed by `getStashedMoneyConflictSummary()`, but only diagnostics can see it.
 3. **Production credential.** Removing the plaintext PIN from the docs does not invalidate it; it must be rotated by the owner (reported earlier).
 4. **Approval needed for deployment**, per the rollout order above.

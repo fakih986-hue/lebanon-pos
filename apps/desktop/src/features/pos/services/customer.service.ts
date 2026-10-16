@@ -30,6 +30,9 @@ export type DebtSale = {
   id: string
   customerId: string
   saleNumber: string
+  /** The sale this debt belongs to. Kept locally; not sent (a hub on the
+   * previous release would reject the column). The server links it itself. */
+  saleId?: string
   subtotal: number
   discountTotal?: number
   tax: number
@@ -113,6 +116,7 @@ export type CreateCustomerInput = {
 export type RecordDebtSaleInput = {
   customerId: string
   saleNumber: string
+  saleId?: string
   subtotal: number
   discountTotal?: number
   tax: number
@@ -298,6 +302,7 @@ export function recordDebtSale(input: RecordDebtSaleInput) {
     id: createId(),
     customerId: input.customerId,
     saleNumber: input.saleNumber,
+    ...(input.saleId ? { saleId: input.saleId } : {}),
     subtotal: input.subtotal,
     discountTotal: input.discountTotal,
     tax: input.tax,
@@ -311,20 +316,29 @@ export function recordDebtSale(input: RecordDebtSaleInput) {
     entity: "debt",
     action: "create",
     summary: `${sale.saleNumber} debt sale queued for sync.`,
-    payload: sale,
+    payload: debtWirePayload(sale),
   })
 
   return sale
 }
 
+function debtWirePayload(debt: DebtSale) {
+  const { saleId: _saleId, ...wire } = debt
+  return wire
+}
+
 /**
  * Reverse a debt sale when its underlying sale is voided.
- * Removes the matching DebtSale entry so the customer balance drops back.
+ * Removes THIS sale's DebtSale entry so the customer balance drops back: by
+ * sale id; an unlinked (older) row only when exactly one matches the number
+ * and customer. Never "the first debt with that number".
  */
-export function reverseDebtSale(saleNumber: string) {
+export function reverseDebtSale(sale: { id: string; saleNumber: string; customerId?: string }) {
   const debtSales = getDebtSales()
-  const match = debtSales.find((d) => d.saleNumber === saleNumber)
+  const unlinked = debtSales.filter((d) => !d.saleId && d.saleNumber === sale.saleNumber && (!sale.customerId || d.customerId === sale.customerId))
+  const match = debtSales.find((d) => d.saleId === sale.id) ?? (unlinked.length === 1 ? unlinked[0] : undefined)
   if (!match) return undefined
+  const saleNumber = sale.saleNumber
 
   writeCollection(DEBT_SALES_KEY, debtSales.filter((d) => d.id !== match.id))
   enqueueSyncOperation({

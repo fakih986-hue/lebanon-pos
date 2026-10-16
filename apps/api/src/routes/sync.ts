@@ -56,6 +56,12 @@ export function shapeRefundsForSchema(rows: any[], schema: number): any[] {
   }))
 }
 
+/** DebtSale.saleId (document-reference fix) reaches only schema-2 clients; old hubs re-insert pulled rows verbatim. */
+export function shapeDebtSalesForSchema(rows: any[], schema: number): any[] {
+  if (schema >= 2) return rows
+  return rows.map(({ saleId: _s, ...debt }: any) => debt)
+}
+
 const router = Router()
 
 const syncOperationSchema = z.object({
@@ -277,6 +283,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         // REFUND-INTEGRITY-1: refund/void rule violations are business
         // conflicts with a stable code prefix (e.g. "REFUND_EXCEEDS_REFUNDABLE: …").
         err instanceof RefundRuleError ||
+        err instanceof TenantScopeError ||
         errorMessage.includes("Insufficient stock") ||
         errorMessage.includes("was voided") ||
         errorMessage.includes("Insufficient stock in batch") ||
@@ -530,7 +537,7 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
 
   json(res, {
     serverTime: new Date().toISOString(),
-    products, sales: shapeSalesForSchema(sales, clientSyncSchema(req as any)), refunds: shapeRefundsForSchema(refunds, clientSyncSchema(req as any)), customers, debtSales, debtPayments,
+    products, sales: shapeSalesForSchema(sales, clientSyncSchema(req as any)), refunds: shapeRefundsForSchema(refunds, clientSyncSchema(req as any)), customers, debtSales: shapeDebtSalesForSchema(debtSales, clientSyncSchema(req as any)), debtPayments,
     suppliers, purchaseOrders, supplierPayments, users, shifts,
     auditEvents, settings: settings ? [settings] : [], expenses, batches,
     adjustments, stockCounts: counts, dailyCloses, deliveryOrders,
@@ -667,6 +674,7 @@ router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest,
       entity,
       items: entity === "sales" ? shapeSalesForSchema(items, clientSyncSchema(req as any))
         : entity === "refunds" ? shapeRefundsForSchema(items, clientSyncSchema(req as any))
+        : entity === "debt-sales" ? shapeDebtSalesForSchema(items, clientSyncSchema(req as any))
         : items,
       hasMore,
       nextCursor: nextCursor ?? null,
@@ -676,6 +684,11 @@ router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest,
     json(res, { error: "Failed to pull full data" }, 500)
   }
 })
+
+/** A push referenced a record id that belongs to another tenant. Never retried. */
+export class TenantScopeError extends Error {
+  constructor(message: string) { super(`TENANT_SCOPE: ${message}`); this.name = "TenantScopeError" }
+}
 
 async function processOperation(
   tenantId: string,
@@ -749,6 +762,37 @@ async function processOperation(
     return value
   }
   payload = stripClientMeta(payload) as Record<string, unknown> | undefined
+
+  // RELEASE-BLOCKER (document references): record ids are unique across the
+  // whole database, but every write here belongs to ONE tenant. Several
+  // handlers upsert by id alone, so an id that already belongs to another
+  // tenant would overwrite that tenant's row. Refuse it.
+  const ID_MODELS: Record<string, string> = {
+    sale: "sale", refund: "saleRefund", shift: "shift", expense: "expense", customer: "customer", supplier: "supplier",
+    "purchase-order": "purchaseOrder", "supplier-payment": "supplierPayment", "daily-close": "dailyClose",
+    "delivery-order": "deliveryOrder", "cash-movement": "cashMovement",
+  }
+  const guardModel = entity === "debt" ? (action === "payment" ? "debtPayment" : "debtSale")
+    : entity === "inventory" ? (action === "adjust" ? "stockAdjustment" : action === "count" ? "stockCountSession" : undefined)
+    : ID_MODELS[entity]
+  const guardId = (payload as any)?.id
+  if (guardModel && typeof guardId === "string" && guardId) {
+    const owner = await (db as any)[guardModel].findUnique({ where: { id: guardId }, select: { tenantId: true } })
+    if (owner?.tenantId && owner.tenantId !== tenantId) throw new TenantScopeError(`${entity} ${guardId} belongs to another store`)
+  }
+
+  // A debt belongs to a SALE (by id), not to a sale number: numbers are display
+  // references and two sales may share one. Rows from before the link existed
+  // (saleId null) are matched only when they unambiguously belong to the sale:
+  // same number AND same customer, and the same total if that is still not one row.
+  const removeDebtOfSale = async (s: { id: string; saleNumber: string; customerId: string | null; total: unknown }) => {
+    await db.debtSale.deleteMany({ where: { tenantId, saleId: s.id } as any })
+    if (!s.customerId) return
+    const legacy = await db.debtSale.findMany({ where: { tenantId, saleId: null, saleNumber: s.saleNumber, customerId: s.customerId } as any, select: { id: true, total: true } })
+    const match = legacy.length === 1 ? legacy : legacy.filter((d) => Number(d.total) === Number(s.total))
+    if (match.length === 1) await db.debtSale.deleteMany({ where: { tenantId, id: match[0].id } })
+    else if (match.length > 1) console.warn(`[sync] void ${s.id}: ${match.length} unlinked debts share ${s.saleNumber}; none removed automatically`)
+  }
 
   // Record a stock movement for the audit trail (POS-SYNC-AUTHORITY-2A ledger,
   // RECORD-ONLY — does not change any stock outcome). Delegates to the shared
@@ -948,19 +992,11 @@ async function processOperation(
           // Clean up tender record to prevent stale tender data in reports
           await db.saleTender.deleteMany({ where: { saleId: id } })
 
-          // If this was a debt sale, remove the DebtSale record too
-          if (saleNumber) {
-            await db.debtSale.deleteMany({
-              where: { saleNumber, tenantId },
-            })
-          } else {
-            const saleData = sale ?? await db.sale.findFirst({ where: { id, tenantId }, select: { saleNumber: true } })
-            if (saleData?.saleNumber) {
-              await db.debtSale.deleteMany({
-                where: { saleNumber: saleData.saleNumber, tenantId },
-              })
-            }
-          }
+          // If this was a debt sale, remove ITS DebtSale (never every debt that
+          // happens to share the display number; never for a sale this tenant
+          // does not have).
+          const voided = sale ?? await db.sale.findFirst({ where: { id, tenantId }, select: { id: true, saleNumber: true, customerId: true, total: true } })
+          if (voided) await removeDebtOfSale(voided as any)
         }
       } else if (action === "create") {
         const data = payload as any
@@ -1322,7 +1358,18 @@ async function processOperation(
     }
     case "debt": {
       if (action === "create") {
-        const { items: _i, ...debtData } = payload ?? {}
+        const { items: _i, ...debtData } = (payload ?? {}) as Record<string, any>
+        // Link the debt to its sale. Clients do not send saleId (a hub on the
+        // previous release would reject the unknown column), so resolve it:
+        // the sale with this number AND customer, only if exactly one exists.
+        if (debtData.saleId) {
+          const own = await db.sale.findFirst({ where: { id: String(debtData.saleId), tenantId }, select: { id: true } })
+          if (!own) delete debtData.saleId
+        }
+        if (!debtData.saleId && debtData.saleNumber && debtData.customerId) {
+          const matches = await db.sale.findMany({ where: { tenantId, saleNumber: String(debtData.saleNumber), customerId: String(debtData.customerId) }, select: { id: true }, take: 2 })
+          if (matches.length === 1) debtData.saleId = matches[0].id
+        }
         await db.debtSale.upsert({
           where: { id: debtData.id as string },
           update: debtData,
@@ -1360,16 +1407,23 @@ async function processOperation(
         // void itself. The void handler removes the debt when it accepts the
         // void, so only honour the delete once the sale is actually voided —
         // a rejected void must not erase the customer's debt.
-        const debtRow = id ? await db.debtSale.findFirst({ where: { id, tenantId }, select: { saleNumber: true } }) : null
-        const linkedSaleNumber = saleNumber ?? debtRow?.saleNumber
-        if (linkedSaleNumber) {
-          const linkedSale = await db.sale.findFirst({ where: { tenantId, saleNumber: linkedSaleNumber }, select: { status: true } })
-          if (linkedSale && linkedSale.status !== "Voided") break
-        }
+        // The gate is THIS debt's sale (by id when linked); an unlinked debt
+        // only looks at sales with its number and customer, and is kept while
+        // any of them is still live. A display number alone never picks "some
+        // sale with that number".
+        const debtRow = id ? await db.debtSale.findFirst({ where: { id, tenantId }, select: { saleId: true, saleNumber: true, customerId: true } as any }) as any : null
+        const number = debtRow?.saleNumber ?? saleNumber
+        const linkedSales = debtRow?.saleId
+          ? await db.sale.findMany({ where: { tenantId, id: debtRow.saleId }, select: { status: true } })
+          : number
+            ? await db.sale.findMany({ where: { tenantId, saleNumber: number, ...(debtRow?.customerId ? { customerId: debtRow.customerId } : {}) }, select: { status: true } })
+            : []
+        if (linkedSales.some((s) => s.status !== "Voided")) break
         if (id) {
           await db.debtSale.deleteMany({ where: { id, tenantId } })
         } else if (saleNumber) {
-          await db.debtSale.deleteMany({ where: { saleNumber, tenantId } })
+          const unlinked = await db.debtSale.findMany({ where: { tenantId, saleNumber, saleId: null } as any, select: { id: true }, take: 2 })
+          if (unlinked.length === 1) await db.debtSale.deleteMany({ where: { tenantId, id: unlinked[0].id } })
         }
       }
       break

@@ -44,7 +44,7 @@ import {
   toggleProductFavorite,
 } from "../services/product.service"
 import { decreaseProductStock, increaseProductStock } from "../services/product.service"
-import { recordSale, buildSale, finalizeCommittedSale, voidSale, type SaleTender } from "../services/sales.service"
+import { recordSale, buildSale, finalizeCommittedSale, voidSale, getSales, type SaleTender } from "../services/sales.service"
 import {
   holdSale,
   removeHeldSale,
@@ -53,7 +53,7 @@ import {
 import { recordDebtSale } from "../services/customer.service"
 import { recordAuditEvent, userCan, getActiveShift } from "../services/security.service"
 import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
-import { getConnectionMode, pullFromServer, commitSaleToHub } from "../services/sync.service"
+import { getConnectionMode, pullFromServer, commitSaleToHub, nextDocumentReference } from "../services/sync.service"
 import { createId } from "../lib/storage"
 
 import type { Product } from "../types/product"
@@ -618,7 +618,7 @@ export default function POSPage() {
     // success. For CONNECT_TO_HUB it's the LAN hub.
     const writeThrough = (mode === "CONNECT_TO_HUB" || mode === "STORE_HUB") && stockDecrementing
 
-    const saleNumber = `S-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`
+    const saleNumber = nextDocumentReference("S", 6, () => getSales().map((s) => s.saleNumber))
     const saleId = createId() // client-generated UUID → hub commit is idempotent
 
     const cartInputs = items.map((item) => ({
@@ -718,7 +718,7 @@ export default function POSPage() {
 
       if (paymentMethod === "Debt" && selectedCustomer) {
         recordDebtSale({
-          customerId: selectedCustomer.id, saleNumber,
+          customerId: selectedCustomer.id, saleNumber, saleId,
           subtotal, discountTotal, tax, total, items: saleItems,
         })
       }

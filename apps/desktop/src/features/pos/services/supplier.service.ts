@@ -3,7 +3,7 @@ import {
   getCurrentUser,
   recordAuditEvent,
 } from "./security.service"
-import { enqueueSyncOperation, assertCanWrite, getDeviceId } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite, getDeviceId, nextDocumentReference } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getRegisterId } from "./settings.service"
@@ -422,7 +422,7 @@ export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
       : Math.min(total, Math.max(0, input.paidAmount ?? total))
   const purchaseOrder: PurchaseOrder = {
     id: createId("purchase-order"),
-    poNumber: `PO-${Date.now().toString().slice(-6)}`,
+    poNumber: nextDocumentReference("PO", 5, () => getPurchaseOrders().map((p) => p.poNumber)),
     supplierId: input.supplierId,
     supplierName: input.supplierName,
     status: input.status ?? "Received",

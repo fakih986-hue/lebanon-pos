@@ -247,7 +247,7 @@ model Sale {
   refunds    SaleRefund[]
   tender     SaleTender?
 
-  @@unique([tenantId, saleNumber])
+  @@index([tenantId, saleNumber])
   @@index([tenantId, createdAt])
   @@index([tenantId, customerId])
   @@index([tenantId, status, createdAt])
@@ -363,6 +363,9 @@ model DebtSale {
   customerId    String
   customer      Customer @relation(fields: [customerId], references: [id])
   saleNumber    String
+  /// The sale this debt belongs to (immutable id). NULL for rows written before
+  /// the link existed whose sale could not be identified unambiguously.
+  saleId        String?
   subtotal      Decimal  @db.Decimal(18, 4)
   discountTotal Decimal? @db.Decimal(18, 4)
   tax           Decimal  @db.Decimal(18, 4)
@@ -370,6 +373,7 @@ model DebtSale {
   createdAt     DateTime @default(now())
 
   @@index([tenantId, customerId])
+  @@index([tenantId, saleId])
   @@index([tenantId, createdAt])
 }
 
@@ -430,7 +434,7 @@ model PurchaseOrder {
 
   items PurchaseOrderItem[]
 
-  @@unique([tenantId, poNumber])
+  @@index([tenantId, poNumber])
   @@index([tenantId, supplierId])
 }
 
@@ -494,7 +498,7 @@ model Shift {
   closedBy          StaffUser?  @relation("ShiftCloser", fields: [closedById], references: [id])
   notes             String?
 
-  @@unique([tenantId, shiftNumber])
+  @@index([tenantId, shiftNumber])
   @@index([tenantId, status])
 }
 
@@ -533,7 +537,7 @@ model Expense {
   shiftNumber   String?
   createdAt     DateTime @default(now())
 
-  @@unique([tenantId, expenseNumber])
+  @@index([tenantId, expenseNumber])
   @@index([tenantId, createdAt])
 }
 

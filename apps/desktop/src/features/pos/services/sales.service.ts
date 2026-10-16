@@ -854,7 +854,7 @@ export function voidSale(saleId: string, restoreStock = true) {
 
   // 3. If it was a debt sale, reverse the customer's outstanding balance
   if (sale.paymentMethod === "Debt" || sale.status === "Debt") {
-    reverseDebtSale(sale.saleNumber)
+    reverseDebtSale({ id: sale.id, saleNumber: sale.saleNumber, customerId: sale.customerId })
   }
 
   recordAuditEvent({

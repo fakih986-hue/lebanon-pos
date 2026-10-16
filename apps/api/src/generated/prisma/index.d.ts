@@ -18184,6 +18184,7 @@ export namespace Prisma {
     tenantId: string | null
     customerId: string | null
     saleNumber: string | null
+    saleId: string | null
     subtotal: Decimal | null
     discountTotal: Decimal | null
     tax: Decimal | null
@@ -18196,6 +18197,7 @@ export namespace Prisma {
     tenantId: string | null
     customerId: string | null
     saleNumber: string | null
+    saleId: string | null
     subtotal: Decimal | null
     discountTotal: Decimal | null
     tax: Decimal | null
@@ -18208,6 +18210,7 @@ export namespace Prisma {
     tenantId: number
     customerId: number
     saleNumber: number
+    saleId: number
     subtotal: number
     discountTotal: number
     tax: number
@@ -18236,6 +18239,7 @@ export namespace Prisma {
     tenantId?: true
     customerId?: true
     saleNumber?: true
+    saleId?: true
     subtotal?: true
     discountTotal?: true
     tax?: true
@@ -18248,6 +18252,7 @@ export namespace Prisma {
     tenantId?: true
     customerId?: true
     saleNumber?: true
+    saleId?: true
     subtotal?: true
     discountTotal?: true
     tax?: true
@@ -18260,6 +18265,7 @@ export namespace Prisma {
     tenantId?: true
     customerId?: true
     saleNumber?: true
+    saleId?: true
     subtotal?: true
     discountTotal?: true
     tax?: true
@@ -18359,6 +18365,7 @@ export namespace Prisma {
     tenantId: string
     customerId: string
     saleNumber: string
+    saleId: string | null
     subtotal: Decimal
     discountTotal: Decimal | null
     tax: Decimal
@@ -18390,6 +18397,7 @@ export namespace Prisma {
     tenantId?: boolean
     customerId?: boolean
     saleNumber?: boolean
+    saleId?: boolean
     subtotal?: boolean
     discountTotal?: boolean
     tax?: boolean
@@ -18404,6 +18412,7 @@ export namespace Prisma {
     tenantId?: boolean
     customerId?: boolean
     saleNumber?: boolean
+    saleId?: boolean
     subtotal?: boolean
     discountTotal?: boolean
     tax?: boolean
@@ -18418,6 +18427,7 @@ export namespace Prisma {
     tenantId?: boolean
     customerId?: boolean
     saleNumber?: boolean
+    saleId?: boolean
     subtotal?: boolean
     discountTotal?: boolean
     tax?: boolean
@@ -18432,6 +18442,7 @@ export namespace Prisma {
     tenantId?: boolean
     customerId?: boolean
     saleNumber?: boolean
+    saleId?: boolean
     subtotal?: boolean
     discountTotal?: boolean
     tax?: boolean
@@ -18439,7 +18450,7 @@ export namespace Prisma {
     createdAt?: boolean
   }
 
-  export type DebtSaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "customerId" | "saleNumber" | "subtotal" | "discountTotal" | "tax" | "total" | "createdAt", ExtArgs["result"]["debtSale"]>
+  export type DebtSaleOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "customerId" | "saleNumber" | "saleId" | "subtotal" | "discountTotal" | "tax" | "total" | "createdAt", ExtArgs["result"]["debtSale"]>
   export type DebtSaleInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     customer?: boolean | CustomerDefaultArgs<ExtArgs>
@@ -18464,6 +18475,11 @@ export namespace Prisma {
       tenantId: string
       customerId: string
       saleNumber: string
+      /**
+       * The sale this debt belongs to (immutable id). NULL for rows written before
+       * the link existed whose sale could not be identified unambiguously.
+       */
+      saleId: string | null
       subtotal: Prisma.Decimal
       discountTotal: Prisma.Decimal | null
       tax: Prisma.Decimal
@@ -18898,6 +18914,7 @@ export namespace Prisma {
     readonly tenantId: FieldRef<"DebtSale", 'String'>
     readonly customerId: FieldRef<"DebtSale", 'String'>
     readonly saleNumber: FieldRef<"DebtSale", 'String'>
+    readonly saleId: FieldRef<"DebtSale", 'String'>
     readonly subtotal: FieldRef<"DebtSale", 'Decimal'>
     readonly discountTotal: FieldRef<"DebtSale", 'Decimal'>
     readonly tax: FieldRef<"DebtSale", 'Decimal'>
@@ -44888,6 +44905,7 @@ export namespace Prisma {
     tenantId: 'tenantId',
     customerId: 'customerId',
     saleNumber: 'saleNumber',
+    saleId: 'saleId',
     subtotal: 'subtotal',
     discountTotal: 'discountTotal',
     tax: 'tax',
@@ -46255,7 +46273,6 @@ export namespace Prisma {
 
   export type SaleWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    tenantId_saleNumber?: SaleTenantIdSaleNumberCompoundUniqueInput
     AND?: SaleWhereInput | SaleWhereInput[]
     OR?: SaleWhereInput[]
     NOT?: SaleWhereInput | SaleWhereInput[]
@@ -46283,7 +46300,7 @@ export namespace Prisma {
     items?: SaleItemListRelationFilter
     refunds?: SaleRefundListRelationFilter
     tender?: XOR<SaleTenderNullableScalarRelationFilter, SaleTenderWhereInput> | null
-  }, "id" | "tenantId_saleNumber">
+  }, "id">
 
   export type SaleOrderByWithAggregationInput = {
     id?: SortOrder
@@ -46841,6 +46858,7 @@ export namespace Prisma {
     tenantId?: StringFilter<"DebtSale"> | string
     customerId?: StringFilter<"DebtSale"> | string
     saleNumber?: StringFilter<"DebtSale"> | string
+    saleId?: StringNullableFilter<"DebtSale"> | string | null
     subtotal?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     discountTotal?: DecimalNullableFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
@@ -46855,6 +46873,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     customerId?: SortOrder
     saleNumber?: SortOrder
+    saleId?: SortOrderInput | SortOrder
     subtotal?: SortOrder
     discountTotal?: SortOrderInput | SortOrder
     tax?: SortOrder
@@ -46872,6 +46891,7 @@ export namespace Prisma {
     tenantId?: StringFilter<"DebtSale"> | string
     customerId?: StringFilter<"DebtSale"> | string
     saleNumber?: StringFilter<"DebtSale"> | string
+    saleId?: StringNullableFilter<"DebtSale"> | string | null
     subtotal?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     discountTotal?: DecimalNullableFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
@@ -46886,6 +46906,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     customerId?: SortOrder
     saleNumber?: SortOrder
+    saleId?: SortOrderInput | SortOrder
     subtotal?: SortOrder
     discountTotal?: SortOrderInput | SortOrder
     tax?: SortOrder
@@ -46906,6 +46927,7 @@ export namespace Prisma {
     tenantId?: StringWithAggregatesFilter<"DebtSale"> | string
     customerId?: StringWithAggregatesFilter<"DebtSale"> | string
     saleNumber?: StringWithAggregatesFilter<"DebtSale"> | string
+    saleId?: StringNullableWithAggregatesFilter<"DebtSale"> | string | null
     subtotal?: DecimalWithAggregatesFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     discountTotal?: DecimalNullableWithAggregatesFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalWithAggregatesFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
@@ -47122,7 +47144,6 @@ export namespace Prisma {
 
   export type PurchaseOrderWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    tenantId_poNumber?: PurchaseOrderTenantIdPoNumberCompoundUniqueInput
     AND?: PurchaseOrderWhereInput | PurchaseOrderWhereInput[]
     OR?: PurchaseOrderWhereInput[]
     NOT?: PurchaseOrderWhereInput | PurchaseOrderWhereInput[]
@@ -47144,7 +47165,7 @@ export namespace Prisma {
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     supplier?: XOR<SupplierScalarRelationFilter, SupplierWhereInput>
     items?: PurchaseOrderItemListRelationFilter
-  }, "id" | "tenantId_poNumber">
+  }, "id">
 
   export type PurchaseOrderOrderByWithAggregationInput = {
     id?: SortOrder
@@ -47427,7 +47448,6 @@ export namespace Prisma {
 
   export type ShiftWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    tenantId_shiftNumber?: ShiftTenantIdShiftNumberCompoundUniqueInput
     AND?: ShiftWhereInput | ShiftWhereInput[]
     OR?: ShiftWhereInput[]
     NOT?: ShiftWhereInput | ShiftWhereInput[]
@@ -47452,7 +47472,7 @@ export namespace Prisma {
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     openedBy?: XOR<StaffUserScalarRelationFilter, StaffUserWhereInput>
     closedBy?: XOR<StaffUserNullableScalarRelationFilter, StaffUserWhereInput> | null
-  }, "id" | "tenantId_shiftNumber">
+  }, "id">
 
   export type ShiftOrderByWithAggregationInput = {
     id?: SortOrder
@@ -47629,7 +47649,6 @@ export namespace Prisma {
 
   export type ExpenseWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    tenantId_expenseNumber?: ExpenseTenantIdExpenseNumberCompoundUniqueInput
     AND?: ExpenseWhereInput | ExpenseWhereInput[]
     OR?: ExpenseWhereInput[]
     NOT?: ExpenseWhereInput | ExpenseWhereInput[]
@@ -47648,7 +47667,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"Expense"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     recordedByUser?: XOR<StaffUserNullableScalarRelationFilter, StaffUserWhereInput> | null
-  }, "id" | "tenantId_expenseNumber">
+  }, "id">
 
   export type ExpenseOrderByWithAggregationInput = {
     id?: SortOrder
@@ -50456,6 +50475,7 @@ export namespace Prisma {
   export type DebtSaleCreateInput = {
     id?: string
     saleNumber: string
+    saleId?: string | null
     subtotal: Decimal | DecimalJsLike | number | string
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
@@ -50470,6 +50490,7 @@ export namespace Prisma {
     tenantId: string
     customerId: string
     saleNumber: string
+    saleId?: string | null
     subtotal: Decimal | DecimalJsLike | number | string
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
@@ -50480,6 +50501,7 @@ export namespace Prisma {
   export type DebtSaleUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
+    saleId?: NullableStringFieldUpdateOperationsInput | string | null
     subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -50494,6 +50516,7 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
+    saleId?: NullableStringFieldUpdateOperationsInput | string | null
     subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -50506,6 +50529,7 @@ export namespace Prisma {
     tenantId: string
     customerId: string
     saleNumber: string
+    saleId?: string | null
     subtotal: Decimal | DecimalJsLike | number | string
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
@@ -50516,6 +50540,7 @@ export namespace Prisma {
   export type DebtSaleUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
+    saleId?: NullableStringFieldUpdateOperationsInput | string | null
     subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -50528,6 +50553,7 @@ export namespace Prisma {
     tenantId?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
+    saleId?: NullableStringFieldUpdateOperationsInput | string | null
     subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -53734,11 +53760,6 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
-  export type SaleTenantIdSaleNumberCompoundUniqueInput = {
-    tenantId: string
-    saleNumber: string
-  }
-
   export type SaleCountOrderByAggregateInput = {
     id?: SortOrder
     tenantId?: SortOrder
@@ -54261,6 +54282,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     customerId?: SortOrder
     saleNumber?: SortOrder
+    saleId?: SortOrder
     subtotal?: SortOrder
     discountTotal?: SortOrder
     tax?: SortOrder
@@ -54280,6 +54302,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     customerId?: SortOrder
     saleNumber?: SortOrder
+    saleId?: SortOrder
     subtotal?: SortOrder
     discountTotal?: SortOrder
     tax?: SortOrder
@@ -54292,6 +54315,7 @@ export namespace Prisma {
     tenantId?: SortOrder
     customerId?: SortOrder
     saleNumber?: SortOrder
+    saleId?: SortOrder
     subtotal?: SortOrder
     discountTotal?: SortOrder
     tax?: SortOrder
@@ -54405,11 +54429,6 @@ export namespace Prisma {
   export type SupplierScalarRelationFilter = {
     is?: SupplierWhereInput
     isNot?: SupplierWhereInput
-  }
-
-  export type PurchaseOrderTenantIdPoNumberCompoundUniqueInput = {
-    tenantId: string
-    poNumber: string
   }
 
   export type PurchaseOrderCountOrderByAggregateInput = {
@@ -54627,11 +54646,6 @@ export namespace Prisma {
     isNot?: StaffUserWhereInput | null
   }
 
-  export type ShiftTenantIdShiftNumberCompoundUniqueInput = {
-    tenantId: string
-    shiftNumber: string
-  }
-
   export type ShiftCountOrderByAggregateInput = {
     id?: SortOrder
     tenantId?: SortOrder
@@ -54765,11 +54779,6 @@ export namespace Prisma {
     userName?: SortOrder
     userRole?: SortOrder
     createdAt?: SortOrder
-  }
-
-  export type ExpenseTenantIdExpenseNumberCompoundUniqueInput = {
-    tenantId: string
-    expenseNumber: string
   }
 
   export type ExpenseCountOrderByAggregateInput = {
@@ -59239,6 +59248,7 @@ export namespace Prisma {
   export type DebtSaleCreateWithoutTenantInput = {
     id?: string
     saleNumber: string
+    saleId?: string | null
     subtotal: Decimal | DecimalJsLike | number | string
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
@@ -59251,6 +59261,7 @@ export namespace Prisma {
     id?: string
     customerId: string
     saleNumber: string
+    saleId?: string | null
     subtotal: Decimal | DecimalJsLike | number | string
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
@@ -60278,6 +60289,7 @@ export namespace Prisma {
     tenantId?: StringFilter<"DebtSale"> | string
     customerId?: StringFilter<"DebtSale"> | string
     saleNumber?: StringFilter<"DebtSale"> | string
+    saleId?: StringNullableFilter<"DebtSale"> | string | null
     subtotal?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
     discountTotal?: DecimalNullableFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFilter<"DebtSale"> | Decimal | DecimalJsLike | number | string
@@ -63625,6 +63637,7 @@ export namespace Prisma {
   export type DebtSaleCreateWithoutCustomerInput = {
     id?: string
     saleNumber: string
+    saleId?: string | null
     subtotal: Decimal | DecimalJsLike | number | string
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
@@ -63637,6 +63650,7 @@ export namespace Prisma {
     id?: string
     tenantId: string
     saleNumber: string
+    saleId?: string | null
     subtotal: Decimal | DecimalJsLike | number | string
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
@@ -70102,6 +70116,7 @@ export namespace Prisma {
     id?: string
     customerId: string
     saleNumber: string
+    saleId?: string | null
     subtotal: Decimal | DecimalJsLike | number | string
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
@@ -70715,6 +70730,7 @@ export namespace Prisma {
   export type DebtSaleUpdateWithoutTenantInput = {
     id?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
+    saleId?: NullableStringFieldUpdateOperationsInput | string | null
     subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -70727,6 +70743,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
+    saleId?: NullableStringFieldUpdateOperationsInput | string | null
     subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -70738,6 +70755,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     customerId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
+    saleId?: NullableStringFieldUpdateOperationsInput | string | null
     subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -72491,6 +72509,7 @@ export namespace Prisma {
     id?: string
     tenantId: string
     saleNumber: string
+    saleId?: string | null
     subtotal: Decimal | DecimalJsLike | number | string
     discountTotal?: Decimal | DecimalJsLike | number | string | null
     tax: Decimal | DecimalJsLike | number | string
@@ -72539,6 +72558,7 @@ export namespace Prisma {
   export type DebtSaleUpdateWithoutCustomerInput = {
     id?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
+    saleId?: NullableStringFieldUpdateOperationsInput | string | null
     subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -72551,6 +72571,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tenantId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
+    saleId?: NullableStringFieldUpdateOperationsInput | string | null
     subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -72562,6 +72583,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tenantId?: StringFieldUpdateOperationsInput | string
     saleNumber?: StringFieldUpdateOperationsInput | string
+    saleId?: NullableStringFieldUpdateOperationsInput | string | null
     subtotal?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     discountTotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     tax?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string

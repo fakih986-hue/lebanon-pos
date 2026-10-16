@@ -3,7 +3,7 @@ import {
   getCurrentUser,
   recordAuditEvent,
 } from "./security.service"
-import { enqueueSyncOperation, assertCanWrite, getDeviceId } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite, getDeviceId, nextDocumentReference } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getRegisterId } from "./settings.service"
@@ -107,7 +107,7 @@ export function createExpense(input: CreateExpenseInput) {
   const amount = Math.max(0, input.amount)
   const expense: Expense = {
     id: input.id ?? createId(),
-    expenseNumber: `EXP-${Date.now().toString().slice(-6)}`,
+    expenseNumber: nextDocumentReference("EXP", 5, () => getExpenses().map((e) => e.expenseNumber)),
     vendor: cleanText(input.vendor) || "Unknown vendor",
     category: input.category,
     amount,

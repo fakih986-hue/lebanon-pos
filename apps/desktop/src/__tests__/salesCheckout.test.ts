@@ -16,6 +16,10 @@ vi.mock("../features/pos/services/sync.service", () => ({
   getDeviceId: () => "DEV-TEST",
   getApiUrl: () => "",
   isSuspensionGracePeriodExpired: () => false,
+  nextDocumentReference: (prefix: string, digits: number) => `${prefix}-TEST-${"1".padStart(digits, "0")}`,
+  getDeviceTag: () => "TEST",
+  getCurrentTenantId: () => null,
+  getSyncQueue: () => [],
 }))
 
 const USERS_KEY = "lebanonpos.users.v1"

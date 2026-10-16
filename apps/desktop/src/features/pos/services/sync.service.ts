@@ -410,6 +410,39 @@ export function getDeviceTag(): string {
   return tail || "LOCAL"
 }
 
+// Per-device counters for document references. Never cleared by a store
+// switch: a device must not reissue its own numbers.
+const REFERENCE_SEQ_KEY = "lebanonpos.reference-seq.v1"
+
+/**
+ * Next human-readable document reference issued by THIS device:
+ * `PREFIX-TAG-000123` (e.g. `S-7Q2K-000123`, `SHIFT-7Q2K-042`).
+ * - Sequential per device, so this device never repeats one.
+ * - Carries the device tag, so staff can tell registers apart and two devices
+ *   do not produce the same reference.
+ * It is still only a display reference: the record id is the identity, and the
+ * server accepts duplicates (older clients' references can collide).
+ * `existing` seeds the counter if its storage was lost (highest issued number
+ * for this tag among local records).
+ */
+export function nextDocumentReference(prefix: string, digits: number, existing: () => Array<string | undefined> = () => []): string {
+  const key = `${prefix}-${getDeviceTag()}`
+  let seqs: Record<string, number> = {}
+  try { seqs = JSON.parse(localStorage.getItem(REFERENCE_SEQ_KEY) ?? "{}") ?? {} } catch { seqs = {} }
+  let last = Number(seqs[key] ?? 0)
+  if (!last) {
+    const pattern = new RegExp(`^${key}-(\\d+)$`)
+    for (const ref of existing()) {
+      const match = ref ? pattern.exec(ref) : null
+      if (match) last = Math.max(last, Number(match[1]))
+    }
+  }
+  const next = last + 1
+  seqs[key] = next
+  try { localStorage.setItem(REFERENCE_SEQ_KEY, JSON.stringify(seqs)) } catch { /* reference still unique this session */ }
+  return `${key}-${String(next).padStart(digits, "0")}`
+}
+
 // ── Multi-store support ──────────────────────────────────────────────
 const KNOWN_STORES_KEY = "lebanonpos.known-stores.v1"
 
@@ -828,11 +861,15 @@ function matchesDeletion(item: unknown, deletion: PulledDeletion): boolean {
   const record = item as Record<string, unknown>
   const id = deletion.id
   const saleNumber = deletion.saleNumber
-  return (
-    (id !== undefined && String(record.id) === String(id)) ||
-    (saleNumber !== undefined && String(record.saleNumber) === String(saleNumber))
-  )
+  // The id identifies the record. A display number is used only when the
+  // deletion carries no id (numbers are not unique: matching on them would
+  // delete every record that happens to share one).
+  if (id !== undefined) return String(record.id) === String(id)
+  return saleNumber !== undefined && String(record.saleNumber) === String(saleNumber)
 }
+
+/** Exposed for tests only. */
+export const applyPulledDeletionsForTest = (deletions: PulledDeletion[]) => applyPulledDeletions(deletions)
 
 function applyPulledDeletions(deletions: PulledDeletion[]) {
   if (!canUseStorage() || deletions.length === 0) return
