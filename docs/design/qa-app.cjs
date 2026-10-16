@@ -435,21 +435,54 @@ const prodEditorEmpty = ["Add product + Save empty", `const b = __t.textBtn(/^(A
 const prodDetail = (name) => ["open " + name + " details", `const r = ${prodRows}.find((x) => x.textContent.includes(${JSON.stringify(name)})); r.querySelector("td:nth-child(2)").click(); await new Promise((r) => setTimeout(r, 500)); const d = document.querySelector("[role=dialog]"); const btns = [...d.querySelectorAll("button, a")].map((x) => x.getAttribute("aria-label") || x.textContent.trim().slice(0, 24)).filter(Boolean); return "actions: " + btns.slice(0, 12).join(" | ") + "; lots shown " + d.querySelectorAll(".mg2-lot").length`, 200]
 // Receiving recovery in the app. "crash" = the page is reloaded with the draft still holding the
 // in-flight save, written exactly as the page writes it (draft first, then receiveAndRecord).
-const recSetup = (committed) => ["simulate a save " + (committed ? "that finished" : "interrupted mid-write") + ", then a crash", `
+const recSetup = (mode) => ["receive with " + mode + ", then a crash", `
   const L = await import("/src/features/pos/lib/receiveRows.ts")
   const S = await import("/src/features/pos/services/receiveSubmission.service.ts")
   const sup = await import("/src/features/pos/services/supplier.service.ts")
   const ps = await import("/src/features/pos/services/product.service.ts")
+  const sec = await import("/src/features/pos/services/security.service.ts")
+  if (!sec.getActiveShift()) sec.openShift(100)
+  if (!sup.getSupplierLedger().length) sup.createSupplier({ name: "Malia Group", mobile: "01 000 000", contact: "Karim", address: "Dora", notes: "" })
+  const supplier = sup.getSupplierLedger()[0]
   const p = (await ps.getProducts()).find((x) => x.name === "Pepsi Can")
   const sent = { ...L.addScan([L.createRow()], p.barcode, p).rows[0], quantity: 6, cost: 0.55, price: 0.9 }
-  const other = { ...L.createRow(), name: "Zaatar Mix 1kg", barcode: "6291000999002", scannedBarcode: "6291000999002", category: "Pantry", quantity: 4, cost: 3, price: 5, mode: "new", decisionConfirmed: true }
-  const id = "receive-qa-${committed ? 1 : 2}"
-  S.writeReceiveDraft(L.serializeDraft({ rows: [sent, other], supplierId: "", invoiceNumber: "INV-55", paymentMethod: "On Account", note: "", pending: { submissionId: id, rowIds: [sent.id] } }))
-  ${committed ? `await sup.receiveAndRecord([L.toReceiveEntry(sent)], undefined, { submissionId: id })` : `S.beginReceiveSubmission(id, [sent.id])`}
-  return "Pepsi stock now " + (await ps.getProducts()).find((x) => x.name === "Pepsi Can").stock`, 200]
+  const fresh = { ...L.createRow(), name: "Zaatar Mix 1kg", barcode: "6291000999002", scannedBarcode: "6291000999002", category: "Pantry", quantity: 4, cost: 3, price: 5, mode: "new", decisionConfirmed: true }
+  const id = "receive-qa-" + "${mode}".replace(/\\W+/g, "-")
+  const failKey = { "a finished save": null, "the lots failing": "lebanonpos.inventory-batches.v1", "the payment failing": "lebanonpos.supplier-payments.v1", "the queue failing": "lebanonpos.sync-queue.v1" }["${mode}"]
+  const rows = [sent, fresh]
+  S.writeReceiveDraft(L.serializeDraft({ rows, supplierId: supplier.id, invoiceNumber: "INV-55", paymentMethod: "Cash", note: "", pending: { submissionId: id, rowIds: rows.map((r) => r.id) } }))
+  const setItem = Storage.prototype.setItem
+  if (failKey) Storage.prototype.setItem = function (k, v) { if (k === failKey) throw new DOMException("quota", "QuotaExceededError"); return setItem.call(this, k, v) }
+  let outcome
+  try { const r = await sup.receiveAndRecord(rows.map(L.toReceiveEntry), { supplierId: supplier.id, supplierName: supplier.name, invoiceNumber: "INV-55", paymentMethod: "Cash", note: "" }, { submissionId: id }); outcome = "PO " + r.purchaseOrder.status + " " + (r.purchaseOrder.number || "") + ", payment " + r.payment.status }
+  catch (e) { outcome = e.name }
+  finally { Storage.prototype.setItem = setItem }
+  if ("${mode}" === "the queue failing") {
+    // three Pepsi sold from the new lot before its receive could be sent
+    const lots = JSON.parse(localStorage.getItem("lebanonpos.inventory-batches.v1") || "[]")
+    const lot = lots.find((b) => b.id === id + "-lot-0"); if (lot) { lot.quantityRemaining -= 3; localStorage.setItem("lebanonpos.inventory-batches.v1", JSON.stringify(lots)) }
+  }
+  return outcome + "; Pepsi stock " + (await ps.getProducts()).find((x) => x.name === "Pepsi Can").stock`, 300]
 const recState = ["after reopening", `await new Promise((r) => setTimeout(r, 300)); const ps = await import("/src/features/pos/services/product.service.ts"); const stock = (await ps.getProducts()).find((x) => x.name === "Pepsi Can").stock; const rows = [...document.querySelectorAll("tr[data-row]")].map((r) => r.querySelector("td")?.textContent.trim().slice(0, 44)); const save = [...document.querySelectorAll("button")].find((x) => /^(Save delivery|حفظ الشحنة)/.test(x.textContent.trim())); return "banners: " + [...document.querySelectorAll(".mg2-banner")].map((b) => b.textContent.trim().slice(0, 90)).join(" || ") + "; rows: " + rows.join(" | ") + "; Save " + (save?.disabled ? "DISABLED" : "enabled") + "; Pepsi stock " + stock`, 100]
 const recRetry = ["press Save (retry)", `const b = [...document.querySelectorAll("button")].find((x) => /^(Save delivery|حفظ الشحنة)/.test(x.textContent.trim())); b.click(); await new Promise((r) => setTimeout(r, 1200)); const ps = await import("/src/features/pos/services/product.service.ts"); const ib = await import("/src/features/pos/services/inventoryBatch.service.ts"); const p = (await ps.getProducts()).find((x) => x.name === "Pepsi Can"); return "Pepsi stock " + p.stock + "; Pepsi lots " + ib.getInventoryBatches().filter((x) => x.productId === p.id).map((x) => x.initialQuantity).join("+")`, 100]
-const recResolve = ["choose: it was not received", `const b = __t.textBtn(/not received|لم يُستلم/); b.click(); await new Promise((r) => setTimeout(r, 400)); const save = [...document.querySelectorAll("button")].find((x) => /^(Save delivery|حفظ الشحنة)/.test(x.textContent.trim())); return "alerts left " + document.querySelectorAll("[role=alert]").length + "; Save " + (save?.disabled ? "DISABLED" : "enabled") + "; rows " + document.querySelectorAll("tr[data-row]").length`, 100]
+// A user who may receive but not adjust stock (no inventory.adjust): Complete allowed, Undo/close not.
+const asReceiver = `(()=>{ const u = JSON.parse(localStorage.getItem("lebanonpos.users.v1") || "[]"); if (u[0]) { u[0].role = "Cashier"; u[0].permissions = ["sales.checkout", "inventory.view", "inventory.receive"]; localStorage.setItem("lebanonpos.users.v1", JSON.stringify(u)) } })()`
+const uiSupplier = ["add supplier Malia Group", `const sup = await import("/src/features/pos/services/supplier.service.ts"); if (!sup.getSupplierLedger().length) sup.createSupplier({ name: "Malia Group", mobile: "01 000 000", contact: "Karim", address: "Dora", notes: "" }); return "ok"`, 200]
+const uiSaveCashPaymentFails = ["pick supplier + Cash, Save with the payment write failing", `
+  const sel = [...document.querySelectorAll("select")].find((s) => [...s.options].some((o) => /Malia/.test(o.textContent)))
+  const opt = [...sel.options].find((o) => /Malia/.test(o.textContent)); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(sel, opt.value); sel.dispatchEvent(new Event("change", { bubbles: true }))
+  await new Promise((r) => setTimeout(r, 200))
+  const cash = [...document.querySelectorAll("input[name=rcv-pay]")][1]; cash.click()
+  await new Promise((r) => setTimeout(r, 200))
+  const setItem = Storage.prototype.setItem
+  Storage.prototype.setItem = function (k, v) { if (k === "lebanonpos.supplier-payments.v1") throw new DOMException("quota", "QuotaExceededError"); return setItem.call(this, k, v) }
+  const b = [...document.querySelectorAll("button")].find((x) => /^(Save delivery|حفظ الشحنة)/.test(x.textContent.trim())); b.click()
+  await new Promise((r) => setTimeout(r, 1500))
+  Storage.prototype.setItem = setItem
+  return "outcomes: " + ([...document.querySelectorAll(".mg2-outcomes > div")].map((d) => d.textContent.trim().slice(0, 70)).join(" | ") || "none") + "; banners: " + [...document.querySelectorAll(".mg2-banner")].map((x) => x.textContent.trim().slice(0, 50)).join(" || ")`, 300]
+const recReview = ["open Review what was saved", `const b = __t.textBtn(/Review what was saved|مراجعة ما حُفظ/); b.click(); await new Promise((r) => setTimeout(r, 900)); const d = document.querySelector("[role=dialog]"); if (!d) return "NO drawer"; const rows = [...d.querySelectorAll("tbody tr")].map((r) => [...r.querySelectorAll("td")].map((c) => c.textContent.trim().slice(0, 40)).join(" / ")); const btn = (re) => { const x = [...d.querySelectorAll("button")].find((y) => re.test(y.textContent)); return x ? (x.disabled ? "disabled" : "enabled") : "absent" }; return "rows: " + rows.join(" | ") + "; supplier: " + [...d.querySelectorAll(".mg2-card")].slice(0, 2).map((c) => c.textContent.trim().slice(0, 50)).join(" | ") + "; ops: " + [...d.querySelectorAll("li")].slice(0, 6).map((l) => l.textContent.trim().slice(0, 40)).join(" | ") + "; Complete " + btn(/^(Complete|إكمال)/) + ", Undo " + btn(/^(Undo|التراجع)/) + "; reasons: " + [...d.querySelectorAll(".mg2-card ul li")].map((l) => l.textContent.trim().slice(0, 70)).filter((x) => !/Count the|Check their|Check the supplier|اجرد|راجع/.test(x)).join(" | ")`, 200]
+const recComplete = ["press Complete the delivery", `const d = document.querySelector("[role=dialog]"); const b = [...d.querySelectorAll("button")].find((y) => /^(Complete|إكمال)/.test(y.textContent)); b.click(); await new Promise((r) => setTimeout(r, 1500)); const ps = await import("/src/features/pos/services/product.service.ts"); const ib = await import("/src/features/pos/services/inventoryBatch.service.ts"); const sup = await import("/src/features/pos/services/supplier.service.ts"); const p = (await ps.getProducts()).find((x) => x.name === "Pepsi Can"); return "drawer " + (document.querySelector("[role=dialog]") ? "open" : "closed") + "; alerts " + document.querySelectorAll(".mg2-banner.mg2-t-err").length + "; Pepsi stock " + p.stock + "; Pepsi lots " + ib.getInventoryBatches().filter((x) => x.productId === p.id).map((x) => x.initialQuantity).join("+") + "; POs " + sup.getPurchaseOrders().length + "; payments " + sup.getSupplierPayments().length + "; rows " + document.querySelectorAll("tr[data-row]").length`, 200]
+const recRetryPay = ["press Retry payment", `const b = __t.textBtn(/Retry payment|إعادة تسجيل الدفع/); b.click(); await new Promise((r) => setTimeout(r, 900)); const sup = await import("/src/features/pos/services/supplier.service.ts"); return "payments " + sup.getSupplierPayments().length + "; PO " + sup.getPurchaseOrders().map((o) => o.poNumber + " " + o.paymentStatus).join(", ") + "; banners: " + [...document.querySelectorAll(".mg2-banner")].map((x) => x.textContent.trim().slice(0, 60)).join(" || ")`, 200]
 // Lot details drawer: a lot with a received entry and a damaged-stock adjustment, opened from the list.
 const lotSetup = ["adjust the Pepsi lot", `
   const ps = await import("/src/features/pos/services/product.service.ts")
@@ -478,10 +511,19 @@ const STOCK = [
   ["products-detail-fresh.en.dark.desktop", { w: 1440, h: 900, path: "/products", steps: [prodDetail("Cheese Saj"), ["Cheese Saj history", `const ps = await import("/src/features/pos/services/product.service.ts"); const p = (await ps.getProducts()).find((x) => x.name === "Cheese Saj"); return JSON.stringify(ps.getProductHistory(p.id))`, 50], ["new product: create + open", `const ps = await import("/src/features/pos/services/product.service.ts"); await ps.createProduct({ name: "QA Fresh Item", barcode: "6291000555001", category: "Snacks", price: 1, cost: 0.5, stock: 0 }); return "created"`, 300], reloadStep, prodDetail("QA Fresh Item")] }],
   ["products-cashier.en.dark.desktop", { w: 1440, h: 900, path: "/products", setup: asCashier, steps: [prodEditorEmpty, prodBulkArchive] }],
   ["lots-cashier.en.dark.desktop", { w: 1440, h: 900, path: "/stock", setup: asCashier, steps: [seedStock, reloadStep, ["header actions", `return [...document.querySelectorAll("main a, main button")].slice(0, 6).map((x) => x.textContent.trim() || x.getAttribute("aria-label")).join(" | ")`, 50]] }],
-  ["receiving-recovered.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup(true), reloadStep, recState, recRetry] }],
-  ["receiving-unknown.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup(false), reloadStep, recState] }],
-  ["receiving-unknown.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/products/new", steps: [recSetup(false), reloadStep, recState] }],
-  ["receiving-unknown-resolved.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup(false), reloadStep, recResolve] }],
+  ["receiving-recovered.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup("a finished save"), reloadStep, recState, recRetry] }],
+  ["receiving-unknown.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup("the lots failing"), reloadStep, recState] }],
+  ["receiving-review.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup("the lots failing"), reloadStep, recReview] }],
+  ["receiving-review.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/products/new", steps: [recSetup("the lots failing"), reloadStep, recReview] }],
+  ["receiving-review-blocked.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup("the queue failing"), reloadStep, recReview] }],
+  ["receiving-review-receiver.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", setup: asReceiver, steps: [recSetup("the lots failing"), reloadStep, recReview] }],
+  ["receiving-review-completed.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup("the lots failing"), reloadStep, recReview, recComplete] }],
+  ["receiving-payment-failed.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup("the payment failing"), reloadStep, recState] }],
+  ["receiving-payment-failed.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", path: "/products/new", steps: [recSetup("the payment failing"), reloadStep, recState] }],
+  ["receiving-ui-payment-failed.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [uiSupplier, reloadStep, rcvStock("before"), rcvScan("PEPSI"), rcvScan("PEPSI"), uiSaveCashPaymentFails, rcvStock("after")] }],
+  ["receiving-ui-payment-failed.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/products/new", steps: [uiSupplier, reloadStep, rcvStock("before"), rcvScan("PEPSI"), uiSaveCashPaymentFails] }],
+  ["receiving-payment-retried.en.dark.desktop", { w: 1440, h: 900, path: "/products/new", steps: [recSetup("the payment failing"), reloadStep, recRetryPay] }],
+  ["receiving-unknown.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/products/new", steps: [recSetup("the lots failing"), reloadStep, recState] }],
   ["lot-drawer.en.dark.desktop", { w: 1440, h: 900, path: "/stock", steps: [seedStock, lotSetup, reloadStep, openLot] }],
   ["lot-drawer.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/stock", steps: [seedStock, lotSetup, reloadStep, openLot] }],
   ["lot-drawer.ar.light.desktop", { w: 1440, h: 900, theme: "light", lang: "ar", path: "/stock", steps: [seedStock, lotSetup, reloadStep, openLot] }],

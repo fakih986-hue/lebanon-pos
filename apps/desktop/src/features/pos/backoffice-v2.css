@@ -146,3 +146,9 @@
 @media (min-width: 1200px) { .mg2-bo .mg2-layout { grid-template-columns: minmax(0, 1fr) 360px; } }
 .mg2-bo .mg2-sum { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; padding-block: 4px; }
 .mg2-bo .mg2-sum strong { font-variant-numeric: tabular-nums; }
+
+/* Receiving outcomes: stock, purchase order and payment, each on its own line. */
+.mg2-bo .mg2-outcomes { display: grid; gap: 4px; margin: 0; }
+.mg2-bo .mg2-outcomes > div { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.mg2-bo .mg2-outcomes dt { min-width: 120px; color: var(--text-2); font-weight: 600; }
+.mg2-bo .mg2-outcomes dd { margin: 0; }

@@ -132,13 +132,17 @@ describe("receiving recovery", () => {
       .rejects.toBeInstanceOf(m.ReceiveOutcomeUnknownError)
     expect(books()).toEqual(partial)
 
-    // A person checks Lots and records the decision; only then is the draft released.
-    m.resolveReceiveSubmission("receive-test-2", "received")
+    // Completing it (from its recorded effects, see receiveReconciliation.test) settles the draft
+    // exactly like a save that had finished: received rows leave, rejected rows stay.
+    const { completeReceiveSubmission } = await import("../features/pos/services/receiveRecovery.service")
+    await completeReceiveSubmission("receive-test-2")
     expect(m.getUnresolvedReceiveSubmissions()).toEqual([])
     const settled = m.recoverReceiveDraft(m.parseDraft(m.readReceiveDraftRaw())!)
-    expect(settled.recovery.kind).toBe("none")
-    expect(settled.draft.rows.every((r) => !rows.some((x) => x.id === r.id))).toBe(true)
+    expect(settled.recovery.kind).toBe("committed")
+    expect(settled.draft.rows.map((r) => r.id)).toEqual([rows[1].id])
     expect(settled.draft.pending).toBeUndefined()
+    expect(books().stock["RCV-0001"]).toBe(5) // completed, not received twice
+    expect(books().lots).toEqual([5])
   })
 
   it("a refusal before any write is not an unknown outcome", async () => {

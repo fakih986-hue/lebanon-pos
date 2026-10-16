@@ -47,6 +47,8 @@ export type RecordStockAdjustmentInput = {
   reason: StockAdjustmentReason
   note?: string
   batchId?: string
+  /** Fixed id (receiving recovery): the server applies an adjustment once per id. */
+  id?: string
 }
 
 function createAdjustmentNumber(count: number) {
@@ -134,7 +136,7 @@ export function recordStockAdjustment(input: RecordStockAdjustmentInput) {
 
   const existingAdjustments = getStockAdjustments()
   const adjustment: StockAdjustment = {
-    id: createId("stock-adjustment"),
+    id: input.id ?? createId("stock-adjustment"),
     adjustmentNumber: createAdjustmentNumber(existingAdjustments.length),
     productId: product.id,
     productName: product.name,

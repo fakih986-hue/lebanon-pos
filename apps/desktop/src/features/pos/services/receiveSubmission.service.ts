@@ -14,6 +14,7 @@
 // "unbound", which is only ever restored to an equally unbound session.
 import { getCurrentTenantId } from "./sync.service"
 import { applyReceiveResults, createRow, type ReceiveDraft } from "../lib/receiveRows"
+import type { ReceiveBatchInput } from "./inventoryBatch.service"
 
 export const RECEIVE_LEDGER_KEY = "lebanonpos.receive-submissions.v1"
 export const RECEIVE_DRAFTS_KEY = "lebanonpos.receive-drafts.v2"
@@ -31,6 +32,32 @@ export type ReceiveOutcomeSummary = {
   totalValue: number
   units: number
 }
+
+/** The purchase order of a delivery, reported apart from the stock it received. */
+export type PurchaseOrderOutcome = { status: "recorded" | "failed" | "not_needed"; id?: string; number?: string; total?: number; error?: string }
+/** The supplier payment of a delivery, reported apart from its purchase order. "waiting": the PO is not recorded yet. */
+export type PaymentOutcome = { status: "recorded" | "failed" | "on_account" | "not_needed" | "waiting"; id?: string; amount: number; method?: string; error?: string }
+export type ReceiveFinance = { purchaseOrder: PurchaseOrderOutcome; payment: PaymentOutcome }
+
+/** What the products write decided, recorded right after it (see product.service receiveProducts). */
+export type ReceivePlan = {
+  results: Array<{ accepted: boolean; error?: string }>
+  lots: ReceiveBatchInput[]
+  createdProductIds: number[]
+  modifiedProductIds: number[]
+}
+export type ReceiveAuditEntry = { at: string; by: string; action: string; detail?: string }
+export type ReceiveEntryRecord = {
+  rowId?: string; name: string; barcode: string; category: string; quantity: number; cost: number; price: number
+  reorderPoint?: number; reorderQuantity?: number; expiryDate?: string
+  attachAliasToProductId?: number; parentId?: number; variantName?: string
+}
+
+/**
+ * Journal steps: "products" (catalog + stock, one storage write), "followUps" (product sync, lots,
+ * movements, receive operation), "finance" (purchase order + payment), and for an undo
+ * "undo:<n>:start" / "undo:<n>:done" around each reversal.
+ */
 export type ReceiveSubmission = {
   id: string
   tenantKey: string
@@ -42,15 +69,27 @@ export type ReceiveSubmission = {
   summary?: ReceiveOutcomeSummary
   /** Why a started submission did not commit (the thrown error), when known. */
   failure?: string
-  resolution?: "received" | "not_received"
+  /** What was sent, so an interrupted save can be completed exactly as it was asked (images dropped). */
+  entries?: ReceiveEntryRecord[]
+  context?: { supplierId?: string; supplierName?: string; invoiceNumber?: string; paymentMethod?: string; note?: string }
+  /** Stock of the existing products the entries touch, read just before writing. */
+  stockBefore?: Record<string, number>
+  steps?: Record<string, string>
+  plan?: ReceivePlan
+  finance?: ReceiveFinance
+  /** A started submission closed without completing it: undone (effects reversed) or by hand. */
+  resolution?: "undone" | "manual"
+  resolutionNote?: string
   resolvedAt?: string
+  recovered?: boolean
+  audit?: ReceiveAuditEntry[]
 }
 
 /** The save was interrupted after it began writing: what reached stock is unknown. */
 export class ReceiveOutcomeUnknownError extends Error {
   submissionId: string
   constructor(submissionId: string, cause?: unknown) {
-    super(`Delivery ${submissionId}: the save was interrupted; check lots before saving again.`)
+    super(`Delivery ${submissionId}: the save was interrupted; review its effects before saving again.`)
     this.name = "ReceiveOutcomeUnknownError"
     this.submissionId = submissionId
     this.cause = cause
@@ -70,14 +109,17 @@ function readLedger(): Ledger {
     return v && typeof v === "object" && !Array.isArray(v) ? v : {}
   } catch { return {} }
 }
+const financeOpen = (s: ReceiveSubmission) =>
+  s.finance?.purchaseOrder.status === "failed" || s.finance?.payment.status === "failed" || s.finance?.payment.status === "waiting"
+const needsAttention = (s: ReceiveSubmission) => s.status === "started" || (s.status === "committed" && financeOpen(s))
 function writeSubmission(sub: ReceiveSubmission) {
   const ledger = readLedger()
   const mine = { ...(ledger[sub.tenantKey] ?? {}), [sub.id]: sub }
-  // Keep the newest entries, but never drop an unresolved (started) one.
+  // Keep the newest entries, but never drop one that still needs attention.
   const all = Object.values(mine).sort((a, b) => b.startedAt.localeCompare(a.startedAt))
-  const keep = all.filter((s, i) => i < LEDGER_KEEP || s.status === "started")
+  const keep = all.filter((s, i) => i < LEDGER_KEEP || needsAttention(s))
   ledger[sub.tenantKey] = Object.fromEntries(keep.map((s) => [s.id, s]))
-  // Synchronous on purpose: this must be on disk before (started) and after (committed) the writes.
+  // Synchronous on purpose: every journal entry is on disk before the next write begins.
   localStorage.setItem(RECEIVE_LEDGER_KEY, JSON.stringify(ledger))
 }
 
@@ -91,29 +133,40 @@ export function getUnresolvedReceiveSubmissions(): ReceiveSubmission[] {
   return Object.values(readLedger()[currentTenantKey()] ?? {}).filter((s) => s.status === "started")
 }
 
-export function beginReceiveSubmission(id: string, rowIds: string[]): ReceiveSubmission {
-  const sub: ReceiveSubmission = { id, tenantKey: currentTenantKey(), rowIds, startedAt: new Date().toISOString(), status: "started" }
+/** Received deliveries whose purchase order or payment did not go through (retry is idempotent). */
+export function getReceiveFinanceIssues(): ReceiveSubmission[] {
+  return Object.values(readLedger()[currentTenantKey()] ?? {}).filter((s) => s.status === "committed" && financeOpen(s))
+}
+
+export function beginReceiveSubmission(id: string, rowIds: string[], extra?: Pick<ReceiveSubmission, "entries" | "context" | "stockBefore">): ReceiveSubmission {
+  const sub: ReceiveSubmission = { id, tenantKey: currentTenantKey(), rowIds, startedAt: new Date().toISOString(), status: "started", steps: {}, ...extra }
   writeSubmission(sub)
   return sub
 }
 
-export function commitReceiveSubmission(sub: ReceiveSubmission, results: ReceiveRowResult[], summary: ReceiveOutcomeSummary): ReceiveSubmission {
-  const next: ReceiveSubmission = { ...sub, status: "committed", committedAt: new Date().toISOString(), results, summary }
+/** Read-modify-write of one submission of the current tenant. */
+export function patchReceiveSubmission(id: string, patch: (s: ReceiveSubmission) => ReceiveSubmission): ReceiveSubmission {
+  const cur = getReceiveSubmission(id)
+  if (!cur) throw new Error(`Delivery ${id} is not on this device for this store.`)
+  const next = patch(cur)
   writeSubmission(next)
   return next
 }
 
-export function noteReceiveFailure(sub: ReceiveSubmission, failure: string) {
-  writeSubmission({ ...sub, failure })
+export function markReceiveStep(id: string, step: string, extra?: Partial<ReceiveSubmission>): ReceiveSubmission {
+  return patchReceiveSubmission(id, (s) => ({ ...s, ...extra, steps: { ...(s.steps ?? {}), [step]: new Date().toISOString() } }))
 }
 
-/** A person reconciled an interrupted save after checking lots and stock. */
-export function resolveReceiveSubmission(id: string, resolution: "received" | "not_received"): ReceiveSubmission | undefined {
-  const sub = getReceiveSubmission(id)
-  if (!sub || sub.status !== "started") return sub
-  const next: ReceiveSubmission = { ...sub, status: "resolved", resolution, resolvedAt: new Date().toISOString() }
-  writeSubmission(next)
-  return next
+export function commitReceiveSubmission(id: string, results: ReceiveRowResult[], summary: ReceiveOutcomeSummary, finance: ReceiveFinance, extra?: Partial<ReceiveSubmission>): ReceiveSubmission {
+  return patchReceiveSubmission(id, (s) => ({ ...s, ...extra, status: "committed", committedAt: new Date().toISOString(), results, summary, finance }))
+}
+
+export function noteReceiveFailure(id: string, failure: string) {
+  patchReceiveSubmission(id, (s) => ({ ...s, failure }))
+}
+
+export function appendReceiveAudit(id: string, entry: Omit<ReceiveAuditEntry, "at">) {
+  return patchReceiveSubmission(id, (s) => ({ ...s, audit: [...(s.audit ?? []), { ...entry, at: new Date().toISOString() }] }))
 }
 
 // ── Drafts, per tenant ────────────────────────────────────────────────────────
@@ -163,8 +216,12 @@ export function recoverReceiveDraft(draft: ReceiveDraft): { draft: ReceiveDraft;
   if (!sub) return { draft: { ...draft, pending: undefined }, recovery: { kind: "none" } }
   if (sub.status === "started") return { draft, recovery: { kind: "unknown", submissionId: sub.id } }
   if (sub.status === "resolved") {
+    // Undone: nothing of it remains, the rows are editable again. Closed by hand: the rows stay,
+    // marked, because only the person who closed it knows what was received.
     const sent = new Set(sub.rowIds)
-    const rows = sub.resolution === "received" ? draft.rows.filter((r) => !sent.has(r.id)) : draft.rows
+    const rows = sub.resolution === "manual"
+      ? draft.rows.map((r) => (sent.has(r.id) ? { ...r, saveError: "closed by hand: save again only if it was not received" } : r))
+      : draft.rows
     return { draft: { ...draft, rows: rows.length ? rows : [createRow()], pending: undefined }, recovery: { kind: "none" } }
   }
   const results = sub.results ?? []

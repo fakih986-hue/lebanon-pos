@@ -3,13 +3,14 @@ import {
   getCurrentUser,
   recordAuditEvent,
 } from "./security.service"
-import { enqueueSyncOperation, assertCanWrite, getDeviceId, nextDocumentReference } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite, getDeviceId, getSyncQueue, nextDocumentReference } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getRegisterId } from "./settings.service"
 import {
-  beginReceiveSubmission, commitReceiveSubmission, getReceiveSubmission, noteReceiveFailure,
-  ReceiveOutcomeUnknownError, type ReceiveRowResult, type ReceiveSubmission,
+  beginReceiveSubmission, commitReceiveSubmission, getReceiveSubmission, markReceiveStep, noteReceiveFailure,
+  ReceiveOutcomeUnknownError, type PaymentOutcome, type PurchaseOrderOutcome, type ReceiveFinance, type ReceivePlan, type ReceiveRowResult,
+  type ReceiveSubmission,
 } from "./receiveSubmission.service"
 
 const SUPPLIERS_KEY = "lebanonpos.suppliers.v1"
@@ -107,6 +108,9 @@ export type RecordPurchaseOrderInput = {
   items: PurchaseOrderItem[]
   paymentMethod: PurchasePaymentMethod
   paidAmount?: number
+  /** Fixed ids (receiving submissions): the purchase order and its sync operation are written once. */
+  id?: string
+  syncOpId?: string
 }
 
 export type RecordSupplierPaymentInput = {
@@ -115,6 +119,9 @@ export type RecordSupplierPaymentInput = {
   amount: number
   method: SupplierPaymentMethod
   reference: string
+  /** Fixed ids (receiving submissions): the payment and its sync operation are written once. */
+  id?: string
+  syncOpId?: string
 }
 
 function cleanText(value: string) {
@@ -348,9 +355,17 @@ export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
     throw new Error("Choose a supplier before recording payment.")
   }
 
-  // Idempotency: skip duplicate payment for same PO/supplier with same amount and reference
   const existingPayments = getSupplierPayments()
-  const duplicate = existingPayments.find(p =>
+  if (input.id) {
+    const mine = existingPayments.find((p) => p.id === input.id)
+    if (mine) {
+      enqueueSyncOperation({ id: input.syncOpId, entity: "supplier-payment", action: "payment", summary: `${mine.supplierName} payment queued for sync.`, payload: mine })
+      return mine
+    }
+  }
+  // Idempotency: skip duplicate payment for same PO/supplier with same amount and reference
+  // (a heuristic for callers without an id; a fixed id is exact and takes precedence).
+  const duplicate = input.id ? undefined : existingPayments.find(p =>
     p.supplierId === input.supplierId &&
     Math.abs(p.amount - input.amount) < 0.005 &&
     p.reference === cleanText(input.reference) &&
@@ -366,7 +381,7 @@ export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
   const shift = getActiveShift()
   const user = getCurrentUser()
   const payment: SupplierPayment = {
-    id: createId("supplier-payment"),
+    id: input.id ?? createId("supplier-payment"),
     supplierId: supplier.id,
     supplierName: supplier.name,
     purchaseOrderId: purchaseOrder?.id,
@@ -406,6 +421,7 @@ export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
     },
   })
   enqueueSyncOperation({
+    id: input.syncOpId,
     entity: "supplier-payment",
     action: "payment",
     summary: `${payment.supplierName} payment queued for sync.`,
@@ -417,6 +433,14 @@ export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
 
 export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
   assertCanWrite("record purchase order")
+  if (input.id) {
+    const existing = getPurchaseOrders().find((o) => o.id === input.id)
+    if (existing) {
+      // Written before (a retried receive): make sure its create operation is queued, nothing else.
+      enqueueSyncOperation({ id: input.syncOpId, entity: "purchase-order", action: "create", summary: `${existing.poNumber} purchase order queued for sync.`, payload: existing })
+      return existing
+    }
+  }
   const shift = getActiveShift()
   const user = getCurrentUser()
   const total = input.items.reduce((sum, item) => sum + item.total, 0)
@@ -425,7 +449,7 @@ export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
       ? 0
       : Math.min(total, Math.max(0, input.paidAmount ?? total))
   const purchaseOrder: PurchaseOrder = {
-    id: createId("purchase-order"),
+    id: input.id ?? createId("purchase-order"),
     poNumber: nextDocumentReference("PO", 5, () => getPurchaseOrders().map((p) => p.poNumber)),
     supplierId: input.supplierId,
     supplierName: input.supplierName,
@@ -479,6 +503,7 @@ export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
     },
   })
   enqueueSyncOperation({
+    id: input.syncOpId,
     entity: "purchase-order",
     action: "create",
     summary: `${purchaseOrder.poNumber} purchase order queued for sync.`,
@@ -590,17 +615,24 @@ export type ReceivingContext = {
 }
 
 export type ReceivingSummary = {
+  /** Rows received / rejected (by row, see `results`). */
   acceptedCount: number
   rejectedCount: number
   errors: string[]
   productsCreated: number
   productsUpdated: number
   batchesCreated: number
-  poNumber?: string
-  paymentRecorded: boolean
+  units: number
   totalValue: number
   /** Per-entry outcome by row id (entry.rowId, or the entry's position when none was given). */
   results: ReceiveRowResult[]
+  /** The purchase order and the payment are separate outcomes: stock can be received while
+   *  either failed, and each can be retried on its own (idempotently). */
+  purchaseOrder: PurchaseOrderOutcome
+  payment: PaymentOutcome
+  /** Kept for existing callers: the saved purchase order's number / whether a payment was recorded. */
+  poNumber?: string
+  paymentRecorded: boolean
   submissionId?: string
   /** True when this submission had already been received: nothing was written again. */
   replayed?: boolean
@@ -621,37 +653,204 @@ export type ReceiveEntry = {
   variantName?: string
 }
 
+/** Fixed ids of a submission's finance effects (absent without a submission: fresh ids). */
+export function receiveFinanceIds(submissionId: string) {
+  return {
+    po: `${submissionId}-po`, poOp: `${submissionId}-op-po`, poReceivedOp: `${submissionId}-op-po-received`,
+    pay: `${submissionId}-pay`, payOp: `${submissionId}-op-pay`,
+  }
+}
+
+/**
+ * The purchase order, then the payment, for the entries that were received. Never throws: each
+ * outcome is reported on its own. With a submission id both are idempotent (fixed ids), so a retry
+ * completes what is missing and can never add a second order, liability or payment.
+ * The order is written Unpaid; only a recorded payment marks it paid.
+ */
+export function recordReceiveFinance(
+  submissionId: string | undefined,
+  context: ReceivingContext | undefined,
+  received: Array<Pick<ReceiveEntry, "name" | "barcode" | "quantity" | "cost" | "price">>,
+): ReceiveFinance {
+  const totalCost = received.reduce((sum, e) => sum + e.quantity * e.cost, 0)
+  const method = context?.paymentMethod ?? "On Account"
+  if (!context?.supplierId || totalCost <= 0) {
+    return { purchaseOrder: { status: "not_needed" }, payment: { status: "not_needed", amount: 0 } }
+  }
+  const k = submissionId ? receiveFinanceIds(submissionId) : undefined
+  let po: PurchaseOrder
+  try {
+    po = recordPurchaseOrder({
+      id: k?.po, syncOpId: k?.poOp,
+      supplierId: context.supplierId,
+      supplierName: context.supplierName ?? "",
+      status: "Draft",
+      invoiceNumber: context.invoiceNumber ?? "",
+      note: context.note ?? "",
+      paymentMethod: method,
+      paidAmount: 0,
+      items: received.map(e => ({
+        name: e.name, barcode: e.barcode, quantity: e.quantity,
+        unitCost: e.cost, unitPrice: e.price, total: e.quantity * e.cost,
+      })),
+    })
+    const orders = getPurchaseOrders()
+    const createdPo = orders.find(o => o.id === po.id)
+    if (createdPo && createdPo.status === "Draft") {
+      createdPo.status = "Received"
+      createdPo.receivedAt = new Date().toISOString()
+      writePurchaseOrders(orders)
+    }
+    if (createdPo && (createdPo.status !== "Draft")) {
+      // writePurchaseOrders() only writes local storage — it does not sync.
+      // Without this, the server never learns the PO left Draft, so its
+      // status stays permanently out of sync with every device that pulls it.
+      enqueueSyncOperation({
+        id: k?.poReceivedOp,
+        entity: "purchase-order",
+        action: "update",
+        summary: `${createdPo.poNumber} marked Received.`,
+        payload: createdPo,
+      })
+      po = createdPo
+    }
+  } catch (err) {
+    const error = String((err as Error)?.message ?? err)
+    return {
+      purchaseOrder: { status: "failed", id: k?.po, error },
+      payment: method === "On Account" ? { status: "on_account", amount: 0, method } : { status: "waiting", amount: totalCost, method },
+    }
+  }
+  if (k && !getSyncQueue().some((op) => op.id === k.poOp)) {
+    // Recorded here but not queued: the server would never learn of this liability. Retry re-queues it.
+    return {
+      purchaseOrder: { status: "failed", id: po.id, number: po.poNumber, total: po.total, error: "recorded on this device but not queued for sync" },
+      payment: method === "On Account" ? { status: "on_account", amount: 0, method } : { status: "waiting", amount: totalCost, method },
+    }
+  }
+  const purchaseOrder: PurchaseOrderOutcome = { status: "recorded", id: po.id, number: po.poNumber, total: po.total }
+  if (method === "On Account") return { purchaseOrder, payment: { status: "on_account", amount: 0, method } }
+  try {
+    const payment = recordSupplierPayment({
+      id: k?.pay, syncOpId: k?.payOp,
+      supplierId: context.supplierId,
+      purchaseOrderId: po.id,
+      amount: totalCost,
+      method,
+      reference: po.invoiceNumber || `Payment for ${po.poNumber}`,
+    })
+    if (k && !getSyncQueue().some((op) => op.id === k.payOp)) {
+      return { purchaseOrder, payment: { status: "failed", id: payment.id, amount: payment.amount, method, error: "recorded on this device but not queued for sync" } }
+    }
+    return { purchaseOrder, payment: { status: "recorded", id: payment.id, amount: payment.amount, method } }
+  } catch (err) {
+    // The order stays recorded and Unpaid; the supplier balance shows it owed until the retry.
+    return { purchaseOrder, payment: { status: "failed", id: k?.pay, amount: totalCost, method, error: String((err as Error)?.message ?? err) } }
+  }
+}
+
+const rowIdOf = (e: { rowId?: string }, i: number) => e.rowId ?? String(i)
+
+function summaryFromRecord(rec: ReceiveSubmission, replayed: boolean): ReceivingSummary {
+  const results = rec.results ?? []
+  const finance = rec.finance ?? { purchaseOrder: { status: "not_needed" as const }, payment: { status: "not_needed" as const, amount: 0 } }
+  const sum = rec.summary
+  return {
+    acceptedCount: results.filter((r) => r.status === "accepted").length,
+    rejectedCount: results.filter((r) => r.status === "rejected").length,
+    errors: results.filter((r) => r.status === "rejected").map((r) => r.reason ?? "rejected"),
+    productsCreated: sum?.productsCreated ?? 0, productsUpdated: sum?.productsUpdated ?? 0, batchesCreated: sum?.batchesCreated ?? 0,
+    units: sum?.units ?? 0, totalValue: sum?.totalValue ?? 0,
+    results, purchaseOrder: finance.purchaseOrder, payment: finance.payment,
+    poNumber: finance.purchaseOrder.number, paymentRecorded: finance.payment.status === "recorded",
+    submissionId: rec.id, replayed,
+  }
+}
+
 /**
  * Receive a delivery: stock and lots for each accepted entry, then (with a supplier) the
  * purchase order and payment for exactly the entries that were received.
  *
  * With `opts.submissionId` the save is idempotent and recoverable (receiveSubmission.service):
  * - already committed  -> returns the recorded outcome, writes nothing (`replayed: true`);
- * - started, never committed (crash/exception mid-write) -> ReceiveOutcomeUnknownError, writes
- *   nothing: what reached stock is unknown and a person must reconcile it, not a blind resend.
+ * - started, never committed (an exception mid-write) -> ReceiveOutcomeUnknownError, writes
+ *   nothing: the effects must be reviewed and completed or undone (receiveRecovery.service).
  */
 export async function receiveAndRecord(
   entries: ReceiveEntry[],
   context?: ReceivingContext,
   opts?: { submissionId?: string }
 ): Promise<ReceivingSummary> {
-  const { receiveProducts } = await import("./product.service")
-  const rowIdOf = (e: ReceiveEntry, i: number) => e.rowId ?? String(i)
-
-  let submission: ReceiveSubmission | undefined
-  if (opts?.submissionId) {
-    const prior = getReceiveSubmission(opts.submissionId)
-    if (prior?.status === "committed" && prior.results && prior.summary) {
-      return { ...prior.summary, errors: prior.results.filter((r) => r.status === "rejected").map((r) => r.reason ?? "rejected"), results: prior.results, submissionId: prior.id, replayed: true }
-    }
+  const products = await import("./product.service")
+  const sub = opts?.submissionId
+  if (sub) {
+    const prior = getReceiveSubmission(sub)
+    if (prior?.status === "committed") return summaryFromRecord(prior, true)
     if (prior) throw new ReceiveOutcomeUnknownError(prior.id)
     // Checks that write nothing run before the ledger entry, so a refusal is not an "unknown".
     assertCanWrite("receive products")
-    submission = beginReceiveSubmission(opts.submissionId, entries.map(rowIdOf))
+    beginReceiveSubmission(sub, entries.map(rowIdOf), {
+      // Images (large data URLs) are not kept in the ledger.
+      entries: entries.map((e, i) => { const rec = { ...e, rowId: rowIdOf(e, i) }; delete rec.image; return rec }),
+      context: context ? { ...context } : undefined,
+      stockBefore: snapshotStockBefore(entries, products),
+    })
   }
-
   try {
-    const receiveResult = receiveProducts(
+    return runReceiveSteps(entries, context, sub, products)
+  } catch (err) {
+    if (!sub) throw err
+    // Products, lots or movements may be partly written: never report "nothing happened".
+    try { noteReceiveFailure(sub, String((err as Error)?.message ?? err)) } catch { /* the started entry stands */ }
+    throw new ReceiveOutcomeUnknownError(sub, err)
+  }
+}
+
+/** Stock of the existing products the entries will touch, read before anything is written. */
+export function snapshotStockBefore(entries: ReceiveEntry[], products: typeof import("./product.service")) {
+  const all = products.getProductsSync()
+  const out: Record<string, number> = {}
+  for (const e of entries) {
+    const p = e.attachAliasToProductId != null ? all.find((x) => x.id === e.attachAliasToProductId) : products.findProductByBarcode(e.barcode)
+    if (p) out[String(p.id)] = p.stock
+  }
+  return out
+}
+
+/**
+ * A failed sync-queue write is logged, not thrown (sync.service writeQueue), so a receive checks
+ * that the operations the server needs are really queued before it calls its follow-ups done:
+ * the new products' create and the lots' receive (the server adds stock only through it).
+ */
+function assertFollowUpsQueued(sub: string, plan: ReceivePlan) {
+  const rec = getReceiveSubmission(sub)
+  if (rec?.steps?.followUps) return
+  const queued = new Set(getSyncQueue().map((op) => op.id))
+  const missing = [
+    ...(plan.createdProductIds.length > 0 ? [`${sub}-op-products`] : []),
+    ...(plan.lots.length > 0 ? [`${sub}-op-receive`] : []),
+  ].filter((id) => !queued.has(id))
+  if (missing.length > 0) throw new Error(`Could not queue ${missing.join(", ")} for sync (storage full?).`)
+  markReceiveStep(sub, "followUps")
+}
+
+/**
+ * The receive, step by step. With a submission id each step is journaled when it completes and
+ * is idempotent (fixed ids), so a resumed run (receiveRecovery) completes only what is missing:
+ * products (catalog + stock, one write) -> follow-ups (product sync, lots, movements, receive
+ * operation) -> finance (purchase order, payment) -> commit.
+ */
+export function runReceiveSteps(
+  entries: ReceiveEntry[],
+  context: ReceivingContext | undefined,
+  sub: string | undefined,
+  products: typeof import("./product.service"),
+  opts?: { recovered?: boolean },
+): ReceivingSummary {
+  const rec = sub ? getReceiveSubmission(sub) : undefined
+  let plan = rec?.plan
+  if (!rec?.steps?.products) {
+    const r = products.receiveProducts(
       entries.map(e => ({
         name: e.name, barcode: e.barcode, category: e.category,
         stock: e.quantity, cost: e.cost, price: e.price,
@@ -662,75 +861,53 @@ export async function receiveAndRecord(
         image: e.image,
         parentId: e.parentId,
         variantName: e.variantName,
-      }))
+      })),
+      {
+        submissionId: sub,
+        // Journaled right after the one products write, before any lot or operation.
+        onProductsWritten: (w) => {
+          plan = { results: w.results, lots: w.batchInputs, createdProductIds: w.createdProductIds, modifiedProductIds: w.modifiedProductIds }
+          if (sub) markReceiveStep(sub, "products", { plan })
+        },
+      },
     )
-    const results: ReceiveRowResult[] = entries.map((e, i) => {
-      const r = receiveResult.results[i]
-      return r?.accepted === false ? { rowId: rowIdOf(e, i), status: "rejected", reason: r.error } : { rowId: rowIdOf(e, i), status: "accepted" }
+    plan = plan ?? { results: r.results, lots: [], createdProductIds: r.newlyCreated.map((p) => p.id), modifiedProductIds: r.modifiedExisting.map((p) => p.id) }
+    } else if (!rec.steps.followUps && plan) {
+    const all = products.getProductsSync()
+    const syncIdOf = new Map(plan.lots.map((l) => [l.productId, l.productSyncId]))
+    const pick = (ids: number[]) => ids.map((id) => {
+      const p = all.find((x) => x.id === id && (!syncIdOf.get(id) || x.syncId === syncIdOf.get(id)))
+      if (!p) throw new Error(`Product #${id} written by this delivery is no longer on this device.`)
+      return p
     })
-    // The purchase order (and any payment) covers only what was actually received: a rejected
-    // row is fixed and saved again later, and must not be billed twice.
-    const received = entries.filter((_, i) => results[i].status === "accepted")
-
-    let poNumber: string | undefined
-    let paymentRecorded = false
-    const totalCost = received.reduce((s, e) => s + e.quantity * e.cost, 0)
-
-    if (context?.supplierId && totalCost > 0) {
-      try {
-        const po = recordPurchaseOrder({
-          supplierId: context.supplierId,
-          supplierName: context.supplierName ?? "",
-          status: "Draft",
-          invoiceNumber: context.invoiceNumber ?? "",
-          note: context.note ?? "",
-          paymentMethod: context.paymentMethod ?? "On Account",
-          paidAmount: context.paymentMethod && context.paymentMethod !== "On Account" ? totalCost : 0,
-          items: received.map(e => ({
-            name: e.name, barcode: e.barcode, quantity: e.quantity,
-            unitCost: e.cost, unitPrice: e.price, total: e.quantity * e.cost,
-          })),
-        })
-        poNumber = po.poNumber
-        paymentRecorded = context.paymentMethod !== undefined && context.paymentMethod !== "On Account"
-
-        // Now update PO to Received status
-        const orders = getPurchaseOrders()
-        const createdPo = orders.find(o => o.id === po.id)
-        if (createdPo) {
-          createdPo.status = "Received"
-          createdPo.receivedAt = new Date().toISOString()
-          writePurchaseOrders(orders)
-          // writePurchaseOrders() only writes local storage — it does not sync.
-          // Without this, the server never learns the PO left Draft, so its
-          // status stays permanently out of sync with every device that pulls it.
-          enqueueSyncOperation({
-            entity: "purchase-order",
-            action: "update",
-            summary: `${createdPo.poNumber} marked Received.`,
-            payload: createdPo,
-          })
-        }
-      } catch { /* PO creation failure is non-fatal */ }
-    }
-
-    const summary = {
-      acceptedCount: receiveResult.acceptedCount,
-      rejectedCount: receiveResult.rejectedCount,
-      productsCreated: receiveResult.newlyCreated.length,
-      productsUpdated: receiveResult.modifiedExisting.length,
-      batchesCreated: receiveResult.batchesCreated,
-      poNumber,
-      paymentRecorded,
-      totalValue: totalCost,
-      units: received.reduce((s, e) => s + e.quantity, 0),
-    }
-    if (submission) commitReceiveSubmission(submission, results, summary)
-    return { ...summary, errors: receiveResult.errors, results, submissionId: submission?.id }
-  } catch (err) {
-    if (!submission) throw err
-    // Products, lots, PO or payment may be partly written: never report "nothing happened".
-    try { noteReceiveFailure(submission, String((err as Error)?.message ?? err)) } catch { /* the started entry stands */ }
-    throw new ReceiveOutcomeUnknownError(submission.id, err)
+    products.applyReceiveFollowUps({ newlyCreated: pick(plan.createdProductIds), modifiedExisting: pick(plan.modifiedProductIds), batchInputs: plan.lots, submissionId: sub })
+  }
+  if (!plan) throw new Error("The delivery's products step has no recorded plan.")
+  if (sub) assertFollowUpsQueued(sub, plan)
+  const results: ReceiveRowResult[] = entries.map((e, i) => {
+    const r = plan!.results[i]
+    return r?.accepted === false ? { rowId: rowIdOf(e, i), status: "rejected", reason: r.error } : { rowId: rowIdOf(e, i), status: "accepted" }
+  })
+  // The purchase order (and any payment) covers only what was actually received: a rejected
+  // row is fixed and saved again later, and must not be billed twice.
+  const received = entries.filter((_, i) => results[i].status === "accepted")
+  const finance = recordReceiveFinance(sub, context, received)
+  if (sub) markReceiveStep(sub, "finance")
+  const summaryRecord = {
+    acceptedCount: received.length,
+    rejectedCount: results.length - received.length,
+    productsCreated: plan.createdProductIds.length,
+    productsUpdated: plan.modifiedProductIds.length,
+    batchesCreated: plan.lots.length,
+    poNumber: finance.purchaseOrder.number,
+    paymentRecorded: finance.payment.status === "recorded",
+    totalValue: received.reduce((s, e) => s + e.quantity * e.cost, 0),
+    units: received.reduce((s, e) => s + e.quantity, 0),
+  }
+  if (sub) commitReceiveSubmission(sub, results, summaryRecord, finance, opts?.recovered ? { recovered: true } : undefined)
+  return {
+    ...summaryRecord,
+    errors: results.filter((r) => r.status === "rejected").map((r) => r.reason ?? "rejected"),
+    results, purchaseOrder: finance.purchaseOrder, payment: finance.payment, submissionId: sub,
   }
 }

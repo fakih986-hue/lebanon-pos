@@ -207,9 +207,30 @@ export function subscribeProducts(callback: (products: Product[]) => void) {
   }
 }
 
-export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening?: boolean }) {
+/** What a receive wrote to the catalog, recorded by receiving submissions so the rest of the
+ *  receive (sync operations, lots, movements) can be completed later without repeating it. */
+export type ReceiveProductsWritten = {
+  results: Array<{ accepted: boolean; error?: string }>
+  batchInputs: ReceiveBatchInput[]
+  createdProductIds: number[]
+  modifiedProductIds: number[]
+}
+
+export function receiveProducts(
+  entries: ProductReceiveInput[],
+  opts?: {
+    opening?: boolean
+    /** Receiving submission: new products, lots, movements and sync operations get ids derived
+     *  from it, so every effect can be found again and is never applied twice. */
+    submissionId?: string
+    /** Called right after products and stock are written (one storage write), before anything else. */
+    onProductsWritten?: (written: ReceiveProductsWritten) => void
+  }
+) {
   assertCanWrite("receive products")
   const opening = opts?.opening === true
+  const sub = opts?.submissionId
+  const lotIds = (index: number) => (sub ? { id: `${sub}-lot-${index}`, movementId: `${sub}-mv-${index}` } : {})
   const currentProducts = getProductsSync()
   const nextProducts = [...currentProducts]
   let nextId =
@@ -273,6 +294,7 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
       }
       const updatedTarget = nextProducts[targetIndex]
       batchInputs.push({
+        ...lotIds(index),
         productId: updatedTarget.id,
         productSyncId: updatedTarget.syncId ?? undefined,
         productName: updatedTarget.name,
@@ -334,6 +356,7 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
       const updatedProduct = nextProducts[existingIndex]
 
       batchInputs.push({
+        ...lotIds(index),
         productId: updatedProduct.id,
         productSyncId: updatedProduct.syncId ?? undefined,
         productName: updatedProduct.name,
@@ -351,7 +374,7 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
 
     const product: Product = {
       id: nextId,
-      syncId: createId(),
+      syncId: sub ? `${sub}-p${index}` : createId(),
       name,
       price: entry.price,
       cost: entry.cost,
@@ -383,6 +406,7 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
       }
     }
     batchInputs.push({
+        ...lotIds(index),
       productId: product.id,
       productSyncId: product.syncId ?? undefined,
       productName: product.name,
@@ -402,8 +426,37 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
   const newlyCreated = nextProducts.filter(
     (p) => !currentProducts.find((c) => c.id === p.id)
   )
+  const modifiedExisting = nextProducts.filter(
+    (p) => currentProducts.find((c) => c.id === p.id && JSON.stringify(c) !== JSON.stringify(p))
+  )
+  opts?.onProductsWritten?.({
+    results, batchInputs,
+    createdProductIds: newlyCreated.map((p) => p.id),
+    modifiedProductIds: modifiedExisting.map((p) => p.id),
+  })
+
+  const batchesCreated = applyReceiveFollowUps({ newlyCreated, modifiedExisting, batchInputs, opening, submissionId: sub })
+
+  const acceptedCount = newlyCreated.length + modifiedExisting.length
+  return { acceptedCount, rejectedCount, errors, results, newlyCreated, modifiedExisting, batchesCreated }
+}
+
+/**
+ * The part of a receive after products and stock are written: product sync operations, then the
+ * lots (with their movements and the inventory/receive operation). With a submission id every
+ * step is idempotent (fixed ids), so a resumed receive completes only what is missing.
+ */
+export function applyReceiveFollowUps(input: {
+  newlyCreated: Product[]
+  modifiedExisting: Product[]
+  batchInputs: ReceiveBatchInput[]
+  opening?: boolean
+  submissionId?: string
+}) {
+  const { newlyCreated, modifiedExisting, batchInputs, opening, submissionId: sub } = input
   if (newlyCreated.length > 0) {
     enqueueSyncOperation({
+      id: sub ? `${sub}-op-products` : undefined,
       entity: "product",
       action: "create",
       summary: `${newlyCreated.length} receiving line${
@@ -416,9 +469,6 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
     })
   }
 
-  const modifiedExisting = nextProducts.filter(
-    (p) => currentProducts.find((c) => c.id === p.id && JSON.stringify(c) !== JSON.stringify(p))
-  )
   for (const mod of modifiedExisting) {
     // POS-SYNC-RECEIVE-1: metadata-only update (price/cost/reorder/supplier/
     // expiry). The received quantity is applied by the inventory/receive handler,
@@ -426,6 +476,7 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
     // from every product.update unconditionally.
     const { stock: _stock, ...meta } = mod
     enqueueSyncOperation({
+      id: sub ? `${sub}-op-product-${mod.id}` : undefined,
       entity: "product",
       action: "update",
       summary: `${mod.name} details updated.`,
@@ -436,13 +487,10 @@ export function receiveProducts(entries: ProductReceiveInput[], opts?: { opening
   // Enqueue inventory receives AFTER product creates/updates
   let batchesCreated = 0
   if (batchInputs.length > 0) {
-    const receive = opening ? openingInventoryBatches : receiveInventoryBatches
-    const batches = receive(batchInputs)
+    const batches = receiveInventoryBatches(batchInputs, { opening, syncOpId: sub ? `${sub}-op-receive` : undefined })
     batchesCreated = batches.length
   }
-
-  const acceptedCount = newlyCreated.length + modifiedExisting.length
-  return { acceptedCount, rejectedCount, errors, results, newlyCreated, modifiedExisting, batchesCreated }
+  return batchesCreated
 }
 
 export function updateProduct(productId: number, patch: Partial<Product>) {
@@ -1226,4 +1274,23 @@ export async function getReconciliationIssues(): Promise<ReconciliationIssue[]> 
   }
 
   return issues.sort((a, b) => a.severity === "error" ? -1 : 1)
+}
+
+/**
+ * Receiving recovery only: take back stock that a receive wrote to this device's product record
+ * but never sent anywhere (its lot, and so its inventory/receive operation, was never written).
+ * Local on purpose: the server never added this stock, so there is nothing to sync. Never lower
+ * than zero; returns the stock before and after.
+ */
+export function revertUnsentReceiveStock(productId: number, quantity: number) {
+  assertCanWrite("revert unsent receive stock")
+  const all = getProductsSync()
+  const index = all.findIndex((p) => p.id === productId)
+  if (index < 0) throw new Error(`Product #${productId} is not on this device.`)
+  const before = all[index].stock
+  const after = Math.max(0, before - Math.max(0, quantity))
+  const next = [...all]
+  next[index] = { ...all[index], stock: after }
+  writeProducts(next)
+  return { before, after }
 }

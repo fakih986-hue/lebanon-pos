@@ -44,9 +44,12 @@ export function getStockMovements(): StockMovement[] {
 export function recordStockMovement(params: {
   productId: number; productName: string; type: MovementType;
   quantity: number; reference: string; note?: string; userId?: string; userName?: string;
+  /** A fixed id makes the record idempotent: a movement with this id is never written twice. */
+  id?: string;
 }) {
   if (!canUseStorage()) return
   const existing = getMovements()
+  if (params.id && existing.some((m) => m.id === params.id)) return
   // Calculate running balance for this product
   const prevBalance = existing
     .filter(m => m.productId === params.productId)
@@ -54,7 +57,7 @@ export function recordStockMovement(params: {
   const balance = prevBalance + params.quantity
 
   const movement: StockMovement = {
-    id: createId("stkmv"),
+    id: params.id ?? createId("stkmv"),
     productId: params.productId,
     productName: params.productName,
     type: params.type,
@@ -126,6 +129,9 @@ export type ReceiveBatchInput = {
   supplierId?: string
   supplierName?: string
   purchaseOrderNumber?: string
+  /** Fixed lot and movement ids (receiving submissions): a lot with this id is never written twice. */
+  id?: string
+  movementId?: string
 }
 
 export type ConsumeBatchInput = {
@@ -224,14 +230,18 @@ export function openingInventoryBatches(entries: ReceiveBatchInput[]) {
   return receiveInventoryBatches(entries, { opening: true })
 }
 
-export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { opening?: boolean }) {
+export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { opening?: boolean; syncOpId?: string }) {
   assertCanWrite("receive inventory batches")
   const opening = opts?.opening === true
   const now = new Date().toISOString()
+  const known = new Set(getInventoryBatches().map((b) => b.id))
+  // Lots with fixed ids that already exist are not written again; their movements and the
+  // receive operation are still completed below (each is idempotent by its own id).
+  const existing = entries.filter((entry) => entry.id && known.has(entry.id))
   const batches = entries
-    .filter((entry) => entry.quantity > 0)
+    .filter((entry) => entry.quantity > 0 && !(entry.id && known.has(entry.id)))
     .map<InventoryBatch>((entry) => ({
-      id: createId("batch"),
+      id: entry.id ?? createId("batch"),
       batchNumber: entry.purchaseOrderNumber || (opening ? createOpeningBatchNumber() : createBatchNumber()),
       productId: entry.productId,
       productSyncId: entry.productSyncId,
@@ -249,15 +259,19 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { o
       status: "Open",
     }))
 
-  if (batches.length === 0) {
+  const movementIdOf = new Map(entries.filter((e) => e.id && e.movementId).map((e) => [e.id as string, e.movementId as string]))
+  if (batches.length > 0) writeBatches([...batches, ...getInventoryBatches()])
+  const all = [...batches, ...getInventoryBatches().filter((b) => existing.some((e) => e.id === b.id))]
+  if (all.length === 0) {
     return []
   }
 
-  writeBatches([...batches, ...getInventoryBatches()])
-
   // Record stock movements for each batch — Opening for first-setup, else Receive.
-  for (const b of batches) {
+  for (const b of all) {
+    // Without a fixed id a movement is only recorded for a lot written now.
+    if (!movementIdOf.has(b.id) && !batches.includes(b)) continue
     recordStockMovement({
+      id: movementIdOf.get(b.id),
       productId: b.productId, productName: b.productName,
       type: opening ? "Opening" : "Receive", quantity: b.initialQuantity,
       reference: b.batchNumber,
@@ -268,14 +282,21 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { o
   }
 
   enqueueSyncOperation({
+    id: opts?.syncOpId,
     entity: "inventory",
     action: "receive",
-    summary: `${batches.length} ${opening ? "opening" : "inventory"} batch${
-      batches.length === 1 ? "" : "es"
+    summary: `${all.length} ${opening ? "opening" : "inventory"} batch${
+      all.length === 1 ? "" : "es"
     } queued for sync.`,
     // The `opening` flag rides the sync payload only (not the stored batch row);
     // the server strips it and tags the movement Opening vs Receive.
-    payload: opening ? batches.map((b) => ({ ...b, opening: true })) : batches,
+    // The server creates each lot (and adds its stock) once per lot id, so a resent lot is harmless.
+    // A lot written earlier (a resumed receive) has never reached the server yet: it is sent as
+    // received, so the server adds the received quantity; sales already queued then take theirs.
+    payload: all.map((b) => {
+      const first = batches.includes(b) ? b : { ...b, quantityRemaining: b.initialQuantity, status: "Open" as const }
+      return opening ? { ...first, opening: true } : first
+    }),
   })
 
   return batches

@@ -768,7 +768,10 @@ export type SyncStatus = {
   recentErrors: string[]
 }
 
-type EnqueueSyncInput = Pick<SyncOperation, "entity" | "action" | "summary" | "payload">
+type EnqueueSyncInput = Pick<SyncOperation, "entity" | "action" | "summary" | "payload"> & {
+  /** A caller-chosen id makes the enqueue idempotent: an operation with this id is never queued twice. */
+  id?: string
+}
 
 let autoFlushTimer: number | undefined
 
@@ -1067,8 +1070,12 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
     return undefined
   }
 
+  if (input.id) {
+    const existing = getSyncQueue().find((op) => op.id === input.id)
+    if (existing) return existing
+  }
   const operation: SyncOperation = {
-    id: createId(),
+    id: input.id ?? createId(),
     entity: input.entity,
     action: input.action,
     summary: input.summary,
