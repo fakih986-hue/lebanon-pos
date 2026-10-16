@@ -162,7 +162,29 @@ show("C. LBP sale, $1.50 then the rest", sale({ paidUsd: 0, paidLbp: 600_000, ch
 show("D. sale rounded up (605,000 kept), four partials of $1.68", sale({ paidUsd: 0, paidLbp: 605_000, changeIn: "LBP" }, P("up", "nearest")), [1.68, 1.68, 1.68, 1.68], P("up", "nearest"))
 show("E. mixed $5 + 155,000 kept, half then half", sale({ paidUsd: 5, paidLbp: 200_000, changeIn: "LBP" }), [3.36, 3.36])
 show("F. mixed $5 + 155,000 kept, three partials", sale({ paidUsd: 5, paidLbp: 200_000, changeIn: "LBP" }), [1.0, 2.5, 3.22])
-show("G. $10 paid, change 295,000 LBP (LBP leg negative → netted into USD)", sale({ paidUsd: 10, paidLbp: 0, changeIn: "LBP" }), [6.72])
+// G. Cross-currency change: $10 received, 295,000 LBP handed back. TWO physical movements
+// (+$10.00, −295,000 LBP). A refund either reverses both, or converts the net into one
+// currency, which is an explicit exchange at the sale's rate with its own cent/note rounding.
+{
+  const g = sale({ paidUsd: 10, paidLbp: 0, changeIn: "LBP" })
+  const netValue = g.keptValueLbp                         // 895,000 − 295,000 = 600,000 LBP of value
+  const exactUsd = netValue / rate                        // 6.7039106… — not a whole number of cents
+  const usdCents = Math.floor(exactUsd * 100 + 1e-9)      // cent rounding (down: never above the value kept)
+  const usdResidualLbp = netValue - Math.round((usdCents / 100) * rate)
+  const lbpNotes = roundTo(netValue, rec.change.denomLbp, "down")
+  console.log("G. $10 received, 295,000 LBP returned:", g.movements.map(fmt).join(", "), "| net value", netValue.toLocaleString("en"), "LBP at", rate)
+  console.log("   option 1, reverse both movements:", JSON.stringify({ drawer: "−$10.00, +295,000 LBP (customer hands back the LBP change)", conversion: "none", residualLbp: 0 }))
+  console.log("   option 2, convert the net to USD:", JSON.stringify({ exactUsd: exactUsd.toFixed(7), paid: `$${(usdCents / 100).toFixed(2)}`, centRounding: "down", residualLbp: usdResidualLbp, residualUsd: (usdResidualLbp / rate).toFixed(5), drawer: `−$${(usdCents / 100).toFixed(2)}` }))
+  console.log("   option 3, convert the net to LBP:", JSON.stringify({ paid: `${lbpNotes.toLocaleString("en")} LBP`, noteRounding: "down to 5,000", residualLbp: netValue - lbpNotes, drawer: `−${lbpNotes.toLocaleString("en")} LBP` }))
+  // Partial refund of half ($3.36), then the rest, converting to USD: cumulative on the net value, last exact to the cent.
+  let paidValue = 0
+  for (const [i, share] of [[1, 0.5], [2, 1]] as const) {
+    const target = Math.round(netValue * share)
+    const cents = Math.floor((target - paidValue) / rate * 100 + 1e-9)
+    paidValue += Math.round((cents / 100) * rate)
+    console.log(`   option 2, refund ${i} of 2:`, JSON.stringify({ targetValueLbp: target, paid: `$${(cents / 100).toFixed(2)}`, paidValueSoFar: paidValue, residualLbp: target - paidValue }))
+  }
+}
 console.log("naive per-refund round-up for D:", [1.68, 1.68, 1.68, 1.68].reduce((s, a) => s + ceilLbp(Math.round(a * rate), 5000), 0).toLocaleString("en"), "LBP back for 605,000 received")
 
 console.log("\n── 5. Drawer per currency (one shift; float $100 + 0 LBP) ──")

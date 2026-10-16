@@ -97,7 +97,7 @@ The sale `total` is not changed. The receipt prints only the change actually han
 
 **Proposed rule:**
 1. **The refund amount is unchanged.** `previewRefund` and `assertRefundAmount` still decide each refund's USD amount from `sale.total` and prior refunds.
-2. **The breakdown is what the customer net paid in each currency:** tendered − change, per currency. If the change in one currency exceeded what was paid in it (for example, $10 paid and 295,000 LBP change), that currency's net is negative. It is netted into the other currency at the sale's rate, so the refund comes back in the currency that was actually paid.
+2. **The breakdown is what the customer net paid in each currency:** tendered − change, per currency. When both are zero or positive, each currency is refunded in itself. When change was given in a *different* currency (for example, $10 received and 295,000 LBP handed back), the sale moved **two currencies in opposite directions**. It cannot be refunded in "the original tender" by a single payout. See *Cross-currency change* below.
 3. **Each currency is allocated cumulatively.** After refunds totalling ΣA, the target for that currency is its net paid × ΣA / total, rounded once: USD down to the cent, LBP to the nearest change denomination. The target never exceeds that currency's net. Each payout is the target minus what that currency has already paid back.
 4. **The last refund pays the exact remainder of each currency.** The total paid back equals the breakdown, per currency, and never exceeds it.
 5. **Override.** If the drawer lacks a currency, a cashier can pay that leg in the other one. This is recorded as an explicit exchange at the sale's rate, with its own adjustment. It is never the default.
@@ -110,7 +110,32 @@ The sale `total` is not changed. The receipt prints only the change actually han
 | D. Sale rounded up (605,000 kept), four × $1.68 | 605,000 LBP | 150,000 + 155,000 + 150,000 + 150,000 | **605,000 LBP** (the rejected rule pays 620,000) |
 | E. Mixed $5 + 155,000 kept, half then half | $5.00 + 155,000 LBP | $2.50 + 80,000, then $2.50 + 75,000 | $5.00 + 155,000 LBP |
 | F. Mixed, three partials ($1.00, $2.50, $3.22) | $5.00 + 155,000 LBP | $0.74 + 25,000; $1.86 + 55,000; $2.40 + 75,000 | $5.00 + 155,000 LBP |
-| G. $10 paid, 295,000 LBP change | $6.70 (LBP leg netted into USD) | $6.70 | $6.70; 350 LBP of value, under one cent, stays and is recorded |
+| G. $10 received, 295,000 LBP returned | Two movements: +$10.00, −295,000 LBP | See below | See below |
+
+### Cross-currency change: $10 received, 295,000 LBP returned
+
+The sale's drawer movements are **+$10.00** and **−295,000 LBP**.
+
+- **Net value** at the sale's rate: 10 × 89,500 − 295,000 = **600,000 LBP**, which is $6.7039106…
+- The sale total is $6.72 (601,440 LBP). The difference of −1,440 LBP is the change-rounding adjustment the sale already recorded.
+
+There are three ways to refund it in full. **Only option 1 preserves the original tender**; options 2 and 3 are conversions.
+
+| Option | Drawer movements | Conversion | Rounding | Residual (kept, recorded) |
+|---|---|---|---|---|
+| **1. Reverse both movements** | −$10.00, **+295,000 LBP** (the customer hands back the LBP change) | none | none | **0** |
+| **2. Convert the net to USD** | −$6.70 | 600,000 LBP ÷ 89,500 = $6.7039106 | cents, **down** (never above the value kept) | **350 LBP** ($0.0039) |
+| **3. Convert the net to LBP** | −600,000 LBP | the $10 leg, at 89,500 | down to 5,000 (600,000 is already a multiple) | **0** |
+
+- Option 1 is the only exact reversal. It works only if the customer still has the change notes.
+- Options 2 and 3 are **explicit exchanges at the sale's rate**. The refund records the conversion, the rounding and the residual. Neither is described as preserving the original tender.
+- With option 2, $6.70 is a cent-rounded conversion of the net value, not the original payment.
+- **Partial refunds of this sale** are practical only as conversions; a pro-rata reversal would ask the customer to return part of the LBP change. Option 2, half then the rest:
+  - First refund: target 300,000 LBP of value, so $3.35, leaving 175 LBP.
+  - Second (last) refund: target 600,000, so $3.35, leaving 350 LBP in total.
+
+  The residual never exceeds one cent of value, and it is recorded on the refund.
+- **Proposed default** (decision 5b): offer option 1 first. If the customer can't return the change, the cashier picks option 2 or 3. The receipt prints the conversion line ("$10.00 received, 295,000 LBP change → refunded $6.70 at 89,500; 350 LBP kept").
 
 Each refund records:
 - its USD amount (the existing `total`);
@@ -184,6 +209,7 @@ The per-currency drawer does not depend on the rounding decisions: it can ship f
 | 3 | Change rounding mode and denomination | **Nearest, 5,000**. Alternative: down |
 | 4 | USD change | **Cents**. Option: whole dollars, the rest in LBP |
 | 5 | Refunds | **Original tender breakdown per currency, allocated cumulatively**, last refund exact. Override only as a recorded exchange at the sale's rate |
+| 5b | Cross-currency change refunds | Offer the **exact two-currency reversal** first; otherwise an explicit conversion (to USD with cents down, or to LBP notes), recording rate, rounding and residual |
 | 6 | Non-sale drawer movements | Add a currency and LBP amount to expenses, supplier payments, cash in/out and the float, so both ledgers are exact. Planned as its own sprint: `docs/DUAL-CURRENCY-ACCOUNTING-SPRINT.md` |
 | 7 | Close | **Count USD and LBP separately**; per-currency variance first; the USD-equivalent labelled with its rate |
 | 8 | Activation | Server-owned setting, gated on every device at schema 3; effective from each register's next shift |
