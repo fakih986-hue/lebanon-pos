@@ -135,8 +135,8 @@ The mocked contract test asserts that the lock precedes both the sale read and t
 
 - **Full pulls.** `preserveLocalOnlyRecords` keeps local refunds that are unsynced, conflicted or settled, plus local-only refund credits.
 - **Restart.** Conflicts live in the persisted queue; settlements resume at startup.
-- **Store switch.** `clearStoreData` first stashes the open conflicts per store: the ops, their refunds, local credits and settlement records (`stashMoneyConflictsForStore`, keyed by the store subdomain). The connect flow restores them after the store's pull (`restoreStashedMoneyConflicts`, `LoginScreen.tsx`).
-- **Tested.** Switching to another store shows nothing of the first store's conflicts; switching back restores them. The same tests cover restart and full pull.
+- **Store switch.** `clearStoreData` first resolves interrupted refunds in their own store, then stashes the open conflicts, unsent operations, their refunds, local credits, settlement records and any remaining refund journal (`stashMoneyConflictsForStore`). The stash is keyed by the **immutable tenant id** from the server-issued token, never the subdomain; an unknown tenant is kept but never restored automatically. The connect flow restores them after the store's pull (`restoreStashedMoneyConflicts`, `LoginScreen.tsx`). Details: `STOCK-ACCOUNTING-REVIEW.md` R2.
+- **Tested.** Another tenant on the same subdomain sees nothing of the first tenant's conflicts; returning to the first tenant (even under a renamed subdomain) restores them. An interrupted refund never changes the next tenant's stock. The same tests cover restart and full pull.
 
 ### 4.8 Rollback limits once new refunds exist
 
@@ -156,7 +156,7 @@ Refunds recorded under the new rules stay correct as history. New activity after
 **Credits.** Credits the new server created as `refund-credit:<id>` stay correct after a rollback. But an **old cloud plus old clients** will again accept a separate credit for a refund it rejected.
 
 **After the hub release (1.0.49+) ships, the cloud must not be rolled back alone.**
-- **Refunds.** New hubs push refunds with `saleLineId`, `exchangeRate` and `rateSource`. The old cloud's refund handler spreads the payload into Prisma with a client generated *without* those fields, so it raises "Unknown argument". New hubs' refunds would then fail to sync until the cloud is rolled forward again. They would not be lost, but they would be stuck.
+- **Refunds.** No longer stuck: the refund sync payload omits `exchangeRate`/`rateSource` (the server resolves the rate from the sale), and `saleLineId` travels inside items, which the old handler maps field by field. A test pins the payload to the old columns. The old cloud does apply its old, weaker refund rules.
 - **Debt-refund credits.** The till no longer pushes the credit at all. The old cloud never creates it, so debt-refund credits from new hubs would be missing on an old cloud.
 
 **So: before the hub release, cloud rollback is the normal "redeploy previous image". After it, roll forward instead.**
@@ -176,10 +176,9 @@ The Electron hub applies the same migration at startup. Old hubs keep working ag
 
 ## 6. Known follow-ups (not in this sprint)
 
-- `StockAdjustment` is unique per `(tenantId, adjustmentNumber)`, and the number is generated per device (`ADJ-00001`). Two devices' first adjustments collide; the second retries until dead. This is pre-existing.
-- `refundNumber` is generated on the client; a collision makes that refund retry until dead. Pre-existing.
+- ~~Adjustment / refund / count number collisions~~: fixed (migration `20261016130000_reference_numbers_not_unique`, `STOCK-ACCOUNTING-REVIEW.md` R1). **Still open:** sale, shift, expense and PO numbers have the same per-device pattern under unique indexes.
 - Server void of a sale not yet on the server is still a no-op. Pre-existing.
-- `reports.test.ts` "only one of two concurrent close requests succeeds" is flaky (1 of 5 runs in isolation). It is fully mocked and untouched by this work.
+- ~~`reports.test.ts` flake~~: a test-order assumption, fixed; the real-Postgres close test found and fixed a cross-tenant close and wrong expected cash (`STOCK-ACCOUNTING-REVIEW.md` R5).
 
 ## 7. Tests
 
@@ -191,4 +190,4 @@ The Electron hub applies the same migration at startup. Old hubs keep working ag
 | `apps/api/__tests__/inventory-authority.test.ts` (real Postgres) | 2 | Adjustments applied once with retries; absolute lot writes ignored |
 | `apps/desktop/src/__tests__/refundIntegrity.test.ts` | 18 | Line ids, exact lots, rollback/restart, legacy, normalization, void guard; conflicts survive clear, pull, restart and store switch; manager + note + evidence; the four cash outcomes (drawer, counted refunds, cloud entries, audit); debt keep/reverse; idempotency, resume, rejected-entry retry; EN/AR parity |
 
-Real-Postgres suites need `DATABASE_URL` pointing at a migrated **scratch** database.
+Real-Postgres suites need `DATABASE_URL` pointing at a migrated **scratch** database. The second review round adds `old-client-adjustments.test.ts`, `z-report-close.test.ts` and more tests in the suites above; see `STOCK-ACCOUNTING-REVIEW.md` §3.

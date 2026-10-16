@@ -4,7 +4,7 @@ import {
 } from "./inventoryAdjustment.service"
 import { getProductsSync } from "./product.service"
 import { recordAuditEvent } from "./security.service"
-import { enqueueSyncOperation } from "./sync.service"
+import { enqueueSyncOperation, getDeviceTag } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 
@@ -73,7 +73,7 @@ function summarizeLines(lines: StockCountLine[]) {
 }
 
 function createCountNumber(count: number) {
-  return `COUNT-${String(count + 1).padStart(5, "0")}`
+  return `COUNT-${getDeviceTag()}-${String(count + 1).padStart(5, "0")}`
 }
 
 export function getStockCounts() {

@@ -25,6 +25,7 @@ vi.mock("../src/lib/prisma", () => {
     saleRefund: aggregateModel(),
     expense: aggregateModel(),
     supplierPayment: aggregateModel(),
+    cashMovement: aggregateModel(),
     product: model(),
     staffUser: model(),
     $connect: vi.fn(),
@@ -41,7 +42,10 @@ beforeAll(startServer)
 afterAll(stopServer)
 
 describe("POST /api/reports/z-report", () => {
-  beforeEach(() => { vi.clearAllMocks() })
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked((prisma as any).cashMovement.aggregate).mockResolvedValue({ _sum: { amountUsd: 0 } })
+  })
 
   it("returns 401 without auth", async () => {
     const res = await request("POST", "/api/reports/z-report")
@@ -128,7 +132,10 @@ describe("POST /api/reports/z-report", () => {
       request("POST", "/api/reports/z-report", { token, body: { closingCash: 280 } }),
     ])
 
-    expect(res1.status).toBe(200)
-    expect(res2.status).toBe(409)
+    // Which request reaches the compare-and-set first is not deterministic;
+    // the invariant is that exactly one wins. (Asserting that request 1 wins
+    // made this test fail ~1 run in 12. The real-Postgres proof with row
+    // locks is z-report-close.test.ts.)
+    expect([res1.status, res2.status].sort()).toEqual([200, 409])
   })
 })

@@ -256,8 +256,9 @@ router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: 
 router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const body = (req as any).body ?? {}
-    // Admin JWT has empty tenantId — fall back to body parameter
-    const tenantId = (body.tenantId as string) || req.auth!.tenantId
+    // Admin JWT has empty tenantId: only then fall back to the body parameter.
+    // A tenant user always acts on their own tenant, whatever the body says.
+    const tenantId = req.auth!.tenantId || (body.tenantId as string)
     const force = body.force === true
 
     if (!tenantId) {

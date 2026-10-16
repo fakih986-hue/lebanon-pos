@@ -182,6 +182,65 @@ describe("REFUND-INTEGRITY-1 — desktop refunds", () => {
     expect(read("lebanonpos.debt-payments.v1")).toHaveLength(1)
   })
 
+  it("lot-less returned stock is sold at checkout: the register's own sequence allocates it as untracked, stock reaches 0, no lot goes negative", async () => {
+    seed()
+    // A legacy sale (no line ids, no recorded lots) refunded: 5 units come back with no lot.
+    window.localStorage.setItem(SALES_KEY, JSON.stringify([trackedSale({
+      items: [{ id: 1, name: "Cola", barcode: "111", cost: 2, quantity: 5, unitPrice: 5, total: 25 }],
+      subtotal: 25, total: 25, tender: undefined,
+    })]))
+    const { sales } = await services()
+    sales.processRefund({ saleId: "sale-1", quantities: { "legacy-product:1": 5 }, reason: "" })
+    expect(stockOf(1)).toBe(5)
+    expect(read(BATCHES_KEY).reduce((sum: number, b: any) => sum + b.quantityRemaining, 0)).toBe(0)
+
+    // Exactly what POSPage.completeSale does (offline / direct mode).
+    const batches = await import("../features/pos/services/inventoryBatch.service")
+    const cartInputs = [{ productId: 1, productName: "Cola", barcode: "111", quantity: 5, fallbackUnitCost: 2 }]
+    const dry = batches.consumeInventoryBatches(cartInputs, { dryRun: true })
+    expect(dry.get(1)).toEqual([{ batchId: "legacy-stock", batchNumber: "Legacy stock", quantity: 5, unitCost: 2 }])
+    const saleInput = {
+      saleNumber: "S-2", paymentMethod: "Cash" as const, subtotal: 25, discountTotal: 0, tax: 0, total: 25,
+      items: [{ id: 1, name: "Cola", barcode: "111", cost: 2, quantity: 5, unitPrice: 5, total: 25, batchAllocations: dry.get(1)! }],
+    }
+    sales.buildSale(saleInput as any, "sale-2") // the register's gate (open shift etc.)
+    batches.consumeInventoryBatches(cartInputs)
+    sales.recordSale(saleInput as any, { id: "sale-2" })
+    const products = await import("../features/pos/services/product.service")
+    products.decreaseProductStock([{ productId: 1, quantity: 5 }])
+
+    expect(stockOf(1)).toBe(0)
+    expect(read(BATCHES_KEY).every((b: any) => b.quantityRemaining >= 0)).toBe(true)
+    const saleOp = queue().find((op) => op.entity === "sale" && op.payload?.id === "sale-2")
+    expect(saleOp?.payload.items[0].batchAllocations).toEqual([expect.objectContaining({ batchId: "legacy-stock", quantity: 5 })])
+    // A sixth unit is refused by the register's stock gate (product stock is 0).
+    expect(read(PRODUCTS_KEY).find((p: any) => p.id === 1).stock <= 0).toBe(true)
+  })
+
+  it("the refund sync payload only carries fields a hub on the previous release accepts", async () => {
+    seed()
+    window.localStorage.setItem(SALES_KEY, JSON.stringify([trackedSale()]))
+    const { sales } = await services()
+    const refund = sales.processRefund({ saleId: "sale-1", quantities: { L1: 1 }, reason: "" })
+    // The local record keeps the original rate…
+    expect(sales.getAllRefunds().find((r) => r.id === refund.id)).toMatchObject({ exchangeRate: 89500, rateSource: "sale_tender" })
+    // …the wire payload carries only SaleRefund columns of origin/master (43230e3), plus the
+    // registerId/deviceId attribution that server strips, plus items (mapped field by field).
+    const OLD_COLUMNS = ["id", "refundNumber", "saleId", "saleNumber", "customerId", "customerName", "method", "reason", "total", "cashier", "cashierId", "shiftId", "shiftNumber", "createdAt", "registerId", "deviceId", "items"]
+    const op = queue().find((o) => o.entity === "refund" && o.payload.id === refund.id)!
+    expect(Object.keys(op.payload).filter((k) => !OLD_COLUMNS.includes(k))).toEqual([])
+  })
+
+  it("the sale sync payload only carries fields a hub on the previous release accepts", async () => {
+    seed()
+    const { sales } = await services()
+    sales.recordSale({ saleNumber: "S-9", paymentMethod: "Cash", subtotal: 5, discountTotal: 0, tax: 0, total: 5,
+      items: [{ id: 2, name: "Chips", barcode: "222", cost: 1, quantity: 1, unitPrice: 5, total: 5, batchAllocations: [] }] } as any, { id: "sale-9" })
+    const OLD_COLUMNS = ["id", "saleNumber", "paymentMethod", "customerId", "customerName", "subtotal", "discountTotal", "tax", "total", "cost", "profit", "soldAtCost", "cashier", "cashierId", "shiftId", "shiftNumber", "payableLbp", "status", "createdAt", "registerId", "deviceId", "items", "tender"]
+    const op = queue().find((o) => o.entity === "sale" && o.payload.id === "sale-9")!
+    expect(Object.keys(op.payload).filter((k) => !OLD_COLUMNS.includes(k))).toEqual([])
+  })
+
   it("legacy sales (no line ids) pool per product and restore product stock only", async () => {
     seed()
     window.localStorage.setItem(SALES_KEY, JSON.stringify([trackedSale({
@@ -278,21 +337,103 @@ describe("REFUND-INTEGRITY-1 — server-rejected refunds", () => {
     expect(conflicts.getMoneyConflicts().map((c) => c.opId)).toEqual([s.opId])
   })
 
-  it("is stashed on store switch and comes back when the device returns to that store", async () => {
+  /** A server-issued token as the device stores it (only the tenant claim matters here). */
+  const tokenFor = (tenantId: string) => `h.${btoa(JSON.stringify({ userId: "u1", tenantId, role: "Admin" })).replace(/=+$/, "")}.sig`
+  const TENANT_A = "11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+  const TENANT_B = "22222222-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+
+  it("is stashed on store switch by tenant identity: the same subdomain on another tenant restores nothing", async () => {
+    seed()
+    window.localStorage.setItem("lebanonpos.settings.v1", JSON.stringify({ subdomain: "fakih" }))
+    window.localStorage.setItem("lebanonpos.auth-token", tokenFor(TENANT_A))
+    const s = await issueThenReject()
+    await s.sync.clearStoreData()
+    expect(s.conflicts.getMoneyConflicts()).toEqual([])
+    expect(s.sync.getStashedMoneyConflictSummary()).toEqual([expect.objectContaining({ key: `tenant:${TENANT_A}`, tenantId: TENANT_A, conflicts: 1 })])
+    // A different tenant that reuses the subdomain "fakih" (another server, or a reassigned name).
+    s.sync.setAuthToken(tokenFor(TENANT_B))
+    window.localStorage.setItem("lebanonpos.settings.v1", JSON.stringify({ subdomain: "fakih" }))
+    expect(s.sync.restoreStashedMoneyConflicts()).toBe(0)
+    expect(s.conflicts.getMoneyConflicts()).toEqual([])
+    expect(s.sales.getAllRefunds()).toEqual([])
+    // Back to tenant A (even under a renamed subdomain): the conflict and its refund return.
+    s.sync.setAuthToken(tokenFor(TENANT_A))
+    window.localStorage.setItem("lebanonpos.settings.v1", JSON.stringify({ subdomain: "fakih-renamed" }))
+    expect(s.sync.restoreStashedMoneyConflicts()).toBe(1)
+    expect(s.conflicts.getMoneyConflicts().map((c) => c.opId)).toEqual([s.opId])
+    expect(s.sales.getAllRefunds().map((r) => r.id)).toContain(s.refund.id)
+    s.sync.clearAuthToken()
+  })
+
+  it("an interrupted refund is resolved in its own store before a switch and never replayed into the next tenant's stock", async () => {
+    seed()
+    window.localStorage.setItem("lebanonpos.auth-token", tokenFor(TENANT_A))
+    window.localStorage.setItem(SALES_KEY, JSON.stringify([trackedSale()]))
+    const { sales, sync } = await services()
+    // Crash after stock was restored but before the commit point.
+    sales.refundFaults.afterStep = (step) => { if (step === "stock") throw new Error("power cut") }
+    // processRefund rolls back in-process; simulate a real crash by keeping the half-applied journal.
+    const journalBefore = { refundId: "half", startedAt: "2026-10-01T00:00:00.000Z", tenantId: TENANT_A,
+      refund: { id: "half", refundNumber: "R-HALF", saleId: "sale-1", saleNumber: "S-1", total: 5, items: [] },
+      plan: [{ productId: 1, productName: "Cola", barcode: "111", quantity: 1, allocations: [{ batchId: "lot-b", quantity: 1 }] }],
+      steps: { lots: true, stock: true, committed: false, debt: false, ledger: false } }
+    sales.refundFaults.afterStep = undefined
+    window.localStorage.setItem(PRODUCTS_KEY, JSON.stringify(read(PRODUCTS_KEY).map((p: any) => (p.id === 1 ? { ...p, stock: 1 } : p))))
+    window.localStorage.setItem(BATCHES_KEY, JSON.stringify(read(BATCHES_KEY).map((b: any) => (b.id === "lot-b" ? { ...b, quantityRemaining: 1, status: "Open" } : b))))
+    window.localStorage.setItem(JOURNAL_KEY, JSON.stringify([journalBefore]))
+
+    await sync.clearStoreData()
+    // Resolved against tenant A's data before the wipe; nothing is left to replay.
+    expect(read(JOURNAL_KEY)).toEqual([])
+
+    // Tenant B: its own product id 1 and lot-b exist with stock. Startup recovery must not touch them.
+    sync.setAuthToken(tokenFor(TENANT_B))
+    window.localStorage.setItem(PRODUCTS_KEY, JSON.stringify([{ id: 1, name: "B's product", barcode: "B1", price: 9, cost: 4, stock: 7, category: "B" }]))
+    window.localStorage.setItem(BATCHES_KEY, JSON.stringify([{ id: "lot-b", batchNumber: "B", productId: 1, productName: "B's product", barcode: "B1", initialQuantity: 7, quantityRemaining: 7, unitCost: 4, unitPrice: 9, receivedAt: "2026-02-01T00:00:00.000Z", status: "Open" }]))
+    expect(sync.restoreStashedMoneyConflicts()).toBe(0)
+    expect(sales.recoverRefundJournal()).toEqual({ rolledBack: 0, completed: 0 })
+    expect(stockOf(1)).toBe(7)
+    expect(lotOf("lot-b")).toBe(7)
+
+    // Defence in depth: a journal entry stamped with another tenant is skipped, not applied.
+    window.localStorage.setItem(JOURNAL_KEY, JSON.stringify([journalBefore]))
+    expect(sales.recoverRefundJournal()).toEqual({ rolledBack: 0, completed: 0 })
+    expect(stockOf(1)).toBe(7)
+    expect(lotOf("lot-b")).toBe(7)
+    sync.clearAuthToken()
+  })
+
+  it("with no known tenant identity, stashed conflicts are kept but never restored automatically", async () => {
     seed()
     window.localStorage.setItem("lebanonpos.settings.v1", JSON.stringify({ subdomain: "fakih" }))
     const s = await issueThenReject()
     await s.sync.clearStoreData()
-    expect(s.conflicts.getMoneyConflicts()).toEqual([])
-    // Another store: nothing of fakih's appears there.
-    window.localStorage.setItem("lebanonpos.settings.v1", JSON.stringify({ subdomain: "bendo2" }))
+    const [entry] = s.sync.getStashedMoneyConflictSummary()
+    expect(entry).toMatchObject({ tenantId: null, conflicts: 1 })
+    expect(entry.key.startsWith("unbound:")).toBe(true)
+    s.sync.setAuthToken(tokenFor(TENANT_A))
     expect(s.sync.restoreStashedMoneyConflicts()).toBe(0)
-    expect(s.conflicts.getMoneyConflicts()).toEqual([])
-    // Back to fakih: the conflict and its refund are back.
-    window.localStorage.setItem("lebanonpos.settings.v1", JSON.stringify({ subdomain: "fakih" }))
-    expect(s.sync.restoreStashedMoneyConflicts()).toBe(1)
-    expect(s.conflicts.getMoneyConflicts().map((c) => c.opId)).toEqual([s.opId])
-    expect(s.sales.getAllRefunds().map((r) => r.id)).toContain(s.refund.id)
+    expect(s.sync.getStashedMoneyConflictSummary()).toHaveLength(1)
+    s.sync.clearAuthToken()
+  })
+
+  it("pending work that never reached the server survives a store switch and returns only to its tenant", async () => {
+    seed()
+    window.localStorage.setItem("lebanonpos.auth-token", tokenFor(TENANT_A))
+    window.localStorage.setItem(SALES_KEY, JSON.stringify([trackedSale()]))
+    const { sales, sync } = await services()
+    const refund = sales.processRefund({ saleId: "sale-1", quantities: { L1: 1 }, reason: "" })
+    const pendingIds = queue().filter((op) => op.status !== "Synced").map((op) => op.id)
+    expect(queue().some((op) => op.entity === "refund" && op.payload.id === refund.id && op.status === "Pending")).toBe(true)
+    await sync.clearStoreData()
+    expect(queue()).toEqual([])
+    sync.setAuthToken(tokenFor(TENANT_B))
+    expect(sync.restoreStashedMoneyConflicts()).toBe(0)
+    expect(queue()).toEqual([])
+    sync.setAuthToken(tokenFor(TENANT_A))
+    sync.restoreStashedMoneyConflicts()
+    expect(queue().map((op) => op.id).sort()).toEqual([...pendingIds].sort())
+    sync.clearAuthToken()
   })
 
   it("only a manager can settle; a note is required; 'recovered' requires how and a reference", async () => {

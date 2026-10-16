@@ -104,18 +104,41 @@ export function isSettlementEntryOperation(op: Pick<SyncOperation, "payload">) {
 // this device connects to that store again, so they are never lost.
 const MONEY_CONFLICT_STASH_KEY = "lebanonpos.money-conflict-stash.v1"
 const MONEY_CONFLICT_SETTLEMENTS_KEY = "lebanonpos.money-conflict-settlements.v1"
+const REFUND_JOURNAL_KEY = "lebanonpos.refund-journal.v1"
 
+// Stash entries are keyed by the immutable tenant id. A store subdomain alone
+// never restores anything: two tenants can share a subdomain on different
+// servers, and a subdomain can be reassigned. If the tenant is unknown (no
+// token was ever decoded on this device) the entry is kept under an "unbound"
+// key that is never restored automatically: kept, not guessed.
 function currentStoreStashKey(): string {
+  const tenantId = getCurrentTenantId()
+  if (tenantId) return `tenant:${tenantId}`
+  let subdomain = ""
   try {
     const raw = localStorage.getItem("lebanonpos.settings.v1")
     const settings = raw ? JSON.parse(raw) : null
-    const subdomain = (Array.isArray(settings) ? settings[0]?.subdomain : settings?.subdomain) ?? ""
-    if (subdomain) return `store:${String(subdomain).toLowerCase()}`
-  } catch { /* fall through */ }
-  return `url:${(getApiUrl() ?? "none").toLowerCase()}`
+    subdomain = String((Array.isArray(settings) ? settings[0]?.subdomain : settings?.subdomain) ?? "")
+  } catch { /* none */ }
+  return `unbound:${(getApiUrl() ?? "none").toLowerCase()}|${subdomain.toLowerCase()}|${Date.now()}`
 }
 
-type MoneyConflictStash = { ops: SyncOperation[]; refunds: any[]; debtCredits: any[]; settlements: any[]; stashedAt: string }
+type MoneyConflictStash = {
+  tenantId: string | null
+  ops: SyncOperation[]
+  refunds: any[]
+  debtCredits: any[]
+  settlements: any[]
+  refundJournal: any[]
+  stashedAt: string
+}
+
+/** Stashed money conflicts held on this device, per tenant (or unbound). */
+export function getStashedMoneyConflictSummary(): Array<{ key: string; tenantId: string | null; conflicts: number; stashedAt: string }> {
+  return Object.entries(readStash()).map(([key, entry]) => ({
+    key, tenantId: entry.tenantId ?? null, conflicts: (entry.ops ?? []).filter(isMoneyConflictOperation).length, stashedAt: entry.stashedAt,
+  }))
+}
 
 function readJsonArray(key: string): any[] {
   try {
@@ -130,17 +153,28 @@ function readStash(): Record<string, MoneyConflictStash> {
 
 /** Called by clearStoreData before it wipes the store's local data. */
 export function stashMoneyConflictsForStore(): number {
-  const ops = readQueue().filter((op) => isMoneyConflictOperation(op) || (op.status !== "Synced" && isSettlementEntryOperation(op)))
+  // Every operation the server has not accepted yet travels with its tenant:
+  // open money conflicts, unsent settlement entries, and any other pending or
+  // failed work (a store switch while offline used to discard it). Restored
+  // only to the same tenant, where it is pushed again.
+  const ops = readQueue().filter((op) => isMoneyConflictOperation(op) || op.status !== "Synced")
   const refundIds = new Set(ops.filter((op) => op.entity === "refund").map((op) => (op.payload as { id?: string })?.id))
   const refunds = readJsonArray("lebanonpos.refunds.v1").filter((r) => refundIds.has(r?.id) || r?.conflict)
   const debtCredits = readJsonArray("lebanonpos.debt-payments.v1").filter((p) => p?.localOnly)
   const settlements = readJsonArray(MONEY_CONFLICT_SETTLEMENTS_KEY)
-  if (ops.length + refunds.length + debtCredits.length + settlements.length === 0) return 0
+  // Interrupted refunds are recovered in their own store before a switch (see
+  // clearStoreData); anything still journaled travels with its tenant and is
+  // never replayed against another tenant's stock.
+  const refundJournal = readJsonArray(REFUND_JOURNAL_KEY)
+  localStorage.removeItem(REFUND_JOURNAL_KEY)
+  if (ops.length + refunds.length + debtCredits.length + settlements.length + refundJournal.length === 0) return 0
   const stash = readStash()
   const key = currentStoreStashKey()
   const prior = stash[key]
   const byId = (a: any[], b: any[]) => [...b, ...a.filter((x) => !b.some((y) => y?.id === x?.id || (y?.opId && y.opId === x?.opId)))]
   stash[key] = {
+    tenantId: getCurrentTenantId(),
+    refundJournal: [...(prior?.refundJournal ?? []).filter((e: any) => !refundJournal.some((n: any) => n?.refundId === e?.refundId)), ...refundJournal],
     ops: byId(prior?.ops ?? [], ops),
     refunds: byId(prior?.refunds ?? [], refunds),
     debtCredits: byId(prior?.debtCredits ?? [], debtCredits),
@@ -154,10 +188,12 @@ export function stashMoneyConflictsForStore(): number {
 
 /** Call after connecting to a store (settings pulled). Returns open conflicts restored. */
 export function restoreStashedMoneyConflicts(): number {
+  const tenantId = getCurrentTenantId()
+  if (!tenantId) return 0
   const stash = readStash()
-  const key = currentStoreStashKey()
+  const key = `tenant:${tenantId}`
   const entry = stash[key]
-  if (!entry) return 0
+  if (!entry || (entry.tenantId && entry.tenantId !== tenantId)) return 0
   const queue = readQueue()
   writeQueue([...queue, ...entry.ops.filter((op) => !queue.some((q) => q.id === op.id))])
   const merge = (storageKey: string, rows: any[]) => {
@@ -169,6 +205,10 @@ export function restoreStashedMoneyConflicts(): number {
   merge("lebanonpos.debt-payments.v1", entry.debtCredits)
   const settlements = readJsonArray(MONEY_CONFLICT_SETTLEMENTS_KEY)
   localStorage.setItem(MONEY_CONFLICT_SETTLEMENTS_KEY, JSON.stringify([...entry.settlements.filter((s) => !settlements.some((c) => c?.opId === s?.opId)), ...settlements]))
+  if (entry.refundJournal?.length) {
+    const journal = readJsonArray(REFUND_JOURNAL_KEY)
+    localStorage.setItem(REFUND_JOURNAL_KEY, JSON.stringify([...journal, ...entry.refundJournal.filter((e: any) => !journal.some((j: any) => j?.refundId === e?.refundId))]))
+  }
   delete stash[key]
   localStorage.setItem(MONEY_CONFLICT_STASH_KEY, JSON.stringify(stash))
   dispatchSyncChanged()
@@ -243,7 +283,27 @@ export function setApiUrl(url: string) {
 }
 export function setAuthToken(token: string) {
   localStorage.setItem(AUTH_TOKEN_KEY, token)
+  const tenantId = tenantIdFromToken(token)
+  if (tenantId) localStorage.setItem(TENANT_ID_KEY, tenantId)
   setupBackgroundSync()
+}
+
+// The immutable identity of the tenant whose data is on this device. A store
+// subdomain or URL can be renamed, reused or point at a different server (hub
+// vs cloud); the tenant id inside the server-issued token cannot. Persisted
+// separately so it survives a logout that clears the token.
+const TENANT_ID_KEY = "lebanonpos.tenant-id.v1"
+function tenantIdFromToken(token: string | null): string | null {
+  if (!token) return null
+  try {
+    const part = token.split(".")[1]
+    if (!part) return null
+    const json = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(part.length / 4) * 4, "=")))
+    return typeof json?.tenantId === "string" && json.tenantId ? json.tenantId : null
+  } catch { return null }
+}
+export function getCurrentTenantId(): string | null {
+  return tenantIdFromToken(getAuthToken()) ?? localStorage.getItem(TENANT_ID_KEY)
 }
 export function clearAuthToken() {
   localStorage.removeItem(AUTH_TOKEN_KEY)
@@ -342,6 +402,14 @@ export function getDeviceId(): string {
   return deviceId
 }
 
+/** Short device tag for human-readable reference numbers (R-…, ADJ-…).
+ * Numbers are references, not identities: the record id is the identity, so
+ * two devices may never be forced to agree on a counter while offline. */
+export function getDeviceTag(): string {
+  const tail = getDeviceId().replace(/[^A-Za-z0-9]/g, "").slice(-4).toUpperCase()
+  return tail || "LOCAL"
+}
+
 // ── Multi-store support ──────────────────────────────────────────────
 const KNOWN_STORES_KEY = "lebanonpos.known-stores.v1"
 
@@ -373,6 +441,12 @@ export function rememberStore(store: KnownStore) {
  * Used when switching stores so store B's data never mixes with store A's.
  */
 export async function clearStoreData() {
+  // Finish or roll back interrupted refunds while their own store's data is
+  // still here, never against the next store's stock.
+  try {
+    const { recoverRefundJournal } = await import("./sales.service")
+    recoverRefundJournal()
+  } catch (e) { console.error("[sync] refund journal recovery before store switch failed:", e) }
   // Never lose an open money conflict to a store switch.
   stashMoneyConflictsForStore()
   for (const { key } of Object.values(PULL_TARGETS)) {
@@ -392,7 +466,7 @@ export async function clearStoreData() {
   try { await clearIndexedDB() } catch (e) { console.error("[sync] clearIndexedDB failed:", e) }
 }
 
-/** Count pending sync operations that will be lost on store switch */
+/** Count pending sync operations a store switch sets aside (kept per tenant and re-sent on return) */
 export function getUnsyncedCount(): number {
   try {
     const raw = localStorage.getItem(SYNC_QUEUE_KEY)

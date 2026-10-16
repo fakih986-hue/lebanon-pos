@@ -8,7 +8,8 @@ const router = Router()
 // ── Low-stock alerts ─────────────────────────────────────────────────
 router.get("/low-stock", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    // Always the caller's own tenant: a query parameter must never select another tenant.
+    const tenantId = req.auth!.tenantId
     const products = await prisma.product.findMany({
       where: {
         tenantId,
@@ -46,7 +47,8 @@ router.get("/low-stock", requireAuth, async (req: AuthRequest, res: ServerRespon
 // ── X Report (mid-shift summary) ─────────────────────────────────────
 router.get("/x-report", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    // Always the caller's own tenant: a query parameter must never select another tenant.
+    const tenantId = req.auth!.tenantId
 
     const openShift = await prisma.shift.findFirst({
       where: { tenantId, status: "Open" },
@@ -136,7 +138,8 @@ router.get("/x-report", requireAuth, async (req: AuthRequest, res: ServerRespons
 // ── Z Report (end-of-shift summary + close) ──────────────────────────
 router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    // Always the caller's own tenant: a query parameter must never select another tenant.
+    const tenantId = req.auth!.tenantId
     const body = (req as any).body ?? {}
     const shiftId = body.shiftId as string | undefined
     const closingCash = body.closingCash as number | undefined
@@ -154,61 +157,69 @@ router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerRespon
     const since = shift.openedAt
     // Shift attribution: match by shiftId first, time fallback for old records
     const shiftFilter: any = { tenantId, OR: [{ shiftId: shift.id }, { shiftId: null, createdAt: { gte: since } }] }
-
-    const [salesAgg, refundsAgg, expensesAgg, supplierPaymentsAgg, cashSalesAgg] = await Promise.all([
-      prisma.sale.aggregate({
-        where: { ...shiftFilter, status: { not: "Voided" } },
-        _sum: { total: true, cost: true, profit: true },
-        _count: true,
-      }),
-      prisma.saleRefund.aggregate({
-        where: shiftFilter,
-        _sum: { total: true },
-      }),
-      prisma.expense.aggregate({
-        where: shiftFilter,
-        _sum: { amount: true },
-      }),
-      prisma.supplierPayment.aggregate({
-        where: shiftFilter,
-        _sum: { amount: true },
-      }),
-      prisma.sale.aggregate({
-        where: { ...shiftFilter, status: { not: "Voided" }, paymentMethod: "Cash" },
-        _sum: { total: true },
-      }),
-    ])
-
-    const cashSales = Number(cashSalesAgg._sum.total ?? 0)
-    const cashRefunds = Number(refundsAgg._sum.total ?? 0)
-    const cashExpenses = Number(expensesAgg._sum.amount ?? 0)
-    const cashSupplierPayments = Number(supplierPaymentsAgg._sum.amount ?? 0)
-    const expectedCash = Number(shift.openingFloatUsd ?? 0) + cashSales - cashRefunds - cashExpenses - cashSupplierPayments
-    const difference = (closingCash ?? 0) - expectedCash
-
     const now = new Date()
-    const updateResult = await prisma.shift.updateMany({
-      where: { id: shift.id, status: "Open" },
-      data: {
-        status: "Closed",
-        closedAt: now,
-        closedById: req.auth!.userId,
-        closedByName: (body.closedByName as string) ?? req.auth!.userId,
-        cashSalesUsd: cashSales,
-        cashRefundsUsd: cashRefunds,
-        cashExpensesUsd: cashExpenses,
-        supplierPaymentsUsd: Number(supplierPaymentsAgg._sum.amount ?? 0),
-        expectedCashUsd: expectedCash,
-        closingCashUsd: closingCash ?? 0,
-        differenceUsd: difference,
-        notes: notes ?? undefined,
-      },
+
+    // STOCK-REVIEW: claim the shift FIRST (compare-and-set on status, which
+    // takes the row lock), then compute and store the totals in the same
+    // transaction. A concurrent close blocks on the lock, then finds the shift
+    // Closed and gets 409 without computing anything. Expected cash follows
+    // the desktop drawer formula exactly (shift.service computeShiftCashBreakdown):
+    // only CASH refunds, expenses and supplier payments leave the drawer, and
+    // cash in / out movements are counted.
+    const closed = await prisma.$transaction(async (tx) => {
+      const claim = await tx.shift.updateMany({
+        where: { id: shift.id, tenantId, status: "Open" },
+        data: { status: "Closed", closedAt: now, closedById: req.auth!.userId, closedByName: (body.closedByName as string) ?? req.auth!.userId },
+      })
+      if (claim.count === 0) return null
+
+      const [salesAgg, cashRefundsAgg, cashExpensesAgg, cashSupplierPaymentsAgg, cashSalesAgg, cashInAgg, cashOutAgg] = await Promise.all([
+        tx.sale.aggregate({
+          where: { ...shiftFilter, status: { not: "Voided" } },
+          _sum: { total: true, cost: true, profit: true },
+          _count: true,
+        }),
+        tx.saleRefund.aggregate({ where: { ...shiftFilter, method: "Cash" }, _sum: { total: true } }),
+        tx.expense.aggregate({ where: { ...shiftFilter, paymentMethod: "Cash" }, _sum: { amount: true } }),
+        tx.supplierPayment.aggregate({ where: { ...shiftFilter, method: "Cash" }, _sum: { amount: true } }),
+        tx.sale.aggregate({
+          where: { ...shiftFilter, status: { not: "Voided" }, paymentMethod: "Cash" },
+          _sum: { total: true },
+        }),
+        tx.cashMovement.aggregate({ where: { ...shiftFilter, direction: "In" }, _sum: { amountUsd: true } }),
+        tx.cashMovement.aggregate({ where: { ...shiftFilter, direction: "Out" }, _sum: { amountUsd: true } }),
+      ])
+
+      const cashSales = Number(cashSalesAgg._sum.total ?? 0)
+      const cashRefunds = Number(cashRefundsAgg._sum.total ?? 0)
+      const cashExpenses = Number(cashExpensesAgg._sum.amount ?? 0)
+      const cashSupplierPayments = Number(cashSupplierPaymentsAgg._sum.amount ?? 0)
+      const cashIn = Number(cashInAgg._sum.amountUsd ?? 0)
+      const cashOut = Number(cashOutAgg._sum.amountUsd ?? 0)
+      const expectedCash = Number(shift.openingFloatUsd ?? 0) + cashSales - cashRefunds - cashExpenses - cashSupplierPayments + cashIn - cashOut
+      const difference = (closingCash ?? 0) - expectedCash
+
+      await tx.shift.updateMany({
+        where: { id: shift.id, tenantId },
+        data: {
+          cashSalesUsd: cashSales,
+          cashRefundsUsd: cashRefunds,
+          cashExpensesUsd: cashExpenses,
+          supplierPaymentsUsd: cashSupplierPayments,
+          expectedCashUsd: expectedCash,
+          closingCashUsd: closingCash ?? 0,
+          differenceUsd: difference,
+          notes: notes ?? undefined,
+        },
+      })
+      return { salesAgg, cashSales, cashRefunds, cashExpenses, cashSupplierPayments, cashIn, cashOut, expectedCash, difference }
     })
 
-    if (updateResult.count === 0) {
+    if (!closed) {
       json(res, { error: "Shift already closed" }, 409)
       return
     }
+    const { salesAgg, cashSales, cashRefunds, cashExpenses, cashSupplierPayments, cashIn, cashOut, expectedCash, difference } = closed
 
     json(res, {
       type: "Z",
@@ -229,12 +240,15 @@ router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerRespon
       },
       refunds: { total: cashRefunds },
       expenses: { total: cashExpenses },
-      supplierPayments: { total: Number(supplierPaymentsAgg._sum.amount ?? 0) },
+      supplierPayments: { total: cashSupplierPayments },
       cashReconciliation: {
         openingFloat: Number(shift.openingFloatUsd ?? 0),
         cashSales,
         cashRefunds,
         cashExpenses,
+        cashSupplierPayments,
+        cashIn,
+        cashOut,
         expectedCash,
         closingCash: closingCash ?? 0,
         difference,
@@ -250,7 +264,8 @@ router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerRespon
 // ── Margin per product/category ──────────────────────────────────────
 router.get("/margin", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    // Always the caller's own tenant: a query parameter must never select another tenant.
+    const tenantId = req.auth!.tenantId
     const days = Math.min(90, Math.max(1, Number((req as any).query?.days) || 30))
     const since = new Date(Date.now() - days * 86400000)
 
@@ -341,7 +356,8 @@ router.get("/margin", requireAuth, async (req: AuthRequest, res: ServerResponse)
 // ── Customer debt aging ──────────────────────────────────────────────
 router.get("/debt-aging", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    // Always the caller's own tenant: a query parameter must never select another tenant.
+    const tenantId = req.auth!.tenantId
 
     const [debtSales, debtPayments, customers] = await Promise.all([
       prisma.debtSale.findMany({
@@ -428,7 +444,8 @@ router.get("/debt-aging", requireAuth, async (req: AuthRequest, res: ServerRespo
 // ── Excel export ─────────────────────────────────────────────────────
 router.get("/export/:type", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    // Always the caller's own tenant: a query parameter must never select another tenant.
+    const tenantId = req.auth!.tenantId
     const type = (req as any).params?.type as string
 
     let csv: string

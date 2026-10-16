@@ -1334,9 +1334,14 @@ async function processOperation(
         // leave its credit behind. Older clients still send the credit as a
         // separate "Refund Credit" payment referencing "<R-number> return for
         // <S-number>": apply it only once its refund exists, and never twice.
-        const refundRef = typeof payload?.reference === "string" ? /^(\S+) return for /.exec(payload.reference) : null
+        // Refund numbers are per-device references, not unique: match the
+        // sale number and customer too.
+        const refundRef = typeof payload?.reference === "string" ? /^(\S+) return for (\S+)/.exec(payload.reference) : null
         if (payload?.method === "Refund Credit" && refundRef) {
-          const refund = await db.saleRefund.findFirst({ where: { tenantId, refundNumber: refundRef[1] }, select: { id: true } })
+          const refund = await db.saleRefund.findFirst({
+            where: { tenantId, refundNumber: refundRef[1], saleNumber: refundRef[2], ...(payload.customerId ? { customerId: String(payload.customerId) } : {}) },
+            select: { id: true },
+          })
           // Retryable: the refund may still be syncing. If it was rejected, this
           // credit is never applied (it exhausts its retries visibly instead).
           if (!refund) throw new Error(`Refund credit ${refundRef[1]} waits for its refund to be accepted`)

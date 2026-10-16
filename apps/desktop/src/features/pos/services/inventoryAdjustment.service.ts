@@ -9,7 +9,7 @@ import {
 } from "./product.service"
 import { recordAuditEvent } from "./security.service"
 import { canUseStorage, createId } from "../lib/storage"
-import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite, getDeviceTag } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 
 const ADJUSTMENTS_KEY = "lebanonpos.inventory-adjustments.v1"
@@ -50,7 +50,7 @@ export type RecordStockAdjustmentInput = {
 }
 
 function createAdjustmentNumber(count: number) {
-  return `ADJ-${String(count + 1).padStart(5, "0")}`
+  return `ADJ-${getDeviceTag()}-${String(count + 1).padStart(5, "0")}`
 }
 
 function readAdjustments() {

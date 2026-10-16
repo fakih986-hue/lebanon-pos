@@ -15,7 +15,7 @@ import {
   getCurrentUser,
   recordAuditEvent,
 } from "./security.service"
-import { enqueueSyncOperation, assertCanWrite, getDeviceId, getSyncQueue } from "./sync.service"
+import { enqueueSyncOperation, assertCanWrite, getCurrentTenantId, getDeviceId, getDeviceTag, getSyncQueue } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { getRegisterId } from "./settings.service"
 
@@ -517,6 +517,8 @@ type RefundJournalEntry = {
   plan: Array<{ productId: number; productName: string; barcode: string; quantity: number; allocations: AllocationSlice[] | null }>
   debt?: { customerId: string; amount: number; reference: string }
   steps: { lots: boolean; stock: boolean; committed: boolean; debt: boolean; ledger: boolean }
+  /** Tenant whose data the refund was applied to; recovery never replays it into another tenant. */
+  tenantId?: string | null
 }
 
 function readRefundJournal(): RefundJournalEntry[] {
@@ -554,6 +556,18 @@ function refundOpEnqueued(refundId: string): boolean {
   )
 }
 
+/**
+ * What a refund sends to the server. The rate is kept on the local record but
+ * not sent: the server resolves it from the persisted sale (never from the
+ * client), and a hub still on the previous release writes every top-level
+ * field it receives as a column, so an unknown column would fail the refund
+ * there until the hub is upgraded.
+ */
+function refundWirePayload(refund: SaleRefund) {
+  const { exchangeRate: _rate, rateSource: _source, conflict: _conflict, ...wire } = refund
+  return wire
+}
+
 /** Commit point: the refund record and its sync operation. Idempotent. */
 function commitRefundEntry(entry: RefundJournalEntry) {
   const all = readRefunds()
@@ -563,7 +577,7 @@ function commitRefundEntry(entry: RefundJournalEntry) {
       entity: "refund",
       action: "create",
       summary: `${entry.refund.refundNumber} refund queued for sync.`,
-      payload: entry.refund,
+      payload: refundWirePayload(entry.refund),
     })
   }
   entry.steps.committed = true
@@ -690,7 +704,7 @@ export function processRefund(input: ProcessRefundInput): SaleRefund {
 
   const refund: SaleRefund = {
     id: createId(),
-    refundNumber: `R-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`,
+    refundNumber: `R-${getDeviceTag()}-${Date.now().toString(36).toUpperCase().slice(-6)}`,
     saleId: sale.id,
     saleNumber: sale.saleNumber,
     customerId: sale.customerId,
@@ -734,6 +748,7 @@ export function processRefund(input: ProcessRefundInput): SaleRefund {
       ? { debt: { customerId: sale.customerId, amount: total, reference: `${refund.refundNumber} return for ${sale.saleNumber}` } }
       : {}),
     steps: { lots: false, stock: false, committed: false, debt: false, ledger: false },
+    tenantId: getCurrentTenantId(),
   }
 
   saveJournalEntry(entry)
@@ -778,7 +793,10 @@ export function processRefund(input: ProcessRefundInput): SaleRefund {
 export function recoverRefundJournal(): { rolledBack: number; completed: number } {
   const result = { rolledBack: 0, completed: 0 }
   if (!canUseStorage()) return result
+  const tenantId = getCurrentTenantId()
   for (const entry of readRefundJournal()) {
+    // Belongs to another tenant (it should have been stashed on the switch): leave it.
+    if (entry.tenantId && tenantId && entry.tenantId !== tenantId) continue
     try {
       const issued = readRefunds().some((refund) => refund.id === entry.refundId)
       if (!issued) {

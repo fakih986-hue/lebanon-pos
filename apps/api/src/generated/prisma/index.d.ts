@@ -46572,7 +46572,6 @@ export namespace Prisma {
 
   export type SaleRefundWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    tenantId_refundNumber?: SaleRefundTenantIdRefundNumberCompoundUniqueInput
     AND?: SaleRefundWhereInput | SaleRefundWhereInput[]
     OR?: SaleRefundWhereInput[]
     NOT?: SaleRefundWhereInput | SaleRefundWhereInput[]
@@ -46595,7 +46594,7 @@ export namespace Prisma {
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
     items?: RefundItemListRelationFilter
-  }, "id" | "tenantId_refundNumber">
+  }, "id">
 
   export type SaleRefundOrderByWithAggregationInput = {
     id?: SortOrder
@@ -47861,7 +47860,6 @@ export namespace Prisma {
 
   export type StockAdjustmentWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    tenantId_adjustmentNumber?: StockAdjustmentTenantIdAdjustmentNumberCompoundUniqueInput
     AND?: StockAdjustmentWhereInput | StockAdjustmentWhereInput[]
     OR?: StockAdjustmentWhereInput[]
     NOT?: StockAdjustmentWhereInput | StockAdjustmentWhereInput[]
@@ -47881,7 +47879,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"StockAdjustment"> | Date | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     product?: XOR<ProductScalarRelationFilter, ProductWhereInput>
-  }, "id" | "tenantId_adjustmentNumber">
+  }, "id">
 
   export type StockAdjustmentOrderByWithAggregationInput = {
     id?: SortOrder
@@ -47958,7 +47956,6 @@ export namespace Prisma {
 
   export type StockCountSessionWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    tenantId_countNumber?: StockCountSessionTenantIdCountNumberCompoundUniqueInput
     AND?: StockCountSessionWhereInput | StockCountSessionWhereInput[]
     OR?: StockCountSessionWhereInput[]
     NOT?: StockCountSessionWhereInput | StockCountSessionWhereInput[]
@@ -47971,7 +47968,7 @@ export namespace Prisma {
     totalValueImpact?: DecimalFilter<"StockCountSession"> | Decimal | DecimalJsLike | number | string
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
     lines?: StockCountLineListRelationFilter
-  }, "id" | "tenantId_countNumber">
+  }, "id">
 
   export type StockCountSessionOrderByWithAggregationInput = {
     id?: SortOrder
@@ -54055,11 +54052,6 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
-  export type SaleRefundTenantIdRefundNumberCompoundUniqueInput = {
-    tenantId: string
-    refundNumber: string
-  }
-
   export type SaleRefundCountOrderByAggregateInput = {
     id?: SortOrder
     tenantId?: SortOrder
@@ -54942,11 +54934,6 @@ export namespace Prisma {
     _max?: NestedEnumInventoryBatchStatusFilter<$PrismaModel>
   }
 
-  export type StockAdjustmentTenantIdAdjustmentNumberCompoundUniqueInput = {
-    tenantId: string
-    adjustmentNumber: string
-  }
-
   export type StockAdjustmentCountOrderByAggregateInput = {
     id?: SortOrder
     tenantId?: SortOrder
@@ -55020,11 +55007,6 @@ export namespace Prisma {
     in?: $Enums.StockCountStatus[] | ListEnumStockCountStatusFieldRefInput<$PrismaModel>
     notIn?: $Enums.StockCountStatus[] | ListEnumStockCountStatusFieldRefInput<$PrismaModel>
     not?: NestedEnumStockCountStatusFilter<$PrismaModel> | $Enums.StockCountStatus
-  }
-
-  export type StockCountSessionTenantIdCountNumberCompoundUniqueInput = {
-    tenantId: string
-    countNumber: string
   }
 
   export type StockCountSessionCountOrderByAggregateInput = {

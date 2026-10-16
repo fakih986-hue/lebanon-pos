@@ -363,4 +363,18 @@ describe("REFUND-INTEGRITY-1 against real Postgres", () => {
     const inc = await request("GET", "/api/sync/pull?since=2000-01-01T00:00:00Z")
     expect(inc.body.refunds.every((r: any) => !("rateSource" in r))).toBe(true)
   })
+  it("two devices issuing the same refund number for different sales: both refunds are accepted (numbers are references, ids are identities)", async () => {
+    const lots = await makeLots(4, 0)
+    const one = await sellTracked(2, lots, [2, 0])
+    const two = await sellTracked(2, lots, [2, 0])
+    const stock0 = await stockOf()
+    // Pre-fix devices generated R-<6 clock digits><2 random digits>: two tills can collide.
+    const a = refundPayload(one.saleId, one.lineId, 1, 5, { refundNumber: "R-12345678" })
+    const b = refundPayload(two.saleId, two.lineId, 1, 5, { refundNumber: "R-12345678" })
+    expect((await push("refund", "create", a)).status).toBe("ok")
+    expect((await push("refund", "create", b)).status).toBe("ok")
+    expect(await prisma.saleRefund.count({ where: { tenantId: TENANT_ID, refundNumber: "R-12345678" } })).toBe(2)
+    expect(await stockOf()).toBe(stock0 + 2)
+    expect(await lotOf(lots.a)).toBe(2)
+  })
 })

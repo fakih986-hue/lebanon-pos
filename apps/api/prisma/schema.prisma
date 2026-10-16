@@ -313,7 +313,7 @@ model SaleRefund {
 
   items RefundItem[]
 
-  @@unique([tenantId, refundNumber])
+  @@index([tenantId, refundNumber])
   @@index([tenantId, saleId])
 }
 
@@ -586,7 +586,7 @@ model StockAdjustment {
   valueImpact       Decimal  @db.Decimal(18, 4)
   createdAt         DateTime @default(now())
 
-  @@unique([tenantId, adjustmentNumber])
+  @@index([tenantId, adjustmentNumber])
   @@index([tenantId, productId])
 }
 
@@ -603,7 +603,7 @@ model StockCountSession {
 
   lines StockCountLine[]
 
-  @@unique([tenantId, countNumber])
+  @@index([tenantId, countNumber])
 }
 
 model StockCountLine {
