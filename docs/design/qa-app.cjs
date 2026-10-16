@@ -202,6 +202,24 @@ const SHIFT = [
   ["shift-sheet-cashier.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", setup: asCashier, steps: [openSheetFromChip, openShift, openExpense] }],
 ]
 
+// Shell top bar fit: every control visible inside the header, nothing clipped (no resize; fresh profile per size).
+const topbarFit = ["top bar fit", `
+  const h = document.querySelector("header.topbar-shell"); if (!h) return "no header"
+  const hr = h.getBoundingClientRect()
+  const clipped = [...h.querySelectorAll("button")].filter((b) => b.offsetParent !== null).filter((b) => { const r = b.getBoundingClientRect(); return r.left < hr.left - 1 || r.right > hr.right + 1 }).map((b) => b.getAttribute("aria-label") || b.textContent.trim().slice(0, 20))
+  const truncated = [...h.querySelectorAll("button, button span")].filter((b) => b.offsetParent !== null && b.scrollWidth > b.clientWidth + 1).map((b) => (b.getAttribute("aria-label") || b.textContent.trim()).slice(0, 40))
+  return "header " + Math.round(hr.width) + "px, content " + h.scrollWidth + "px; overflow=" + (h.scrollWidth > h.clientWidth + 1) + "; clipped: " + (clipped.join(", ") || "none") + "; truncated: " + (truncated.join(", ") || "none") + "; page overflowX=" + (document.documentElement.scrollWidth > innerWidth + 1)`, 100]
+const SHELL = [
+  ["shell-topbar.en.dark.tablet", { w: 768, h: 1024, mobile: true, steps: [openSheetFromChip, openShift, escSheet, topbarFit] }],
+  ["shell-topbar.ar.dark.tablet", { w: 768, h: 1024, mobile: true, lang: "ar", steps: [openSheetFromChip, openShift, escSheet, topbarFit] }],
+  ["shell-topbar.en.light.tablet-landscape", { w: 1024, h: 768, theme: "light", steps: [openShift, topbarFit] }],
+  ["shell-topbar.en.dark.tablet-820", { w: 820, h: 1180, mobile: true, steps: [openSheetFromChip, openShift, escSheet, topbarFit] }],
+  ["shell-topbar-noshift.en.dark.tablet", { w: 768, h: 1024, mobile: true, steps: [topbarFit] }],
+  ["shell-topbar.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [openSheetFromChip, openShift, escSheet, topbarFit] }],
+  ["shell-topbar.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", steps: [openSheetFromChip, openShift, escSheet, topbarFit] }],
+  ["shell-topbar.en.dark.mobile-360", { w: 360, h: 780, mobile: true, steps: [openSheetFromChip, openShift, escSheet, topbarFit] }],
+]
+
 const SCENES = [
   ["register-cash.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid] }],
   ["register-cash.en.light.desktop", { w: 1440, h: 900, theme: "light", steps: [openShift, addTiles, cashPaid] }],
@@ -224,7 +242,7 @@ const SCENES = [
     const cdp = new CDP(ws); await cdp.open()
     const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null
     const results = []
-    for (const [name, opts] of (process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
+    for (const [name, opts] of (process.env.SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
     fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify({ base: BASE, at: new Date().toISOString(), results }, null, 2))
   } finally { chrome.kill() }
 })().catch((e) => { console.error(e); process.exit(1) })

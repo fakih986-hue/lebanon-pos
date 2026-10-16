@@ -162,13 +162,14 @@ export default function SyncStatus() {
         ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex min-h-[40px] items-center gap-2 rounded-full border px-3 text-[13px] font-semibold transition hover:opacity-80"
+        className="flex min-h-[40px] min-w-[40px] items-center justify-center gap-2 rounded-full border px-2.5 text-[13px] font-semibold transition hover:opacity-80 sm:px-3"
         aria-label={`${t("sync.v2.capsule")}: ${label}`}
         aria-expanded={open}
         style={{ background: pillBg, borderColor: pillBorder, color: pillColor }}
       >
         <Icon size={15} className="shrink-0" />
-        <span className="max-w-[120px] truncate whitespace-nowrap sm:max-w-none">{label}</span>
+        {/* Phones: icon only (colour + icon carry the state, aria-label the words); the panel has the detail. */}
+        <span className="hidden whitespace-nowrap sm:inline">{label}</span>
       </button>
 
       {open && createPortal(

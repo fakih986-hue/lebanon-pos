@@ -50,7 +50,7 @@ export default function Topbar() {
   const isPosRoute = location.pathname === "/"
 
   return (
-    <header className={`topbar-shell flex shrink-0 items-center justify-between gap-3 border-b px-4 sm:px-6 ${isPosRoute ? "min-h-[56px]" : "min-h-[64px]"}`}>
+    <header className={`topbar-shell flex shrink-0 items-center justify-between gap-2 border-b px-3 sm:gap-3 sm:px-6 ${isPosRoute ? "min-h-[56px]" : "min-h-[64px]"}`}>
       {!isPosRoute && (
         <div className="min-w-0">
           <h2 className="truncate text-lg font-bold leading-tight tracking-tight sm:text-xl" style={{ color: "var(--text)" }}>
@@ -63,20 +63,21 @@ export default function Topbar() {
       )}
 
       {isPosRoute && (
-        <div className="flex items-center gap-2">
+        // min-w-0: the shift chip shrinks (and truncates) before the controls on the right are pushed out.
+        <div className="flex min-w-0 items-center gap-2">
           <button type="button" onClick={openShiftSheet}
             aria-label={activeShift ? t("pos.v2.manage_shift", { shift: activeShift.shiftNumber }) : t("pos.v2.open_shift")}
-            className="inline-flex max-w-[150px] items-center gap-2 truncate whitespace-nowrap rounded-full px-3 text-[13px] font-semibold sm:max-w-none"
+            className="inline-flex min-w-0 items-center gap-2 whitespace-nowrap rounded-full px-2.5 text-[13px] font-semibold sm:px-3"
             style={{ minHeight: 44, background: activeShift ? "var(--surface-3)" : "var(--v2-warn-soft)", color: activeShift ? "var(--text-2)" : "var(--v2-warn)", border: "1px solid var(--border)" }}>
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: activeShift ? "var(--v2-ok)" : "var(--v2-warn)" }} />
-            {activeShift?.shiftNumber ?? t("desktop.no_shift")}
+            <span className="hidden h-2 w-2 shrink-0 rounded-full sm:block" style={{ background: activeShift ? "var(--v2-ok)" : "var(--v2-warn)" }} />
+            <span className="truncate">{activeShift?.shiftNumber ?? t("desktop.no_shift")}</span>
           </button>
           <ShiftSheet />
-          <span className="hidden text-[13px] font-medium sm:inline" style={{ color: "var(--text-2)" }}>{today}</span>
+          <span className="hidden whitespace-nowrap text-[13px] font-medium xl:inline" style={{ color: "var(--text-2)" }}>{today}</span>
         </div>
       )}
 
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         {!isPosRoute && (
           <div
             className="hidden h-8 items-center gap-1.5 rounded-lg border px-3 text-[12px] font-bold md:flex"
@@ -104,7 +105,7 @@ export default function Topbar() {
           </span>
           {currentUser?.role && (
             <span
-              className="hidden rounded-full px-2 py-0.5 text-[10px] font-bold md:inline"
+              className="hidden rounded-full px-2 py-0.5 text-[10px] font-bold xl:inline"
               style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}
             >
               {currentUser.role}
