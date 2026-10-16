@@ -1,3 +1,5 @@
+import ShiftSheet from "../../features/pos/components/ShiftSheet"
+import { openShiftSheet } from "../../features/pos/components/shiftSheetEvents"
 import { useEffect, useState } from "react"
 import { LockKeyhole, Moon, Sun, UserRound } from "lucide-react"
 import { useLocation } from "react-router"
@@ -62,11 +64,14 @@ export default function Topbar() {
 
       {isPosRoute && (
         <div className="flex items-center gap-2">
-          <span className="inline-flex max-w-[150px] items-center gap-2 truncate whitespace-nowrap rounded-full px-3 text-[13px] font-semibold sm:max-w-none"
-            style={{ minHeight: 32, background: activeShift ? "var(--surface-3)" : "var(--v2-warn-soft)", color: activeShift ? "var(--text-2)" : "var(--v2-warn)" }}>
-            <span className="h-2 w-2 rounded-full" style={{ background: activeShift ? "var(--v2-ok)" : "var(--v2-warn)" }} />
+          <button type="button" onClick={openShiftSheet}
+            aria-label={activeShift ? t("pos.v2.manage_shift", { shift: activeShift.shiftNumber }) : t("pos.v2.open_shift")}
+            className="inline-flex max-w-[150px] items-center gap-2 truncate whitespace-nowrap rounded-full px-3 text-[13px] font-semibold sm:max-w-none"
+            style={{ minHeight: 44, background: activeShift ? "var(--surface-3)" : "var(--v2-warn-soft)", color: activeShift ? "var(--text-2)" : "var(--v2-warn)", border: "1px solid var(--border)" }}>
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: activeShift ? "var(--v2-ok)" : "var(--v2-warn)" }} />
             {activeShift?.shiftNumber ?? t("desktop.no_shift")}
-          </span>
+          </button>
+          <ShiftSheet />
           <span className="hidden text-[13px] font-medium sm:inline" style={{ color: "var(--text-2)" }}>{today}</span>
         </div>
       )}

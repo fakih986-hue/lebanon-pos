@@ -1,85 +1,78 @@
 import { useState } from "react"
-import { ChevronDown, Receipt } from "lucide-react"
+import { ChevronDown, Lock, Receipt } from "lucide-react"
+import { useI18n } from "@lebanonpos/shared"
+
 import { createExpense, type ExpenseCategory, type ExpensePaymentMethod } from "../services/expense.service"
+import { getActiveShift, userCan } from "../services/security.service"
 import { showToast } from "../services/toast.service"
+import { formatCurrency } from "../lib/currency"
 
 const CATEGORIES: ExpenseCategory[] = ["Supplier", "Rent", "Utilities", "Payroll", "Delivery", "Maintenance", "Other"]
 const PAYMENTS: ExpensePaymentMethod[] = ["Cash", "Card", "Bank Transfer", "Wallet", "On Account"]
+const key = (v: string) => v.toLowerCase().replace(/\s+/g, "_")
 
+/** Record expense (register rail + shift sheet). Values stay in English (stored); labels are localized. */
 export default function ExpensePanel({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
+  const { t } = useI18n()
   const [vendor, setVendor] = useState("")
   const [amount, setAmount] = useState("")
   const [category, setCategory] = useState<ExpenseCategory>("Other")
   const [payment, setPayment] = useState<ExpensePaymentMethod>("Cash")
+  const allowed = userCan("accounting.manage") || userCan("cash.manage")
+  const hasShift = Boolean(getActiveShift())
 
   function handleSubmit() {
     const amt = parseFloat(amount)
-    if (!vendor.trim()) { showToast("Enter a vendor name", "error"); return }
-    if (!amt || amt <= 0) { showToast("Enter a valid amount", "error"); return }
-    createExpense({ vendor: vendor.trim(), amount: amt, category, paymentMethod: payment, invoiceNumber: "", note: "" })
-    showToast(`Expense recorded — $${amt.toFixed(2)}`)
+    if (!vendor.trim()) { showToast(t("pos.expense.need_vendor"), "error"); return }
+    if (!amt || amt <= 0) { showToast(t("pos.expense.need_amount"), "error"); return }
+    try {
+      createExpense({ vendor: vendor.trim(), amount: amt, category, paymentMethod: payment, invoiceNumber: "", note: "" })
+    } catch (err) {
+      showToast(/shift/i.test(String((err as Error)?.message)) ? t("pos.expense.need_shift") : t("pos.drawer.action_failed", { reason: String((err as Error)?.message ?? err) }), "error")
+      return
+    }
+    showToast(t("pos.expense.recorded", { amount: formatCurrency(amt) }))
     setVendor("")
     setAmount("")
     setCategory("Other")
     setPayment("Cash")
   }
 
+  const field = { minHeight: 44, fontSize: 14 } as const
   return (
     <div>
-      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between px-4 py-2.5 text-[12px] font-bold hover:opacity-80"
-        style={{ color: "var(--text-2)", background: expanded ? "var(--surface-2)" : "transparent" }}>
+      <button type="button" onClick={onToggle} aria-expanded={expanded}
+        className="flex w-full items-center justify-between px-4 text-[14px] font-semibold hover:opacity-80"
+        style={{ minHeight: 48, color: "var(--text-2)", background: expanded ? "var(--surface-2)" : "transparent" }}>
         <span className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: "var(--text-3)" }} />
-          <Receipt size={14} style={{ color: "var(--text-3)" }} />
-          Record Expense
+          <Receipt size={16} style={{ color: "var(--text-2)" }} aria-hidden="true" />
+          {t("pos.expense.title")}
         </span>
-        <ChevronDown size={14} className={`transition ${expanded ? "rotate-180" : ""}`} style={{ color: "var(--text-3)" }} />
+        <ChevronDown size={16} className={`transition ${expanded ? "rotate-180" : ""}`} style={{ color: "var(--text-2)" }} aria-hidden="true" />
       </button>
 
       {expanded && (
-        <div className="px-4 pb-3 space-y-2">
-          <input
-            value={vendor}
-            onChange={(e) => setVendor(e.target.value)}
-            placeholder="Vendor / description"
-            className="input w-full"
-            style={{ height: 34, fontSize: 12 }}
-          />
-          <div className="flex gap-2">
-            <input
-              type="number" min="0" step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Amount (USD)"
-              className="input flex-1"
-              style={{ height: 34, fontSize: 13, fontWeight: 700 }}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
-              className="input w-full"
-              style={{ height: 32, fontSize: 11 }}
-            >
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <select
-              value={payment}
-              onChange={(e) => setPayment(e.target.value as ExpensePaymentMethod)}
-              className="input w-full"
-              style={{ height: 32, fontSize: 11 }}
-            >
-              {PAYMENTS.map((p) => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
-          <button
-            onClick={handleSubmit}
-            className="w-full rounded-lg py-1.5 text-[12px] font-bold text-white transition hover:opacity-90"
-            style={{ background: "var(--rose)" }}
-          >
-            Record Expense
-          </button>
+        <div className="px-4 pb-4 pt-2 space-y-2">
+          {!allowed ? (
+            <p className="flex items-center gap-2 text-[14px]" style={{ margin: 0, color: "var(--text-2)" }}><Lock size={14} aria-hidden="true" />{t("pos.expense.need_permission")}</p>
+          ) : (<>
+            {!hasShift && <p className="text-[14px]" style={{ margin: 0, color: "var(--v2-warn)" }}>{t("pos.expense.need_shift")}</p>}
+            <input value={vendor} onChange={(e) => setVendor(e.target.value)} placeholder={t("pos.expense.vendor")} aria-label={t("pos.expense.vendor")}
+              className="input w-full" style={field} />
+            <input type="number" min="0" step="0.01" inputMode="decimal" dir="ltr" value={amount} onChange={(e) => setAmount(e.target.value)}
+              placeholder={t("pos.expense.amount")} aria-label={t("pos.expense.amount")} className="input w-full" style={{ ...field, fontWeight: 600, textAlign: "end" }} />
+            <div className="grid grid-cols-2 gap-2">
+              <select value={category} onChange={(e) => setCategory(e.target.value as ExpenseCategory)} aria-label={t("pos.expense.category")} className="input w-full" style={field}>
+                {CATEGORIES.map((c) => <option key={c} value={c}>{t(`pos.accounting.category_${key(c)}`)}</option>)}
+              </select>
+              <select value={payment} onChange={(e) => setPayment(e.target.value as ExpensePaymentMethod)} aria-label={t("pos.expense.payment")} className="input w-full" style={field}>
+                {PAYMENTS.map((p) => <option key={p} value={p}>{t(`pos.accounting.payment_${key(p)}`)}</option>)}
+              </select>
+            </div>
+            <button type="button" onClick={handleSubmit} disabled={!hasShift && payment === "Cash"} className="mg2-btn" style={{ width: "100%" }}>
+              {t("pos.expense.submit")}
+            </button>
+          </>)}
         </div>
       )}
     </div>

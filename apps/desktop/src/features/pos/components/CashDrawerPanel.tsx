@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { ChevronDown, CircleDollarSign, Clock, HandCoins, Landmark, Lock } from "lucide-react"
-import { getActiveShift, getShifts, openShift, closeShift, subscribeSecurity, type Shift } from "../services/security.service"
+import { getActiveShift, getCurrentUser, getShifts, openShift, closeShift, subscribeSecurity, userCan, type Shift } from "../services/security.service"
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../lib/currency"
 import { getSettings } from "../services/settings.service"
 import { showToast } from "../services/toast.service"
@@ -33,6 +33,11 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
   }, [])
 
   const expectedCash = shift ? computeExpectedCash(shift) : 0
+  // Permission rules (DESIGN-SYSTEM §6: visible, disabled with the reason).
+  const me = getCurrentUser()
+  const canOpen = userCan("sales.checkout") || userCan("shifts.manage")
+  const canClose = Boolean(shift) && (shift?.openedById === me?.id || userCan("shifts.manage"))
+  const canDraw = userCan("cash.manage")
   const countedVal = parseFloat(countedCash)
   const diff = countedCash && !isNaN(countedVal) ? countedVal - expectedCash : 0
 
@@ -44,7 +49,8 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
   function handleOpenShift() {
     const f = parseFloat(floatInput)
     if (!f || f <= 0) { showToast(t("pos.drawer.invalid_float"), "error"); return }
-    const s = openShift(f)
+    let s: Shift | null | undefined
+    try { s = openShift(f) } catch (err) { showToast(t("pos.drawer.action_failed", { reason: String((err as Error)?.message ?? err) }), "error"); return }
     if (!s) return
     setShift(s)
     setFloatInput("")
@@ -52,7 +58,7 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
   }
 
   function handleCloseShift() {
-    if (!shift) return
+    if (!shift || !canClose) return
     closeShift({
       shiftId: shift.id,
       expectedCashUsd: expectedCash,
@@ -66,7 +72,7 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
   }
 
   function handleOwnerDraw() {
-    if (!shift) return
+    if (!shift || !canDraw) return
     const amount = parseFloat(drawerNote)
     if (!amount || amount <= 0) { showToast(t("pos.drawer.invalid_amount"), "error"); return }
     const result = createCashMovement({
@@ -83,8 +89,8 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
 
   return (
     <div>
-      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between px-4 py-2.5 text-[12px] font-bold hover:opacity-80"
-        style={{ color: "var(--text-2)", background: expanded ? "var(--surface-2)" : "transparent" }}>
+      <button type="button" onClick={onToggle} aria-expanded={expanded} className="flex w-full items-center justify-between px-4 text-[14px] font-semibold hover:opacity-80"
+        style={{ minHeight: 48, color: "var(--text-2)", background: expanded ? "var(--surface-2)" : "transparent" }}>
         <span className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full shrink-0" style={{ background: shift ? "var(--success)" : "var(--rose)" }} />
           <Landmark size={14} style={{ color: shift ? "var(--success)" : "var(--text-3)" }} />
@@ -105,12 +111,13 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
                   onChange={(e) => setFloatInput(e.target.value)}
                   placeholder={t("pos.drawer.float_example")}
                   aria-label={t("pos.drawer.opening_float")}
-                  className="input flex-1" style={{ height: 36, fontSize: 14, fontWeight: 700 }} />
-                <button onClick={handleOpenShift}
-                  className="flex items-center gap-1 rounded-lg px-3 text-[12px] font-bold text-white" style={{ background: "var(--brand)" }}>
+                  className="input flex-1" style={{ minHeight: 44, fontSize: 16, fontWeight: 600 }} />
+                <button type="button" onClick={handleOpenShift} disabled={!canOpen} aria-describedby={canOpen ? undefined : "drawer-open-why"}
+                  className="mg2-btn mg2-btn-primary" style={{ minHeight: 44 }}>
                   <Lock size={13} /> {t("pos.drawer.open")}
                 </button>
               </div>
+              {!canOpen && <p id="drawer-open-why" className="text-[14px]" style={{ margin: 0, color: "var(--text-2)" }}>{t("pos.drawer.need_checkout")}</p>}
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -127,7 +134,7 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
                   onChange={(e) => setCountedCash(e.target.value)}
                   placeholder={`${expectedCash.toFixed(2)}`}
                   aria-label={t("pos.drawer.counted")}
-                  className="input flex-1" style={{ height: 34, fontSize: 13, fontWeight: 600 }} />
+                  className="input flex-1" style={{ minHeight: 44, fontSize: 14, fontWeight: 600 }} />
                 <span className="px-2 text-[11px] font-bold rounded tabular-nums"
                   style={{
                     lineHeight: "34px",
@@ -142,23 +149,24 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
               </div>
               <div className="flex gap-2">
                 <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("pos.drawer.note")} aria-label={t("pos.drawer.note")}
-                  className="input flex-1" style={{ height: 30, fontSize: 11 }} />
-                <button onClick={handleCloseShift}
-                  className="flex items-center gap-1 rounded-lg px-3 text-[12px] font-bold text-white" style={{ background: "var(--ink)" }}>
+                  className="input flex-1" style={{ minHeight: 44, fontSize: 14 }} />
+                <button type="button" onClick={handleCloseShift} disabled={!canClose} aria-describedby={canClose ? undefined : "drawer-close-why"}
+                  className="mg2-btn" style={{ minHeight: 44 }}>
                   <CircleDollarSign size={13} /> {t("pos.drawer.close")}
                 </button>
               </div>
 
+              {!canClose && <p id="drawer-close-why" className="text-[14px]" style={{ margin: 0, color: "var(--text-2)" }}>{t("pos.drawer.need_shift_manage")}</p>}
+
               {/* Owner Draw */}
-              <div className="flex gap-2 pt-1">
+              {!canDraw ? <p className="text-[14px] pt-1" style={{ margin: 0, color: "var(--text-2)" }}>{t("pos.drawer.need_cash_manage")}</p> : <div className="flex gap-2 pt-1">
                 <input value={drawerNote} onChange={(e) => setDrawerNote(e.target.value)} placeholder={t("pos.drawer.owner_draw")} aria-label={t("pos.drawer.owner_draw")}
                   type="number" min="0" step="0.01"
-                  className="input flex-1" style={{ height: 30, fontSize: 11 }} />
-                <button onClick={handleOwnerDraw}
-                  className="flex items-center gap-1 rounded-lg px-3 text-[12px] font-bold text-white" style={{ background: "var(--amber)" }}>
+                  className="input flex-1" style={{ minHeight: 44, fontSize: 14 }} />
+                <button type="button" onClick={handleOwnerDraw} className="mg2-btn" style={{ minHeight: 44 }}>
                   <HandCoins size={13} /> {t("pos.drawer.draw")}
                 </button>
-              </div>
+              </div>}
             </div>
           )}
 

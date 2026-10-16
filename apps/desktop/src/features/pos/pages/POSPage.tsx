@@ -22,6 +22,7 @@ import VariantPicker from "../components/VariantPicker"
 import QuickPOSMode from "../components/QuickPOSMode"
 import KeyboardShortcutsModal from "../components/KeyboardShortcutsModal"
 import PaymentReviewDialog from "../components/PaymentReviewDialog"
+import { openShiftSheet } from "../components/shiftSheetEvents"
 import { playErrorBuzz, playScanBlip } from "../lib/sound"
 import { openWhatsAppShare, receiptMessage } from "../lib/whatsapp"
 import {
@@ -51,7 +52,7 @@ import {
   type HeldSale,
 } from "../services/heldSale.service"
 import { recordDebtSale } from "../services/customer.service"
-import { recordAuditEvent, userCan, getActiveShift } from "../services/security.service"
+import { recordAuditEvent, userCan, getActiveShift, subscribeSecurity } from "../services/security.service"
 import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
 import { getConnectionMode, pullFromServer, commitSaleToHub, nextDocumentReference, getSyncStatus } from "../services/sync.service"
 import { createId } from "../lib/storage"
@@ -123,6 +124,8 @@ export default function POSPage() {
   const [quickMode, setQuickMode] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [showReview, setShowReview] = useState(false)
+  const [hasShift, setHasShift] = useState(() => Boolean(getActiveShift()))
+  useEffect(() => subscribeSecurity(() => setHasShift(Boolean(getActiveShift()))), [])
 
   const productListRef = useRef<HTMLDivElement | null>(null)
 
@@ -802,6 +805,15 @@ export default function POSPage() {
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <section className="flex h-full min-w-0 flex-col gap-3 overflow-hidden p-3 pb-24 sm:p-4 md:pb-4 xl:p-5">
             <SyncBanner />
+            {!hasShift && (
+              <div className="mg2-banner mg2-t-warn" role="status">
+                <div style={{ flex: 1, minWidth: 180 }}>
+                  <div className="mg2-sub" style={{ color: "var(--text)" }}>{t("pos.v2.no_shift_title")}</div>
+                  <div className="mg2-cap" style={{ color: "var(--text-2)" }}>{t("pos.v2.no_shift_text")}</div>
+                </div>
+                <button type="button" className="mg2-btn mg2-btn-primary" onClick={openShiftSheet}>{t("pos.v2.open_shift")}</button>
+              </div>
+            )}
             <LastSaleBanner
               sales={recentSales}
               onNewSale={cleanSale}

@@ -2,7 +2,7 @@
 
 **Where:** `pnpm --dir apps/desktop dev`, then open **http://localhost:5174/?dev**. This is local dev mode: a "Dev Admin", the demo catalog, and no server. Test the hub or cloud too, on a test store, never production.
 
-**Before you start:** open a shift in the empty cart rail with **Cash Drawer › Opening float › Open**. Repeat the checks in Arabic (the AR button) and in light mode (the sun button).
+**Before you start:** open a shift. On any screen size, tap the shift chip in the top bar ("No shift") or **Open shift** in the register banner, enter the opening float, and press **Open**. On a wide screen the cart rail has the same Cash Drawer. Repeat the checks in Arabic (the AR button) and in light mode (the sun button).
 
 **How to record a result:** tick the item, or write what happened.
 
@@ -68,6 +68,11 @@
 - [ ] Restart again: the sale is not sent or counted twice.
 
 ## Shift and drawer
+- [ ] On a phone or tablet with no open shift, the register shows "No open shift" with **Open shift**, and the top-bar chip says "No shift".
+- [ ] Tapping either one opens **Shift & drawer** from the bottom. Focus is in the opening-float field. After **Open**, the banner disappears and the chip shows the shift number.
+- [ ] Esc (or ×) closes the sheet, and focus returns to the chip.
+- [ ] As a Cashier: you can open your own shift and close it. Owner draw and Record expense show why they are unavailable instead of doing nothing.
+- [ ] Record expense with no open shift says to open a shift first. A recorded expense shows a confirmation with the amount, in English and Arabic.
 - [ ] Before closing the shift, check that the expected-in-drawer amount includes the sales just made.
 - [ ] **Known gap.** The drawer closes slightly **over**, by the sum of the cash rounding (`docs/CASH-ROUNDING-RECONCILIATION.md`). Record the amount you see; this is expected until the rounding policy is decided.
 
@@ -77,5 +82,5 @@ These check behaviour; they don't replace this checklist.
 
 | Script | What it proves |
 |---|---|
-| `docs/design/qa-app.cjs` | Screenshots. With `BEHAVIOUR=1`: keyboard, focus trap with real Tab presses, focus return, offline sale, Cashier permissions |
+| `docs/design/qa-app.cjs` | Screenshots. With `BEHAVIOUR=1`: keyboard, focus trap with real Tab presses, focus return, offline sale, Cashier permissions. With `SHIFT=1`: a fresh phone (390×844) and tablet (768×1024) session, no shift, opened from the top bar or banner, then a sale; Cashier permission reasons |
 | `docs/design/qa-offline-recovery.cjs` | Offline sale → real reload → server back → sale recorded exactly once (real API, scratch DB) |

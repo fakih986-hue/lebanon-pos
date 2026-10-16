@@ -167,6 +167,41 @@ const MORE = [
   ["simple-pos.en.dark.mobile", { w: 1440, h: 900, steps: [openShift, toPhone, addTiles, quick, exactCash] }],
 ]
 
+// Fresh session at phone/tablet size from the first paint: no @resize, no seeded shift.
+const shiftChip = `[...document.querySelectorAll("header button[aria-label]")].find((b) => /Open shift|Shift & drawer|فتح وردية|الوردية والدرج/.test(b.getAttribute("aria-label")))`
+const shiftState = ["state", `
+  const chip = ${shiftChip}
+  const banner = [...document.querySelectorAll(".mg2-banner")].find((b) => b.offsetParent !== null && /No open shift|لا وردية مفتوحة/.test(b.textContent))
+  return "chip: " + (chip ? chip.getAttribute("aria-label") + " (" + Math.round(chip.getBoundingClientRect().height) + "px)" : "MISSING") + "; banner: " + (banner ? "shown" : "none") + "; viewport " + innerWidth + "x" + innerHeight`, 100]
+const openSheetFromChip = ["tap topbar shift chip", `
+  const chip = ${shiftChip}
+  if (!chip) throw new Error("no shift chip"); chip.focus(); chip.click(); await new Promise(r=>setTimeout(r,400))
+  const d = document.querySelector("[role=dialog][aria-labelledby=shift-sheet-title]")
+  return d ? "sheet open; focus " + (d.contains(document.activeElement) ? "inside: " + (document.activeElement.getAttribute("aria-label") || document.activeElement.placeholder || document.activeElement.textContent.trim().slice(0,30)) : "OUTSIDE") : "NO SHEET"`, 300]
+const openSheetFromBanner = ["tap banner Open shift", `
+  const b = [...document.querySelectorAll(".mg2-banner button")].find((x) => x.offsetParent !== null); if (!b) throw new Error("no banner button"); b.click(); await new Promise(r=>setTimeout(r,400))
+  return document.querySelector("[aria-labelledby=shift-sheet-title]") ? "sheet open" : "NO SHEET"`, 300]
+const sheetFacts = ["sheet contents", `
+  const d = document.querySelector("[aria-labelledby=shift-sheet-title]"); if (!d) return "no sheet"
+  const r = d.getBoundingClientRect()
+  const small = [...d.querySelectorAll("button:not([disabled]), input, select")].filter((e) => e.offsetParent !== null && e.getBoundingClientRect().height < 44).map((e) => (e.getAttribute("aria-label") || e.textContent.trim().slice(0,20) || e.tagName) + " " + Math.round(e.getBoundingClientRect().height))
+  const why = [...d.querySelectorAll("p")].map((p) => p.textContent.trim()).filter((x) => /permission|صلاحية|opened this shift|فتحها|Open a shift first|افتح وردية/i.test(x))
+  const disabled = [...d.querySelectorAll("button[disabled]")].map((b) => b.textContent.trim().slice(0,20))
+  return "sheet " + Math.round(r.width) + "x" + Math.round(r.height) + " fits=" + (r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1) + "; under-44px: " + (small.join(", ") || "none") + "; disabled: " + (disabled.join(", ") || "none") + "; reasons: " + (why.join(" | ") || "none")`, 100]
+const openExpense = ["expand Record expense", `__t.click("[aria-labelledby=shift-sheet-title] button", /Record expense|تسجيل مصروف/i); return "ok"`, 400]
+const escSheet = ["Esc (real key)", "@key:Escape:1", 400]
+const afterClose = ["after close", `return (document.querySelector("[aria-labelledby=shift-sheet-title]") ? "sheet STILL open" : "sheet closed") + "; focus: " + (document.activeElement?.getAttribute("aria-label") || document.activeElement?.tagName)`, 100]
+const expectedCash = ["drawer after sale", `const d = document.querySelector("[aria-labelledby=shift-sheet-title]"); return d ? d.innerText.replace(/\\s+/g, " ").slice(0, 220) : "no sheet"`, 100]
+const freshShift = [shiftState, openSheetFromChip, sheetFacts, openShift, shiftState, escSheet, afterClose]
+const SHIFT = [
+  ["shift-fresh.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [...freshShift, addTiles, openCartSheet, exactCash, payInSheet, confirm, openSheetFromChip, expectedCash, sheetFacts] }],
+  ["shift-fresh.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", steps: [shiftState, openSheetFromBanner, sheetFacts, openShift, shiftState, escSheet, afterClose] }],
+  ["shift-fresh.en.dark.tablet", { w: 768, h: 1024, mobile: true, steps: [...freshShift, addTiles, openCartSheet, exactCash, payInSheet, confirm, shiftState] }],
+  ["shift-cashier.en.dark.mobile", { w: 390, h: 844, mobile: true, setup: asCashier, steps: [shiftState, openSheetFromChip, openShift, sheetFacts, openExpense, sheetFacts] }],
+  ["shift-sheet-open.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [shiftState, openSheetFromChip] }],
+  ["shift-sheet-cashier.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", setup: asCashier, steps: [openSheetFromChip, openShift, openExpense] }],
+]
+
 const SCENES = [
   ["register-cash.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid] }],
   ["register-cash.en.light.desktop", { w: 1440, h: 900, theme: "light", steps: [openShift, addTiles, cashPaid] }],
@@ -189,7 +224,7 @@ const SCENES = [
     const cdp = new CDP(ws); await cdp.open()
     const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null
     const results = []
-    for (const [name, opts] of (process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
+    for (const [name, opts] of (process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
     fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify({ base: BASE, at: new Date().toISOString(), results }, null, 2))
   } finally { chrome.kill() }
 })().catch((e) => { console.error(e); process.exit(1) })
