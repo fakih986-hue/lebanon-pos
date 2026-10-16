@@ -360,6 +360,7 @@ const K = {
   "inv.rcv.fx.po": ["Purchase order", "أمر الشراء"],
   "inv.rcv.fx.payment": ["Payment", "الدفع"],
   "inv.rcv.fx.sync_title": ["Sync operations", "عمليات المزامنة"],
+  "inv.rcv.fx.op.staged": ["Saved on this device", "محفوظة على هذا الجهاز"],
   "inv.rcv.fx.op.queued": ["Queued", "في الانتظار"],
   "inv.rcv.fx.op.sent": ["Sent", "أُرسلت"],
   "inv.rcv.fx.op.failed": ["Failed", "فشلت"],

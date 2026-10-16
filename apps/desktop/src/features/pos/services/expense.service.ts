@@ -5,7 +5,7 @@ import {
   recordAuditEvent,
   userCan,
 } from "./security.service"
-import { enqueueSyncOperation, assertCanWrite, getDeviceId, nextDocumentReference } from "./sync.service"
+import { assertCanWrite, commitStagedSyncOperation, getDeviceId, nextDocumentReference, settleStagedSyncOperation, stageSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getRegisterId } from "./settings.service"
@@ -133,8 +133,22 @@ export function createExpense(input: CreateExpenseInput) {
     throw new Error("Expense amount must be greater than zero.")
   }
 
-  writeExpenses([expense, ...getExpenses()])
-  recordAuditEvent({
+  // Durability: the sync operation is saved before the expense (SyncStorageError -> nothing written).
+  const staged = stageSyncOperation({
+    entity: "expense",
+    action: "create",
+    summary: `${expense.expenseNumber} expense queued for sync.`,
+    payload: expense,
+  })
+  try {
+    writeExpenses([expense, ...getExpenses()])
+  } catch (error) {
+    settleStagedSyncOperation(staged.id)
+    throw error
+  }
+  commitStagedSyncOperation(staged.id)
+  // The expense is written: a failed audit write must not report it as not recorded.
+  try { recordAuditEvent({
     action: "expense.create",
     entity: "expense",
     summary: `${expense.expenseNumber} recorded for ${expense.vendor}.`,
@@ -146,13 +160,7 @@ export function createExpense(input: CreateExpenseInput) {
       shiftId: expense.shiftId,
       shiftNumber: expense.shiftNumber,
     },
-  })
-  enqueueSyncOperation({
-    entity: "expense",
-    action: "create",
-    summary: `${expense.expenseNumber} expense queued for sync.`,
-    payload: expense,
-  })
+  }) } catch (error) { console.error("[expense] audit write failed:", error) }
 
   return expense
 }

@@ -3,7 +3,10 @@ import {
   getCurrentUser,
   recordAuditEvent,
 } from "./security.service"
-import { enqueueSyncOperation, assertCanWrite, getDeviceId, getSyncQueue, nextDocumentReference } from "./sync.service"
+import {
+  assertCanWrite, commitStagedSyncOperation, enqueueSyncOperation, getDeviceId, isSyncOperationRecorded, nextDocumentReference,
+  settleStagedSyncOperation, stageSyncOperation,
+} from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getRegisterId } from "./settings.service"
@@ -330,19 +333,24 @@ function updatePurchaseOrderPaidTotal(purchaseOrderId: string) {
     }
   })
 
-  writePurchaseOrders(nextPurchaseOrders)
-
-  for (const po of nextPurchaseOrders) {
+  const changed = nextPurchaseOrders.filter((po) => {
     const original = purchaseOrders.find(p => p.id === po.id)
-    if (original && (original.paidTotal !== po.paidTotal || original.status !== po.status)) {
-      enqueueSyncOperation({
-        entity: "purchase-order",
-        action: "update",
-        summary: `${po.poNumber} payment status updated.`,
-        payload: po,
-      })
-    }
+    return !!original && (original.paidTotal !== po.paidTotal || original.status !== po.status)
+  })
+  // Staged before the write; an update is released only if the stored order matches it.
+  const staged = changed.map((po) => stageSyncOperation({
+    entity: "purchase-order",
+    action: "update",
+    summary: `${po.poNumber} payment status updated.`,
+    payload: po,
+  }))
+  try {
+    writePurchaseOrders(nextPurchaseOrders)
+  } catch (error) {
+    for (const op of staged) settleStagedSyncOperation(op.id)
+    throw error
   }
+  for (const op of staged) commitStagedSyncOperation(op.id)
 }
 
 export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
@@ -401,13 +409,27 @@ export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
     throw new Error("Payment amount must be greater than zero.")
   }
 
-  writeSupplierPayments([payment, ...getSupplierPayments()])
+  // Durability: the payment operation is saved before the payment (SyncStorageError -> nothing written).
+  const staged = stageSyncOperation({
+    id: input.syncOpId,
+    entity: "supplier-payment",
+    action: "payment",
+    summary: `${payment.supplierName} payment queued for sync.`,
+    payload: payment,
+  })
+  try {
+    writeSupplierPayments([payment, ...getSupplierPayments()])
+  } catch (error) {
+    settleStagedSyncOperation(staged.id)
+    throw error
+  }
+  commitStagedSyncOperation(staged.id)
 
   if (purchaseOrder?.id) {
     updatePurchaseOrderPaidTotal(purchaseOrder.id)
   }
 
-  recordAuditEvent({
+  try { recordAuditEvent({
     action: "supplier.payment",
     entity: "supplier",
     summary: `${payment.supplierName} paid $${payment.amount.toFixed(2)}.`,
@@ -419,14 +441,7 @@ export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
       shiftId: payment.shiftId,
       shiftNumber: payment.shiftNumber,
     },
-  })
-  enqueueSyncOperation({
-    id: input.syncOpId,
-    entity: "supplier-payment",
-    action: "payment",
-    summary: `${payment.supplierName} payment queued for sync.`,
-    payload: payment,
-  })
+  }) } catch (error) { console.error("[supplier] payment audit write failed:", error) }
 
   return payment
 }
@@ -444,6 +459,8 @@ export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
   const shift = getActiveShift()
   const user = getCurrentUser()
   const total = input.items.reduce((sum, item) => sum + item.total, 0)
+  // What is to be paid now. The order itself is written Unpaid: only a recorded payment marks it
+  // paid (updatePurchaseOrderPaidTotal), so a failed payment can never leave a "Paid" order.
   const paidTotal =
     input.paymentMethod === "On Account"
       ? 0
@@ -454,11 +471,11 @@ export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
     supplierId: input.supplierId,
     supplierName: input.supplierName,
     status: input.status ?? "Received",
-    paymentStatus: buildPaymentStatus(total, paidTotal),
+    paymentStatus: buildPaymentStatus(total, 0),
     invoiceNumber: cleanText(input.invoiceNumber),
     note: cleanText(input.note),
     total,
-    paidTotal,
+    paidTotal: 0,
     items: input.items,
     createdBy: user.name,
     shiftId: shift?.id,
@@ -477,7 +494,21 @@ export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
     throw new Error("Purchase order needs at least one item with cost.")
   }
 
-  writePurchaseOrders([purchaseOrder, ...getPurchaseOrders()])
+  // Durability: the create operation is saved before the order (SyncStorageError -> nothing written).
+  const staged = stageSyncOperation({
+    id: input.syncOpId,
+    entity: "purchase-order",
+    action: "create",
+    summary: `${purchaseOrder.poNumber} purchase order queued for sync.`,
+    payload: purchaseOrder,
+  })
+  try {
+    writePurchaseOrders([purchaseOrder, ...getPurchaseOrders()])
+  } catch (error) {
+    settleStagedSyncOperation(staged.id)
+    throw error
+  }
+  commitStagedSyncOperation(staged.id)
 
   if (paidTotal > 0 && input.paymentMethod !== "On Account") {
     recordSupplierPayment({
@@ -490,27 +521,22 @@ export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
     })
   }
 
-  recordAuditEvent({
-    action: "purchase.receive",
-    entity: "supplier",
-    summary: `${purchaseOrder.poNumber} recorded for ${purchaseOrder.supplierName}.`,
-    metadata: {
-      purchaseOrderId: purchaseOrder.id,
-      supplierId: purchaseOrder.supplierId,
-      total: purchaseOrder.total,
-      paidTotal: purchaseOrder.paidTotal,
-      paymentStatus: purchaseOrder.paymentStatus,
-    },
-  })
-  enqueueSyncOperation({
-    id: input.syncOpId,
-    entity: "purchase-order",
-    action: "create",
-    summary: `${purchaseOrder.poNumber} purchase order queued for sync.`,
-    payload: purchaseOrder,
-  })
+  try {
+    recordAuditEvent({
+      action: "purchase.receive",
+      entity: "supplier",
+      summary: `${purchaseOrder.poNumber} recorded for ${purchaseOrder.supplierName}.`,
+      metadata: {
+        purchaseOrderId: purchaseOrder.id,
+        supplierId: purchaseOrder.supplierId,
+        total: purchaseOrder.total,
+        paidTotal,
+        paymentStatus: purchaseOrder.paymentStatus,
+      },
+    })
+  } catch (error) { console.error("[purchase] audit write failed:", error) }
 
-  return purchaseOrder
+  return getPurchaseOrders().find((o) => o.id === purchaseOrder.id) ?? purchaseOrder
 }
 
 export function getSupplierLedger() {
@@ -697,21 +723,23 @@ export function recordReceiveFinance(
     const orders = getPurchaseOrders()
     const createdPo = orders.find(o => o.id === po.id)
     if (createdPo && createdPo.status === "Draft") {
-      createdPo.status = "Received"
-      createdPo.receivedAt = new Date().toISOString()
-      writePurchaseOrders(orders)
-    }
-    if (createdPo && (createdPo.status !== "Draft")) {
-      // writePurchaseOrders() only writes local storage — it does not sync.
-      // Without this, the server never learns the PO left Draft, so its
-      // status stays permanently out of sync with every device that pulls it.
-      enqueueSyncOperation({
-        id: k?.poReceivedOp,
-        entity: "purchase-order",
-        action: "update",
-        summary: `${createdPo.poNumber} marked Received.`,
-        payload: createdPo,
-      })
+      // writePurchaseOrders() only writes local storage — it does not sync. Without the update
+      // the server never learns the PO left Draft. Staged before the write (fixed id: once).
+      const received = { ...createdPo, status: "Received" as const, receivedAt: new Date().toISOString() }
+      const staged = stageSyncOperation({ id: k?.poReceivedOp, entity: "purchase-order", action: "update", summary: `${createdPo.poNumber} marked Received.`, payload: received })
+      try {
+        writePurchaseOrders(orders.map((o) => (o.id === createdPo.id ? received : o)))
+      } catch (error) {
+        settleStagedSyncOperation(staged.id)
+        throw error
+      }
+      commitStagedSyncOperation(staged.id)
+      po = received
+    } else if (createdPo) {
+      // Received earlier (a retry): make sure its update is recorded, once.
+      if (k && !isSyncOperationRecorded(k.poReceivedOp)) {
+        enqueueSyncOperation({ id: k.poReceivedOp, entity: "purchase-order", action: "update", summary: `${createdPo.poNumber} marked Received.`, payload: createdPo })
+      }
       po = createdPo
     }
   } catch (err) {
@@ -721,7 +749,7 @@ export function recordReceiveFinance(
       payment: method === "On Account" ? { status: "on_account", amount: 0, method } : { status: "waiting", amount: totalCost, method },
     }
   }
-  if (k && !getSyncQueue().some((op) => op.id === k.poOp)) {
+  if (k && !isSyncOperationRecorded(k.poOp)) {
     // Recorded here but not queued: the server would never learn of this liability. Retry re-queues it.
     return {
       purchaseOrder: { status: "failed", id: po.id, number: po.poNumber, total: po.total, error: "recorded on this device but not queued for sync" },
@@ -739,7 +767,7 @@ export function recordReceiveFinance(
       method,
       reference: po.invoiceNumber || `Payment for ${po.poNumber}`,
     })
-    if (k && !getSyncQueue().some((op) => op.id === k.payOp)) {
+    if (k && !isSyncOperationRecorded(k.payOp)) {
       return { purchaseOrder, payment: { status: "failed", id: payment.id, amount: payment.amount, method, error: "recorded on this device but not queued for sync" } }
     }
     return { purchaseOrder, payment: { status: "recorded", id: payment.id, amount: payment.amount, method } }
@@ -825,11 +853,12 @@ export function snapshotStockBefore(entries: ReceiveEntry[], products: typeof im
 function assertFollowUpsQueued(sub: string, plan: ReceivePlan) {
   const rec = getReceiveSubmission(sub)
   if (rec?.steps?.followUps) return
-  const queued = new Set(getSyncQueue().map((op) => op.id))
+  // Queued, staged or already acknowledged all count: an operation flushed and acknowledged at once
+  // may have left the queue, and its absence is not a failure.
   const missing = [
     ...(plan.createdProductIds.length > 0 ? [`${sub}-op-products`] : []),
     ...(plan.lots.length > 0 ? [`${sub}-op-receive`] : []),
-  ].filter((id) => !queued.has(id))
+  ].filter((id) => !isSyncOperationRecorded(id))
   if (missing.length > 0) throw new Error(`Could not queue ${missing.join(", ")} for sync (storage full?).`)
   markReceiveStep(sub, "followUps")
 }

@@ -15,7 +15,7 @@
 //                                                                                 (PO only: inventory.receive)
 // When an action is not safe the submission stays blocked and the reasons say what to check.
 import { getCurrentUser, PermissionError, recordAuditEvent, userCan, type Permission } from "./security.service"
-import { enqueueSyncOperation, getSyncQueue, type SyncOperation } from "./sync.service"
+import { enqueueSyncOperation, getSyncOperationState, getSyncQueue } from "./sync.service"
 import { getInventoryBatches, getStockMovements } from "./inventoryBatch.service"
 import { recordStockAdjustment } from "./inventoryAdjustment.service"
 import {
@@ -40,7 +40,7 @@ export type RowEffects = {
   lot: { state: EffectState; id: string; number?: string; remaining?: number; initial?: number; touched?: boolean }
   movement: { state: EffectState; id: string }
 }
-export type OperationEffect = { id: string; label: string; state: "queued" | "sent" | "failed" | "rejected" | "not_in_queue"; error?: string }
+export type OperationEffect = { id: string; label: string; state: "staged" | "queued" | "sent" | "failed" | "rejected" | "not_in_queue"; error?: string }
 export type SubmissionEffects = {
   submission: ReceiveSubmission
   rows: RowEffects[]
@@ -74,9 +74,11 @@ function requireSubmission(id: string): ReceiveSubmission {
 function requirePermission(permission: Permission, what: string) {
   if (!userCan(permission)) throw new PermissionError(`You do not have permission to ${what}.`)
 }
-function opState(op: SyncOperation | undefined): OperationEffect["state"] {
-  if (!op) return "not_in_queue"
-  return op.status === "Synced" ? "sent" : op.status === "Failed" ? "failed" : op.status === "Rejected" ? "rejected" : "queued"
+/** From the queue AND the acknowledgement ledger: an operation acknowledged and then pruned from
+ *  the queue is "sent", never "not in queue" (that would invite sending it again). */
+function opState(id: string): OperationEffect["state"] {
+  const s = getSyncOperationState(id)
+  return s === "acknowledged" ? "sent" : s === "pending" ? "queued" : s === "unknown" ? "not_in_queue" : s
 }
 
 async function loadProducts() { return import("./product.service") }
@@ -142,7 +144,7 @@ export async function inspectReceiveSubmission(id: string): Promise<SubmissionEf
   if (payNeeded) opIds.push([`${sub.id}-op-pay`, "payment"])
   const operations: OperationEffect[] = opIds.map(([oid, label]) => {
     const op = queue.find((o) => o.id === oid)
-    return { id: oid, label, state: opState(op), error: op?.error }
+    return { id: oid, label, state: opState(oid), error: op?.error }
   })
 
   // ── safety ──

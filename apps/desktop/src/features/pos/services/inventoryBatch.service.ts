@@ -1,4 +1,4 @@
-import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
+import { assertCanWrite, commitStagedSyncOperation, enqueueSyncOperation, settleStagedSyncOperation, stageSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 
@@ -260,11 +260,36 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { o
     }))
 
   const movementIdOf = new Map(entries.filter((e) => e.id && e.movementId).map((e) => [e.id as string, e.movementId as string]))
-  if (batches.length > 0) writeBatches([...batches, ...getInventoryBatches()])
   const all = [...batches, ...getInventoryBatches().filter((b) => existing.some((e) => e.id === b.id))]
   if (all.length === 0) {
     return []
   }
+  // Durability: the receive operation is saved before the lots (SyncStorageError -> nothing written).
+  // The server adds stock only through it, once per lot id. With a fixed id it is never queued
+  // again once queued or acknowledged.
+  const staged = stageSyncOperation({
+    id: opts?.syncOpId,
+    entity: "inventory",
+    action: "receive",
+    summary: `${all.length} ${opening ? "opening" : "inventory"} batch${
+      all.length === 1 ? "" : "es"
+    } queued for sync.`,
+    // The `opening` flag rides the sync payload only (not the stored batch row);
+    // the server strips it and tags the movement Opening vs Receive.
+    // A lot written earlier (a resumed receive) has never reached the server yet: it is sent as
+    // received, so the server adds the received quantity; sales already queued then take theirs.
+    payload: all.map((b) => {
+      const first = batches.includes(b) ? b : { ...b, quantityRemaining: b.initialQuantity, status: "Open" as const }
+      return opening ? { ...first, opening: true } : first
+    }),
+  })
+  try {
+    if (batches.length > 0) writeBatches([...batches, ...getInventoryBatches()])
+  } catch (error) {
+    settleStagedSyncOperation(staged.id)
+    throw error
+  }
+  commitStagedSyncOperation(staged.id)
 
   // Record stock movements for each batch — Opening for first-setup, else Receive.
   for (const b of all) {
@@ -280,24 +305,6 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { o
         : `Received batch ${b.batchNumber}${b.supplierName ? ` from ${b.supplierName}` : ""}`,
     })
   }
-
-  enqueueSyncOperation({
-    id: opts?.syncOpId,
-    entity: "inventory",
-    action: "receive",
-    summary: `${all.length} ${opening ? "opening" : "inventory"} batch${
-      all.length === 1 ? "" : "es"
-    } queued for sync.`,
-    // The `opening` flag rides the sync payload only (not the stored batch row);
-    // the server strips it and tags the movement Opening vs Receive.
-    // The server creates each lot (and adds its stock) once per lot id, so a resent lot is harmless.
-    // A lot written earlier (a resumed receive) has never reached the server yet: it is sent as
-    // received, so the server adds the received quantity; sales already queued then take theirs.
-    payload: all.map((b) => {
-      const first = batches.includes(b) ? b : { ...b, quantityRemaining: b.initialQuantity, status: "Open" as const }
-      return opening ? { ...first, opening: true } : first
-    }),
-  })
 
   return batches
 }

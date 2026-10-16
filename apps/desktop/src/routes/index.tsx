@@ -25,7 +25,7 @@ import {
   userCan,
   type Permission,
 } from "../features/pos/services/security.service"
-import { setupBackgroundSync, stopBackgroundSync, isSuspended, subscribeSuspended, isSuspensionGracePeriodExpired, getSuspensionRemainingDays } from "../features/pos/services/sync.service"
+import { recoverStagedSyncOperations, setupBackgroundSync, stopBackgroundSync, isSuspended, subscribeSuspended, isSuspensionGracePeriodExpired, getSuspensionRemainingDays } from "../features/pos/services/sync.service"
 import LoginScreen from "../pages/auth/LoginScreen"
 import AccountingPage from "../pages/accounting/AccountingPage"
 import CustomersPage from "../pages/customers/CustomersPage"
@@ -78,6 +78,9 @@ function Shell({ children }: { children: ReactNode }) {
     const { rolledBack, completed } = recoverRefundJournal()
     // Finish any conflict settlement interrupted mid-way (idempotent).
     resumeMoneyConflictSettlements()
+    // Release (exactly once) or remove sync operations saved ahead of business data whose commit
+    // did not reach storage before the app closed. Runs before the first flush or pull.
+    try { recoverStagedSyncOperations() } catch (error) { console.error("[sync] staged recovery failed:", error) }
     if (completed > 0) showToast(t("pos.refund.recovered_completed", { count: completed }), "info")
     if (rolledBack > 0) showToast(t("pos.refund.recovered_rolled_back", { count: rolledBack }), "warning")
   }, [])

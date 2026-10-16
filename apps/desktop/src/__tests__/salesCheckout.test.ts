@@ -12,6 +12,12 @@ const { enqueueMock } = vi.hoisted(() => ({ enqueueMock: vi.fn() }))
 
 vi.mock("../features/pos/services/sync.service", () => ({
   enqueueSyncOperation: (op: unknown) => enqueueMock(op),
+  // Money/stock writers stage their operation before the record and commit it after it.
+  stageSyncOperation: (op: { id?: string }) => { enqueueMock(op); return { ...op, id: op.id ?? "op-test" } },
+  commitStagedSyncOperation: () => "pending",
+  settleStagedSyncOperation: () => "unknown",
+  discardStagedSyncOperation: () => {},
+  isRecordAcknowledged: () => false,
   assertCanWrite: () => {},
   getDeviceId: () => "DEV-TEST",
   getApiUrl: () => "",

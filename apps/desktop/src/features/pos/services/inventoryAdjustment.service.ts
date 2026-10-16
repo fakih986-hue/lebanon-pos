@@ -9,7 +9,7 @@ import {
 } from "./product.service"
 import { recordAuditEvent } from "./security.service"
 import { canUseStorage, createId } from "../lib/storage"
-import { enqueueSyncOperation, assertCanWrite, getDeviceTag } from "./sync.service"
+import { assertCanWrite, commitStagedSyncOperation, getDeviceTag, settleStagedSyncOperation, stageSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 
 const ADJUSTMENTS_KEY = "lebanonpos.inventory-adjustments.v1"
@@ -107,6 +107,33 @@ export function recordStockAdjustment(input: RecordStockAdjustmentInput) {
     return null
   }
 
+  // Durability: the operation is saved before any stock or lot changes (SyncStorageError -> nothing
+  // written). Its payload is completed on commit; if that cannot be saved, recovery takes it from
+  // the stored adjustment (written last, so its presence means the adjustment happened).
+  const adjustmentId = input.id ?? createId("stock-adjustment")
+  const staged = stageSyncOperation({
+    entity: "inventory",
+    action: "adjust",
+    summary: `${product.name} stock adjustment queued for sync.`,
+    payload: { id: adjustmentId, productId: product.id, quantityChange, reason: input.reason, batchId: input.batchId },
+  })
+  try {
+    const adjustment = applyStockAdjustment(input, product, adjustmentId, quantityBefore, quantityChange)
+    commitStagedSyncOperation(staged.id, adjustment)
+    return adjustment
+  } catch (error) {
+    settleStagedSyncOperation(staged.id)
+    throw error
+  }
+}
+
+function applyStockAdjustment(
+  input: RecordStockAdjustmentInput,
+  product: NonNullable<ReturnType<typeof getProductsSync>[number]>,
+  adjustmentId: string,
+  quantityBefore: number,
+  quantityChange: number,
+) {
   const batchAllocations = adjustInventoryBatches({
     productId: product.id,
     productName: product.name,
@@ -136,7 +163,7 @@ export function recordStockAdjustment(input: RecordStockAdjustmentInput) {
 
   const existingAdjustments = getStockAdjustments()
   const adjustment: StockAdjustment = {
-    id: input.id ?? createId("stock-adjustment"),
+    id: adjustmentId,
     adjustmentNumber: createAdjustmentNumber(existingAdjustments.length),
     productId: product.id,
     productName: product.name,
@@ -153,7 +180,8 @@ export function recordStockAdjustment(input: RecordStockAdjustmentInput) {
   }
 
   writeAdjustments([adjustment, ...existingAdjustments].slice(0, 500))
-  recordAuditEvent({
+  // Written: a failed audit write must not undo the commit of the operation.
+  try { recordAuditEvent({
     action: "inventory.adjust",
     entity: "inventory",
     summary: `${adjustment.adjustmentNumber}: ${product.name} ${
@@ -166,13 +194,7 @@ export function recordStockAdjustment(input: RecordStockAdjustmentInput) {
       quantityAfter: adjustment.quantityAfter,
       reason: input.reason,
     },
-  })
-  enqueueSyncOperation({
-    entity: "inventory",
-    action: "adjust",
-    summary: `${adjustment.adjustmentNumber} stock adjustment queued for sync.`,
-    payload: adjustment,
-  })
+  }) } catch (error) { console.error("[adjustment] audit write failed:", error) }
 
   return adjustment
 }

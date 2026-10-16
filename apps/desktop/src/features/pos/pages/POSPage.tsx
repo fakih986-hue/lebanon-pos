@@ -831,7 +831,15 @@ export default function POSPage() {
     } catch (err) {
       // Reverse completed steps — cart is preserved so user can retry
       if (recordedSaleId) {
-        voidSale(recordedSaleId, stockDecreased)
+        // The sale's operation may already have reached the server: it is undone only through a
+        // void that is itself saved for sync. If even that cannot be saved (storage full), the sale
+        // stands as recorded and the error says so — never a silent local-only undo.
+        try {
+          voidSale(recordedSaleId, stockDecreased)
+        } catch (voidError) {
+          console.error("[checkout] could not void the recorded sale:", voidError)
+          if (!stockDecreased) decreaseProductStock(items.map((item) => ({ productId: item.id, quantity: item.quantity })))
+        }
       } else {
         // Sale was NOT recorded — manually restore what was consumed
         if (stockDecreased) {

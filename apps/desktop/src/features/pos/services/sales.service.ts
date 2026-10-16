@@ -15,7 +15,10 @@ import {
   getCurrentUser,
   recordAuditEvent,
 } from "./security.service"
-import { enqueueSyncOperation, assertCanWrite, getCurrentTenantId, getDeviceId, getDeviceTag, getSyncQueue } from "./sync.service"
+import {
+  assertCanWrite, commitStagedSyncOperation, getCurrentTenantId, getDeviceId, getDeviceTag, getSyncQueue, isRecordAcknowledged,
+  settleStagedSyncOperation, stageSyncOperation,
+} from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { getRegisterId } from "./settings.service"
 
@@ -417,7 +420,27 @@ export function buildSale(input: RecordSaleInput, id: string): Sale {
  *  — the write-through path passes skipSync because the hub already committed
  *  the sale authoritatively, so re-enqueuing it would be redundant. */
 function persistSaleRecord(sale: Sale, opts?: { skipSync?: boolean }) {
-  writeSales([sale, ...getSales()])
+  // Durability: the sync operation is saved BEFORE the sale. If it cannot be saved this throws
+  // SyncStorageError with nothing written (checkout then restores the cart, lots and stock).
+  const staged = opts?.skipSync ? null : stageSyncOperation({
+    entity: "sale",
+    action: "create",
+    summary: `${sale.saleNumber} sale queued for sync.`,
+    payload: sale,
+  })
+  try {
+    writeSales([sale, ...getSales()])
+  } catch (error) {
+    if (staged) settleStagedSyncOperation(staged.id)
+    throw error
+  }
+  if (staged) commitStagedSyncOperation(staged.id)
+  // The sale is the commit point: once it is written, a failed audit write must not make the
+  // caller undo it (checkout would restore stock under a sale that stands).
+  try { auditSaleComplete(sale) } catch (error) { console.error("[sale] audit write failed:", error) }
+}
+
+function auditSaleComplete(sale: Sale) {
   recordAuditEvent({
     action: "sale.complete",
     entity: "sale",
@@ -431,14 +454,6 @@ function persistSaleRecord(sale: Sale, opts?: { skipSync?: boolean }) {
       shiftNumber: sale.shiftNumber,
     },
   })
-  if (!opts?.skipSync) {
-    enqueueSyncOperation({
-      entity: "sale",
-      action: "create",
-      summary: `${sale.saleNumber} sale queued for sync.`,
-      payload: sale,
-    })
-  }
 }
 
 export function recordSale(input: RecordSaleInput, opts?: { id?: string; skipSync?: boolean }) {
@@ -550,10 +565,11 @@ function planSlices(entry: RefundJournalEntry): AllocationSlice[] {
   return entry.plan.flatMap((line) => line.allocations ?? [])
 }
 
+/** Queued, staged or already acknowledged (its queue entry may have been pruned since). */
 function refundOpEnqueued(refundId: string): boolean {
   return getSyncQueue().some(
     (op) => op.entity === "refund" && op.action === "create" && (op.payload as { id?: string } | undefined)?.id === refundId
-  )
+  ) || isRecordAcknowledged("refund", "create", refundId)
 }
 
 /**
@@ -570,16 +586,23 @@ function refundWirePayload(refund: SaleRefund) {
 
 /** Commit point: the refund record and its sync operation. Idempotent. */
 function commitRefundEntry(entry: RefundJournalEntry) {
-  const all = readRefunds()
-  if (!all.some((refund) => refund.id === entry.refundId)) writeRefunds([entry.refund, ...all])
-  if (!refundOpEnqueued(entry.refundId)) {
-    enqueueSyncOperation({
-      entity: "refund",
-      action: "create",
-      summary: `${entry.refund.refundNumber} refund queued for sync.`,
-      payload: refundWirePayload(entry.refund),
-    })
+  // The operation is saved before the refund record (SyncStorageError -> nothing issued, the
+  // caller rolls the journal back). A commit that cannot be saved stays staged and is released by
+  // recovery once the refund record is seen.
+  const staged = refundOpEnqueued(entry.refundId) ? null : stageSyncOperation({
+    entity: "refund",
+    action: "create",
+    summary: `${entry.refund.refundNumber} refund queued for sync.`,
+    payload: refundWirePayload(entry.refund),
+  })
+  try {
+    const all = readRefunds()
+    if (!all.some((refund) => refund.id === entry.refundId)) writeRefunds([entry.refund, ...all])
+  } catch (error) {
+    if (staged) settleStagedSyncOperation(staged.id)
+    throw error
   }
+  if (staged) commitStagedSyncOperation(staged.id)
   entry.steps.committed = true
   saveJournalEntry(entry)
 }
@@ -837,7 +860,26 @@ export function voidSale(saleId: string, restoreStock = true) {
 
   const plan = planVoidRestoration(refundableLinesOf(sale), priorRefundLinesOf(getRefunds(), sale.id))
 
-  const nextSales = sales.map((item) =>
+  // Saved before the void's effects; SyncStorageError leaves the sale untouched.
+  const staged = stageSyncOperation({
+    entity: "sale",
+    action: "void",
+    summary: `${sale.saleNumber} void queued for sync.`,
+    payload: { id: saleId, saleNumber: sale.saleNumber },
+  })
+  try {
+    applyVoid(sale, plan, restoreStock)
+  } catch (error) {
+    // Part-way: released if the sale is marked Voided here, removed otherwise.
+    settleStagedSyncOperation(staged.id)
+    throw error
+  }
+  commitStagedSyncOperation(staged.id)
+}
+
+function applyVoid(sale: Sale, plan: ReturnType<typeof planVoidRestoration>, restoreStock: boolean) {
+  const saleId = sale.id
+  const nextSales = readSales().map((item) =>
     item.id === saleId ? { ...item, status: "Voided" as const } : item
   )
   writeSales(nextSales)
@@ -857,23 +899,20 @@ export function voidSale(saleId: string, restoreStock = true) {
     reverseDebtSale({ id: sale.id, saleNumber: sale.saleNumber, customerId: sale.customerId })
   }
 
-  recordAuditEvent({
-    action: "sale.void",
-    entity: "sale",
-    summary: `${sale.saleNumber} voided — stock and debt restored.`,
-    metadata: {
-      saleId,
-      total: sale.total,
-      itemsRestored: sale.items.length,
-      wasDebt: sale.paymentMethod === "Debt",
-    },
-  })
-  enqueueSyncOperation({
-    entity: "sale",
-    action: "void",
-    summary: `${sale.saleNumber} void queued for sync.`,
-    payload: { id: saleId, saleNumber: sale.saleNumber },
-  })
+  // The void is done: a failed audit write must not report it as failed.
+  try {
+    recordAuditEvent({
+      action: "sale.void",
+      entity: "sale",
+      summary: `${sale.saleNumber} voided — stock and debt restored.`,
+      metadata: {
+        saleId,
+        total: sale.total,
+        itemsRestored: sale.items.length,
+        wasDebt: sale.paymentMethod === "Debt",
+      },
+    })
+  } catch (error) { console.error("[sale] void audit write failed:", error) }
 }
 
 /** Settle a server-rejected refund locally (see refundConflict.service). */

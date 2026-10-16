@@ -195,7 +195,8 @@ export function restoreStashedMoneyConflicts(): number {
   const entry = stash[key]
   if (!entry || (entry.tenantId && entry.tenantId !== tenantId)) return 0
   const queue = readQueue()
-  writeQueue([...queue, ...entry.ops.filter((op) => !queue.some((q) => q.id === op.id))])
+  // The stash is the only copy of these operations: keep it unless they are really back in the queue.
+  if (!writeQueue([...queue, ...entry.ops.filter((op) => !queue.some((q) => q.id === op.id))])) return 0
   const merge = (storageKey: string, rows: any[]) => {
     if (rows.length === 0) return
     const current = readJsonArray(storageKey)
@@ -480,6 +481,9 @@ export async function clearStoreData() {
     const { recoverRefundJournal } = await import("./sales.service")
     recoverRefundJournal()
   } catch (e) { console.error("[sync] refund journal recovery before store switch failed:", e) }
+  // Settle staged operations while this store's records are still here (present -> released and
+  // stashed with the tenant; missing -> never happened).
+  try { recoverStagedSyncOperations() } catch (e) { console.error("[sync] staged recovery before store switch failed:", e) }
   // Never lose an open money conflict to a store switch.
   stashMoneyConflictsForStore()
   for (const { key } of Object.values(PULL_TARGETS)) {
@@ -753,10 +757,39 @@ export type SyncOperation = {
   lastAttemptAt?: string
   syncedAt?: string
   error?: string
+  /** Written ahead of its business data (stageSyncOperation): never pushed until committed. */
+  staged?: boolean
+}
+
+/**
+ * Where an operation stands, from this device's point of view:
+ *  staged       - saved ahead of its business data; not sent (commit pending or failed: see recovery)
+ *  pending      - in the queue, not yet acknowledged
+ *  failed       - in the queue, last attempt failed (retried)
+ *  rejected     - the server refused it (settled by a person)
+ *  acknowledged - the server accepted it (the queue entry may since have been pruned)
+ *  unknown      - not on this device: never queued, or a storage failure lost it
+ */
+export type SyncOperationState = "staged" | "pending" | "failed" | "rejected" | "acknowledged" | "unknown"
+
+/** The queue could not be written: nothing was queued and nothing was sent. */
+export class SyncStorageError extends Error {
+  operationId: string
+  constructor(operationId: string, cause?: unknown) {
+    super(`Could not save this change for sync (device storage is full or unavailable). Nothing was sent. [${operationId}]`)
+    this.name = "SyncStorageError"
+    this.operationId = operationId
+    this.cause = cause
+  }
 }
 
 export type SyncStatus = {
   online: boolean
+  /** Saved ahead of their business data and not yet committed (recovered on restart). */
+  staged: number
+  /** Changes this session that could not be saved for sync at all (storage full/unavailable). */
+  storageFailures: number
+  lastStorageError?: string
   pending: number   // actionable: Pending and attempts < MAX_ATTEMPTS
   failed: number    // Failed and attempts < MAX_ATTEMPTS
   rejected: number  // Rejected (exhausted, cannot auto-retry)
@@ -824,30 +857,276 @@ function readQueue(): SyncOperation[] {
   }
 }
 
-function writeQueue(queue: SyncOperation[]) {
-  if (!canUseStorage()) return
-  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
+// ── Durability ───────────────────────────────────────────────────────────────
+// A queue write can fail (QuotaExceededError). It used to be logged and ignored, and the operation
+// was still pushed and reported as queued. Now: persistQueue() says whether it was saved; if not,
+// acknowledged entries are compacted out (their ids live on in the acknowledgement ledger) and the
+// write is retried once. Callers that write money or stock stage their operation BEFORE their
+// business data (stageSyncOperation / commitStagedSyncOperation / discardStagedSyncOperation), so a
+// storage failure either stops them before anything is written or leaves a durable staged entry
+// that recovery promotes exactly once.
 
-  // Separate pending/failed (must keep) from synced (purgeable)
+const ACK_KEY = "lebanonpos.sync-acked.v1"
+const ACK_KEEP = 3000
+let sessionStorageFailures = 0
+let lastStorageError: string | undefined
+
+/** The immutable tenant of this device's data ("unbound" when none is known yet). */
+function syncTenantKey() {
+  const tenantId = getCurrentTenantId()
+  return tenantId ? `tenant:${tenantId}` : "unbound"
+}
+
+type AckEntry = [id: string, entity: string, action: string, recordId: string | null, at: string]
+function readAcks(): Record<string, AckEntry[]> {
+  try {
+    const v = JSON.parse(window.localStorage.getItem(ACK_KEY) ?? "{}")
+    return v && typeof v === "object" && !Array.isArray(v) ? v : {}
+  } catch { return {} }
+}
+const recordIdOf = (payload: unknown): string | null => {
+  const id = (payload as { id?: unknown } | undefined)?.id
+  return typeof id === "string" || typeof id === "number" ? String(id) : null
+}
+/** Remember acknowledged operations, per tenant, independently of the queue (which prunes them). */
+function recordAcknowledged(ops: SyncOperation[]): boolean {
+  if (!canUseStorage() || ops.length === 0) return true
+  try {
+    const all = readAcks()
+    const key = syncTenantKey()
+    const mine = all[key] ?? []
+    const known = new Set(mine.map((e) => e[0]))
+    const now = new Date().toISOString()
+    const added = ops.filter((op) => !known.has(op.id)).map<AckEntry>((op) => [op.id, op.entity, op.action, recordIdOf(op.payload), now])
+    all[key] = [...added, ...mine].slice(0, ACK_KEEP)
+    window.localStorage.setItem(ACK_KEY, JSON.stringify(all))
+    return true
+  } catch (e) {
+    console.error("[sync] could not record acknowledged operations:", e)
+    return false
+  }
+}
+function acknowledgedIds(): Set<string> {
+  return new Set((readAcks()[syncTenantKey()] ?? []).map((e) => e[0]))
+}
+/** True when the server acknowledged an operation for this record (by entity, action and record id). */
+export function isRecordAcknowledged(entity: SyncEntity, action: SyncAction, recordId: string) {
+  return (readAcks()[syncTenantKey()] ?? []).some((e) => e[1] === entity && e[2] === action && e[3] === recordId)
+}
+
+/** Where an operation stands (see SyncOperationState). */
+export function getSyncOperationState(id: string): SyncOperationState {
+  const op = readQueue().find((o) => o.id === id)
+  if (op) {
+    if (op.staged) return "staged"
+    if (op.status === "Synced") return "acknowledged"
+    if (op.status === "Rejected") return "rejected"
+    return op.status === "Failed" ? "failed" : "pending"
+  }
+  return acknowledgedIds().has(id) ? "acknowledged" : "unknown"
+}
+/** Recorded durably on this device or by the server: it will reach the server (or already has). */
+export function isSyncOperationRecorded(id: string) {
+  return getSyncOperationState(id) !== "unknown"
+}
+
+function noteStorageFailure(e: unknown) {
+  sessionStorageFailures++
+  lastStorageError = String((e as Error)?.message ?? e)
+  dispatchSyncChanged()
+}
+
+function trimQueue(queue: SyncOperation[]) {
+  const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000
   const retryable = queue.filter((op) => op.status !== "Synced" && op.attempts < MAX_ATTEMPTS)
   const dead = queue
     .filter((op) => op.status !== "Synced" && op.attempts >= MAX_ATTEMPTS)
     .slice(0, 100)
-  const active  = [...retryable, ...dead]
-  const synced  = queue
+  const active = [...retryable, ...dead]
+  const synced = queue
     .filter((op) => op.status === "Synced" && new Date(op.createdAt).getTime() >= cutoff)
-    .slice(0, Math.max(0, 300 - active.length))   // fill remaining budget with recent synced
+    .slice(0, Math.max(0, 300 - active.length))
+  return { active, synced }
+}
 
-  // Active ops always survive; synced ops fill the rest — new ops are NEVER silently dropped
-  const trimmed = [...active, ...synced]
-
-  try {
-    window.localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(trimmed))
-  } catch (e) {
-    console.error("[sync] failed to persist sync queue:", e)
+/** Write the queue; true only when it is on disk. On failure, drops acknowledged entries and retries once. */
+function persistQueue(queue: SyncOperation[]): boolean {
+  if (!canUseStorage()) return false
+  const trimmed = trimQueue(queue)
+  const active = trimmed.active
+  let synced = trimmed.synced
+  // Synced entries are pruned only once the acknowledgement ledger remembers them.
+  const prunedSynced = queue.filter((op) => op.status === "Synced" && !synced.includes(op))
+  if (prunedSynced.length && !recordAcknowledged(prunedSynced)) synced = queue.filter((op) => op.status === "Synced")
+  const attempt = (list: SyncOperation[]) => {
+    window.localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(list))
+    putMany("sync-queue", list).catch((e) => console.error("[sync] sync-queue write failed:", e))
   }
-  putMany("sync-queue", trimmed).catch((e) => console.error("[sync] sync-queue write failed:", e))
+  let ok = false
+  try {
+    attempt([...active, ...synced])
+    ok = true
+  } catch (first) {
+    console.error("[sync] failed to persist sync queue:", first)
+    // Make room: acknowledged entries are only history once they are in the ledger.
+    if (synced.length > 0 && recordAcknowledged(synced)) {
+      try { attempt(active); ok = true } catch (second) { noteStorageFailure(second) }
+    } else {
+      noteStorageFailure(first)
+    }
+  }
   dispatchSyncChanged()
+  return ok
+}
+
+function writeQueue(queue: SyncOperation[]): boolean {
+  return persistQueue(queue)
+}
+
+/** Apply per-operation changes onto the CURRENT queue (never a stale snapshot taken before an await). */
+function updateQueueOps(update: (op: SyncOperation) => SyncOperation | null): boolean {
+  const next: SyncOperation[] = []
+  for (const op of readQueue()) {
+    const u = update(op)
+    if (u) next.push(u)
+  }
+  return persistQueue(next)
+}
+
+/** Oldest staged operation still waiting: nothing created after it is pushed (dependency order). */
+function oldestStagedAt(queue = readQueue()): string | null {
+  const staged = queue.filter((op) => op.staged).map((op) => op.createdAt).sort()
+  return staged[0] ?? null
+}
+
+/**
+ * Save an operation BEFORE the business data it describes. Throws SyncStorageError when it cannot be
+ * saved (the caller has written nothing yet, so nothing is lost). Idempotent by id.
+ */
+export function stageSyncOperation(input: EnqueueSyncInput): SyncOperation {
+  if (!canUseStorage()) throw new SyncStorageError(input.id ?? "?")
+  const queue = readQueue()
+  if (input.id) {
+    const existing = queue.find((op) => op.id === input.id)
+    if (existing) return existing
+    // Already acknowledged (queue entry pruned): nothing to stage, never sent again.
+    if (acknowledgedIds().has(input.id)) {
+      return { id: input.id, entity: input.entity, action: input.action, summary: input.summary, payload: input.payload, status: "Synced", attempts: 0, createdAt: new Date().toISOString() }
+    }
+  }
+  const operation: SyncOperation = {
+    id: input.id ?? createId(), entity: input.entity, action: input.action, summary: input.summary,
+    payload: input.payload, status: "Pending", attempts: 0, createdAt: new Date().toISOString(), staged: true,
+  }
+  if (!persistQueue([operation, ...queue])) throw new SyncStorageError(operation.id)
+  return operation
+}
+
+/**
+ * The business data is written: release the staged operation for sync (optionally with its final
+ * payload). Never throws. If it cannot be saved the operation stays staged on disk and recovery
+ * promotes it (exactly once) on the next flush or restart.
+ */
+export function commitStagedSyncOperation(id: string, payload?: unknown): SyncOperationState {
+  let found = false
+  const ok = updateQueueOps((op) => {
+    if (op.id !== id) return op
+    found = true
+    return { ...op, staged: undefined, ...(payload !== undefined ? { payload } : {}) }
+  })
+  if (!found) return getSyncOperationState(id)
+  if (!ok) { pendingCommits.set(id, payload); return "staged" }
+  pendingCommits.delete(id)
+  scheduleAutoFlush()
+  return "pending"
+}
+const pendingCommits = new Map<string, unknown>()
+
+/**
+ * After a business write threw part-way: release the staged operation if its record shows the
+ * change (it is real on this device), otherwise remove it (never sent). Same rule as recovery.
+ */
+export function settleStagedSyncOperation(id: string): SyncOperationState {
+  const op = readQueue().find((o) => o.id === id)
+  if (!op?.staged) return getSyncOperationState(id)
+  const found = stagedRecordState(op)
+  if (found.state === "present") return commitStagedSyncOperation(id)
+  if (found.state === "missing") { discardStagedSyncOperation(id); return "unknown" }
+  return "staged"
+}
+
+/** The business write failed: remove its staged operation (it was never sent). */
+export function discardStagedSyncOperation(id: string) {
+  updateQueueOps((op) => (op.id === id && op.staged ? null : op))
+}
+
+// Does the business record a staged operation describes exist on this device? Read straight from
+// storage (no service imports). "missing": the write never happened. "unknown": no rule; held.
+const RECORD_KEYS: Partial<Record<string, string>> = {
+  "sale/create": "lebanonpos.sales.v1",
+  "refund/create": "lebanonpos.refunds.v1",
+  "expense/create": "lebanonpos.expenses.v1",
+  "cash-movement/create": "lebanonpos.cash-movements.v1",
+  "inventory/adjust": "lebanonpos.inventory-adjustments.v1",
+  "supplier-payment/payment": "lebanonpos.supplier-payments.v1",
+  "purchase-order/create": "lebanonpos.purchase-orders.v1",
+}
+function readArray(key: string): Array<Record<string, unknown>> {
+  try { const v = JSON.parse(window.localStorage.getItem(key) ?? "[]"); return Array.isArray(v) ? v : [] } catch { return [] }
+}
+function stagedRecordState(op: SyncOperation): { state: "present" | "missing" | "unknown"; record?: unknown } {
+  const k = `${op.entity}/${op.action}`
+  if (k === "sale/void") {
+    const sale = readArray("lebanonpos.sales.v1").find((s) => String(s.id) === recordIdOf(op.payload))
+    return { state: sale?.status === "Voided" ? "present" : "missing" }
+  }
+  if (k === "purchase-order/update") {
+    // An update is "present" only when the stored order says what the update says (a failed
+    // payment must not release a "paid" update).
+    const want = op.payload as { status?: unknown; paidTotal?: unknown; paymentStatus?: unknown } | undefined
+    const po = readArray("lebanonpos.purchase-orders.v1").find((r) => String(r.id) === recordIdOf(op.payload))
+    const same = !!po && po.status === want?.status && Number(po.paidTotal ?? 0) === Number(want?.paidTotal ?? 0) && po.paymentStatus === want?.paymentStatus
+    return { state: same ? "present" : "missing" }
+  }
+  if (k === "inventory/receive") {
+    const ids = (Array.isArray(op.payload) ? op.payload : []).map((b) => String((b as { id?: unknown }).id))
+    const lots = new Set(readArray("lebanonpos.inventory-batches.v1").map((b) => String(b.id)))
+    return { state: ids.length > 0 && ids.every((id) => lots.has(id)) ? "present" : "missing" }
+  }
+  const key = RECORD_KEYS[k]
+  if (!key) return { state: "unknown" }
+  const record = readArray(key).find((r) => String(r.id) === recordIdOf(op.payload))
+  return record ? { state: "present", record } : { state: "missing" }
+}
+
+/**
+ * Settle staged operations left by a failed commit or an interrupted write: present business
+ * record -> released for sync (once; adjustments take the stored record as payload); missing ->
+ * removed (the write never happened, nothing was sent); no rule -> kept staged and reported.
+ */
+export function recoverStagedSyncOperations(): { promoted: number; dropped: number; held: number } {
+  if (!canUseStorage()) return { promoted: 0, dropped: 0, held: 0 }
+  let promoted = 0, dropped = 0, held = 0
+  const queue = readQueue()
+  if (!queue.some((op) => op.staged)) return { promoted, dropped, held }
+  const next: SyncOperation[] = []
+  for (const op of queue) {
+    if (!op.staged) { next.push(op); continue }
+    const found = stagedRecordState(op)
+    if (found.state === "present") {
+      const payload = pendingCommits.has(op.id) && pendingCommits.get(op.id) !== undefined ? pendingCommits.get(op.id)
+        : op.entity === "inventory" && op.action === "adjust" && found.record ? found.record : op.payload
+      next.push({ ...op, staged: undefined, payload })
+      promoted++
+    } else if (found.state === "missing") {
+      dropped++
+    } else {
+      next.push(op)
+      held++
+    }
+  }
+  if (persistQueue(next)) for (const op of queue) pendingCommits.delete(op.id)
+  return { promoted, dropped, held }
 }
 
 function readLastSyncedAt() {
@@ -932,6 +1211,8 @@ export function getSyncStatus(): SyncStatus {
       dead++
       if (op.error && recentErrors.length < 3) recentErrors.push(`${op.entity}: ${op.error}`)
       if (op.error) lastError = op.error
+    } else if (op.staged) {
+      // counted as staged above, not as pending
     } else if (op.status === "Pending") {
       pending++
     } else if (op.status === "Failed") {
@@ -943,6 +1224,9 @@ export function getSyncStatus(): SyncStatus {
 
   return {
     online: isBrowserOnline(),
+    staged: queue.filter((op) => op.staged).length,
+    storageFailures: sessionStorageFailures,
+    lastStorageError,
     pending,
     failed,
     rejected,
@@ -1073,6 +1357,8 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
   if (input.id) {
     const existing = getSyncQueue().find((op) => op.id === input.id)
     if (existing) return existing
+    // Acknowledged earlier (its queue entry may have been pruned): never queue or send it again.
+    if (acknowledgedIds().has(input.id)) return undefined
   }
   const operation: SyncOperation = {
     id: input.id ?? createId(),
@@ -1084,7 +1370,10 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
     attempts: 0,
     createdAt: new Date().toISOString(),
   }
-  writeQueue([operation, ...getSyncQueue()])
+  // Never report "queued", and never send, unless it is on disk.
+  if (!persistQueue([operation, ...getSyncQueue()])) return undefined
+  // Nothing overtakes an older staged operation (dependency order); it goes out with the flush.
+  if (oldestStagedAt()) { scheduleAutoFlush(); return operation }
   
   // Write-through: try to push to hub API immediately
   // This makes the hub the single authority — no local-first conflicts
@@ -1102,7 +1391,7 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
         const body = await response.json().catch(() => ({ results: [] as any[] }))
         if (body.code === "DEVICE_NOT_APPROVED") {
           const rejected = { ...operation, status: "Rejected" as const, attempts: 5, lastAttemptAt: new Date().toISOString(), error: body.error ?? "Device not approved" }
-          writeQueue(getSyncQueue().map((op) => op.id === operation.id ? rejected : op))
+          updateQueueOps((op) => op.id === operation.id ? rejected : op)
           dispatchOperationRejected(rejected)
           dispatchSyncChanged()
           return operation
@@ -1111,13 +1400,14 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
         const result = body.results?.find((r: { id: string }) => r.id === operation.id)
         if (result?.status === "rejected") {
           const rejected = { ...operation, status: "Rejected" as const, attempts: 5, lastAttemptAt: new Date().toISOString(), error: result.error ?? "Rejected by server" }
-          writeQueue(getSyncQueue().map((op) => op.id === operation.id ? rejected : op))
+          updateQueueOps((op) => op.id === operation.id ? rejected : op)
           dispatchOperationRejected(rejected)
           dispatchSyncChanged()
           return operation
         }
         if (!result || result.status === "ok") {
-          writeQueue(getSyncQueue().map((op) => op.id === operation.id ? { ...op, status: "Synced" as const } : op))
+          recordAcknowledged([operation])
+          updateQueueOps((op) => op.id === operation.id ? { ...op, status: "Synced" as const, syncedAt: new Date().toISOString() } : op)
           dispatchSyncChanged()
           return operation
         }
@@ -1134,6 +1424,7 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
 export async function flushSyncQueue() {
   if (_flushing) return { synced: 0, skipped: 0 }
   _flushing = true
+  try { recoverStagedSyncOperations() } catch (e) { console.error("[sync] staged recovery failed:", e) }
   try {
     return await _flushSyncQueue()
   } finally {
@@ -1161,7 +1452,11 @@ async function _flushSyncQueue() {
   // Only try operations that are Pending/Failed, haven't exceeded max attempts,
   // AND whose backoff window has elapsed. Rejected ops are never retried.
   const now = Date.now()
+  // A staged operation (business write not confirmed) holds back everything created after it.
+  const holdFrom = oldestStagedAt(queue)
   const pending = queue.filter((op) => {
+    if (op.staged) return false
+    if (holdFrom && op.createdAt >= holdFrom) return false
     if (op.status === "Synced" || op.status === "Rejected") return false
     if (op.attempts >= MAX_ATTEMPTS) return false
     if (op.status === "Failed" && op.lastAttemptAt) {
@@ -1206,24 +1501,24 @@ async function _flushSyncQueue() {
           // Retry flush with fresh token
           return await _flushSyncQueue()
         }
-        const nextQueue = queue.map((op) =>
-          op.status === "Pending"
+        const sent = new Set(pending.map((op) => op.id))
+        updateQueueOps((op) =>
+          sent.has(op.id) && op.status === "Pending"
             ? { ...op, status: "Failed" as const, attempts: op.attempts + 1, error: "Token expired — re-enter in Settings" }
             : op
         )
-        writeQueue(nextQueue)
         return { synced: 0, skipped: pending.length }
       }
       if (response.status === 403) {
         const body = await response.json().catch(() => ({ error: "Device not approved" }))
         if (body.code === "DEVICE_NOT_APPROVED") {
           const now = new Date().toISOString()
-          const nextQueue = queue.map((op) => {
-            if (op.status !== "Pending" && op.status !== "Failed") return op
+          const sent = new Set(pending.map((op) => op.id))
+          updateQueueOps((op) => {
+            if (!sent.has(op.id) || (op.status !== "Pending" && op.status !== "Failed")) return op
             dispatchOperationRejected({ ...op, status: "Rejected", attempts: 5, lastAttemptAt: now, error: body.error ?? "Device not approved" })
             return { ...op, status: "Rejected" as const, attempts: 5, lastAttemptAt: now, error: body.error ?? "Device not approved" }
           })
-          writeQueue(nextQueue)
           return { synced: 0, skipped: pending.length }
         }
       }
@@ -1233,8 +1528,14 @@ async function _flushSyncQueue() {
     const result = await response.json()
     const now = new Date().toISOString()
     let synced = 0
+    const sent = new Set(pending.map((op) => op.id))
+    // Acknowledgements are remembered before the queue is rewritten (it may prune them).
+    recordAcknowledged(pending.filter((op) => result.results?.find((r: { id: string; status: string }) => r.id === op.id)?.status === "ok"))
 
-    const nextQueue = queue.map((op) => {
+    // Re-read: operations queued while this request was in flight must survive (they used to be
+    // overwritten by the snapshot taken before the await).
+    updateQueueOps((op) => {
+      if (!sent.has(op.id)) return op
       if (op.status !== "Pending" && op.status !== "Failed") return op
       if (op.attempts >= MAX_ATTEMPTS) return op  // don't touch dead ops
 
@@ -1251,17 +1552,17 @@ async function _flushSyncQueue() {
     })
 
     if (synced > 0) writeLastSyncedAt(now)
-    writeQueue(nextQueue)
     return { synced, skipped: pending.length - synced }
   } catch (err) {
-    // Mark all as failed with incremented attempts
+    // The outcome is uncertain (the server may have applied some): they stay queued and are resent;
+    // every server handler is idempotent by operation and record id.
     const now = new Date().toISOString()
-    const nextQueue = queue.map((op) =>
-      (op.status === "Pending" || op.status === "Failed") && op.attempts < MAX_ATTEMPTS
+    const sent = new Set(pending.map((op) => op.id))
+    updateQueueOps((op) =>
+      sent.has(op.id) && (op.status === "Pending" || op.status === "Failed") && op.attempts < MAX_ATTEMPTS
         ? { ...op, status: "Failed" as const, attempts: op.attempts + 1, lastAttemptAt: now, error: String(err) }
         : op
     )
-    writeQueue(nextQueue)
     return { synced: 0, skipped: pending.length }
   }
 }
@@ -1277,6 +1578,14 @@ async function _flushSyncQueue() {
  */
 export async function pullFromServer(full = false) {
   if (_pulling) return
+  // A pull replaces local collections. While a staged operation is unresolved its business record
+  // may exist only on this device: settle it first, and never overwrite local data until it is.
+  try { recoverStagedSyncOperations() } catch (e) { console.error("[sync] staged recovery before pull failed:", e) }
+  if (oldestStagedAt()) {
+    console.warn("[sync] pull skipped: a change is saved locally but not yet released for sync")
+    dispatchSyncChanged()
+    return
+  }
   _pulling = true
   try {
     await _pullFromServer(full)
@@ -1721,7 +2030,9 @@ export function clearSyncQueue() {
  */
 export function clearAllSyncOperations() {
   if (canUseStorage()) {
-    const conflicts = readQueue().filter(isMoneyConflictOperation)
+    // Money conflicts and staged operations (the only evidence that a saved record still needs
+    // syncing) are never force-cleared.
+    const conflicts = readQueue().filter((op) => isMoneyConflictOperation(op) || op.staged)
     if (conflicts.length > 0) writeQueue(conflicts)
     else window.localStorage.removeItem(SYNC_QUEUE_KEY)
   }

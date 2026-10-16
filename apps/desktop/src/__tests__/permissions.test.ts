@@ -3,6 +3,14 @@ import { describe, it, expect, vi } from "vitest"
 // POS-PERMISSIONS-1 — model + guardrails (pure functions).
 vi.mock("../features/pos/services/sync.service", () => ({
   enqueueSyncOperation: vi.fn(),
+  // Money/stock writers stage their operation before the record and commit it after it: a staged
+  // operation is the same operation the plain enqueue used to receive.
+  stageSyncOperation: (op: { id?: string }) => { void op; return { ...op, id: op.id ?? "staged-op" } },
+  commitStagedSyncOperation: () => "pending",
+  settleStagedSyncOperation: () => "unknown",
+  discardStagedSyncOperation: () => {},
+  isSyncOperationRecorded: () => true,
+  isRecordAcknowledged: () => false,
   getApiUrl: () => "",
   isSuspensionGracePeriodExpired: () => false,
   assertCanWrite: () => {},

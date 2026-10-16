@@ -15,7 +15,7 @@ import { showToast } from "../../services/toast.service"
 // purchase order, the payment and the sync queue, and the three ways to settle it. Each action is
 // permission-checked and audited by receiveRecovery.service; an unsafe one shows why instead.
 const STATE_TONE: Record<EffectState, Tone> = { applied: "ok", missing: "warn", unknown: "err", "n/a": "muted" }
-const OP_TONE: Record<OperationEffect["state"], Tone> = { queued: "info", sent: "ok", failed: "err", rejected: "err", not_in_queue: "warn" }
+const OP_TONE: Record<OperationEffect["state"], Tone> = { staged: "warn", queued: "info", sent: "ok", failed: "err", rejected: "err", not_in_queue: "warn" }
 
 export type RecoverySettled = "completed" | "undone" | "closed"
 

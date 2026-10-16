@@ -111,7 +111,7 @@ export default function SyncStatus() {
   }
 
   const pendingWork = status.pending + status.failed
-  const hasDead = status.dead > 0
+  const hasDead = status.dead + status.rejected > 0
 
   let pillBg: string
   let pillBorder: string
@@ -119,10 +119,19 @@ export default function SyncStatus() {
   let label: string
   let Icon: typeof Cloud
 
-  // Midnight Gold v2 capsule (DESIGN-SYSTEM §6): priority stuck > offline > waiting > synced.
-  if (hasDead) {
+  // Midnight Gold v2 capsule (DESIGN-SYSTEM §6): priority storage failure > saved here only
+  // (staged) > needs attention (stuck/rejected) > offline > waiting > synced.
+  if (status.storageFailures > 0) {
     pillBg = "var(--v2-err-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-err)"
-    label = t("sync.v2.stuck", { n: status.dead })
+    label = t("sync.v2.storage_failed", { n: status.storageFailures })
+    Icon = AlertTriangle
+  } else if (status.staged > 0) {
+    pillBg = "var(--v2-err-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-err)"
+    label = t("sync.v2.staged", { n: status.staged })
+    Icon = AlertTriangle
+  } else if (hasDead) {
+    pillBg = "var(--v2-err-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-err)"
+    label = t("sync.v2.stuck", { n: status.dead + status.rejected })
     Icon = AlertTriangle
   } else if (!status.online) {
     pillBg = "var(--v2-warn-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-warn)"
@@ -190,11 +199,19 @@ export default function SyncStatus() {
             </span>
           </div>
 
+          {(status.storageFailures > 0 || status.staged > 0) && (
+            <p className="mb-3 text-[13px]" role="alert" style={{ color: "var(--v2-err)" }}>
+              {status.storageFailures > 0 ? t("sync.v2.storage_failed_help", { error: status.lastStorageError ?? "" }) : t("sync.v2.staged_help")}
+            </p>
+          )}
           <div className="grid grid-cols-3 gap-2 mb-3">
             {[
-              { label: "Pending", value: status.pending, color: "var(--amber-text)" },
-              { label: "Synced", value: status.synced, color: "var(--brand-text)" },
-              { label: "Stuck", value: status.dead, color: status.dead > 0 ? "var(--rose-text)" : "var(--text-3)" },
+              { label: t("sync.v2.stat.pending"), value: status.pending + status.failed, color: "var(--amber-text)" },
+              { label: t("sync.v2.stat.staged"), value: status.staged, color: status.staged > 0 ? "var(--rose-text)" : "var(--text-3)" },
+              { label: t("sync.v2.stat.rejected"), value: status.rejected, color: status.rejected > 0 ? "var(--rose-text)" : "var(--text-3)" },
+              { label: t("sync.v2.stat.storage"), value: status.storageFailures, color: status.storageFailures > 0 ? "var(--rose-text)" : "var(--text-3)" },
+              { label: t("sync.v2.stat.synced"), value: status.synced, color: "var(--brand-text)" },
+              { label: t("sync.v2.stat.stuck"), value: status.dead, color: status.dead > 0 ? "var(--rose-text)" : "var(--text-3)" },
             ].map((c) => (
               <div key={c.label} className="rounded-lg px-2 py-2 text-center" style={{ background: "var(--surface-2)" }}>
                 <p className="text-[16px] font-bold" style={{ color: c.color }}>{c.value}</p>

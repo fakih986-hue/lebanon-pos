@@ -218,13 +218,20 @@ describe("interrupted saves", () => {
   it("a lot sold from before its receive was ever sent blocks automatic repair, with the reason", async () => {
     await interruptAfterStock()
     const m = await load()
-    // Lots written but the receive operation not (storage full on the queue at that moment).
+    // With the queue full, completing no longer writes the lots without their receive operation:
+    // the operation is staged first, so nothing is written and the submission stays as it was.
     const spy = failWrites(KEYS.queue)
     await expect(m.completeReceiveSubmission("rcv-x")).rejects.toBeInstanceOf(m.ReceiveOutcomeUnknownError)
     spy.mockRestore()
-    const lots = read<{ id: string; quantityRemaining: number }>(KEYS.batches)
-    lots[0].quantityRemaining = 1 // three sold since
-    localStorage.setItem(KEYS.batches, JSON.stringify(lots))
+    expect(books().lots).toEqual([])
+    // A submission interrupted before that change can still hold lots whose receive was never
+    // queued: build that state directly (lots written, no receive operation), then sell 3.
+    const sub = m.getReceiveSubmission("rcv-x")!
+    localStorage.setItem(KEYS.batches, JSON.stringify(sub.plan!.lots.map((l, i) => ({
+      id: l.id, batchNumber: `LOT-OLD-${i}`, productId: l.productId, productSyncId: l.productSyncId, productName: l.productName, barcode: l.barcode,
+      initialQuantity: l.quantity, quantityRemaining: i === 0 ? l.quantity - 3 : l.quantity, unitCost: l.unitCost, unitPrice: l.unitPrice,
+      receivedAt: new Date().toISOString(), status: "Open",
+    }))))
     const fx = await m.inspectReceiveSubmission("rcv-x")
     expect(fx.complete.safe).toBe(false)
     expect(fx.complete.reasons.map((r) => r.code)).toContain("lot_sold_unsent")

@@ -1,4 +1,4 @@
-import { assertCanWrite, enqueueSyncOperation, getSyncQueue, getDeviceId } from "./sync.service"
+import { assertCanWrite, commitStagedSyncOperation, getSyncQueue, getDeviceId, settleStagedSyncOperation, stageSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getCurrentUser, getActiveShift, recordAuditEvent, userCan } from "./security.service"
@@ -93,23 +93,30 @@ export function createCashMovement(input: CreateCashMovementInput): CashMovement
     createdAt: new Date().toISOString(),
   }
 
-  const existing = getCashMovements()
-  writeLocalWithIndexedDB(MOVEMENTS_KEY, [movement, ...existing])
+  // Durability: the sync operation is saved before the movement (SyncStorageError -> nothing written).
+  const staged = stageSyncOperation({
+    entity: "cash-movement",
+    action: "create",
+    summary: `Cash ${direction} ${input.amountUsd.toFixed(2)} — ${input.reason}`,
+    payload: movement,
+  })
+  try {
+    const existing = getCashMovements()
+    writeLocalWithIndexedDB(MOVEMENTS_KEY, [movement, ...existing])
+  } catch (error) {
+    settleStagedSyncOperation(staged.id)
+    throw error
+  }
+  commitStagedSyncOperation(staged.id)
   window.dispatchEvent(new Event(MOVEMENTS_EVENT))
 
-  recordAuditEvent({
+  // The movement is written: a failed audit write must not report it as not recorded.
+  try { recordAuditEvent({
     action: `cash.${input.type.toLowerCase()}`,
     entity: "cash-movement",
     summary: `${direction}$ ${input.amountUsd.toFixed(2)} — ${input.reason}`,
     metadata: { movementId: movement.id, type: input.type, direction, amount: input.amountUsd, shiftId: shift?.id },
-  })
-
-  enqueueSyncOperation({
-    entity: "cash-movement",
-    action: "create",
-    summary: `Cash ${direction} $${input.amountUsd.toFixed(2)} — ${input.reason}`,
-    payload: movement,
-  })
+  }) } catch (error) { console.error("[cash] audit write failed:", error) }
 
   return movement
 }
