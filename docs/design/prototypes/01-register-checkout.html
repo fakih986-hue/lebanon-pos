@@ -1,170 +1,247 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en" dir="ltr" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Register — checkout</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/tailwind.css">
 <style>
-:root{--page-bg:#0B0E14;--surface:#12161F;--surface-2:#171C27;--surface-3:#1E2430;--surface-hover:#1A2029;
---border:rgba(148,163,184,.10);--border-strong:rgba(148,163,184,.18);--text:#F4F6FA;--text-2:#9AA4B8;--text-3:#5F6B80;
---brand:#D4A843;--brand-hover:#E4BC5C;--brand-soft:rgba(212,168,67,.12);--brand-border:rgba(212,168,67,.35);--brand-contrast:#2C1F05;
+:root,[data-theme=dark]{color-scheme:dark;--page-bg:#0B0E14;--surface:#12161F;--surface-2:#171C27;--surface-3:#1E2430;--surface-hover:#1A2029;
+--border:rgba(148,163,184,.10);--border-strong:rgba(148,163,184,.22);--text:#F4F6FA;--text-2:#9AA4B8;--text-3:#7C879B;
+--brand:#D4A843;--brand-hover:#E4BC5C;--brand-soft:rgba(212,168,67,.12);--brand-border:rgba(212,168,67,.40);--brand-contrast:#2C1F05;--brand-text:#E4BC5C;
 --ok:#34D399;--ok-soft:rgba(52,211,153,.12);--warn:#FBBF24;--warn-soft:rgba(251,191,36,.12);--err:#F87171;--err-soft:rgba(248,113,113,.12);--info:#60A5FA;--info-soft:rgba(96,165,250,.12);
---elev-1:0 1px 2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);--elev-3:0 16px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05)}
+--rail-bg:linear-gradient(180deg,#0A0F18,#05070D);--rail-text:#C4CBD8;--plate:#05070D;
+--elev-1:0 1px 2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);--elev-3:0 16px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);--scrim:rgba(5,7,13,.78)}
+[data-theme=light]{color-scheme:light;--page-bg:#F7F5F1;--surface:#FFFFFF;--surface-2:#F6F4EF;--surface-3:#ECE8E1;--surface-hover:#F4F1EB;
+--border:#E8E4DC;--border-strong:#D3CCC0;--text:#1C1917;--text-2:#57534E;--text-3:#635D55;
+--brand:#996d14;--brand-hover:#7E5A10;--brand-soft:rgba(156,111,20,.10);--brand-border:rgba(156,111,20,.40);--brand-contrast:#FFFFFF;--brand-text:#6B4C0A;
+--ok:#137639;--ok-soft:rgba(22,163,74,.10);--warn:#a44c09;--warn-soft:rgba(180,83,9,.10);--err:#b91c1c;--err-soft:rgba(220,38,38,.09);--info:#0e6d93;--info-soft:rgba(14,122,165,.10);
+--rail-bg:linear-gradient(180deg,#0A0F18,#05070D);--rail-text:#C4CBD8;--plate:#05070D;
+--elev-1:0 1px 2px rgba(28,25,23,.06);--elev-3:0 16px 40px rgba(28,25,23,.16);--scrim:rgba(28,25,23,.45)}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inter","IBM Plex Sans Arabic",system-ui,sans-serif;font-size:14px;line-height:20px}
-[dir=rtl]{font-family:"IBM Plex Sans Arabic","Inter",system-ui,sans-serif;line-height:22px}
+[dir=rtl] body,[dir=rtl] .root{font-family:"IBM Plex Sans Arabic","Inter",system-ui,sans-serif;line-height:22px}
+[dir=rtl] .ic.dir{transform:scaleX(-1)}
+.ic{flex-shrink:0;display:inline-block;vertical-align:middle}
 .num{font-variant-numeric:tabular-nums;unicode-bidi:isolate}
 .cap{font-size:12px;line-height:16px;font-weight:500;color:var(--text-2)}
+.meta{color:var(--text-3)}
 .sub{font-size:16px;line-height:24px;font-weight:600}
 .title{font-size:20px;line-height:28px;font-weight:600}
 .stat{font-size:28px;line-height:34px;font-weight:600}
 .total{font-size:44px;line-height:48px;font-weight:700;letter-spacing:-.01em}
 .hero{font-size:64px;line-height:68px;font-weight:700;letter-spacing:-.02em}
+[dir=rtl] .total,[dir=rtl] .hero{letter-spacing:0}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--elev-1)}
 .inset{background:var(--surface-2);border:1px solid var(--border);border-radius:8px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;font-weight:600;font-size:14px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);white-space:nowrap}
-.btn-sm{height:32px;padding:0 12px;font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font:inherit;font-weight:600;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);white-space:nowrap;cursor:pointer}
+.btn-sm{min-height:32px;padding:0 12px;font-size:13px}
+.btn-touch{min-height:48px}
 .btn-primary{background:var(--brand);border-color:var(--brand);color:var(--brand-contrast)}
 .btn-ghost{background:transparent;border-color:transparent;color:var(--text-2)}
 .btn-danger{background:var(--err-soft);border-color:transparent;color:var(--err)}
-.btn-pay{width:100%;height:64px;border-radius:12px;background:var(--brand);color:var(--brand-contrast);font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
-.btn[disabled]{opacity:.45}
-.input{height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);padding:0 12px;display:flex;align-items:center;gap:8px}
+.btn-pay{width:100%;min-height:64px;border-radius:12px;background:var(--brand);color:var(--brand-contrast);font:inherit;font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;cursor:pointer}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn:focus-visible,.btn-pay:focus-visible,.field:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.field{width:100%;min-height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);padding:8px 12px;font:inherit}
+.field-row{display:flex;align-items:center;gap:8px}
 .focus{outline:2px solid var(--brand);outline-offset:2px}
-.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600}
-.badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600}
-.t-ok{background:var(--ok-soft);color:var(--ok)}.t-warn{background:var(--warn-soft);color:var(--warn)}.t-err{background:var(--err-soft);color:var(--err)}.t-info{background:var(--info-soft);color:var(--info)}.t-gold{background:var(--brand-soft);color:var(--brand)}.t-mute{background:var(--surface-3);color:var(--text-2)}
+.label{display:block;font-size:12px;line-height:16px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+.help{font-size:12px;line-height:16px;color:var(--text-3);margin-top:6px}
+.error{font-size:12px;line-height:16px;color:var(--err);margin-top:6px;display:flex;gap:6px;align-items:center}
+.invalid{border-color:var(--err)!important}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:4px;min-height:20px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.t-ok{background:var(--ok-soft);color:var(--ok)}.t-warn{background:var(--warn-soft);color:var(--warn)}.t-err{background:var(--err-soft);color:var(--err)}.t-info{background:var(--info-soft);color:var(--info)}.t-gold{background:var(--brand-soft);color:var(--brand-text)}.t-mute{background:var(--surface-3);color:var(--text-2)}
 .dot{width:8px;height:8px;border-radius:999px;display:inline-block}
-.row{display:grid;align-items:center;border-bottom:1px solid var(--border);min-height:44px}
-.th{font-size:12px;font-weight:600;color:var(--text-2);background:var(--surface-2)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:12px;font-weight:600;color:var(--text-2);background:var(--surface-2);text-align:start;padding:10px 16px;white-space:nowrap}
+.tbl td{padding:10px 16px;border-top:1px solid var(--border);vertical-align:middle}
+.tbl .r{text-align:end}
+.scroll-x{overflow-x:auto;position:relative}
 .sel{background:var(--brand-soft);box-shadow:inset 3px 0 0 var(--brand)}
 [dir=rtl] .sel{box-shadow:inset -3px 0 0 var(--brand)}
-.tab{height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent}
+.tab{min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap}
 .tab.on{color:var(--text);border-color:var(--brand)}
 .kbd{font-size:11px;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface-2)}
-.banner{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 16px;border:1px solid var(--border)}
+.banner{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 16px;flex-wrap:wrap}
+.banner > .grow{flex:1;min-width:220px}
+.plate{background:var(--plate);display:inline-grid;place-items:center;border:1px solid rgba(212,168,67,.25)}
+.seg{display:grid;gap:4px;padding:4px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border)}
+.seg > *{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:8px;font-weight:600;color:var(--text-2)}
+.seg > .on{background:var(--surface);box-shadow:var(--elev-1);color:var(--text)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ── Shell (§2): 232px sidebar ≥1200 · 64px rail 768–1199 · bottom nav <768 ── */
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+.side{background-color:#05070D;background-image:var(--rail-bg);border-inline-end:1px solid rgba(148,163,184,.12);display:flex;flex-direction:column;gap:4px;padding:16px 12px;color:var(--rail-text);position:sticky;top:0;height:100vh}
+.side .nav{display:flex;align-items:center;gap:12px;min-height:44px;border-radius:8px;padding:0 12px;font-weight:600;color:var(--rail-text)}
+.side .nav.on{background:rgba(212,168,67,.14);box-shadow:inset 3px 0 0 #D4A843;color:#F4F6FA}
+[dir=rtl] .side .nav.on{box-shadow:inset -3px 0 0 #D4A843}
+.side .who{margin-top:auto}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{min-height:64px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:10px 24px;border-bottom:1px solid var(--border);background:var(--page-bg);position:sticky;top:0;z-index:30}
+.topbar .tools{display:flex;align-items:center;gap:8px;margin-inline-start:auto;flex-wrap:wrap}
+.tabs{display:flex;gap:24px;padding:0 24px;border-bottom:1px solid var(--border);overflow-x:auto}
+.content{padding:24px;display:flex;flex-direction:column;gap:16px}
+.bottom-nav{display:none}
+@media (max-width:1199px){
+  .shell{grid-template-columns:64px minmax(0,1fr)}
+  .side{padding:16px 8px;align-items:center}
+  .side .lbl,.side .brand-text,.side .who .who-text{display:none}
+  .side .nav{padding:0;justify-content:center;width:44px}
+}
+@media (max-width:767px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{display:none}
+  .topbar{padding:10px 16px}
+  .topbar .hide-sm{display:none}
+  .tabs{padding:0 16px;gap:18px}
+  .content{padding:16px 16px 88px}
+  .bottom-nav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;inset-inline:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);z-index:40;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--text-2);text-decoration:none;min-height:48px;justify-content:center}
+  .bottom-nav a.on{color:var(--brand-text)}
+}
+/* ── Layout helpers ── */
+.cols-2{display:grid;grid-template-columns:minmax(0,1fr) 480px;gap:16px;align-items:start}
+.cols-2b{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+.cols-side{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.stack{display:flex;flex-direction:column;gap:16px}
+@media (max-width:1199px){.cols-2,.cols-2b,.cols-side{grid-template-columns:minmax(0,1fr)}}
+/* ── Register (§8) ── */
+.register{display:grid;grid-template-columns:minmax(0,1fr) 440px;min-height:calc(100vh - 48px)}
+.strip{--brand-text:#E4BC5C;--brand-soft:rgba(212,168,67,.16);--ok:#34D399;--ok-soft:rgba(52,211,153,.14);--warn:#FBBF24;--warn-soft:rgba(251,191,36,.14);--err:#F87171;--err-soft:rgba(248,113,113,.14);--border:rgba(148,163,184,.18);min-height:48px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:6px 16px;border-bottom:1px solid rgba(148,163,184,.14);background:#05070D;color:#F4F6FA}
+.strip .tools{display:flex;align-items:center;gap:8px;margin-inline-start:auto}
+.strip .btn-ghost{color:#C4CBD8}
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tile{border-radius:16px;padding:14px;min-height:124px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);box-shadow:var(--elev-1);text-align:start;font:inherit;color:inherit;cursor:pointer}
+.rail{background:var(--surface);border-inline-start:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.paybar{display:none}
+.register.simple{grid-template-columns:minmax(0,1fr) 420px}
+@media (max-width:1199px){.register,.register.simple{grid-template-columns:minmax(0,1fr) 380px}}
+@media (max-width:899px){
+  .register,.register.simple{grid-template-columns:minmax(0,1fr)}
+  .rail{border-inline-start:0;border-top:1px solid var(--border)}
+  .strip .hide-sm{display:none}
+  .paybar{display:flex;position:fixed;inset-inline:0;bottom:0;z-index:40;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);box-shadow:var(--elev-3)}
+  .register .with-paybar{padding-bottom:96px}
+  .hide-sm{display:none}
+}
+@media (max-width:479px){.total{font-size:36px;line-height:40px}.hero{font-size:48px;line-height:52px}}
 </style>
+<script>(function(){var m=/[?&]theme=(light|dark)/.exec(location.search);document.documentElement.dataset.theme=m?m[1]:'dark'})();</script>
 </head>
 <body>
-<div style="width:1440px;height:900px;display:flex;flex-direction:column;background:var(--page-bg)">
-  <div style="height:48px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--border);background:#05070D">
-    <span style="width:28px;height:28px;border-radius:6px;background:#05070D;display:inline-grid;place-items:center;border:1px solid rgba(212,168,67,.25)"><img src="https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/projects/14f044a4-5f7e-4a67-928b-a6a8801bea37/brand-assets/apps-desktop-public-titan-logo.png/titan-logo.png" alt="Titan POS" style="width:23px;height:23px;object-fit:contain"></span><span class="font-semibold">Fakih Market</span><span class="cap" style="color:var(--text-3)">Register 1 · Hamra</span>
-    <span class="pill t-mute ms-4"><iconify-icon icon="lucide:clock" width="14" height="14" style="color:currentColor"></iconify-icon>Shift #42 · Maya</span>
-    <div class="flex items-center gap-2" style="margin-inline-start:auto">
-      <button class="pill t-ok" style="height:32px;padding:0 12px;border:1px solid var(--border)" aria-label="Sync and status"><span class="dot" style="background:var(--ok)"></span><span>Synced 1 min ago</span></button>
-      <button class="btn btn-ghost btn-sm"><iconify-icon icon="lucide:languages" width="16" height="16" style="color:currentColor"></iconify-icon>عربي</button>
-      <button class="btn btn-ghost btn-sm"><iconify-icon icon="lucide:layout-dashboard" width="16" height="16" style="color:currentColor"></iconify-icon>Back office</button>
-      <button class="btn btn-ghost btn-sm" aria-label="Lock"><iconify-icon icon="lucide:lock" width="16" height="16" style="color:currentColor"></iconify-icon></button>
+<div class="root">
+<div class="strip">
+    <span class="plate" style="width:28px;height:28px;border-radius:6px"><img src="assets/titan-logo.png" alt="Titan POS" width="23" height="23" style="object-fit:contain"></span><span class="font-semibold">Fakih Market</span><span class="cap hide-sm" style="color:#9AA4B8">Register 1 · Hamra</span>
+    <span class="pill hide-sm" style="background:#1E2430;color:#C4CBD8"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Shift #42 · Maya</span>
+    <div class="tools">
+      <button class="pill t-ok" style="min-height:32px;padding:0 12px;border:1px solid var(--border)" aria-label="Sync and status: Synced 1 min ago"><span class="dot" style="background:var(--ok)"></span><span>Synced 1 min ago</span></button>
+      <button class="btn btn-ghost btn-sm hide-sm"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>عربي</button>
+      <button class="btn btn-ghost btn-sm hide-sm"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Back office</button>
+      <button class="btn btn-ghost btn-sm" aria-label="Lock"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
     </div>
   </div>
-  <div style="flex:1;display:grid;grid-template-columns:1fr 440px;min-height:0">
-    <section style="padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0">
-      <div class="input focus" style="height:56px;border-radius:12px;border-color:var(--brand-border)"><iconify-icon icon="lucide:scan-barcode" width="22" height="22" style="color:var(--brand)"></iconify-icon><span style="font-size:16px;color:var(--text-3)">Scan a barcode or type a product name…</span><span class="ms-auto flex gap-2"><span class="kbd">Enter</span><span class="cap">to pay when empty</span></span></div>
-      <div class="flex items-center gap-2 cap" style="color:var(--ok)"><iconify-icon icon="lucide:check-circle-2" width="16" height="16" style="color:var(--ok)"></iconify-icon><span class="font-semibold" style="color:var(--text)">Almarai Laban 1 L</span> added · only 3 left in lot L-0812 (exp 19 Oct)</div>
-      <div class="flex gap-2"><span class="pill t-gold" style="height:36px;padding:0 14px;font-size:13px">All</span><span class="pill t-mute" style="height:36px;padding:0 14px;font-size:13px">Favorites</span><span class="pill t-mute" style="height:36px;padding:0 14px;font-size:13px">Drinks</span><span class="pill t-mute" style="height:36px;padding:0 14px;font-size:13px">Dairy</span><span class="pill t-mute" style="height:36px;padding:0 14px;font-size:13px">Snacks</span><span class="pill t-mute" style="height:36px;padding:0 14px;font-size:13px">Bakery</span><span class="pill t-mute" style="height:36px;padding:0 14px;font-size:13px">Household</span></div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
-        <div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Drinks</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Pepsi 330 ml</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$0.60</span></div>
-        </div><div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Dairy</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Almarai Laban 1 L</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$1.85</span><span class="badge t-warn"><iconify-icon icon="lucide:alert-triangle" width="12" height="12" style="color:currentColor"></iconify-icon>Low</span></div>
-        </div><div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Snacks</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Lays Salt 45 g</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$0.90</span></div>
-        </div><div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Dairy</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Picon Cheese 8 pcs</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$2.40</span></div>
-        </div><div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Household</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Ariel Pods 22</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$9.50</span></div>
-        </div><div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Drinks</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Water Sohat 1.5 L</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$0.45</span></div>
-        </div><div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Drinks</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Bonjus Orange 1 L</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$1.10</span></div>
-        </div><div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Snacks</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Kitkat 4 finger</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$0.75</span><span class="badge t-warn"><iconify-icon icon="lucide:alert-triangle" width="12" height="12" style="color:currentColor"></iconify-icon>Low</span></div>
-        </div><div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Household</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Tide 3 kg</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$11.90</span></div>
-        </div><div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Bakery</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Arabic bread</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$0.95</span></div>
-        </div><div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Dairy</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Eggs 30</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$4.80</span></div>
-        </div><div class="card" style="border-radius:16px;padding:14px;height:132px;display:flex;flex-direction:column">
-          <div class="cap" style="color:var(--text-3)">Drinks</div>
-          <div class="font-semibold" style="font-size:15px;margin-top:4px">Nescafé 3in1 x10</div>
-          <div class="flex items-end justify-between" style="margin-top:auto"><span class="num" style="font-size:18px;font-weight:700">$2.95</span></div>
-        </div>
+  <div class="register">
+    <section class="with-paybar" style="padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0" aria-label="Products">
+      <label class="field-row field focus" style="min-height:56px;border-radius:12px;border-color:var(--brand-border)"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M17 7v10"/></svg><span class="sr-only">Scan or search</span><input class="num" style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:16px;outline:none" placeholder="Scan a barcode or type a product name…"><span class="hide-sm flex gap-2 items-center"><span class="kbd">Enter</span><span class="cap">pay when empty</span></span></label>
+      <div class="flex items-center gap-2 cap" role="status" style="color:var(--ok);flex-wrap:wrap"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><span class="font-semibold" style="color:var(--text)">Almarai Laban 1 L</span> added · only 3 left in lot L-0812 (exp 19 Oct)</div>
+      <div class="flex gap-2" style="overflow-x:auto"><span class="pill t-gold" style="min-height:40px;padding:0 14px;font-size:13px">All</span><span class="pill t-mute" style="min-height:40px;padding:0 14px;font-size:13px">Favorites</span><span class="pill t-mute" style="min-height:40px;padding:0 14px;font-size:13px">Drinks</span><span class="pill t-mute" style="min-height:40px;padding:0 14px;font-size:13px">Dairy</span><span class="pill t-mute" style="min-height:40px;padding:0 14px;font-size:13px">Snacks</span><span class="pill t-mute" style="min-height:40px;padding:0 14px;font-size:13px">Bakery</span><span class="pill t-mute" style="min-height:40px;padding:0 14px;font-size:13px">Household</span></div>
+      <div class="prod-grid">
+        <button class="tile"><span class="cap meta">Drinks</span><span class="font-semibold" style="font-size:15px;margin-top:4px">Pepsi 330 ml</span><span class="flex items-end justify-between" style="margin-top:auto;width:100%"><span class="num" style="font-size:18px;font-weight:700">$0.60</span></span></button><button class="tile"><span class="cap meta">Dairy</span><span class="font-semibold" style="font-size:15px;margin-top:4px">Almarai Laban 1 L</span><span class="flex items-end justify-between" style="margin-top:auto;width:100%"><span class="num" style="font-size:18px;font-weight:700">$1.85</span><span class="badge t-warn"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Low</span></span></button><button class="tile"><span class="cap meta">Snacks</span><span class="font-semibold" style="font-size:15px;margin-top:4px">Lays Salt 45 g</span><span class="flex items-end justify-between" style="margin-top:auto;width:100%"><span class="num" style="font-size:18px;font-weight:700">$0.90</span></span></button><button class="tile"><span class="cap meta">Dairy</span><span class="font-semibold" style="font-size:15px;margin-top:4px">Picon Cheese 8 pcs</span><span class="flex items-end justify-between" style="margin-top:auto;width:100%"><span class="num" style="font-size:18px;font-weight:700">$2.40</span></span></button><button class="tile"><span class="cap meta">Household</span><span class="font-semibold" style="font-size:15px;margin-top:4px">Ariel Pods 22</span><span class="flex items-end justify-between" style="margin-top:auto;width:100%"><span class="num" style="font-size:18px;font-weight:700">$9.50</span></span></button><button class="tile"><span class="cap meta">Drinks</span><span class="font-semibold" style="font-size:15px;margin-top:4px">Water Sohat 1.5 L</span><span class="flex items-end justify-between" style="margin-top:auto;width:100%"><span class="num" style="font-size:18px;font-weight:700">$0.45</span></span></button><button class="tile"><span class="cap meta">Drinks</span><span class="font-semibold" style="font-size:15px;margin-top:4px">Bonjus Orange 1 L</span><span class="flex items-end justify-between" style="margin-top:auto;width:100%"><span class="num" style="font-size:18px;font-weight:700">$1.10</span></span></button><button class="tile"><span class="cap meta">Snacks</span><span class="font-semibold" style="font-size:15px;margin-top:4px">Kitkat 4 finger</span><span class="flex items-end justify-between" style="margin-top:auto;width:100%"><span class="num" style="font-size:18px;font-weight:700">$0.75</span><span class="badge t-warn"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Low</span></span></button><button class="tile"><span class="cap meta">Bakery</span><span class="font-semibold" style="font-size:15px;margin-top:4px">Arabic bread</span><span class="flex items-end justify-between" style="margin-top:auto;width:100%"><span class="num" style="font-size:18px;font-weight:700">$0.95</span></span></button>
       </div>
-      <div class="flex gap-4 cap" style="margin-top:auto;color:var(--text-3)"><span><span class="kbd">Ctrl</span> <span class="kbd">F</span> search</span><span><span class="kbd">F2</span> exact cash</span><span><span class="kbd">F8</span> hold</span><span><span class="kbd">Esc</span> back</span></div>
+      <div class="flex gap-4 cap meta hide-sm" style="margin-top:auto;flex-wrap:wrap"><span><span class="kbd">Ctrl</span> <span class="kbd">F</span> search</span><span><span class="kbd">F2</span> exact cash</span><span><span class="kbd">F8</span> hold</span><span><span class="kbd">Esc</span> back</span></div>
     </section>
-    <aside style="background:var(--surface);border-inline-start:1px solid var(--border);display:flex;flex-direction:column;min-height:0">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--border)" class="flex items-center gap-3">
-        <span class="pill t-mute" style="height:32px"><iconify-icon icon="lucide:user" width="14" height="14" style="color:currentColor"></iconify-icon>Walk-in customer</span>
-        <span class="ms-auto flex gap-1"><button class="btn btn-ghost btn-sm"><iconify-icon icon="lucide:pause" width="14" height="14" style="color:currentColor"></iconify-icon>Hold</button><button class="btn btn-ghost btn-sm"><iconify-icon icon="lucide:trash-2" width="14" height="14" style="color:currentColor"></iconify-icon>Clear</button></span>
+    <aside class="rail" aria-label="Current sale">
+      <div class="flex items-center gap-3" style="padding:16px 20px;border-bottom:1px solid var(--border)">
+        <span class="pill t-mute" style="min-height:32px"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Walk-in customer</span>
+        <span class="flex gap-1" style="margin-inline-start:auto"><button class="btn btn-ghost btn-sm"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/></svg>Hold</button><button class="btn btn-ghost btn-sm"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Clear</button></span>
       </div>
-      <div style="padding:8px 20px;flex:1;overflow:hidden">
-        
-        <div class="flex items-center gap-3" style="padding:12px 0;border-bottom:1px solid var(--border)">
-          <div class="min-w-0" style="flex:1"><div class="font-semibold">Almarai Laban 1 L</div><div class="cap num">2 × 1.85</div></div>
-          <div class="flex items-center inset" style="height:40px;border-radius:10px"><button class="btn btn-ghost" style="height:38px;width:40px;padding:0" aria-label="Decrease"><iconify-icon icon="lucide:minus" width="16" height="16" style="color:currentColor"></iconify-icon></button><span class="num font-semibold" style="width:28px;text-align:center">2</span><button class="btn btn-ghost" style="height:38px;width:40px;padding:0" aria-label="Increase"><iconify-icon icon="lucide:plus" width="16" height="16" style="color:currentColor"></iconify-icon></button></div>
-          <div class="num font-semibold" style="width:64px;text-align:end">$3.70</div>
+      <div style="padding:8px 20px;flex:1">
+      <div class="flex items-center gap-3" style="padding:12px 0;border-bottom:1px solid var(--border)">
+        <div class="min-w-0" style="flex:1"><div class="font-semibold">Almarai Laban 1 L</div><div class="cap num">2 × $1.85</div></div>
+        <div class="flex items-center inset" style="border-radius:10px">
+          <button class="btn btn-ghost" style="min-height:40px;width:40px;padding:0" aria-label="Decrease Almarai Laban 1 L"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+          <span class="num font-semibold" style="width:28px;text-align:center">2</span>
+          <button class="btn btn-ghost" style="min-height:40px;width:40px;padding:0" aria-label="Increase Almarai Laban 1 L"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
         </div>
-        <div class="flex items-center gap-3" style="padding:12px 0;border-bottom:1px solid var(--border)">
-          <div class="min-w-0" style="flex:1"><div class="font-semibold">Ariel Pods 22</div><div class="cap num">1 × 9.50</div></div>
-          <div class="flex items-center inset" style="height:40px;border-radius:10px"><button class="btn btn-ghost" style="height:38px;width:40px;padding:0" aria-label="Decrease"><iconify-icon icon="lucide:minus" width="16" height="16" style="color:currentColor"></iconify-icon></button><span class="num font-semibold" style="width:28px;text-align:center">1</span><button class="btn btn-ghost" style="height:38px;width:40px;padding:0" aria-label="Increase"><iconify-icon icon="lucide:plus" width="16" height="16" style="color:currentColor"></iconify-icon></button></div>
-          <div class="num font-semibold" style="width:64px;text-align:end">$9.50</div>
-        </div>
-        <div class="flex items-center gap-3" style="padding:12px 0;border-bottom:1px solid var(--border)">
-          <div class="min-w-0" style="flex:1"><div class="font-semibold">Arabic bread</div><div class="cap num">3 × 0.95</div></div>
-          <div class="flex items-center inset" style="height:40px;border-radius:10px"><button class="btn btn-ghost" style="height:38px;width:40px;padding:0" aria-label="Decrease"><iconify-icon icon="lucide:minus" width="16" height="16" style="color:currentColor"></iconify-icon></button><span class="num font-semibold" style="width:28px;text-align:center">3</span><button class="btn btn-ghost" style="height:38px;width:40px;padding:0" aria-label="Increase"><iconify-icon icon="lucide:plus" width="16" height="16" style="color:currentColor"></iconify-icon></button></div>
-          <div class="num font-semibold" style="width:64px;text-align:end">$2.85</div>
-        </div>
-        <div class="flex items-center gap-3" style="padding:12px 0;border-bottom:1px solid var(--border)">
-          <div class="min-w-0" style="flex:1"><div class="font-semibold">Pepsi 330 ml</div><div class="cap num">6 × 0.60</div></div>
-          <div class="flex items-center inset" style="height:40px;border-radius:10px"><button class="btn btn-ghost" style="height:38px;width:40px;padding:0" aria-label="Decrease"><iconify-icon icon="lucide:minus" width="16" height="16" style="color:currentColor"></iconify-icon></button><span class="num font-semibold" style="width:28px;text-align:center">6</span><button class="btn btn-ghost" style="height:38px;width:40px;padding:0" aria-label="Increase"><iconify-icon icon="lucide:plus" width="16" height="16" style="color:currentColor"></iconify-icon></button></div>
-          <div class="num font-semibold" style="width:64px;text-align:end">$3.60</div>
-        </div>
+        <div class="num font-semibold" style="width:64px;text-align:end">$3.70</div>
       </div>
+      <div class="flex items-center gap-3" style="padding:12px 0;border-bottom:1px solid var(--border)">
+        <div class="min-w-0" style="flex:1"><div class="font-semibold">Ariel Pods 22</div><div class="cap num">1 × $9.50</div></div>
+        <div class="flex items-center inset" style="border-radius:10px">
+          <button class="btn btn-ghost" style="min-height:40px;width:40px;padding:0" aria-label="Decrease Ariel Pods 22"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+          <span class="num font-semibold" style="width:28px;text-align:center">1</span>
+          <button class="btn btn-ghost" style="min-height:40px;width:40px;padding:0" aria-label="Increase Ariel Pods 22"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+        </div>
+        <div class="num font-semibold" style="width:64px;text-align:end">$9.50</div>
+      </div>
+      <div class="flex items-center gap-3" style="padding:12px 0;border-bottom:1px solid var(--border)">
+        <div class="min-w-0" style="flex:1"><div class="font-semibold">Arabic bread</div><div class="cap num">3 × $0.95</div></div>
+        <div class="flex items-center inset" style="border-radius:10px">
+          <button class="btn btn-ghost" style="min-height:40px;width:40px;padding:0" aria-label="Decrease Arabic bread"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+          <span class="num font-semibold" style="width:28px;text-align:center">3</span>
+          <button class="btn btn-ghost" style="min-height:40px;width:40px;padding:0" aria-label="Increase Arabic bread"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+        </div>
+        <div class="num font-semibold" style="width:64px;text-align:end">$2.85</div>
+      </div>
+      <div class="flex items-center gap-3" style="padding:12px 0;border-bottom:1px solid var(--border)">
+        <div class="min-w-0" style="flex:1"><div class="font-semibold">Pepsi 330 ml</div><div class="cap num">6 × $0.60</div></div>
+        <div class="flex items-center inset" style="border-radius:10px">
+          <button class="btn btn-ghost" style="min-height:40px;width:40px;padding:0" aria-label="Decrease Pepsi 330 ml"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+          <span class="num font-semibold" style="width:28px;text-align:center">6</span>
+          <button class="btn btn-ghost" style="min-height:40px;width:40px;padding:0" aria-label="Increase Pepsi 330 ml"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+        </div>
+        <div class="num font-semibold" style="width:64px;text-align:end">$3.60</div>
+      </div></div>
       <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:12px">
         <div class="flex justify-between cap num"><span>Subtotal</span><span>$19.65</span></div>
         <div class="flex justify-between cap num"><span>VAT 11%</span><span>$2.16</span></div>
         <div class="flex items-end justify-between"><span class="cap" style="font-size:13px">Total due</span><div class="num" style="text-align:end"><div class="total">$21.81</div><div class="sub" style="color:var(--text-2)">1,952,000 LBP</div></div></div>
-        <div class="inset" style="display:grid;grid-template-columns:repeat(4,1fr);padding:4px;gap:4px;border-radius:10px">
-          <span class="flex items-center justify-center gap-2 font-semibold" style="height:40px;border-radius:8px;background:var(--surface);box-shadow:var(--elev-1);color:var(--text)"><iconify-icon icon="lucide:banknote" width="16" height="16" style="color:currentColor"></iconify-icon>Cash</span><span class="flex items-center justify-center gap-2 font-semibold" style="height:40px;border-radius:8px;color:var(--text-2)"><iconify-icon icon="lucide:credit-card" width="16" height="16" style="color:currentColor"></iconify-icon>Card</span><span class="flex items-center justify-center gap-2 font-semibold" style="height:40px;border-radius:8px;color:var(--text-2)"><iconify-icon icon="lucide:wallet" width="16" height="16" style="color:currentColor"></iconify-icon>Wallet</span><span class="flex items-center justify-center gap-2 font-semibold" style="height:40px;border-radius:8px;color:var(--text-2)"><iconify-icon icon="lucide:hand-coins" width="16" height="16" style="color:currentColor"></iconify-icon>Debt</span>
+        <div class="seg" style="grid-template-columns:repeat(4,minmax(0,1fr))" role="radiogroup" aria-label="Payment method"><span role="radio" aria-checked="true" class="on"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg><span class="hide-xs">Cash</span></span><span role="radio" aria-checked="false" class=""><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg><span class="hide-xs">Card</span></span><span role="radio" aria-checked="false" class=""><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg><span class="hide-xs">Wallet</span></span><span role="radio" aria-checked="false" class=""><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17"/><path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9"/><path d="m2 16 6 6"/><circle cx="16" cy="9" r="2.9"/><circle cx="6" cy="5" r="3"/></svg><span class="hide-xs">Debt</span></span></div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+          <label><span class="label">Paid USD</span><input class="field num" style="min-height:48px;font-size:18px;font-weight:600" value="$ 20"></label>
+          <label><span class="label">Paid LBP</span><input class="field num focus" style="min-height:48px;font-size:18px;font-weight:600" value="200,000"></label>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><div class="cap mb-1">Paid USD</div><div class="input num" style="height:48px;font-size:18px;font-weight:600">$ 20</div></div>
-          <div><div class="cap mb-1">Paid LBP</div><div class="input num focus" style="height:48px;font-size:18px;font-weight:600">200,000</div></div>
-        </div>
-        <div class="flex gap-2"><span class="pill t-mute num" style="height:32px">Exact $</span><span class="pill t-mute num" style="height:32px">Exact LBP</span><span class="pill t-mute num" style="height:32px">$20</span><span class="pill t-mute num" style="height:32px">$50</span><span class="pill t-mute num" style="height:32px">100,000</span></div>
-        <div class="banner" style="background:var(--ok-soft);border-color:transparent"><span class="cap" style="color:var(--ok)">Change due</span><span class="num ms-auto font-semibold" style="font-size:22px;color:var(--ok)">35,000 LBP</span></div>
-        <button class="btn-pay"><span>Pay</span><span class="num">$21.81 · 1,952,000 LBP</span><span class="kbd" style="background:rgba(0,0,0,.12);color:var(--brand-contrast);border-color:rgba(0,0,0,.2)">Enter</span></button>
-        <div class="cap" style="color:var(--text-3)">Cash payable rounded up to 1,955,000 LBP (nearest 5,000 note).</div>
+        <div class="flex gap-2" style="flex-wrap:wrap"><button class="pill t-mute num" style="min-height:36px;border:0">Exact $</button><button class="pill t-mute num" style="min-height:36px;border:0">Exact LBP</button><button class="pill t-mute num" style="min-height:36px;border:0">$20</button><button class="pill t-mute num" style="min-height:36px;border:0">$50</button><button class="pill t-mute num" style="min-height:36px;border:0">100,000</button></div>
+        <div class="banner t-ok" role="status"><span class="cap" style="color:inherit">Change due</span><span class="num font-semibold" style="margin-inline-start:auto;font-size:22px">35,000 LBP</span></div>
+        <button class="btn-pay hide-sm"><span>Pay</span><span class="num">$21.81 · 1,952,000 LBP</span><span class="kbd" style="background:rgba(0,0,0,.12);color:var(--brand-contrast);border-color:rgba(0,0,0,.2)">Enter</span></button>
+        <div class="cap meta">Cash payable rounded up to 1,955,000 LBP (nearest 5,000 note).</div>
       </div>
     </aside>
   </div>
+  <div class="paybar"><button class="btn-pay"><span>Pay</span><span class="num">$21.81</span><span class="num cap" style="color:inherit">1,952,000 LBP</span></button></div>
 </div>
+<script>
+(function(){
+  if(!/[?&]qa=1/.test(location.search))return;
+  function lum(c){var m=c.match(/[\d.]+/g);if(!m)return null;var a=m[3]===undefined?1:+m[3];var v=[m[0],m[1],m[2]].map(function(x){x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});return {l:.2126*v[0]+.7152*v[1]+.0722*v[2],a:a,rgb:[+m[0],+m[1],+m[2]]}}
+  function bgOf(el){var stack=[];while(el&&el.nodeType===1){var c=getComputedStyle(el).backgroundColor;var p=lum(c);if(p&&p.a>0){stack.push(p);if(p.a>=1)break}el=el.parentElement}var base=[11,14,20];var root=lum(getComputedStyle(document.body).backgroundColor);if(root)base=root.rgb;for(var i=stack.length-1;i>=0;i--){var s=stack[i];base=base.map(function(b,k){return s.rgb[k]*s.a+b*(1-s.a)})}return base}
+  function L(rgb){var v=rgb.map(function(x){x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});return .2126*v[0]+.7152*v[1]+.0722*v[2]}
+  setTimeout(function(){document.fonts.ready.then(function(){
+    var low=[];var seen=0;
+    document.querySelectorAll('.root *').forEach(function(el){
+      if(!el.childNodes.length)return;var own=[].some.call(el.childNodes,function(n){return n.nodeType===3&&n.textContent.trim()});if(!own)return;
+      var r=el.getBoundingClientRect();if(!r.width||!r.height)return;var cs=getComputedStyle(el);if(cs.visibility==='hidden'||+cs.opacity===0)return;
+      seen++;var fg=lum(cs.color);if(!fg)return;var bg=bgOf(el);var fgc=fg.rgb.map(function(x,k){return x*fg.a+bg[k]*(1-fg.a)});
+      var a=L(fgc),b=L(bg);var ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);var size=parseFloat(cs.fontSize);var bold=+cs.fontWeight>=600;
+      var need=(size>=24||(size>=18.66&&bold))?3:4.5;if(el.closest('[disabled]'))need=0;
+      if(ratio<need)low.push({text:el.textContent.trim().slice(0,40),ratio:Math.round(ratio*100)/100,need:need});
+    });
+    var unnamed=[].filter.call(document.querySelectorAll('button,a,input,select,textarea'),function(el){if(el.type==='hidden')return false;var n=(el.getAttribute('aria-label')||el.textContent||'').trim();if(n)return false;if(el.id&&document.querySelector('label[for="'+el.id+'"]'))return false;return !el.closest('label')}).map(function(el){return el.outerHTML.slice(0,60)});
+    var lang=document.documentElement.lang;
+    var report={screen:document.title,theme:document.documentElement.dataset.theme,lang:lang,dir:document.documentElement.dir,viewport:innerWidth+'x'+innerHeight,
+      overflowX:document.documentElement.scrollWidth>innerWidth+1?document.documentElement.scrollWidth:0,
+      overflowBy:(function(){var w=null;document.querySelectorAll('.root *').forEach(function(el){var r=el.getBoundingClientRect();if(r.right>innerWidth+1||r.left<-1){if(!w||r.width<w.width)w={tag:el.tagName,cls:typeof el.className==='string'?el.className.slice(0,40):'',width:Math.round(r.width)}}});return w})(),
+      brokenImages:[].filter.call(document.images,function(i){return !i.complete||!i.naturalWidth}).length,
+      icons:document.querySelectorAll('svg.ic').length,
+      fontLatin:document.fonts.check('600 16px Inter'),fontArabic:document.fonts.check('600 16px "IBM Plex Sans Arabic"'),
+      textNodesChecked:seen,lowContrast:low.slice(0,12),lowContrastCount:low.length,unnamedControls:unnamed.slice(0,8)};
+    var pre=document.createElement('pre');pre.id='qa-report';pre.textContent=JSON.stringify(report);document.body.appendChild(pre);
+  })},300);
+})();</script>
 </body>
 </html>

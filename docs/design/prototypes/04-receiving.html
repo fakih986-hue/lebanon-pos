@@ -1,148 +1,232 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en" dir="ltr" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Stock — receiving</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/tailwind.css">
 <style>
-:root{--page-bg:#0B0E14;--surface:#12161F;--surface-2:#171C27;--surface-3:#1E2430;--surface-hover:#1A2029;
---border:rgba(148,163,184,.10);--border-strong:rgba(148,163,184,.18);--text:#F4F6FA;--text-2:#9AA4B8;--text-3:#5F6B80;
---brand:#D4A843;--brand-hover:#E4BC5C;--brand-soft:rgba(212,168,67,.12);--brand-border:rgba(212,168,67,.35);--brand-contrast:#2C1F05;
+:root,[data-theme=dark]{color-scheme:dark;--page-bg:#0B0E14;--surface:#12161F;--surface-2:#171C27;--surface-3:#1E2430;--surface-hover:#1A2029;
+--border:rgba(148,163,184,.10);--border-strong:rgba(148,163,184,.22);--text:#F4F6FA;--text-2:#9AA4B8;--text-3:#7C879B;
+--brand:#D4A843;--brand-hover:#E4BC5C;--brand-soft:rgba(212,168,67,.12);--brand-border:rgba(212,168,67,.40);--brand-contrast:#2C1F05;--brand-text:#E4BC5C;
 --ok:#34D399;--ok-soft:rgba(52,211,153,.12);--warn:#FBBF24;--warn-soft:rgba(251,191,36,.12);--err:#F87171;--err-soft:rgba(248,113,113,.12);--info:#60A5FA;--info-soft:rgba(96,165,250,.12);
---elev-1:0 1px 2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);--elev-3:0 16px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05)}
+--rail-bg:linear-gradient(180deg,#0A0F18,#05070D);--rail-text:#C4CBD8;--plate:#05070D;
+--elev-1:0 1px 2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);--elev-3:0 16px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);--scrim:rgba(5,7,13,.78)}
+[data-theme=light]{color-scheme:light;--page-bg:#F7F5F1;--surface:#FFFFFF;--surface-2:#F6F4EF;--surface-3:#ECE8E1;--surface-hover:#F4F1EB;
+--border:#E8E4DC;--border-strong:#D3CCC0;--text:#1C1917;--text-2:#57534E;--text-3:#635D55;
+--brand:#996d14;--brand-hover:#7E5A10;--brand-soft:rgba(156,111,20,.10);--brand-border:rgba(156,111,20,.40);--brand-contrast:#FFFFFF;--brand-text:#6B4C0A;
+--ok:#137639;--ok-soft:rgba(22,163,74,.10);--warn:#a44c09;--warn-soft:rgba(180,83,9,.10);--err:#b91c1c;--err-soft:rgba(220,38,38,.09);--info:#0e6d93;--info-soft:rgba(14,122,165,.10);
+--rail-bg:linear-gradient(180deg,#0A0F18,#05070D);--rail-text:#C4CBD8;--plate:#05070D;
+--elev-1:0 1px 2px rgba(28,25,23,.06);--elev-3:0 16px 40px rgba(28,25,23,.16);--scrim:rgba(28,25,23,.45)}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inter","IBM Plex Sans Arabic",system-ui,sans-serif;font-size:14px;line-height:20px}
-[dir=rtl]{font-family:"IBM Plex Sans Arabic","Inter",system-ui,sans-serif;line-height:22px}
+[dir=rtl] body,[dir=rtl] .root{font-family:"IBM Plex Sans Arabic","Inter",system-ui,sans-serif;line-height:22px}
+[dir=rtl] .ic.dir{transform:scaleX(-1)}
+.ic{flex-shrink:0;display:inline-block;vertical-align:middle}
 .num{font-variant-numeric:tabular-nums;unicode-bidi:isolate}
 .cap{font-size:12px;line-height:16px;font-weight:500;color:var(--text-2)}
+.meta{color:var(--text-3)}
 .sub{font-size:16px;line-height:24px;font-weight:600}
 .title{font-size:20px;line-height:28px;font-weight:600}
 .stat{font-size:28px;line-height:34px;font-weight:600}
 .total{font-size:44px;line-height:48px;font-weight:700;letter-spacing:-.01em}
 .hero{font-size:64px;line-height:68px;font-weight:700;letter-spacing:-.02em}
+[dir=rtl] .total,[dir=rtl] .hero{letter-spacing:0}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--elev-1)}
 .inset{background:var(--surface-2);border:1px solid var(--border);border-radius:8px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;font-weight:600;font-size:14px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);white-space:nowrap}
-.btn-sm{height:32px;padding:0 12px;font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font:inherit;font-weight:600;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);white-space:nowrap;cursor:pointer}
+.btn-sm{min-height:32px;padding:0 12px;font-size:13px}
+.btn-touch{min-height:48px}
 .btn-primary{background:var(--brand);border-color:var(--brand);color:var(--brand-contrast)}
 .btn-ghost{background:transparent;border-color:transparent;color:var(--text-2)}
 .btn-danger{background:var(--err-soft);border-color:transparent;color:var(--err)}
-.btn-pay{width:100%;height:64px;border-radius:12px;background:var(--brand);color:var(--brand-contrast);font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
-.btn[disabled]{opacity:.45}
-.input{height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);padding:0 12px;display:flex;align-items:center;gap:8px}
+.btn-pay{width:100%;min-height:64px;border-radius:12px;background:var(--brand);color:var(--brand-contrast);font:inherit;font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;cursor:pointer}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn:focus-visible,.btn-pay:focus-visible,.field:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.field{width:100%;min-height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);padding:8px 12px;font:inherit}
+.field-row{display:flex;align-items:center;gap:8px}
 .focus{outline:2px solid var(--brand);outline-offset:2px}
-.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600}
-.badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600}
-.t-ok{background:var(--ok-soft);color:var(--ok)}.t-warn{background:var(--warn-soft);color:var(--warn)}.t-err{background:var(--err-soft);color:var(--err)}.t-info{background:var(--info-soft);color:var(--info)}.t-gold{background:var(--brand-soft);color:var(--brand)}.t-mute{background:var(--surface-3);color:var(--text-2)}
+.label{display:block;font-size:12px;line-height:16px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+.help{font-size:12px;line-height:16px;color:var(--text-3);margin-top:6px}
+.error{font-size:12px;line-height:16px;color:var(--err);margin-top:6px;display:flex;gap:6px;align-items:center}
+.invalid{border-color:var(--err)!important}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:4px;min-height:20px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.t-ok{background:var(--ok-soft);color:var(--ok)}.t-warn{background:var(--warn-soft);color:var(--warn)}.t-err{background:var(--err-soft);color:var(--err)}.t-info{background:var(--info-soft);color:var(--info)}.t-gold{background:var(--brand-soft);color:var(--brand-text)}.t-mute{background:var(--surface-3);color:var(--text-2)}
 .dot{width:8px;height:8px;border-radius:999px;display:inline-block}
-.row{display:grid;align-items:center;border-bottom:1px solid var(--border);min-height:44px}
-.th{font-size:12px;font-weight:600;color:var(--text-2);background:var(--surface-2)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:12px;font-weight:600;color:var(--text-2);background:var(--surface-2);text-align:start;padding:10px 16px;white-space:nowrap}
+.tbl td{padding:10px 16px;border-top:1px solid var(--border);vertical-align:middle}
+.tbl .r{text-align:end}
+.scroll-x{overflow-x:auto;position:relative}
 .sel{background:var(--brand-soft);box-shadow:inset 3px 0 0 var(--brand)}
 [dir=rtl] .sel{box-shadow:inset -3px 0 0 var(--brand)}
-.tab{height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent}
+.tab{min-height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent;white-space:nowrap}
 .tab.on{color:var(--text);border-color:var(--brand)}
 .kbd{font-size:11px;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface-2)}
-.banner{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 16px;border:1px solid var(--border)}
+.banner{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 16px;flex-wrap:wrap}
+.banner > .grow{flex:1;min-width:220px}
+.plate{background:var(--plate);display:inline-grid;place-items:center;border:1px solid rgba(212,168,67,.25)}
+.seg{display:grid;gap:4px;padding:4px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border)}
+.seg > *{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border-radius:8px;font-weight:600;color:var(--text-2)}
+.seg > .on{background:var(--surface);box-shadow:var(--elev-1);color:var(--text)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ── Shell (§2): 232px sidebar ≥1200 · 64px rail 768–1199 · bottom nav <768 ── */
+.shell{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+.side{background-color:#05070D;background-image:var(--rail-bg);border-inline-end:1px solid rgba(148,163,184,.12);display:flex;flex-direction:column;gap:4px;padding:16px 12px;color:var(--rail-text);position:sticky;top:0;height:100vh}
+.side .nav{display:flex;align-items:center;gap:12px;min-height:44px;border-radius:8px;padding:0 12px;font-weight:600;color:var(--rail-text)}
+.side .nav.on{background:rgba(212,168,67,.14);box-shadow:inset 3px 0 0 #D4A843;color:#F4F6FA}
+[dir=rtl] .side .nav.on{box-shadow:inset -3px 0 0 #D4A843}
+.side .who{margin-top:auto}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{min-height:64px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:10px 24px;border-bottom:1px solid var(--border);background:var(--page-bg);position:sticky;top:0;z-index:30}
+.topbar .tools{display:flex;align-items:center;gap:8px;margin-inline-start:auto;flex-wrap:wrap}
+.tabs{display:flex;gap:24px;padding:0 24px;border-bottom:1px solid var(--border);overflow-x:auto}
+.content{padding:24px;display:flex;flex-direction:column;gap:16px}
+.bottom-nav{display:none}
+@media (max-width:1199px){
+  .shell{grid-template-columns:64px minmax(0,1fr)}
+  .side{padding:16px 8px;align-items:center}
+  .side .lbl,.side .brand-text,.side .who .who-text{display:none}
+  .side .nav{padding:0;justify-content:center;width:44px}
+}
+@media (max-width:767px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{display:none}
+  .topbar{padding:10px 16px}
+  .topbar .hide-sm{display:none}
+  .tabs{padding:0 16px;gap:18px}
+  .content{padding:16px 16px 88px}
+  .bottom-nav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;inset-inline:0;bottom:0;background:var(--surface);border-top:1px solid var(--border);z-index:40;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--text-2);text-decoration:none;min-height:48px;justify-content:center}
+  .bottom-nav a.on{color:var(--brand-text)}
+}
+/* ── Layout helpers ── */
+.cols-2{display:grid;grid-template-columns:minmax(0,1fr) 480px;gap:16px;align-items:start}
+.cols-2b{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+.cols-side{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.stack{display:flex;flex-direction:column;gap:16px}
+@media (max-width:1199px){.cols-2,.cols-2b,.cols-side{grid-template-columns:minmax(0,1fr)}}
+/* ── Register (§8) ── */
+.register{display:grid;grid-template-columns:minmax(0,1fr) 440px;min-height:calc(100vh - 48px)}
+.strip{--brand-text:#E4BC5C;--brand-soft:rgba(212,168,67,.16);--ok:#34D399;--ok-soft:rgba(52,211,153,.14);--warn:#FBBF24;--warn-soft:rgba(251,191,36,.14);--err:#F87171;--err-soft:rgba(248,113,113,.14);--border:rgba(148,163,184,.18);min-height:48px;display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:6px 16px;border-bottom:1px solid rgba(148,163,184,.14);background:#05070D;color:#F4F6FA}
+.strip .tools{display:flex;align-items:center;gap:8px;margin-inline-start:auto}
+.strip .btn-ghost{color:#C4CBD8}
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tile{border-radius:16px;padding:14px;min-height:124px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);box-shadow:var(--elev-1);text-align:start;font:inherit;color:inherit;cursor:pointer}
+.rail{background:var(--surface);border-inline-start:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.paybar{display:none}
+.register.simple{grid-template-columns:minmax(0,1fr) 420px}
+@media (max-width:1199px){.register,.register.simple{grid-template-columns:minmax(0,1fr) 380px}}
+@media (max-width:899px){
+  .register,.register.simple{grid-template-columns:minmax(0,1fr)}
+  .rail{border-inline-start:0;border-top:1px solid var(--border)}
+  .strip .hide-sm{display:none}
+  .paybar{display:flex;position:fixed;inset-inline:0;bottom:0;z-index:40;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);box-shadow:var(--elev-3)}
+  .register .with-paybar{padding-bottom:96px}
+  .hide-sm{display:none}
+}
+@media (max-width:479px){.total{font-size:36px;line-height:40px}.hero{font-size:48px;line-height:52px}}
 </style>
+<script>(function(){var m=/[?&]theme=(light|dark)/.exec(location.search);document.documentElement.dataset.theme=m?m[1]:'dark'})();</script>
 </head>
 <body>
-<div style="display:flex;min-height:900px;width:1440px">
-  <aside style="width:232px;flex-shrink:0;background:linear-gradient(180deg,#0A0F18,#05070D);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;padding:16px 12px;gap:4px">
-    <div class="flex items-center gap-3 px-2 pb-4"><span style="width:36px;height:36px;border-radius:8px;background:#05070D;display:inline-grid;place-items:center;border:1px solid rgba(212,168,67,.25)"><img src="https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/projects/14f044a4-5f7e-4a67-928b-a6a8801bea37/brand-assets/apps-desktop-public-titan-logo.png/titan-logo.png" alt="Titan POS" style="width:30px;height:30px;object-fit:contain"></span><div><div class="font-semibold" style="font-size:15px">Titan POS</div><div class="cap" style="color:var(--text-3)">Fakih Market · Hamra</div></div></div>
-    
-      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
-        <iconify-icon icon="lucide:shopping-cart" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Sell</span>
-        
-      </div>
-      <div class="flex items-center gap-3 h-11 rounded-lg px-3 sel" style="color:var(--text)">
-        <iconify-icon icon="lucide:boxes" width="20" height="20" style="color:var(--brand)"></iconify-icon><span class="font-semibold">Stock</span>
-        
-      </div>
-      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
-        <iconify-icon icon="lucide:wallet" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Money</span>
-        
-      </div>
-      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
-        <iconify-icon icon="lucide:truck" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Delivery</span>
-        
-      </div>
-      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
-        <iconify-icon icon="lucide:shield" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Admin</span>
-        
-      </div>
-    <div style="margin-top:auto" class="inset p-3 flex items-center gap-3">
-      <span style="width:32px;height:32px;border-radius:999px;background:var(--surface-3);display:grid;place-items:center" class="font-semibold">RF</span>
-      <div class="min-w-0"><div class="font-semibold" style="font-size:13px">Rami Fakih</div><div class="cap">Owner</div></div>
+<div class="root">
+<div class="shell">
+  <aside class="side" aria-label="Main navigation">
+    <div class="flex items-center gap-3 px-2 pb-4"><span class="plate" style="width:36px;height:36px;border-radius:8px"><img src="assets/titan-logo.png" alt="Titan POS" width="30" height="30" style="object-fit:contain"></span><div class="brand-text"><div class="font-semibold" style="font-size:15px;color:#F4F6FA">Titan POS</div><div class="cap" style="color:#9AA4B8">Fakih Market · Hamra</div></div></div>
+    <a href="#sell" id="nav-sell" class="nav" aria-label="Sell"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg><span class="lbl">Sell</span></a><a href="#stock" id="nav-stock" class="nav on" aria-label="Stock" aria-current="page"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D4A843" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></svg><span class="lbl">Stock</span></a><a href="#money" id="nav-money" class="nav" aria-label="Money"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg><span class="lbl">Money</span></a><a href="#delivery" id="nav-delivery" class="nav" aria-label="Delivery"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg><span class="lbl">Delivery</span></a><a href="#admin" id="nav-admin" class="nav" aria-label="Admin"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg><span class="lbl">Admin</span></a>
+    <div class="who flex items-center gap-3" style="padding:10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(148,163,184,.12)">
+      <span style="width:32px;height:32px;border-radius:999px;background:#1E2430;display:grid;place-items:center;color:#F4F6FA" class="font-semibold">RF</span>
+      <div class="who-text min-w-0"><div class="font-semibold" style="font-size:13px;color:#F4F6FA">Rami Fakih</div><div class="cap" style="color:#9AA4B8">Owner</div></div>
     </div>
   </aside>
-  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
-    <header style="height:64px;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid var(--border);background:var(--page-bg)">
-      <div class="min-w-0"><div class="cap" style="color:var(--text-3)">Stock</div><div class="title">Receiving</div></div>
-      <div class="flex items-center gap-2" style="margin-inline-start:auto">
-        <button class="pill t-ok" style="height:32px;padding:0 12px;border:1px solid var(--border)" aria-label="Sync and status"><span class="dot" style="background:var(--ok)"></span><span>Synced just now</span></button>
-        <span class="pill t-mute" style="height:32px"><iconify-icon icon="lucide:clock" width="14" height="14" style="color:currentColor"></iconify-icon>Shift #42 · open since 08:02</span>
-        <button class="btn btn-ghost btn-sm" aria-label="Language"><iconify-icon icon="lucide:languages" width="16" height="16" style="color:currentColor"></iconify-icon>EN</button>
-        <button class="btn btn-ghost btn-sm" aria-label="Theme"><iconify-icon icon="lucide:moon" width="16" height="16" style="color:currentColor"></iconify-icon></button>
-        <button class="btn btn-ghost btn-sm" aria-label="Lock"><iconify-icon icon="lucide:lock" width="16" height="16" style="color:currentColor"></iconify-icon></button>
+  <main class="main">
+    <header class="topbar">
+      <div class="min-w-0"><div class="cap meta">Stock</div><h1 class="title" style="margin:0">Receiving</h1></div>
+      <div class="tools">
+        <button class="pill t-ok" style="min-height:32px;padding:0 12px;border:1px solid var(--border)" aria-label="Sync and status: Synced just now"><span class="dot" style="background:var(--ok)"></span><span>Synced just now</span></button>
+        <span class="pill t-mute hide-sm" style="min-height:32px"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Shift #42 · open since 08:02</span>
+        <button class="btn btn-ghost btn-sm hide-sm"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>عربي</button>
+        <button class="btn btn-ghost btn-sm" aria-label="Theme"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg></button>
+        <button class="btn btn-ghost btn-sm" aria-label="Lock"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></button>
         
       </div>
     </header>
-    <div class="flex items-end gap-6 px-6" style="border-bottom:1px solid var(--border)"><span class="tab ">Products</span><span class="tab ">Lots & counts</span><span class="tab on">Receiving</span><span class="tab ">Suppliers</span></div>
-    <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+    <nav class="tabs" aria-label="Sections"><span class="tab">Products</span><span class="tab">Lots & counts</span><span class="tab on" aria-current="page">Receiving</span><span class="tab">Suppliers</span></nav>
+    <div class="content">
       
       
-    <div style="display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start">
-      <div class="card" style="overflow:hidden">
-        <div style="padding:16px" class="flex items-center gap-3">
-          <div class="input focus" style="flex:1;height:48px;border-color:var(--brand-border)"><iconify-icon icon="lucide:scan-barcode" width="20" height="20" style="color:var(--brand)"></iconify-icon><span style="color:var(--text-3)">Scan items into this delivery…</span></div>
-          <button class="btn"><iconify-icon icon="lucide:clipboard-paste" width="16" height="16" style="color:currentColor"></iconify-icon>Paste sheet</button>
+      <div class="cols-side">
+        <div class="card" style="overflow:hidden">
+          <div class="flex items-center gap-3" style="padding:16px;flex-wrap:wrap">
+            <label class="field-row field focus" style="flex:1;min-width:220px;min-height:48px;border-color:var(--brand-border)"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M17 7v10"/></svg><span class="sr-only">Scan items</span><input style="flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;outline:none" placeholder="Scan items into this delivery…"></label>
+            <button class="btn"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 14h10"/><path d="M16 4h2a2 2 0 0 1 2 2v1.344"/><path d="m17 18 4-4-4-4"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 1.793-1.113"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>Paste sheet</button>
+          </div>
+          <div class="scroll-x"><table class="tbl" style="min-width:720px"><thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Unit cost</th><th class="r">Sell price</th><th>Lot</th><th>Expiry</th><th><span class="sr-only">Remove</span></th></tr></thead><tbody>
+          
+          <tr><td><div class="font-semibold">Almarai Laban 1 L</div><span class="badge t-ok" style="margin-top:4px">matched · 6281007030221</span></td><td class="r num">24</td><td class="r num">$1.30</td><td class="r num">$1.85</td><td class="num">L-0851</td><td class="num">09-11-2026</td><td><button class="btn btn-ghost btn-sm" aria-label="Remove row"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></td></tr>
+          <tr><td><div class="font-semibold">Picon Cheese 8 pcs</div><span class="badge t-ok" style="margin-top:4px">matched</span></td><td class="r num">12</td><td class="r num">$1.70</td><td class="r num">$2.40</td><td class="num">L-0852</td><td class="num">15-01-2027</td><td><button class="btn btn-ghost btn-sm" aria-label="Remove row"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></td></tr>
+          <tr style="box-shadow:inset 3px 0 0 var(--warn)"><td><div class="font-semibold">Unknown barcode 6291041500213</div><span class="badge t-warn" style="margin-top:4px">new product or alias?</span></td><td class="r num">6</td><td class="r num">—</td><td class="r num">—</td><td class="num">—</td><td class="num">—</td><td><button class="btn btn-ghost btn-sm" aria-label="Remove row"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></td></tr>
+          <tr><td><div class="font-semibold">Kitkat 4 finger</div><span class="badge t-info" style="margin-top:4px">cost +8% vs last delivery</span></td><td class="r num">48</td><td class="r num">$0.52</td><td class="r num">$0.80</td><td class="num">L-0853</td><td class="num">02-03-2027</td><td><button class="btn btn-ghost btn-sm" aria-label="Remove row"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></td></tr>
+          </tbody></table></div>
+          <div class="flex items-center gap-2" style="padding:12px 16px;flex-wrap:wrap">
+            <div class="banner t-warn" style="flex:1;min-width:240px;font-size:13px"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span>1 row needs a decision before saving: link 6291041500213 to an existing product, or create a new one.</span></div>
+            <button class="btn btn-sm">Link to product</button><button class="btn btn-sm">Create new</button>
+          </div>
         </div>
-        <div class="row th" style="grid-template-columns:2.2fr .7fr .8fr .8fr 1fr 1.1fr 40px;padding:0 16px"><span>Item</span><span style="text-align:end">Qty</span><span style="text-align:end">Unit cost</span><span style="text-align:end">Sell price</span><span>Lot</span><span>Expiry</span><span></span></div>
-        
-        <div class="row" style="grid-template-columns:2.2fr .7fr .8fr .8fr 1fr 1.1fr 40px;padding:0 16px;">
-          <div><div class="font-semibold">Almarai Laban 1 L</div><div class="cap"><span class="badge t-ok">matched · 6281007030221</span></div></div>
-          <span class="num" style="text-align:end">24</span><span class="num" style="text-align:end">$1.30</span><span class="num" style="text-align:end">$1.85</span><span class="num">L-0851</span><span class="num">09 Nov 2026</span>
-          <button class="btn btn-ghost btn-sm" aria-label="Remove row"><iconify-icon icon="lucide:x" width="14" height="14" style="color:currentColor"></iconify-icon></button></div>
-        <div class="row" style="grid-template-columns:2.2fr .7fr .8fr .8fr 1fr 1.1fr 40px;padding:0 16px;">
-          <div><div class="font-semibold">Picon Cheese 8 pcs</div><div class="cap"><span class="badge t-ok">matched</span></div></div>
-          <span class="num" style="text-align:end">12</span><span class="num" style="text-align:end">$1.70</span><span class="num" style="text-align:end">$2.40</span><span class="num">L-0852</span><span class="num">15 Jan 2027</span>
-          <button class="btn btn-ghost btn-sm" aria-label="Remove row"><iconify-icon icon="lucide:x" width="14" height="14" style="color:currentColor"></iconify-icon></button></div>
-        <div class="row" style="grid-template-columns:2.2fr .7fr .8fr .8fr 1fr 1.1fr 40px;padding:0 16px;background:var(--warn-soft)">
-          <div><div class="font-semibold">Unknown barcode 6291041500213</div><div class="cap"><span class="badge t-warn">new product or alias?</span></div></div>
-          <span class="num" style="text-align:end">6</span><span class="num" style="text-align:end">—</span><span class="num" style="text-align:end">—</span><span class="num">—</span><span class="num">—</span>
-          <button class="btn btn-ghost btn-sm" aria-label="Remove row"><iconify-icon icon="lucide:x" width="14" height="14" style="color:currentColor"></iconify-icon></button></div>
-        <div class="row" style="grid-template-columns:2.2fr .7fr .8fr .8fr 1fr 1.1fr 40px;padding:0 16px;">
-          <div><div class="font-semibold">Kitkat 4 finger</div><div class="cap"><span class="badge t-info">price changed: cost +8%</span></div></div>
-          <span class="num" style="text-align:end">48</span><span class="num" style="text-align:end">$0.52</span><span class="num" style="text-align:end">$0.80</span><span class="num">L-0853</span><span class="num">02 Mar 2027</span>
-          <button class="btn btn-ghost btn-sm" aria-label="Remove row"><iconify-icon icon="lucide:x" width="14" height="14" style="color:currentColor"></iconify-icon></button></div>
-        <div style="padding:12px 16px" class="flex items-center gap-2">
-          <div class="banner t-warn" style="border-color:transparent;flex:1;font-size:13px"><iconify-icon icon="lucide:help-circle" width="16" height="16" style="color:currentColor"></iconify-icon><span>1 row needs a decision before saving: link <span class="num">6291041500213</span> to an existing product, or create a new one.</span></div>
-          <button class="btn btn-sm">Link to product</button><button class="btn btn-sm">Create new</button>
-        </div>
-      </div>
-      <div class="flex flex-col gap-4">
-        <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
-          <div class="sub">Supplier & invoice</div>
-          <div class="input"><iconify-icon icon="lucide:building-2" width="16" height="16" style="color:var(--text-3)"></iconify-icon>Malia Group</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="input num">INV-77431</div><div class="input num">PO-118 · partial</div></div>
-          <div class="cap">Payment</div>
-          <div class="inset" style="display:grid;grid-template-columns:1fr 1fr 1fr;padding:4px;gap:4px"><span class="flex items-center justify-center font-semibold" style="height:34px;border-radius:6px;background:var(--surface);color:var(--text)">On account</span><span class="flex items-center justify-center font-semibold" style="height:34px;border-radius:6px;color:var(--text-2)">Cash</span><span class="flex items-center justify-center font-semibold" style="height:34px;border-radius:6px;color:var(--text-2)">Transfer</span></div>
-          <div class="cap" style="color:var(--text-3)">Adds $87.56 to Malia Group's balance. PO-118 already recorded $40.80 — only the difference is added.</div>
-        </div>
-        <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px">
-          <div class="sub">Summary</div>
-          <div class="flex justify-between"><span style="color:var(--text-2)">Ready rows</span><span class="num font-semibold">3 of 4</span></div><div class="flex justify-between"><span style="color:var(--text-2)">Units</span><span class="num font-semibold">84</span></div><div class="flex justify-between"><span style="color:var(--text-2)">Cost</span><span class="num font-semibold">$87.56</span></div><div class="flex justify-between"><span style="color:var(--text-2)">Labels to print</span><span class="num font-semibold">84</span></div>
-          <button class="btn btn-primary" style="height:48px;margin-top:6px" disabled><iconify-icon icon="lucide:check" width="16" height="16" style="color:currentColor"></iconify-icon>Save delivery</button>
-          <div class="cap" style="color:var(--text-3)">Resolve 1 row to save. Rows stay here if you leave this page.</div>
+        <div class="stack">
+          <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+            <h2 class="sub" style="margin:0">Supplier & invoice</h2>
+            <label><span class="label">Supplier</span><select class="field"><option>Malia Group</option></select></label>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><label><span class="label">Invoice</span><input class="field num" value="INV-77431"></label><label><span class="label">Purchase order</span><input class="field num" value="PO-118 · partial"></label></div>
+            <span class="label" style="margin:0">Payment</span>
+            <div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))"><span class="on">On account</span><span class="">Cash</span><span class="">Transfer</span></div>
+            <div class="cap meta">Adds $87.56 to Malia Group's balance. PO-118 already recorded $40.80 — only the difference is added.</div>
+          </div>
+          <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:8px">
+            <h2 class="sub" style="margin:0">Summary</h2>
+            <div class="flex justify-between"><span style="color:var(--text-2)">Ready rows</span><span class="num font-semibold">3 of 4</span></div><div class="flex justify-between"><span style="color:var(--text-2)">Units</span><span class="num font-semibold">84</span></div><div class="flex justify-between"><span style="color:var(--text-2)">Cost</span><span class="num font-semibold">$87.56</span></div><div class="flex justify-between"><span style="color:var(--text-2)">Labels to print</span><span class="num font-semibold">84</span></div>
+            <button class="btn btn-primary" style="min-height:48px;margin-top:6px" disabled><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Save delivery</button>
+            <div class="cap meta">Resolve 1 row to save. Rows stay here if you leave this page.</div>
+          </div>
         </div>
       </div>
-    </div>
     </div>
   </main>
+  <nav class="bottom-nav" aria-label="Main navigation"><a href="#sell" id="bnav-sell" class=""><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg><span>Sell</span></a><a href="#stock" id="bnav-stock" class="on" aria-current="page"><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></svg><span>Stock</span></a><a href="#money" id="bnav-money" class=""><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg><span>Money</span></a><a href="#delivery" id="bnav-delivery" class=""><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg><span>Delivery</span></a><a href="#admin" id="bnav-admin" class=""><svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg><span>Admin</span></a></nav>
 </div>
+</div>
+<script>
+(function(){
+  if(!/[?&]qa=1/.test(location.search))return;
+  function lum(c){var m=c.match(/[\d.]+/g);if(!m)return null;var a=m[3]===undefined?1:+m[3];var v=[m[0],m[1],m[2]].map(function(x){x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});return {l:.2126*v[0]+.7152*v[1]+.0722*v[2],a:a,rgb:[+m[0],+m[1],+m[2]]}}
+  function bgOf(el){var stack=[];while(el&&el.nodeType===1){var c=getComputedStyle(el).backgroundColor;var p=lum(c);if(p&&p.a>0){stack.push(p);if(p.a>=1)break}el=el.parentElement}var base=[11,14,20];var root=lum(getComputedStyle(document.body).backgroundColor);if(root)base=root.rgb;for(var i=stack.length-1;i>=0;i--){var s=stack[i];base=base.map(function(b,k){return s.rgb[k]*s.a+b*(1-s.a)})}return base}
+  function L(rgb){var v=rgb.map(function(x){x/=255;return x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4)});return .2126*v[0]+.7152*v[1]+.0722*v[2]}
+  setTimeout(function(){document.fonts.ready.then(function(){
+    var low=[];var seen=0;
+    document.querySelectorAll('.root *').forEach(function(el){
+      if(!el.childNodes.length)return;var own=[].some.call(el.childNodes,function(n){return n.nodeType===3&&n.textContent.trim()});if(!own)return;
+      var r=el.getBoundingClientRect();if(!r.width||!r.height)return;var cs=getComputedStyle(el);if(cs.visibility==='hidden'||+cs.opacity===0)return;
+      seen++;var fg=lum(cs.color);if(!fg)return;var bg=bgOf(el);var fgc=fg.rgb.map(function(x,k){return x*fg.a+bg[k]*(1-fg.a)});
+      var a=L(fgc),b=L(bg);var ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);var size=parseFloat(cs.fontSize);var bold=+cs.fontWeight>=600;
+      var need=(size>=24||(size>=18.66&&bold))?3:4.5;if(el.closest('[disabled]'))need=0;
+      if(ratio<need)low.push({text:el.textContent.trim().slice(0,40),ratio:Math.round(ratio*100)/100,need:need});
+    });
+    var unnamed=[].filter.call(document.querySelectorAll('button,a,input,select,textarea'),function(el){if(el.type==='hidden')return false;var n=(el.getAttribute('aria-label')||el.textContent||'').trim();if(n)return false;if(el.id&&document.querySelector('label[for="'+el.id+'"]'))return false;return !el.closest('label')}).map(function(el){return el.outerHTML.slice(0,60)});
+    var lang=document.documentElement.lang;
+    var report={screen:document.title,theme:document.documentElement.dataset.theme,lang:lang,dir:document.documentElement.dir,viewport:innerWidth+'x'+innerHeight,
+      overflowX:document.documentElement.scrollWidth>innerWidth+1?document.documentElement.scrollWidth:0,
+      overflowBy:(function(){var w=null;document.querySelectorAll('.root *').forEach(function(el){var r=el.getBoundingClientRect();if(r.right>innerWidth+1||r.left<-1){if(!w||r.width<w.width)w={tag:el.tagName,cls:typeof el.className==='string'?el.className.slice(0,40):'',width:Math.round(r.width)}}});return w})(),
+      brokenImages:[].filter.call(document.images,function(i){return !i.complete||!i.naturalWidth}).length,
+      icons:document.querySelectorAll('svg.ic').length,
+      fontLatin:document.fonts.check('600 16px Inter'),fontArabic:document.fonts.check('600 16px "IBM Plex Sans Arabic"'),
+      textNodesChecked:seen,lowContrast:low.slice(0,12),lowContrastCount:low.length,unnamedControls:unnamed.slice(0,8)};
+    var pre=document.createElement('pre');pre.id='qa-report';pre.textContent=JSON.stringify(report);document.body.appendChild(pre);
+  })},300);
+})();</script>
 </body>
 </html>

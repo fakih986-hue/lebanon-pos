@@ -1,0 +1,358 @@
+{
+  "dark": [
+    {
+      "label": "Body text on page",
+      "fg": "text",
+      "bg": "page-bg",
+      "ratio": 17.85,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Body text on surface",
+      "fg": "text",
+      "bg": "surface",
+      "ratio": 16.73,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Secondary text on surface",
+      "fg": "text-2",
+      "bg": "surface",
+      "ratio": 7.22,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Secondary text on inset",
+      "fg": "text-2",
+      "bg": "surface-2",
+      "ratio": 6.8,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Meta text on surface",
+      "fg": "text-3",
+      "bg": "surface",
+      "ratio": 5,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Meta text on inset",
+      "fg": "text-3",
+      "bg": "surface-2",
+      "ratio": 4.71,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Meta text on page",
+      "fg": "text-3",
+      "bg": "page-bg",
+      "ratio": 5.33,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Text on gold button",
+      "fg": "brand-contrast",
+      "bg": "brand",
+      "ratio": 7.26,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Gold text (chips) on gold tint",
+      "fg": "brand-text",
+      "bg": "brand-soft",
+      "ratio": 8.22,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Gold focus ring / indicator vs surface (UI)",
+      "fg": "brand",
+      "bg": "surface",
+      "ratio": 8.17,
+      "need": 3,
+      "pass": true
+    },
+    {
+      "label": "Success text on success tint",
+      "fg": "ok",
+      "bg": "ok-soft",
+      "ratio": 7.57,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Warning text on warning tint",
+      "fg": "warn",
+      "bg": "warn-soft",
+      "ratio": 8.55,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Error text on error tint",
+      "fg": "err",
+      "bg": "err-soft",
+      "ratio": 5.57,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Info text on info tint",
+      "fg": "info",
+      "bg": "info-soft",
+      "ratio": 5.9,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Error text on surface",
+      "fg": "err",
+      "bg": "surface",
+      "ratio": 6.54,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Success text on tint over page",
+      "fg": "ok",
+      "bg": "ok-soft@page-bg",
+      "ratio": 8.28,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Warning text on tint over page",
+      "fg": "warn",
+      "bg": "warn-soft@page-bg",
+      "ratio": 9.36,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Error text on tint over page",
+      "fg": "err",
+      "bg": "err-soft@page-bg",
+      "ratio": 6.05,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Info text on tint over page",
+      "fg": "info",
+      "bg": "info-soft@page-bg",
+      "ratio": 6.44,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Warning text on tint over inset",
+      "fg": "warn",
+      "bg": "warn-soft@surface-2",
+      "ratio": 7.95,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Gold text on tint over page",
+      "fg": "brand-text",
+      "bg": "brand-soft@page-bg",
+      "ratio": 8.97,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Sidebar text on rail",
+      "fg": "rail-text",
+      "bg": "rail",
+      "ratio": 12.35,
+      "need": 4.5,
+      "pass": true
+    }
+  ],
+  "light": [
+    {
+      "label": "Body text on page",
+      "fg": "text",
+      "bg": "page-bg",
+      "ratio": 16.06,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Body text on surface",
+      "fg": "text",
+      "bg": "surface",
+      "ratio": 17.49,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Secondary text on surface",
+      "fg": "text-2",
+      "bg": "surface",
+      "ratio": 7.63,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Secondary text on inset",
+      "fg": "text-2",
+      "bg": "surface-2",
+      "ratio": 6.94,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Meta text on surface",
+      "fg": "text-3",
+      "bg": "surface",
+      "ratio": 6.51,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Meta text on inset",
+      "fg": "text-3",
+      "bg": "surface-2",
+      "ratio": 5.92,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Meta text on page",
+      "fg": "text-3",
+      "bg": "page-bg",
+      "ratio": 5.98,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Text on gold button",
+      "fg": "brand-contrast",
+      "bg": "brand",
+      "ratio": 4.61,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Gold text (chips) on gold tint",
+      "fg": "brand-text",
+      "bg": "brand-soft",
+      "ratio": 6.98,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Gold focus ring / indicator vs surface (UI)",
+      "fg": "brand",
+      "bg": "surface",
+      "ratio": 4.61,
+      "need": 3,
+      "pass": true
+    },
+    {
+      "label": "Success text on success tint",
+      "fg": "ok",
+      "bg": "ok-soft",
+      "ratio": 5.11,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Warning text on warning tint",
+      "fg": "warn",
+      "bg": "warn-soft",
+      "ratio": 5.07,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Error text on error tint",
+      "fg": "err",
+      "bg": "err-soft",
+      "ratio": 5.63,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Info text on info tint",
+      "fg": "info",
+      "bg": "info-soft",
+      "ratio": 5.07,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Error text on surface",
+      "fg": "err",
+      "bg": "surface",
+      "ratio": 6.47,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Success text on tint over page",
+      "fg": "ok",
+      "bg": "ok-soft@page-bg",
+      "ratio": 4.72,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Warning text on tint over page",
+      "fg": "warn",
+      "bg": "warn-soft@page-bg",
+      "ratio": 4.68,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Error text on tint over page",
+      "fg": "err",
+      "bg": "err-soft@page-bg",
+      "ratio": 5.19,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Info text on tint over page",
+      "fg": "info",
+      "bg": "info-soft@page-bg",
+      "ratio": 4.68,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Warning text on tint over inset",
+      "fg": "warn",
+      "bg": "warn-soft@surface-2",
+      "ratio": 4.64,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Gold text on tint over page",
+      "fg": "brand-text",
+      "bg": "brand-soft@page-bg",
+      "ratio": 6.44,
+      "need": 4.5,
+      "pass": true
+    },
+    {
+      "label": "Sidebar text on rail",
+      "fg": "rail-text",
+      "bg": "rail",
+      "ratio": 12.35,
+      "need": 4.5,
+      "pass": true
+    }
+  ]
+}

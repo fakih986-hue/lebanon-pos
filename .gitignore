@@ -31,3 +31,5 @@ apps/electron/assets/titan-source.png
 
 # Superdesign scratch HTML
 .superdesign/tmp/
+# Prototype QA screenshots (regenerate with docs/design/qa-prototypes.cjs)
+docs/design/qa/shots/

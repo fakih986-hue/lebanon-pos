@@ -73,11 +73,11 @@ Never use gold for large backgrounds or for body text.
 | `--surface-2` | `#171C27` | `#F6F4EF` | Inset rows, inputs, table headers |
 | `--surface-3` | `#1E2430` | `#ECE8E1` | Pressed/selected, chips |
 | `--border` | `rgba(148,163,184,.10)` | `#E8E4DC` | Default hairline |
-| `--border-strong` | `rgba(148,163,184,.18)` | `#D9D3C8` | Inputs, dividers that matter |
+| `--border-strong` | `rgba(148,163,184,.22)` | `#D3CCC0` | Inputs, dividers that matter |
 | `--text` | `#F4F6FA` | `#1C1917` | Primary text, money |
 | `--text-2` | `#9AA4B8` | `#57534E` | Secondary text |
-| `--text-3` | `#5F6B80` | `#8C8578` | Meta, placeholders (never for values) |
-| `--brand` | `#D4A843` | `#9C6F14` | Primary action, active nav, focus |
+| `--text-3` | `#7C879B` | `#635D55` | Meta, placeholders (never for values) — raised from `#5F6B80` / `#8C8578`, which measured ~3.3:1 |
+| `--brand` | `#D4A843` | `#996d14` | Primary action, active nav, focus (light darkened 2% so white text passes 4.5:1) |
 | `--brand-hover` | `#E4BC5C` | `#7E5A10` | |
 | `--brand-soft` | `rgba(212,168,67,.12)` | `rgba(156,111,20,.10)` | Selected row, active tab background |
 | `--brand-contrast` | `#2C1F05` | `#FFFFFF` | Text on gold |
@@ -86,10 +86,10 @@ Never use gold for large backgrounds or for body text.
 
 | Status | Dark | Light | Meaning |
 |---|---|---|---|
-| ok | `#34D399` | `#16a34a` | Synced, paid, in stock, balanced |
-| warn | `#FBBF24` | `#b45309` | Pending, low stock, expiring, grace period, over/short |
-| err | `#F87171` | `#dc2626` | Rejected, failed, blocked, overdue, destructive |
-| info | `#60A5FA` | `#0e7aa5` | Neutral notices, updates available |
+| ok | `#34D399` | `#137639` | Synced, paid, in stock, balanced |
+| warn | `#FBBF24` | `#a44c09` | Pending, low stock, expiring, grace period, over/short |
+| err | `#F87171` | `#b91c1c` | Rejected, failed, blocked, overdue, destructive |
+| info | `#60A5FA` | `#0e6d93` | Neutral notices, updates available |
 
 **Status color rules**
 
@@ -97,7 +97,7 @@ Never use gold for large backgrounds or for body text.
 - Success green appears only for a positive confirmation, e.g. "Change $2.00" or "Synced". It is never decorative.
 - Payment method colors (Cash, Card, Wallet, Debt) are muted chart colors, used only in charts and legends.
 
-**Contrast:** body text ≥ 4.5:1 and money ≥ 7:1 against its surface, in both themes.
+**Contrast:** body text ≥ 4.5:1 and money ≥ 7:1 against its surface, in both themes. Verified by `docs/design/contrast-check.cjs` (all 16 pairs × 2 themes pass AA) and the rendered matrix in `docs/design/qa-prototypes.cjs`.
 
 ## 4. Typography
 
