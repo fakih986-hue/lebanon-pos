@@ -50,9 +50,13 @@ export function shiftOpAllowed(action: string, perms: Permission[], userId: stri
 
 /**
  * The staff user a pushed record names as acting (closedById, recordedById…)
- * and what that user must be allowed to do. The sync token belongs to the
- * store/device account, so this is the only place the cashier who actually
- * did it is visible to the server. null = the op names no acting user.
+ * and what that user must be allowed to do. null = the op names no acting user.
+ *
+ * LIMITATION: this id is CLIENT-ASSERTED, not authenticated. The sync token is
+ * the store/device account; the cashier's PIN session is local to the device.
+ * A modified client can name any staff member, so this is a consistency check
+ * on what an honest client records, not cashier authentication
+ * (docs/PERMISSIONS-ENFORCEMENT.md).
  */
 export function recordedActorRule(entity: string, action: string, payload: unknown):
   { userId: string; kind: "shift-open" | "shift-close" | "permission"; permission?: Permission } | null {

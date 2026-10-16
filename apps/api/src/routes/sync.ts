@@ -207,10 +207,13 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
 
   // Returns a refusal message, or null when the op may run. Two checks:
   //  1. the pushing account (actorPermissions, when it is a staff user);
-  //  2. the staff user the record names as acting (closedById, recordedById…),
-  //     because the sync token is the store/device account, not the cashier's
-  //     PIN session. An acting user the server cannot find fails closed
-  //     ("error", retried later — e.g. once that staff record has synced).
+  //  2. the staff user the record names as acting (closedById, recordedById…).
+  //     The sync token is the store/device account, not the cashier's PIN
+  //     session, so this id is CLIENT-ASSERTED and unauthenticated: it catches
+  //     an honest client recording a disallowed action, not a modified client
+  //     (docs/PERMISSIONS-ENFORCEMENT.md). An acting user the server cannot
+  //     find fails closed ("error", retried later, e.g. once that staff record
+  //     has synced).
   const permsOf = new Map<string, string[] | null>()
   async function staffPermissions(userId: string) {
     if (!permsOf.has(userId)) {

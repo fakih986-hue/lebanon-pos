@@ -39,6 +39,8 @@ export type Expense = {
   invoiceNumber: string
   note: string
   recordedBy: string
+  /** Staff id of the recorder; the server checks this user holds accounting.manage (client-asserted, see docs/PERMISSIONS-ENFORCEMENT.md). Column exists since the first migration. */
+  recordedById?: string
   shiftId?: string
   shiftNumber?: string
   registerId?: string
@@ -119,6 +121,7 @@ export function createExpense(input: CreateExpenseInput) {
     invoiceNumber: cleanText(input.invoiceNumber),
     note: cleanText(input.note),
     recordedBy: user.name,
+    recordedById: user.id,
     shiftId: shift.id,
     shiftNumber: shift.shiftNumber,
     registerId: getRegisterId(),

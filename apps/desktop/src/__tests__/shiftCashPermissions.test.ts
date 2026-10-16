@@ -95,6 +95,8 @@ describe("shift, owner draw and expense permissions (service layer)", () => {
     as("mgr")
     expect(createExpense(input).amount).toBe(12)
     expect(queued("expense")).toHaveLength(1)
+    // The queued record names its recorder, so the server can check that staff member's permission.
+    expect((enqueueMock.mock.calls.at(-1)![0] as { payload: { recordedById?: string } }).payload.recordedById).toBe("mgr")
   })
 
   it("a user with no selling or shift permission cannot open a shift", async () => {

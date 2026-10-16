@@ -5,11 +5,14 @@ import { randomUUID } from "node:crypto"
 import jwt from "jsonwebtoken"
 
 // SHIFT / DRAWER / EXPENSE PERMISSIONS on the sync push (real Postgres).
-// The desktop services refuse these too; this proves a client that skips
-// them cannot get the records accepted. Two identities are checked:
-//  - the pushing account (a cashier's own token);
-//  - the staff member the record names (closedById / recordedById), because
-//    a store's devices normally push with the store account's token.
+// The desktop services refuse these too; this proves the server refuses a
+// record when either identity lacks the permission:
+//  - the pushing account (e.g. a cashier's own token);
+//  - the staff member the record names (closedById / recordedById), since a
+//    store's devices normally push with the store account's token.
+// The named staff member is CLIENT-ASSERTED: a modified client can name a
+// manager. This is a consistency check, not authenticated cashier
+// authorization (docs/PERMISSIONS-ENFORCEMENT.md).
 process.env.JWT_SECRET = process.env.JWT_SECRET || "shift-perm-secret"
 
 const prisma = (await import("../src/lib/prisma.js")).default
@@ -22,7 +25,7 @@ const ADMIN = randomUUID(), MANAGER = randomUUID(), CASH1 = randomUUID(), CASH2 
 const DEV = `SP-${T.slice(0, 8)}`
 const tokens: Record<string, string> = {}
 
-async function push(as: "admin" | "cash1" | "cash2", entity: string, action: string, payload: Record<string, unknown>) {
+async function push(as: "admin" | "cash1" | "cash2" | "hub", entity: string, action: string, payload: Record<string, unknown>) {
   const res = await fetch(`${baseUrl}/api/sync/push`, {
     method: "POST",
     headers: { Authorization: `Bearer ${tokens[as]}`, "Content-Type": "application/json" },
@@ -51,7 +54,8 @@ beforeAll(async () => {
     await prisma.staffUser.create({ data: { id, tenantId: T, name, mobile: `sp-${id.slice(0, 8)}`, pin: "x", role } })
   }
   await prisma.device.create({ data: { tenantId: T, deviceId: DEV, deviceName: DEV, status: "APPROVED" } })
-  for (const [k, id, role] of [["admin", ADMIN, "Admin"], ["cash1", CASH1, "Cashier"], ["cash2", CASH2, "Cashier"]] as const) {
+  // A store hub token (setup/auto-login) carries userId "__admin__", not a staff row: only the recorded-user check applies.
+  for (const [k, id, role] of [["admin", ADMIN, "Admin"], ["cash1", CASH1, "Cashier"], ["cash2", CASH2, "Cashier"], ["hub", "__admin__", "Admin"]] as const) {
     tokens[k] = jwt.sign({ userId: id, tenantId: T, role }, process.env.JWT_SECRET!, { expiresIn: "1h" })
   }
 })
@@ -107,6 +111,13 @@ describe("shift close", () => {
     const row = await shiftRow(id)
     expect(row?.openedById).toBe(CASH1)
     expect(Number(row?.openingFloatUsd)).toBe(100)
+  })
+
+  it("with a hub token (no staff row), the named closer is still checked", async () => {
+    const id = await openShiftAs(CASH1)
+    expect((await push("hub", "shift", "close", closePayload(id, CASH2))).status).toBe("error")
+    expect(await shiftRow(id)).toMatchObject({ status: "Open" })
+    expect((await push("hub", "shift", "close", closePayload(id, CASH1))).status).toBe("ok")
   })
 
   it("a close naming a staff member the server does not know fails closed", async () => {
