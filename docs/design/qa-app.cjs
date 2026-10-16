@@ -292,6 +292,10 @@ const REVIEW = [
   ["review-receipt.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid, review, confirm] }],
   ["review-receipt.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [...mobileShift, addTiles, openCartSheet, cashPaid, payInSheet, confirm] }],
   ["review-printed-receipt.en.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid, review, confirm, printedReceipt] }],
+  ["review-simple-review.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, quick, exactCash, ["Enter in the empty scan field", `const i = document.querySelector("input[aria-label*='next item' i]"); i.focus(); __t.key(i, "Enter"); return "ok"`, 600]] }],
+  ["review-simple-review.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [...mobileShift, addTiles, quick, exactCash, ["Enter in the empty scan field", `const i = document.querySelector("input[aria-label*='next item' i]"); i.focus(); __t.key(i, "Enter"); return "ok"`, 600]] }],
+  ["review-simple-header.ar.dark.mobile-360", { w: 360, h: 780, mobile: true, lang: "ar", steps: [...mobileShift, addTiles, quick] }],
+  ["review-latest-sale.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [...mobileShift, addTiles, openCartSheet, exactCash, payInSheet, confirm, ["close the panel", `const b = [...document.querySelectorAll("button[aria-label]")].find((x) => /^(Close|Dismiss|إغلاق)/i.test(x.getAttribute("aria-label")) && x.closest(".mg2-receipt")); b?.click(); return b ? "closed" : "no close"`, 400], addTiles, openCartSheet, exactCash, payInSheet, confirm] }],
   ["review-full-pos.ar.light.desktop", { w: 1440, h: 900, theme: "light", lang: "ar", steps: [openShift, addTiles, cashPaid] }],
   ["review-payment.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", steps: [...mobileShift, addTiles, openCartSheet, cashPaid, payInSheet] }],
 ]

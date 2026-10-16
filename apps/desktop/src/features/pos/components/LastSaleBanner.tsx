@@ -20,17 +20,17 @@ export default function LastSaleBanner({ sales, onNewSale, onPrintReceipt, onWha
   return (
     <div className="flex flex-col gap-1" aria-label={t("pos.v2.recent_receipts")}>
       {sales.slice(0, 1).map((sale, i) => (
-        <div key={sale.number} className="flex items-center gap-2 rounded-lg border px-3"
+        <div key={sale.number} className="flex items-center gap-1 rounded-lg border px-2 sm:gap-2 sm:px-3"
           style={{ minHeight: 48, background: "var(--surface)", borderColor: "var(--border)" }}>
-          <CheckCircle2 size={16} className="shrink-0" style={{ color: i === 0 ? "var(--v2-ok)" : "var(--text-3)" }} aria-hidden="true" />
+          <CheckCircle2 size={16} className="hidden shrink-0 sm:block" style={{ color: i === 0 ? "var(--v2-ok)" : "var(--text-3)" }} aria-hidden="true" />
           <span className="min-w-0 flex-1 truncate text-[14px]" style={{ color: "var(--text)" }}>
-            <span className="num font-semibold">{sale.number}</span>
-            <span className="num ms-2" style={{ color: "var(--text-2)" }}>{formatCurrency(sale.total)}</span>
+            <span className="num font-semibold" style={{ whiteSpace: "nowrap" }}>{sale.number}</span>
+            <span className="num ms-2 hidden min-[400px]:inline" style={{ color: "var(--text-2)" }}>{formatCurrency(sale.total)}</span>
             {sale.customerName && <span className="ms-2" style={{ color: "var(--text-2)" }}>{sale.customerName}</span>}
           </span>
           {i === 0 && (
-            <button type="button" onClick={onNewSale} className="mg2-btn mg2-btn-ghost" style={{ minHeight: 44 }}>
-              <Eraser size={14} />{t("pos.new_sale")}
+            <button type="button" onClick={onNewSale} className="mg2-btn mg2-btn-ghost" style={{ minHeight: 44 }} aria-label={t("pos.new_sale")} title={t("pos.new_sale")}>
+              <Eraser size={14} /><span className="hidden sm:inline">{t("pos.new_sale")}</span>
             </button>
           )}
           <button type="button" onClick={() => onPrintReceipt(sale)} className="mg2-btn mg2-btn-ghost" style={{ minHeight: 44, width: 44, padding: 0 }}
