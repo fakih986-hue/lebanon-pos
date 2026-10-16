@@ -16,7 +16,6 @@ import {
   type BrowserBarcodeDetector, type Html5QrcodeInstance,
 } from "../../features/pos/lib/cameraScanner"
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
-import { createId } from "../../features/pos/lib/storage"
 import {
   findProductByBarcode, findProductsByExactName, generateProductBarcode,
   getProducts, parseSpreadsheetPaste, productMatchesSearch,
@@ -31,27 +30,14 @@ import {
   type SupplierLedger,
   type ReceivingSummary,
 } from "../../features/pos/services/supplier.service"
-import type { Product, ProductAccent } from "../../features/pos/types/product"
+import type { Product } from "../../features/pos/types/product"
 import { showToast } from "../../features/pos/services/toast.service"
 import { useI18n } from "@lebanonpos/shared"
 
-// POS-RECEIVE-UX-1A: every row carries an explicit decision. `mode` is chosen,
-// not inferred from empty fields. `scannedBarcode` preserves the exact code that
-// was scanned (which may be an alias of a matched product); `targetProductId` is
-// the product an `alias` row attaches its barcode to. No write happens until
-// Save Batch.
-type ReceiveRowMode = "matched" | "new" | "alias" | "variant" | "conflict"
-type BatchRow = {
-  id: string; name: string; category: string; quantity: number
-  cost: number; price: number; reorderPoint: number; reorderQuantity: number
-  expiryDate: string; barcode: string; labels: number; accent: ProductAccent
-  mode: ReceiveRowMode; scannedBarcode: string; targetProductId?: number
-  decisionConfirmed?: boolean
-  // POS-PRODUCT-IMAGE-1: optional image for NEW-product rows (staged to Save).
-  image?: string
-  // POS-RECEIVE-VARIANT-1B: staged variant of an existing parent product.
-  parentProductId?: number; variantName?: string
-}
+import {
+  applySaveResult, createRow, fillRowFromBarcode as fillRowFromProduct, isBlankRow, isRowReady, toReceiveEntry,
+  type BatchRow,
+} from "../../features/pos/lib/receiveRows"
 type LabelSize = "40x25" | "50x30" | "58x35"
 
 const purchasePaymentMethods: PurchasePaymentMethod[] = [
@@ -66,23 +52,10 @@ const pmIcons: Record<string, typeof Banknote> = {
   Cash: Banknote, Card: CreditCard, Wallet: WalletCards,
   "Bank Transfer": Landmark, "On Account": ClipboardCheck,
 }
-const accents: ProductAccent[] = ["emerald", "cyan", "amber", "rose", "violet", "indigo"]
 const RECEIVE_CAMERA_READER_ID = "lebanonpos-receive-camera-reader"
 
-function createRow(defaults?: Partial<BatchRow>): BatchRow {
-  return { id: createId(), name: "", category: "", quantity: 0, cost: 0, price: 0, reorderPoint: 10, reorderQuantity: 20, expiryDate: "", barcode: "", labels: 1, accent: accents[Math.floor(Math.random() * accents.length)], mode: "new", scannedBarcode: "", targetProductId: undefined, decisionConfirmed: false, ...defaults }
-}
 function escapeHtml(v: string) { return v.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;") }
 function normalizeNumber(v: string) { const n = Number(v); return Number.isFinite(n) ? n : 0 }
-function isRowReady(row: BatchRow) {
-  // alias rows are ready once a target is picked + a scanned barcode + qty; the
-  // name is mirrored from the target so it is always present.
-  if (row.mode === "alias") return !!row.targetProductId && row.scannedBarcode.trim().length > 0 && row.quantity > 0
-  // variant rows need a parent, a variant name, its own barcode, and qty.
-  if (row.mode === "variant") return !!row.parentProductId && (row.variantName ?? "").trim().length > 0 && row.scannedBarcode.trim().length > 0 && row.quantity > 0
-  return row.name.trim().length > 0 && row.barcode.trim().length > 0 && row.quantity > 0
-}
-
 export default function ProductReceivePage() {
   const { t } = useI18n()
   const [products, setProducts] = useState<Product[]>([])
@@ -104,6 +77,8 @@ export default function ProductReceivePage() {
   const [purchasePaymentMethod, setPurchasePaymentMethod] = useState<PurchasePaymentMethod>("On Account")
   const [supplierInvoiceNumber, setSupplierInvoiceNumber] = useState("")
   const [supplierNote, setSupplierNote] = useState("")
+  // One save at a time: a second click while saving (or after) can never receive the same delivery twice.
+  const [saving, setSaving] = useState(false)
   const [barcodeSuggestions, setBarcodeSuggestions] = useState<Record<string, { name: string; category: string } | null>>({})
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -152,15 +127,7 @@ export default function ProductReceivePage() {
     })
   }
   function fillRowFromBarcode(row: BatchRow, barcode: string): BatchRow {
-    const product = findProductByBarcode(barcode)
-    if (!product) {
-      // Unknown → default to a NEW product; the decision strip lets staff switch
-      // to "add barcode to existing". Preserve the scanned code for context.
-      return { ...row, barcode, scannedBarcode: barcode, mode: "new", targetProductId: undefined, decisionConfirmed: false, name: "", category: "Pantry", price: 0, cost: 0, reorderPoint: 10, reorderQuantity: 20, expiryDate: "" }
-    }
-    // Known (primary OR alias) → restock. Keep `scannedBarcode` as the exact code
-    // scanned (may be an alias) while `barcode` holds the product's primary.
-    return { ...row, mode: "matched", targetProductId: undefined, scannedBarcode: barcode, name: product.name, category: product.category, price: product.price, cost: product.cost, reorderPoint: product.reorderPoint ?? 10, reorderQuantity: product.reorderQuantity ?? 20, expiryDate: product.expiryDate ?? "", barcode: product.barcode, accent: product.accent }
+    return fillRowFromProduct(row, barcode, findProductByBarcode(barcode) ?? undefined)
   }
   function applyBarcodeToActiveRow(barcode: string) {
     const clean = barcode.trim().replace(/\s+/g, "")
@@ -332,16 +299,19 @@ export default function ProductReceivePage() {
     addRow({ name: row.name, category: row.category, cost: row.cost, price: row.price, quantity: row.quantity, reorderPoint: row.reorderPoint, reorderQuantity: row.reorderQuantity, expiryDate: row.expiryDate, labels: row.labels, accent: row.accent, barcode: "", scannedBarcode: "", mode: "new", targetProductId: undefined, parentProductId: undefined, variantName: undefined, decisionConfirmed: false })
   }
   function saveBatch() {
-    if (readyRows.length === 0) { showToast(t("pos.receive.no_ready_rows"), "error"); return }
+    if (saving) return
+    const startedRows = rows.filter((r) => !isBlankRow(r))
+    const unready = startedRows.filter((r) => !isRowReady(r))
+    if (readyRows.length === 0) {
+      showToast(t("pos.receive.no_ready_rows"), "error")
+      if (unready[0]) setActiveRowId(unready[0].id)
+      return
+    }
+    const sent = readyRows
     const supplierId = selectedSupplier?.id
+    setSaving(true)
     receiveAndRecord(
-      readyRows.map((r) =>
-        r.mode === "alias"
-          ? { name: r.name, barcode: r.scannedBarcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, attachAliasToProductId: r.targetProductId }
-          : r.mode === "variant"
-          ? { name: r.name, barcode: r.scannedBarcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, image: r.image, parentId: r.parentProductId, variantName: (r.variantName ?? "").trim() }
-          : { name: r.name, barcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, image: r.mode === "new" ? r.image : undefined }
-      ),
+      sent.map(toReceiveEntry),
       supplierId ? {
         supplierId,
         supplierName: selectedSupplier!.name,
@@ -350,10 +320,15 @@ export default function ProductReceivePage() {
         note: supplierNote,
       } : undefined
     ).then(summary => {
+      // Accepted rows leave the grid so pressing Save again cannot receive them twice;
+      // rejected rows stay with their reason; rows that were not ready stay as they were.
+      const after = applySaveResult(rows, sent, summary.errors)
+      setRows(after.rows)
+      setActiveRowId(after.rows[0].id)
       getProducts().then(setProducts)
       setLastReceivedTotal(totalUnits)
       setSuppliers(getSupplierLedger())
-      recordAuditEvent({ action: "inventory.receive", entity: "inventory", summary: `${totalUnits} units received.`, metadata: { rows: readyRows.length, totalUnits, totalCost, poNumber: summary.poNumber } })
+      recordAuditEvent({ action: "inventory.receive", entity: "inventory", summary: `${totalUnits} units received.`, metadata: { rows: sent.length, totalUnits, totalCost, poNumber: summary.poNumber } })
       if (summary.errors.length > 0) {
         showToast(`${summary.acceptedCount} products · ${summary.batchesCreated} batches · ${summary.rejectedCount} rejected`, "error")
         for (const err of summary.errors.slice(0, 3)) showToast(err, "error")
@@ -363,13 +338,21 @@ export default function ProductReceivePage() {
         if (summary.paymentRecorded) parts.push("paid")
         showToast(parts.join(" · "), "success")
       }
-    })
+      if (unready.length > 0) showToast(t("pos.receive.rows_not_saved", { n: unready.length }), "error")
+    }).catch((err) => {
+      // Nothing was received (the service threw before or while writing): keep every row.
+      showToast(String((err as Error)?.message ?? err), "error")
+    }).finally(() => setSaving(false))
   }
   function pasteFromSpreadsheet() {
     const text = prompt("Paste spreadsheet data (Name, Barcode, Category, Qty, Cost, Price):")
     if (!text?.trim()) return
     const { rows: parsed, rejected } = parseSpreadsheetPaste(text)
-    parsed.forEach(r => addRow({ name: r.name, barcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price }))
+    parsed.forEach(r => {
+      const product = findProductByBarcode(r.barcode)
+      const row = product ? { ...fillRowFromBarcode(createRow(), r.barcode), quantity: r.quantity, cost: r.cost || product.cost, price: r.price || product.price } : null
+      addRow(row ?? { name: r.name, barcode: r.barcode, scannedBarcode: r.barcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, decisionConfirmed: true })
+    })
     if (rejected.length > 0) {
       showToast(`${parsed.length} rows added · ${rejected.length} rejected: ${rejected.map(r => `Row ${r.index}: ${r.reason}`).join("; ")}`, "error")
     } else {
@@ -490,7 +473,7 @@ export default function ProductReceivePage() {
                 className="btn btn-default h-9 gap-1.5 text-[13px]" title="Paste from spreadsheet">
                 Paste
               </button>
-              <button type="button" onClick={saveBatch} disabled={readyRows.length === 0}
+              <button type="button" onClick={saveBatch} disabled={readyRows.length === 0 || saving} aria-busy={saving || undefined}
                 aria-label="Save and receive all ready rows"
                 className="btn btn-primary h-9 gap-1.5 text-[13px] disabled:opacity-40">
                 <CheckCircle2 size={14} /> Save Batch
@@ -981,7 +964,7 @@ export default function ProductReceivePage() {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={saveBatch} disabled={readyRows.length === 0}
+                <button type="button" onClick={saveBatch} disabled={readyRows.length === 0 || saving} aria-busy={saving || undefined}
                   aria-label="Save and receive batch"
                   className="btn btn-primary h-10 gap-2 justify-center text-[13px] disabled:opacity-40">
                   <CheckCircle2 size={14} /> Save

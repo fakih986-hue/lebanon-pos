@@ -1365,4 +1365,5 @@ export const en = {
   "settings.printer.saved": "Printer settings saved on this device.",
   "pos.v2.sales_history": "Sales history",
   "pos.status.payment_covered": "Payment covered: press Enter to review.",
+  "pos.receive.rows_not_saved": "{n} row(s) not saved: they still need a quantity, name, barcode or decision.",
 }

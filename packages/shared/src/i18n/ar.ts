@@ -1365,4 +1365,5 @@ export const ar = {
   "settings.printer.saved": "حُفظت إعدادات الطابعة على هذا الجهاز.",
   "pos.v2.sales_history": "سجل المبيعات",
   "pos.status.payment_covered": "المبلغ مغطّى: اضغط Enter للمراجعة.",
+  "pos.receive.rows_not_saved": "لم تُحفظ {n} من الأسطر: ما زالت تحتاج إلى كمية أو اسم أو باركود أو قرار.",
 }
