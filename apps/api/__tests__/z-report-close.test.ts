@@ -23,6 +23,8 @@ const USER_A = randomUUID()
 const USER_B = randomUUID()
 let tokenA = ""
 let tokenB = ""
+const CASHIER_A = randomUUID(), CASHIER_A2 = randomUUID()
+let tokenCashier = "", tokenCashier2 = ""
 
 async function call(method: string, path: string, token: string, body?: unknown) {
   const res = await fetch(`${baseUrl}${path}`, {
@@ -70,6 +72,11 @@ beforeAll(async () => {
     await prisma.staffUser.create({ data: { id: userId, tenantId, name: "IT", mobile: `zr-${tenantId.slice(0, 6)}`, pin: "x", role: "Admin" } })
   }
   tokenA = jwt.sign({ userId: USER_A, tenantId: TENANT_A, role: "Admin" }, process.env.JWT_SECRET!, { expiresIn: "1h" })
+  for (const [id, n] of [[CASHIER_A, 1], [CASHIER_A2, 2]] as const) {
+    await prisma.staffUser.create({ data: { id, tenantId: TENANT_A, name: `Cashier ${n}`, mobile: `zr-c${n}-${TENANT_A.slice(0, 6)}`, pin: "x", role: "Cashier" } })
+  }
+  tokenCashier = jwt.sign({ userId: CASHIER_A, tenantId: TENANT_A, role: "Cashier" }, process.env.JWT_SECRET!, { expiresIn: "1h" })
+  tokenCashier2 = jwt.sign({ userId: CASHIER_A2, tenantId: TENANT_A, role: "Cashier" }, process.env.JWT_SECRET!, { expiresIn: "1h" })
   tokenB = jwt.sign({ userId: USER_B, tenantId: TENANT_B, role: "Admin" }, process.env.JWT_SECRET!, { expiresIn: "1h" })
 })
 
@@ -139,5 +146,47 @@ describe("server Z-report close (real Postgres)", () => {
     const x = await call("GET", `/api/reports/x-report?tenantId=${TENANT_A}`, tokenB)
     expect(JSON.stringify(x.body)).not.toContain(shiftA.shiftNumber)
     await prisma.shift.update({ where: { id: shiftA.id }, data: { status: "Closed" } as any })
+  })
+
+  it("the X-report's drawer figures agree with the Z-report for the same mixed-tender shift", async () => {
+    const shift = await openShift(TENANT_A, 100)
+    await seedShiftActivity(TENANT_A, shift.id)
+    const supplier = await prisma.supplier.create({ data: { tenantId: TENANT_A, name: "XZ supplier" } })
+    await prisma.supplierPayment.createMany({ data: [
+      { id: randomUUID(), tenantId: TENANT_A, shiftId: shift.id, supplierId: supplier.id, supplierName: "IT", amount: 2, method: "Cash", recordedBy: "IT" },
+      { id: randomUUID(), tenantId: TENANT_A, shiftId: shift.id, supplierId: supplier.id, supplierName: "IT", amount: 6, method: "Card", recordedBy: "IT" },
+    ] as any })
+    await prisma.cashMovement.createMany({ data: [
+      { id: randomUUID(), tenantId: TENANT_A, shiftId: shift.id, type: "CashIn", direction: "In", amountUsd: 20, reason: "IT", recordedByName: "IT" },
+      { id: randomUUID(), tenantId: TENANT_A, shiftId: shift.id, type: "SafeDrop", direction: "Out", amountUsd: 8, reason: "IT", recordedByName: "IT" },
+    ] })
+    // Cash: +100 sales, −10 refund, −3 expense, −2 supplier, +20 in, −8 out. Card/debt activity must not move the drawer.
+    const expected = 100 + 100 - 10 - 3 - 2 + 20 - 8
+    const x = await call("GET", "/api/reports/x-report", tokenA)
+    expect(x.status).toBe(200)
+    expect(x.body.shift.number).toBe(shift.shiftNumber)
+    expect(x.body.cashReconciliation.expectedCash).toBe(expected)
+    expect(x.body.netCash).toBe(expected - 100) // was 100 − 22 (all refunds) − 7 (all expenses) = 71
+    expect(x.body.refunds.total).toBe(22) // activity totals still report every tender
+    expect(x.body.expenses.total).toBe(7)
+    const csv = await fetch(`${baseUrl}/api/reports/export/x-report`, { headers: { Authorization: `Bearer ${tokenA}` } }).then((r) => r.text())
+    expect(csv).toContain(`Expected Cash,"$${expected.toFixed(2)}"`)
+    expect(csv).toContain(`Net Cash,"$${(expected - 100).toFixed(2)}"`)
+    expect(csv).toContain(`Sales Total,"$180.00"`) // Debt sales count as sales (status "Debt", not only "Completed")
+    const z = await call("POST", "/api/reports/z-report", tokenA, { shiftId: shift.id, closingCash: expected })
+    expect(z.status).toBe(200)
+    const { closingCash: _c, difference: _d, ...zDrawer } = z.body.cashReconciliation
+    expect(x.body.cashReconciliation).toEqual(zDrawer)
+    expect(z.body.cashReconciliation.difference).toBe(0)
+  })
+
+  it("a cashier cannot Z-close a shift another user opened; the opener can", async () => {
+    const shift = await prisma.shift.create({ data: { id: randomUUID(), tenantId: TENANT_A, shiftNumber: `Z-${randomUUID().slice(0, 8)}`, status: "Open", openedAt: new Date(Date.now() - 60_000), openedById: CASHIER_A, openedByName: "Cashier 1", openingFloatUsd: 50 } as any })
+    const other = await call("POST", "/api/reports/z-report", tokenCashier2, { shiftId: shift.id, closingCash: 50 })
+    expect(other.status).toBe(403)
+    expect((await prisma.shift.findUnique({ where: { id: shift.id } }))!.status).toBe("Open")
+    const own = await call("POST", "/api/reports/z-report", tokenCashier, { shiftId: shift.id, closingCash: 50 })
+    expect(own.status).toBe(200)
+    expect((await prisma.shift.findUnique({ where: { id: shift.id } }))!).toMatchObject({ status: "Closed", closedById: CASHIER_A })
   })
 })

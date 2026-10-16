@@ -2,8 +2,44 @@ import { Router } from "express"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
+import { effectivePermissions, shiftOpAllowed } from "../lib/permissions.js"
 
 const router = Router()
+
+type Db = Pick<typeof prisma, "sale" | "saleRefund" | "expense" | "supplierPayment" | "cashMovement">
+type ShiftRef = { id: string; openedAt: Date; openingFloatUsd: unknown }
+
+/** Records of a shift: by shiftId, with a time fallback for old records that have none. */
+function shiftFilter(tenantId: string, shift: ShiftRef): any {
+  return { tenantId, OR: [{ shiftId: shift.id }, { shiftId: null, createdAt: { gte: shift.openedAt } }] }
+}
+
+/**
+ * The drawer formula, shared by the X-report (mid-shift), its CSV export and
+ * the Z-report (close), and the same as the desktop computeShiftCashBreakdown:
+ * only CASH sales, refunds, expenses and supplier payments move the drawer,
+ * plus cash in / out movements.
+ */
+async function shiftCash(db: Db, tenantId: string, shift: ShiftRef) {
+  const where = shiftFilter(tenantId, shift)
+  const [sales, refunds, expenses, supplierPayments, inAgg, outAgg] = await Promise.all([
+    db.sale.aggregate({ where: { ...where, status: { not: "Voided" }, paymentMethod: "Cash" }, _sum: { total: true }, _count: true }),
+    db.saleRefund.aggregate({ where: { ...where, method: "Cash" }, _sum: { total: true } }),
+    db.expense.aggregate({ where: { ...where, paymentMethod: "Cash" }, _sum: { amount: true } }),
+    db.supplierPayment.aggregate({ where: { ...where, method: "Cash" }, _sum: { amount: true } }),
+    db.cashMovement.aggregate({ where: { ...where, direction: "In" }, _sum: { amountUsd: true } }),
+    db.cashMovement.aggregate({ where: { ...where, direction: "Out" }, _sum: { amountUsd: true } }),
+  ])
+  const openingFloat = Number(shift.openingFloatUsd ?? 0)
+  const cashSales = Number(sales._sum.total ?? 0)
+  const cashRefunds = Number(refunds._sum.total ?? 0)
+  const cashExpenses = Number(expenses._sum.amount ?? 0)
+  const cashSupplierPayments = Number(supplierPayments._sum.amount ?? 0)
+  const cashIn = Number(inAgg._sum.amountUsd ?? 0)
+  const cashOut = Number(outAgg._sum.amountUsd ?? 0)
+  const netCash = cashSales - cashRefunds - cashExpenses - cashSupplierPayments + cashIn - cashOut
+  return { openingFloat, cashSalesCount: sales._count, cashSales, cashRefunds, cashExpenses, cashSupplierPayments, cashIn, cashOut, netCash, expectedCash: openingFloat + netCash }
+}
 
 // ── Low-stock alerts ─────────────────────────────────────────────────
 router.get("/low-stock", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
@@ -59,42 +95,31 @@ router.get("/x-report", requireAuth, async (req: AuthRequest, res: ServerRespons
       return
     }
 
-    const since = openShift.openedAt
-    // Shift attribution: match by shiftId first, time fallback for old records
-    const shiftFilter: any = { tenantId, OR: [{ shiftId: openShift.id }, { shiftId: null, createdAt: { gte: since } }] }
+    const where = shiftFilter(tenantId, openShift)
 
-    const [sales, refunds, expenses, supplierPayments] = await Promise.all([
+    // All-tender activity totals, then the drawer (cash only) from the shared formula.
+    const [sales, refunds, expenses, supplierPayments, cash, walletSales] = await Promise.all([
       prisma.sale.aggregate({
-        where: { ...shiftFilter, status: { not: "Voided" } },
+        where: { ...where, status: { not: "Voided" } },
         _sum: { total: true, cost: true, profit: true },
         _count: true,
       }),
       prisma.saleRefund.aggregate({
-        where: shiftFilter,
+        where,
         _sum: { total: true },
         _count: true,
       }),
       prisma.expense.aggregate({
-        where: shiftFilter,
+        where,
         _sum: { amount: true },
         _count: true,
       }),
       prisma.supplierPayment.aggregate({
-        where: shiftFilter,
+        where,
         _sum: { amount: true },
       }),
-    ])
-
-    const [cashSales, walletSales] = await Promise.all([
-      prisma.sale.aggregate({
-        where: { ...shiftFilter, status: { not: "Voided" }, paymentMethod: "Cash" },
-        _sum: { total: true },
-        _count: true,
-      }),
-      prisma.sale.aggregate({
-        where: { ...shiftFilter, status: { not: "Voided" }, paymentMethod: "Wallet" },
-        _sum: { total: true },
-      }),
+      shiftCash(prisma, tenantId, openShift),
+      prisma.sale.aggregate({ where: { ...where, status: { not: "Voided" }, paymentMethod: "Wallet" }, _sum: { total: true } }),
     ])
 
     json(res, {
@@ -123,10 +148,16 @@ router.get("/x-report", requireAuth, async (req: AuthRequest, res: ServerRespons
         total: Number(supplierPayments._sum.amount ?? 0),
       },
       paymentBreakdown: {
-      cashSales: { count: cashSales._count, total: Number(cashSales._sum.total ?? 0) },
-      wallet: { total: Number(walletSales._sum.total ?? 0) },
+        cashSales: { count: cash.cashSalesCount, total: cash.cashSales },
+        wallet: { total: Number(walletSales._sum.total ?? 0) },
       },
-      netCash: Number(cashSales._sum.total ?? 0) - Number(refunds._sum.total ?? 0) - Number(expenses._sum.amount ?? 0),
+      // Drawer view, identical to the Z-report's cashReconciliation (without the count).
+      cashReconciliation: {
+        openingFloat: cash.openingFloat, cashSales: cash.cashSales, cashRefunds: cash.cashRefunds, cashExpenses: cash.cashExpenses,
+        cashSupplierPayments: cash.cashSupplierPayments, cashIn: cash.cashIn, cashOut: cash.cashOut, expectedCash: cash.expectedCash,
+      },
+      // Cash added to the drawer during the shift (cash tenders only) = expectedCash − openingFloat.
+      netCash: cash.netCash,
       generatedAt: new Date().toISOString(),
     })
   } catch (err) {
@@ -154,9 +185,14 @@ router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerRespon
       return
     }
 
-    const since = shift.openedAt
-    // Shift attribution: match by shiftId first, time fallback for old records
-    const shiftFilter: any = { tenantId, OR: [{ shiftId: shift.id }, { shiftId: null, createdAt: { gte: since } }] }
+    // Closing a shift: its opener or a manager (shifts.manage), the same rule as the desktop and the sync push.
+    const closer = await prisma.staffUser.findFirst({ where: { id: req.auth!.userId, tenantId }, select: { role: true, permissions: true } })
+    if (!closer || !shiftOpAllowed("close", effectivePermissions(closer.permissions, closer.role), req.auth!.userId, shift.openedById)) {
+      json(res, { error: "Only the person who opened this shift or a manager can close it" }, 403)
+      return
+    }
+
+    const where = shiftFilter(tenantId, shift)
     const now = new Date()
 
     // STOCK-REVIEW: claim the shift FIRST (compare-and-set on status, which
@@ -173,30 +209,15 @@ router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerRespon
       })
       if (claim.count === 0) return null
 
-      const [salesAgg, cashRefundsAgg, cashExpensesAgg, cashSupplierPaymentsAgg, cashSalesAgg, cashInAgg, cashOutAgg] = await Promise.all([
+      const [salesAgg, cash] = await Promise.all([
         tx.sale.aggregate({
-          where: { ...shiftFilter, status: { not: "Voided" } },
+          where: { ...where, status: { not: "Voided" } },
           _sum: { total: true, cost: true, profit: true },
           _count: true,
         }),
-        tx.saleRefund.aggregate({ where: { ...shiftFilter, method: "Cash" }, _sum: { total: true } }),
-        tx.expense.aggregate({ where: { ...shiftFilter, paymentMethod: "Cash" }, _sum: { amount: true } }),
-        tx.supplierPayment.aggregate({ where: { ...shiftFilter, method: "Cash" }, _sum: { amount: true } }),
-        tx.sale.aggregate({
-          where: { ...shiftFilter, status: { not: "Voided" }, paymentMethod: "Cash" },
-          _sum: { total: true },
-        }),
-        tx.cashMovement.aggregate({ where: { ...shiftFilter, direction: "In" }, _sum: { amountUsd: true } }),
-        tx.cashMovement.aggregate({ where: { ...shiftFilter, direction: "Out" }, _sum: { amountUsd: true } }),
+        shiftCash(tx as Db, tenantId, shift),
       ])
-
-      const cashSales = Number(cashSalesAgg._sum.total ?? 0)
-      const cashRefunds = Number(cashRefundsAgg._sum.total ?? 0)
-      const cashExpenses = Number(cashExpensesAgg._sum.amount ?? 0)
-      const cashSupplierPayments = Number(cashSupplierPaymentsAgg._sum.amount ?? 0)
-      const cashIn = Number(cashInAgg._sum.amountUsd ?? 0)
-      const cashOut = Number(cashOutAgg._sum.amountUsd ?? 0)
-      const expectedCash = Number(shift.openingFloatUsd ?? 0) + cashSales - cashRefunds - cashExpenses - cashSupplierPayments + cashIn - cashOut
+      const { cashSales, cashRefunds, cashExpenses, cashSupplierPayments, cashIn, cashOut, expectedCash } = cash
       const difference = (closingCash ?? 0) - expectedCash
 
       await tx.shift.updateMany({
@@ -539,20 +560,12 @@ router.get("/export/:type", requireAuth, async (req: AuthRequest, res: ServerRes
           orderBy: { openedAt: "desc" },
         })
         if (!shift) { json(res, { error: "No open shift" }, 404); return }
-        const since = shift.openedAt
-        const [sales, refunds, expenses] = await Promise.all([
-          prisma.sale.aggregate({
-            where: { tenantId, status: "Completed", createdAt: { gte: since } },
-            _sum: { total: true, profit: true }, _count: true,
-          }),
-          prisma.saleRefund.aggregate({
-            where: { tenantId, createdAt: { gte: since } },
-            _sum: { total: true },
-          }),
-          prisma.expense.aggregate({
-            where: { tenantId, createdAt: { gte: since } },
-            _sum: { amount: true },
-          }),
+        const where = shiftFilter(tenantId, shift)
+        const [sales, refunds, expenses, cash] = await Promise.all([
+          prisma.sale.aggregate({ where: { ...where, status: { not: "Voided" } }, _sum: { total: true, profit: true }, _count: true }),
+          prisma.saleRefund.aggregate({ where, _sum: { total: true } }),
+          prisma.expense.aggregate({ where, _sum: { amount: true } }),
+          shiftCash(prisma, tenantId, shift),
         ])
         csv = "Metric,Value\n"
         csv += `Shift Number,"${shift.shiftNumber}"\nOpened At,"${shift.openedAt.toISOString()}"\n`
@@ -560,6 +573,7 @@ router.get("/export/:type", requireAuth, async (req: AuthRequest, res: ServerRes
         csv += `Refunds,"$${Number(refunds._sum.total ?? 0).toFixed(2)}"\n`
         csv += `Expenses,"$${Number(expenses._sum.amount ?? 0).toFixed(2)}"\n`
         csv += `Net Profit,"$${Number(sales._sum.profit ?? 0).toFixed(2)}"\n`
+        csv += `Cash Sales,"$${cash.cashSales.toFixed(2)}"\nCash Refunds,"$${cash.cashRefunds.toFixed(2)}"\nCash Expenses,"$${cash.cashExpenses.toFixed(2)}"\nCash Supplier Payments,"$${cash.cashSupplierPayments.toFixed(2)}"\nCash In,"$${cash.cashIn.toFixed(2)}"\nCash Out,"$${cash.cashOut.toFixed(2)}"\nNet Cash,"$${cash.netCash.toFixed(2)}"\nExpected Cash,"$${cash.expectedCash.toFixed(2)}"\n`
         filename = `x-report-${shift.shiftNumber}.csv`
         break
       }
