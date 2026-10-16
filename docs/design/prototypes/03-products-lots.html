@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock — products & lots</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--page-bg:#0B0E14;--surface:#12161F;--surface-2:#171C27;--surface-3:#1E2430;--surface-hover:#1A2029;
+--border:rgba(148,163,184,.10);--border-strong:rgba(148,163,184,.18);--text:#F4F6FA;--text-2:#9AA4B8;--text-3:#5F6B80;
+--brand:#D4A843;--brand-hover:#E4BC5C;--brand-soft:rgba(212,168,67,.12);--brand-border:rgba(212,168,67,.35);--brand-contrast:#2C1F05;
+--ok:#34D399;--ok-soft:rgba(52,211,153,.12);--warn:#FBBF24;--warn-soft:rgba(251,191,36,.12);--err:#F87171;--err-soft:rgba(248,113,113,.12);--info:#60A5FA;--info-soft:rgba(96,165,250,.12);
+--elev-1:0 1px 2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);--elev-3:0 16px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inter","IBM Plex Sans Arabic",system-ui,sans-serif;font-size:14px;line-height:20px}
+[dir=rtl]{font-family:"IBM Plex Sans Arabic","Inter",system-ui,sans-serif;line-height:22px}
+.num{font-variant-numeric:tabular-nums;unicode-bidi:isolate}
+.cap{font-size:12px;line-height:16px;font-weight:500;color:var(--text-2)}
+.sub{font-size:16px;line-height:24px;font-weight:600}
+.title{font-size:20px;line-height:28px;font-weight:600}
+.stat{font-size:28px;line-height:34px;font-weight:600}
+.total{font-size:44px;line-height:48px;font-weight:700;letter-spacing:-.01em}
+.hero{font-size:64px;line-height:68px;font-weight:700;letter-spacing:-.02em}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--elev-1)}
+.inset{background:var(--surface-2);border:1px solid var(--border);border-radius:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;font-weight:600;font-size:14px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);white-space:nowrap}
+.btn-sm{height:32px;padding:0 12px;font-size:13px}
+.btn-primary{background:var(--brand);border-color:var(--brand);color:var(--brand-contrast)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+.btn-danger{background:var(--err-soft);border-color:transparent;color:var(--err)}
+.btn-pay{width:100%;height:64px;border-radius:12px;background:var(--brand);color:var(--brand-contrast);font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+.btn[disabled]{opacity:.45}
+.input{height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);padding:0 12px;display:flex;align-items:center;gap:8px}
+.focus{outline:2px solid var(--brand);outline-offset:2px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600}
+.t-ok{background:var(--ok-soft);color:var(--ok)}.t-warn{background:var(--warn-soft);color:var(--warn)}.t-err{background:var(--err-soft);color:var(--err)}.t-info{background:var(--info-soft);color:var(--info)}.t-gold{background:var(--brand-soft);color:var(--brand)}.t-mute{background:var(--surface-3);color:var(--text-2)}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block}
+.row{display:grid;align-items:center;border-bottom:1px solid var(--border);min-height:44px}
+.th{font-size:12px;font-weight:600;color:var(--text-2);background:var(--surface-2)}
+.sel{background:var(--brand-soft);box-shadow:inset 3px 0 0 var(--brand)}
+[dir=rtl] .sel{box-shadow:inset -3px 0 0 var(--brand)}
+.tab{height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent}
+.tab.on{color:var(--text);border-color:var(--brand)}
+.kbd{font-size:11px;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface-2)}
+.banner{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 16px;border:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div style="display:flex;min-height:900px;width:1440px">
+  <aside style="width:232px;flex-shrink:0;background:linear-gradient(180deg,#0A0F18,#05070D);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;padding:16px 12px;gap:4px">
+    <div class="flex items-center gap-3 px-2 pb-4"><span style="width:36px;height:36px;border-radius:8px;background:#05070D;display:inline-grid;place-items:center;border:1px solid rgba(212,168,67,.25)"><img src="https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/projects/14f044a4-5f7e-4a67-928b-a6a8801bea37/brand-assets/apps-desktop-public-titan-logo.png/titan-logo.png" alt="Titan POS" style="width:30px;height:30px;object-fit:contain"></span><div><div class="font-semibold" style="font-size:15px">Titan POS</div><div class="cap" style="color:var(--text-3)">Fakih Market · Hamra</div></div></div>
+    
+      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
+        <iconify-icon icon="lucide:shopping-cart" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Sell</span>
+        
+      </div>
+      <div class="flex items-center gap-3 h-11 rounded-lg px-3 sel" style="color:var(--text)">
+        <iconify-icon icon="lucide:boxes" width="20" height="20" style="color:var(--brand)"></iconify-icon><span class="font-semibold">Stock</span>
+        
+      </div>
+      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
+        <iconify-icon icon="lucide:wallet" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Money</span>
+        
+      </div>
+      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
+        <iconify-icon icon="lucide:truck" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Delivery</span>
+        
+      </div>
+      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
+        <iconify-icon icon="lucide:shield" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Admin</span>
+        
+      </div>
+    <div style="margin-top:auto" class="inset p-3 flex items-center gap-3">
+      <span style="width:32px;height:32px;border-radius:999px;background:var(--surface-3);display:grid;place-items:center" class="font-semibold">RF</span>
+      <div class="min-w-0"><div class="font-semibold" style="font-size:13px">Rami Fakih</div><div class="cap">Owner</div></div>
+    </div>
+  </aside>
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header style="height:64px;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid var(--border);background:var(--page-bg)">
+      <div class="min-w-0"><div class="cap" style="color:var(--text-3)">Stock</div><div class="title">Products</div></div>
+      <div class="flex items-center gap-2" style="margin-inline-start:auto">
+        <button class="pill t-warn" style="height:32px;padding:0 12px;border:1px solid var(--border)" aria-label="Sync and status"><iconify-icon icon="lucide:cloud-off" width="14" height="14" style="color:currentColor"></iconify-icon><span>12 waiting to sync</span></button>
+        <span class="pill t-mute" style="height:32px"><iconify-icon icon="lucide:clock" width="14" height="14" style="color:currentColor"></iconify-icon>Shift #42 · open since 08:02</span>
+        <button class="btn btn-ghost btn-sm" aria-label="Language"><iconify-icon icon="lucide:languages" width="16" height="16" style="color:currentColor"></iconify-icon>EN</button>
+        <button class="btn btn-ghost btn-sm" aria-label="Theme"><iconify-icon icon="lucide:moon" width="16" height="16" style="color:currentColor"></iconify-icon></button>
+        <button class="btn btn-ghost btn-sm" aria-label="Lock"><iconify-icon icon="lucide:lock" width="16" height="16" style="color:currentColor"></iconify-icon></button>
+        <button class="btn btn-primary btn-sm"><iconify-icon icon="lucide:plus" width="16" height="16" style="color:currentColor"></iconify-icon>Add product</button>
+      </div>
+    </header>
+    <div class="flex items-end gap-6 px-6" style="border-bottom:1px solid var(--border)"><span class="tab on">Products<span class="badge t-mute num">1,284</span></span><span class="tab ">Lots & counts</span><span class="tab ">Receiving</span><span class="tab ">Suppliers</span></div>
+    <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+      
+      
+    <div class="flex items-center gap-2">
+      <div class="input" style="width:360px"><iconify-icon icon="lucide:search" width="16" height="16" style="color:var(--text-3)"></iconify-icon><span style="color:var(--text-3)">Search name, barcode or alias…</span></div>
+      <span class="pill t-gold" style="height:32px">All 1,284</span><span class="pill t-warn" style="height:32px">Low stock 23</span><span class="pill t-err" style="height:32px">Expiring 9</span><span class="pill t-mute" style="height:32px">No barcode 14</span><span class="pill t-mute" style="height:32px">Archived</span>
+      <button class="btn btn-sm" style="margin-inline-start:auto"><iconify-icon icon="lucide:upload" width="14" height="14" style="color:currentColor"></iconify-icon>Import</button><button class="btn btn-sm"><iconify-icon icon="lucide:download" width="14" height="14" style="color:currentColor"></iconify-icon>Export</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 480px;gap:16px;align-items:start">
+      <div class="card" style="overflow:hidden">
+        <div class="row th" style="grid-template-columns:2.4fr 1fr .9fr .8fr .8fr .7fr .7fr;padding:0 16px"><span>Product</span><span>Category</span><span style="text-align:end">Price</span><span style="text-align:end">Cost</span><span style="text-align:end">Margin</span><span style="text-align:end">Stock</span><span style="text-align:end">Lots</span></div>
+        <div class="row sel" style="grid-template-columns:2.4fr 1fr .9fr .8fr .8fr .7fr .7fr;padding:0 16px">
+          <div><div class="font-semibold">Almarai Laban 1 L</div><div class="cap num" style="color:var(--text-3)">6281007030221</div></div>
+          <span style="color:var(--text-2)">Dairy</span><span class="num" style="text-align:end">$1.85</span><span class="num" style="text-align:end;color:var(--text-2)">$1.32</span><span class="num" style="text-align:end;color:var(--text-2)">29%</span>
+          <span style="text-align:end"><span class="num">27</span></span><span class="cap" style="text-align:end">2 lots · 1 expiring</span></div><div class="row " style="grid-template-columns:2.4fr 1fr .9fr .8fr .8fr .7fr .7fr;padding:0 16px">
+          <div><div class="font-semibold">Pepsi 330 ml</div><div class="cap num" style="color:var(--text-3)">5449000000996</div></div>
+          <span style="color:var(--text-2)">Drinks</span><span class="num" style="text-align:end">$0.60</span><span class="num" style="text-align:end;color:var(--text-2)">$0.38</span><span class="num" style="text-align:end;color:var(--text-2)">37%</span>
+          <span style="text-align:end"><span class="num">214</span></span><span class="cap" style="text-align:end">3 lots</span></div><div class="row " style="grid-template-columns:2.4fr 1fr .9fr .8fr .8fr .7fr .7fr;padding:0 16px">
+          <div><div class="font-semibold">Picon Cheese 8 pcs</div><div class="cap num" style="color:var(--text-3)">3073781024407</div></div>
+          <span style="color:var(--text-2)">Dairy</span><span class="num" style="text-align:end">$2.40</span><span class="num" style="text-align:end;color:var(--text-2)">$1.70</span><span class="num" style="text-align:end;color:var(--text-2)">29%</span>
+          <span style="text-align:end"><span class="num">41</span></span><span class="cap" style="text-align:end">2 lots</span></div><div class="row " style="grid-template-columns:2.4fr 1fr .9fr .8fr .8fr .7fr .7fr;padding:0 16px">
+          <div><div class="font-semibold">Ariel Pods 22</div><div class="cap num" style="color:var(--text-3)">8001090206926</div></div>
+          <span style="color:var(--text-2)">Household</span><span class="num" style="text-align:end">$9.50</span><span class="num" style="text-align:end;color:var(--text-2)">$7.10</span><span class="num" style="text-align:end;color:var(--text-2)">25%</span>
+          <span style="text-align:end"><span class="num">18</span></span><span class="cap" style="text-align:end">1 lot</span></div><div class="row " style="grid-template-columns:2.4fr 1fr .9fr .8fr .8fr .7fr .7fr;padding:0 16px">
+          <div><div class="font-semibold">Kitkat 4 finger</div><div class="cap num" style="color:var(--text-3)">6294001820310</div></div>
+          <span style="color:var(--text-2)">Snacks</span><span class="num" style="text-align:end">$0.75</span><span class="num" style="text-align:end;color:var(--text-2)">$0.48</span><span class="num" style="text-align:end;color:var(--text-2)">36%</span>
+          <span style="text-align:end"><span class="badge t-warn num">6</span></span><span class="cap" style="text-align:end">1 lot</span></div><div class="row " style="grid-template-columns:2.4fr 1fr .9fr .8fr .8fr .7fr .7fr;padding:0 16px">
+          <div><div class="font-semibold">Bonjus Orange 1 L</div><div class="cap num" style="color:var(--text-3)">5287000150013</div></div>
+          <span style="color:var(--text-2)">Drinks</span><span class="num" style="text-align:end">$1.10</span><span class="num" style="text-align:end;color:var(--text-2)">$0.74</span><span class="num" style="text-align:end;color:var(--text-2)">33%</span>
+          <span style="text-align:end"><span class="badge t-err num">0</span></span><span class="cap" style="text-align:end">—</span></div><div class="row " style="grid-template-columns:2.4fr 1fr .9fr .8fr .8fr .7fr .7fr;padding:0 16px">
+          <div><div class="font-semibold">Arabic bread</div><div class="cap num" style="color:var(--text-3)">—</div></div>
+          <span style="color:var(--text-2)">Bakery</span><span class="num" style="text-align:end">$0.95</span><span class="num" style="text-align:end;color:var(--text-2)">$0.60</span><span class="num" style="text-align:end;color:var(--text-2)">37%</span>
+          <span style="text-align:end"><span class="num">60</span></span><span class="cap" style="text-align:end">untracked</span></div>
+      </div>
+      <div class="card" style="box-shadow:var(--elev-3)">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border)" class="flex items-start gap-3">
+          <div style="flex:1"><div class="sub">Almarai Laban 1 L</div><div class="cap num">6281007030221 · alias 6281007030238 · Dairy</div></div>
+          <button class="btn btn-ghost btn-sm" aria-label="Close"><iconify-icon icon="lucide:x" width="16" height="16" style="color:currentColor"></iconify-icon></button>
+        </div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div class="inset" style="padding:10px"><div class="cap">On hand</div><div class="stat num" style="font-size:22px">27</div></div>
+            <div class="inset" style="padding:10px"><div class="cap">Reorder at</div><div class="stat num" style="font-size:22px">12</div></div>
+            <div class="inset" style="padding:10px"><div class="cap">Avg cost</div><div class="stat num" style="font-size:22px">$1.32</div></div>
+          </div>
+          <div class="flex items-center justify-between"><div class="sub" style="font-size:15px">Lots · first-expiry first</div><button class="btn btn-sm"><iconify-icon icon="lucide:package-plus" width="14" height="14" style="color:currentColor"></iconify-icon>Receive</button></div>
+          
+          <div class="inset" style="padding:12px">
+            <div class="flex items-center gap-2"><span class="font-semibold num">L-0812</span><span class="cap">received 02 Oct</span><span class="badge t-err" style="margin-inline-start:auto"><iconify-icon icon="lucide:calendar-clock" width="12" height="12" style="color:currentColor"></iconify-icon>exp 19 Oct · 3 days</span></div>
+            <div class="flex items-center gap-3 mt-2"><div style="flex:1;height:6px;border-radius:999px;background:var(--surface-3)"><div style="width:12.5%;height:6px;border-radius:999px;background:var(--brand)"></div></div><span class="cap num">3 of 24 left</span></div>
+          </div>
+          <div class="inset" style="padding:12px">
+            <div class="flex items-center gap-2"><span class="font-semibold num">L-0839</span><span class="cap">received 11 Oct</span><span class="badge t-warn" style="margin-inline-start:auto"><iconify-icon icon="lucide:calendar-clock" width="12" height="12" style="color:currentColor"></iconify-icon>exp 08 Nov · 23 days</span></div>
+            <div class="flex items-center gap-3 mt-2"><div style="flex:1;height:6px;border-radius:999px;background:var(--surface-3)"><div style="width:100%;height:6px;border-radius:999px;background:var(--brand)"></div></div><span class="cap num">24 of 24 left</span></div>
+          </div>
+          <div class="banner t-info" style="border-color:transparent;font-size:13px"><iconify-icon icon="lucide:info" width="16" height="16" style="color:currentColor"></iconify-icon><span>Stock matches lots and the movement ledger.</span></div>
+          <div class="flex gap-2"><button class="btn btn-sm"><iconify-icon icon="lucide:sliders-horizontal" width="14" height="14" style="color:currentColor"></iconify-icon>Adjust</button><button class="btn btn-sm"><iconify-icon icon="lucide:clipboard-check" width="14" height="14" style="color:currentColor"></iconify-icon>Count</button><button class="btn btn-ghost btn-sm" style="margin-inline-start:auto"><iconify-icon icon="lucide:archive" width="14" height="14" style="color:currentColor"></iconify-icon>Archive</button><button class="btn btn-primary btn-sm">Save</button></div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Money — today</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--page-bg:#0B0E14;--surface:#12161F;--surface-2:#171C27;--surface-3:#1E2430;--surface-hover:#1A2029;
+--border:rgba(148,163,184,.10);--border-strong:rgba(148,163,184,.18);--text:#F4F6FA;--text-2:#9AA4B8;--text-3:#5F6B80;
+--brand:#D4A843;--brand-hover:#E4BC5C;--brand-soft:rgba(212,168,67,.12);--brand-border:rgba(212,168,67,.35);--brand-contrast:#2C1F05;
+--ok:#34D399;--ok-soft:rgba(52,211,153,.12);--warn:#FBBF24;--warn-soft:rgba(251,191,36,.12);--err:#F87171;--err-soft:rgba(248,113,113,.12);--info:#60A5FA;--info-soft:rgba(96,165,250,.12);
+--elev-1:0 1px 2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);--elev-3:0 16px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inter","IBM Plex Sans Arabic",system-ui,sans-serif;font-size:14px;line-height:20px}
+[dir=rtl]{font-family:"IBM Plex Sans Arabic","Inter",system-ui,sans-serif;line-height:22px}
+.num{font-variant-numeric:tabular-nums;unicode-bidi:isolate}
+.cap{font-size:12px;line-height:16px;font-weight:500;color:var(--text-2)}
+.sub{font-size:16px;line-height:24px;font-weight:600}
+.title{font-size:20px;line-height:28px;font-weight:600}
+.stat{font-size:28px;line-height:34px;font-weight:600}
+.total{font-size:44px;line-height:48px;font-weight:700;letter-spacing:-.01em}
+.hero{font-size:64px;line-height:68px;font-weight:700;letter-spacing:-.02em}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--elev-1)}
+.inset{background:var(--surface-2);border:1px solid var(--border);border-radius:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;font-weight:600;font-size:14px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);white-space:nowrap}
+.btn-sm{height:32px;padding:0 12px;font-size:13px}
+.btn-primary{background:var(--brand);border-color:var(--brand);color:var(--brand-contrast)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+.btn-danger{background:var(--err-soft);border-color:transparent;color:var(--err)}
+.btn-pay{width:100%;height:64px;border-radius:12px;background:var(--brand);color:var(--brand-contrast);font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+.btn[disabled]{opacity:.45}
+.input{height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);padding:0 12px;display:flex;align-items:center;gap:8px}
+.focus{outline:2px solid var(--brand);outline-offset:2px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600}
+.t-ok{background:var(--ok-soft);color:var(--ok)}.t-warn{background:var(--warn-soft);color:var(--warn)}.t-err{background:var(--err-soft);color:var(--err)}.t-info{background:var(--info-soft);color:var(--info)}.t-gold{background:var(--brand-soft);color:var(--brand)}.t-mute{background:var(--surface-3);color:var(--text-2)}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block}
+.row{display:grid;align-items:center;border-bottom:1px solid var(--border);min-height:44px}
+.th{font-size:12px;font-weight:600;color:var(--text-2);background:var(--surface-2)}
+.sel{background:var(--brand-soft);box-shadow:inset 3px 0 0 var(--brand)}
+[dir=rtl] .sel{box-shadow:inset -3px 0 0 var(--brand)}
+.tab{height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent}
+.tab.on{color:var(--text);border-color:var(--brand)}
+.kbd{font-size:11px;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface-2)}
+.banner{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 16px;border:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div style="display:flex;min-height:900px;width:1440px">
+  <aside style="width:232px;flex-shrink:0;background:linear-gradient(180deg,#0A0F18,#05070D);border-inline-end:1px solid var(--border);display:flex;flex-direction:column;padding:16px 12px;gap:4px">
+    <div class="flex items-center gap-3 px-2 pb-4"><span style="width:36px;height:36px;border-radius:8px;background:#05070D;display:inline-grid;place-items:center;border:1px solid rgba(212,168,67,.25)"><img src="https://vgbujcuwptvheqijyjbe.supabase.co/storage/v1/object/public/hmac-uploads/projects/14f044a4-5f7e-4a67-928b-a6a8801bea37/brand-assets/apps-desktop-public-titan-logo.png/titan-logo.png" alt="Titan POS" style="width:30px;height:30px;object-fit:contain"></span><div><div class="font-semibold" style="font-size:15px">Titan POS</div><div class="cap" style="color:var(--text-3)">Fakih Market · Hamra</div></div></div>
+    
+      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
+        <iconify-icon icon="lucide:shopping-cart" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Sell</span>
+        
+      </div>
+      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
+        <iconify-icon icon="lucide:boxes" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Stock</span>
+        
+      </div>
+      <div class="flex items-center gap-3 h-11 rounded-lg px-3 sel" style="color:var(--text)">
+        <iconify-icon icon="lucide:wallet" width="20" height="20" style="color:var(--brand)"></iconify-icon><span class="font-semibold">Money</span>
+        <span class="badge t-err ms-auto num">2</span>
+      </div>
+      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
+        <iconify-icon icon="lucide:truck" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Delivery</span>
+        
+      </div>
+      <div class="flex items-center gap-3 h-11 rounded-lg px-3 " style="color:var(--text-2)">
+        <iconify-icon icon="lucide:shield" width="20" height="20" style="color:currentColor"></iconify-icon><span class="font-semibold">Admin</span>
+        
+      </div>
+    <div style="margin-top:auto" class="inset p-3 flex items-center gap-3">
+      <span style="width:32px;height:32px;border-radius:999px;background:var(--surface-3);display:grid;place-items:center" class="font-semibold">RF</span>
+      <div class="min-w-0"><div class="font-semibold" style="font-size:13px">Rami Fakih</div><div class="cap">Owner</div></div>
+    </div>
+  </aside>
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <header style="height:64px;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid var(--border);background:var(--page-bg)">
+      <div class="min-w-0"><div class="cap" style="color:var(--text-3)">Money</div><div class="title">Today</div></div>
+      <div class="flex items-center gap-2" style="margin-inline-start:auto">
+        <button class="pill t-err" style="height:32px;padding:0 12px;border:1px solid var(--border)" aria-label="Sync and status"><iconify-icon icon="lucide:alert-octagon" width="14" height="14" style="color:currentColor"></iconify-icon><span>2 refunds need review</span></button>
+        <span class="pill t-mute" style="height:32px"><iconify-icon icon="lucide:clock" width="14" height="14" style="color:currentColor"></iconify-icon>Shift #42 · open since 08:02</span>
+        <button class="btn btn-ghost btn-sm" aria-label="Language"><iconify-icon icon="lucide:languages" width="16" height="16" style="color:currentColor"></iconify-icon>EN</button>
+        <button class="btn btn-ghost btn-sm" aria-label="Theme"><iconify-icon icon="lucide:moon" width="16" height="16" style="color:currentColor"></iconify-icon></button>
+        <button class="btn btn-ghost btn-sm" aria-label="Lock"><iconify-icon icon="lucide:lock" width="16" height="16" style="color:currentColor"></iconify-icon></button>
+        <button class="btn btn-primary btn-sm"><iconify-icon icon="lucide:lock-keyhole" width="16" height="16" style="color:currentColor"></iconify-icon>Close the day</button>
+      </div>
+    </header>
+    <div class="flex items-end gap-6 px-6" style="border-bottom:1px solid var(--border)"><span class="tab on">Today</span><span class="tab ">Shift & drawer</span><span class="tab ">Expenses</span><span class="tab ">Customers & debt</span><span class="tab ">Reports</span></div>
+    <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
+      <div class="banner" style="background:var(--err-soft);border-color:transparent"><iconify-icon icon="lucide:alert-octagon" width="20" height="20" style="color:var(--err)"></iconify-icon><div style="flex:1"><div class="font-semibold">2 refunds were rejected by the server</div><div class="cap">Issued offline on Register 2, but another register had already refunded the same items. $32.40 left the drawer and is not on the server's books.</div></div><button class="btn btn-sm">Review & settle</button></div>
+      
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+      
+      <div class="card" style="padding:16px"><div class="flex items-center justify-between"><span class="cap">Net sales</span><span class="badge t-ok num">+12%</span></div><div class="stat num" style="margin-top:6px">$1,842.30</div><div class="cap num" style="color:var(--text-3)">164.9M LBP</div></div>
+      <div class="card" style="padding:16px"><div class="flex items-center justify-between"><span class="cap">Gross profit</span><span class="badge t-ok num">+4%</span></div><div class="stat num" style="margin-top:6px">$486.10</div><div class="cap num" style="color:var(--text-3)">26.4% margin</div></div>
+      <div class="card" style="padding:16px"><div class="flex items-center justify-between"><span class="cap">Cash in drawer</span><span class="badge t-warn num">−$6.50</span></div><div class="stat num" style="margin-top:6px">$612.00</div><div class="cap num" style="color:var(--text-3)">expected $618.50</div></div>
+      <div class="card" style="padding:16px"><div class="flex items-center justify-between"><span class="cap">Outstanding debt</span><span class="badge t-err num">+$85</span></div><div class="stat num" style="margin-top:6px">$2,310.00</div><div class="cap num" style="color:var(--text-3)">14 customers · 3 overdue</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px">
+      <div class="card" style="padding:16px">
+        <div class="flex items-center justify-between"><div class="sub">Sales · last 14 days</div><div class="flex gap-1"><span class="pill t-gold">Day</span><span class="pill t-mute">Week</span><span class="pill t-mute">Month</span></div></div>
+        <div style="height:220px;display:flex;align-items:flex-end;gap:10px;margin-top:16px;padding-bottom:4px;border-bottom:1px solid var(--border)"><div style="flex:1;height:92.4px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:121.00000000000001px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:83.60000000000001px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:134.20000000000002px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:154px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:145.20000000000002px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:105.60000000000001px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:129.8px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:160.60000000000002px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:178.20000000000002px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:140.8px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:169.4px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:193.60000000000002px;border-radius:6px 6px 2px 2px;background:var(--surface-3)"></div><div style="flex:1;height:158.4px;border-radius:6px 6px 2px 2px;background:var(--brand)"></div></div>
+        <div class="flex justify-between cap num" style="margin-top:8px;color:var(--text-3)"><span>03 Oct</span><span>Today</span></div>
+        <div class="flex gap-4 mt-4"><span class="flex items-center gap-2 cap"><span class="dot" style="background:#5CB894"></span>Cash <span class="num" style="color:var(--text)">68%</span></span><span class="flex items-center gap-2 cap"><span class="dot" style="background:#7D8CD9"></span>Card <span class="num" style="color:var(--text)">14%</span></span><span class="flex items-center gap-2 cap"><span class="dot" style="background:#A186C9"></span>Wallet <span class="num" style="color:var(--text)">6%</span></span><span class="flex items-center gap-2 cap"><span class="dot" style="background:#C9A25C"></span>Debt <span class="num" style="color:var(--text)">12%</span></span></div>
+      </div>
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div class="sub">Needs attention · by money at risk</div>
+        
+        <div class="inset flex items-center gap-3" style="padding:10px 12px"><span class="badge t-err" style="height:28px;width:28px;justify-content:center;padding:0"><iconify-icon icon="lucide:alert-octagon" width="14" height="14" style="color:currentColor"></iconify-icon></span><div style="flex:1"><div class="font-semibold">2 rejected refunds</div><div class="cap num">$32.40 · settle before closing</div></div><iconify-icon icon="lucide:chevron-right" width="16" height="16" style="color:var(--text-3)"></iconify-icon></div>
+        <div class="inset flex items-center gap-3" style="padding:10px 12px"><span class="badge t-err" style="height:28px;width:28px;justify-content:center;padding:0"><iconify-icon icon="lucide:hand-coins" width="14" height="14" style="color:currentColor"></iconify-icon></span><div style="flex:1"><div class="font-semibold">3 overdue customers</div><div class="cap num">$940 over 60 days</div></div><iconify-icon icon="lucide:chevron-right" width="16" height="16" style="color:var(--text-3)"></iconify-icon></div>
+        <div class="inset flex items-center gap-3" style="padding:10px 12px"><span class="badge t-warn" style="height:28px;width:28px;justify-content:center;padding:0"><iconify-icon icon="lucide:calendar-clock" width="14" height="14" style="color:currentColor"></iconify-icon></span><div style="flex:1"><div class="font-semibold">9 lots expire this week</div><div class="cap num">$118 at cost</div></div><iconify-icon icon="lucide:chevron-right" width="16" height="16" style="color:var(--text-3)"></iconify-icon></div>
+        <div class="inset flex items-center gap-3" style="padding:10px 12px"><span class="badge t-warn" style="height:28px;width:28px;justify-content:center;padding:0"><iconify-icon icon="lucide:wallet" width="14" height="14" style="color:currentColor"></iconify-icon></span><div style="flex:1"><div class="font-semibold">Drawer short $6.50</div><div class="cap num">Shift #42 · Maya</div></div><iconify-icon icon="lucide:chevron-right" width="16" height="16" style="color:var(--text-3)"></iconify-icon></div>
+        <div class="inset flex items-center gap-3" style="padding:10px 12px"><span class="badge t-warn" style="height:28px;width:28px;justify-content:center;padding:0"><iconify-icon icon="lucide:package-search" width="14" height="14" style="color:currentColor"></iconify-icon></span><div style="flex:1"><div class="font-semibold">23 products below reorder</div><div class="cap num">draft PO ready</div></div><iconify-icon icon="lucide:chevron-right" width="16" height="16" style="color:var(--text-3)"></iconify-icon></div>
+      </div>
+    </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

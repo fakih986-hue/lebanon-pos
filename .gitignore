@@ -28,3 +28,6 @@ apps/electron/assets/titan-source.png
 
 .env.*.local
 .env.local
+
+# Superdesign scratch HTML
+.superdesign/tmp/

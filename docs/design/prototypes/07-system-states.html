@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System states</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--page-bg:#0B0E14;--surface:#12161F;--surface-2:#171C27;--surface-3:#1E2430;--surface-hover:#1A2029;
+--border:rgba(148,163,184,.10);--border-strong:rgba(148,163,184,.18);--text:#F4F6FA;--text-2:#9AA4B8;--text-3:#5F6B80;
+--brand:#D4A843;--brand-hover:#E4BC5C;--brand-soft:rgba(212,168,67,.12);--brand-border:rgba(212,168,67,.35);--brand-contrast:#2C1F05;
+--ok:#34D399;--ok-soft:rgba(52,211,153,.12);--warn:#FBBF24;--warn-soft:rgba(251,191,36,.12);--err:#F87171;--err-soft:rgba(248,113,113,.12);--info:#60A5FA;--info-soft:rgba(96,165,250,.12);
+--elev-1:0 1px 2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.04);--elev-3:0 16px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page-bg);color:var(--text);font-family:"Inter","IBM Plex Sans Arabic",system-ui,sans-serif;font-size:14px;line-height:20px}
+[dir=rtl]{font-family:"IBM Plex Sans Arabic","Inter",system-ui,sans-serif;line-height:22px}
+.num{font-variant-numeric:tabular-nums;unicode-bidi:isolate}
+.cap{font-size:12px;line-height:16px;font-weight:500;color:var(--text-2)}
+.sub{font-size:16px;line-height:24px;font-weight:600}
+.title{font-size:20px;line-height:28px;font-weight:600}
+.stat{font-size:28px;line-height:34px;font-weight:600}
+.total{font-size:44px;line-height:48px;font-weight:700;letter-spacing:-.01em}
+.hero{font-size:64px;line-height:68px;font-weight:700;letter-spacing:-.02em}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--elev-1)}
+.inset{background:var(--surface-2);border:1px solid var(--border);border-radius:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;font-weight:600;font-size:14px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text);white-space:nowrap}
+.btn-sm{height:32px;padding:0 12px;font-size:13px}
+.btn-primary{background:var(--brand);border-color:var(--brand);color:var(--brand-contrast)}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+.btn-danger{background:var(--err-soft);border-color:transparent;color:var(--err)}
+.btn-pay{width:100%;height:64px;border-radius:12px;background:var(--brand);color:var(--brand-contrast);font-size:18px;font-weight:700;border:0;display:flex;align-items:center;justify-content:space-between;padding:0 20px}
+.btn[disabled]{opacity:.45}
+.input{height:40px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);padding:0 12px;display:flex;align-items:center;gap:8px}
+.focus{outline:2px solid var(--brand);outline-offset:2px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600}
+.badge{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600}
+.t-ok{background:var(--ok-soft);color:var(--ok)}.t-warn{background:var(--warn-soft);color:var(--warn)}.t-err{background:var(--err-soft);color:var(--err)}.t-info{background:var(--info-soft);color:var(--info)}.t-gold{background:var(--brand-soft);color:var(--brand)}.t-mute{background:var(--surface-3);color:var(--text-2)}
+.dot{width:8px;height:8px;border-radius:999px;display:inline-block}
+.row{display:grid;align-items:center;border-bottom:1px solid var(--border);min-height:44px}
+.th{font-size:12px;font-weight:600;color:var(--text-2);background:var(--surface-2)}
+.sel{background:var(--brand-soft);box-shadow:inset 3px 0 0 var(--brand)}
+[dir=rtl] .sel{box-shadow:inset -3px 0 0 var(--brand)}
+.tab{height:44px;display:inline-flex;align-items:center;gap:6px;color:var(--text-2);font-weight:600;border-bottom:2px solid transparent}
+.tab.on{color:var(--text);border-color:var(--brand)}
+.kbd{font-size:11px;font-weight:600;color:var(--text-2);border:1px solid var(--border-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface-2)}
+.banner{display:flex;align-items:center;gap:12px;border-radius:12px;padding:12px 16px;border:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div style="width:1440px;padding:32px;display:flex;flex-direction:column;gap:24px;background:var(--page-bg)">
+  <div><div class="cap" style="color:var(--text-3)">Design system v2 · §6</div><div class="title">System states — one model everywhere</div><div style="color:var(--text-2)">Status capsule (always visible) → inline banner (only when the page is affected) → row badge (on the exact item).</div></div>
+  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:24px;align-items:start">
+    <div class="card" style="overflow:hidden">
+      <div class="row th" style="grid-template-columns:48px 300px 1fr;padding:0 16px"><span>Priority</span><span>Capsule</span><span>Behaviour</span></div>
+      <div class="row" style="grid-template-columns:48px 300px 1fr;padding:10px 16px"><span class="num cap">1</span><span><span class="pill t-err" style="height:32px;padding:0 12px"><iconify-icon icon="lucide:lock" width="14" height="14" style="color:currentColor"></iconify-icon>Read-only — contact support</span></span><span style="color:var(--text-2)">Licence blocked. Selling and edits are off; reports and exports still work.</span></div><div class="row" style="grid-template-columns:48px 300px 1fr;padding:10px 16px"><span class="num cap">2</span><span><span class="pill t-err" style="height:32px;padding:0 12px"><iconify-icon icon="lucide:hand-coins" width="14" height="14" style="color:currentColor"></iconify-icon>2 refunds need review</span></span><span style="color:var(--text-2)">Server rejected offline refunds. Never hidden; a manager settles each one.</span></div><div class="row" style="grid-template-columns:48px 300px 1fr;padding:10px 16px"><span class="num cap">3</span><span><span class="pill t-err" style="height:32px;padding:0 12px"><iconify-icon icon="lucide:file-x" width="14" height="14" style="color:currentColor"></iconify-icon>3 changes rejected</span></span><span style="color:var(--text-2)">Other rejected operations. Review, retry or discard (never for money).</span></div><div class="row" style="grid-template-columns:48px 300px 1fr;padding:10px 16px"><span class="num cap">4</span><span><span class="pill t-info" style="height:32px;padding:0 12px"><iconify-icon icon="lucide:life-buoy" width="14" height="14" style="color:currentColor"></iconify-icon>Recovered 1 interrupted refund</span></span><span style="color:var(--text-2)">Shown once after restart: completed or rolled back, with what happened.</span></div><div class="row" style="grid-template-columns:48px 300px 1fr;padding:10px 16px"><span class="num cap">5</span><span><span class="pill t-warn" style="height:32px;padding:0 12px"><iconify-icon icon="lucide:cloud-off" width="14" height="14" style="color:currentColor"></iconify-icon>Offline — saved on this device</span></span><span style="color:var(--text-2)">Selling continues. Nothing blocks.</span></div><div class="row" style="grid-template-columns:48px 300px 1fr;padding:10px 16px"><span class="num cap">6</span><span><span class="pill t-warn" style="height:32px;padding:0 12px"><iconify-icon icon="lucide:upload-cloud" width="14" height="14" style="color:currentColor"></iconify-icon>12 waiting to sync</span></span><span style="color:var(--text-2)">Counts only — pending is not an error.</span></div><div class="row" style="grid-template-columns:48px 300px 1fr;padding:10px 16px"><span class="num cap">7</span><span><span class="pill t-warn" style="height:32px;padding:0 12px"><iconify-icon icon="lucide:badge-alert" width="14" height="14" style="color:currentColor"></iconify-icon>Licence: 4 days left</span></span><span style="color:var(--text-2)">Owner pages only, with a renew action.</span></div><div class="row" style="grid-template-columns:48px 300px 1fr;padding:10px 16px"><span class="num cap">9</span><span><span class="pill t-ok" style="height:32px;padding:0 12px"><span class="dot" style="background:var(--ok)"></span>Synced 2 min ago</span></span><span style="color:var(--text-2)">Quiet: a dot, no colour wash.</span></div>
+      <div class="row" style="grid-template-columns:48px 300px 1fr;padding:10px 16px"><span class="num cap">8</span><span><span class="pill t-warn" style="height:32px;padding:0 12px"><iconify-icon icon="lucide:clock" width="14" height="14" style="color:currentColor"></iconify-icon>Shift closed</span></span><span style="color:var(--text-2)">Lives on the shift chip, not the capsule. Register shows one action: Open shift.</span></div>
+    </div>
+    <div class="flex flex-col gap-4">
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div class="sub">Inline banners</div>
+        <div class="banner" style="background:var(--err-soft);border-color:transparent"><iconify-icon icon="lucide:lock" width="18" height="18" style="color:var(--err)"></iconify-icon><div style="flex:1"><div class="font-semibold">This store is read-only</div><div class="cap">The licence has ended. You can still view reports and export data.</div></div><button class="btn btn-sm">Contact support</button></div>
+        <div class="banner" style="background:var(--info-soft);border-color:transparent"><iconify-icon icon="lucide:life-buoy" width="18" height="18" style="color:var(--info)"></iconify-icon><div style="flex:1"><div class="font-semibold">Restoring this store's data…</div><div class="cap num">Products 1,284 / 1,284 · Sales 3,912 / 8,040 · keep this window open</div><div style="height:6px;border-radius:999px;background:var(--surface-3);margin-top:8px"><div style="width:48%;height:6px;border-radius:999px;background:var(--info)"></div></div></div></div>
+        <div class="banner" style="background:var(--warn-soft);border-color:transparent"><iconify-icon icon="lucide:clock" width="18" height="18" style="color:var(--warn)"></iconify-icon><div style="flex:1"><div class="font-semibold">Shift closed</div><div class="cap">Open a shift to sell or refund.</div></div><button class="btn btn-primary btn-sm">Open shift</button></div>
+      </div>
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div class="sub">Permission</div>
+        <div class="flex items-center gap-2"><button class="btn btn-sm" disabled><iconify-icon icon="lucide:lock" width="14" height="14" style="color:currentColor"></iconify-icon>Refund</button><span class="cap">Needs: Refunds — ask a manager</span></div>
+        <div class="inset" style="padding:20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px">
+          <span class="badge t-mute" style="height:40px;width:40px;justify-content:center;padding:0;border-radius:12px"><iconify-icon icon="lucide:shield-off" width="20" height="20" style="color:currentColor"></iconify-icon></span>
+          <div class="sub">Accounting is for managers</div>
+          <div class="cap" style="max-width:320px">This page needs the <span style="color:var(--text)">Accounting</span> permission. Switch to a user who has it.</div>
+          <button class="btn btn-primary btn-sm"><iconify-icon icon="lucide:users" width="14" height="14" style="color:currentColor"></iconify-icon>Switch user</button>
+        </div>
+      </div>
+      <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div class="sub">Empty & loading</div>
+        <div class="inset" style="padding:20px;text-align:center;border-style:dashed"><div class="font-semibold">No receipts today</div><div class="cap">Sales you ring up appear here.</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div class="inset" style="height:64px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2))"></div><div class="inset" style="height:64px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2))"></div><div class="inset" style="height:64px;background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2))"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
