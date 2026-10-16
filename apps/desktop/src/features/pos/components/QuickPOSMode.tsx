@@ -289,7 +289,7 @@ export default function QuickPOSMode({
                       transition={{ duration: 0.18, delay: i * 0.02 }}
                       className="flex flex-wrap items-center gap-3 rounded-xl px-4 py-3 sm:flex-nowrap"
                       style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <div className="min-w-0 flex-1 basis-full sm:basis-auto"><p className="truncate text-[16px] font-semibold" style={{ margin: 0, color: "var(--text)" }}>{item.name}</p><p className="num" style={{ margin: 0, color: "var(--text-2)" }}>{item.quantity} × {formatCurrency(item.price)}</p></div>
+                      <div className="min-w-0 flex-1 basis-full sm:basis-auto"><p className="break-words text-[16px] font-semibold leading-snug" style={{ margin: 0, color: "var(--text)" }}>{item.name}</p><p className="num" style={{ margin: 0, color: "var(--text-2)" }}>{item.quantity} × {formatCurrency(item.price)}</p></div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button type="button" onClick={() => onDecreaseQty(item.id)}
                           aria-label={`Decrease ${item.name}`}

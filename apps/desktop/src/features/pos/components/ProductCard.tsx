@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react"
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Plus, Star } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
@@ -63,6 +63,35 @@ const ProductCard = memo(function ProductCard({
     ? Number(product.wholesalePrice)
     : product.price
 
+  // Full name: two lines in the tile; when even that cuts it, the whole name
+  // shows on hover (mouse), keyboard focus, and a long press (touch) — a long
+  // press shows it without adding the item.
+  const nameRef = useRef<HTMLParagraphElement>(null)
+  const [clipped, setClipped] = useState(false)
+  const [pressTip, setPressTip] = useState(false)
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const longPressed = useRef(false)
+  const tipId = useId()
+  useLayoutEffect(() => {
+    const el = nameRef.current
+    if (!el) return
+    const measure = () => setClipped(el.scrollHeight > el.clientHeight + 1)
+    measure()
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null
+    ro?.observe(el)
+    return () => ro?.disconnect()
+  }, [product.name])
+  useEffect(() => () => { if (pressTimer.current) clearTimeout(pressTimer.current) }, [])
+  const startPress = (e: React.PointerEvent) => {
+    if (e.pointerType !== "touch" || !clipped) return
+    longPressed.current = false
+    pressTimer.current = setTimeout(() => { longPressed.current = true; setPressTip(true) }, 450)
+  }
+  const endPress = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current)
+    if (longPressed.current) pressTimer.current = setTimeout(() => setPressTip(false), 2500)
+  }
+
   const [justAdded, setJustAdded] = useState(false)
   const [addCount,  setAddCount]  = useState(0)
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -80,6 +109,7 @@ const ProductCard = memo(function ProductCard({
   const stockColor = outOfStock ? "var(--rose)" : lowStock ? "var(--warning)" : "var(--text-3)"
 
   const handleClick = useCallback(() => {
+    if (longPressed.current) { longPressed.current = false; return } // the long press only revealed the name
     if (outOfStock) return
     onClick()
     setJustAdded(true)
@@ -109,8 +139,14 @@ const ProductCard = memo(function ProductCard({
         <button
           type="button"
           onClick={handleClick}
+          onPointerDown={startPress}
+          onPointerUp={endPress}
+          onPointerCancel={endPress}
+          onPointerLeave={endPress}
+          onContextMenu={(e) => { if (clipped) e.preventDefault() }}
           disabled={outOfStock}
-          className="flex w-full flex-col gap-1.5 p-2.5 text-start"
+          aria-describedby={clipped ? tipId : undefined}
+          className="pos-tile-button flex w-full flex-col gap-1.5 p-2.5 text-start"
         >
           {/* Row 1: Image + Name + Stock */}
           <div className="flex items-start gap-2">
@@ -133,7 +169,7 @@ const ProductCard = memo(function ProductCard({
 
             {/* Name + Stock */}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] font-bold leading-tight" style={{ color: "var(--text)" }}>
+              <p ref={nameRef} className="line-clamp-2 break-words text-[13px] font-bold leading-tight" style={{ color: "var(--text)" }}>
                 <HighlightedText text={product.name} query={searchQuery} />
               </p>
               {(stockLabel || (wholesale && product.wholesalePrice != null)) && (
@@ -186,6 +222,12 @@ const ProductCard = memo(function ProductCard({
             </span>
           </div>
         </button>
+
+        {clipped && (
+          <span id={tipId} role="tooltip" className="pos-name-tip" data-open={pressTip ? "true" : undefined}>
+            {product.name}
+          </span>
+        )}
 
         {/* Ring burst on add */}
         <AnimatePresence>

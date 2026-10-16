@@ -65,7 +65,8 @@ async function scene(cdp, name, { w, h, mobile = false, theme = "dark", lang = "
         const [, key, times = "1", shift] = js.split(":")
         const codes = { Tab: 9, Escape: 27, Enter: 13 }
         for (let i = 0; i < Number(times); i++) {
-          for (const type of ["rawKeyDown", "keyUp"]) await cdp.send("Input.dispatchKeyEvent", { type, key, code: key, windowsVirtualKeyCode: codes[key], modifiers: shift ? 8 : 0 }, sessionId)
+          // Enter carries its text so the browser performs the default action (e.g. activating a focused button), as a real keyboard does.
+          for (const type of [key === "Enter" ? "keyDown" : "rawKeyDown", "keyUp"]) await cdp.send("Input.dispatchKeyEvent", { type, key, code: key, windowsVirtualKeyCode: codes[key], modifiers: shift ? 8 : 0, ...(key === "Enter" && type === "keyDown" ? { text: "\r", unmodifiedText: "\r" } : {}) }, sessionId)
           await sleep(80)
         }
         log.push([label, await ev(`const d=document.querySelector("[role=dialog][aria-modal=true]"); const a=document.activeElement; return (d ? (d.contains(a) ? "inside dialog: " : "OUTSIDE dialog: ") : "no dialog, ") + (a ? (a.getAttribute("aria-label") || a.textContent.trim().slice(0,30) || a.tagName) : "none")`)])
@@ -75,6 +76,20 @@ async function scene(cdp, name, { w, h, mobile = false, theme = "dark", lang = "
         const [, rw, rh] = js.split(":")
         await cdp.send("Emulation.setDeviceMetricsOverride", { width: Number(rw), height: Number(rh), deviceScaleFactor: 1, mobile: Number(rw) < 768 }, sessionId)
         log.push([label, `viewport ${rw}x${rh}`]); await sleep(wait); continue
+      }
+      if (typeof js === "string" && /^@(hover|longpress|tap):/.test(js)) {
+        const kind = js.slice(1, js.indexOf(":")); const sel = js.slice(js.indexOf(":") + 1)
+        const pt = await ev(`const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return null; el.scrollIntoView({ block: "center" }); const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + Math.min(r.height / 2, 20) }`)
+        if (!pt) { log.push([label, "ERROR no element " + sel]); continue }
+        if (kind === "hover") await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: pt.x, y: pt.y }, sessionId)
+        else {
+          await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: pt.x, y: pt.y }] }, sessionId)
+          await sleep(kind === "longpress" ? 700 : 60)
+          await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }, sessionId)
+        }
+        await sleep(wait)
+        log.push([label, await ev(`const t = [...document.querySelectorAll(".pos-name-tip")].find((x) => getComputedStyle(x).display !== "none"); const cart = JSON.parse(localStorage.getItem("lebanonpos.cart.v1") || "null"); return (t ? "full name shown: " + t.textContent.trim() : "no full name shown") + "; focus: " + (document.activeElement?.className?.toString().includes("pos-tile-button") ? "tile" : document.activeElement?.tagName)`)])
+        continue
       }
       if (js === "@offline") {
         await cdp.send("Network.enable", {}, sessionId)
@@ -220,6 +235,24 @@ const SHELL = [
   ["shell-topbar.en.dark.mobile-360", { w: 360, h: 780, mobile: true, steps: [openSheetFromChip, openShift, escSheet, topbarFit] }],
 ]
 
+// Long product names: two lines in the tile; the full name on hover, keyboard focus and long press.
+const LONG_NAME = "Water Bottle 500ml Natural Mineral Spring, Family Pack of 6 Bottles"
+const LONG_NAME_AR = "مياه معدنية طبيعية من الينابيع، عبوة عائلية من ست زجاجات سعة ٥٠٠ مل"
+// A step (not setup): a fresh profile stores the demo catalogue only after its first load.
+const longName = (name) => ["give one product a long name", `const k = "lebanonpos.products.v1"; let p = JSON.parse(localStorage.getItem(k) || "[]"); if (!p.length) { const m = await import("/src/features/pos/data/products.ts"); p = JSON.parse(JSON.stringify(m.products)) } const i = p.findIndex((x) => /Water Bottle/.test(x.name)); if (i < 0) throw new Error("no Water Bottle product"); p[i].name = ${JSON.stringify(name)}; localStorage.setItem(k, JSON.stringify(p)); setTimeout(() => location.reload(), 50); return "renamed; reloading"`, 3500]
+const nameFacts = ["tile name", `const b = document.querySelector(".pos-tile-button[aria-describedby]"); if (!b) return "no clipped tile"; const p = b.querySelector("p"); const lines = Math.round(p.getBoundingClientRect().height / parseFloat(getComputedStyle(p).lineHeight)); return "clipped tile found; visible lines " + lines + "; accessible name has full text: " + b.textContent.includes(document.getElementById(b.getAttribute("aria-describedby")).textContent.trim()) + "; tooltip id linked: " + !!document.getElementById(b.getAttribute("aria-describedby"))`, 100]
+const keyFocusTile = ["keyboard: Tab onto the tile", `const all = [...document.querySelectorAll("button, input, select, a[href], [tabindex]:not([tabindex='-1'])")].filter((e) => e.offsetParent !== null && !e.disabled); const target = document.querySelector(".pos-tile-button[aria-describedby]"); all[all.indexOf(target) - 1].focus(); return "focused the control before it"`, 100]
+const tipVisible = ["full name visible?", `const t = [...document.querySelectorAll(".pos-name-tip")].find((x) => getComputedStyle(x).display !== "none"); return t ? "shown: " + t.textContent.trim() : "hidden"`, 50]
+const cartLines = ["cart lines", `const c = JSON.parse(localStorage.getItem("lebanonpos.cart.v1") || "null"); const n = [...document.querySelectorAll(".mg2-paybar button")][0]; return n ? n.textContent.trim().slice(0, 30) : "no paybar"`, 50]
+const cartName = ["cart line name", `const b = [...document.querySelectorAll("p[role=button][aria-expanded]")].find((x) => x.offsetParent !== null); if (!b) { const q = [...document.querySelectorAll("p")].find((x) => x.offsetParent !== null && x.textContent.startsWith("Water Bottle 500ml Natural") && !x.closest(".pos-product-tile")); return q ? "cart name fits, nothing cut (" + (q.scrollHeight <= q.clientHeight + 1) + "): " + q.textContent.trim() : "no cart line" } const p = b; return "expanded=" + b.getAttribute("aria-expanded") + "; lines " + Math.round(p.getBoundingClientRect().height / parseFloat(getComputedStyle(p).lineHeight)) + "; text complete in DOM: " + (p.textContent.trim().length > 40)`, 50]
+const focusCartName = ["focus cart line name", `const b = [...document.querySelectorAll("p[role=button][aria-expanded]")].find((x) => x.offsetParent !== null); b.focus(); return document.activeElement === b ? "focused" : "not focused"`, 100]
+const NAMES = [
+  ["names-hover.en.dark.desktop", { w: 1440, h: 900, steps: [longName(LONG_NAME), openShift, nameFacts, tipVisible, ["mouse hover", "@hover:.pos-tile-button[aria-describedby]", 300]] }],
+  ["names-keyboard.en.dark.desktop", { w: 1440, h: 900, steps: [longName(LONG_NAME), openShift, keyFocusTile, ["Tab (real key)", "@key:Tab:1", 300], tipVisible, ["Enter adds it (real key)", "@key:Enter:1", 600], cartName, focusCartName, ["Enter on the name (real key)", "@key:Enter:1", 300], cartName] }],
+  ["names-longpress.en.dark.mobile", { w: 390, h: 844, mobile: true, steps: [longName(LONG_NAME), openSheetFromChip, openShift, escSheet, nameFacts, cartLines, ["long press (touch)", "@longpress:.pos-tile-button[aria-describedby]", 300], cartLines, ["short tap (touch)", "@tap:.pos-tile-button[aria-describedby]", 1200], cartLines, openCartSheet, cartName, ["tap the cart line name", "@tap:p[role=button][aria-expanded=\"false\"]", 400], cartName] }],
+  ["names-longpress.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", steps: [longName(LONG_NAME_AR), openSheetFromChip, openShift, escSheet, nameFacts, ["long press (touch)", "@longpress:.pos-tile-button[aria-describedby]", 300]] }],
+]
+
 const SCENES = [
   ["register-cash.en.dark.desktop", { w: 1440, h: 900, steps: [openShift, addTiles, cashPaid] }],
   ["register-cash.en.light.desktop", { w: 1440, h: 900, theme: "light", steps: [openShift, addTiles, cashPaid] }],
@@ -242,7 +275,7 @@ const SCENES = [
     const cdp = new CDP(ws); await cdp.open()
     const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null
     const results = []
-    for (const [name, opts] of (process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
+    for (const [name, opts] of (process.env.QA_NAMES ? NAMES : process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL, ...NAMES])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
     fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify({ base: BASE, at: new Date().toISOString(), results }, null, 2))
   } finally { chrome.kill() }
 })().catch((e) => { console.error(e); process.exit(1) })

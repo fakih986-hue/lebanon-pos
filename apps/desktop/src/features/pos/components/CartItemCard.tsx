@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from "react"
+import { memo, useRef, useState, useLayoutEffect } from "react"
 import { Minus, Plus, Trash2 } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
@@ -52,6 +52,24 @@ const CartItemCard = memo(function CartItemCard({
     setEditingPrice(false)
   }
 
+  // Long names: two lines; when that cuts the name, the name itself expands
+  // it (click, Enter/Space, tap) and the full text shows on hover.
+  const nameRef = useRef<HTMLParagraphElement>(null)
+  const [nameClipped, setNameClipped] = useState(false)
+  const [showFullName, setShowFullName] = useState(false)
+  // One stable element (never swapped, so the observer keeps watching it); a hidden element (0 px) is not measured.
+  useLayoutEffect(() => {
+    const el = nameRef.current
+    if (!el || showFullName) return
+    const measure = () => { if (el.clientHeight > 0) setNameClipped(el.scrollHeight > el.clientHeight + 1) }
+    measure()
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null
+    ro?.observe(el)
+    return () => ro?.disconnect()
+  }, [name, showFullName])
+  const expandable = nameClipped || showFullName
+  const toggleName = () => setShowFullName((v) => !v)
+
   return (
     <div
       className="rounded-xl px-3 py-3"
@@ -63,7 +81,15 @@ const CartItemCard = memo(function CartItemCard({
       <div className="flex items-center gap-3">
         {/* Info */}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold leading-tight" style={{ color: "var(--text)" }}>
+          <p ref={nameRef}
+            className={`${showFullName ? "" : "line-clamp-2 "}break-words text-[14px] font-semibold leading-tight${expandable ? " cursor-pointer" : ""}`}
+            style={{ color: "var(--text)", margin: 0 }}
+            role={expandable ? "button" : undefined}
+            tabIndex={expandable ? 0 : undefined}
+            aria-expanded={expandable ? showFullName : undefined}
+            title={expandable && !showFullName ? name : undefined}
+            onClick={expandable ? toggleName : undefined}
+            onKeyDown={expandable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleName() } } : undefined}>
             {name}
           </p>
 

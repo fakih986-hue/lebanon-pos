@@ -308,7 +308,7 @@ const ReceiptPreview = memo(function ReceiptPreview({
                   return (
                     <div key={`return-${sale.id}-${refundLineKeyOf(item)}-${index}`} className="grid grid-cols-[minmax(0,1fr)_72px] gap-2 rounded-lg px-3 py-2 text-[12px]" style={{ background: "var(--surface)" }}>
                       <div className="min-w-0">
-                        <p className="truncate font-bold" style={{ color: "var(--text)" }}>{item.name}</p>
+                        <p className="break-words font-bold" style={{ color: "var(--text)" }}>{item.name}</p>
                         <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
                           {t("pos.sold_returned", { n: formatNumber(item.quantity), n2: formatNumber(refundedQuantity) })}
                         </p>
