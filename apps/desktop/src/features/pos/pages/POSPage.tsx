@@ -997,8 +997,8 @@ export default function POSPage() {
           </section>
 
           {/* ── Mobile floating cart button ── */}
-          {/* Hidden (not only inert) while review is open: on phones it sat right under the dialog's Confirm button. */}
-          {!quickMode && <div className="mg2-paybar lg:hidden" style={showReview ? { visibility: "hidden" } : undefined}>
+          {/* Hidden (not only inert) while review is open: see body[data-payment-review] in register-v2.css. */}
+          {!quickMode && <div className="mg2-paybar lg:hidden">
             <button type="button" className="mg2-btn" style={{ minHeight: 64, flexDirection: "column", gap: 0, padding: "0 14px" }}
               onClick={() => setIsCartOpen(true)} aria-label={t("pos.v2.open_cart", { lines: formatNumber(items.length) })}>
               <ShoppingCart size={18} />

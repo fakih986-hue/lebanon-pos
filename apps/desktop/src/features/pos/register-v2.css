@@ -89,3 +89,6 @@
 .pos-name-tip { display: none; position: absolute; inset-inline: 6px; top: 6px; z-index: 30; padding: 8px 10px; border-radius: 10px; background: var(--surface-3); color: var(--text); border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,.35); font-size: 14px; font-weight: 600; line-height: 1.3; pointer-events: none; overflow-wrap: anywhere; }
 .pos-product-tile:has(.pos-tile-button:focus-visible) .pos-name-tip, .pos-name-tip[data-open="true"] { display: block; }
 @media (hover: hover) { .pos-product-tile:hover .pos-name-tip { display: block; } }
+
+/* While Review payment is open, no other Pay control is visible (they are inert too). */
+body[data-payment-review] .mg2-paybar, body[data-payment-review] .mg2-pay:not(.mg2-review-confirm) { visibility: hidden !important; }

@@ -63,7 +63,10 @@ export default function PaymentReviewDialog({
         if (sibling !== node && !sibling.hasAttribute("inert") && !(sibling instanceof HTMLScriptElement)) { sibling.setAttribute("inert", ""); marked.push(sibling) }
       }
     }
-    return () => { for (const el of marked) el.removeAttribute("inert") }
+    // Pay buttons outside the dialog are also hidden (register-v2.css): on phones the
+    // Pay bar and the cart sheet's Pay sat right under Confirm.
+    document.body.setAttribute("data-payment-review", "open")
+    return () => { for (const el of marked) el.removeAttribute("inert"); document.body.removeAttribute("data-payment-review") }
   }, [])
   const isCash = paymentMethod === "Cash"
   const changeInLbp = paidLbp > 0 && paidUsd === 0 // USD and mixed tenders give USD change
@@ -149,7 +152,7 @@ export default function PaymentReviewDialog({
           <button type="button" className="mg2-btn" style={{ flex: "0 0 auto", minHeight: 56 }} onClick={onBack}>
             <ArrowLeft size={18} className="mg2-dir" />{t("pos.v2.back")} <span className="mg2-kbd">Esc</span>
           </button>
-          <button ref={confirmRef} type="button" className="mg2-pay" style={{ flex: "1 1 240px", minHeight: 56, width: "auto", fontSize: 17, flexWrap: "wrap", justifyContent: "space-between" }}
+          <button ref={confirmRef} type="button" className="mg2-pay mg2-review-confirm" style={{ flex: "1 1 240px", minHeight: 56, width: "auto", fontSize: 17, flexWrap: "wrap", justifyContent: "space-between" }}
             disabled={!!blockedReason} onClick={confirmOnce}>
             <span>{paymentMethod === "Debt" ? t("pos.record_debt") : t("pos.v2.confirm_and_pay")}</span>
             <span className="num" style={{ whiteSpace: "nowrap" }}>{amountLabel}</span>

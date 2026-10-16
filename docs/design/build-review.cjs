@@ -12,6 +12,9 @@ const rows = [
   ["Payment review (Arabic)", "", null, "Phone, light, right-to-left", "review-payment.ar.light.mobile"],
   ["Receipt", "Sale complete panel (does not take focus)", "review-receipt.en.dark.desktop", "Phone", "review-receipt.en.dark.mobile"],
   ["Printed receipt", "80 mm, from the register's Print receipt", "review-printed-receipt.en.desktop", "", null],
+  ["Printed receipt: fit check, 80 mm roll", "Register and reprint at 72 mm printable, margin 2 and 0 mm; long English and Arabic names, large totals, rounding lines", "receipt-fit-80.desktop", "", null],
+  ["Printed receipt: fit check, 58 mm roll", "48 mm printable, margin 2 and 4 mm (browser render; confirm on the physical printer with Settings › Print test receipt)", "receipt-fit-58.desktop", "", null],
+  ["Payment review: Pay bar", "", null, "Phone: Pay bar hidden and inert while review is open", "pay-bar-hidden.en.dark.mobile"],
 ]
 const fig = (name, caption, w) => name && fs.existsSync(path.join(dir, "review", `${name}.png`))
   ? `<figure style="max-width:${w}px"><figcaption>${caption}</figcaption><img src="review/${name}.png" alt="${name}"></figure>` : ""
