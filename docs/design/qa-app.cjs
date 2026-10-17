@@ -493,6 +493,122 @@ const lotSetup = ["adjust the Pepsi lot", `
   adj.recordStockAdjustment({ productId: p.id, quantityChange: -2, reason: "Damage", batchId: lot.id, note: "Dented cans" })
   return "lot " + lot.batchNumber + " now " + ib.getInventoryBatches().find((b) => b.id === lot.id).quantityRemaining`, 300]
 const openLot = ["open the Pepsi lot", `const b = [...document.querySelectorAll("tr button.mg2-sort")].find((x) => /Pepsi/.test(x.textContent)); b.click(); await new Promise((r) => setTimeout(r, 600)); const d = document.querySelector("[role=dialog]"); return d ? "drawer: " + d.querySelector("h2")?.textContent + "; trace rows " + d.querySelectorAll("tbody tr").length + ": " + [...d.querySelectorAll("tbody tr")].map((r) => r.textContent.trim().slice(0, 60)).join(" | ") : "NO drawer"`, 300]
+// Customers, Suppliers and Receipts (accounts group). Demo data written as the services store it,
+// with some dates in the past so aging, overdue and day groups show. Local dev mode only.
+const seedAccounts = ["seed customers, suppliers, receipts", `
+  const now = Date.now(), day = 864e5, iso = (d) => new Date(now - d * day - 3600e3 * 3).toISOString()
+  const ps = await import("/src/features/pos/services/product.service.ts")
+  const products = await ps.getProducts()
+  const P = (name) => products.find((p) => p.name === name) ?? products[0]
+  const set = (k, v) => localStorage.setItem(k, JSON.stringify(v))
+  set("lebanonpos.customers.v1", [
+    { id: "c-nour", name: "Nour Haddad", mobile: "70123456", creditLimit: 500, notes: "Will pay Friday", createdAt: iso(120) },
+    { id: "c-rami", name: "Rami Khoury", mobile: "03987654", creditLimit: 150, notes: "", createdAt: iso(90), isWholesale: true },
+    { id: "c-layla", name: "Layla Saad", mobile: "71555222", creditLimit: 0, notes: "", createdAt: iso(60), sellAtCost: true },
+    { id: "c-karim", name: "Karim Fares", mobile: "76444111", creditLimit: 300, notes: "", createdAt: iso(30) },
+    { id: "c-old", name: "Hadi Mansour", mobile: "70999000", creditLimit: 0, notes: "", createdAt: iso(400), archived: true },
+  ])
+  const dline = (name, q) => ({ id: P(name).id, name, barcode: P(name).barcode ?? "", quantity: q, unitPrice: P(name).price, total: Math.round(q * P(name).price * 100) / 100 })
+  const dsale = (id, cust, num, d, lines) => { const total = lines.reduce((s, l) => s + l.total, 0); return { id, customerId: cust, saleNumber: num, saleId: "sale-" + num, subtotal: total, tax: 0, total, items: lines, createdAt: iso(d) } }
+  set("lebanonpos.debt-sales.v1", [
+    dsale("d1", "c-nour", "S-1041", 75, [dline("Mixed Nuts 250g", 12), dline("Lebanese Coffee", 20)]),
+    dsale("d2", "c-nour", "S-1077", 40, [dline("Labneh 500g", 15), dline("Cheese Saj", 10)]),
+    dsale("d3", "c-nour", "S-1102", 6, [dline("Chicken Shawarma", 6), dline("Pepsi Can", 12)]),
+    dsale("d4", "c-rami", "S-1090", 12, [dline("Mixed Nuts 250g", 30), dline("Chocolate Bar", 40)]),
+    dsale("d5", "c-layla", "S-1012", 95, [dline("Falafel Wrap", 8)]),
+    dsale("d6", "c-karim", "S-1110", 2, [dline("Manoushe Zaatar", 12)]),
+  ])
+  set("lebanonpos.debt-payments.v1", [
+    { id: "dp1", customerId: "c-nour", amount: 50, method: "Cash", reference: "", createdAt: iso(30) },
+    { id: "dp2", customerId: "c-nour", amount: 20, method: "Wallet", reference: "OMT 5521", createdAt: iso(8) },
+    { id: "dp3", customerId: "c-karim", amount: 15, method: "Card", reference: "", createdAt: iso(1) },
+  ])
+  set("lebanonpos.suppliers.v1", [
+    { id: "s-malia", name: "Malia Group", mobile: "01555123", contact: "Hadi Nasr", address: "Dora, Beirut", notes: "Delivers on Tuesdays", createdAt: iso(200) },
+    { id: "s-gandour", name: "Gandour", mobile: "05444888", contact: "Maya", address: "Choueifat", notes: "", createdAt: iso(150) },
+    { id: "s-tanmia", name: "Tanmia Dairy", mobile: "08333777", contact: "", address: "Zahle", notes: "", createdAt: iso(90) },
+    { id: "s-old", name: "Old Wholesale Co", mobile: "01000000", contact: "", address: "", notes: "", createdAt: iso(500), archived: true },
+  ])
+  const pline = (name, q, c) => ({ name, barcode: P(name).barcode ?? "", quantity: q, unitCost: c, unitPrice: P(name).price, total: Math.round(q * c * 100) / 100 })
+  const pay = { po1: 100, po2: 0, po3: 96, po4: 0 }
+  const po = (id, num, sup, name, d, items) => { const total = Math.round(items.reduce((s, i) => s + i.total, 0) * 100) / 100; const paid = pay[id]
+    return { id, poNumber: num, supplierId: sup, supplierName: name, status: "Received", paymentStatus: paid <= 0 ? "Unpaid" : paid + 0.005 >= total ? "Paid" : "Partial", invoiceNumber: "F-" + num.slice(-4), note: "", total, paidTotal: paid, items, createdBy: "Dev Admin", createdAt: iso(d), receivedAt: iso(d) } }
+  set("lebanonpos.purchase-orders.v1", [
+    po("po4", "PO-DV7K-00018", "s-tanmia", "Tanmia Dairy", 1, [pline("Labneh 500g", 40, 1.6)]),
+    po("po2", "PO-DV7K-00016", "s-malia", "Malia Group", 6, [pline("Pepsi Can", 96, 0.55), pline("Water Bottle 500ml", 120, 0.28)]),
+    po("po3", "PO-DV7K-00014", "s-gandour", "Gandour", 15, [pline("Chocolate Bar", 160, 0.6)]),
+    po("po1", "PO-DV7K-00011", "s-malia", "Malia Group", 24, [pline("Pepsi Can", 120, 0.55), pline("Chips", 240, 0.42), pline("Water Bottle 500ml", 100, 0.28)]),
+  ])
+  set("lebanonpos.supplier-payments.v1", [
+    { id: "sp1", supplierId: "s-malia", supplierName: "Malia Group", purchaseOrderId: "po1", purchaseOrderNumber: "PO-DV7K-00011", amount: 100, method: "Bank Transfer", reference: "BLOM 7731", recordedBy: "Dev Admin", createdAt: iso(10) },
+    { id: "sp2", supplierId: "s-gandour", supplierName: "Gandour", purchaseOrderId: "po3", purchaseOrderNumber: "PO-DV7K-00014", amount: 96, method: "Cash", reference: "", recordedBy: "Dev Admin", createdAt: iso(14) },
+  ])
+  const rate = 89500
+  const sline = (name, q, n) => ({ id: P(name).id, lineId: "L" + n, name, barcode: P(name).barcode ?? "", cost: P(name).cost, quantity: q, unitPrice: P(name).price, total: Math.round(q * P(name).price * 100) / 100 })
+  const sale = (n, d, method, lines, extra = {}) => { const total = Math.round(lines.reduce((s, l) => s + l.total, 0) * 100) / 100; const cost = lines.reduce((s, l) => s + l.cost * l.quantity, 0)
+    return { id: "sale-S-" + n, saleNumber: "S-" + n, paymentMethod: method, subtotal: total, discountTotal: 0, tax: 0, total, cost, profit: Math.round((total - cost) * 100) / 100, items: lines,
+      cashier: n % 3 ? "Dev Admin" : "Maya", shiftNumber: "SHIFT-DV-0" + (40 + Math.floor(d)), status: method === "Debt" ? "Debt" : "Completed", createdAt: iso(d),
+      ...(method === "Cash" ? { tender: { currency: "USD", exchangeRate: rate, paidUsd: Math.ceil(total), paidLbp: 0, paidTotalUsd: Math.ceil(total), paidTotalLbp: Math.ceil(total) * rate, changeUsd: Math.round((Math.ceil(total) - total) * 100) / 100, changeLbp: 0, changeCurrency: "USD" } } : {}), ...extra } }
+  const s1 = sale(1214, 0.02, "Cash", [sline("Pepsi Can", 4, 1), sline("Chips", 3, 2), sline("Manoushe Zaatar", 2, 3)])
+  const s2 = sale(1213, 0.1, "Card", [sline("Chicken Shawarma", 2, 1), sline("Pepsi Can", 2, 2)])
+  const s3 = sale(1212, 0.3, "Cash", [sline("Lebanese Coffee", 1, 1), sline("Chocolate Bar", 2, 2)], { payableLbp: 335000 })
+  const s4 = sale(1211, 0.5, "Wallet", [sline("Falafel Wrap", 3, 1)])
+  const s5 = sale(1205, 1.2, "Cash", [sline("Mixed Nuts 250g", 2, 1), sline("Water Bottle 500ml", 6, 2)])
+  const s6 = sale(1204, 1.4, "Cash", [sline("Cheese Saj", 2, 1)], { status: "Voided" })
+  const s7 = sale(1102, 6, "Debt", [sline("Chicken Shawarma", 6, 1), sline("Pepsi Can", 12, 2)], { customerId: "c-nour", customerName: "Nour Haddad" })
+  const s8 = sale(1188, 2.2, "Cash", [sline("Labneh 500g", 3, 1), sline("Pepsi Can", 6, 2)])
+  const s9 = sale(1190, 2.5, "Card", [sline("Lebanese Coffee", 2, 1)], { customerId: "c-layla", customerName: "Layla Saad", soldAtCost: true })
+  set("lebanonpos.sales.v1", [s1, s2, s3, s4, s5, s6, s8, s9, s7])
+  set("lebanonpos.refunds.v1", [{ id: "rf-1", refundNumber: "R-DV-3K9Q", saleId: s8.id, saleNumber: s8.saleNumber, method: "Cash", reason: "Damaged pack", total: s8.items[0].unitPrice,
+    items: [{ id: s8.items[0].id, name: s8.items[0].name, barcode: s8.items[0].barcode, quantity: 1, unitPrice: s8.items[0].unitPrice, cost: s8.items[0].cost, total: s8.items[0].unitPrice, saleLineId: "L1" }],
+    cashier: "Dev Admin", createdAt: iso(2) }])
+  return "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+`, 200]
+const lastDrawer = `[...document.querySelectorAll(".mg2-drawer")].pop()`
+const openRow = (re) => ["open " + re, `const el = [...document.querySelectorAll("tr, .mg2-rowcard")].find((e) => ${re}.test(e.textContent) && e.offsetParent !== null); if (!el) throw new Error("no row ${re}"); el.click(); await new Promise((r) => setTimeout(r, 500)); const d = ${lastDrawer}; return d ? d.querySelector("h2").textContent + " | " + [...d.querySelectorAll(".mg2-drawer-foot button")].map((b) => b.textContent.trim() + (b.disabled ? " (disabled)" : "")).join(" · ") : "no drawer"`, 300]
+const drawerBtn = (re) => ["press " + re, `const d = ${lastDrawer}; const b = [...d.querySelectorAll("button")].find((x) => ${re}.test(x.textContent.trim()) && !x.disabled); if (!b) throw new Error("no button ${re}"); b.click(); await new Promise((r) => setTimeout(r, 500)); const n = ${lastDrawer}; return n.querySelector("h2").textContent + " | errors: " + [...n.querySelectorAll(".err,[role=alert]")].map((e) => e.textContent.trim()).join(" / ")`, 300]
+const drawerType = (sel, value) => ["type " + value, `const d = ${lastDrawer}; const i = [...d.querySelectorAll(${JSON.stringify(sel)})].find((x) => !x.disabled); __t.type(i, ${JSON.stringify(value)}); await new Promise((r) => setTimeout(r, 200)); return "typed"`, 200]
+const tabLink = (re) => ["open tab " + re, `const a = [...document.querySelectorAll(".mg2-nav a")].find((x) => ${re}.test(x.textContent.trim())); if (!a) throw new Error("no tab ${re}"); a.click(); await new Promise((r) => setTimeout(r, 500)); return location.search`, 300]
+const pageBtn = (re) => ["press " + re, `const b = __t.textBtn(${re}); if (!b) throw new Error("no button ${re}"); b.click(); await new Promise((r) => setTimeout(r, 500)); const d = ${lastDrawer}; return d ? d.querySelector("h2").textContent : "no drawer"`, 300]
+const queueFails = ["make the sync queue unwritable (storage full)", `const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === "lebanonpos.sync-queue.v1") throw new DOMException("quota", "QuotaExceededError"); return orig.call(this, k, v) }; return "queue write fails"`, 50]
+const listFacts = ["list", `const rows = [...document.querySelectorAll("tbody tr, .mg2-rowcard")].filter((e) => e.offsetParent !== null); return rows.length + " rows; chips: " + [...document.querySelectorAll(".mg2-chip")].map((c) => c.textContent.trim()).join(" | ")`, 50]
+// A cashier who may view receipts and reprint, but not refund or void.
+const asReceiptViewer = `(()=>{ const u = JSON.parse(localStorage.getItem("lebanonpos.users.v1") || "[]"); if (u[0]) { u[0].role = "Cashier"; u[0].permissions = ["sales.checkout", "sales.reprint", "inventory.view", "reports.view"]; localStorage.setItem("lebanonpos.users.v1", JSON.stringify(u)) } })()`
+const ACCT = [
+  ["customers.en.dark.desktop", { w: 1440, h: 900, path: "/customers", steps: [seedAccounts, reloadStep, listFacts] }],
+  ["customers.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/customers", steps: [seedAccounts, reloadStep, listFacts] }],
+  ["customers.en.light.desktop", { w: 1440, h: 900, theme: "light", path: "/customers", steps: [seedAccounts, reloadStep, listFacts] }],
+  ["customers-detail.en.dark.desktop", { w: 1440, h: 900, path: "/customers", steps: [seedAccounts, reloadStep, openRow("/Nour Haddad/")] }],
+  ["customers-detail.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", path: "/customers", steps: [seedAccounts, reloadStep, openRow("/Nour Haddad/")] }],
+  ["customers-payments.en.dark.desktop", { w: 1440, h: 900, path: "/customers", steps: [seedAccounts, reloadStep, openRow("/Nour Haddad/"), drawerBtn("/^Payments/")] }],
+  ["customers-pay-over.en.dark.desktop", { w: 1440, h: 900, path: "/customers", steps: [seedAccounts, reloadStep, openRow("/Nour Haddad/"), drawerBtn("/^Receive payment$/"), drawerType("input[type=number]", "300"), drawerBtn("/^Record payment$/")] }],
+  ["customers-pay.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/customers", steps: [seedAccounts, reloadStep, openRow("/Nour Haddad/"), drawerBtn("/^استلام دفعة$/"), drawerType("input[type=number]", "50")] }],
+  ["customers-pay-failed.en.dark.desktop", { w: 1440, h: 900, path: "/customers", steps: [seedAccounts, reloadStep, openRow("/Rami Khoury/"), drawerBtn("/^Receive payment$/"), drawerType("input[type=number]", "40"), queueFails, drawerBtn("/^Record payment$/")] }],
+  ["customers-paid.en.dark.desktop", { w: 1440, h: 900, path: "/customers", steps: [seedAccounts, reloadStep, openRow("/Rami Khoury/"), drawerBtn("/^Receive payment$/"), drawerType("input[type=number]", "40"), drawerBtn("/^Record payment$/")] }],
+  ["customers-editor.en.dark.desktop", { w: 1440, h: 900, path: "/customers", steps: [seedAccounts, reloadStep, pageBtn("/^Add customer$/"), drawerBtn("/^Save$/")] }],
+  ["customers-archived.en.dark.desktop", { w: 1440, h: 900, path: "/customers", steps: [seedAccounts, reloadStep, pageBtn("/^Archived/"), listFacts, openRow("/Hadi Mansour/")] }],
+  ["customers-empty.en.dark.desktop", { w: 1440, h: 900, path: "/customers", steps: [listFacts] }],
+  ["suppliers.en.dark.desktop", { w: 1440, h: 900, path: "/suppliers", steps: [seedAccounts, reloadStep, listFacts] }],
+  ["suppliers.ar.light.desktop", { w: 1440, h: 900, theme: "light", lang: "ar", path: "/suppliers", steps: [seedAccounts, reloadStep, listFacts] }],
+  ["suppliers.en.dark.mobile", { w: 390, h: 844, mobile: true, path: "/suppliers", steps: [seedAccounts, reloadStep, listFacts] }],
+  ["suppliers-detail.en.dark.desktop", { w: 1440, h: 900, path: "/suppliers", steps: [seedAccounts, reloadStep, openRow("/Malia Group/")] }],
+  ["suppliers-orders.en.dark.desktop", { w: 1440, h: 900, path: "/suppliers", steps: [seedAccounts, reloadStep, tabLink(/^Purchase orders/), listFacts] }],
+  ["suppliers-orders.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/suppliers", steps: [seedAccounts, reloadStep, tabLink(/^أوامر الشراء/), listFacts] }],
+  ["suppliers-order.en.dark.desktop", { w: 1440, h: 900, path: "/suppliers", steps: [seedAccounts, reloadStep, tabLink(/^Purchase orders/), openRow("/PO-DV7K-00011/")] }],
+  ["suppliers-pay.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/suppliers", steps: [seedAccounts, reloadStep, openRow("/Malia Group/"), drawerBtn("/^ادفع /")] }],
+  ["suppliers-pay.en.dark.desktop", { w: 1440, h: 900, path: "/suppliers", steps: [seedAccounts, reloadStep, openRow("/Malia Group/"), drawerBtn("/^Pay \\$/")] }],
+  ["suppliers-empty.en.dark.desktop", { w: 1440, h: 900, path: "/suppliers", steps: [tabLink(/^Purchase orders/), listFacts] }],
+  ["receipts.en.dark.desktop", { w: 1440, h: 900, path: "/sales", steps: [seedAccounts, reloadStep, listFacts] }],
+  ["receipts.ar.dark.mobile", { w: 390, h: 844, mobile: true, lang: "ar", path: "/sales", steps: [seedAccounts, reloadStep, listFacts] }],
+  ["receipts-grouped.en.light.desktop", { w: 1440, h: 900, theme: "light", path: "/sales", steps: [seedAccounts, reloadStep, pageBtn("/^Group by day$/"), listFacts] }],
+  ["receipts-detail.en.dark.desktop", { w: 1440, h: 900, path: "/sales", steps: [seedAccounts, reloadStep, openRow("/S-1188/")] }],
+  ["receipts-detail.ar.light.mobile", { w: 390, h: 844, mobile: true, theme: "light", lang: "ar", path: "/sales", steps: [seedAccounts, reloadStep, openRow("/S-1212/")] }],
+  ["receipts-return.en.dark.desktop", { w: 1440, h: 900, path: "/sales", steps: [seedAccounts, reloadStep, openRow("/S-1214/"), drawerBtn("/^Return items$/"), drawerType("input[type=number]", "2")] }],
+  ["receipts-voided.en.dark.desktop", { w: 1440, h: 900, path: "/sales", steps: [seedAccounts, reloadStep, openRow("/S-1204/")] }],
+  ["receipts-cashier.en.dark.desktop", { w: 1440, h: 900, path: "/sales", setup: asReceiptViewer, steps: [seedAccounts, reloadStep, openRow("/S-1214/")] }],
+  ["receipts-empty.en.dark.desktop", { w: 1440, h: 900, path: "/sales", steps: [listFacts] }],
+]
+
 const STOCK = [
   ["products.en.dark.desktop", { w: 1440, h: 900, path: "/products", steps: [seedStock, reloadStep] }],
   ["products.ar.light.desktop", { w: 1440, h: 900, path: "/products", theme: "light", lang: "ar", steps: [seedStock, reloadStep] }],
@@ -560,7 +676,7 @@ const SCENES = [
     const cdp = new CDP(ws); await cdp.open()
     const only = process.env.ONLY ? new RegExp(process.env.ONLY) : null
     const results = []
-    for (const [name, opts] of (process.env.QA_STOCK ? STOCK : process.env.QA_FIVE ? FIVE : process.env.QA_PAY ? PAY : process.env.QA_RECEIPT ? RECEIPT : process.env.QA_REVIEW ? REVIEW : process.env.QA_NAMES ? NAMES : process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL, ...NAMES])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
+    for (const [name, opts] of (process.env.QA_ACCT ? ACCT : process.env.QA_STOCK ? STOCK : process.env.QA_FIVE ? FIVE : process.env.QA_PAY ? PAY : process.env.QA_RECEIPT ? RECEIPT : process.env.QA_REVIEW ? REVIEW : process.env.QA_NAMES ? NAMES : process.env.QA_SHELL ? SHELL : process.env.SHIFT ? SHIFT : process.env.BEHAVIOUR ? BEHAVIOUR : process.env.MORE ? MORE : [...SCENES, ...MORE, ...SHIFT, ...SHELL, ...NAMES])) if (!only || only.test(name)) { results.push(await scene(cdp, name, opts)); console.log(name, JSON.stringify(results.at(-1).log.map(([l, v]) => `${l}: ${v}`)), JSON.stringify(results.at(-1).facts)) }
     fs.writeFileSync(path.join(OUT, "report.json"), JSON.stringify({ base: BASE, at: new Date().toISOString(), results }, null, 2))
   } finally { chrome.kill() }
 })().catch((e) => { console.error(e); process.exit(1) })

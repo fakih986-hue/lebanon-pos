@@ -44,4 +44,6 @@ docs/design/qa/review/*.png
 docs/design/qa/review/report.json
 
 docs/design/qa/stock-*/*.png
+docs/design/qa/accounts-*/*.png
+docs/design/qa/accounts-review.html
 docs/design/qa/stock-review.html

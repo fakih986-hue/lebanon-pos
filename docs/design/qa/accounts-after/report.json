@@ -1,0 +1,946 @@
+{
+  "base": "http://localhost:5174",
+  "at": "2026-10-17T16:23:21.557Z",
+  "results": [
+    {
+      "name": "customers.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "list",
+          "4 rows; chips: All4 | Owing3 | Overdue2 | Over limit1 | Archived1 | 0 to 30 days$197.30 | 30 to 60 days$63.50 | 60 to 90 days$6.20 | Over 90 days$18.00"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers.ar.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "list",
+          "4 rows; chips: الكل4 | عليهم رصيد3 | متأخرون2 | تجاوزوا الحدّ1 | مؤرشفون1 | من 0 إلى 30 يوماً$197.30 | من 30 إلى 60 يوماً$63.50 | من 60 إلى 90 يوماً$6.20 | أكثر من 90 يوماً$18.00"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers.en.light.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "light",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "list",
+          "4 rows; chips: All4 | Owing3 | Overdue2 | Over limit1 | Archived1 | 0 to 30 days$197.30 | 30 to 60 days$63.50 | 60 to 90 days$6.20 | Over 90 days$18.00"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "light",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers-detail.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Nour Haddad/",
+          "Nour Haddad | Receive payment · Edit · Archive"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers-detail.ar.light.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "light",
+      "lang": "ar",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Nour Haddad/",
+          "Nour Haddad | استلام دفعة · تعديل · أرشفة"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "light",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers-payments.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Nour Haddad/",
+          "Nour Haddad | Receive payment · Edit · Archive"
+        ],
+        [
+          "press /^Payments/",
+          "Nour Haddad | errors: "
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers-pay-over.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Nour Haddad/",
+          "Nour Haddad | Receive payment · Edit · Archive"
+        ],
+        [
+          "press /^Receive payment$/",
+          "Receive payment | errors: "
+        ],
+        [
+          "type 300",
+          "typed"
+        ],
+        [
+          "press /^Record payment$/",
+          "Receive payment | errors: That is more than is owed. The most you can record is $107.50."
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "SELECT",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers-pay.ar.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Nour Haddad/",
+          "Nour Haddad | استلام دفعة · تعديل · أرشفة"
+        ],
+        [
+          "press /^استلام دفعة$/",
+          "استلام دفعة | errors: "
+        ],
+        [
+          "type 50",
+          "typed"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "SELECT",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers-pay-failed.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Rami Khoury/",
+          "Rami Khoury | Receive payment · Edit · Archive"
+        ],
+        [
+          "press /^Receive payment$/",
+          "Receive payment | errors: "
+        ],
+        [
+          "type 40",
+          "typed"
+        ],
+        [
+          "make the sync queue unwritable (storage full)",
+          "queue write fails"
+        ],
+        [
+          "press /^Record payment$/",
+          "Receive payment | errors: Could not save this change for sync (device storage is full or unavailable). Nothing was sent. [op-pay-5e8af775-b831-49c1-bcab-95fa37542ea2]"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "SELECT",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers-paid.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Rami Khoury/",
+          "Rami Khoury | Receive payment · Edit · Archive"
+        ],
+        [
+          "press /^Receive payment$/",
+          "Receive payment | errors: "
+        ],
+        [
+          "type 40",
+          "typed"
+        ],
+        [
+          "press /^Record payment$/",
+          "Rami Khoury | errors: "
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers-editor.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "press /^Add customer$/",
+          "Add customer"
+        ],
+        [
+          "press /^Save$/",
+          "Add customer | errors: Enter a name. / Enter a mobile number."
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "INPUT",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers-archived.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "press /^Archived/",
+          "no drawer"
+        ],
+        [
+          "list",
+          "1 rows; chips: All4 | Owing3 | Overdue2 | Over limit1 | Archived1 | 0 to 30 days$197.30 | 30 to 60 days$63.50 | 60 to 90 days$6.20 | Over 90 days$18.00"
+        ],
+        [
+          "open /Hadi Mansour/",
+          "Hadi Mansour | Receive payment (disabled) · Edit · Restore · Delete"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "INPUT",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "customers-empty.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "list",
+          "0 rows; chips: All0 | Owing0 | Overdue0 | Over limit0 | Archived0"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "list",
+          "3 rows; chips: All3 | You owe2 | Archived1"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers.ar.light.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "light",
+      "lang": "ar",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "list",
+          "3 rows; chips: الكل3 | عليك لهم2 | مؤرشفون1"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "light",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers.en.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "list",
+          "3 rows; chips: All3 | You owe2 | Archived1"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers-detail.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Malia Group/",
+          "Malia Group | Pay supplier · Archive"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers-orders.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open tab /^Purchase orders/",
+          "?tab=orders"
+        ],
+        [
+          "list",
+          "4 rows; chips: All orders4 | Unpaid2 | Partly paid1 | Paid1"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers-orders.ar.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open tab /^أوامر الشراء/",
+          "?tab=orders"
+        ],
+        [
+          "list",
+          "4 rows; chips: كل الأوامر4 | غير مدفوع2 | مدفوع جزئياً1 | مدفوع1"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers-order.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open tab /^Purchase orders/",
+          "?tab=orders"
+        ],
+        [
+          "open /PO-DV7K-00011/",
+          "Purchase order PO-DV7K-00011 | Pay $94.80 · Open supplier"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers-pay.ar.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Malia Group/",
+          "Malia Group | الدفع لمورد · أرشفة"
+        ],
+        [
+          "press /^ادفع /",
+          "الدفع لمورد | errors: "
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "SELECT",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers-pay.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Malia Group/",
+          "Malia Group | Pay supplier · Archive"
+        ],
+        [
+          "press /^Pay \\$/",
+          "Pay supplier | errors: "
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "SELECT",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers-empty.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "open tab /^Purchase orders/",
+          "?tab=orders"
+        ],
+        [
+          "list",
+          "0 rows; chips: All orders0 | Unpaid0 | Partly paid0 | Paid0"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receipts.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "list",
+          "9 rows; chips: Today | Last 7 days | This month | All time | Group by day | All9 | Paid7 | On account1 | With refunds1 | Voided1"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receipts.ar.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "list",
+          "9 rows; chips: اليوم | آخر 7 أيام | هذا الشهر | كل الفترات | تجميع بالتاريخ | الكل9 | مدفوعة7 | بالدين1 | فيها مرتجعات1 | ملغاة1"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receipts-grouped.en.light.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "light",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "press /^Group by day$/",
+          "no drawer"
+        ],
+        [
+          "list",
+          "13 rows; chips: Today | Last 7 days | This month | All time | Group by day | All9 | Paid7 | On account1 | With refunds1 | Voided1"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "light",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receipts-detail.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /S-1188/",
+          "Receipt S-1188 | Print · Return items · Void"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receipts-detail.ar.light.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "light",
+      "lang": "ar",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /S-1212/",
+          "الإيصال S-1212 | طباعة · إرجاع أصناف · إلغاء"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "light",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receipts-return.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /S-1214/",
+          "Receipt S-1214 | Print · Return items · Void"
+        ],
+        [
+          "press /^Return items$/",
+          "Receipt S-1214 | errors: "
+        ],
+        [
+          "type 2",
+          "typed"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receipts-voided.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /S-1204/",
+          "Receipt S-1204 | Print · Return items (disabled)"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receipts-cashier.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /S-1214/",
+          "Receipt S-1214 | Print · Return items (disabled)"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "receipts-empty.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "list",
+          "0 rows; chips: Today | Last 7 days | This month | All time | Group by day | All0 | Paid0 | On account0 | With refunds0 | Voided0"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BODY",
+        "overflowX": false
+      }
+    }
+  ]
+}
