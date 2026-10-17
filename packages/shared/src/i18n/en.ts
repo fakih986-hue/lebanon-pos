@@ -1288,6 +1288,8 @@ export const en = {
   "pos.status.ready": "Scanner ready.",
   "pos.status.ready_next": "Scanner ready for the next sale.",
   "pos.status.sale_completed": "Sale completed. Scanner ready for the next sale.",
+  "pos.status.hub_unconfirmed": "This sale ({number}) may already be on the hub, but it did not confirm. Do not take payment again: try again when the hub is reachable (the same sale is resent, never charged twice).",
+  "pos.status.hub_previous_committed": "An earlier sale ({number}) whose confirmation was lost did go through; it is recorded now. This cart was NOT charged — check it with the customer before charging.",
   "pos.status.sale_needs_attention": "Sale saved, but part of it needs attention: see Sync status.",
   "pos.status.server_rejected": "Not accepted by the server: {error}",
   "pos.status.server_rejected_generic": "The server did not accept the sale.",

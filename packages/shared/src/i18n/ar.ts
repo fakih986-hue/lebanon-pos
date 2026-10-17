@@ -1288,6 +1288,8 @@ export const ar = {
   "pos.status.ready": "الماسح جاهز.",
   "pos.status.ready_next": "الماسح جاهز للبيع التالي.",
   "pos.status.sale_completed": "اكتمل البيع. الماسح جاهز للبيع التالي.",
+  "pos.status.hub_unconfirmed": "قد يكون هذا البيع ({number}) على الخادم المحلي لكنه لم يؤكَّد. لا تستلم الدفع مجدداً: حاول عند توفر الخادم (يُعاد إرسال البيع نفسه ولا يُحتسب مرتين).",
+  "pos.status.hub_previous_committed": "بيع سابق ({number}) ضاع تأكيده قد تمّ فعلاً وسُجّل الآن. لم تُحتسب هذه السلة — راجعها مع الزبون قبل الدفع.",
   "pos.status.sale_needs_attention": "حُفظ البيع، لكن جزءاً منه يحتاج إلى مراجعة: راجع حالة المزامنة.",
   "pos.status.server_rejected": "لم يقبله الخادم: {error}",
   "pos.status.server_rejected_generic": "لم يقبل الخادم البيع.",

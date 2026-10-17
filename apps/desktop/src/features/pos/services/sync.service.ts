@@ -1679,7 +1679,7 @@ const COMMIT_TIMEOUT_MS = 1200
 const COMMIT_MAX_ATTEMPTS = 2
 
 /** Asks the hub whether a sale id has already committed (idempotency check). */
-async function saleCommittedOnHub(saleId: string): Promise<boolean | null> {
+export async function saleCommittedOnHub(saleId: string): Promise<boolean | null> {
   const apiUrl = getApiUrl(); const token = getAuthToken()
   if (!apiUrl || !token) return null
   try {

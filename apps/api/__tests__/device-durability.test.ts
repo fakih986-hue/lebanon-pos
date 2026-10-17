@@ -58,10 +58,14 @@ let customerId = ""
 // The network: real HTTP to the API; in "lose" mode the server receives and applies the push, but
 // its answer never reaches the device.
 let lose = false
+// "hubLost": the hub receives and commits the push, then the till loses it entirely (the answer
+// and every later request, including "is this sale committed?").
+let hubLost = false
 const realFetch = globalThis.fetch
 g.fetch = (async (url: string, init?: RequestInit) => {
+  if (hubLost && !String(url).includes("/api/sync/push")) throw new Error("hub unreachable")
   const res = await realFetch(url, init)
-  if (lose && String(url).includes("/api/sync/push")) { await res.text(); throw new Error("connection reset: response lost") }
+  if ((lose || hubLost) && String(url).includes("/api/sync/push")) { await res.text(); throw new Error("connection reset: response lost") }
   return res
 }) as typeof fetch
 
@@ -74,6 +78,7 @@ async function device() {
     batches: await import("../../desktop/src/features/pos/services/inventoryBatch.service.js"),
     customer: await import("../../desktop/src/features/pos/services/customer.service.js"),
     journal: await import("../../desktop/src/features/pos/services/businessJournal.service.js"),
+    hub: await import("../../desktop/src/features/pos/services/hubCheckout.service.js"),
   }
 }
 type Device = Awaited<ReturnType<typeof device>>
@@ -161,6 +166,69 @@ afterAll(async () => {
   }
   await new Promise<void>((resolve) => server.close(() => resolve()))
   await prisma.$disconnect()
+})
+
+describe("hub write-through checkout (real server)", () => {
+  /** What the POS page does for a hub checkout: a fresh sale (new id and number) for this cart. */
+  async function hubCart(d: Device, qty: number) {
+    const c = await cart(d, qty, false)
+    return {
+      fingerprint: d.hub.cartFingerprint({ items: [{ id: productId, quantity: qty, unitPrice: 5 }], paymentMethod: "Cash", total: qty * 5 }),
+      build: () => c.sale, lots: c.lots, stock: c.stock, sale: c.sale,
+    }
+  }
+  const salesOnServer = () => prisma.sale.count({ where: { tenantId: TENANT } })
+
+  it("the hub commits, its answer is lost, the till reloads and retries: one sale, one stock deduction", async () => {
+    let d = await device()
+    const s0 = await serverStock()
+    const n0 = await salesOnServer()
+    const local0 = deviceStock()
+    hubLost = true
+    const first = await d.hub.checkoutViaHub(await hubCart(d, 2))
+    hubLost = false
+    expect(first.status).toBe("unconfirmed") // cashier: "may already be on the hub, do not take payment again"
+    expect(await salesOnServer()).toBe(n0 + 1) // the hub did commit it
+    expect(deviceStock()).toBe(local0)          // nothing finalized here yet
+    expect(d.hub.getPendingHubSale()?.sale.id).toBe((first as { sale: { id: string } }).sale.id)
+
+    // Reload, then the cashier presses Pay again for the same cart (the page builds a NEW sale).
+    d = await restart()
+    const retry = await d.hub.checkoutViaHub(await hubCart(d, 2))
+    expect(retry).toMatchObject({ status: "committed", reused: true })
+    expect((retry as { sale: { id: string } }).sale.id).toBe((first as { sale: { id: string } }).sale.id) // the same sale
+    expect(await salesOnServer()).toBe(n0 + 1)
+    expect(await serverStock()).toBe(s0 - 2)
+    expect(deviceStock()).toBe(local0 - 2)
+    expect(d.hub.getPendingHubSale()).toBeNull()
+    // Pressing Pay once more for an identical new cart is a new sale (nothing pending any more).
+  })
+
+  it("after a lost answer, a different cart is not charged until the earlier sale is settled", async () => {
+    let d = await device()
+    const n0 = await salesOnServer()
+    const s0 = await serverStock()
+    hubLost = true
+    const first = await d.hub.checkoutViaHub(await hubCart(d, 1))
+    expect(first.status).toBe("unconfirmed")
+    // Still unreachable: neither the same cart nor another one creates a second sale.
+    expect((await d.hub.checkoutViaHub(await hubCart(d, 1))).status).toBe("unconfirmed")
+    expect((await d.hub.checkoutViaHub(await hubCart(d, 3))).status).toBe("unconfirmed")
+    hubLost = false
+    expect(await salesOnServer()).toBe(n0 + 1)
+
+    d = await restart()
+    const other = await d.hub.checkoutViaHub(await hubCart(d, 3))
+    expect(other.status).toBe("previous_committed") // "the earlier sale went through; this cart was not charged"
+    expect(await salesOnServer()).toBe(n0 + 1)
+    expect(await serverStock()).toBe(s0 - 1)
+    const local = JSON.parse(storage.getItem("lebanonpos.sales.v1") ?? "[]") as Array<{ id: string }>
+    expect(local.filter((x) => x.id === (first as { sale: { id: string } }).sale.id)).toHaveLength(1)
+    // Now the new cart can be charged, once.
+    expect((await d.hub.checkoutViaHub(await hubCart(d, 3))).status).toBe("committed")
+    expect(await salesOnServer()).toBe(n0 + 2)
+    expect(await serverStock()).toBe(s0 - 4)
+  })
 })
 
 describe("device -> real server (Postgres)", () => {

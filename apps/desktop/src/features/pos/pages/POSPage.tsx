@@ -44,17 +44,16 @@ import {
   productMatchesSearch,
   toggleProductFavorite,
 } from "../services/product.service"
-import { decreaseProductStock, increaseProductStock } from "../services/product.service"
-import { buildSale, checkoutLocalSale, finalizeCommittedSale, voidSale, getSales, type SaleTender } from "../services/sales.service"
+import { buildSale, checkoutLocalSale, getSales, type SaleTender } from "../services/sales.service"
+import { cartFingerprint, checkoutViaHub } from "../services/hubCheckout.service"
 import {
   holdSale,
   removeHeldSale,
   type HeldSale,
 } from "../services/heldSale.service"
-import { recordDebtSale } from "../services/customer.service"
 import { recordAuditEvent, userCan, getActiveShift, subscribeSecurity } from "../services/security.service"
-import { consumeInventoryBatches, restoreInventoryBatches } from "../services/inventoryBatch.service"
-import { getConnectionMode, pullFromServer, commitSaleToHub, nextDocumentReference, getSyncStatus } from "../services/sync.service"
+import { consumeInventoryBatches } from "../services/inventoryBatch.service"
+import { getConnectionMode, pullFromServer, nextDocumentReference, getSyncStatus } from "../services/sync.service"
 import { createId } from "../lib/storage"
 
 import type { Product } from "../types/product"
@@ -705,9 +704,6 @@ export default function POSPage() {
       quantity: item.quantity, fallbackUnitCost: item.cost,
     }))
 
-    let batchesConsumed = false
-    let recordedSaleId: string | undefined
-    let stockDecreased = false
 
     try {
       // Build the canonical sale payload FIRST, via a dry-run batch allocation
@@ -755,25 +751,42 @@ export default function POSPage() {
       // recorded and the cashier sees a clear failure instead of a false
       // success that later reverts. For STORE_HUB the target is localhost
       // (instant, same-machine); for CONNECT_TO_HUB it's the LAN hub.
+      let committedSale = sale
       if (writeThrough) {
+        // The sale is saved as this till's pending hub sale BEFORE it is sent: a lost confirmation
+        // can never lead to a second sale — the same cart re-sends the same sale, and a different
+        // cart is held until the earlier one is confirmed (hubCheckout.service).
         setIsValidatingStock(true)
         setScannerStatus(mode === "STORE_HUB" ? t("pos.status.completing") : t("pos.status.completing_hub"))
-        let result
-        try { result = await commitSaleToHub(sale) }
-        finally { setIsValidatingStock(false) }
-        if (result.status === "rejected") {
-          setScannerStatus(/Insufficient stock/i.test(result.error)
+        let outcome
+        try {
+          outcome = await checkoutViaHub({
+            fingerprint: cartFingerprint({ items: items.map((item) => ({ id: item.id, quantity: item.quantity, unitPrice: item.price })), paymentMethod, customerId: selectedCustomer?.id, total }),
+            build: () => sale,
+            lots: cartInputs,
+            stock: items.map((item) => ({ productId: item.id, quantity: item.quantity })),
+            debt: paymentMethod === "Debt" && selectedCustomer
+              ? { customerId: selectedCustomer.id, saleNumber, subtotal, discountTotal, tax, total, items: saleItems }
+              : undefined,
+          })
+        } finally { setIsValidatingStock(false) }
+        if (outcome.status === "rejected") {
+          setScannerStatus(/Insufficient stock/i.test(outcome.error)
             ? t("pos.status.hub_out_of_stock")
-            : t("pos.status.hub_rejected", { error: result.error }))
+            : t("pos.status.hub_rejected", { error: outcome.error }))
           playErrorBuzz(); pullFromServer().catch(() => {}); return
         }
-        if (result.status === "unreachable") {
-          setScannerStatus(mode === "STORE_HUB"
-            ? t("pos.status.local_down")
-            : t("pos.status.hub_down"))
+        if (outcome.status === "unconfirmed") {
+          // The hub may already have it: the cart stays, and payment must not be taken again.
+          setScannerStatus(t("pos.status.hub_unconfirmed", { number: outcome.sale.saleNumber }))
           playErrorBuzz(); return
         }
-        // committed → fall through to local finalize (enqueues suppressed)
+        if (outcome.status === "previous_committed") {
+          // An earlier sale with a lost confirmation went through; this cart was not charged.
+          setScannerStatus(t("pos.status.hub_previous_committed", { number: outcome.sale.saleNumber }))
+          playErrorBuzz(); pullFromServer().catch(() => {}); return
+        }
+        committedSale = outcome.sale
       }
 
       // ── Local finalize ────────────────────────────────────────────────
@@ -782,10 +795,7 @@ export default function POSPage() {
       // here are for immediate receipt/display and are reconciled by pull.
       let needsAttention: string | undefined
       if (writeThrough) {
-        consumeInventoryBatches(cartInputs, { skipSync: true })
-        batchesConsumed = true
-        finalizeCommittedSale(sale)
-        recordedSaleId = saleId
+        // Finalized locally by checkoutViaHub (once, even across retries).
       } else {
         // One durable boundary for lots, the sale, its debt and stock (businessJournal): a failure
         // before the sale is written is compensated and thrown (cart kept); after it the rest is
@@ -809,21 +819,8 @@ export default function POSPage() {
         })
       }
 
-      if (writeThrough) {
-        if (paymentMethod === "Debt" && selectedCustomer) {
-          recordDebtSale({
-            customerId: selectedCustomer.id, saleNumber, saleId,
-            subtotal, discountTotal, tax, total, items: saleItems,
-          })
-        }
-        decreaseProductStock(
-          items.map((item) => ({ productId: item.id, quantity: item.quantity }))
-        )
-        stockDecreased = true
-      }
-
       const saleRecord = {
-        number: saleNumber, paymentMethod, customerName: selectedCustomer?.name,
+        number: committedSale.saleNumber, paymentMethod, customerName: selectedCustomer?.name,
         grossSubtotal, subtotal, discountTotal, tax, total, totalLbp, exchangeRate,
         payableLbp, payableUsd,
         tender,
@@ -844,33 +841,9 @@ export default function POSPage() {
       // Reconcile local stock/batches with the hub's authoritative numbers.
       if (writeThrough) pullFromServer().catch(() => {})
     } catch (err) {
-      // Reverse completed steps — cart is preserved so user can retry
-      if (recordedSaleId) {
-        // The sale's operation may already have reached the server: it is undone only through a
-        // void that is itself saved for sync. If even that cannot be saved (storage full), the sale
-        // stands as recorded and the error says so — never a silent local-only undo.
-        try {
-          voidSale(recordedSaleId, stockDecreased)
-        } catch (voidError) {
-          console.error("[checkout] could not void the recorded sale:", voidError)
-          if (!stockDecreased) decreaseProductStock(items.map((item) => ({ productId: item.id, quantity: item.quantity })))
-        }
-      } else {
-        // Sale was NOT recorded — manually restore what was consumed
-        if (stockDecreased) {
-          increaseProductStock(
-            items.map((item) => ({ productId: item.id, quantity: item.quantity }))
-          )
-        }
-        if (batchesConsumed) {
-          restoreInventoryBatches(
-            items.map((item) => ({
-              productId: item.id, productName: item.name, barcode: item.barcode,
-              quantity: item.quantity, fallbackUnitCost: item.cost,
-            }))
-          )
-        }
-      }
+      // Nothing to undo here: checkoutLocalSale compensates (or completes) its own effects through
+      // the business journal, and checkoutViaHub records nothing until the hub commits. The cart
+      // is kept so the cashier can retry.
       const reason = (err as Error)?.message?.trim()
       console.error("[checkout] sale failed:", err)
       setScannerStatus(reason ? t("pos.status.checkout_failed", { reason }) : t("pos.status.checkout_failed_generic"))
