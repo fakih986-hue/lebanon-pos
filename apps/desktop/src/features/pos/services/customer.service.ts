@@ -1,5 +1,5 @@
 import type { Product } from "../types/product"
-import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
+import { assertCanWrite, commitStagedSyncOperation, enqueueSyncOperation, settleStagedSyncOperation, stageSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 
@@ -296,10 +296,19 @@ export function updateCustomer(customerId: string, patch: Partial<Customer>) {
   return updated
 }
 
+/** The debt of a sale has an id derived from the sale: recording it again (a retry, a recovery)
+ *  finds it instead of adding a second debt. */
+export function debtIdForSale(saleId: string) {
+  return `debt-${saleId}`
+}
+
 export function recordDebtSale(input: RecordDebtSaleInput) {
   assertCanWrite("record debt sale")
+  const id = input.saleId ? debtIdForSale(input.saleId) : createId()
+  const existing = getDebtSales().find((d) => d.id === id)
+  if (existing) return existing
   const sale: DebtSale = {
-    id: createId(),
+    id,
     customerId: input.customerId,
     saleNumber: input.saleNumber,
     ...(input.saleId ? { saleId: input.saleId } : {}),
@@ -311,13 +320,21 @@ export function recordDebtSale(input: RecordDebtSaleInput) {
     createdAt: new Date().toISOString(),
   }
 
-  writeCollection(DEBT_SALES_KEY, [sale, ...getDebtSales()])
-  enqueueSyncOperation({
+  // Durability: the operation is saved before the debt (SyncStorageError -> nothing written).
+  const staged = stageSyncOperation({
+    id: `op-${sale.id}`,
     entity: "debt",
     action: "create",
     summary: `${sale.saleNumber} debt sale queued for sync.`,
     payload: debtWirePayload(sale),
   })
+  try {
+    writeCollection(DEBT_SALES_KEY, [sale, ...getDebtSales()])
+  } catch (error) {
+    settleStagedSyncOperation(staged.id)
+    throw error
+  }
+  commitStagedSyncOperation(staged.id)
 
   return sale
 }
@@ -340,13 +357,20 @@ export function reverseDebtSale(sale: { id: string; saleNumber: string; customer
   if (!match) return undefined
   const saleNumber = sale.saleNumber
 
-  writeCollection(DEBT_SALES_KEY, debtSales.filter((d) => d.id !== match.id))
-  enqueueSyncOperation({
+  const staged = stageSyncOperation({
+    id: `op-del-${match.id}`,
     entity: "debt",
     action: "delete",
     summary: `Debt sale ${saleNumber} reversed (sale voided).`,
     payload: { id: match.id, saleNumber },
   })
+  try {
+    writeCollection(DEBT_SALES_KEY, debtSales.filter((d) => d.id !== match.id))
+  } catch (error) {
+    settleStagedSyncOperation(staged.id)
+    throw error
+  }
+  commitStagedSyncOperation(staged.id)
   return match
 }
 
@@ -375,14 +399,28 @@ export function recordDebtPayment(input: RecordDebtPaymentInput, opts?: { localO
   }
 
   if (opts?.localOnly) payment.localOnly = true
-  writeCollection(DEBT_PAYMENTS_KEY, [payment, ...getDebtPayments()])
-  if (opts?.localOnly) return payment
-  enqueueSyncOperation({
+  // Recorded before (a retried settlement or refund credit with the same id): never twice.
+  const existing = getDebtPayments().find((p) => p.id === payment.id)
+  if (existing) return existing
+  if (opts?.localOnly) {
+    writeCollection(DEBT_PAYMENTS_KEY, [payment, ...getDebtPayments()])
+    return payment
+  }
+  // Durability: the operation is saved before the payment (SyncStorageError -> nothing written).
+  const staged = stageSyncOperation({
+    id: `op-${payment.id}`,
     entity: "debt",
     action: "payment",
-    summary: `$${payment.amount.toFixed(2)} debt payment queued for sync.`,
+    summary: `${payment.amount.toFixed(2)} debt payment queued for sync.`,
     payload: payment,
   })
+  try {
+    writeCollection(DEBT_PAYMENTS_KEY, [payment, ...getDebtPayments()])
+  } catch (error) {
+    settleStagedSyncOperation(staged.id)
+    throw error
+  }
+  commitStagedSyncOperation(staged.id)
 
   return payment
 }

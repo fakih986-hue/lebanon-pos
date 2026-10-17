@@ -1070,6 +1070,8 @@ const RECORD_KEYS: Partial<Record<string, string>> = {
   "inventory/adjust": "lebanonpos.inventory-adjustments.v1",
   "supplier-payment/payment": "lebanonpos.supplier-payments.v1",
   "purchase-order/create": "lebanonpos.purchase-orders.v1",
+  "debt/create": "lebanonpos.debt-sales.v1",
+  "debt/payment": "lebanonpos.debt-payments.v1",
 }
 function readArray(key: string): Array<Record<string, unknown>> {
   try { const v = JSON.parse(window.localStorage.getItem(key) ?? "[]"); return Array.isArray(v) ? v : [] } catch { return [] }
@@ -1079,6 +1081,11 @@ function stagedRecordState(op: SyncOperation): { state: "present" | "missing" | 
   if (k === "sale/void") {
     const sale = readArray("lebanonpos.sales.v1").find((s) => String(s.id) === recordIdOf(op.payload))
     return { state: sale?.status === "Voided" ? "present" : "missing" }
+  }
+  if (k === "debt/delete") {
+    // A reversal happened when the debt is gone.
+    const still = readArray("lebanonpos.debt-sales.v1").some((d) => String(d.id) === recordIdOf(op.payload))
+    return { state: still ? "missing" : "present" }
   }
   if (k === "purchase-order/update") {
     // An update is "present" only when the stored order says what the update says (a failed
