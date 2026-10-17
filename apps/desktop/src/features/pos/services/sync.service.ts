@@ -1055,6 +1055,22 @@ export function settleStagedSyncOperation(id: string): SyncOperationState {
   return "staged"
 }
 
+const preRecoveryHooks: Array<() => void> = []
+/** Runs before staged recovery (the business journal settles its entries here). */
+export function registerPreRecoveryHook(hook: () => void) {
+  preRecoveryHooks.push(hook)
+}
+const stagedCompleters = new Map<string, (op: SyncOperation) => void>()
+/** Completes effects that live beside a staged operation's record when it is released (idempotent). */
+export function registerStagedCompleter(entityAction: string, complete: (op: SyncOperation) => void) {
+  stagedCompleters.set(entityAction, complete)
+}
+const stagedOwners: Array<(opId: string) => boolean> = []
+/** A journal registers here so generic recovery leaves the staged operations it owns alone. */
+export function registerStagedOwner(owns: (opId: string) => boolean) {
+  stagedOwners.push(owns)
+}
+
 /** The business write failed: remove its staged operation (it was never sent). */
 export function discardStagedSyncOperation(id: string) {
   updateQueueOps((op) => (op.id === id && op.staged ? null : op))
@@ -1113,14 +1129,22 @@ function stagedRecordState(op: SyncOperation): { state: "present" | "missing" | 
  */
 export function recoverStagedSyncOperations(): { promoted: number; dropped: number; held: number } {
   if (!canUseStorage()) return { promoted: 0, dropped: 0, held: 0 }
+  // Multi-step workflows settle their own entries (and the operations they own) first.
+  for (const hook of preRecoveryHooks) {
+    try { hook() } catch (e) { console.error("[sync] journal recovery failed:", e) }
+  }
   let promoted = 0, dropped = 0, held = 0
   const queue = readQueue()
   if (!queue.some((op) => op.staged)) return { promoted, dropped, held }
   const next: SyncOperation[] = []
   for (const op of queue) {
     if (!op.staged) { next.push(op); continue }
+    // Owned by a multi-step workflow's journal (businessJournal.service): only it may settle it.
+    if (stagedOwners.some((owns) => owns(op.id))) { next.push(op); held++; continue }
     const found = stagedRecordState(op)
     if (found.state === "present") {
+      // Effects that belong to the record but have their own storage (lot movements) are completed.
+      try { stagedCompleters.get(`${op.entity}/${op.action}`)?.(op) } catch (e) { console.error("[sync] completing", op.id, "failed:", e) }
       const payload = pendingCommits.has(op.id) && pendingCommits.get(op.id) !== undefined ? pendingCommits.get(op.id)
         : op.entity === "inventory" && op.action === "adjust" && found.record ? found.record : op.payload
       next.push({ ...op, staged: undefined, payload })

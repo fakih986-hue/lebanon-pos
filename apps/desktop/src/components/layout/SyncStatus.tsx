@@ -3,6 +3,8 @@ import { createPortal } from "react-dom"
 import { AlertTriangle, Cloud, CloudOff, RotateCw, X } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
+import { closeBlockedJournalEntry, getBlockedJournalEntries, type JournalEntry } from "../../features/pos/services/businessJournal.service"
+import { userCan } from "../../features/pos/services/security.service"
 import {
   clearSyncQueue,
   flushSyncQueue,
@@ -36,6 +38,11 @@ function isInsufficientStockError(error: string): boolean {
 export default function SyncStatus() {
   const { t } = useI18n()
   const [status, setStatus] = useState<RegisterSyncStatus>(getSyncStatus())
+  // Interrupted multi-step changes (checkout, void, adjustment) that could not be settled safely.
+  const [blocked, setBlocked] = useState<JournalEntry[]>(() => { try { return getBlockedJournalEntries() } catch { return [] } })
+  const [closeNote, setCloseNote] = useState<Record<string, string>>({})
+  const refreshBlocked = useCallback(() => { try { setBlocked(getBlockedJournalEntries()) } catch { setBlocked([]) } }, [])
+  useEffect(() => subscribeSync(refreshBlocked), [refreshBlocked])
   const [open, setOpen] = useState(false)
   const [toast, setToast] = useState<RejectedToast | null>(null)
   const toastTimer = useRef<number>(undefined)
@@ -121,7 +128,11 @@ export default function SyncStatus() {
 
   // Midnight Gold v2 capsule (DESIGN-SYSTEM §6): priority storage failure > saved here only
   // (staged) > needs attention (stuck/rejected) > offline > waiting > synced.
-  if (status.storageFailures > 0) {
+  if (blocked.length > 0) {
+    pillBg = "var(--v2-err-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-err)"
+    label = t("sync.v2.blocked", { n: blocked.length })
+    Icon = AlertTriangle
+  } else if (status.storageFailures > 0) {
     pillBg = "var(--v2-err-soft)"; pillBorder = "var(--border)"; pillColor = "var(--v2-err)"
     label = t("sync.v2.storage_failed", { n: status.storageFailures })
     Icon = AlertTriangle
@@ -199,6 +210,30 @@ export default function SyncStatus() {
             </span>
           </div>
 
+          {blocked.length > 0 && (
+            <div className="mb-3 flex flex-col gap-2" role="alert">
+              <p className="text-[13px]" style={{ color: "var(--v2-err)" }}>{t("sync.v2.blocked_help")}</p>
+              {blocked.map((entry) => (
+                <div key={entry.id} className="rounded-lg p-2 text-[12px]" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
+                  <p className="font-semibold" style={{ color: "var(--text)" }}>
+                    {t(`sync.v2.kind.${entry.kind}`)} · {String((entry.plan as { saleNumber?: string; adjustmentId?: string }).saleNumber ?? (entry.plan as { adjustmentId?: string }).adjustmentId ?? "")}
+                    {" · "}{entry.committed ? t("sync.v2.committed") : t("sync.v2.not_committed")}
+                  </p>
+                  <p dir="ltr">{entry.blocked?.detail}</p>
+                  {userCan("inventory.adjust") ? (
+                    <div className="mt-1 flex gap-1">
+                      <input className="mg2-input" style={{ minHeight: 32, fontSize: 12 }} aria-label={t("sync.v2.close_note")} placeholder={t("sync.v2.close_note")}
+                        value={closeNote[entry.id] ?? ""} onChange={(e) => setCloseNote((n) => ({ ...n, [entry.id]: e.target.value }))} />
+                      <button type="button" className="mg2-btn" style={{ minHeight: 32, fontSize: 12 }} disabled={!(closeNote[entry.id] ?? "").trim()}
+                        onClick={() => { try { closeBlockedJournalEntry(entry.id, closeNote[entry.id] ?? "") } catch (e) { console.error(e) } refreshBlocked(); setStatus(getSyncStatus()) }}>
+                        {t("sync.v2.close")}
+                      </button>
+                    </div>
+                  ) : <p>{t("sync.v2.close_needs_permission")}</p>}
+                </div>
+              ))}
+            </div>
+          )}
           {(status.storageFailures > 0 || status.staged > 0) && (
             <p className="mb-3 text-[13px]" role="alert" style={{ color: "var(--v2-err)" }}>
               {status.storageFailures > 0 ? t("sync.v2.storage_failed_help", { error: status.lastStorageError ?? "" }) : t("sync.v2.staged_help")}

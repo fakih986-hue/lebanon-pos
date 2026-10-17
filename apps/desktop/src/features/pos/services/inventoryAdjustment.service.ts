@@ -1,7 +1,14 @@
 import {
   adjustInventoryBatches,
+  getInventoryBatches,
+  recordStockMovement,
+  restoreLotsFromSnapshot,
   type BatchAllocation,
+  type InventoryBatch,
 } from "./inventoryBatch.service"
+import {
+  blockJournalEntry, check, closeJournalEntry, markDone, openJournalEntry, registerJournalRecoverer, type Check, type JournalEntry,
+} from "./businessJournal.service"
 import {
   decreaseProductStock,
   getProductsSync,
@@ -9,7 +16,7 @@ import {
 } from "./product.service"
 import { recordAuditEvent } from "./security.service"
 import { canUseStorage, createId } from "../lib/storage"
-import { assertCanWrite, commitStagedSyncOperation, getDeviceTag, settleStagedSyncOperation, stageSyncOperation } from "./sync.service"
+import { assertCanWrite, commitStagedSyncOperation, discardStagedSyncOperation, getDeviceTag, stageSyncOperation, SyncStorageError } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 
 const ADJUSTMENTS_KEY = "lebanonpos.inventory-adjustments.v1"
@@ -107,25 +114,94 @@ export function recordStockAdjustment(input: RecordStockAdjustmentInput) {
     return null
   }
 
-  // Durability: the operation is saved before any stock or lot changes (SyncStorageError -> nothing
-  // written). Its payload is completed on commit; if that cannot be saved, recovery takes it from
-  // the stored adjustment (written last, so its presence means the adjustment happened).
+  // Durable boundary (businessJournal): the entry (with the product's stock and full lots) and the
+  // operation are saved before any change; the commit point is the adjustment record, written
+  // last. SyncStorageError -> nothing written. Interrupted before the record -> lots and stock are
+  // put back exactly; after it -> the missing stock change is applied. Otherwise blocked, shown.
   const adjustmentId = input.id ?? createId("stock-adjustment")
-  const staged = stageSyncOperation({
-    entity: "inventory",
-    action: "adjust",
-    summary: `${product.name} stock adjustment queued for sync.`,
-    payload: { id: adjustmentId, productId: product.id, quantityChange, reason: input.reason, batchId: input.batchId },
-  })
+  const opId = `op-${adjustmentId}`
+  const productLots = getInventoryBatches().filter((b) => b.productId === product.id)
+  let entry: JournalEntry
   try {
-    const adjustment = applyStockAdjustment(input, product, adjustmentId, quantityBefore, quantityChange)
-    commitStagedSyncOperation(staged.id, adjustment)
+    entry = openJournalEntry("adjustment", {
+      adjustmentId, productId: product.id, quantityChange, reason: input.reason, batchId: input.batchId ?? null,
+      lotRecords: productLots, allocations: null,
+    }, { stock: { [String(product.id)]: quantityBefore }, lots: Object.fromEntries(productLots.map((b) => [b.id, b.quantityRemaining])) }, [opId])
+  } catch (error) { throw new SyncStorageError(opId, error) }
+  try {
+    stageSyncOperation({
+      id: opId,
+      entity: "inventory",
+      action: "adjust",
+      summary: `${product.name} stock adjustment queued for sync.`,
+      payload: { id: adjustmentId, productId: product.id, quantityChange, reason: input.reason, batchId: input.batchId },
+    })
+  } catch (error) { closeJournalEntry(entry); throw error }
+  try {
+    const adjustment = applyStockAdjustment(input, product, adjustmentId, quantityBefore, quantityChange, entry)
+    commitStagedSyncOperation(opId, adjustment)
+    closeJournalEntry(entry)
     return adjustment
   } catch (error) {
-    settleStagedSyncOperation(staged.id)
-    throw error
+    // If settling fails too (storage still full) the entry stays open: restart recovery finishes it.
+    try { recoverAdjustment(entry) } catch (settleError) { console.error("[adjustment] settle failed; restart will finish it:", settleError) }
+    if (!entry.committed) throw error
+    return getStockAdjustments().find((a) => a.id === adjustmentId) ?? null
   }
 }
+
+type AdjustmentPlan = {
+  adjustmentId: string; productId: number; quantityChange: number; reason: string; batchId: string | null
+  lotRecords: InventoryBatch[]; allocations: BatchAllocation[] | null
+}
+function recoverAdjustment(entry: JournalEntry): "closed" | "blocked" {
+  const p = entry.plan as unknown as AdjustmentPlan
+  const opId = entry.opIds[0]
+  const key = String(p.productId)
+  const now = getProductsSync().find((x) => x.id === p.productId)?.stock
+  const stock = check(now, entry.before.stock[key], p.quantityChange)
+  // Lots: with the recorded allocations each lot is checked; without them (the write that would
+  // record them failed) the product's lots must be untouched, or it is ambiguous.
+  const lotsNow = getInventoryBatches().filter((b) => b.productId === p.productId)
+  const sign = p.quantityChange > 0 ? 1 : -1
+  let lots: Check
+  let createdIds: string[] = []
+  if (p.allocations) {
+    const real = p.allocations.filter((a) => a.batchId && a.batchId !== "legacy-stock")
+    createdIds = real.map((a) => a.batchId!).filter((id) => entry.before.lots[id] === undefined)
+    const states = real.map((a) => check(lotsNow.find((b) => b.id === a.batchId)?.quantityRemaining ?? (createdIds.includes(a.batchId!) ? 0 : undefined), entry.before.lots[a.batchId!] ?? 0, sign * a.quantity))
+    lots = states.every((s) => s === "expected") ? "expected" : states.every((s) => s === "before") ? "before" : "ambiguous"
+  } else {
+    const unchanged = lotsNow.length === Object.keys(entry.before.lots).length && lotsNow.every((b) => entry.before.lots[b.id] === b.quantityRemaining)
+    lots = unchanged ? "before" : "ambiguous"
+  }
+  const detail = `product #${p.productId}: stock ${now} (before ${entry.before.stock[key]}, expected ${(entry.before.stock[key] ?? 0) + p.quantityChange}); lots ${lots}`
+  const record = getStockAdjustments().find((a) => a.id === p.adjustmentId)
+  if (record) {
+    // Committed: the record is written last, so lots and stock should both be applied.
+    entry.committed = true
+    if (lots !== "expected" && p.allocations !== null) { blockJournalEntry(entry, "lots", detail); return "blocked" }
+    if (stock === "ambiguous") { blockJournalEntry(entry, "stock", detail); return "blocked" }
+    if (stock === "before") (p.quantityChange > 0 ? increaseProductStock : decreaseProductStock)([{ productId: p.productId, quantity: Math.abs(p.quantityChange) }])
+    commitStagedSyncOperation(opId, record)
+    closeJournalEntry(entry)
+    return "closed"
+  }
+  // Not committed: put back exactly what was applied; never sent.
+  if (lots === "ambiguous" || stock === "ambiguous") { blockJournalEntry(entry, lots === "ambiguous" ? "lots" : "stock", detail); return "blocked" }
+  if (lots === "expected") {
+    restoreLotsFromSnapshot(p.lotRecords, createdIds)
+    if (p.quantityChange < 0) {
+      // adjustInventoryBatches recorded a movement for a decrease: record its reversal.
+      recordStockMovement({ productId: p.productId, productName: lotsNow[0]?.productName ?? `Product #${p.productId}`, type: "Adjustment", quantity: -p.quantityChange, reference: p.adjustmentId, note: "Interrupted adjustment reversed (no adjustment recorded)" })
+    }
+  }
+  if (stock === "expected") (p.quantityChange > 0 ? decreaseProductStock : increaseProductStock)([{ productId: p.productId, quantity: Math.abs(p.quantityChange) }])
+  discardStagedSyncOperation(opId)
+  closeJournalEntry(entry)
+  return "closed"
+}
+registerJournalRecoverer("adjustment", recoverAdjustment)
 
 function applyStockAdjustment(
   input: RecordStockAdjustmentInput,
@@ -133,6 +209,7 @@ function applyStockAdjustment(
   adjustmentId: string,
   quantityBefore: number,
   quantityChange: number,
+  entry: JournalEntry,
 ) {
   const batchAllocations = adjustInventoryBatches({
     productId: product.id,
@@ -144,6 +221,7 @@ function applyStockAdjustment(
     batchId: input.batchId,
     reason: input.reason,
   })
+  markDone(entry, "lots", { plan: { ...entry.plan, allocations: batchAllocations } })
 
   if (quantityChange > 0) {
     increaseProductStock([
@@ -160,6 +238,8 @@ function applyStockAdjustment(
       },
     ])
   }
+
+  markDone(entry, "stock")
 
   const existingAdjustments = getStockAdjustments()
   const adjustment: StockAdjustment = {
@@ -180,6 +260,7 @@ function applyStockAdjustment(
   }
 
   writeAdjustments([adjustment, ...existingAdjustments].slice(0, 500))
+  markDone(entry, "record", { committed: true })
   // Written: a failed audit write must not undo the commit of the operation.
   try { recordAuditEvent({
     action: "inventory.adjust",

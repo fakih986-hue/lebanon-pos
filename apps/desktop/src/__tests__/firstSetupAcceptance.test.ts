@@ -16,6 +16,12 @@ vi.mock("../features/pos/services/sync.service", () => ({
   discardStagedSyncOperation: () => {},
   isSyncOperationRecorded: () => true,
   isRecordAcknowledged: () => false,
+  // Registrations made by services at import time (journal ownership, recovery hooks, completers).
+  registerStagedOwner: () => {},
+  registerPreRecoveryHook: () => {},
+  registerStagedCompleter: () => {},
+  getCurrentTenantId: () => null,
+  SyncStorageError: class SyncStorageError extends Error {},
   assertCanWrite: () => {},
 }))
 

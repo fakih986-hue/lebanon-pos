@@ -1,8 +1,11 @@
 import type { Product } from "../types/product"
 import type { BatchAllocation } from "./inventoryBatch.service"
-import { applyLotRestoration, recordStockMovement } from "./inventoryBatch.service"
-import { increaseProductStock, decreaseProductStock } from "./product.service"
-import { reverseDebtSale, recordDebtPayment, getDebtPayments } from "./customer.service"
+import { applyLotRestoration, consumeInventoryBatches, getInventoryBatches, recordStockMovement, restoreLotsFromSnapshot, type ConsumeBatchInput, type InventoryBatch } from "./inventoryBatch.service"
+import { increaseProductStock, decreaseProductStock, getProductsSync } from "./product.service"
+import { reverseDebtSale, recordDebtPayment, recordDebtSale, getDebtPayments, type RecordDebtSaleInput } from "./customer.service"
+import {
+  blockJournalEntry, check, closeJournalEntry, markDone, openJournalEntry, registerJournalRecoverer, type Check, type JournalEntry,
+} from "./businessJournal.service"
 import {
   buildRefundableLines, planRefund, planVoidRestoration, assertRefundAmount, resolveRefundRate,
   refundableQuantity, legacyLineKey, isLegacyLineKey, normalizeAllocations, roundQty,
@@ -16,8 +19,8 @@ import {
   recordAuditEvent,
 } from "./security.service"
 import {
-  assertCanWrite, commitStagedSyncOperation, getCurrentTenantId, getDeviceId, getDeviceTag, getSyncQueue, isRecordAcknowledged,
-  settleStagedSyncOperation, stageSyncOperation,
+  assertCanWrite, commitStagedSyncOperation, discardStagedSyncOperation, getCurrentTenantId, getDeviceId, getDeviceTag, getSyncQueue,
+  isRecordAcknowledged, settleStagedSyncOperation, stageSyncOperation, SyncStorageError,
 } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { getRegisterId } from "./settings.service"
@@ -859,60 +862,208 @@ export function voidSale(saleId: string, restoreStock = true) {
   if (sale.status === "Voided") return
 
   const plan = planVoidRestoration(refundableLinesOf(sale), priorRefundLinesOf(getRefunds(), sale.id))
-
-  // Saved before the void's effects; SyncStorageError leaves the sale untouched.
-  const staged = stageSyncOperation({
-    entity: "sale",
-    action: "void",
-    summary: `${sale.saleNumber} void queued for sync.`,
-    payload: { id: saleId, saleNumber: sale.saleNumber },
-  })
+  const slices = lotSlices(plan.flatMap((line) => line.allocations ?? []))
+  const stock = restoreStock ? plan.map((line) => ({ productId: line.productId, quantity: line.quantity })) : []
+  const isDebt = sale.paymentMethod === "Debt" || sale.status === "Debt"
+  const opId = `op-void-${saleId}`
+  // Durable boundary (businessJournal): the entry and the void operation are saved before any
+  // effect; the commit point is the sale marked Voided. SyncStorageError -> nothing done.
+  let entry: JournalEntry
   try {
-    applyVoid(sale, plan, restoreStock)
+    entry = openJournalEntry("void", { saleId, saleNumber: sale.saleNumber, customerId: sale.customerId ?? null, slices, stock, isDebt },
+      { stock: stockSnapshot(stock.map((l) => l.productId)), lots: lotQuantities(slices.map((s) => s.batchId)) }, [opId])
+  } catch (error) { throw new SyncStorageError(opId, error) }
+  try {
+    stageSyncOperation({ id: opId, entity: "sale", action: "void", summary: `${sale.saleNumber} void queued for sync.`, payload: { id: saleId, saleNumber: sale.saleNumber } })
+  } catch (error) { closeJournalEntry(entry); throw error }
+
+  try {
+    writeSales(readSales().map((item) => (item.id === saleId ? { ...item, status: "Voided" as const } : item)))
+    markDone(entry, "status", { committed: true })
+    // 1. Restore product stock (unless the caller knows it was never decremented).
+    if (stock.length) increaseProductStock(stock)
+    markDone(entry, "stock")
+    // 2. Return the consumed lots recorded on the sale (local only — the server restores its own).
+    applyLotRestoration(slices, 1)
+    markDone(entry, "lots")
+    // 3. A debt sale: reverse the customer's outstanding balance.
+    if (isDebt) reverseDebtSale({ id: sale.id, saleNumber: sale.saleNumber, customerId: sale.customerId })
+    markDone(entry, "debt")
+    commitStagedSyncOperation(opId)
+    closeJournalEntry(entry)
   } catch (error) {
-    // Part-way: released if the sale is marked Voided here, removed otherwise.
-    settleStagedSyncOperation(staged.id)
-    throw error
+    // Settle now by the recovery rules: committed -> completed (or blocked); not -> nothing applied.
+    // If settling fails too (storage still full) the entry stays open: restart recovery finishes it.
+    let outcome: "closed" | "blocked" | "pending"
+    try { outcome = recoverVoid(entry) } catch { outcome = "pending" }
+    if (!entry.committed) throw error
+    if (outcome !== "closed") console.error("[void] needs attention:", entry.blocked?.detail ?? "will complete on restart")
   }
-  commitStagedSyncOperation(staged.id)
-}
-
-function applyVoid(sale: Sale, plan: ReturnType<typeof planVoidRestoration>, restoreStock: boolean) {
-  const saleId = sale.id
-  const nextSales = readSales().map((item) =>
-    item.id === saleId ? { ...item, status: "Voided" as const } : item
-  )
-  writeSales(nextSales)
-
-  // 1. Restore product stock for every line item (unless the caller
-  //    knows stock was never decremented, e.g. partial error recovery)
-  if (restoreStock) {
-    increaseProductStock(plan.map((line) => ({ productId: line.productId, quantity: line.quantity })))
-  }
-
-  // 2. Return the consumed lots recorded on the sale (local only — the
-  //    server restores its own lots when the void syncs).
-  applyLotRestoration(plan.flatMap((line) => line.allocations ?? []), 1)
-
-  // 3. If it was a debt sale, reverse the customer's outstanding balance
-  if (sale.paymentMethod === "Debt" || sale.status === "Debt") {
-    reverseDebtSale({ id: sale.id, saleNumber: sale.saleNumber, customerId: sale.customerId })
-  }
-
   // The void is done: a failed audit write must not report it as failed.
   try {
     recordAuditEvent({
       action: "sale.void",
       entity: "sale",
       summary: `${sale.saleNumber} voided — stock and debt restored.`,
-      metadata: {
-        saleId,
-        total: sale.total,
-        itemsRestored: sale.items.length,
-        wasDebt: sale.paymentMethod === "Debt",
-      },
+      metadata: { saleId, total: sale.total, itemsRestored: sale.items.length, wasDebt: sale.paymentMethod === "Debt" },
     })
   } catch (error) { console.error("[sale] void audit write failed:", error) }
+}
+
+type VoidPlan = { saleId: string; saleNumber: string; customerId: string | null; slices: LotSlice[]; stock: StockLine[]; isDebt: boolean }
+function recoverVoid(entry: JournalEntry): "closed" | "blocked" {
+  const p = entry.plan as unknown as VoidPlan
+  const opId = entry.opIds[0]
+  const sale = readSales().find((s) => s.id === p.saleId)
+  if (sale?.status !== "Voided") {
+    // The status is written first: nothing else of this void was applied. Never sent.
+    discardStagedSyncOperation(opId)
+    closeJournalEntry(entry)
+    return "closed"
+  }
+  entry.committed = true
+  const stock = stockState(p.stock, entry.before.stock, +1)
+  if (stock.state === "ambiguous") return blockEntry(entry, "stock", stock.detail)
+  const lots = lotState(p.slices, entry.before.lots, +1)
+  if (lots.state === "ambiguous") return blockEntry(entry, "lots", lots.detail)
+  if (stock.state === "before") increaseProductStock(p.stock)
+  if (lots.state === "before") applyLotRestoration(p.slices, 1)
+  if (p.isDebt) reverseDebtSale({ id: p.saleId, saleNumber: p.saleNumber, customerId: p.customerId ?? undefined })
+  commitStagedSyncOperation(opId)
+  closeJournalEntry(entry)
+  return "closed"
+}
+registerJournalRecoverer("void", recoverVoid)
+
+// ── checkout (local finalize, not write-through): journaled ───────────────────
+export type LocalCheckoutInput = {
+  sale: Sale
+  /** The cart as lot consumption input (consumeInventoryBatches). */
+  lots: ConsumeBatchInput[]
+  stock: StockLine[]
+  debt?: Omit<RecordDebtSaleInput, "saleId">
+}
+export type LocalCheckoutResult = { sale: Sale; status: "completed" | "blocked"; detail?: string }
+
+/**
+ * Finalize a sale on this device: lots, the sale (commit point), its debt, stock. One durable
+ * boundary (businessJournal): if anything fails before the sale is written, what was applied is
+ * compensated and the error is thrown (the cart stays); after it, the rest is completed — the
+ * sale stands. A state that matches neither is blocked and shown, never abandoned.
+ */
+export function checkoutLocalSale(input: LocalCheckoutInput): LocalCheckoutResult {
+  assertCanWrite("record sale")
+  const sale = input.sale
+  const slices = lotSlices(sale.items.flatMap((item) => item.batchAllocations ?? []))
+  const lotIds = slices.map((s) => s.batchId)
+  const opId = `op-sale-${sale.id}`
+  let entry: JournalEntry
+  try {
+    entry = openJournalEntry("checkout", {
+      saleId: sale.id, saleNumber: sale.saleNumber, slices, stock: input.stock, debt: input.debt ?? null,
+      lotRecords: getInventoryBatches().filter((b) => lotIds.includes(b.id)),
+    }, { stock: stockSnapshot(input.stock.map((l) => l.productId)), lots: lotQuantities(lotIds) }, [opId])
+  } catch (error) { throw new SyncStorageError(opId, error) }
+  try {
+    stageSyncOperation({ id: opId, entity: "sale", action: "create", summary: `${sale.saleNumber} sale queued for sync.`, payload: sale })
+  } catch (error) { closeJournalEntry(entry); throw error }
+
+  try {
+    consumeInventoryBatches(input.lots)
+    markDone(entry, "lots")
+    writeSales([sale, ...readSales()])
+    markDone(entry, "sale", { committed: true })
+    if (input.debt) recordDebtSale({ ...input.debt, saleId: sale.id })
+    markDone(entry, "debt")
+    decreaseProductStock(input.stock)
+    markDone(entry, "stock")
+    commitStagedSyncOperation(opId)
+    closeJournalEntry(entry)
+  } catch (error) {
+    // If settling fails too (storage still full) the entry stays open: restart recovery finishes it.
+    let outcome: "closed" | "blocked" | "pending"
+    try { outcome = recoverCheckout(entry) } catch { outcome = "pending" }
+    if (!entry.committed) throw error // compensated, blocked, or held open — no sale either way
+    if (outcome !== "closed") return { sale, status: "blocked", detail: entry.blocked?.detail ?? "completes on restart" }
+  }
+  try { auditSaleComplete(sale) } catch (error) { console.error("[sale] audit write failed:", error) }
+  return { sale, status: "completed" }
+}
+
+type CheckoutPlan = { saleId: string; saleNumber: string; slices: LotSlice[]; stock: StockLine[]; debt: Omit<RecordDebtSaleInput, "saleId"> | null; lotRecords: InventoryBatch[] }
+function recoverCheckout(entry: JournalEntry): "closed" | "blocked" {
+  const p = entry.plan as unknown as CheckoutPlan
+  const opId = entry.opIds[0]
+  const lots = lotState(p.slices, entry.before.lots, -1)
+  if (readSales().some((s) => s.id === p.saleId)) {
+    // Committed: the lots precede the sale and must be consumed; complete debt and stock.
+    entry.committed = true
+    if (lots.state !== "expected" && p.slices.length > 0) return blockEntry(entry, "lots", lots.detail)
+    const stock = stockState(p.stock, entry.before.stock, -1)
+    if (stock.state === "ambiguous") return blockEntry(entry, "stock", stock.detail)
+    if (p.debt) recordDebtSale({ ...p.debt, saleId: p.saleId }) // idempotent by debt id
+    if (stock.state === "before") decreaseProductStock(p.stock)
+    commitStagedSyncOperation(opId)
+    closeJournalEntry(entry)
+    return "closed"
+  }
+  // Not committed: give back the lots it consumed, exactly; the sale never existed, never sent.
+  if (lots.state === "ambiguous") return blockEntry(entry, "lots", lots.detail)
+  if (lots.state === "expected") {
+    restoreLotsFromSnapshot(p.lotRecords)
+    for (const line of p.stock) {
+      const product = getProductsSync().find((x) => x.id === line.productId)
+      recordStockMovement({ productId: line.productId, productName: product?.name ?? `Product #${line.productId}`, type: "Refund", quantity: line.quantity, reference: p.saleNumber, note: `Interrupted checkout ${p.saleNumber} reversed (no sale recorded)` })
+    }
+  }
+  discardStagedSyncOperation(opId)
+  closeJournalEntry(entry)
+  return "closed"
+}
+registerJournalRecoverer("checkout", recoverCheckout)
+
+// ── snapshot helpers for the journal ─────────────────────────────────────────
+type LotSlice = { batchId: string; quantity: number }
+type StockLine = { productId: number; quantity: number }
+function lotSlices(allocations: Array<{ batchId?: string | null; quantity: number }>): LotSlice[] {
+  return allocations.filter((a): a is LotSlice => !!a.batchId && a.batchId !== "legacy-stock" && a.quantity > 0)
+}
+function stockSnapshot(productIds: number[]): Record<string, number> {
+  const all = getProductsSync()
+  const out: Record<string, number> = {}
+  for (const id of productIds) { const p = all.find((x) => x.id === id); if (p) out[String(id)] = p.stock }
+  return out
+}
+function lotQuantities(ids: string[]): Record<string, number> {
+  const all = getInventoryBatches()
+  const out: Record<string, number> = {}
+  for (const id of ids) { const b = all.find((x) => x.id === id); if (b) out[id] = b.quantityRemaining }
+  return out
+}
+/** All lines together (they are written in one storage write): before, expected, or ambiguous. */
+function stockState(lines: StockLine[], before: Record<string, number>, sign: 1 | -1) {
+  const now = stockSnapshot(lines.map((l) => l.productId))
+  const sums = new Map<number, number>()
+  for (const l of lines) sums.set(l.productId, (sums.get(l.productId) ?? 0) + l.quantity)
+  const states = [...sums].map(([id, qty]) => ({ id, s: check(now[String(id)], before[String(id)], sign * qty), now: now[String(id)], before: before[String(id)], qty }))
+  return summarize(states, (x) => `product #${x.id}: stock ${x.now} (before ${x.before}, expected ${(x.before ?? 0) + sign * x.qty})`)
+}
+function lotState(slices: LotSlice[], before: Record<string, number>, sign: 1 | -1) {
+  const now = lotQuantities(slices.map((s) => s.batchId))
+  const sums = new Map<string, number>()
+  for (const s of slices) sums.set(s.batchId, (sums.get(s.batchId) ?? 0) + s.quantity)
+  const states = [...sums].map(([id, qty]) => ({ id, s: check(now[id], before[id], sign * qty), now: now[id], before: before[id], qty }))
+  return summarize(states, (x) => `lot ${x.id}: ${x.now} left (before ${x.before}, expected ${(x.before ?? 0) + sign * x.qty})`)
+}
+function summarize<T extends { s: Check }>(states: T[], describe: (x: T) => string): { state: Check; detail: string } {
+  if (states.length === 0) return { state: "expected", detail: "" }
+  if (states.every((x) => x.s === "expected")) return { state: "expected", detail: "" }
+  if (states.every((x) => x.s === "before")) return { state: "before", detail: "" }
+  return { state: "ambiguous", detail: states.filter((x) => x.s !== "expected").map(describe).join("; ") }
+}
+function blockEntry(entry: JournalEntry, step: string, detail: string): "blocked" {
+  blockJournalEntry(entry, step, detail)
+  return "blocked"
 }
 
 /** Settle a server-rejected refund locally (see refundConflict.service). */

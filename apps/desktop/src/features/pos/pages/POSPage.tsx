@@ -45,7 +45,7 @@ import {
   toggleProductFavorite,
 } from "../services/product.service"
 import { decreaseProductStock, increaseProductStock } from "../services/product.service"
-import { recordSale, buildSale, finalizeCommittedSale, voidSale, getSales, type SaleTender } from "../services/sales.service"
+import { buildSale, checkoutLocalSale, finalizeCommittedSale, voidSale, getSales, type SaleTender } from "../services/sales.service"
 import {
   holdSale,
   removeHeldSale,
@@ -780,12 +780,26 @@ export default function POSPage() {
       // When the hub already committed (write-through), suppress enqueues —
       // the hub owns the authoritative stock/batch decrement; local writes
       // here are for immediate receipt/display and are reconciled by pull.
-      consumeInventoryBatches(cartInputs, { skipSync: writeThrough })
-      batchesConsumed = true
-
-      if (writeThrough) finalizeCommittedSale(sale)
-      else recordSale(saleInput, { id: saleId })
-      recordedSaleId = saleId
+      let needsAttention: string | undefined
+      if (writeThrough) {
+        consumeInventoryBatches(cartInputs, { skipSync: true })
+        batchesConsumed = true
+        finalizeCommittedSale(sale)
+        recordedSaleId = saleId
+      } else {
+        // One durable boundary for lots, the sale, its debt and stock (businessJournal): a failure
+        // before the sale is written is compensated and thrown (cart kept); after it the rest is
+        // completed. A state that matches neither is blocked and shown in Sync status.
+        const result = checkoutLocalSale({
+          sale,
+          lots: cartInputs,
+          stock: items.map((item) => ({ productId: item.id, quantity: item.quantity })),
+          debt: paymentMethod === "Debt" && selectedCustomer
+            ? { customerId: selectedCustomer.id, saleNumber, subtotal, discountTotal, tax, total, items: saleItems }
+            : undefined,
+        })
+        if (result.status === "blocked") needsAttention = result.detail
+      }
 
       if (discountTotal > 0) {
         recordAuditEvent({
@@ -795,17 +809,18 @@ export default function POSPage() {
         })
       }
 
-      if (paymentMethod === "Debt" && selectedCustomer) {
-        recordDebtSale({
-          customerId: selectedCustomer.id, saleNumber, saleId,
-          subtotal, discountTotal, tax, total, items: saleItems,
-        })
+      if (writeThrough) {
+        if (paymentMethod === "Debt" && selectedCustomer) {
+          recordDebtSale({
+            customerId: selectedCustomer.id, saleNumber, saleId,
+            subtotal, discountTotal, tax, total, items: saleItems,
+          })
+        }
+        decreaseProductStock(
+          items.map((item) => ({ productId: item.id, quantity: item.quantity }))
+        )
+        stockDecreased = true
       }
-
-      decreaseProductStock(
-        items.map((item) => ({ productId: item.id, quantity: item.quantity }))
-      )
-      stockDecreased = true
 
       const saleRecord = {
         number: saleNumber, paymentMethod, customerName: selectedCustomer?.name,
@@ -824,7 +839,7 @@ export default function POSPage() {
       setSearch("")
       setSaleNote("")
       setIsCartOpen(false)
-      setScannerStatus(t("pos.status.sale_completed"))
+      setScannerStatus(needsAttention ? t("pos.status.sale_needs_attention") : t("pos.status.sale_completed"))
       window.requestAnimationFrame(() => scanInputRef.current?.focus())
       // Reconcile local stock/batches with the hub's authoritative numbers.
       if (writeThrough) pullFromServer().catch(() => {})

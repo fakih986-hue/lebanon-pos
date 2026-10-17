@@ -1,4 +1,4 @@
-import { assertCanWrite, commitStagedSyncOperation, enqueueSyncOperation, settleStagedSyncOperation, stageSyncOperation } from "./sync.service"
+import { assertCanWrite, commitStagedSyncOperation, enqueueSyncOperation, registerStagedCompleter, settleStagedSyncOperation, stageSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 
@@ -296,7 +296,7 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { o
     // Without a fixed id a movement is only recorded for a lot written now.
     if (!movementIdOf.has(b.id) && !batches.includes(b)) continue
     recordStockMovement({
-      id: movementIdOf.get(b.id),
+      id: movementIdOf.get(b.id) ?? `${b.id}-mv`,
       productId: b.productId, productName: b.productName,
       type: opening ? "Opening" : "Receive", quantity: b.initialQuantity,
       reference: b.batchNumber,
@@ -548,6 +548,20 @@ export function applyLotRestoration(slices: Array<{ batchId: string | null; quan
   return changed
 }
 
+/**
+ * Compensation (businessJournal): put the given lots back exactly as they were (full records,
+ * received and remaining quantities) and remove lots the interrupted workflow created. Only lots
+ * passed in are touched.
+ */
+export function restoreLotsFromSnapshot(before: InventoryBatch[], createdIds: string[] = []) {
+  const byId = new Map(before.map((b) => [b.id, b]))
+  const created = new Set(createdIds)
+  const next = getInventoryBatches()
+    .filter((b) => !created.has(b.id))
+    .map((b) => (byId.has(b.id) ? { ...byId.get(b.id)! } : b))
+  writeBatches(next)
+}
+
 export function restoreInventoryBatches(items: ConsumeBatchInput[]) {
   const batches = getInventoryBatches()
 
@@ -623,3 +637,21 @@ export function subscribeInventoryBatches(callback: () => void) {
     window.removeEventListener("storage", callback)
   }
 }
+
+// A lot receive released by recovery: its lots are written (the record); make sure each has its
+// Receive/Opening movement (fixed id: never recorded twice).
+registerStagedCompleter("inventory/receive", (op) => {
+  const lots = Array.isArray(op.payload) ? (op.payload as Array<InventoryBatch & { opening?: boolean }>) : []
+  const stored = new Map(getInventoryBatches().map((b) => [b.id, b]))
+  for (const lot of lots) {
+    const b = stored.get(lot.id)
+    if (!b) continue
+    recordStockMovement({
+      id: `${b.id}-mv`,
+      productId: b.productId, productName: b.productName,
+      type: lot.opening ? "Opening" : "Receive", quantity: b.initialQuantity,
+      reference: b.batchNumber,
+      note: lot.opening ? `Opening stock ${b.batchNumber}` : `Received batch ${b.batchNumber}${b.supplierName ? ` from ${b.supplierName}` : ""}`,
+    })
+  }
+})
