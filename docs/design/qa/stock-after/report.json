@@ -1,66 +1,86 @@
 {
   "base": "http://localhost:5174",
-  "at": "2026-10-17T11:33:41.003Z",
+  "at": "2026-10-17T12:12:15.815Z",
   "results": [
     {
-      "name": "products-edit.en.dark.desktop",
+      "name": "receiving-toast.en.dark.desktop",
       "w": 1440,
       "h": 900,
       "theme": "dark",
       "lang": "en",
       "log": [
         [
-          "seed a delivery",
-          "received; supplier Malia Group"
+          "add supplier Malia Group",
+          "ok"
         ],
         [
           "reload",
           1
         ],
         [
-          "open Pepsi Can details",
-          "actions: Close | POS favorite | Open lot LOT-6803893-17 | Edit | Receive | Adjust or count | Archive; lots shown 1"
+          "before",
+          "Pepsi stock 126; lots 0 ()"
         ],
         [
-          "press Edit",
-          "Edit Pepsi Can; fields 11"
+          "scan PEPSI + Enter",
+          "1 row(s): Pepsi CanMatched · 528100100002 qty 1; status: Pepsi Can added (qty 1)."
+        ],
+        [
+          "scan PEPSI + Enter",
+          "1 row(s): Pepsi CanMatched · 528100100002 qty 2; status: Pepsi Can: qty now 2."
+        ],
+        [
+          "pick supplier + Cash, Save with the payment write failing",
+          "outcomes: StockReceived 2 units · new 0 · updated 1 · lots 1 | Purchase orderPO-EZZM-00001 · $0.96 | PaymentUnpaid: $0.96 owed; banners: PO-EZZM-00001 is unpaidThe payment of $0.96 to Mal || StockReceived 2 units · new 0 · updated 1 · lots 1"
+        ],
+        [
+          "fire a temporary toast (Print labels)",
+          "toasts 1 [Popup blocked. Allow popups to print barcode labels.]; pointer-events auto; controls under a toast: none"
         ]
       ],
       "facts": {
         "dir": "ltr",
         "theme": "dark",
-        "active": "BODY",
+        "active": "Scan items into this delivery…",
         "overflowX": false
       }
     },
     {
-      "name": "products-edit.ar.dark.mobile",
+      "name": "receiving-toast.ar.dark.mobile",
       "w": 390,
       "h": 844,
       "theme": "dark",
       "lang": "ar",
       "log": [
         [
-          "seed a delivery",
-          "received; supplier Malia Group"
+          "add supplier Malia Group",
+          "ok"
         ],
         [
           "reload",
           1
         ],
         [
-          "open Pepsi Can details",
-          "actions: إغلاق | مفضّل في نقطة البيع | فتح الدفعة LOT-6815255-54 | تعديل | استلام | تعديل أو جرد | أرشفة; lots shown 1"
+          "before",
+          "Pepsi stock 126; lots 0 ()"
         ],
         [
-          "press Edit",
-          "تعديل Pepsi Can; fields 11"
+          "scan PEPSI + Enter",
+          "1 row(s): Pepsi Canمطابق · 528100100002 qty 1; status: أُضيف Pepsi Can (الكمية 1)."
+        ],
+        [
+          "pick supplier + Cash, Save with the payment write failing",
+          "outcomes: المخزوناستُلم 1 وحدة · جديد 0 · محدّث 1 · دفعات 1 | أمر الشراءPO-DW5X-00001 · $0.48 | الدفعغير مدفوع: $0.48 مستحق; banners: PO-DW5X-00001 غير مدفوعلم تُسجّل دفعة $0.48 إلى Ma || المخزوناستُلم 1 وحدة · جديد 0 · محدّث 1 · دفعات 1أ"
+        ],
+        [
+          "fire a temporary toast (Print labels)",
+          "toasts 1 [تم حظر النافذة المنبثقة. اسمح بالنوافذ المنبثقة لطباعة ملصقات الباركود.]; pointer-events auto; controls under a toast: none"
         ]
       ],
       "facts": {
         "dir": "rtl",
         "theme": "dark",
-        "active": "BODY",
+        "active": "امسح الأصناف في هذه الشحنة…",
         "overflowX": false
       }
     }
