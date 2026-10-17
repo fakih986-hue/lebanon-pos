@@ -19,6 +19,7 @@ vi.mock("../features/pos/services/sync.service", () => ({
   isRecordAcknowledged: () => false,
   // Registrations made by services at import time (journal ownership, recovery hooks, completers).
   registerStagedOwner: () => {},
+  registerStoreSwitchHook: () => {},
   registerPreRecoveryHook: () => {},
   registerStagedCompleter: () => {},
   getCurrentTenantId: () => null,

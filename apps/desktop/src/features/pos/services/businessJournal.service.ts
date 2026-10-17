@@ -13,7 +13,7 @@
 // every effect is checked against its snapshot: before -> not applied, expected -> applied,
 // anything else -> the entry is BLOCKED and shown, with the figures, until a person closes it.
 // Nothing is silently abandoned.
-import { commitStagedSyncOperation, discardStagedSyncOperation, getCurrentTenantId, registerPreRecoveryHook, registerStagedOwner } from "./sync.service"
+import { commitStagedSyncOperation, discardStagedSyncOperation, getCurrentTenantId, registerPreRecoveryHook, registerStagedOwner, registerStoreSwitchHook } from "./sync.service"
 import { getCurrentUser, PermissionError, recordAuditEvent, userCan } from "./security.service"
 import { createId } from "../lib/storage"
 
@@ -112,6 +112,14 @@ export function check(now: number | undefined, before: number | undefined, delta
 }
 
 registerPreRecoveryHook(() => { recoverBusinessJournal() })
+// A store switch replaces this store's data on the device: an entry still unfinished then can
+// no longer be checked against it (on return its records are gone or pulled from the server).
+registerStoreSwitchHook(() => {
+  for (const entry of getOpenJournalEntries()) {
+    if (entry.status === "blocked") continue
+    blockJournalEntry(entry, "store_switch", `This store's data on this device was replaced by a store switch while this ${entry.kind} was unfinished (${entry.committed ? "recorded" : "not recorded"}); check it by hand.`)
+  }
+})
 
 // ── recovery registry (each workflow's service registers how to settle its entries) ──
 type Recoverer = (entry: JournalEntry) => "closed" | "blocked"

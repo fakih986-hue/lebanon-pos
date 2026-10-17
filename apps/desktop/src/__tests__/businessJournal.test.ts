@@ -190,3 +190,99 @@ describe("stock adjustment", () => {
     expect(stockOf(1)).toBe(before.stock)
   })
 })
+
+describe("store switching", () => {
+  const token = (tenantId: string) => {
+    const b64 = (o: object) => btoa(JSON.stringify(o)).replace(/=+$/, "")
+    return `${b64({ alg: "none" })}.${b64({ tenantId })}.sig`
+  }
+
+  it("an entry left open is never settled against another store's data, nor against this store's wiped data", async () => {
+    localStorage.setItem("lebanonpos.auth-token", token("tenant-A"))
+    // A product with no lots: nothing for the lot check to catch.
+    localStorage.setItem(K.products, JSON.stringify([...read(K.products), { id: 2, syncId: "p-gum", name: "Gum", barcode: "222", price: 1, cost: 0.5, stock: 20, category: "Snacks" }]))
+    let m = await svc()
+    const sale = m.sales.buildSale({ saleNumber: "S-SW1", paymentMethod: "Cash", subtotal: 3, tax: 0, total: 3, items: [{ id: 2, name: "Gum", barcode: "222", cost: 0.5, quantity: 3, unitPrice: 1, total: 3, batchAllocations: [] }] }, "sale-sw1")
+    // Stock cannot be written, through the switch too: the committed sale's entry stays open.
+    const spy = failKey(K.products)
+    expect(m.sales.checkoutLocalSale({ sale, lots: [], stock: [{ productId: 2, quantity: 3 }] }).status).toBe("blocked")
+    await m.sync.clearStoreData()
+    spy.mockRestore()
+    m.sync.setAuthToken(token("tenant-B"))
+    m = await restart()
+    // Store B: A's entry is invisible and untouched.
+    expect(m.journal.getOpenJournalEntries()).toEqual([])
+    expect(JSON.parse(localStorage.getItem(K.journal) ?? "[]")).toHaveLength(1)
+
+    await m.sync.clearStoreData()
+    m.sync.setAuthToken(token("tenant-A"))
+    m = await restart()
+    m.sync.restoreStashedMoneyConflicts()
+    m.sync.recoverStagedSyncOperations()
+    // Back in A: its records were replaced by the switch. The sale really happened, so its
+    // operation must still be there (held), and the entry must wait for a person.
+    const saleOp = ops().find((o) => o.entity === "sale" && o.payload?.id === "sale-sw1")
+    expect(saleOp).toBeTruthy()
+    expect(saleOp?.staged).toBe(true)
+    const blocked = m.journal.getBlockedJournalEntries()
+    expect(blocked).toHaveLength(1)
+    expect(blocked[0].blocked?.reason).toBe("store_switch")
+  })
+})
+
+describe("store switching: every journaled workflow, both directions", () => {
+  const token = (tenantId: string) => {
+    const b64 = (o: object) => btoa(JSON.stringify(o)).replace(/=+$/, "")
+    return `${b64({ alg: "none" })}.${b64({ tenantId })}.sig`
+  }
+
+  it("checkout, void and adjustment entries left open stay with their tenant, blocked, with their operations held", async () => {
+    localStorage.setItem("lebanonpos.auth-token", token("tenant-A"))
+    let m = await svc()
+    const done = await cart(m, 2)
+    expect(m.sales.checkoutLocalSale(done).status).toBe("completed") // a sale to void
+    // Products cannot be written from here on (through the switch), nor lots after two more writes
+    // (the checkout consumes, the adjustment changes; giving the adjustment's lots back fails):
+    // three entries stay open.
+    let spy = failKeys({ [K.products]: 0, [K.adjustments]: 0, [K.batches]: 2 })
+    const c = await cart(m, 1)
+    m.sales.checkoutLocalSale(c)
+    m.sales.voidSale(done.sale.id)
+    expect(() => m.adj.recordStockAdjustment({ productId: 1, quantityChange: -1, reason: "Damage" })).toThrow()
+    await m.sync.clearStoreData()
+    spy.mockRestore()
+    const aEntries = JSON.parse(localStorage.getItem(K.journal) ?? "[]") as Array<{ kind: string; status: string; blocked?: { reason: string }; opIds: string[] }>
+    expect(aEntries.map((e) => e.kind).sort()).toEqual(["adjustment", "checkout", "void"])
+    // All blocked, none settled: the ones whose figures moved (all three touch lot A) block on
+    // their lots before the switch; the rest are blocked by the switch itself.
+    expect(aEntries.every((e) => e.status === "blocked" && ["store_switch", "lots", "stock"].includes(e.blocked?.reason ?? ""))).toBe(true)
+    expect(aEntries.some((e) => e.blocked?.reason === "store_switch")).toBe(true)
+
+    // Store B: none of A's entries are visible or settled; B gets an unfinished entry of its own.
+    m.sync.setAuthToken(token("tenant-B"))
+    m = await restart()
+    expect(m.journal.getOpenJournalEntries()).toEqual([])
+    localStorage.setItem(K.products, JSON.stringify([{ id: 1, syncId: "p-cola", name: "Cola", barcode: "111", price: 5, cost: 2, stock: 10, category: "Drinks" }]))
+    localStorage.setItem(K.users, JSON.stringify([{ id: "u1", name: "Owner", role: "Admin", pin: "HASH", code: "OWN", active: true, permissions: [] }]))
+    localStorage.setItem(K.current, "u1") // the switch signs the user out
+    m.security.openShift(100)
+    spy = failKeys({ [K.products]: 0 })
+    const b = m.sales.buildSale({ saleNumber: "S-B1", paymentMethod: "Cash", subtotal: 5, tax: 0, total: 5, items: [{ id: 1, name: "Cola", barcode: "111", cost: 2, quantity: 1, unitPrice: 5, total: 5, batchAllocations: [] }] }, "sale-b1")
+    m.sales.checkoutLocalSale({ sale: b, lots: [], stock: [{ productId: 1, quantity: 1 }] })
+    await m.sync.clearStoreData()
+    spy.mockRestore()
+
+    // Back in A: A's three entries are back (blocked), their operations held; B's is not here.
+    m.sync.setAuthToken(token("tenant-A"))
+    m = await restart()
+    m.sync.restoreStashedMoneyConflicts()
+    m.sync.recoverStagedSyncOperations()
+    const back = m.journal.getBlockedJournalEntries()
+    expect(back.map((e) => e.kind).sort()).toEqual(["adjustment", "checkout", "void"])
+    const held = ops().filter((o) => back.some((e) => e.opIds.includes(o.id)))
+    expect(held.length).toBeGreaterThanOrEqual(2) // the checkout's and the void's (the adjustment's was never staged past its failure)
+    expect(held.every((o) => o.staged)).toBe(true)
+    expect(ops().some((o) => o.payload?.id === "sale-b1")).toBe(false)
+    expect(JSON.parse(localStorage.getItem(K.journal) ?? "[]").some((e: { plan: { saleId?: string } }) => e.plan.saleId === "sale-b1")).toBe(true) // B's kept for B
+  })
+})

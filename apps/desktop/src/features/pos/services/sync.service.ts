@@ -484,6 +484,11 @@ export async function clearStoreData() {
   // Settle staged operations while this store's records are still here (present -> released and
   // stashed with the tenant; missing -> never happened).
   try { recoverStagedSyncOperations() } catch (e) { console.error("[sync] staged recovery before store switch failed:", e) }
+  // Whatever is still unfinished now must never be settled against data that is about to be
+  // replaced (this store's on return, or another store's): the journal blocks it for a person.
+  for (const hook of storeSwitchHooks) {
+    try { hook() } catch (e) { console.error("[sync] store-switch hook failed:", e) }
+  }
   // Never lose an open money conflict to a store switch.
   stashMoneyConflictsForStore()
   for (const { key } of Object.values(PULL_TARGETS)) {
@@ -1055,6 +1060,11 @@ export function settleStagedSyncOperation(id: string): SyncOperationState {
   return "staged"
 }
 
+const storeSwitchHooks: Array<() => void> = []
+/** Runs in clearStoreData after recovery, before this store's data is wiped. */
+export function registerStoreSwitchHook(hook: () => void) {
+  storeSwitchHooks.push(hook)
+}
 const preRecoveryHooks: Array<() => void> = []
 /** Runs before staged recovery (the business journal settles its entries here). */
 export function registerPreRecoveryHook(hook: () => void) {
