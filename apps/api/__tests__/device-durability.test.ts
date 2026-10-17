@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest"
+import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest"
 import http from "node:http"
 import type { AddressInfo } from "node:net"
 import { randomUUID } from "node:crypto"
@@ -42,6 +42,7 @@ function failKeys(rules: Record<string, number>) {
 
 const prisma = (await import("../src/lib/prisma.js")).default
 const app = (await import("../src/app.js")).default
+const { syncTestHooks } = await import("../src/routes/sync.js")
 const { vi } = await import("vitest")
 // The app loads apps/api/.env (a dev hub sets IS_LOCAL_SERVER): run in cloud mode (no device pairing).
 delete process.env.IS_LOCAL_SERVER
@@ -61,9 +62,12 @@ let lose = false
 // "hubLost": the hub receives and commits the push, then the till loses it entirely (the answer
 // and every later request, including "is this sale committed?").
 let hubLost = false
+// "dropPush": the till's push fails before it is sent; the till gets no answer.
+let dropPush = false
 const realFetch = globalThis.fetch
 g.fetch = (async (url: string, init?: RequestInit) => {
   if (hubLost && !String(url).includes("/api/sync/push")) throw new Error("hub unreachable")
+  if (dropPush && String(url).includes("/api/sync/push")) throw new Error("request timed out")
   const res = await realFetch(url, init)
   if ((lose || hubLost) && String(url).includes("/api/sync/push")) { await res.text(); throw new Error("connection reset: response lost") }
   return res
@@ -332,5 +336,147 @@ describe("device -> real server (Postgres)", () => {
     await flush(d)
     expect(await serverBalance()).toBe(b0 - 7)
     expect(await prisma.debtPayment.count({ where: { tenantId: TENANT, id: `pay-${TENANT.slice(0, 6)}` } })).toBe(1)
+  })
+})
+
+describe("hub checkout race (real Postgres): a pending attempt is settled only terminally", () => {
+  async function hubCart(d: Device, qty: number) {
+    const c = await cart(d, qty, false)
+    return {
+      fingerprint: d.hub.cartFingerprint({ items: [{ id: productId, quantity: qty, unitPrice: 5 }], paymentMethod: "Cash", total: qty * 5 }),
+      build: () => c.sale, lots: c.lots, stock: c.stock, sale: c.sale,
+    }
+  }
+  const salesOnServer = () => prisma.sale.count({ where: { tenantId: TENANT } })
+  /** This store's local data as a fresh sign-in/refresh would leave it (earlier tests switched stores). */
+  async function refreshLocal(d: Device) {
+    const p = (await prisma.product.findUnique({ where: { id: productId } }))!
+    storage.setItem("lebanonpos.products.v1", JSON.stringify([{ id: productId, syncId: SYNC_ID, name: "Durable widget", barcode: SYNC_ID, price: 5, cost: 2, stock: Number(p.stock), category: "Test" }]))
+    const lots = await prisma.inventoryBatch.findMany({ where: { tenantId: TENANT } })
+    storage.setItem("lebanonpos.inventory-batches.v1", JSON.stringify(lots.map((b) => ({
+      id: b.id, batchNumber: b.batchNumber, productId, productName: b.productName, barcode: b.barcode,
+      initialQuantity: Number(b.initialQuantity), quantityRemaining: Number(b.quantityRemaining), unitCost: Number(b.unitCost), unitPrice: Number(b.unitPrice),
+      receivedAt: b.receivedAt.toISOString(), status: b.status,
+    }))))
+    storage.setItem("lebanonpos.users.v1", JSON.stringify([{ id: ADMIN, name: "IT", role: "Admin", pin: "HASH", code: "IT", active: true, permissions: [] }]))
+    storage.setItem("lebanonpos.current-user.v1", ADMIN)
+    try { d.security.openShift(100) } catch { /* already open */ }
+  }
+  /** A pause the server reaches for one operation, released by the test. */
+  function gateFor(opId: string) {
+    let release!: () => void, reached!: () => void
+    const released = new Promise<void>((r) => { release = r })
+    const reachedP = new Promise<void>((r) => { reached = r })
+    const hook = async (id: string) => { if (id === opId) { reached(); await released } }
+    return { hook, release, reached: reachedP }
+  }
+  /** The till sends a write-through sale and gets no answer; its request is still on the way (sent by the test). */
+  async function unansweredAttempt(d: Device, qty: number) {
+    dropPush = true
+    const first = await d.hub.checkoutViaHub(await hubCart(d, qty))
+    dropPush = false
+    expect(first.status).toBe("unconfirmed")
+    const pending = d.hub.getPendingHubSale()!
+    const original = { id: `wt-${pending.sale.id}`, entity: "sale", action: "create", payload: pending.sale }
+    const sendOriginal = () => realFetch(`${baseUrl}/api/sync/push`, {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token(TENANT)}` },
+      body: JSON.stringify({ operations: [original] }),
+    }).then((r) => r.json() as Promise<{ results: Array<{ status: string; error?: string }> }>)
+    return { pending, original, sendOriginal }
+  }
+  afterEach(() => { syncTestHooks.beforeClaim = undefined; syncTestHooks.afterClaim = undefined; dropPush = false; hubLost = false })
+
+  it("a reload and a store switch keep the pending attempt; 'open' never clears it", async () => {
+    let d = await restart()
+    await refreshLocal(d)
+    const { pending } = await unansweredAttempt(d, 1)
+    expect(await d.sync.hubCheckoutAttemptState(pending.sale.id)).toBe("open") // not found yet: unresolved
+    expect(d.hub.getPendingHubSale()?.sale.id).toBe(pending.sale.id)
+
+    d = await restart()
+    expect(d.hub.getPendingHubSale()?.sale.id).toBe(pending.sale.id)
+    await d.sync.clearStoreData()
+    storage.setItem("lebanonpos.auth-token", token(OTHER)); storage.setItem("lebanonpos.tenant-id.v1", OTHER)
+    d = await restart()
+    expect(d.hub.getPendingHubSale()).toBeNull() // the other store does not see it
+    await d.sync.clearStoreData()
+    storage.setItem("lebanonpos.auth-token", token(TENANT)); storage.setItem("lebanonpos.tenant-id.v1", TENANT)
+    d = await restart()
+    expect(d.hub.getPendingHubSale()?.sale.id).toBe(pending.sale.id) // back: still pending, still blocking
+    await refreshLocal(d)
+    // Hub unreachable: a different cart is not charged and the attempt stays.
+    hubLost = true
+    expect((await d.hub.checkoutViaHub(await hubCart(d, 4))).status).toBe("unconfirmed")
+    hubLost = false
+    expect(d.hub.getPendingHubSale()?.sale.id).toBe(pending.sale.id)
+    // Settled terminally (it never arrived -> cancelled), then forgotten.
+    expect((await d.hub.settlePendingHubSale()).state).toBe("cancelled")
+    expect(d.hub.getPendingHubSale()).toBeNull()
+  })
+
+  it("delayed before it commits: status open, the replacement cancels it, the late original is refused (one sale)", async () => {
+    const d = await restart()
+    await refreshLocal(d)
+    const s0 = await serverStock(), n0 = await salesOnServer(), local0 = deviceStock()
+    const { pending, original, sendOriginal } = await unansweredAttempt(d, 2)
+
+    // 1. The original request arrives and is held before it commits.
+    const gate = gateFor(original.id)
+    syncTestHooks.beforeClaim = gate.hook
+    const originalDone = sendOriginal()
+    await gate.reached
+    // 2. Status while it is still running: open, so the till keeps the attempt.
+    expect(await d.sync.hubCheckoutAttemptState(pending.sale.id)).toBe("open")
+    expect(d.hub.getPendingHubSale()).not.toBeNull()
+    // 3. A replacement checkout (different cart): the attempt is cancelled terminally first.
+    const replacement = await d.hub.checkoutViaHub(await hubCart(d, 3))
+    expect(replacement.status).toBe("committed")
+    expect(d.hub.getPendingHubSale()).toBeNull()
+    // 4. The original resumes: refused, it can never commit now.
+    gate.release()
+    const late = await originalDone
+    expect(late.results[0].status).toBe("rejected")
+    expect(late.results[0].error).toMatch(/CHECKOUT_CANCELLED/)
+    syncTestHooks.beforeClaim = undefined
+    expect((await sendOriginal()).results[0].status).toBe("rejected") // a later resend too
+    // 5. One valid outcome: only the replacement sale, one stock deduction on each side.
+    expect(await salesOnServer()).toBe(n0 + 1)
+    expect(await prisma.sale.count({ where: { id: pending.sale.id } })).toBe(0)
+    expect(await serverStock()).toBe(s0 - 3)
+    expect(deviceStock()).toBe(local0 - 3)
+    expect(await d.sync.hubCheckoutAttemptState(pending.sale.id)).toBe("cancelled")
+  })
+
+  it("delayed while it commits: the cancel waits, the original commits, the replacement cart is not charged (one sale)", async () => {
+    const d = await restart()
+    await refreshLocal(d)
+    const s0 = await serverStock(), n0 = await salesOnServer(), local0 = deviceStock()
+    const { pending, original, sendOriginal } = await unansweredAttempt(d, 2)
+
+    // 1. The original request has claimed the attempt and is in the middle of committing.
+    const gate = gateFor(original.id)
+    syncTestHooks.afterClaim = gate.hook
+    const originalDone = sendOriginal()
+    await gate.reached
+    // 2. Status while it is still running: open (nothing committed yet).
+    expect(await d.sync.hubCheckoutAttemptState(pending.sale.id)).toBe("open")
+    // 3. A replacement checkout: its cancel waits on the original's claim...
+    let replacementSettled = false
+    const replacementP = d.hub.checkoutViaHub(await hubCart(d, 3)).finally(() => { replacementSettled = true })
+    await new Promise((r) => setTimeout(r, 300))
+    expect(replacementSettled).toBe(false)
+    // 4. ...the original resumes and commits.
+    gate.release()
+    const done = await originalDone
+    expect(done.results[0].status).toBe("ok")
+    const replacement = await replacementP
+    expect(replacement.status).toBe("previous_committed") // the earlier sale went through; this cart was not charged
+    // 5. One valid outcome: the original sale only, deducted once on each side.
+    expect(await salesOnServer()).toBe(n0 + 1)
+    expect(await prisma.sale.count({ where: { id: pending.sale.id } })).toBe(1)
+    expect(await serverStock()).toBe(s0 - 2)
+    expect(deviceStock()).toBe(local0 - 2)
+    expect(d.hub.getPendingHubSale()).toBeNull()
+    expect(await d.sync.hubCheckoutAttemptState(pending.sale.id)).toBe("committed")
   })
 })

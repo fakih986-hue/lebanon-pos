@@ -290,6 +290,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         continue
       }
 
+      await syncTestHooks.beforeClaim?.(op.id)
       const outcome = await prisma.$transaction(async (tx) => {
         const summary = `${op.action} ${op.entity}`
         const payloadJson = JSON.stringify(op.payload ?? {})
@@ -303,7 +304,10 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         if (!claim || claim.tenantId !== tenantId) throw new TenantScopeError(`sync operation ${op.id} belongs to another store`)
         // An existing row (applied, or an earlier failed attempt) must be this same operation; our
         // own claim row ('Processing', inserted above) always is.
+        // A checkout attempt the till cancelled can never commit afterwards.
+        if (claim.status === "Cancelled") throw new CheckoutCancelledError(op.id)
         if (claim.status !== "Processing" && !sameOperation(claim, op)) throw new OperationIdReuseError(op.id)
+        await syncTestHooks.afterClaim?.(op.id)
         if (claim.appliedAt) return "duplicate" as const
 
         await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, { deviceId: deviceId ?? null, userId: req.auth!.userId })
@@ -342,6 +346,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         err instanceof RefundRuleError ||
         err instanceof TenantScopeError ||
         err instanceof OperationIdReuseError ||
+        err instanceof CheckoutCancelledError ||
         errorMessage.includes("Insufficient stock") ||
         errorMessage.includes("was voided") ||
         errorMessage.includes("Insufficient stock in batch") ||
@@ -359,7 +364,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
               payload: (op.payload ?? {}) as any, status: opStatus, attempts: isRejected ? 5 : 1, lastAttemptAt: new Date(), error: errorMessage,
             },
           })
-        } else if (row.tenantId === tenantId && !row.appliedAt && !(err instanceof OperationIdReuseError)) {
+        } else if (row.tenantId === tenantId && !row.appliedAt && !(err instanceof OperationIdReuseError) && !(err instanceof CheckoutCancelledError)) {
           await prisma.syncOperation.updateMany({
             where: { id: op.id, tenantId, appliedAt: null },
             data: { status: opStatus, attempts: isRejected ? 5 : { increment: 1 }, lastAttemptAt: new Date(), error: errorMessage },
@@ -445,6 +450,57 @@ router.post("/validate-stock", requireCloudOrJwtAuth, async (req: AuthRequest, r
 // the sale but the response was lost), the client calls this BEFORE letting the
 // cashier re-ring — so a committed-but-unacked sale is finalized rather than
 // duplicated. Returns whether a non-voided sale with this id exists on the hub.
+// ─── Write-through checkout attempts (attempt id = the operation id, wt-<saleId>) ─────
+// A till that lost the answer to a write-through sale must settle that attempt before charging
+// a different cart. "Not found" is not an answer: the original request may still be on its way.
+//   GET  .../checkout-attempt/:opId          -> committed | cancelled | open (open = unresolved)
+//   POST .../checkout-attempt/:opId/cancel   -> committed | cancelled — TERMINAL. It takes the
+//        same claim lock as the push: if the original request is applying it, cancel waits and
+//        answers committed; otherwise it records Cancelled and the push is refused if it arrives.
+const saleIdOfAttempt = (opId: string) => (opId.startsWith("wt-") ? opId.slice(3) : null)
+async function attemptState(tenantId: string, opId: string) {
+  const row = await prisma.syncOperation.findUnique({ where: { id: opId }, select: { tenantId: true, appliedAt: true, status: true } })
+  if (row && row.tenantId !== tenantId) return { state: "foreign" as const }
+  const saleId = saleIdOfAttempt(opId)
+  const sale = saleId ? await prisma.sale.findFirst({ where: { id: saleId, tenantId }, select: { id: true } }) : null
+  if (row?.appliedAt || sale) return { state: "committed" as const }
+  if (row?.status === "Cancelled") return { state: "cancelled" as const }
+  return { state: "open" as const }
+}
+router.get("/checkout-attempt/:opId", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+  const opId = ((req as any).params?.opId as string) || ""
+  if (!opId.startsWith("wt-")) { json(res, { error: "not a checkout attempt" }, 400); return }
+  const r = await attemptState(req.auth!.tenantId, opId)
+  if (r.state === "foreign") { json(res, { error: "not found" }, 404); return }
+  json(res, r)
+})
+router.post("/checkout-attempt/:opId/cancel", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+  const tenantId = req.auth!.tenantId
+  const opId = ((req as any).params?.opId as string) || ""
+  if (!opId.startsWith("wt-")) { json(res, { error: "not a checkout attempt" }, 400); return }
+  try {
+    const state = await prisma.$transaction(async (tx) => {
+      await (tx as typeof prisma).$executeRaw`
+        INSERT INTO "SyncOperation" ("id", "tenantId", "entity", "action", "summary", "payload", "status", "attempts", "createdAt")
+        VALUES (${opId}, ${tenantId}, 'sale', 'create', 'checkout attempt cancelled', '{}'::jsonb, 'Cancelled', 0, now())
+        ON CONFLICT ("id") DO NOTHING`
+      // Waits here while the original request holds the claim (it is applying the sale).
+      const [row] = await (tx as typeof prisma).$queryRaw<Array<{ tenantId: string; appliedAt: Date | null }>>`
+        SELECT "tenantId", "appliedAt" FROM "SyncOperation" WHERE "id" = ${opId} FOR UPDATE`
+      if (!row || row.tenantId !== tenantId) return "foreign" as const
+      const saleId = saleIdOfAttempt(opId)
+      const sale = saleId ? await (tx as typeof prisma).sale.findFirst({ where: { id: saleId, tenantId }, select: { id: true } }) : null
+      if (row.appliedAt || sale) return "committed" as const
+      await (tx as any).syncOperation.update({ where: { id: opId }, data: { status: "Cancelled", error: "Cancelled by the till", lastAttemptAt: new Date() } })
+      return "cancelled" as const
+    })
+    if (state === "foreign") { json(res, { error: "not found" }, 404); return }
+    json(res, { state })
+  } catch (err) {
+    json(res, { error: (err as Error).message }, 500)
+  }
+})
+
 router.get("/sale-committed/:saleId", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   const saleId = ((req as any).params?.saleId as string) || ""
@@ -739,6 +795,14 @@ router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest,
 })
 
 /** A push referenced a record id that belongs to another tenant. Never retried. */
+/** Test-only pauses around the claim (real-Postgres race tests); never set in production code. */
+export const syncTestHooks: { beforeClaim?: (opId: string) => Promise<void>; afterClaim?: (opId: string) => Promise<void> } = {}
+
+/** A write-through checkout attempt the till cancelled: it can never commit afterwards. */
+export class CheckoutCancelledError extends Error {
+  constructor(id: string) { super(`CHECKOUT_CANCELLED: checkout attempt ${id} was cancelled by the till`); this.name = "CheckoutCancelledError" }
+}
+
 /** An operation id the server already holds for a different entity, action or payload. */
 export class OperationIdReuseError extends Error {
   constructor(id: string) { super(`OPERATION_ID_REUSED: sync operation ${id} was already used for a different change`); this.name = "OperationIdReuseError" }

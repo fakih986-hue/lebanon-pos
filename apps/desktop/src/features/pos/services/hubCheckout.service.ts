@@ -8,10 +8,12 @@
 // Now the sale about to be sent is saved first, per store (immutable tenant), as the pending hub
 // sale with a fingerprint of its cart:
 //   same cart again      -> the SAME sale (id, number) is sent: the hub acknowledges it once;
-//   a different cart     -> the pending sale is confirmed with the hub first: committed ->
-//                           finalized here and the new cart is NOT charged; unknown -> blocked;
-//                           definitively absent -> forgotten, the new cart proceeds.
-import { commitSaleToHub, getCurrentTenantId, pullFromServer, saleCommittedOnHub, SyncStorageError } from "./sync.service"
+//   a different cart     -> the pending attempt is settled on the hub first, terminally:
+//                           committed -> finalized here and the new cart is NOT charged;
+//                           cancelled (the hub guarantees it can never commit afterwards) ->
+//                           forgotten, the new cart proceeds; hub unreachable -> blocked.
+// "Not found" is never treated as settled: the original request may still be on its way.
+import { cancelHubCheckoutAttempt, commitSaleToHub, getCurrentTenantId, pullFromServer, SyncStorageError } from "./sync.service"
 import { finalizeCommittedSale, getSales, type Sale } from "./sales.service"
 import { consumeInventoryBatches, type ConsumeBatchInput } from "./inventoryBatch.service"
 import { decreaseProductStock } from "./product.service"
@@ -71,6 +73,29 @@ export function cartFingerprint(input: {
   return `${lines}#${input.paymentMethod}#${input.customerId ?? ""}#${input.total}`
 }
 
+/**
+ * Settle this store's pending hub sale terminally (also used by the POS "check now" action):
+ * committed -> recorded here; cancelled -> forgotten (it can never commit); unreachable -> kept.
+ */
+export async function settlePendingHubSale(cancel: typeof cancelHubCheckoutAttempt = cancelHubCheckoutAttempt): Promise<{ state: "none" | "committed" | "cancelled" | "unreachable"; sale?: Sale }> {
+  const pending = getPendingHubSale()
+  if (!pending) return { state: "none" }
+  const result = await cancel(pending.sale.id)
+  if (result === "committed") {
+    try { finalizeLocal(pending) } catch (error) {
+      console.error("[hub checkout] local finalize failed; refreshing from the hub:", error)
+      pullFromServer().catch(() => {})
+    }
+    writePending(null)
+    return { state: "committed", sale: pending.sale }
+  }
+  if (result === "cancelled") {
+    writePending(null)
+    return { state: "cancelled", sale: pending.sale }
+  }
+  return { state: "unreachable", sale: pending.sale }
+}
+
 /** Record the hub-committed sale here once (lots, sale, debt, stock); a second call does nothing. */
 function finalizeLocal(p: PendingHubSale) {
   if (getSales().some((s) => s.id === p.sale.id)) return
@@ -87,21 +112,14 @@ export async function checkoutViaHub(input: {
   lots: ConsumeBatchInput[]
   stock: Array<{ productId: number; quantity: number }>
   debt?: Omit<RecordDebtSaleInput, "saleId">
-}, deps: { commit?: typeof commitSaleToHub; confirm?: typeof saleCommittedOnHub } = {}): Promise<HubCheckoutOutcome> {
+}, deps: { commit?: typeof commitSaleToHub; cancel?: typeof cancelHubCheckoutAttempt } = {}): Promise<HubCheckoutOutcome> {
   const commit = deps.commit ?? commitSaleToHub
-  const confirm = deps.confirm ?? saleCommittedOnHub
   const pending = getPendingHubSale()
 
   if (pending && pending.fingerprint !== input.fingerprint) {
-    // Settle the earlier sale before charging anything else.
-    const committed = await confirm(pending.sale.id)
-    if (committed === true) {
-      finalizeLocal(pending)
-      writePending(null)
-      return { status: "previous_committed", sale: pending.sale }
-    }
-    if (committed === null) return { status: "unconfirmed", sale: pending.sale }
-    writePending(null) // definitively not on the hub
+    const settled = await settlePendingHubSale(deps.cancel)
+    if (settled.state === "committed") return { status: "previous_committed", sale: pending.sale }
+    if (settled.state !== "cancelled") return { status: "unconfirmed", sale: pending.sale }
   }
 
   let current: PendingHubSale

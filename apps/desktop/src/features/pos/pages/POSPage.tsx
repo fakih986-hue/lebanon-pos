@@ -46,6 +46,7 @@ import {
 } from "../services/product.service"
 import { buildSale, checkoutLocalSale, getSales, type SaleTender } from "../services/sales.service"
 import { cartFingerprint, checkoutViaHub } from "../services/hubCheckout.service"
+import PendingHubSaleBanner from "../components/PendingHubSaleBanner"
 import {
   holdSale,
   removeHeldSale,
@@ -858,6 +859,7 @@ export default function POSPage() {
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <section className="flex h-full min-w-0 flex-col gap-3 overflow-hidden p-3 pb-24 sm:p-4 md:pb-4 xl:p-5">
             <SyncBanner />
+            <PendingHubSaleBanner refreshKey={scannerStatus} />
             {!hasShift && (
               <div className="mg2-banner mg2-t-warn" role="status">
                 <div style={{ flex: 1, minWidth: 180 }}>

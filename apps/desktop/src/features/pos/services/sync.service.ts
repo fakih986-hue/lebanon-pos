@@ -1689,6 +1689,36 @@ const COMMIT_TIMEOUT_MS = 1200
 const COMMIT_MAX_ATTEMPTS = 2
 
 /** Asks the hub whether a sale id has already committed (idempotency check). */
+/**
+ * Settle a write-through checkout attempt (wt-<saleId>) for good: "committed" (it went in), or
+ * "cancelled" — the hub guarantees it can never commit afterwards. null: the hub could not be
+ * reached, nothing is settled. Unlike "is it committed?", a "no" here is final.
+ */
+export async function cancelHubCheckoutAttempt(saleId: string): Promise<"committed" | "cancelled" | null> {
+  const apiUrl = getApiUrl(); const token = getAuthToken()
+  if (!apiUrl || !token) return null
+  try {
+    const res = await fetch(`${apiUrl}/api/sync/checkout-attempt/${encodeURIComponent(`wt-${saleId}`)}/cancel`, {
+      method: "POST", headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15_000),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data?.state === "committed" || data?.state === "cancelled" ? data.state : null
+  } catch { return null }
+}
+
+/** Where a write-through checkout attempt stands on the hub (open = not settled yet). */
+export async function hubCheckoutAttemptState(saleId: string): Promise<"committed" | "cancelled" | "open" | null> {
+  const apiUrl = getApiUrl(); const token = getAuthToken()
+  if (!apiUrl || !token) return null
+  try {
+    const res = await fetch(`${apiUrl}/api/sync/checkout-attempt/${encodeURIComponent(`wt-${saleId}`)}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(COMMIT_TIMEOUT_MS) })
+    if (!res.ok) return null
+    const data = await res.json()
+    return ["committed", "cancelled", "open"].includes(data?.state) ? data.state : null
+  } catch { return null }
+}
+
 export async function saleCommittedOnHub(saleId: string): Promise<boolean | null> {
   const apiUrl = getApiUrl(); const token = getAuthToken()
   if (!apiUrl || !token) return null
