@@ -74,7 +74,7 @@ export function cartFingerprint(input: {
 /** Record the hub-committed sale here once (lots, sale, debt, stock); a second call does nothing. */
 function finalizeLocal(p: PendingHubSale) {
   if (getSales().some((s) => s.id === p.sale.id)) return
-  consumeInventoryBatches(p.lots, { skipSync: true })
+  consumeInventoryBatches(p.lots, { skipSync: true, movementIdPrefix: `mv-sale-${p.sale.id}` })
   finalizeCommittedSale(p.sale)
   if (p.debt) recordDebtSale({ ...p.debt, saleId: p.sale.id })
   decreaseProductStock(p.stock)

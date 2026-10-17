@@ -1,6 +1,7 @@
 import {
   adjustInventoryBatches,
   getInventoryBatches,
+  getStockMovements,
   recordStockMovement,
   restoreLotsFromSnapshot,
   type BatchAllocation,
@@ -177,9 +178,14 @@ function recoverAdjustment(entry: JournalEntry): "closed" | "blocked" {
   }
   const detail = `product #${p.productId}: stock ${now} (before ${entry.before.stock[key]}, expected ${(entry.before.stock[key] ?? 0) + p.quantityChange}); lots ${lots}`
   const record = getStockAdjustments().find((a) => a.id === p.adjustmentId)
+  const movementId = `mv-${p.adjustmentId}`
+  const movementWritten = getStockMovements().some((mv) => mv.id === movementId)
+  const productName = lotsNow[0]?.productName ?? getProductsSync().find((x) => x.id === p.productId)?.name ?? `Product #${p.productId}`
   if (record) {
     // Committed: the record is written last, so lots and stock should both be applied.
     entry.committed = true
+    // Its movement (fixed id) is completed if it was never written.
+    if (!movementWritten) recordStockMovement({ id: movementId, productId: p.productId, productName, type: "Adjustment", quantity: p.quantityChange, reference: p.adjustmentId, note: `${p.reason} (completed after an interruption)` })
     if (lots !== "expected" && p.allocations !== null) { blockJournalEntry(entry, "lots", detail); return "blocked" }
     if (stock === "ambiguous") { blockJournalEntry(entry, "stock", detail); return "blocked" }
     if (stock === "before") (p.quantityChange > 0 ? increaseProductStock : decreaseProductStock)([{ productId: p.productId, quantity: Math.abs(p.quantityChange) }])
@@ -189,13 +195,9 @@ function recoverAdjustment(entry: JournalEntry): "closed" | "blocked" {
   }
   // Not committed: put back exactly what was applied; never sent.
   if (lots === "ambiguous" || stock === "ambiguous") { blockJournalEntry(entry, lots === "ambiguous" ? "lots" : "stock", detail); return "blocked" }
-  if (lots === "expected") {
-    restoreLotsFromSnapshot(p.lotRecords, createdIds)
-    if (p.quantityChange < 0) {
-      // adjustInventoryBatches recorded a movement for a decrease: record its reversal.
-      recordStockMovement({ productId: p.productId, productName: lotsNow[0]?.productName ?? `Product #${p.productId}`, type: "Adjustment", quantity: -p.quantityChange, reference: p.adjustmentId, note: "Interrupted adjustment reversed (no adjustment recorded)" })
-    }
-  }
+  if (lots === "expected") restoreLotsFromSnapshot(p.lotRecords, createdIds)
+  // Its movement is reversed only if it was written (fixed ids: never twice).
+  if (movementWritten) recordStockMovement({ id: `${movementId}-rev`, productId: p.productId, productName, type: "Adjustment", quantity: -p.quantityChange, reference: p.adjustmentId, note: "Interrupted adjustment reversed (no adjustment recorded)" })
   if (stock === "expected") (p.quantityChange > 0 ? decreaseProductStock : increaseProductStock)([{ productId: p.productId, quantity: Math.abs(p.quantityChange) }])
   discardStagedSyncOperation(opId)
   closeJournalEntry(entry)
@@ -220,6 +222,7 @@ function applyStockAdjustment(
     unitPrice: product.price,
     batchId: input.batchId,
     reason: input.reason,
+    movementId: `mv-${adjustmentId}`,
   })
   markDone(entry, "lots", { plan: { ...entry.plan, allocations: batchAllocations } })
 

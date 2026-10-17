@@ -1,6 +1,6 @@
 import type { Product } from "../types/product"
 import type { BatchAllocation } from "./inventoryBatch.service"
-import { applyLotRestoration, consumeInventoryBatches, getInventoryBatches, recordStockMovement, restoreLotsFromSnapshot, type ConsumeBatchInput, type InventoryBatch } from "./inventoryBatch.service"
+import { applyLotRestoration, consumeInventoryBatches, getInventoryBatches, getStockMovements, recordStockMovement, restoreLotsFromSnapshot, type ConsumeBatchInput, type InventoryBatch } from "./inventoryBatch.service"
 import { increaseProductStock, decreaseProductStock, getProductsSync } from "./product.service"
 import { reverseDebtSale, recordDebtPayment, recordDebtSale, getDebtPayments, type RecordDebtSaleInput } from "./customer.service"
 import {
@@ -880,9 +880,11 @@ export function voidSale(saleId: string, restoreStock = true) {
   try {
     writeSales(readSales().map((item) => (item.id === saleId ? { ...item, status: "Voided" as const } : item)))
     markDone(entry, "status", { committed: true })
-    // 1. Restore product stock (unless the caller knows it was never decremented).
+    // 1. Restore product stock (unless the caller knows it was never decremented), with its
+    //    movements (fixed ids), so the ledger follows the stock.
     if (stock.length) increaseProductStock(stock)
     markDone(entry, "stock")
+    recordVoidMovements(saleId, sale.saleNumber, stock)
     // 2. Return the consumed lots recorded on the sale (local only — the server restores its own).
     applyLotRestoration(slices, 1)
     markDone(entry, "lots")
@@ -927,6 +929,7 @@ function recoverVoid(entry: JournalEntry): "closed" | "blocked" {
   const lots = lotState(p.slices, entry.before.lots, +1)
   if (lots.state === "ambiguous") return blockEntry(entry, "lots", lots.detail)
   if (stock.state === "before") increaseProductStock(p.stock)
+  recordVoidMovements(p.saleId, p.saleNumber, p.stock) // only the missing ones
   if (lots.state === "before") applyLotRestoration(p.slices, 1)
   if (p.isDebt) reverseDebtSale({ id: p.saleId, saleNumber: p.saleNumber, customerId: p.customerId ?? undefined })
   commitStagedSyncOperation(opId)
@@ -934,6 +937,16 @@ function recoverVoid(entry: JournalEntry): "closed" | "blocked" {
   return "closed"
 }
 registerJournalRecoverer("void", recoverVoid)
+
+/** A void's Refund movements, one per restored line, fixed ids: written once, completed if missing. */
+function recordVoidMovements(saleId: string, saleNumber: string, stock: StockLine[]) {
+  const products = getProductsSync()
+  stock.forEach((line, i) => {
+    const id = `mv-void-${saleId}-${i}`
+    if (movementExists(id)) return
+    recordStockMovement({ id, productId: line.productId, productName: products.find((x) => x.id === line.productId)?.name ?? `Product #${line.productId}`, type: "Refund", quantity: line.quantity, reference: saleNumber, note: `Sale ${saleNumber} voided` })
+  })
+}
 
 // ── checkout (local finalize, not write-through): journaled ───────────────────
 export type LocalCheckoutInput = {
@@ -960,7 +973,7 @@ export function checkoutLocalSale(input: LocalCheckoutInput): LocalCheckoutResul
   let entry: JournalEntry
   try {
     entry = openJournalEntry("checkout", {
-      saleId: sale.id, saleNumber: sale.saleNumber, slices, stock: input.stock, debt: input.debt ?? null,
+      saleId: sale.id, saleNumber: sale.saleNumber, slices, stock: input.stock, debt: input.debt ?? null, lots: input.lots,
       lotRecords: getInventoryBatches().filter((b) => lotIds.includes(b.id)),
     }, { stock: stockSnapshot(input.stock.map((l) => l.productId)), lots: lotQuantities(lotIds) }, [opId])
   } catch (error) { throw new SyncStorageError(opId, error) }
@@ -969,7 +982,7 @@ export function checkoutLocalSale(input: LocalCheckoutInput): LocalCheckoutResul
   } catch (error) { closeJournalEntry(entry); throw error }
 
   try {
-    consumeInventoryBatches(input.lots)
+    consumeInventoryBatches(input.lots, { movementIdPrefix: `mv-sale-${sale.id}` })
     markDone(entry, "lots")
     writeSales([sale, ...readSales()])
     markDone(entry, "sale", { committed: true })
@@ -990,7 +1003,13 @@ export function checkoutLocalSale(input: LocalCheckoutInput): LocalCheckoutResul
   return { sale, status: "completed" }
 }
 
-type CheckoutPlan = { saleId: string; saleNumber: string; slices: LotSlice[]; stock: StockLine[]; debt: Omit<RecordDebtSaleInput, "saleId"> | null; lotRecords: InventoryBatch[] }
+type CheckoutPlan = { saleId: string; saleNumber: string; slices: LotSlice[]; stock: StockLine[]; debt: Omit<RecordDebtSaleInput, "saleId"> | null; lotRecords: InventoryBatch[]; lots: ConsumeBatchInput[] }
+
+/** Movement ids of a checkout's Sale movements (consumeInventoryBatches movementIdPrefix). */
+const saleMovementId = (saleId: string, index: number) => `mv-sale-${saleId}-${index}`
+function movementExists(id: string) {
+  return getStockMovements().some((mv) => mv.id === id)
+}
 function recoverCheckout(entry: JournalEntry): "closed" | "blocked" {
   const p = entry.plan as unknown as CheckoutPlan
   const opId = entry.opIds[0]
@@ -1002,6 +1021,10 @@ function recoverCheckout(entry: JournalEntry): "closed" | "blocked" {
     const stock = stockState(p.stock, entry.before.stock, -1)
     if (stock.state === "ambiguous") return blockEntry(entry, "stock", stock.detail)
     if (p.debt) recordDebtSale({ ...p.debt, saleId: p.saleId }) // idempotent by debt id
+    // Its Sale movements (fixed ids) are completed if any was never written.
+    ;(p.lots ?? []).forEach((line, i) => {
+      if (!movementExists(saleMovementId(p.saleId, i))) recordStockMovement({ id: saleMovementId(p.saleId, i), productId: line.productId, productName: line.productName, type: "Sale", quantity: -line.quantity, reference: p.saleNumber, note: `Sale ${p.saleNumber} (completed after an interruption)` })
+    })
     if (stock.state === "before") decreaseProductStock(p.stock)
     commitStagedSyncOperation(opId)
     closeJournalEntry(entry)
@@ -1009,13 +1032,11 @@ function recoverCheckout(entry: JournalEntry): "closed" | "blocked" {
   }
   // Not committed: give back the lots it consumed, exactly; the sale never existed, never sent.
   if (lots.state === "ambiguous") return blockEntry(entry, "lots", lots.detail)
-  if (lots.state === "expected") {
-    restoreLotsFromSnapshot(p.lotRecords)
-    for (const line of p.stock) {
-      const product = getProductsSync().find((x) => x.id === line.productId)
-      recordStockMovement({ productId: line.productId, productName: product?.name ?? `Product #${line.productId}`, type: "Refund", quantity: line.quantity, reference: p.saleNumber, note: `Interrupted checkout ${p.saleNumber} reversed (no sale recorded)` })
-    }
-  }
+  if (lots.state === "expected") restoreLotsFromSnapshot(p.lotRecords)
+  // Each Sale movement that was written is reversed (fixed ids: once); none written, none reversed.
+  ;(p.lots ?? []).forEach((line, i) => {
+    if (movementExists(saleMovementId(p.saleId, i))) recordStockMovement({ id: `${saleMovementId(p.saleId, i)}-rev`, productId: line.productId, productName: line.productName, type: "Refund", quantity: line.quantity, reference: p.saleNumber, note: `Interrupted checkout ${p.saleNumber} reversed (no sale recorded)` })
+  })
   discardStagedSyncOperation(opId)
   closeJournalEntry(entry)
   return "closed"

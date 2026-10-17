@@ -286,3 +286,86 @@ describe("store switching: every journaled workflow, both directions", () => {
     expect(JSON.parse(localStorage.getItem(K.journal) ?? "[]").some((e: { plan: { saleId?: string } }) => e.plan.saleId === "sale-b1")).toBe(true) // B's kept for B
   })
 })
+
+describe("movement ledger", () => {
+  type Mv = { id: string; productId: number; quantity: number; type: string }
+  const ledger = () => read<Mv>(K.movements).filter((x) => x.productId === 1).reduce((t, x) => t + x.quantity, 0)
+  const ids = () => read<Mv>(K.movements).map((x) => x.id)
+  /** The ledger moves exactly with stock, and no movement id appears twice. */
+  function expectLedgerFollowsStock(before: { ledger: number; stock: number }) {
+    expect(ledger() - before.ledger).toBe((stockOf(1) ?? 0) - before.stock)
+    expect(new Set(ids()).size).toBe(ids().length)
+  }
+  const snap = () => ({ ledger: ledger(), stock: stockOf(1) ?? 0 })
+
+  it("checkout, void and adjustments leave one movement each, with ids derived from the record", async () => {
+    const m = await svc()
+    const b0 = snap()
+    const c = await cart(m, 3)
+    m.sales.checkoutLocalSale(c)
+    expect(ids()).toContain(`mv-sale-${c.sale.id}-0`)
+    expectLedgerFollowsStock(b0)
+    m.sales.voidSale(c.sale.id)
+    expect(ids()).toContain(`mv-void-${c.sale.id}-0`)
+    expectLedgerFollowsStock(b0)
+    const up = m.adj.recordStockAdjustment({ productId: 1, quantityChange: 4, reason: "Count Correction", id: "adj-up" })
+    expect(up).toBeTruthy()
+    expect(ids()).toContain("mv-adj-up") // an increase records its movement too (it used to record none)
+    m.adj.recordStockAdjustment({ productId: 1, quantityChange: -2, reason: "Damage", id: "adj-down" })
+    expect(ids()).toContain("mv-adj-down")
+    expectLedgerFollowsStock(b0)
+  })
+
+  it("a checkout whose movement write fails is compensated with no movement either way", async () => {
+    const m = await svc()
+    const b0 = snap()
+    const c = await cart(m, 2)
+    const spy = failKey(K.movements)
+    expect(() => m.sales.checkoutLocalSale(c)).toThrow()
+    spy.mockRestore()
+    // Settled again once storage works (restart): still none written, none reversed.
+    const r = await restart()
+    r.sync.recoverStagedSyncOperations()
+    expect(read(K.movements)).toEqual([])
+    expect(read(K.journal)).toEqual([])
+    expectLedgerFollowsStock(b0)
+  })
+
+  it("a checkout interrupted after its movement: the movement is reversed once", async () => {
+    let m = await svc()
+    const b0 = snap()
+    const c = await cart(m, 2)
+    const spy = failKey(K.sales)
+    expect(() => m.sales.checkoutLocalSale(c)).toThrow()
+    spy.mockRestore()
+    expect(ids().filter((id) => id.startsWith(`mv-sale-${c.sale.id}-0`)).sort()).toEqual([`mv-sale-${c.sale.id}-0`, `mv-sale-${c.sale.id}-0-rev`])
+    m = await restart()
+    m.sync.recoverStagedSyncOperations()
+    expectLedgerFollowsStock(b0)
+  })
+
+  it("a void whose movement write fails is completed once after restart", async () => {
+    let m = await svc()
+    const c = await cart(m, 2)
+    m.sales.checkoutLocalSale(c)
+    const b0 = snap()
+    const spy = failKey(K.movements)
+    m.sales.voidSale(c.sale.id) // recorded (Voided); its movement cannot be written yet
+    spy.mockRestore()
+    expect(ids()).not.toContain(`mv-void-${c.sale.id}-0`)
+    m = await restart()
+    m.sync.recoverStagedSyncOperations()
+    expect(ids().filter((id) => id === `mv-void-${c.sale.id}-0`)).toHaveLength(1)
+    expectLedgerFollowsStock(b0)
+  })
+
+  it("an adjustment whose movement write fails is compensated with no movement", async () => {
+    const m = await svc()
+    const b0 = snap()
+    const spy = failKey(K.movements)
+    expect(() => m.adj.recordStockAdjustment({ productId: 1, quantityChange: -3, reason: "Damage", id: "adj-x" })).toThrow()
+    spy.mockRestore()
+    expect(ids().some((id) => id.startsWith("mv-adj-x"))).toBe(false)
+    expectLedgerFollowsStock(b0)
+  })
+})

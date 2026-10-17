@@ -151,6 +151,8 @@ export type InventoryBatchAdjustmentInput = {
   unitPrice: number
   batchId?: string
   reason?: string
+  /** A fixed movement id (journaled adjustments): the movement is written once, for either sign. */
+  movementId?: string
 }
 
 function createBatchNumber() {
@@ -311,7 +313,8 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { o
 
 export function consumeInventoryBatches(
   items: ConsumeBatchInput[],
-  opts?: { dryRun?: boolean; skipSync?: boolean },
+  /** movementIdPrefix: each item's Sale movement gets the id <prefix>-<index> (written once). */
+  opts?: { dryRun?: boolean; skipSync?: boolean; movementIdPrefix?: string },
 ) {
   const batches = getInventoryBatches()
   const allocationsByProduct = new Map<number, BatchAllocation[]>()
@@ -387,18 +390,19 @@ export function consumeInventoryBatches(
   }
 
   // Record stock movement for each consumed item
-  for (const item of items) {
+  items.forEach((item, index) => {
     const allocs = allocationsByProduct.get(item.productId)
     if (allocs) {
       const batchRefs = allocs.map(a => a.batchNumber).join(", ")
       recordStockMovement({
+        id: opts?.movementIdPrefix ? `${opts.movementIdPrefix}-${index}` : undefined,
         productId: item.productId, productName: item.productName,
         type: "Sale", quantity: -item.quantity,
         reference: batchRefs,
         note: `Consumed from: ${batchRefs}`,
       })
     }
-  }
+  })
 
   return allocationsByProduct
 }
@@ -456,6 +460,17 @@ export function adjustInventoryBatches(input: InventoryBatchAdjustmentInput) {
     }
 
     writeBatches(batches)
+    // An increase used to leave no movement (the ledger then disagreed with stock): with a fixed id
+    // it is recorded like a decrease.
+    if (input.movementId) {
+      recordStockMovement({
+        id: input.movementId,
+        productId: input.productId, productName: input.productName ?? `Product #${input.productId}`,
+        type: "Adjustment", quantity: quantityDelta,
+        reference: input.batchId ?? allocations[0]?.batchNumber ?? "manual",
+        note: input.reason ?? "Manual adjustment",
+      })
+    }
     return allocations
   }
 
@@ -512,6 +527,7 @@ export function adjustInventoryBatches(input: InventoryBatchAdjustmentInput) {
 
   // Record stock movement for adjustment
   recordStockMovement({
+    id: input.movementId,
     productId: input.productId, productName: input.productName ?? `Product #${input.productId}`,
     type: quantityDelta > 0 ? "Receive" : "Adjustment",
     quantity: quantityDelta,
