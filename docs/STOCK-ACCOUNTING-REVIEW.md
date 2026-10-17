@@ -240,11 +240,12 @@ A duplicate is not cosmetic. Under the tenant-wide UNIQUE index, the second reco
 | `20261016120000_refund_integrity` | Additive: new nullable columns, `Sale.refundVersion` default 0, unique `(saleId, lineId)` | No. Existing `lineId` values are NULL, and NULLs are distinct | Existing rows are legacy lines |
 | `20261016130000_reference_numbers_not_unique` | Drops 3 unique indexes and adds 3 plain indexes (`IF EXISTS` / `IF NOT EXISTS`) | No. Dropping uniqueness cannot conflict | Re-runnable |
 | `20261017090000_document_references` | Adds `DebtSale.saleId` (nullable) and backfills it **before** dropping the sale/shift/expense/PO unique indexes; adds plain indexes | No. The backfill matches at most one sale while uniqueness still holds | Re-runnable (`IF NOT EXISTS` / `IS NULL` guard) |
+| `20261017120000_sync_operation_applied_at` | Adds `SyncOperation.appliedAt` (nullable) and backfills it for rows in `Pending`/`Synced` (R8) | No. Additive column, one `UPDATE` | `Failed`/`Rejected` rows stay NULL on purpose (they mix processing failures with forwarding failures) |
 
 **Verified on the scratch database.**
-- All three migrations applied.
+- All four migrations applied; `20261017120000_sync_operation_applied_at` also applied to a separate `cloud_it` schema used by the hub→cloud forwarding test.
 - **Correction:** the "no drift" check reported in the previous round used a wrong flag name. The command printed its help text and exited 0, so it proved nothing.
-- The check now runs correctly (`prisma migrate diff --from-url <scratch> --to-schema-datamodel prisma/schema.prisma --exit-code`): **"No difference detected", exit 0**.
+- The check now runs correctly (`prisma migrate diff --from-url <scratch> --to-schema-datamodel prisma/schema.prisma --exit-code`): **"No difference detected", exit 0** — re-run after the R8 migration (2026-10-17): still no difference.
 - The dev database `lebanonpos` and production were not touched.
 
 **Mixed-version matrix.** "Old" means `origin/master` (43230e3).
@@ -264,7 +265,7 @@ A duplicate is not cosmetic. Under the tenant-wide UNIQUE index, the second reco
 
 **Rollout order.**
 1. Back up the Railway database.
-2. Deploy the cloud: API, SPA, and both migrations.
+2. Deploy the cloud: API, SPA, and all migrations above.
 3. Verify sync from an existing till.
 4. Publish the hub release.
 5. Upgrade hubs before the tills that connect to them.
@@ -276,19 +277,44 @@ A duplicate is not cosmetic. Under the tenant-wide UNIQUE index, the second reco
 - **After the hub release:** roll forward. The reasons are the debt credits above, and that an old cloud re-opens the refund defects.
 - **Local keys:** new client keys (`tenant-id`, the stash, the journal) are ignored by older desktop builds.
 
+### R8. Sync durability, recovery and server deduplication (2026-10-17)
+
+Device side (local storage, sync queue) and server side (push handler). Each item was reproduced or proven by a test that fails on the code before its fix.
+
+| Area | Defect found | Fix |
+|---|---|---|
+| Sync queue persistence | A failed queue write was only logged; the operation was still pushed and reported as queued. A flush rewrote the queue from a snapshot taken before its network call, dropping operations queued meanwhile | Saved-or-not result, compaction, per-tenant acknowledgement ledger; nothing sent unless saved; flush merges onto the current queue |
+| Money/stock writers | Business data could be saved with no operation on its way to the server | Operations staged before the write (sale, void, refund, adjustment, lot receive, PO, supplier payment, expense, cash movement, debt sale/payment/reversal), committed after; recovery releases exactly once |
+| Partial writes | A staged operation was discarded when its final record was missing, even if lots or stock had changed | Business journal for checkout, void and stock adjustment: one commit point each; complete if recorded, compensate if not, block (shown, held) if the figures match neither |
+| Store switch | An unfinished entry was settled on return against wiped data; a committed sale's operation could be discarded | Unfinished entries are blocked at the switch; never settled automatically against replaced data |
+| Ledger | Random movement ids; void and positive adjustment recorded no movement; a reversal was written even when the original was not | Fixed ids per record (`mv-sale-*`, `mv-void-*`, `mv-<adjustmentId>`); completed once, reversed only if written |
+| Close by hand | Inventory permission alone, a one-line summary, and release with effects unresolved | Preview of every effect (before / now / will be) and outcome; `sales.void` + `inventory.adjust` (+ `customers.manage` for debt) for a sale or void; effects resolved before release; stale or unresolvable previews refused |
+| Hub write-through checkout | A sale committed on the hub with a lost answer could be rung again under a new id after "hub down" or a reload | Pending hub sale saved first: the same cart re-sends the same sale; a different cart is held until the earlier one is confirmed |
+| Server dedupe | "Applied" and "forwarded" were one status; concurrent duplicates raced, one failure rewrote the applied row as Failed (never forwarded), once a wrong balance | `appliedAt` separate from forwarding status; claim (`INSERT … ON CONFLICT` + `FOR UPDATE`) in the applying transaction; the failure path never touches an applied row |
+| Operation id reuse | An id already applied was acknowledged whatever it now carried | Same entity, action and payload (key-order independent) required, otherwise `OPERATION_ID_REUSED` |
+| Lot receive resend | An existing lot's "metadata" update rewrote its quantities | Existing lots take metadata only |
+| Debt | Random debt ids; plain enqueue | Debt id derived from the sale; payments by id; staged |
+
+**Coverage.** `syncDurability`, `debtDurability`, `businessJournal` (desktop, real services); `sync-dedupe` (real Postgres, hub and cloud on separate databases with the real bridge); `device-durability` (the desktop's own services against this API and Postgres: lost responses, restarts, store switches, hub checkout, void).
+
+**Not covered by R8 (still plain enqueue, honest reporting only).** Customer create/edit/delete, shifts, daily close, stock counts, held sales, product catalogue edits. They report a storage failure instead of "queued", but their change is not staged.
+
 ---
 
 ## 3. Tests
 
 | Suite | Result | Kind |
 |---|---|---|
-| API, all | 19 files, 294 tests, pass | Real-Postgres suites ran against the scratch DB `lebanonpos_refund_it` |
+| API, all | 22 files, 320 tests, pass (2026-10-17) | Real-Postgres suites ran against the scratch DB `lebanonpos_refund_it` |
+| `sync-dedupe.test.ts` | 6 / 6 | Real Postgres, hub + cloud (R8); against the previous handler: concurrent duplicates errored, once a wrong balance; id reuse acknowledged |
+| `device-durability.test.ts` | 7 / 7 | Desktop services → real API → Postgres (R8); hub checkout: 2 extra sales without the fix |
 | `old-client-adjustments.test.ts` | 8 / 8 | Real Postgres (new) |
 | `z-report-close.test.ts` | 3 / 3 | Real Postgres (new); on the old handler, 2 of 3 failed: cash arithmetic and cross-tenant close |
 | `refund-integrity.test.ts` | 13 / 13 | Real Postgres (+1: duplicate refund numbers) |
 | `reports.test.ts` | 15 / 15 repeated runs | Mocked (was 11 / 12) |
 | `document-references.test.ts` | 9 / 9 | Real Postgres (R7); 8 of them failed on the old code |
-| Desktop, all | 22 files, 300 tests, pass | jsdom |
+| Desktop, all | 373 tests, pass (2026-10-17) | jsdom |
+| `syncDurability` / `debtDurability` / `businessJournal` | 13 / 1 / 16 | R8; each guard removed in turn fails its test |
 | `documentReferences.test.ts` | 5 / 5 | R7 |
 | `refundIntegrity.test.ts` | 24 / 24 | +6: tenant-identity store switch ×4, legacy checkout, wire payloads ×2 |
 | Typecheck | `tsc` API and desktop: clean | |
@@ -297,7 +323,17 @@ A duplicate is not cosmetic. Under the tenant-wide UNIQUE index, the second reco
 
 ## 4. Open before release
 
-1. ~~Sale, shift, expense and PO number uniqueness~~: fixed (R7).
-2. **A stashed "unbound" conflict has no UI yet.** It is kept and listed by `getStashedMoneyConflictSummary()`, but only diagnostics can see it.
-3. **Production credential.** Removing the plaintext PIN from the docs does not invalidate it; it must be rotated by the owner (reported earlier).
-4. **Approval needed for deployment**, per the rollout order above.
+Fixed:
+1. ~~Sale, shift, expense and PO number uniqueness~~ (R7).
+2. ~~Hub write-through: a lost confirmation allowed a second checkout~~ (R8).
+3. ~~Journal entries across a store switch; movement integrity; close-by-hand permissions and resolution; operation id reuse; server dedupe apart from forwarding~~ (R8).
+
+Open:
+4. **Writers without staging** (R8, "Not covered"): customers, shifts, daily close, stock counts, held sales, catalogue. They report storage failures honestly but are not recovered automatically. Decide whether any is release-blocking; **shifts and daily close carry cash figures**.
+5. **A stashed "unbound" conflict has no UI yet.** It is kept and listed by `getStashedMoneyConflictSummary()`, but only diagnostics can see it.
+6. **Hub write-through, narrow case.** The pending hub sale is forgotten only on a definitive "not committed" from the hub; if the first request were still in flight at that moment and landed later, a different cart could also be charged. The local finalize after a hub commit is not journaled (the hub owns the sale; the till refreshes from it).
+7. **Legacy server rows** in `Failed`/`Rejected` have no `appliedAt`; their retries still rely on record-level idempotency (all money/stock handlers are idempotent by record id).
+8. **Close by hand is a minimal form in Sync status** (no screen migration in this round).
+9. **Genuine storage-full test on a device**: storage failures were simulated by failing writes.
+10. **Production credential.** Removing the plaintext PIN from the docs does not invalidate it; it must be rotated by the owner (reported earlier).
+11. **Approval needed for deployment**, per the rollout order above. The R8 migration must reach the cloud before hubs are upgraded (it is in the same `prisma migrate deploy`).
