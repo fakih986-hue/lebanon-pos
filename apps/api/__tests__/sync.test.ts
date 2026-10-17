@@ -47,6 +47,9 @@ vi.mock("../src/lib/prisma", () => {
     $disconnect: vi.fn(),
   }
 
+  // SYNC-DEDUPE-2 claim: INSERT … ON CONFLICT DO NOTHING, then SELECT … FOR UPDATE (an unapplied t1 row).
+  ;(mock as any).$executeRaw = vi.fn(async () => 1)
+  ;(mock as any).$queryRaw = vi.fn(async () => [{ tenantId: "t1", appliedAt: null }])
   mock.$transaction = vi.fn((cb: (tx: any) => unknown) => cb(mock))
 
   return { default: mock }

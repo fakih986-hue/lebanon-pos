@@ -250,19 +250,23 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
   const results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string }> = []
   const activities: Array<{ entity: string; action: string; summary: string }> = []
 
+  // SYNC-DEDUPE-2: "applied on this server" (appliedAt) is separate from onward delivery to the
+  // cloud (status: Pending = still to forward, Synced = forwarded). Each operation is claimed
+  // inside the same transaction that applies it: the claim row is inserted (ON CONFLICT DO
+  // NOTHING) and locked (FOR UPDATE), so concurrent duplicates wait for each other and the
+  // effects are applied once; the transaction that applies them also records appliedAt, so the
+  // effects and "applied" commit together or not at all. A duplicate of an applied operation is
+  // acknowledged without re-running it, and never touches its forwarding state.
   for (const op of operations) {
     try {
-      const existingOperation = await prisma.syncOperation.findFirst({
-        where: { id: op.id, tenantId },
-        select: { id: true, status: true },
-      })
+      validateSyncOperation(op)
 
-      if (existingOperation?.status === "Synced") {
+      // Already applied here (a lost response, a client retry, a hub re-forward): acknowledge.
+      const applied = await prisma.syncOperation.findFirst({ where: { id: op.id, tenantId, appliedAt: { not: null } }, select: { id: true } })
+      if (applied) {
         results.push({ id: op.id, status: "ok" })
         continue
       }
-
-      validateSyncOperation(op)
 
       // POS-PERMISSIONS-1: server-enforce the money/admin-sensitive subset so a
       // tampered client can't bypass in-app limits. Only fires for a real staff
@@ -284,37 +288,45 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         continue
       }
 
-      await prisma.$transaction(async (tx) => {
+      const outcome = await prisma.$transaction(async (tx) => {
+        const summary = `${op.action} ${op.entity}`
+        const payloadJson = JSON.stringify(op.payload ?? {})
+        // Claim: a concurrent duplicate blocks here until this transaction commits or rolls back.
+        await (tx as typeof prisma).$executeRaw`
+          INSERT INTO "SyncOperation" ("id", "tenantId", "entity", "action", "summary", "payload", "status", "attempts", "createdAt")
+          VALUES (${op.id}, ${tenantId}, ${op.entity}, ${op.action}, ${summary}, ${payloadJson}::jsonb, 'Processing', 0, now())
+          ON CONFLICT ("id") DO NOTHING`
+        const [claim] = await (tx as typeof prisma).$queryRaw<Array<{ tenantId: string; appliedAt: Date | null }>>`
+          SELECT "tenantId", "appliedAt" FROM "SyncOperation" WHERE "id" = ${op.id} FOR UPDATE`
+        if (!claim || claim.tenantId !== tenantId) throw new TenantScopeError(`sync operation ${op.id} belongs to another store`)
+        if (claim.appliedAt) return "duplicate" as const
+
         await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, { deviceId: deviceId ?? null, userId: req.auth!.userId })
 
-        // Mark as Pending so the cloud sync bridge picks it up and pushes to Railway.
-        // (The phone already has it synced — this is for the hub→Railway direction.)
-        const operationData = {
-          entity: op.entity,
-          action: op.action,
-          summary: `${op.action} ${op.entity}`,
-          payload: (op.payload ?? {}) as any,
-          status: "Pending",
-          syncedAt: null,
-          lastAttemptAt: new Date(),
-          error: null,
-        }
-
-        if (existingOperation) {
-          await (tx as any).syncOperation.update({
-            where: { id: op.id },
-            data: operationData,
-          })
-        } else {
-          await (tx as any).syncOperation.create({
-            data: { id: op.id, tenantId, ...operationData },
-          })
-        }
+        // Applied (same transaction) and queued for onward delivery: the cloud sync bridge
+        // forwards status Pending and marks it Synced once the cloud acknowledges it.
+        await (tx as any).syncOperation.update({
+          where: { id: op.id },
+          data: {
+            entity: op.entity,
+            action: op.action,
+            summary,
+            payload: (op.payload ?? {}) as any,
+            appliedAt: new Date(),
+            status: "Pending",
+            syncedAt: null,
+            lastAttemptAt: new Date(),
+            error: null,
+          },
+        })
+        return "applied" as const
       })
 
       results.push({ id: op.id, status: "ok" })
-      const summary = buildActivitySummary(op.entity, op.action, op.payload)
-      if (summary) activities.push({ entity: op.entity, action: op.action, summary })
+      if (outcome === "applied") {
+        const summary = buildActivitySummary(op.entity, op.action, op.payload)
+        if (summary) activities.push({ entity: op.entity, action: op.action, summary })
+      }
     } catch (err) {
       const errorMessage = (err as Error).message
 
@@ -330,31 +342,26 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         errorMessage.includes("PIN is already in use by")
       const opStatus = isRejected ? "Rejected" : "Failed"
 
-      await prisma.syncOperation
-        .upsert({
-          where: { id: op.id },
-          create: {
-            id: op.id,
-            tenantId,
-            entity: op.entity,
-            action: op.action,
-            summary: `${op.action} ${op.entity}`,
-            payload: (op.payload ?? {}) as any,
-            status: opStatus,
-            attempts: isRejected ? 5 : 1,
-            lastAttemptAt: new Date(),
-            error: errorMessage,
-          },
-          update: {
-            status: opStatus,
-            attempts: isRejected ? 5 : { increment: 1 },
-            lastAttemptAt: new Date(),
-            error: errorMessage,
-          },
-        })
-        .catch((syncLogError: unknown) => {
-          console.error("Failed to record sync error:", syncLogError)
-        })
+      // Record the failure — but never on a row that was applied (it would stop its onward
+      // delivery and misreport an applied operation as rejected), nor on another store's row.
+      try {
+        const row = await prisma.syncOperation.findUnique({ where: { id: op.id }, select: { tenantId: true, appliedAt: true } })
+        if (!row) {
+          await prisma.syncOperation.create({
+            data: {
+              id: op.id, tenantId, entity: op.entity, action: op.action, summary: `${op.action} ${op.entity}`,
+              payload: (op.payload ?? {}) as any, status: opStatus, attempts: isRejected ? 5 : 1, lastAttemptAt: new Date(), error: errorMessage,
+            },
+          })
+        } else if (row.tenantId === tenantId && !row.appliedAt) {
+          await prisma.syncOperation.updateMany({
+            where: { id: op.id, tenantId, appliedAt: null },
+            data: { status: opStatus, attempts: isRejected ? 5 : { increment: 1 }, lastAttemptAt: new Date(), error: errorMessage },
+          })
+        }
+      } catch (syncLogError) {
+        console.error("Failed to record sync error:", syncLogError)
+      }
 
       results.push({ id: op.id, status: isRejected ? "rejected" : "error", error: errorMessage })
     }

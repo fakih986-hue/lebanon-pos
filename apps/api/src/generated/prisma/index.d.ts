@@ -39068,6 +39068,7 @@ export namespace Prisma {
     lastAttemptAt: Date | null
     syncedAt: Date | null
     error: string | null
+    appliedAt: Date | null
   }
 
   export type SyncOperationMaxAggregateOutputType = {
@@ -39082,6 +39083,7 @@ export namespace Prisma {
     lastAttemptAt: Date | null
     syncedAt: Date | null
     error: string | null
+    appliedAt: Date | null
   }
 
   export type SyncOperationCountAggregateOutputType = {
@@ -39097,6 +39099,7 @@ export namespace Prisma {
     lastAttemptAt: number
     syncedAt: number
     error: number
+    appliedAt: number
     _all: number
   }
 
@@ -39121,6 +39124,7 @@ export namespace Prisma {
     lastAttemptAt?: true
     syncedAt?: true
     error?: true
+    appliedAt?: true
   }
 
   export type SyncOperationMaxAggregateInputType = {
@@ -39135,6 +39139,7 @@ export namespace Prisma {
     lastAttemptAt?: true
     syncedAt?: true
     error?: true
+    appliedAt?: true
   }
 
   export type SyncOperationCountAggregateInputType = {
@@ -39150,6 +39155,7 @@ export namespace Prisma {
     lastAttemptAt?: true
     syncedAt?: true
     error?: true
+    appliedAt?: true
     _all?: true
   }
 
@@ -39252,6 +39258,7 @@ export namespace Prisma {
     lastAttemptAt: Date | null
     syncedAt: Date | null
     error: string | null
+    appliedAt: Date | null
     _count: SyncOperationCountAggregateOutputType | null
     _avg: SyncOperationAvgAggregateOutputType | null
     _sum: SyncOperationSumAggregateOutputType | null
@@ -39286,6 +39293,7 @@ export namespace Prisma {
     lastAttemptAt?: boolean
     syncedAt?: boolean
     error?: boolean
+    appliedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
 
@@ -39302,6 +39310,7 @@ export namespace Prisma {
     lastAttemptAt?: boolean
     syncedAt?: boolean
     error?: boolean
+    appliedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
 
@@ -39318,6 +39327,7 @@ export namespace Prisma {
     lastAttemptAt?: boolean
     syncedAt?: boolean
     error?: boolean
+    appliedAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
 
@@ -39334,9 +39344,10 @@ export namespace Prisma {
     lastAttemptAt?: boolean
     syncedAt?: boolean
     error?: boolean
+    appliedAt?: boolean
   }
 
-  export type SyncOperationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "entity" | "action" | "summary" | "payload" | "status" | "attempts" | "createdAt" | "lastAttemptAt" | "syncedAt" | "error", ExtArgs["result"]["syncOperation"]>
+  export type SyncOperationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "entity" | "action" | "summary" | "payload" | "status" | "attempts" | "createdAt" | "lastAttemptAt" | "syncedAt" | "error" | "appliedAt", ExtArgs["result"]["syncOperation"]>
   export type SyncOperationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -39365,6 +39376,11 @@ export namespace Prisma {
       lastAttemptAt: Date | null
       syncedAt: Date | null
       error: string | null
+      /**
+       * When this server applied the operation's effects (SYNC-DEDUPE-2). Separate from `status`,
+       * which tracks onward delivery to the cloud (Pending = to forward, Synced = forwarded).
+       */
+      appliedAt: Date | null
     }, ExtArgs["result"]["syncOperation"]>
     composites: {}
   }
@@ -39801,6 +39817,7 @@ export namespace Prisma {
     readonly lastAttemptAt: FieldRef<"SyncOperation", 'DateTime'>
     readonly syncedAt: FieldRef<"SyncOperation", 'DateTime'>
     readonly error: FieldRef<"SyncOperation", 'String'>
+    readonly appliedAt: FieldRef<"SyncOperation", 'DateTime'>
   }
     
 
@@ -45239,7 +45256,8 @@ export namespace Prisma {
     createdAt: 'createdAt',
     lastAttemptAt: 'lastAttemptAt',
     syncedAt: 'syncedAt',
-    error: 'error'
+    error: 'error',
+    appliedAt: 'appliedAt'
   };
 
   export type SyncOperationScalarFieldEnum = (typeof SyncOperationScalarFieldEnum)[keyof typeof SyncOperationScalarFieldEnum]
@@ -48594,6 +48612,7 @@ export namespace Prisma {
     lastAttemptAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     syncedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     error?: StringNullableFilter<"SyncOperation"> | string | null
+    appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }
 
@@ -48610,6 +48629,7 @@ export namespace Prisma {
     lastAttemptAt?: SortOrderInput | SortOrder
     syncedAt?: SortOrderInput | SortOrder
     error?: SortOrderInput | SortOrder
+    appliedAt?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
   }
 
@@ -48629,6 +48649,7 @@ export namespace Prisma {
     lastAttemptAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     syncedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     error?: StringNullableFilter<"SyncOperation"> | string | null
+    appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }, "id">
 
@@ -48645,6 +48666,7 @@ export namespace Prisma {
     lastAttemptAt?: SortOrderInput | SortOrder
     syncedAt?: SortOrderInput | SortOrder
     error?: SortOrderInput | SortOrder
+    appliedAt?: SortOrderInput | SortOrder
     _count?: SyncOperationCountOrderByAggregateInput
     _avg?: SyncOperationAvgOrderByAggregateInput
     _max?: SyncOperationMaxOrderByAggregateInput
@@ -48668,6 +48690,7 @@ export namespace Prisma {
     lastAttemptAt?: DateTimeNullableWithAggregatesFilter<"SyncOperation"> | Date | string | null
     syncedAt?: DateTimeNullableWithAggregatesFilter<"SyncOperation"> | Date | string | null
     error?: StringNullableWithAggregatesFilter<"SyncOperation"> | string | null
+    appliedAt?: DateTimeNullableWithAggregatesFilter<"SyncOperation"> | Date | string | null
   }
 
   export type DeviceWhereInput = {
@@ -52409,6 +52432,7 @@ export namespace Prisma {
     lastAttemptAt?: Date | string | null
     syncedAt?: Date | string | null
     error?: string | null
+    appliedAt?: Date | string | null
     tenant: TenantCreateNestedOneWithoutSyncOperationsInput
   }
 
@@ -52425,6 +52449,7 @@ export namespace Prisma {
     lastAttemptAt?: Date | string | null
     syncedAt?: Date | string | null
     error?: string | null
+    appliedAt?: Date | string | null
   }
 
   export type SyncOperationUpdateInput = {
@@ -52439,6 +52464,7 @@ export namespace Prisma {
     lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
+    appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     tenant?: TenantUpdateOneRequiredWithoutSyncOperationsNestedInput
   }
 
@@ -52455,6 +52481,7 @@ export namespace Prisma {
     lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
+    appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SyncOperationCreateManyInput = {
@@ -52470,6 +52497,7 @@ export namespace Prisma {
     lastAttemptAt?: Date | string | null
     syncedAt?: Date | string | null
     error?: string | null
+    appliedAt?: Date | string | null
   }
 
   export type SyncOperationUpdateManyMutationInput = {
@@ -52484,6 +52512,7 @@ export namespace Prisma {
     lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
+    appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SyncOperationUncheckedUpdateManyInput = {
@@ -52499,6 +52528,7 @@ export namespace Prisma {
     lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
+    appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type DeviceCreateInput = {
@@ -55527,6 +55557,7 @@ export namespace Prisma {
     lastAttemptAt?: SortOrder
     syncedAt?: SortOrder
     error?: SortOrder
+    appliedAt?: SortOrder
   }
 
   export type SyncOperationAvgOrderByAggregateInput = {
@@ -55545,6 +55576,7 @@ export namespace Prisma {
     lastAttemptAt?: SortOrder
     syncedAt?: SortOrder
     error?: SortOrder
+    appliedAt?: SortOrder
   }
 
   export type SyncOperationMinOrderByAggregateInput = {
@@ -55559,6 +55591,7 @@ export namespace Prisma {
     lastAttemptAt?: SortOrder
     syncedAt?: SortOrder
     error?: SortOrder
+    appliedAt?: SortOrder
   }
 
   export type SyncOperationSumOrderByAggregateInput = {
@@ -59826,6 +59859,7 @@ export namespace Prisma {
     lastAttemptAt?: Date | string | null
     syncedAt?: Date | string | null
     error?: string | null
+    appliedAt?: Date | string | null
   }
 
   export type SyncOperationUncheckedCreateWithoutTenantInput = {
@@ -59840,6 +59874,7 @@ export namespace Prisma {
     lastAttemptAt?: Date | string | null
     syncedAt?: Date | string | null
     error?: string | null
+    appliedAt?: Date | string | null
   }
 
   export type SyncOperationCreateOrConnectWithoutTenantInput = {
@@ -60800,6 +60835,7 @@ export namespace Prisma {
     lastAttemptAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     syncedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     error?: StringNullableFilter<"SyncOperation"> | string | null
+    appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
   }
 
   export type DeliveryOrderUpsertWithWhereUniqueWithoutTenantInput = {
@@ -70316,6 +70352,7 @@ export namespace Prisma {
     lastAttemptAt?: Date | string | null
     syncedAt?: Date | string | null
     error?: string | null
+    appliedAt?: Date | string | null
   }
 
   export type DeliveryOrderCreateManyTenantInput = {
@@ -71325,6 +71362,7 @@ export namespace Prisma {
     lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
+    appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SyncOperationUncheckedUpdateWithoutTenantInput = {
@@ -71339,6 +71377,7 @@ export namespace Prisma {
     lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
+    appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SyncOperationUncheckedUpdateManyWithoutTenantInput = {
@@ -71353,6 +71392,7 @@ export namespace Prisma {
     lastAttemptAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
+    appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type DeliveryOrderUpdateWithoutTenantInput = {

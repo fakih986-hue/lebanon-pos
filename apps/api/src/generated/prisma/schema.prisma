@@ -745,6 +745,9 @@ model SyncOperation {
   lastAttemptAt DateTime?
   syncedAt      DateTime?
   error         String?
+  /// When this server applied the operation's effects (SYNC-DEDUPE-2). Separate from `status`,
+  /// which tracks onward delivery to the cloud (Pending = to forward, Synced = forwarded).
+  appliedAt     DateTime?
 
   @@index([tenantId, status])
   @@index([tenantId, createdAt])

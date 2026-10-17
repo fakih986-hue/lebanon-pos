@@ -294,6 +294,9 @@ async function syncLoop(): Promise<void> {
 
 // ─── Push: local pending ops → Railway ───────────────────────────────────────
 
+/** One push of this hub's applied operations to the cloud (tests drive the bridge with it). */
+export function pushToCloudOnce(): Promise<void> { return pushToCloud() }
+
 async function pushToCloud(): Promise<void> {
   const tenantId = CLOUD_TENANT!
 
