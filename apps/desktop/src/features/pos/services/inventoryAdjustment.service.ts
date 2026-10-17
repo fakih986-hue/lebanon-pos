@@ -8,7 +8,8 @@ import {
   type InventoryBatch,
 } from "./inventoryBatch.service"
 import {
-  blockJournalEntry, check, closeJournalEntry, markDone, openJournalEntry, registerJournalRecoverer, type Check, type JournalEntry,
+  blockJournalEntry, check, closeJournalEntry, markDone, openJournalEntry, registerJournalCloser, registerJournalRecoverer,
+  type Check, type JournalEffect, type JournalEntry,
 } from "./businessJournal.service"
 import {
   decreaseProductStock,
@@ -204,6 +205,41 @@ function recoverAdjustment(entry: JournalEntry): "closed" | "blocked" {
   return "closed"
 }
 registerJournalRecoverer("adjustment", recoverAdjustment)
+
+// Close by hand: the product's stock and the lots it moved (known allocations; a lot it created
+// counts from 0). Without its recorded allocations the lots cannot be targeted: the close refuses.
+registerJournalCloser("adjustment", (entry) => {
+  const p = entry.plan as unknown as AdjustmentPlan
+  const product = getProductsSync().find((x) => x.id === p.productId)
+  const lotsNow = getInventoryBatches()
+  const sign = p.quantityChange > 0 ? 1 : -1
+  const lotEffects: JournalEffect[] = p.allocations
+    ? p.allocations.filter((a) => a.batchId && a.batchId !== "legacy-stock").map((a) => ({
+        kind: "lot" as const, key: a.batchId!, label: `lot ${a.batchNumber ?? a.batchId}`,
+        before: entry.before.lots[a.batchId!] ?? 0, delta: sign * a.quantity,
+        now: lotsNow.find((b) => b.id === a.batchId)?.quantityRemaining,
+      }))
+    : [{ kind: "lot" as const, key: `lots-of-${p.productId}`, label: `lots of ${product?.name ?? p.productId} (allocation not recorded)`, before: undefined, delta: 0, now: undefined }]
+  return {
+    money: "none",
+    recordHere: getStockAdjustments().some((a) => a.id === p.adjustmentId),
+    effects: [
+      { kind: "stock", key: String(p.productId), label: `${product?.name ?? `product #${p.productId}`} stock`, before: entry.before.stock[String(p.productId)], delta: p.quantityChange, now: product?.stock },
+      ...lotEffects,
+    ],
+  }
+}, (entry, keep) => {
+  const p = entry.plan as unknown as AdjustmentPlan
+  const movementId = `mv-${p.adjustmentId}`
+  const written = getStockMovements().some((mv) => mv.id === movementId)
+  const productName = getProductsSync().find((x) => x.id === p.productId)?.name ?? `Product #${p.productId}`
+  if (keep && !written) recordStockMovement({ id: movementId, productId: p.productId, productName, type: "Adjustment", quantity: p.quantityChange, reference: p.adjustmentId, note: `${p.reason} (closed by hand)` })
+  if (!keep && written) recordStockMovement({ id: `${movementId}-rev`, productId: p.productId, productName, type: "Adjustment", quantity: -p.quantityChange, reference: p.adjustmentId, note: "Interrupted adjustment cancelled by hand" })
+  if (keep) {
+    const record = getStockAdjustments().find((a) => a.id === p.adjustmentId)
+    if (record) commitStagedSyncOperation(entry.opIds[0], record) // the operation carries the record
+  }
+})
 
 function applyStockAdjustment(
   input: RecordStockAdjustmentInput,

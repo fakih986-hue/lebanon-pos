@@ -569,6 +569,19 @@ export function applyLotRestoration(slices: Array<{ batchId: string | null; quan
  * received and remaining quantities) and remove lots the interrupted workflow created. Only lots
  * passed in are touched.
  */
+/** Close by hand only (businessJournal): set the remaining quantity of the given lots, locally. */
+export function setLocalLotQuantities(quantities: Record<string, number>) {
+  if (Object.keys(quantities).length === 0) return
+  const next = getInventoryBatches().map((b) => {
+    if (!(b.id in quantities)) return b
+    const lot = { ...b, quantityRemaining: quantities[b.id] }
+    if (lot.quantityRemaining > 0) lot.status = "Open"
+    updateBatchStatus(lot)
+    return lot
+  })
+  writeBatches(next)
+}
+
 export function restoreLotsFromSnapshot(before: InventoryBatch[], createdIds: string[] = []) {
   const byId = new Map(before.map((b) => [b.id, b]))
   const created = new Set(createdIds)

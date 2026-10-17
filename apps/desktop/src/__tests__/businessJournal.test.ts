@@ -135,8 +135,14 @@ describe("checkout", () => {
     expect(ops().find((o) => o.entity === "sale")?.staged).toBe(true) // never sent while blocked
     expect(m.sync.getSyncStatus().staged).toBe(1)
 
-    expect(() => m.journal.closeBlockedJournalEntry(blocked[0].id, "")).toThrow(/Say what you checked/)
-    expect(m.journal.closeBlockedJournalEntry(blocked[0].id, "Counted Cola: 3. Posted a count.")).toBe(true)
+    // The person sees what it touched and what closing does (not recorded -> cancel, set back).
+    const preview = m.journal.previewBlockedJournalEntry(blocked[0].id)!
+    expect(preview.outcome).toBe("cancel")
+    expect(preview.effects.find((e) => e.key === "lot-a")).toMatchObject({ before: 6, now: 2, target: 6 })
+    expect(preview.requiredPermissions).toEqual(["sales.void", "inventory.adjust"])
+    expect(() => m.journal.closeBlockedJournalEntry(blocked[0].id, "", preview)).toThrow(/Say what you checked/)
+    expect(m.journal.closeBlockedJournalEntry(blocked[0].id, "Counted Cola: 3. Posted a count.", preview)).toBe(true)
+    expect(lots().find((b) => b.id === "lot-a")?.quantityRemaining).toBe(6) // resolved to the shown target
     expect(m.journal.getBlockedJournalEntries()).toEqual([])
     expect(ops().filter((o) => o.entity === "sale")).toEqual([]) // not committed -> removed, never sent
     expect(read<{ action: string }>(K.audit).some((a) => a.action === "journal.closed_by_hand")).toBe(true)
@@ -367,5 +373,79 @@ describe("movement ledger", () => {
     spy.mockRestore()
     expect(ids().some((id) => id.startsWith("mv-adj-x"))).toBe(false)
     expectLedgerFollowsStock(b0)
+  })
+})
+
+describe("close by hand", () => {
+  /** A checkout blocked after its commit point: a debt sale recorded, stock moved by something else. */
+  async function blockedCommittedCheckout() {
+    let m = await svc()
+    const c = await cart(m, 3, true)
+    const spy = failKeys({ [K.products]: 0 })
+    expect(m.sales.checkoutLocalSale(c).status).toBe("blocked")
+    spy.mockRestore()
+    localStorage.setItem(K.products, JSON.stringify(read<{ id: number; stock: number }>(K.products).map((p) => (p.id === 1 ? { ...p, stock: 9 } : p)))) // neither 10 nor 7
+    m = await restart()
+    const [entry] = m.journal.getBlockedJournalEntries()
+    expect(entry).toBeTruthy()
+    return { m, c, entry }
+  }
+  const asUser = (permissions: string[], role = "Cashier") => {
+    localStorage.setItem(K.users, JSON.stringify([{ id: "u2", name: "Stock clerk", role, pin: "X", code: "SC", active: true, permissions }]))
+    localStorage.setItem(K.current, "u2")
+  }
+
+  it("a recorded debt sale: keep and send — figures resolved, debt and movements completed, then released", async () => {
+    const { m, c, entry } = await blockedCommittedCheckout()
+    const preview = m.journal.previewBlockedJournalEntry(entry.id)!
+    expect(preview.outcome).toBe("keep_and_send")
+    expect(preview.effects.find((e) => e.kind === "stock")).toMatchObject({ before: 10, now: 9, target: 7 })
+    expect(preview.requiredPermissions).toEqual(["sales.void", "inventory.adjust", "customers.manage"])
+    expect(ops().find((o) => o.payload?.id === c.sale.id)?.staged).toBe(true)
+
+    m.journal.closeBlockedJournalEntry(entry.id, "Counted 7 Cola; the sale happened.", preview)
+    expect(stockOf(1)).toBe(7)
+    expect(read(K.debtSales)).toHaveLength(1)
+    expect(read<{ id: string }>(K.movements).some((x) => x.id === `mv-sale-${c.sale.id}-0`)).toBe(true)
+    expect(ops().find((o) => o.payload?.id === c.sale.id)?.staged).toBeUndefined() // released only now
+    expect(m.journal.getBlockedJournalEntries()).toEqual([])
+  })
+
+  it("inventory permission alone cannot settle a sale; it can settle an adjustment", async () => {
+    const { m, entry } = await blockedCommittedCheckout()
+    asUser(["inventory.view", "inventory.adjust"])
+    const preview = m.journal.previewBlockedJournalEntry(entry.id)!
+    expect(preview.missingPermissions).toEqual(["sales.void", "customers.manage"])
+    expect(() => m.journal.closeBlockedJournalEntry(entry.id, "note", preview)).toThrow(/needs: sales.void, customers.manage/)
+    expect(m.journal.getBlockedJournalEntries()).toHaveLength(1)
+    expect(stockOf(1)).toBe(9) // nothing changed
+
+    // An adjustment blocked before its record: the same clerk may close it (cancel: set back).
+    const m2 = await restart()
+    const spy = failKeys({ [K.adjustments]: 0, [K.batches]: 1 })
+    expect(() => m2.adj.recordStockAdjustment({ productId: 1, quantityChange: -2, reason: "Damage", id: "adj-c" })).toThrow()
+    spy.mockRestore()
+    localStorage.setItem(K.products, JSON.stringify(read<{ id: number; stock: number }>(K.products).map((p) => (p.id === 1 ? { ...p, stock: 5 } : p))))
+    const m3 = await restart()
+    const adjEntry = m3.journal.getBlockedJournalEntries().find((e) => e.kind === "adjustment")!
+    const p2 = m3.journal.previewBlockedJournalEntry(adjEntry.id)!
+    expect(p2.outcome).toBe("cancel")
+    expect(p2.missingPermissions).toEqual([])
+    m3.journal.closeBlockedJournalEntry(adjEntry.id, "Counted: no damage after all.", p2)
+    expect(ops().some((o) => o.id === "op-adj-c")).toBe(false)
+  })
+
+  it("figures that moved since the review, or effects not on this device, refuse the close", async () => {
+    const { m, entry } = await blockedCommittedCheckout()
+    const preview = m.journal.previewBlockedJournalEntry(entry.id)!
+    // Something changes the target after the person reviewed it (here: the "before" changes its basis).
+    const stale = { ...preview, effects: preview.effects.map((e) => (e.kind === "stock" ? { ...e, target: 8 } : e)) }
+    expect(() => m.journal.closeBlockedJournalEntry(entry.id, "note", stale)).toThrow(/figures changed/)
+    // The product is not on this device any more (store data replaced): cannot be resolved here.
+    localStorage.setItem(K.products, JSON.stringify([]))
+    const gone = m.journal.previewBlockedJournalEntry(entry.id)!
+    expect(gone.unresolvable.length).toBeGreaterThan(0)
+    expect(() => m.journal.closeBlockedJournalEntry(entry.id, "note", gone)).toThrow(/cannot be resolved on this device/)
+    expect(ops().find((o) => o.entity === "sale")?.staged).toBe(true) // still held
   })
 })

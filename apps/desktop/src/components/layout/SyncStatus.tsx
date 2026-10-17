@@ -3,8 +3,7 @@ import { createPortal } from "react-dom"
 import { AlertTriangle, Cloud, CloudOff, RotateCw, X } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
-import { closeBlockedJournalEntry, getBlockedJournalEntries, type JournalEntry } from "../../features/pos/services/businessJournal.service"
-import { userCan } from "../../features/pos/services/security.service"
+import { closeBlockedJournalEntry, getBlockedJournalEntries, previewBlockedJournalEntry, type JournalEntry } from "../../features/pos/services/businessJournal.service"
 import {
   clearSyncQueue,
   flushSyncQueue,
@@ -41,6 +40,9 @@ export default function SyncStatus() {
   // Interrupted multi-step changes (checkout, void, adjustment) that could not be settled safely.
   const [blocked, setBlocked] = useState<JournalEntry[]>(() => { try { return getBlockedJournalEntries() } catch { return [] } })
   const [closeNote, setCloseNote] = useState<Record<string, string>>({})
+  const [reviewing, setReviewing] = useState<string | null>(null)
+  const [ack, setAck] = useState(false)
+  const [closeError, setCloseError] = useState("")
   const refreshBlocked = useCallback(() => { try { setBlocked(getBlockedJournalEntries()) } catch { setBlocked([]) } }, [])
   useEffect(() => subscribeSync(refreshBlocked), [refreshBlocked])
   const [open, setOpen] = useState(false)
@@ -220,16 +222,51 @@ export default function SyncStatus() {
                     {" · "}{entry.committed ? t("sync.v2.committed") : t("sync.v2.not_committed")}
                   </p>
                   <p dir="ltr">{entry.blocked?.detail}</p>
-                  {userCan("inventory.adjust") ? (
-                    <div className="mt-1 flex gap-1">
-                      <input className="mg2-input" style={{ minHeight: 32, fontSize: 12 }} aria-label={t("sync.v2.close_note")} placeholder={t("sync.v2.close_note")}
-                        value={closeNote[entry.id] ?? ""} onChange={(e) => setCloseNote((n) => ({ ...n, [entry.id]: e.target.value }))} />
-                      <button type="button" className="mg2-btn" style={{ minHeight: 32, fontSize: 12 }} disabled={!(closeNote[entry.id] ?? "").trim()}
-                        onClick={() => { try { closeBlockedJournalEntry(entry.id, closeNote[entry.id] ?? "") } catch (e) { console.error(e) } refreshBlocked(); setStatus(getSyncStatus()) }}>
-                        {t("sync.v2.close")}
-                      </button>
-                    </div>
-                  ) : <p>{t("sync.v2.close_needs_permission")}</p>}
+                  {reviewing !== entry.id ? (
+                    <button type="button" className="mg2-btn mt-1" style={{ minHeight: 32, fontSize: 12 }} onClick={() => { setReviewing(entry.id); setAck(false); setCloseError("") }}>
+                      {t("sync.v2.review_close")}
+                    </button>
+                  ) : (() => {
+                    const preview = previewBlockedJournalEntry(entry.id)
+                    if (!preview) return null
+                    const blockedBy = preview.missingPermissions.length > 0 || preview.unresolvable.length > 0
+                    return (
+                      <div className="mt-2 flex flex-col gap-2">
+                        <p style={{ color: "var(--text)" }}>{t(preview.outcome === "keep_and_send" ? "sync.v2.outcome_keep" : "sync.v2.outcome_cancel", { kind: t(`sync.v2.kind.${entry.kind}`) })}</p>
+                        <table className="w-full text-[12px]" aria-label={t("sync.v2.effects")}>
+                          <thead><tr style={{ color: "var(--text-3)" }}><th className="text-start">{t("sync.v2.col.effect")}</th><th className="text-end">{t("sync.v2.col.before")}</th><th className="text-end">{t("sync.v2.col.now")}</th><th className="text-end">{t("sync.v2.col.target")}</th></tr></thead>
+                          <tbody>
+                            {preview.effects.map((e) => (
+                              <tr key={e.key}><td>{e.label}</td><td className="text-end" dir="ltr">{e.before ?? "?"}</td><td className="text-end" dir="ltr">{e.now ?? "—"}</td><td className="text-end font-semibold" dir="ltr" style={{ color: "var(--text)" }}>{e.target ?? "?"}</td></tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        {preview.missingPermissions.length > 0 && <p style={{ color: "var(--v2-err)" }}>{t("sync.v2.missing_perms", { perms: preview.missingPermissions.join(", ") })}</p>}
+                        {preview.unresolvable.length > 0 && <p style={{ color: "var(--v2-err)" }}>{t("sync.v2.unresolvable", { list: preview.unresolvable.map((e) => e.label).join(", ") })}</p>}
+                        {!blockedBy && (
+                          <>
+                            <input className="mg2-input" style={{ minHeight: 32, fontSize: 12 }} aria-label={t("sync.v2.close_note")} placeholder={t("sync.v2.close_note")}
+                              value={closeNote[entry.id] ?? ""} onChange={(e) => setCloseNote((n) => ({ ...n, [entry.id]: e.target.value }))} />
+                            <label className="flex items-center gap-2"><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} />{t("sync.v2.ack")}</label>
+                          </>
+                        )}
+                        {closeError && <p role="alert" style={{ color: "var(--v2-err)" }}>{closeError}</p>}
+                        <div className="flex gap-1">
+                          <button type="button" className="mg2-btn" style={{ minHeight: 32, fontSize: 12 }} disabled={blockedBy || !ack || !(closeNote[entry.id] ?? "").trim()}
+                            onClick={() => {
+                              try {
+                                closeBlockedJournalEntry(entry.id, closeNote[entry.id] ?? "", preview)
+                                setReviewing(null)
+                              } catch (e) { setCloseError(String((e as Error)?.message ?? e)) }
+                              refreshBlocked(); setStatus(getSyncStatus())
+                            }}>
+                            {t("sync.v2.close")}
+                          </button>
+                          <button type="button" className="mg2-btn mg2-btn-ghost" style={{ minHeight: 32, fontSize: 12 }} onClick={() => setReviewing(null)}>{t("sync.v2.back")}</button>
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </div>
               ))}
             </div>

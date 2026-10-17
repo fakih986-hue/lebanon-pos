@@ -1,10 +1,11 @@
 import type { Product } from "../types/product"
 import type { BatchAllocation } from "./inventoryBatch.service"
-import { applyLotRestoration, consumeInventoryBatches, getInventoryBatches, getStockMovements, recordStockMovement, restoreLotsFromSnapshot, type ConsumeBatchInput, type InventoryBatch } from "./inventoryBatch.service"
-import { increaseProductStock, decreaseProductStock, getProductsSync } from "./product.service"
+import { applyLotRestoration, consumeInventoryBatches, getInventoryBatches, getStockMovements, recordStockMovement, restoreLotsFromSnapshot, setLocalLotQuantities, type ConsumeBatchInput, type InventoryBatch } from "./inventoryBatch.service"
+import { increaseProductStock, decreaseProductStock, getProductsSync, setLocalStockLevels } from "./product.service"
 import { reverseDebtSale, recordDebtPayment, recordDebtSale, getDebtPayments, type RecordDebtSaleInput } from "./customer.service"
 import {
-  blockJournalEntry, check, closeJournalEntry, markDone, openJournalEntry, registerJournalRecoverer, type Check, type JournalEntry,
+  blockJournalEntry, check, closeJournalEntry, markDone, openJournalEntry, registerJournalCloser, registerJournalRecoverer,
+  registerLocalQuantitySetter, type Check, type JournalEffect, type JournalEntry,
 } from "./businessJournal.service"
 import {
   buildRefundableLines, planRefund, planVoidRestoration, assertRefundAmount, resolveRefundRate,
@@ -1042,6 +1043,58 @@ function recoverCheckout(entry: JournalEntry): "closed" | "blocked" {
   return "closed"
 }
 registerJournalRecoverer("checkout", recoverCheckout)
+
+// Close by hand (businessJournal): what a checkout / void touched, and how each finishes.
+function quantityEffects(stock: StockLine[], slices: LotSlice[], before: JournalEntry["before"], sign: 1 | -1): JournalEffect[] {
+  const products = getProductsSync()
+  const lots = getInventoryBatches()
+  const perProduct = new Map<number, number>()
+  for (const l of stock) perProduct.set(l.productId, (perProduct.get(l.productId) ?? 0) + l.quantity)
+  const perLot = new Map<string, number>()
+  for (const s of slices) perLot.set(s.batchId, (perLot.get(s.batchId) ?? 0) + s.quantity)
+  return [
+    ...[...perProduct].map(([id, qty]) => {
+      const product = products.find((x) => x.id === id)
+      return { kind: "stock" as const, key: String(id), label: `${product?.name ?? `product #${id}`} stock`, before: before.stock[String(id)], delta: sign * qty, now: product?.stock }
+    }),
+    ...[...perLot].map(([id, qty]) => {
+      const lot = lots.find((b) => b.id === id)
+      return { kind: "lot" as const, key: id, label: `lot ${lot?.batchNumber ?? id}`, before: before.lots[id], delta: sign * qty, now: lot?.quantityRemaining }
+    }),
+  ]
+}
+registerJournalCloser("checkout", (entry) => {
+  const p = entry.plan as unknown as CheckoutPlan
+  return { money: p.debt ? "debt" : "sale", recordHere: readSales().some((s) => s.id === p.saleId), effects: quantityEffects(p.stock, p.slices, entry.before, -1) }
+}, (entry, keep) => {
+  const p = entry.plan as unknown as CheckoutPlan
+  if (keep) {
+    if (p.debt) recordDebtSale({ ...p.debt, saleId: p.saleId })
+    ;(p.lots ?? []).forEach((line, i) => {
+      if (!movementExists(saleMovementId(p.saleId, i))) recordStockMovement({ id: saleMovementId(p.saleId, i), productId: line.productId, productName: line.productName, type: "Sale", quantity: -line.quantity, reference: p.saleNumber, note: `Sale ${p.saleNumber} (closed by hand)` })
+    })
+  } else {
+    ;(p.lots ?? []).forEach((line, i) => {
+      if (movementExists(saleMovementId(p.saleId, i))) recordStockMovement({ id: `${saleMovementId(p.saleId, i)}-rev`, productId: line.productId, productName: line.productName, type: "Refund", quantity: line.quantity, reference: p.saleNumber, note: `Interrupted checkout ${p.saleNumber} cancelled by hand` })
+    })
+  }
+})
+registerJournalCloser("void", (entry) => {
+  const p = entry.plan as unknown as VoidPlan
+  return { money: p.isDebt ? "debt" : "sale", recordHere: readSales().find((s) => s.id === p.saleId)?.status === "Voided", effects: quantityEffects(p.stock, p.slices, entry.before, 1) }
+}, (entry, keep) => {
+  const p = entry.plan as unknown as VoidPlan
+  if (!keep) return
+  if (readSales().some((s) => s.id === p.saleId && s.status !== "Voided")) {
+    writeSales(readSales().map((s) => (s.id === p.saleId ? { ...s, status: "Voided" as const } : s)))
+  }
+  if (p.isDebt) reverseDebtSale({ id: p.saleId, saleNumber: p.saleNumber, customerId: p.customerId ?? undefined })
+  recordVoidMovements(p.saleId, p.saleNumber, p.stock)
+})
+registerLocalQuantitySetter((stock, lots) => {
+  setLocalStockLevels(stock)
+  setLocalLotQuantities(lots)
+})
 
 // ── snapshot helpers for the journal ─────────────────────────────────────────
 type LotSlice = { batchId: string; quantity: number }

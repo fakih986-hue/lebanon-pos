@@ -14,7 +14,7 @@
 // anything else -> the entry is BLOCKED and shown, with the figures, until a person closes it.
 // Nothing is silently abandoned.
 import { commitStagedSyncOperation, discardStagedSyncOperation, getCurrentTenantId, registerPreRecoveryHook, registerStagedOwner, registerStoreSwitchHook } from "./sync.service"
-import { getCurrentUser, PermissionError, recordAuditEvent, userCan } from "./security.service"
+import { getCurrentUser, PermissionError, recordAuditEvent, userCan, type Permission } from "./security.service"
 import { createId } from "../lib/storage"
 
 export const BUSINESS_JOURNAL_KEY = "lebanonpos.business-journal.v1"
@@ -149,42 +149,120 @@ export function recoverBusinessJournal(): { closed: number; blocked: number } {
   return result
 }
 
-/**
- * A person checked a blocked entry (counted stock, looked at the lots) and closes it with a note.
- * Its staged operations are released if the commit point was reached, removed otherwise — the
- * caller passes the settle function so this module does not decide money or stock by itself.
- */
-export function closeBlockedEntryByHand(entryId: string, by: string, note: string, settleOps: (entry: JournalEntry) => void) {
-  const entry = readAll().find((e) => e.id === entryId && e.tenantKey === tenantKey())
-  if (!entry || entry.status !== "blocked") return false
-  if (!note.trim()) throw new Error("Say what you checked and did before closing it.")
-  entry.closedByHand = { by, note: note.trim(), at: new Date().toISOString() }
-  settleOps(entry)
-  return closeJournalEntry(entry)
+// ── Close by hand ──────────────────────────────────────────────────────────────
+// A blocked entry is closed only after a person has seen exactly what it touched and what closing
+// will do, with the permissions its money and stock need. Closing first RESOLVES every effect on
+// this device to the shown target (recorded change: as planned; unrecorded: as before), then
+// finishes the workflow (debt, movements) and only then releases or removes its operation — an
+// operation is never sent with its local effects left unresolved.
+
+export type JournalEffect = {
+  kind: "stock" | "lot"
+  /** Product id or lot id. */
+  key: string
+  label: string
+  /** Recorded before the change, the planned change, and the value now (undefined: not on this device). */
+  before: number | undefined
+  delta: number
+  now: number | undefined
+}
+export type JournalDescription = {
+  effects: JournalEffect[]
+  /** Settling this change decides money (a sale or void) and, for a debt sale, a customer balance. */
+  money: "none" | "sale" | "debt"
+  /** The change's own record is on this device (the sale, the Voided status, the adjustment). */
+  recordHere: boolean
+}
+type Describer = (entry: JournalEntry) => JournalDescription
+/** Finishes a workflow after its quantities were resolved: committed -> keep and send; else cancel. */
+type Finisher = (entry: JournalEntry, keep: boolean) => void
+const describers = new Map<JournalKind, Describer>()
+const finishers = new Map<JournalKind, Finisher>()
+export function registerJournalCloser(kind: JournalKind, describe: Describer, finish: Finisher) {
+  describers.set(kind, describe)
+  finishers.set(kind, finish)
+}
+
+export type ClosePreview = {
+  entry: JournalEntry
+  /** Recorded (the sale/void/adjustment stands and is sent) or not (cancelled, nothing sent). */
+  outcome: "keep_and_send" | "cancel"
+  effects: Array<JournalEffect & { target: number | undefined }>
+  /** Effects this device cannot set (the product or lot is not here, e.g. after a store switch). */
+  unresolvable: JournalEffect[]
+  requiredPermissions: Permission[]
+  missingPermissions: Permission[]
+}
+
+/** What closing this blocked entry would do: shown to the person before they confirm. */
+export function previewBlockedJournalEntry(entryId: string): ClosePreview | null {
+  const entry = getBlockedJournalEntries().find((e) => e.id === entryId)
+  const describe = entry ? describers.get(entry.kind) : undefined
+  if (!entry || !describe) return null
+  const d = describe(entry)
+  const keep = entry.committed || d.recordHere
+  const effects = d.effects.map((e) => ({ ...e, target: e.before === undefined ? undefined : keep ? e.before + e.delta : e.before }))
+  const required: Permission[] = d.money === "none" ? ["inventory.adjust"] : d.money === "debt" ? ["sales.void", "inventory.adjust", "customers.manage"] : ["sales.void", "inventory.adjust"]
+  return {
+    entry,
+    outcome: keep ? "keep_and_send" : "cancel",
+    effects,
+    unresolvable: effects.filter((e) => e.now === undefined || e.target === undefined),
+    requiredPermissions: required,
+    missingPermissions: required.filter((p) => !userCan(p)),
+  }
 }
 
 /**
- * Close a blocked entry after checking it by hand (inventory.adjust, audited). Its operations are
- * released when the commit point was reached (the sale/void/adjustment stands and the server must
- * learn of it), removed otherwise (it never happened on the server either).
+ * Close a blocked entry by hand. Requires the permissions its money and stock need, a note, and
+ * the person's acknowledgement of the preview they saw (same outcome and targets). Effects that
+ * cannot be resolved on this device block the close.
  */
-export function closeBlockedJournalEntry(entryId: string, note: string) {
-  if (!userCan("inventory.adjust")) throw new PermissionError("You do not have permission to close an interrupted change.")
-  const entry = getBlockedJournalEntries().find((e) => e.id === entryId)
-  if (!entry) return false
+export function closeBlockedJournalEntry(entryId: string, note: string, acknowledged: Pick<ClosePreview, "outcome" | "effects">) {
+  const preview = previewBlockedJournalEntry(entryId)
+  if (!preview) return false
+  if (preview.missingPermissions.length > 0) {
+    throw new PermissionError(`Closing this ${preview.entry.kind} needs: ${preview.missingPermissions.join(", ")}.`)
+  }
+  if (!note.trim()) throw new Error("Say what you checked and did before closing it.")
+  const sameTargets = acknowledged.outcome === preview.outcome
+    && acknowledged.effects.length === preview.effects.length
+    && acknowledged.effects.every((e, i) => e.key === preview.effects[i].key && e.target === preview.effects[i].target)
+  if (!sameTargets) throw new Error("The figures changed since you reviewed them: review the change again before closing it.")
+  if (preview.unresolvable.length > 0) {
+    throw new Error(`These effects cannot be resolved on this device: ${preview.unresolvable.map((e) => e.label).join(", ")}. Refresh this store's data first.`)
+  }
+  const entry = preview.entry
+  const keep = preview.outcome === "keep_and_send"
   const by = getCurrentUser()?.name ?? "unknown"
-  const ok = closeBlockedEntryByHand(entryId, by, note, (e) => {
-    for (const id of e.opIds) {
-      if (e.committed) commitStagedSyncOperation(id)
-      else discardStagedSyncOperation(id)
-    }
-  })
+  // 1. Resolve every effect to its shown target (local only: the server's effects come from the
+  //    operation itself, or never happen).
+  setLocalQuantities(
+    Object.fromEntries(preview.effects.filter((e) => e.kind === "stock").map((e) => [e.key, e.target!])),
+    Object.fromEntries(preview.effects.filter((e) => e.kind === "lot").map((e) => [e.key, e.target!])),
+  )
+  // 2. Finish the workflow (debt, movements), 3. then release or remove its operations.
+  finishers.get(entry.kind)!(entry, keep)
+  for (const id of entry.opIds) {
+    if (keep) commitStagedSyncOperation(id)
+    else discardStagedSyncOperation(id)
+  }
+  entry.closedByHand = { by, note: note.trim(), at: new Date().toISOString() }
+  const closed = closeJournalEntry(entry)
   try {
     recordAuditEvent({
       action: "journal.closed_by_hand", entity: "sync",
-      summary: `Interrupted ${entry.kind} closed by ${by}: ${note.trim()} [${entry.blocked?.detail ?? ""}]`,
-      metadata: { entryId, kind: entry.kind, committed: entry.committed, step: entry.blocked?.reason ?? null },
+      summary: `Interrupted ${entry.kind} ${keep ? "kept and sent" : "cancelled"} by ${by}: ${note.trim()} [${preview.effects.map((e) => `${e.label} ${e.now}→${e.target}`).join("; ")}]`,
+      metadata: { entryId, kind: entry.kind, outcome: preview.outcome, step: entry.blocked?.reason ?? null },
     })
   } catch (error) { console.error("[journal] audit write failed:", error) }
-  return ok
+  return closed
+}
+
+// Local quantity setters live with their data; the journal receives them at startup (no cycle).
+let setLocalQuantities: (stock: Record<string, number>, lots: Record<string, number>) => void = () => {
+  throw new Error("Quantity setters are not registered.")
+}
+export function registerLocalQuantitySetter(fn: typeof setLocalQuantities) {
+  setLocalQuantities = fn
 }

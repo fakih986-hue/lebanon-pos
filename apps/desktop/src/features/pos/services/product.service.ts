@@ -1294,3 +1294,10 @@ export function revertUnsentReceiveStock(productId: number, quantity: number) {
   writeProducts(next)
   return { before, after }
 }
+
+/** Close by hand only (businessJournal): set this device's stock of the given products, locally. */
+export function setLocalStockLevels(levels: Record<string, number>) {
+  const ids = Object.keys(levels)
+  if (ids.length === 0) return
+  writeProducts(getProductsSync().map((p) => (String(p.id) in levels ? { ...p, stock: levels[String(p.id)] } : p)))
+}
