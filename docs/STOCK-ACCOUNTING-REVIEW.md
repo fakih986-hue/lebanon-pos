@@ -289,7 +289,8 @@ Device side (local storage, sync queue) and server side (push handler). Each ite
 | Store switch | An unfinished entry was settled on return against wiped data; a committed sale's operation could be discarded | Unfinished entries are blocked at the switch; never settled automatically against replaced data |
 | Ledger | Random movement ids; void and positive adjustment recorded no movement; a reversal was written even when the original was not | Fixed ids per record (`mv-sale-*`, `mv-void-*`, `mv-<adjustmentId>`); completed once, reversed only if written |
 | Close by hand | Inventory permission alone, a one-line summary, and release with effects unresolved | Preview of every effect (before / now / will be) and outcome; `sales.void` + `inventory.adjust` (+ `customers.manage` for debt) for a sale or void; effects resolved before release; stale or unresolvable previews refused |
-| Hub write-through checkout | A sale committed on the hub with a lost answer could be rung again under a new id after "hub down" or a reload | Pending hub sale saved first: the same cart re-sends the same sale; a different cart is held until the earlier one is confirmed |
+| Hub write-through checkout | A sale committed on the hub with a lost answer could be rung again under a new id after "hub down" or a reload | Pending hub sale saved first: the same cart re-sends the same sale; a different cart is held until the earlier one is settled |
+| Hub attempt in flight | A "not committed" answer cleared the pending sale while its original request could still land; a different cart was then charged too (reproduced: two sales) | The attempt (`wt-<saleId>`) is settled on the hub terminally: `POST /api/sync/checkout-attempt/:opId/cancel` takes the push's claim lock and answers `committed` (it waits if the original is applying) or `cancelled` (recorded; a later push of it is refused, `CHECKOUT_CANCELLED`). `GET …/checkout-attempt/:opId` answers `open` while unresolved, which settles nothing. The till keeps the pending sale per store (reload, store switch) until resolved, blocks a different cart, and shows a POS banner with "check with the hub" |
 | Server dedupe | "Applied" and "forwarded" were one status; concurrent duplicates raced, one failure rewrote the applied row as Failed (never forwarded), once a wrong balance | `appliedAt` separate from forwarding status; claim (`INSERT … ON CONFLICT` + `FOR UPDATE`) in the applying transaction; the failure path never touches an applied row |
 | Operation id reuse | An id already applied was acknowledged whatever it now carried | Same entity, action and payload (key-order independent) required, otherwise `OPERATION_ID_REUSED` |
 | Lot receive resend | An existing lot's "metadata" update rewrote its quantities | Existing lots take metadata only |
@@ -305,9 +306,9 @@ Device side (local storage, sync queue) and server side (push handler). Each ite
 
 | Suite | Result | Kind |
 |---|---|---|
-| API, all | 22 files, 320 tests, pass (2026-10-17) | Real-Postgres suites ran against the scratch DB `lebanonpos_refund_it` |
+| API, all | 22 files, 323 tests, pass (2026-10-17) | Real-Postgres suites ran against the scratch DB `lebanonpos_refund_it` |
 | `sync-dedupe.test.ts` | 6 / 6 | Real Postgres, hub + cloud (R8); against the previous handler: concurrent duplicates errored, once a wrong balance; id reuse acknowledged |
-| `device-durability.test.ts` | 7 / 7 | Desktop services → real API → Postgres (R8); hub checkout: 2 extra sales without the fix |
+| `device-durability.test.ts` | 10 / 10 | Desktop services → real API → Postgres (R8); hub checkout: 2 extra sales without the fix. Race: the original request held before / after its claim while status is queried and a replacement checkout cancels; one sale and one stock deduction either way; reload and store switch keep the attempt. With "not found = gone" the late original commits a second sale |
 | `old-client-adjustments.test.ts` | 8 / 8 | Real Postgres (new) |
 | `z-report-close.test.ts` | 3 / 3 | Real Postgres (new); on the old handler, 2 of 3 failed: cash arithmetic and cross-tenant close |
 | `refund-integrity.test.ts` | 13 / 13 | Real Postgres (+1: duplicate refund numbers) |
@@ -327,11 +328,12 @@ Fixed:
 1. ~~Sale, shift, expense and PO number uniqueness~~ (R7).
 2. ~~Hub write-through: a lost confirmation allowed a second checkout~~ (R8).
 3. ~~Journal entries across a store switch; movement integrity; close-by-hand permissions and resolution; operation id reuse; server dedupe apart from forwarding~~ (R8).
+3a. ~~Hub write-through attempt still in flight when the till asked: a different cart could also be charged~~ (R8, terminal attempt resolution; real-Postgres race test).
 
 Open:
 4. **Writers without staging** (R8, "Not covered"): customers, shifts, daily close, stock counts, held sales, catalogue. They report storage failures honestly but are not recovered automatically. Decide whether any is release-blocking; **shifts and daily close carry cash figures**.
 5. **A stashed "unbound" conflict has no UI yet.** It is kept and listed by `getStashedMoneyConflictSummary()`, but only diagnostics can see it.
-6. **Hub write-through, narrow case.** The pending hub sale is forgotten only on a definitive "not committed" from the hub; if the first request were still in flight at that moment and landed later, a different cart could also be charged. The local finalize after a hub commit is not journaled (the hub owns the sale; the till refreshes from it).
+6. **Hub write-through, local finalize not journaled.** The in-flight race is closed (3a). After the hub commits, recording the sale on the till is not journaled; if it fails, the till refreshes from the hub (the hub owns the sale). A pending attempt also blocks a different cart for as long as the hub is unreachable; the cashier sees the banner and can retry.
 7. **Legacy server rows** in `Failed`/`Rejected` have no `appliedAt`; their retries still rely on record-level idempotency (all money/stock handlers are idempotent by record id).
 8. **Close by hand is a minimal form in Sync status** (no screen migration in this round).
 9. **Genuine storage-full test on a device**: storage failures were simulated by failing writes.
