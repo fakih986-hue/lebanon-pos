@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { CheckCircle, Info, X, XCircle, AlertTriangle } from "lucide-react"
 
 export type ToastType = "success" | "error" | "info" | "warning"
@@ -36,13 +36,13 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: (id: 
   return (
     <div
       role="alert"
-      className="pointer-events-auto flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-250"
+      className="flex w-full max-w-[440px] items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-250"
       style={{
         background: bg,
         borderColor: border,
         boxShadow: "var(--shadow-lg)",
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateX(0)" : "translateX(24px)",
+        transform: visible ? "translateY(0)" : "translateY(12px)",
       }}
     >
       <Icon size={16} className="shrink-0" style={{ color: text }} />
@@ -60,25 +60,33 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: (id: 
   )
 }
 
-export default function ToastContainer({
-  toasts,
-  onDismiss,
-  position = "top-end",
-}: {
-  toasts: ToastMessage[]
-  onDismiss: (id: string) => void
-  /** POS routes use bottom-center (cashier eyes live low); owner routes top-end. */
-  position?: "bottom-center" | "top-end"
-}) {
-  if (toasts.length === 0) return null
-  const posClass = position === "bottom-center"
-    ? "bottom-24 left-1/2 -translate-x-1/2 items-center sm:bottom-6"
-    : "top-16 end-4 items-end"
+export default function ToastContainer({ toasts, onDismiss }: { toasts: ToastMessage[]; onDismiss: (id: string) => void }) {
+  // Rendered IN the layout (a strip under the page, above the phone's bottom navigation), not
+  // floating over it: while a toast shows, the page area is that much shorter, so a toast never
+  // covers a control on any screen size. Important outcomes stay inline on their page; the store
+  // keeps at most two toasts.
+  const ref = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    // The register's pay bar (phones and tablets) is fixed over the bottom of the page, which keeps
+    // room for it: move the strip up into that room so neither covers the other.
+    const place = () => {
+      const el = ref.current
+      if (!el) return
+      el.style.transform = ""
+      const bar = document.querySelector<HTMLElement>(".mg2-paybar")
+      if (!toasts.length || !bar) return
+      const css = getComputedStyle(bar)
+      if (css.display === "none" || css.visibility === "hidden") return
+      const overlap = el.getBoundingClientRect().bottom - bar.getBoundingClientRect().top
+      if (overlap > 0) el.style.transform = `translateY(-${Math.ceil(overlap)}px)`
+    }
+    place()
+    const later = window.setTimeout(place, 250) // after a route's enter animation settles
+    window.addEventListener("resize", place)
+    return () => { window.clearTimeout(later); window.removeEventListener("resize", place) }
+  }, [toasts.length])
   return (
-    <div
-      className={`pointer-events-none fixed z-[100] flex flex-col gap-2 ${posClass}`}
-      aria-live="polite"
-    >
+    <div ref={ref} className={`flex shrink-0 flex-col items-center gap-2 ${toasts.length ? "px-4 py-2" : ""}`} aria-live="polite">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}

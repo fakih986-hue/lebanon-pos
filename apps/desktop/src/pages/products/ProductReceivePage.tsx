@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import type { ChangeEvent } from "react"
 import { Link, useSearchParams } from "react-router"
 import {
-  Barcode, Camera, CheckCircle2, ChevronDown, ChevronUp, ClipboardPaste, Copy, ImagePlus, LoaderCircle, Plus, Printer,
+  AlertTriangle, Barcode, Camera, CheckCircle2, ChevronDown, ChevronUp, ClipboardPaste, Copy, ImagePlus, LoaderCircle, Plus, Printer,
   RotateCcw, ScanLine, Trash2,
 } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
@@ -97,6 +97,8 @@ export default function ProductReceivePage() {
   // saving=false and receive the delivery twice. The ref is the lock; the state drives the UI.
   const savingRef = useRef(false)
   const [lastSaved, setLastSaved] = useState<SavedInfo | null>(null)
+  // Save and payment outcomes stay on the page (not in a toast) until the next save or dismiss.
+  const [notice, setNotice] = useState<{ tone: "ok" | "err"; text: string } | null>(null)
   const [problemBanner, setProblemBanner] = useState(false)
   const [pasteOpen, setPasteOpen] = useState(false)
   const [pasteText, setPasteText] = useState("")
@@ -288,9 +290,10 @@ export default function ProductReceivePage() {
     try {
       writeReceiveDraft(serializeDraft({ rows, supplierId, invoiceNumber: invoice, paymentMethod: payment, note, pending: nextPending }))
     } catch {
-      showToast(t("inv.rcv.rec.persist_failed"), "error")
+      setNotice({ tone: "err", text: t("inv.rcv.rec.persist_failed") })
       return
     }
+    setNotice(null)
     savingRef.current = true
     setSaving(true)
     setPending(nextPending)
@@ -309,22 +312,19 @@ export default function ProductReceivePage() {
         setLastSaved({ ...summary, units: sentUnits, labels })
         setFinanceIssues(getReceiveFinanceIssues())
         if (after.every(isBlankRow)) { setInvoice(""); setNote("") }
-        // Stock, purchase order and payment are separate outcomes; a failed one is said, not hidden.
-        if (summary.purchaseOrder.status === "failed") showToast(t("inv.rcv.fin.po_failed_toast"), "error")
-        else if (summary.payment.status === "failed") showToast(t("inv.rcv.fin.pay_failed_toast", { number: summary.purchaseOrder.number ?? "" }), "error")
-        showToast(summary.errors.length ? t("inv.rcv.saved_partial", { ok: summary.acceptedCount, bad: summary.rejectedCount }) : t("inv.rcv.saved", { units: formatNumber(sentUnits) }), summary.errors.length ? "error" : "success")
+        // Stock, purchase order and payment are separate outcomes, shown on the page: the saved
+        // card, the unpaid / not-recorded banner and the rejected rows themselves.
         window.requestAnimationFrame(() => scanRef.current?.focus())
       })
       .catch((err) => {
         if (err instanceof ReceiveOutcomeUnknownError) {
           // Some of it may be in stock: keep the rows locked under this save until someone checks.
           setRecovery({ kind: "unknown", submissionId: err.submissionId })
-          setUnresolved(getUnresolvedReceiveSubmissions())
-          showToast(t("inv.rcv.rec.unknown_title"), "error")
+          setUnresolved(getUnresolvedReceiveSubmissions()) // its banner says so
         } else {
           // Refused before anything was written (permissions, license): every row stays.
           setPending(undefined)
-          showToast(String((err as Error)?.message ?? err), "error")
+          setNotice({ tone: "err", text: String((err as Error)?.message ?? err) })
         }
       })
       .finally(() => { savingRef.current = false; setSaving(false) })
@@ -351,9 +351,9 @@ export default function ProductReceivePage() {
     try {
       const fin = await retryReceiveFinance(id)
       const ok = fin.purchaseOrder.status === "recorded" && (fin.payment.status === "recorded" || fin.payment.status === "on_account")
-      showToast(ok ? t("inv.rcv.fin.retry_ok", { number: fin.purchaseOrder.number ?? "" }) : t("inv.rcv.fin.retry_failed"), ok ? "success" : "error")
+      setNotice(ok ? { tone: "ok", text: t("inv.rcv.fin.retry_ok", { number: fin.purchaseOrder.number ?? "" }) } : { tone: "err", text: t("inv.rcv.fin.retry_failed") })
     } catch (e) {
-      showToast(String((e as Error)?.message ?? e), "error")
+      setNotice({ tone: "err", text: String((e as Error)?.message ?? e) })
     } finally {
       setRetrying("")
       setFinanceIssues(getReceiveFinanceIssues())
@@ -443,6 +443,13 @@ export default function ProductReceivePage() {
         } />
         <StockNav counts={{ receiving: started.length || undefined }} />
 
+        {notice && (
+          <div className={`mg2-banner ${notice.tone === "ok" ? "mg2-t-ok" : "mg2-t-err"}`} role={notice.tone === "ok" ? "status" : "alert"} style={{ marginBottom: 12 }}>
+            {notice.tone === "ok" ? <CheckCircle2 size={18} aria-hidden="true" /> : <AlertTriangle size={18} aria-hidden="true" />}
+            <span style={{ flex: 1, color: "var(--text)" }}>{notice.text}</span>
+            <button type="button" className="mg2-btn mg2-btn-ghost" onClick={() => setNotice(null)}>{t("inv.rcv.rec.dismiss")}</button>
+          </div>
+        )}
         {unresolved.map((u) => (
           <div key={u.id} id="rcv-unknown" tabIndex={-1} className="mg2-banner mg2-t-err" role="alert" style={{ marginBottom: 12, flexWrap: "wrap" }}>
             <div style={{ flex: "1 1 320px", color: "var(--text)" }}>
@@ -489,7 +496,8 @@ export default function ProductReceivePage() {
           <div className="mg2-banner mg2-t-ok" role="status" style={{ marginBottom: 12 }}>
             <CheckCircle2 size={18} aria-hidden="true" />
             <dl className="mg2-outcomes" style={{ flex: 1, color: "var(--text)" }}>
-              <div><dt>{t("inv.rcv.fin.receiving")}</dt><dd>{t("inv.rcv.saved_summary", { units: formatNumber(lastSaved.units), created: lastSaved.productsCreated, updated: lastSaved.productsUpdated, lots: lastSaved.batchesCreated })}</dd></div>
+              <div><dt>{t("inv.rcv.fin.receiving")}</dt><dd>{t("inv.rcv.saved_summary", { units: formatNumber(lastSaved.units), created: lastSaved.productsCreated, updated: lastSaved.productsUpdated, lots: lastSaved.batchesCreated })}
+                {lastSaved.rejectedCount > 0 && <> <Badge tone="err">{t("inv.rcv.saved_partial", { ok: lastSaved.acceptedCount, bad: lastSaved.rejectedCount })}</Badge></>}</dd></div>
               {lastSaved.purchaseOrder.status !== "not_needed" && <div><dt>{t("inv.rcv.fin.po")}</dt><dd>{lastSaved.purchaseOrder.status === "recorded"
                 ? <><span className="num" dir="ltr">{lastSaved.purchaseOrder.number}</span> · {formatCurrency(lastSaved.purchaseOrder.total ?? 0)}</>
                 : <Badge tone="err">{t("inv.rcv.fin.not_recorded")}</Badge>}</dd></div>}

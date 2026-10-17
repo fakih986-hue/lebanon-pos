@@ -159,10 +159,10 @@ function Shell({ children }: { children: ReactNode }) {
             </MotionDiv>
           </AnimatePresence>
         </ErrorBoundary>
+        <ToastContainer toasts={toasts} onDismiss={dismiss} />
       </div>
 
       <BottomNav />
-      <ToastContainer toasts={toasts} onDismiss={dismiss} position={location.pathname === "/" ? "bottom-center" : "top-end"} />
       <ActivityFeed />
 
       <AnimatePresence>
