@@ -262,8 +262,10 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
       validateSyncOperation(op)
 
       // Already applied here (a lost response, a client retry, a hub re-forward): acknowledge.
-      const applied = await prisma.syncOperation.findFirst({ where: { id: op.id, tenantId, appliedAt: { not: null } }, select: { id: true } })
+      const applied = await prisma.syncOperation.findFirst({ where: { id: op.id, tenantId, appliedAt: { not: null } }, select: { entity: true, action: true, payload: true } })
       if (applied) {
+        // Only the same operation is acknowledged: an id reused for something else is refused.
+        if (!sameOperation(applied, op)) throw new OperationIdReuseError(op.id)
         results.push({ id: op.id, status: "ok" })
         continue
       }
@@ -296,9 +298,12 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
           INSERT INTO "SyncOperation" ("id", "tenantId", "entity", "action", "summary", "payload", "status", "attempts", "createdAt")
           VALUES (${op.id}, ${tenantId}, ${op.entity}, ${op.action}, ${summary}, ${payloadJson}::jsonb, 'Processing', 0, now())
           ON CONFLICT ("id") DO NOTHING`
-        const [claim] = await (tx as typeof prisma).$queryRaw<Array<{ tenantId: string; appliedAt: Date | null }>>`
-          SELECT "tenantId", "appliedAt" FROM "SyncOperation" WHERE "id" = ${op.id} FOR UPDATE`
+        const [claim] = await (tx as typeof prisma).$queryRaw<Array<{ tenantId: string; appliedAt: Date | null; entity: string; action: string; payload: unknown; status: string }>>`
+          SELECT "tenantId", "appliedAt", "entity", "action", "payload", "status" FROM "SyncOperation" WHERE "id" = ${op.id} FOR UPDATE`
         if (!claim || claim.tenantId !== tenantId) throw new TenantScopeError(`sync operation ${op.id} belongs to another store`)
+        // An existing row (applied, or an earlier failed attempt) must be this same operation; our
+        // own claim row ('Processing', inserted above) always is.
+        if (claim.status !== "Processing" && !sameOperation(claim, op)) throw new OperationIdReuseError(op.id)
         if (claim.appliedAt) return "duplicate" as const
 
         await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, { deviceId: deviceId ?? null, userId: req.auth!.userId })
@@ -336,6 +341,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         // conflicts with a stable code prefix (e.g. "REFUND_EXCEEDS_REFUNDABLE: …").
         err instanceof RefundRuleError ||
         err instanceof TenantScopeError ||
+        err instanceof OperationIdReuseError ||
         errorMessage.includes("Insufficient stock") ||
         errorMessage.includes("was voided") ||
         errorMessage.includes("Insufficient stock in batch") ||
@@ -353,7 +359,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
               payload: (op.payload ?? {}) as any, status: opStatus, attempts: isRejected ? 5 : 1, lastAttemptAt: new Date(), error: errorMessage,
             },
           })
-        } else if (row.tenantId === tenantId && !row.appliedAt) {
+        } else if (row.tenantId === tenantId && !row.appliedAt && !(err instanceof OperationIdReuseError)) {
           await prisma.syncOperation.updateMany({
             where: { id: op.id, tenantId, appliedAt: null },
             data: { status: opStatus, attempts: isRejected ? 5 : { increment: 1 }, lastAttemptAt: new Date(), error: errorMessage },
@@ -733,6 +739,25 @@ router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest,
 })
 
 /** A push referenced a record id that belongs to another tenant. Never retried. */
+/** An operation id the server already holds for a different entity, action or payload. */
+export class OperationIdReuseError extends Error {
+  constructor(id: string) { super(`OPERATION_ID_REUSED: sync operation ${id} was already used for a different change`); this.name = "OperationIdReuseError" }
+}
+
+/** Key-order-independent JSON (Postgres jsonb does not keep key order). */
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value as object).sort().map((k) => `${JSON.stringify(k)}:${canonicalJson((value as Record<string, unknown>)[k])}`).join(",")}}`
+  }
+  return JSON.stringify(value ?? null)
+}
+/** The stored operation and the incoming one are the same change (entity, action, payload). */
+function sameOperation(stored: { entity: string; action: string; payload: unknown }, incoming: { entity: string; action: string; payload?: unknown }) {
+  return stored.entity === incoming.entity && stored.action === incoming.action
+    && canonicalJson(stored.payload ?? {}) === canonicalJson(JSON.parse(JSON.stringify(incoming.payload ?? {})))
+}
+
 export class TenantScopeError extends Error {
   constructor(message: string) { super(`TENANT_SCOPE: ${message}`); this.name = "TenantScopeError" }
 }

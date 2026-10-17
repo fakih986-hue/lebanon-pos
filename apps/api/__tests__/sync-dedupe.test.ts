@@ -202,6 +202,56 @@ describe("applied once on this server (real Postgres)", () => {
   })
 })
 
+describe("an operation id names one change (real Postgres)", () => {
+  it("reusing an id for a different entity, action or payload is rejected, never acknowledged as the original", async () => {
+    const before = await hubStock()
+    const sale = saleOp(1)
+    expect((await push(sale)).status).toBe("ok")
+    expect(await hubStock()).toBe(before - 1)
+
+    // Same id, same change, keys in another order: still the original (acknowledged, no effect).
+    const reordered = { id: sale.id, entity: "sale", action: "create", payload: Object.fromEntries(Object.entries(sale.payload).reverse()) }
+    expect((await push(reordered)).status).toBe("ok")
+
+    const otherPayload = { ...sale, payload: { ...sale.payload, total: 999 } }
+    const otherAction = { ...sale, action: "void" }
+    const otherEntity = { ...sale, entity: "expense", payload: { id: randomUUID(), amount: 5 } }
+    for (const reused of [otherPayload, otherAction, otherEntity]) {
+      const r = await push(reused)
+      expect(r.status).toBe("rejected")
+      expect(r.error).toMatch(/OPERATION_ID_REUSED/)
+    }
+    expect(await hubStock()).toBe(before - 1)
+    expect(await prisma.expense.count({ where: { tenantId: TENANT } })).toBe(0)
+    const row = await opRow(sale.id)
+    expect(row).toMatchObject({ entity: "sale", action: "create", status: "Pending", error: null }) // the original row untouched
+    expect(row?.appliedAt).toBeTruthy()
+
+    // Another store using the same id is refused too (and changes nothing here).
+    const otherTenant = randomUUID()
+    await prisma.tenant.create({ data: { id: otherTenant, name: "Dedupe IT other (disposable)", subdomain: `dd-o-${otherTenant.slice(0, 8)}` } })
+    const otherToken = jwt.sign({ userId: ADMIN, tenantId: otherTenant, role: "Admin" }, process.env.JWT_SECRET!, { expiresIn: "1h" })
+    const r = await pushTo(hubUrl, sale, { Authorization: `Bearer ${otherToken}` })
+    expect(r.status).toBe("rejected")
+    expect((await opRow(sale.id))?.tenantId).toBe(TENANT)
+    await prisma.syncOperation.deleteMany({ where: { tenantId: otherTenant } })
+    await prisma.auditEvent.deleteMany({ where: { tenantId: otherTenant } }).catch(() => undefined)
+    await prisma.tenant.delete({ where: { id: otherTenant } })
+  })
+
+  it("a failed attempt's id cannot be reused for a different change either", async () => {
+    await prisma.product.update({ where: { id: productId }, data: { stock: 1 } })
+    const tooMuch = saleOp(5) // fails: insufficient stock
+    expect((await push(tooMuch)).status).not.toBe("ok")
+    const swapped = { ...tooMuch, payload: { ...tooMuch.payload, total: 1, items: [{ ...tooMuch.payload.items[0], quantity: 1, total: 5 }] } }
+    const r = await push(swapped)
+    expect(r.status).toBe("rejected")
+    expect(r.error).toMatch(/OPERATION_ID_REUSED/)
+    expect(await hubStock()).toBe(1)
+    await prisma.product.update({ where: { id: productId }, data: { stock: 100 } })
+  })
+})
+
 describe("hub -> cloud forwarding (two real servers, two databases)", () => {
   it("forwards applied operations once, even after a lost acknowledgement, concurrently, and with device resends", async () => {
     // Bring the cloud copy level with the hub before measuring.
