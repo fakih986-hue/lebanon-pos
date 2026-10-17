@@ -331,7 +331,8 @@ Fixed:
 3a. ~~Hub write-through attempt still in flight when the till asked: a different cart could also be charged~~ (R8, terminal attempt resolution; real-Postgres race test).
 
 Open:
-4. **Writers without staging** (R8, "Not covered"): customers, shifts, daily close, stock counts, held sales, catalogue. They report storage failures honestly but are not recovered automatically. Decide whether any is release-blocking; **shifts and daily close carry cash figures**.
+4. **Commercial-release blocker: shift, daily-close and stock-count durability.** These writers are not staged or journaled (R8, "Not covered"): a storage failure is reported honestly, but an interrupted write is not recovered and may never reach the server. Shifts and daily close carry cash figures; a stock count changes stock. Each needs the R8 treatment (staged operation, commit point, recovery, store-switch isolation) and a restart/retry test before a commercial release.
+4a. **Other writers without staging**: customers, held sales, catalogue edits. Same honest reporting, no automatic recovery; not money or stock, so not listed as blocking.
 5. **A stashed "unbound" conflict has no UI yet.** It is kept and listed by `getStashedMoneyConflictSummary()`, but only diagnostics can see it.
 6. **Hub write-through, local finalize not journaled.** The in-flight race is closed (3a). After the hub commits, recording the sale on the till is not journaled; if it fails, the till refreshes from the hub (the hub owns the sale). A pending attempt also blocks a different cart for as long as the hub is unreachable; the cashier sees the banner and can retry.
 7. **Legacy server rows** in `Failed`/`Rejected` have no `appliedAt`; their retries still rely on record-level idempotency (all money/stock handlers are idempotent by record id).
