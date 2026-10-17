@@ -52,6 +52,8 @@ const ReceiptPreview = memo(function ReceiptPreview({
   onVoid: (saleId: string) => void
 }) {
   const { t } = useI18n()
+  // Before any early return: hooks must run in the same order whether or not a sale is shown.
+  const [showReturns, setShowReturns] = useState(false)
   if (!sale) {
     return (
       <div className="flex min-h-96 items-center justify-center rounded-lg border border-dashed border-zinc-300 bg-white p-8 text-center">
@@ -93,7 +95,6 @@ const ReceiptPreview = memo(function ReceiptPreview({
     Math.max(0, sale.total - refundedTotal),
     getRefundTotal(sale, refundDraftItems)
   )
-  const [showReturns, setShowReturns] = useState(false)
 
   return (
     <article className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm">

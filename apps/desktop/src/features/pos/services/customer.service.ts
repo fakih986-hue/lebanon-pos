@@ -218,12 +218,21 @@ export function restoreCustomer(customerId: string) {
   })
 }
 
-// Legacy delete — prefer archiveCustomer() unless no history exists
+/** True when the customer has any debt sale or payment: their balance and history must be kept. */
+export function customerHasHistory(customerId: string) {
+  return getDebtSales().some((d) => d.customerId === customerId) || getDebtPayments().some((p) => p.customerId === customerId)
+}
+
+// Delete only a customer with no money history; one with history is archived instead
+// (deleting would erase their balance and payments here and on the server).
 export function deleteCustomer(customerId: string) {
   assertCanWrite("delete customer")
   const customers = getCustomers()
   const customer = customers.find((item) => item.id === customerId)
   if (!customer) return
+  if (customerHasHistory(customerId)) {
+    throw new Error(`CUSTOMER_HAS_HISTORY: ${customer.name} has sales or payments on account; archive the customer instead.`)
+  }
 
   writeCollection(CUSTOMERS_KEY, customers.filter((item) => item.id !== customerId))
   // Clean up orphan debt records
@@ -425,8 +434,9 @@ export function recordDebtPayment(input: RecordDebtPaymentInput, opts?: { localO
   return payment
 }
 
-export function getCustomerLedger() {
-  const customers = getCustomers().filter(c => !c.archived)
+/** Active customers; with includeArchived, archived ones too (so they can be found and restored). */
+export function getCustomerLedger(opts?: { includeArchived?: boolean }) {
+  const customers = getCustomers().filter((c) => opts?.includeArchived || !c.archived)
   const sales = getDebtSales()
   const payments = getDebtPayments()
 

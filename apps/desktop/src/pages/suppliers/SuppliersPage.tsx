@@ -31,6 +31,7 @@ import {
   recordSupplierPayment,
   restoreSupplier,
   subscribeSuppliers,
+  supplierHasHistory,
   type PurchaseOrder,
   type SupplierLedger,
   type SupplierPaymentMethod,
@@ -89,6 +90,9 @@ const supplierPaymentMethods: Array<{
   },
 ]
 
+/** One id per payment attempt: a double tap or a retry of the same attempt records it once. */
+const newPaymentAttempt = () => `pay-${globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`
+
 function formatDate(value: string | null) {
   if (!value) {
     return "No activity"
@@ -126,12 +130,15 @@ export default function SuppliersPage() {
   const [formErrors, setFormErrors] = useState<Partial<Record<"name" | "mobile", string>>>({})
   const [deleteSupplierId, setDeleteSupplierId] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
+  const paymentAttempt = useRef(newPaymentAttempt())
+  // A changed form is a new attempt; pressing again without a change is the same one.
+  useEffect(() => { paymentAttempt.current = newPaymentAttempt() }, [payment.supplierId, payment.purchaseOrderId, payment.amount, payment.method, payment.reference])
   const { t } = useI18n()
   const [activeWorkspace, setActiveWorkspace] =
     useState<SupplierWorkspace>("Accounts")
 
   function refreshSuppliers(preferredSupplierId?: string) {
-    const nextSuppliers = getSupplierLedger()
+    const nextSuppliers = getSupplierLedger({ includeArchived: true })
     const nextPurchaseOrders = getPurchaseOrders()
     const nextSelectedId =
       preferredSupplierId ||
@@ -238,6 +245,8 @@ export default function SuppliersPage() {
 
     try {
       const supplierPayment = recordSupplierPayment({
+        id: paymentAttempt.current,
+        syncOpId: `op-${paymentAttempt.current}`,
         supplierId: supplier.id,
         purchaseOrderId: payment.purchaseOrderId || undefined,
         amount,
@@ -468,7 +477,7 @@ export default function SuppliersPage() {
                           >
                             {supplier.archived ? <ArchiveRestore size={15} /> : <Archive size={15} />}
                           </button>
-                          <button
+                          {!supplierHasHistory(supplier.id) && <button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation()
@@ -478,7 +487,7 @@ export default function SuppliersPage() {
                             aria-label={`Delete ${supplier.name}`}
                           >
                             <X size={15} />
-                          </button>
+                          </button>}
                           </div>
                         </td>
                       </tr>
@@ -857,7 +866,7 @@ export default function SuppliersPage() {
         confirmDestructive
         onConfirm={() => {
           if (deleteSupplierId !== null) {
-            deleteSupplier(deleteSupplierId)
+            try { deleteSupplier(deleteSupplierId) } catch (error) { showToast(error instanceof Error ? error.message : String(error), "error") }
             setDeleteSupplierId(null)
           }
         }}

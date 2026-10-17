@@ -23,6 +23,7 @@ import {
   addCustomer,
   archiveCustomer,
   buildCustomerStatement,
+  customerHasHistory,
   deleteCustomer,
   getCustomerActivity,
   getCustomerLedger,
@@ -105,6 +106,9 @@ const paymentMethods: Array<{
   },
 ]
 
+/** One id per payment attempt: a double tap or a retry of the same attempt records it once. */
+const newPaymentAttempt = () => `pay-${globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`
+
 function normalizeNumber(value: string) {
   const parsedValue = Number(value)
 
@@ -149,10 +153,13 @@ export default function CustomersPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
   const [agingFilter, setAgingFilter] = useState<string>("")
   const [showArchived, setShowArchived] = useState(false)
+  const paymentAttempt = useRef(newPaymentAttempt())
+  // A changed form is a new attempt; pressing again without a change is the same one.
+  useEffect(() => { paymentAttempt.current = newPaymentAttempt() }, [payment.customerId, payment.amount, payment.method, payment.reference])
   const { t } = useI18n()
 
   function refreshLedger(preferredCustomerId?: string) {
-    const nextCustomers = getCustomerLedger()
+    const nextCustomers = getCustomerLedger({ includeArchived: true })
 
     setCustomers(nextCustomers)
     setTotals(getLedgerTotals())
@@ -305,6 +312,7 @@ export default function CustomersPage() {
 
     try {
       recordDebtPayment({
+        id: paymentAttempt.current,
         customerId: customer.id,
         amount,
         method: payment.method,
@@ -726,13 +734,13 @@ export default function CustomersPage() {
                           style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
                           {selectedCustomer.archived ? "Restore" : "Archive"}
                         </button>
-                        <button type="button"
+                        {!customerHasHistory(selectedCustomer.id) && <button type="button"
                           onClick={() => setDeleteCustomerId(selectedCustomer.id)}
                           aria-label={`Delete ${selectedCustomer.name}`}
                           className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
                           style={{ background: "var(--danger-soft)", borderColor: "var(--danger)", color: "var(--danger-text)" }}>
                           <X size={11} /> Delete
-                        </button>
+                        </button>}
                       </div>
                     </div>
 
@@ -846,7 +854,7 @@ export default function CustomersPage() {
         confirmDestructive
         onConfirm={() => {
           if (deleteCustomerId !== null) {
-            deleteCustomer(deleteCustomerId)
+            try { deleteCustomer(deleteCustomerId) } catch (error) { showToast(error instanceof Error ? error.message : String(error), "error") }
             setDeleteCustomerId(null)
           }
         }}

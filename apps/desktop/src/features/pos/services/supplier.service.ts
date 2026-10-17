@@ -208,11 +208,20 @@ export function restoreSupplier(supplierId: string) {
 }
 
 // Legacy delete — prefer archiveSupplier() unless no history exists
+/** True when the supplier has any purchase order or payment: what is owed and paid must be kept. */
+export function supplierHasHistory(supplierId: string) {
+  return getPurchaseOrders().some((o) => o.supplierId === supplierId) || getSupplierPayments().some((p) => p.supplierId === supplierId)
+}
+
+// Delete only a supplier with no purchase orders or payments; one with history is archived instead.
 export function deleteSupplier(supplierId: string) {
   assertCanWrite("delete supplier")
   const suppliers = getSuppliers()
   const supplier = suppliers.find((item) => item.id === supplierId)
   if (!supplier) return
+  if (supplierHasHistory(supplierId)) {
+    throw new Error(`SUPPLIER_HAS_HISTORY: ${supplier.name} has purchase orders or payments; archive the supplier instead.`)
+  }
 
   const removedOrders = getPurchaseOrders().filter((o) => o.supplierId === supplierId)
   const removedPayments = getSupplierPayments().filter((p) => p.supplierId === supplierId)
@@ -539,8 +548,9 @@ export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
   return getPurchaseOrders().find((o) => o.id === purchaseOrder.id) ?? purchaseOrder
 }
 
-export function getSupplierLedger() {
-  const suppliers = getSuppliers().filter(s => !s.archived)
+/** Active suppliers; with includeArchived, archived ones too (so they can be found and restored). */
+export function getSupplierLedger(opts?: { includeArchived?: boolean }) {
+  const suppliers = getSuppliers().filter((s) => opts?.includeArchived || !s.archived)
   const purchaseOrders = getPurchaseOrders()
   const payments = getSupplierPayments()
 

@@ -154,6 +154,8 @@ export default function SalesPage() {
     quantities: Record<string, number>
   } | null>(null)
   const [voidSaleId, setVoidSaleId] = useState<string | null>(null)
+  // Confirm can be pressed twice before the dialog closes: the ref is the lock (state updates late).
+  const refundingRef = useRef(false)
 
   useEffect(() => subscribeSales(setSales), [])
   useEffect(() => subscribeRefunds(setRefunds), [])
@@ -268,6 +270,7 @@ export default function SalesPage() {
         const item = preview.itemFor(line.key)!
         return { id: line.productId, name: item.name, barcode: item.barcode, quantity: line.quantity, unitPrice: item.unitPrice, total: item.unitPrice * line.quantity, saleLineId: line.key }
       })
+      refundingRef.current = false // a new confirmation: the next Confirm may record it (once)
       setPendingRefund({ sale, refundTotal: preview.total, refundItems, refundReason, quantities })
     } catch (error) {
       setRefundStatus(describeRefundError(error))
@@ -275,7 +278,8 @@ export default function SalesPage() {
   }
 
   function executeRefund() {
-    if (!pendingRefund) return
+    if (!pendingRefund || refundingRef.current) return
+    refundingRef.current = true
     const { sale, refundReason, quantities } = pendingRefund
     try {
       const refund = processRefund({ saleId: sale.id, quantities, reason: refundReason })
