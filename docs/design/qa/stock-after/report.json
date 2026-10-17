@@ -1,47 +1,66 @@
 {
   "base": "http://localhost:5174",
-  "at": "2026-10-16T22:01:32.689Z",
+  "at": "2026-10-17T11:33:41.003Z",
   "results": [
     {
-      "name": "receiving-ui-payment-failed.en.dark.desktop",
+      "name": "products-edit.en.dark.desktop",
       "w": 1440,
       "h": 900,
       "theme": "dark",
       "lang": "en",
       "log": [
         [
-          "add supplier Malia Group",
-          "ok"
+          "seed a delivery",
+          "received; supplier Malia Group"
         ],
         [
           "reload",
           1
         ],
         [
-          "before",
-          "Pepsi stock 126; lots 0 ()"
+          "open Pepsi Can details",
+          "actions: Close | POS favorite | Open lot LOT-6803893-17 | Edit | Receive | Adjust or count | Archive; lots shown 1"
         ],
         [
-          "scan PEPSI + Enter",
-          "1 row(s): Pepsi CanMatched · 528100100002 qty 1; status: Pepsi Can added (qty 1)."
-        ],
-        [
-          "scan PEPSI + Enter",
-          "1 row(s): Pepsi CanMatched · 528100100002 qty 2; status: Pepsi Can: qty now 2."
-        ],
-        [
-          "pick supplier + Cash, Save with the payment write failing",
-          "outcomes: StockReceived 2 units · new 0 · updated 1 · lots 1 | Purchase orderPO-4RVP-00001 · $0.96 | PaymentUnpaid: $0.96 owed; banners: PO-4RVP-00001 is unpaidThe payment of $0.96 to Mal || StockReceived 2 units · new 0 · updated 1 · lots 1"
-        ],
-        [
-          "after",
-          "Pepsi stock 128; lots 1 (2)"
+          "press Edit",
+          "Edit Pepsi Can; fields 11"
         ]
       ],
       "facts": {
         "dir": "ltr",
         "theme": "dark",
-        "active": "Scan items into this delivery…",
+        "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "products-edit.ar.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "seed a delivery",
+          "received; supplier Malia Group"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open Pepsi Can details",
+          "actions: إغلاق | مفضّل في نقطة البيع | فتح الدفعة LOT-6815255-54 | تعديل | استلام | تعديل أو جرد | أرشفة; lots shown 1"
+        ],
+        [
+          "press Edit",
+          "تعديل Pepsi Can; fields 11"
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "BODY",
         "overflowX": false
       }
     }

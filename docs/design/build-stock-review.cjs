@@ -8,6 +8,9 @@ const dir = path.resolve(__dirname, "qa")
 const rows = [
   ["Products", "English, dark: views with counts, filters, sortable table", "products.en.dark.desktop", "Phone, Arabic, dark", "products.ar.dark.mobile"],
   ["Products (Arabic)", "Arabic, light, right-to-left", "products.ar.light.desktop", "Phone, English", "products.en.dark.mobile"],
+  ["Product drawer: edit", "Edit Pepsi Can from its details: name, category, supplier, barcode + aliases, price/cost with margin, reorder; stock changes only through receiving, sales and adjustments", "products-edit.en.dark.desktop", "Phone, Arabic: full-height sheet, Save/Cancel pinned", "products-edit.ar.dark.mobile"],
+  ["Product drawer: create", "Add product, Save with nothing filled: focus goes to the first problem, each field says what is missing", "products-editor.en.dark.desktop", "", null],
+  ["Product details", "Pepsi Can: lots, actions (Edit, Receive, Adjust or count, Archive)", "products-detail.en.dark.desktop", "", null],
   ["Lot details", "Expiry, stock tiles, movement trace (received, then a damaged-stock adjustment)", "lot-drawer.en.dark.desktop", "Phone, Arabic: the reference sits under the movement type", "lot-drawer.ar.dark.mobile"],
   ["Lot details (Arabic)", "Arabic, light, right-to-left", "lot-drawer.ar.light.desktop", "", null],
   ["Receiving", "Empty delivery: scan bar, rows, supplier and payment, summary", "receiving.en.dark.desktop", "Phone, English", "receiving.en.dark.mobile"],
