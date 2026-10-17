@@ -1,251 +1,151 @@
-import { useEffect, useMemo, useRef, useState } from "react"
-import { useDebounce } from "../../hooks/useDebounce"
-import { useHotkeys } from "../../hooks/useHotkey"
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useSearchParams } from "react-router"
-import {
-  ArrowDownUp,
-  BarChart3,
-  Calendar,
-  ChevronDown,
-  Download,
-  Filter,
-  ReceiptText,
-  Search,
-  X,
-} from "lucide-react"
-
-import { formatCurrency, usdToLbp } from "../../features/pos/lib/currency"
-import { getSettings } from "../../features/pos/services/settings.service"
-import {
-  getPaymentMix,
-  getRefunds,
-  getSales,
-  getSalesMetrics,
-  previewRefund,
-  processRefund,
-  refundLineKeyOf,
-  subscribeRefunds,
-  subscribeSales,
-  voidSale,
-  type Sale,
-  type SalePaymentMethod,
-  type SaleRefund,
-  type RefundItem,
-} from "../../features/pos/services/sales.service"
-import { userCan } from "../../features/pos/services/security.service"
-import {
-  getRefundMethod,
-  getRefundTotal,
-  getRefundableQuantity,
-  getSaleExchangeRate,
-  getSaleRefunds,
-  parseReturnQuantity,
-} from "../../features/pos/lib/salesHelpers"
-import { printSaleReceipt } from "../../features/pos/lib/printReceipt"
-import InsightsPanel from "../../features/pos/components/InsightsPanel"
-import ReceiptList from "../../features/pos/components/ReceiptList"
-import ReceiptPreview from "../../features/pos/components/ReceiptPreview"
-import SalesKpiCards from "../../features/pos/components/SalesKpiCards"
-import MoneyConflictsPanel from "../../features/pos/components/MoneyConflictsPanel"
-import ConfirmDialog from "../../components/ConfirmDialog"
-import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
+import { AlertTriangle, ArrowDownUp, CheckCircle2, Download, Lock, Printer, ReceiptText, RotateCcw, Search, XCircle } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
-type SalesTab = "Receipts" | "Insights"
+import { useDebounce } from "../../hooks/useDebounce"
+import { useHotkeys } from "../../hooks/useHotkey"
+import InsightsPanel from "../../features/pos/components/InsightsPanel"
+import MoneyConflictsPanel from "../../features/pos/components/MoneyConflictsPanel"
+import { Badge, ConfirmLayer, Drawer, EmptyState, FilterChip, PageHeader, PageTabs, StatTile } from "../../features/pos/components/backoffice/BackOffice"
+import { formatCurrency, formatLbpCurrency, formatNumber, usdToLbp } from "../../features/pos/lib/currency"
+import { printSaleReceipt } from "../../features/pos/lib/printReceipt"
+import {
+  getRefundMethod, getRefundTotal, getRefundableQuantity, getRefundedQuantity, getSaleExchangeRate, getSaleGrossSubtotal, getSaleQuantity,
+  getSaleRefundTotal, getSaleRefunds, parseReturnQuantity,
+} from "../../features/pos/lib/salesHelpers"
+import {
+  getPaymentMix, getRefunds, getSales, getSalesMetrics, previewRefund, processRefund, refundLineKeyOf, subscribeRefunds, subscribeSales, voidSale,
+  type RefundItem, type Sale, type SalePaymentMethod, type SaleRefund,
+} from "../../features/pos/services/sales.service"
+import { userCan } from "../../features/pos/services/security.service"
+import { getSettings } from "../../features/pos/services/settings.service"
+
+// Midnight Gold v2 — Receipts (DESIGN-SYSTEM §6–§8, Sell workspace). A filtered receipt table
+// (cards on phones) and a receipt drawer with returns and void. Refunds go through the existing
+// preview -> confirm -> processRefund path (REFUND-INTEGRITY-1: the amount shown is the amount
+// recorded); voids through voidSale. Totals, LBP and rounding are shown exactly as recorded.
+type Tab = "receipts" | "insights"
 type DateRange = "today" | "week" | "month" | "all"
 type SortOrder = "newest" | "oldest" | "highest" | "lowest"
+type Status = "All" | "Completed" | "Voided" | "Debt" | "Refunded"
+const RANGES: DateRange[] = ["today", "week", "month", "all"]
+const PAYMENTS: Array<"All" | SalePaymentMethod> = ["All", "Cash", "Card", "Wallet", "Debt"]
+const STATUSES: Status[] = ["All", "Completed", "Debt", "Refunded", "Voided"]
 
-function getDateRangeStart(range: DateRange): Date | null {
+function rangeStart(range: DateRange): Date | null {
   const now = new Date()
   if (range === "today") return new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  if (range === "week") {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    d.setDate(d.getDate() - 6)
-    return d
-  }
+  if (range === "week") { const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()); d.setDate(d.getDate() - 6); return d }
   if (range === "month") return new Date(now.getFullYear(), now.getMonth(), 1)
   return null
 }
-
-function getItemName(item: any): string {
-  return item.name ?? item.productName ?? ""
-}
+const itemName = (item: { name?: string; productName?: string }) => item.name ?? item.productName ?? ""
 
 function exportSalesCsv(sales: Sale[]) {
-  const s = getSettings()
-  const rate = s.usdToLbpRate
+  const rate = getSettings().usdToLbpRate
   const header = ["Sale #", "Date", "Payment", "Customer", "Cashier", "Items", "Subtotal", "Discount", "Tax", "Total", "Total (LBP)", "Cash Payable (LBP)", "Profit", "Profit (LBP)", "Status"]
-  const rows = sales.map((s) => {
-    const payableLbp = s.payableLbp
-    return [
-      s.saleNumber ?? "",
-      s.createdAt ? new Date(s.createdAt).toLocaleString() : "",
-      s.paymentMethod ?? "",
-      s.customerName ?? "",
-      s.cashier ?? "",
-      (Array.isArray(s.items) ? s.items.reduce((sum, i) => sum + (i.quantity ?? 0), 0) : 0),
-      (s.subtotal ?? 0).toFixed(2),
-      (s.discountTotal ?? 0).toFixed(2),
-      (s.tax ?? 0).toFixed(2),
-      (s.total ?? 0).toFixed(2),
-      Math.round((s.total ?? 0) * (rate ?? 0)).toString(),
-      payableLbp ? Math.round(payableLbp).toString() : "",
-      (s.profit ?? 0).toFixed(2),
-      Math.round((s.profit ?? 0) * (rate ?? 0)).toString(),
-      s.status ?? "",
-    ]
-  })
-  const csv = [header, ...rows]
-    .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
-    .join("\n")
-  const blob = new Blob([csv], { type: "text/csv" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `sales-${new Date().toISOString().slice(0, 10)}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
+  const rows = sales.map((s) => [
+    s.saleNumber ?? "", s.createdAt ? new Date(s.createdAt).toLocaleString() : "", s.paymentMethod ?? "", s.customerName ?? "", s.cashier ?? "",
+    Array.isArray(s.items) ? s.items.reduce((sum, i) => sum + (i.quantity ?? 0), 0) : 0,
+    (s.subtotal ?? 0).toFixed(2), (s.discountTotal ?? 0).toFixed(2), (s.tax ?? 0).toFixed(2), (s.total ?? 0).toFixed(2),
+    Math.round((s.total ?? 0) * (rate ?? 0)).toString(), s.payableLbp ? Math.round(s.payableLbp).toString() : "",
+    (s.profit ?? 0).toFixed(2), Math.round((s.profit ?? 0) * (rate ?? 0)).toString(), s.status ?? "",
+  ])
+  const csv = [header, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n")
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
+  const a = document.createElement("a"); a.href = url; a.download = `sales-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url)
 }
 
-function groupSalesByDay(sales: Sale[]) {
-  const groups = new Map<string, Sale[]>()
-  for (const sale of sales) {
-    const day = new Date(sale.createdAt).toLocaleDateString("en-LB", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
-    if (!groups.has(day)) groups.set(day, [])
-    groups.get(day)!.push(sale)
+function useDate() {
+  const { locale } = useI18n()
+  const tag = locale === "ar" ? "ar-LB" : "en-GB"
+  return {
+    stamp: (v: string) => new Intl.DateTimeFormat(tag, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(v)),
+    full: (v: string) => new Intl.DateTimeFormat(tag, { dateStyle: "medium", timeStyle: "short" }).format(new Date(v)),
+    dayHead: (v: string) => new Intl.DateTimeFormat(tag, { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(v)),
+    time: (v: string) => new Intl.DateTimeFormat(tag, { hour: "2-digit", minute: "2-digit" }).format(new Date(v)),
   }
-  return Array.from(groups.entries()).map(([date, items]) => ({ date, items }))
-}
-
-const PM_COLORS: Record<string, string> = {
-  Cash:   "chip-brand",
-  Card:   "chip-brand",
-  Wallet: "chip-brand",
-  Debt:   "chip-brand",
 }
 
 export default function SalesPage() {
   const { t } = useI18n()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const date = useDate()
+  const [params, setParams] = useSearchParams()
+  const tab: Tab = params.get("tab") === "insights" ? "insights" : "receipts"
   const [sales, setSales] = useState<Sale[]>(getSales())
   const [refunds, setRefunds] = useState<SaleRefund[]>(getRefunds())
   const [search, setSearch] = useState("")
-  const debouncedSearch = useDebounce(search, 200)
-  const [paymentFilter, setPaymentFilter] = useState<"All" | SalePaymentMethod>("All")
-  const [statusFilter, setStatusFilter] = useState<"All" | "Completed" | "Voided" | "Debt">("All")
-  const [cashierFilter, setCashierFilter] = useState("All")
-  const [dateRange, setDateRange] = useState<DateRange>("all")
-  const [sortOrder, setSortOrder] = useState<SortOrder>("newest")
+  const q = useDebounce(search, 150)
+  const searchRef = useRef<HTMLInputElement>(null)
+  useHotkeys([{ key: "f", modifiers: ["ctrl"], handler: () => searchRef.current?.focus() }])
+  const [payment, setPayment] = useState<"All" | SalePaymentMethod>("All")
+  const [status, setStatus] = useState<Status>("All")
+  const [cashier, setCashier] = useState("All")
+  const [range, setRange] = useState<DateRange>("all")
+  const [sort, setSort] = useState<SortOrder>("newest")
   const [groupByDay, setGroupByDay] = useState(false)
-  const [activeTab, setActiveTab] = useState<SalesTab>(
-    searchParams.get("tab") === "insights" ? "Insights" : "Receipts"
-  )
-  const [selectedSaleId, setSelectedSaleId] = useState("")
-  const [drawerSaleId, setDrawerSaleId] = useState<string | null>(null)
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const receiptId = params.get("receipt")
   const [refundQuantities, setRefundQuantities] = useState<Record<string, string>>({})
   const [refundReason, setRefundReason] = useState("")
-  const [refundStatus, setRefundStatus] = useState(t("pos.sales.refund_status_default"))
-  const [pendingRefund, setPendingRefund] = useState<{
-    sale: Sale
-    refundTotal: number
-    refundItems: RefundItem[]
-    refundReason: string
-    quantities: Record<string, number>
-  } | null>(null)
+  const [refundStatus, setRefundStatus] = useState<{ tone: "ok" | "err" | "info"; text: string } | null>(null)
+  const [pendingRefund, setPendingRefund] = useState<{ sale: Sale; refundTotal: number; refundItems: RefundItem[]; refundReason: string; quantities: Record<string, number> } | null>(null)
   const [voidSaleId, setVoidSaleId] = useState<string | null>(null)
   // Confirm can be pressed twice before the dialog closes: the ref is the lock (state updates late).
   const refundingRef = useRef(false)
 
   useEffect(() => subscribeSales(setSales), [])
   useEffect(() => subscribeRefunds(setRefunds), [])
-  useEffect(() => {
-    setActiveTab(searchParams.get("tab") === "insights" ? "Insights" : "Receipts")
-  }, [searchParams])
-
-  const searchRef = useRef<HTMLInputElement>(null)
-  useHotkeys([{ key: "f", modifiers: ["ctrl"], handler: () => searchRef.current?.focus() }])
-
   const settings = getSettings()
   const metrics = useMemo(() => getSalesMetrics(), [sales, refunds])
   const paymentMix = useMemo(() => getPaymentMix(), [sales, refunds])
-
-  // All unique cashiers for filter
-  const cashiers = useMemo(() => {
-    const names = new Set(sales.map((s) => s.cashier).filter((c): c is string => typeof c === "string" && c.length > 0))
-    return Array.from(names).sort()
-  }, [sales])
-
-  const filteredSales = useMemo(() => {
-    const query = debouncedSearch.trim().toLowerCase()
-    const rangeStart = getDateRangeStart(dateRange)
-
-    let result = sales.filter((sale) => {
-      if (paymentFilter !== "All" && sale.paymentMethod !== paymentFilter) return false
-      if (statusFilter !== "All" && sale.status !== statusFilter) return false
-      if (cashierFilter !== "All" && sale.cashier !== cashierFilter) return false
-      if (rangeStart && new Date(sale.createdAt) < rangeStart) return false
-      if (query) {
-        const matchesSearch =
-          (sale.saleNumber ?? "").toLowerCase().includes(query) ||
-          (sale.customerName ?? "").toLowerCase().includes(query) ||
-          (sale.cashier ?? "").toLowerCase().includes(query) ||
-          (sale.shiftNumber ?? "").toLowerCase().includes(query) ||
-          (Array.isArray(sale.items) && sale.items.some((item) => getItemName(item).toLowerCase().includes(query)))
-        if (!matchesSearch) return false
-      }
-      return true
-    })
-
-    switch (sortOrder) {
-      case "newest":  result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break
-      case "oldest":  result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); break
-      case "highest": result.sort((a, b) => b.total - a.total); break
-      case "lowest":  result.sort((a, b) => a.total - b.total); break
-    }
-
-    return result
-  }, [sales, debouncedSearch, paymentFilter, statusFilter, cashierFilter, dateRange, sortOrder])
-
-  const filteredRevenue = filteredSales.filter((s) => s.status !== "Voided").reduce((s, x) => s + x.total, 0)
-  const filteredProfit = filteredSales.filter((s) => s.status !== "Voided").reduce((s, x) => s + (x.profit ?? 0), 0)
-
-  const activeFilterCount = [
-    paymentFilter !== "All",
-    statusFilter !== "All",
-    cashierFilter !== "All",
-    dateRange !== "all",
-  ].filter(Boolean).length
-
-  const selectedSale = sales.find((s) => s.id === selectedSaleId) ?? filteredSales[0]
-  const drawerSale = sales.find((s) => s.id === drawerSaleId)
+  const cashiers = useMemo(() => Array.from(new Set(sales.map((s) => s.cashier).filter((c): c is string => typeof c === "string" && c.length > 0))).sort(), [sales])
   const canRefund = userCan("sales.refund")
   const canReprint = userCan("sales.reprint")
+  const canVoid = userCan("sales.void")
 
-  useEffect(() => {
-    if (!selectedSale && filteredSales[0]) setSelectedSaleId(filteredSales[0].id)
-  }, [filteredSales, selectedSale])
+  const filtered = useMemo(() => {
+    const query = q.trim().toLowerCase()
+    const start = rangeStart(range)
+    const result = sales.filter((s) => {
+      if (payment !== "All" && s.paymentMethod !== payment) return false
+      if (status === "Refunded" ? getSaleRefundTotal(refunds, s.id) <= 0 : status !== "All" && s.status !== status) return false
+      if (cashier !== "All" && s.cashier !== cashier) return false
+      if (start && new Date(s.createdAt) < start) return false
+      if (query && !((s.saleNumber ?? "").toLowerCase().includes(query) || (s.customerName ?? "").toLowerCase().includes(query) ||
+        (s.cashier ?? "").toLowerCase().includes(query) || (s.shiftNumber ?? "").toLowerCase().includes(query) ||
+        (Array.isArray(s.items) && s.items.some((i) => itemName(i).toLowerCase().includes(query))))) return false
+      return true
+    })
+    const by: Record<SortOrder, (a: Sale, b: Sale) => number> = {
+      newest: (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      oldest: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      highest: (a, b) => b.total - a.total,
+      lowest: (a, b) => a.total - b.total,
+    }
+    return result.sort(by[sort])
+  }, [sales, refunds, q, payment, status, cashier, range, sort])
+  const revenue = filtered.filter((s) => s.status !== "Voided").reduce((sum, s) => sum + s.total, 0)
+  const profit = filtered.filter((s) => s.status !== "Voided").reduce((sum, s) => sum + (s.profit ?? 0), 0)
+  const filtersOn = payment !== "All" || status !== "All" || cashier !== "All" || range !== "all" || !!search
+  const statusCount = (s: Status) => sales.filter((x) => (s === "All" ? true : s === "Refunded" ? getSaleRefundTotal(refunds, x.id) > 0 : x.status === s)).length
+  const receipt = receiptId ? sales.find((s) => s.id === receiptId) : undefined
 
-  useEffect(() => {
-    setRefundQuantities({})
-    setRefundReason("")
-    setRefundStatus(t("pos.sales.refund_status_default"))
-  }, [drawerSaleId, selectedSale?.id])
-
-  function selectTab(tab: SalesTab) {
-    setActiveTab(tab)
-    setSearchParams({ tab: tab === "Insights" ? "insights" : "receipts" })
+  /** Open (or close) a receipt; a different receipt starts with an empty return form. */
+  function openReceipt(id: string | null) {
+    if (id !== receiptId) { setRefundQuantities({}); setRefundReason(""); setRefundStatus(null) }
+    const next = new URLSearchParams(params); if (id) next.set("receipt", id); else next.delete("receipt")
+    setParams(next, { replace: true })
   }
-
-  function handlePrint(sale: Sale) {
-    if (!canReprint) return
-    printSaleReceipt(sale, settings.usdToLbpRate, refunds)
+  function clearFilters() { setSearch(""); setPayment("All"); setStatus("All"); setCashier("All"); setRange("all") }
+  function handlePrint(sale: Sale) { if (canReprint) printSaleReceipt(sale, settings.usdToLbpRate, refunds) }
+  function describeError(error: unknown) {
+    const m = error instanceof Error ? error.message : String(error)
+    if (m.startsWith("VOID_HAS_REFUNDS")) return t("pos.refund.error_void_has_refunds")
+    if (m.startsWith("REFUND_EXCEEDS")) return t("pos.refund.error_exceeds")
+    if (m.startsWith("REFUND_SALE_VOIDED")) return t("pos.refund.error_sale_voided")
+    return m
   }
-
-  function handleRefundQuantityChange(lineKey: string, value: string) {
-    setRefundQuantities((q) => ({ ...q, [lineKey]: value }))
-  }
-
   /** Requested quantities per sale-line key, capped at what remains refundable. */
   function requestedQuantities(sale: Sale) {
     const quantities: Record<string, number> = {}
@@ -257,15 +157,14 @@ export default function SalesPage() {
     }
     return quantities
   }
-
   function handleRecordRefund(sale: Sale) {
-    if (!canRefund) { setRefundStatus(t("pos.permission_required")); return }
+    if (!canRefund) { setRefundStatus({ tone: "err", text: t("pos.permission_required") }); return }
     const quantities = requestedQuantities(sale)
-    if (Object.keys(quantities).length === 0) { setRefundStatus(t("pos.sales.choose_item_qty")); return }
+    if (Object.keys(quantities).length === 0) { setRefundStatus({ tone: "err", text: t("pos.sales.choose_item_qty") }); return }
     try {
       // REFUND-INTEGRITY-1: the amount shown is exactly what will be recorded.
       const preview = previewRefund({ saleId: sale.id, quantities, reason: refundReason })
-      if (preview.total <= 0) { setRefundStatus(t("pos.sales.no_refundable_balance")); return }
+      if (preview.total <= 0) { setRefundStatus({ tone: "err", text: t("pos.sales.no_refundable_balance") }); return }
       const refundItems: RefundItem[] = preview.planned.map((line) => {
         const item = preview.itemFor(line.key)!
         return { id: line.productId, name: item.name, barcode: item.barcode, quantity: line.quantity, unitPrice: item.unitPrice, total: item.unitPrice * line.quantity, saleLineId: line.key }
@@ -273,485 +172,313 @@ export default function SalesPage() {
       refundingRef.current = false // a new confirmation: the next Confirm may record it (once)
       setPendingRefund({ sale, refundTotal: preview.total, refundItems, refundReason, quantities })
     } catch (error) {
-      setRefundStatus(describeRefundError(error))
+      setRefundStatus({ tone: "err", text: describeError(error) })
     }
   }
-
   function executeRefund() {
     if (!pendingRefund || refundingRef.current) return
     refundingRef.current = true
-    const { sale, refundReason, quantities } = pendingRefund
+    const { sale, refundReason: reason, quantities } = pendingRefund
     try {
-      const refund = processRefund({ saleId: sale.id, quantities, reason: refundReason })
+      const refund = processRefund({ saleId: sale.id, quantities, reason })
       setRefunds(getRefunds())
       setRefundQuantities({})
       setRefundReason("")
-      setRefundStatus(t("pos.sales.refund_recorded", { refund: refund.refundNumber }))
+      setRefundStatus({ tone: "ok", text: t("pos.sales.refund_recorded", { refund: refund.refundNumber }) })
     } catch (error) {
       // Nothing was issued: the refund rolled back, so no money should change hands.
-      setRefundStatus(describeRefundError(error))
+      setRefundStatus({ tone: "err", text: describeError(error) })
     } finally {
       setPendingRefund(null)
     }
   }
-
   function executeVoid(saleId: string) {
-    try {
-      voidSale(saleId)
-    } catch (error) {
-      setRefundStatus(describeRefundError(error))
-    }
+    try { voidSale(saleId); setRefundStatus({ tone: "ok", text: t("rcpt.voided") }) } catch (error) { setRefundStatus({ tone: "err", text: describeError(error) }) }
     setVoidSaleId(null)
   }
 
-  function describeRefundError(error: unknown) {
-    const message = error instanceof Error ? error.message : String(error)
-    if (message.startsWith("VOID_HAS_REFUNDS")) return t("pos.refund.error_void_has_refunds")
-    if (message.startsWith("REFUND_EXCEEDS")) return t("pos.refund.error_exceeds")
-    if (message.startsWith("REFUND_SALE_VOIDED")) return t("pos.refund.error_sale_voided")
-    return message
+  const rate = settings.usdToLbpRate
+  const statusBadges = (s: Sale) => {
+    const refunded = getSaleRefundTotal(refunds, s.id)
+    const exact = usdToLbp(s.total, getSaleExchangeRate(s, rate))
+    return (
+      <>
+        {s.status === "Voided" && <Badge tone="err" icon={<XCircle size={13} aria-hidden="true" />}>{t("pos.sales.status_voided")}</Badge>}
+        {s.status === "Debt" && <Badge tone="warn">{t("rcpt.on_account")}</Badge>}
+        {refunded > 0 && <Badge tone="info" icon={<RotateCcw size={13} aria-hidden="true" />}>{t("rcpt.refunded_amount", { amount: formatCurrency(refunded) })}</Badge>}
+        {Boolean(s.payableLbp) && s.payableLbp !== exact && <Badge tone="muted">{t("rcpt.rounded")}</Badge>}
+        {s.soldAtCost && <Badge tone="muted">{t("rcpt.at_cost")}</Badge>}
+      </>
+    )
   }
-
-  const dateRangeOptions: { key: DateRange; label: string }[] = [
-    { key: "today", label: t("pos.sales.today") },
-    { key: "week",  label: t("pos.sales.this_week") },
-    { key: "month", label: t("pos.sales.this_month") },
-    { key: "all",   label: t("pos.sales.all_time") },
-  ]
-
-  const sortOptions: { key: SortOrder; label: string }[] = [
-    { key: "newest",  label: t("pos.sales.sort_newest") },
-    { key: "oldest",  label: t("pos.sales.sort_oldest") },
-    { key: "highest", label: t("pos.sales.sort_highest") },
-    { key: "lowest",  label: t("pos.sales.sort_lowest") },
-  ]
+  const groups = useMemo(() => {
+    if (!groupByDay) return [{ key: "all", label: "", items: filtered }]
+    const m = new Map<string, Sale[]>()
+    for (const s of filtered) { const d = new Date(s.createdAt); const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; m.set(k, [...(m.get(k) ?? []), s]) }
+    return [...m.entries()].map(([key, items]) => ({ key, label: date.dayHead(items[0].createdAt), items }))
+  }, [filtered, groupByDay, date])
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
-      <SalesKpiCards metrics={metrics} />
+    <main className="mg2 mg2-bo min-h-0 flex-1 overflow-y-auto">
+      <div className="mg2-wrap">
+        <PageHeader eyebrow={t("rcpt.sell")} title={t("rcpt.title")} actions={
+          <button type="button" className="mg2-btn" onClick={() => exportSalesCsv(filtered)} disabled={filtered.length === 0}><Download size={16} />{t("rcpt.export")}</button>
+        } />
+        <PageTabs label={t("rcpt.tabs")} current={tab} items={[{ value: "receipts", label: t("pos.sales.tab_receipts"), count: sales.length }, { value: "insights", label: t("pos.sales.tab_insights") }]} />
 
-      {/* ── Tab bar + search row ── */}
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <WorkspaceTabs<SalesTab>
-          active={activeTab}
-          onChange={selectTab}
-          tabs={[
-            { label: t("pos.sales.tab_receipts") as SalesTab, icon: <ReceiptText size={15} />, count: filteredSales.length },
-            { label: t("pos.sales.tab_insights") as SalesTab, icon: <BarChart3 size={15} /> },
-          ]}
-        />
+        {/* REFUND-INTEGRITY-1: server-rejected refunds stay visible until settled */}
+        <MoneyConflictsPanel />
 
-        <div className="flex flex-wrap gap-2">
-          {/* Search */}
-          <label className="relative min-w-[200px] flex-1 sm:flex-none sm:w-56">
-            <Search size={14} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-3)" }} />
-            <input
-              ref={searchRef}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("pos.sales.search_placeholder")}
-              className="input w-full ps-9"
-              style={{ height: 36 }}
-            />
-            {search && (
-              <button type="button" onClick={() => setSearch("")} className="absolute end-2.5 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100">
-                <X size={14} style={{ color: "var(--text-3)" }} />
-              </button>
-            )}
-          </label>
-
-          {/* Sort */}
-          <div className="relative">
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-              className="input appearance-none pe-8 ps-9"
-              style={{ height: 36, fontSize: 13, fontWeight: 600 }}
-            >
-              {sortOptions.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
-            </select>
-            <ArrowDownUp size={14} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-3)" }} />
-          </div>
-
-          {/* Filters toggle */}
-          <button
-            type="button"
-            onClick={() => setFiltersOpen(!filtersOpen)}
-            className={`btn btn-default h-9 gap-2 relative ${filtersOpen ? "ring-2 ring-[var(--brand)]" : ""}`}
-          >
-            <Filter size={14} />
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--brand)] text-[10px] font-bold text-white">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-
-          {/* Export */}
-          <button
-            type="button"
-            onClick={() => exportSalesCsv(filteredSales)}
-            disabled={filteredSales.length === 0}
-            className="btn btn-default h-9 gap-2"
-          >
-            <Download size={14} />
-            {t("pos.sales.export_csv")}
-          </button>
+        <div className="mg2-stats" style={{ marginBlock: 16 }}>
+          <StatTile label={t("rcpt.kpi.gross")} value={<>{formatCurrency(metrics.todayGross)}<span className="mg2-cap" style={{ display: "block", fontSize: 13, fontWeight: 500 }}>{formatLbpCurrency(usdToLbp(metrics.todayGross, rate))}</span></>} />
+          <StatTile label={t("rcpt.kpi.net")} value={<>{formatCurrency(metrics.todayNetRevenue)}<span className="mg2-cap" style={{ display: "block", fontSize: 13, fontWeight: 500 }}>{formatLbpCurrency(usdToLbp(metrics.todayNetRevenue, rate))}</span></>} />
+          <StatTile label={t("rcpt.kpi.refunds")} value={<span className={metrics.todayRefunds > 0 ? "t-pos" : undefined}>{formatCurrency(metrics.todayRefunds)}</span>} />
+          <StatTile label={t("rcpt.kpi.count")} value={formatNumber(metrics.todayTransactions)} />
         </div>
+
+        <div className="mg2-toolbar">
+          <div className="mg2-search">
+            <Search size={16} aria-hidden="true" />
+            <input ref={searchRef} className="mg2-input" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("rcpt.search")} aria-label={t("rcpt.search")} />
+          </div>
+          <select className="mg2-select" value={payment} onChange={(e) => setPayment(e.target.value as "All" | SalePaymentMethod)} aria-label={t("rcpt.payment")}>
+            {PAYMENTS.map((p) => <option key={p} value={p}>{p === "All" ? t("pos.sales.all_payments") : t(`pos.payment.${p.toLowerCase()}`)}</option>)}
+          </select>
+          {cashiers.length > 1 && (
+            <select className="mg2-select" value={cashier} onChange={(e) => setCashier(e.target.value)} aria-label={t("rcpt.cashier")}>
+              <option value="All">{t("pos.sales.filter_cashier")}</option>
+              {cashiers.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+          <label className="mg2-select" style={{ display: "inline-flex", alignItems: "center", gap: 6, paddingInlineEnd: 4 }}>
+            <ArrowDownUp size={14} aria-hidden="true" style={{ color: "var(--text-3)" }} />
+            <select value={sort} onChange={(e) => setSort(e.target.value as SortOrder)} aria-label={t("rcpt.sort")} style={{ background: "transparent", border: 0, color: "inherit", font: "inherit", minHeight: "calc(var(--mg2-ctl) - 2px)" }}>
+              {(["newest", "oldest", "highest", "lowest"] as const).map((k) => <option key={k} value={k}>{t(`pos.sales.sort_${k}`)}</option>)}
+            </select>
+          </label>
+        </div>
+        <div className="mg2-chips" role="group" aria-label={t("rcpt.when")} style={{ marginBottom: 8 }}>
+          {RANGES.map((r) => <FilterChip key={r} pressed={range === r} onClick={() => setRange(r)} label={t(`rcpt.range.${r}`)} />)}
+          <span aria-hidden="true" style={{ width: 1, background: "var(--border)", marginInline: 4 }} />
+          <FilterChip pressed={groupByDay} onClick={() => setGroupByDay((g) => !g)} label={t("pos.sales.group_by_day")} />
+        </div>
+        <div className="mg2-chips" role="group" aria-label={t("rcpt.status")} style={{ marginBottom: 12 }}>
+          {STATUSES.map((s) => <FilterChip key={s} pressed={status === s} onClick={() => setStatus(s)} label={t(`rcpt.status.${s}`)} count={statusCount(s)} tone={s === "Voided" ? "err" : s === "Debt" ? "warn" : undefined} />)}
+        </div>
+
+        {tab === "insights" ? (
+          <InsightsPanel filteredSales={filtered} paymentMix={paymentMix} onViewSale={(s) => openReceipt(s.id)} onExportCsv={() => exportSalesCsv(filtered)} />
+        ) : sales.length === 0 ? (
+          <div className="mg2-card"><EmptyState icon={<ReceiptText size={28} aria-hidden="true" />} title={t("rcpt.empty_title")} text={t("rcpt.empty_text")} /></div>
+        ) : filtered.length === 0 ? (
+          <div className="mg2-card"><EmptyState title={t("acct.no_match")} text={t("rcpt.no_match_text")} action={<button type="button" className="mg2-btn" onClick={clearFilters}>{t("acct.clear_filters")}</button>} /></div>
+        ) : (
+          <>
+            <div className="mg2-table-wrap wide-only">
+              <table className="mg2-table" aria-label={t("rcpt.table")}>
+                <thead><tr>
+                  <th>{t("rcpt.col.receipt")}</th><th>{t("acct.col.date")}</th><th className="p3">{t("rcpt.col.customer")}</th>
+                  <th>{t("rcpt.payment")}</th><th className="p4">{t("rcpt.cashier")}</th><th className="num">{t("acct.col.total")}</th>
+                </tr></thead>
+                <tbody>
+                  {groups.map((g) => (
+                    <GroupRows key={g.key} label={g.label} summary={g.label ? t("rcpt.day_summary", { n: g.items.length, total: formatCurrency(g.items.filter((s) => s.status !== "Voided").reduce((x, s) => x + s.total, 0)) }) : ""}>
+                      {g.items.map((s) => (
+                        <tr key={s.id} aria-selected={receiptId === s.id} onClick={() => openReceipt(s.id)}>
+                          <td>
+                            <button type="button" className="mg2-sort num-ltr" style={{ fontWeight: 600 }} onClick={(e) => { e.stopPropagation(); openReceipt(s.id) }}>{s.saleNumber}</button>
+                            <span className="sub" style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                              <span style={{ maxWidth: 320, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.items.map(itemName).filter(Boolean).join(", ")}</span>{statusBadges(s)}
+                            </span>
+                          </td>
+                          <td style={{ color: "var(--text-2)", whiteSpace: "nowrap" }}>{groupByDay ? date.time(s.createdAt) : date.stamp(s.createdAt)}</td>
+                          <td className="p3">{s.customerName || <span style={{ color: "var(--text-3)" }}>{t("pos.walk_in")}</span>}</td>
+                          <td><Badge tone="muted">{t(`pos.payment.${s.paymentMethod.toLowerCase()}`)}</Badge></td>
+                          <td className="p4" style={{ color: "var(--text-2)" }}>{s.cashier}</td>
+                          <td className="num" style={{ fontWeight: 700, textDecoration: s.status === "Voided" ? "line-through" : undefined }}>{formatCurrency(s.total)}</td>
+                        </tr>
+                      ))}
+                    </GroupRows>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="phone-only">
+              {groups.map((g) => (
+                <section key={g.key} aria-label={g.label || t("rcpt.table")} style={{ marginBottom: 12 }}>
+                  {g.label && <h3 className="mg2-cap" style={{ margin: "0 0 6px", fontWeight: 600 }}>{g.label}</h3>}
+                  <div className="mg2-rowcards" role="list">
+                    {g.items.map((s) => (
+                      <button key={s.id} type="button" role="listitem" className="mg2-rowcard" aria-current={receiptId === s.id || undefined} onClick={() => openReceipt(s.id)}>
+                        <span className="top"><span className="name num-ltr">{s.saleNumber}</span><span className="amt" style={{ textDecoration: s.status === "Voided" ? "line-through" : undefined }}>{formatCurrency(s.total)}</span></span>
+                        <span className="meta"><span>{date.stamp(s.createdAt)}</span><span>{t(`pos.payment.${s.paymentMethod.toLowerCase()}`)}</span><span>{s.customerName || t("pos.walk_in")}</span><span>{t("rcpt.items_n", { n: formatNumber(getSaleQuantity(s)) })}</span></span>
+                        {(s.status !== "Completed" || getSaleRefundTotal(refunds, s.id) > 0 || s.soldAtCost || Boolean(s.payableLbp)) && <span className="meta">{statusBadges(s)}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+            <p className="mg2-cap" style={{ marginTop: 8 }}>
+              {t("rcpt.footer", { n: filtered.length, revenue: formatCurrency(revenue) })}{profit > 0 && <> · {t("rcpt.footer_profit", { profit: formatCurrency(profit) })}</>}
+              {filtersOn && <> · <button type="button" className="mg2-sort" style={{ color: "var(--text)", textDecoration: "underline" }} onClick={clearFilters}>{t("acct.clear_filters")}</button></>}
+            </p>
+          </>
+        )}
       </div>
 
-      {/* ── Filter panel ── */}
-      {filtersOpen && (
-        <div
-          className="mt-3 rounded-xl border p-4 animate-fade-in"
-          style={{ background: "var(--surface)", borderColor: "var(--border)" }}
-        >
-          <div className="flex flex-wrap gap-4">
-            {/* Date range */}
-            <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>
-                <Calendar size={11} className="inline me-1" />
-                Date Range
-              </p>
-              <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: "var(--border)" }}>
-                  {dateRangeOptions.map((o) => (
-                    <button
-                      key={o.key}
-                      type="button"
-                      onClick={() => setDateRange(o.key)}
-                      className="px-3 h-8 text-[12px] font-semibold transition"
-                      style={dateRange === o.key
-                        ? { background: "var(--brand)", color: "var(--brand-contrast)" }
-                        : { color: "var(--text-2)" }
-                      }
-                    >
-                      {o.label}
-                    </button>
-                  ))}
-              </div>
-            </div>
-
-            {/* Payment method */}
-            <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Payment</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(["All", "Cash", "Card", "Wallet", "Debt"] as const).map((pm) => (
-                  <button
-                    key={pm}
-                    type="button"
-                    aria-pressed={paymentFilter === pm}
-                    onClick={() => setPaymentFilter(pm)}
-                    className="h-8 rounded-lg border px-3 text-[12px] font-semibold transition"
-                    style={paymentFilter === pm
-                      ? { background: "var(--brand)", borderColor: "var(--brand)", color: "var(--brand-contrast)" }
-                      : { borderColor: "var(--border)", color: "var(--text-2)" }
-                    }
-                  >
-                    {pm === "All" ? t("pos.sales.all_payments") : t(`pos.payment.${pm.toLowerCase()}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Status */}
-            <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Status</p>
-              <div className="flex flex-wrap gap-1.5">
-                {(["All", "Completed", "Voided", "Debt"] as const).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    aria-pressed={statusFilter === s}
-                    onClick={() => setStatusFilter(s)}
-                    className="h-8 rounded-lg border px-3 text-[12px] font-semibold transition"
-                    style={statusFilter === s
-                      ? { background: "var(--brand)", borderColor: "var(--brand)", color: "var(--brand-contrast)" }
-                      : { borderColor: "var(--border)", color: "var(--text-2)" }
-                    }
-                  >
-                    {s === "All" ? "All" : t(`pos.sales.status_${s.toLowerCase()}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Cashier */}
-            {cashiers.length > 1 && (
-              <div>
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Cashier</p>
-                <select
-                  value={cashierFilter}
-                  onChange={(e) => setCashierFilter(e.target.value)}
-                  className="input h-8"
-                  style={{ fontSize: 12, fontWeight: 600, minWidth: 140 }}
-                >
-                  <option value="All">{t("pos.sales.filter_cashier")}</option>
-                  {cashiers.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-            )}
-
-            {/* Group by day toggle */}
-            <div>
-              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>View</p>
-              <button
-                type="button"
-                onClick={() => setGroupByDay(!groupByDay)}
-                className="h-8 rounded-lg border px-3 text-[12px] font-semibold transition gap-2 flex items-center"
-                style={groupByDay
-                  ? { background: "var(--brand-soft)", borderColor: "var(--brand)", color: "var(--brand-text)" }
-                  : { borderColor: "var(--border)", color: "var(--text-2)" }
-                }
-              >
-                {t("pos.sales.group_by_day")}
-              </button>
-            </div>
-
-            {/* Clear */}
-            {activeFilterCount > 0 && (
-              <div className="flex items-end">
-                <button
-                  type="button"
-                  onClick={() => { setPaymentFilter("All"); setStatusFilter("All"); setCashierFilter("All"); setDateRange("all") }}
-                  className="h-8 rounded-lg px-3 text-[12px] font-semibold transition hover:opacity-80"
-                  style={{ color: "var(--rose)", background: "var(--rose-soft)" }}
-                >
-                  Clear filters
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Results summary */}
-          <div
-            className="mt-3 rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between"
-            style={{ background: "var(--surface-2)", color: "var(--text-2)" }}
-          >
-            <span>
-              <span style={{ color: "var(--text)" }}>{filteredSales.length}</span> sales
-              {" · "}
-              <span className="tabular-nums font-bold" style={{ color: "var(--text)" }}>{formatCurrency(filteredRevenue)}</span> revenue
-              {filteredProfit > 0 && (
-                <> · <span className="tabular-nums font-bold" style={{ color: "var(--success-text)" }}>{formatCurrency(filteredProfit)}</span> profit</>
-              )}
-            </span>
-            {search && (
-              <span style={{ color: "var(--text-3)" }}>matching "{search}"</span>
-            )}
-          </div>
-        </div>
+      {receipt && (
+        <ReceiptDrawer key={receipt.id} sale={receipt} refunds={refunds} rate={rate} canRefund={canRefund} canReprint={canReprint} canVoid={canVoid}
+          quantities={refundQuantities} reason={refundReason} status={refundStatus}
+          onClose={() => openReceipt(null)} onPrint={() => handlePrint(receipt)}
+          onQuantity={(key, v) => setRefundQuantities((x) => ({ ...x, [key]: v }))} onReason={setRefundReason}
+          onRefund={() => handleRecordRefund(receipt)} onVoid={() => setVoidSaleId(receipt.id)} />
       )}
 
-      {/* REFUND-INTEGRITY-1: server-rejected refunds stay visible until settled */}
-      <MoneyConflictsPanel />
-
-      {/* ── Content ── */}
-      {activeTab === "Receipts" ? (
-        <section className="mt-4">
-          {groupByDay && activeTab === "Receipts" ? (
-            // Grouped by day view
-            <div className="space-y-4">
-              {groupSalesByDay(filteredSales).map(({ date, items: daySales }) => (
-                <div key={date}>
-                  <div className="flex items-center justify-between mb-2 px-1">
-                    <p className="text-[12px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>{date}</p>
-                    <p className="text-[12px] font-semibold" style={{ color: "var(--text-3)" }}>
-                      {daySales.length} sales · {formatCurrency(daySales.filter((s) => s.status !== "Voided").reduce((sum, s) => sum + s.total, 0))}
-                    </p>
-                  </div>
-                  <div className="grid gap-4 xl:grid-cols-[minmax(320px,430px)_minmax(0,1fr)]">
-                    <div className="space-y-2">
-                      {daySales.map((sale) => (
-                        <SaleRow
-                          key={sale.id}
-                          sale={sale}
-                          selected={selectedSaleId === sale.id}
-                          refunds={refunds}
-                          onSelect={() => setSelectedSaleId(sale.id)}
-                          onView={() => { setSelectedSaleId(sale.id); setDrawerSaleId(sale.id) }}
-                          onPrint={() => handlePrint(sale)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {filteredSales.length === 0 && <EmptyResult />}
-            </div>
-          ) : (
-            // Standard two-pane view
-            <div className="grid gap-4 xl:grid-cols-[minmax(320px,430px)_minmax(0,1fr)]">
-              <ReceiptList
-                filteredSales={filteredSales}
-                selectedSaleId={selectedSaleId}
-                refunds={refunds}
-                onSelectSale={setSelectedSaleId}
-                handlePrint={handlePrint}
-                onViewSale={(sale) => { setSelectedSaleId(sale.id); setDrawerSaleId(sale.id) }}
-              />
-              <div className="hidden xl:block">
-                <div className="sticky top-4">
-                  <ReceiptPreview
-                    sale={selectedSale}
-                    fallbackExchangeRate={settings.usdToLbpRate}
-                    refunds={refunds}
-                    refundQuantities={refundQuantities}
-                    refundReason={refundReason}
-                    refundStatus={refundStatus}
-                    canRefund={canRefund}
-                    onPrint={handlePrint}
-                    onRefundQuantityChange={handleRefundQuantityChange}
-                    onRefundReasonChange={setRefundReason}
-                    onRecordRefund={handleRecordRefund}
-                    onVoid={setVoidSaleId}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-      ) : (
-        <InsightsPanel
-          filteredSales={filteredSales}
-          paymentMix={paymentMix}
-          onViewSale={(sale) => setDrawerSaleId(sale.id)}
-          onExportCsv={() => exportSalesCsv(filteredSales)}
-        />
-      )}
-
-      {/* Mobile receipt drawer */}
-      {drawerSale && (
-        <div
-          className="fixed inset-0 z-50 flex justify-end"
-          onKeyDown={(e) => { if (e.key === "Escape") setDrawerSaleId(null) }}
-          tabIndex={0}
-        >
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setDrawerSaleId(null)} />
-          <aside
-            role="dialog"
-            aria-modal="true"
-            className="relative z-10 flex h-full w-full max-w-2xl flex-col overflow-hidden shadow-2xl sm:rounded-xl animate-fade-in"
-            style={{ background: "var(--surface)" }}
-          >
-            <div className="flex-1 overflow-y-auto">
-              <ReceiptPreview
-                sale={drawerSale}
-                fallbackExchangeRate={settings.usdToLbpRate}
-                refunds={refunds}
-                refundQuantities={refundQuantities}
-                refundReason={refundReason}
-                refundStatus={refundStatus}
-                canRefund={canRefund}
-                onClose={() => setDrawerSaleId(null)}
-                onPrint={handlePrint}
-                onRefundQuantityChange={handleRefundQuantityChange}
-                onRefundReasonChange={setRefundReason}
-                onRecordRefund={handleRecordRefund}
-                onVoid={setVoidSaleId}
-              />
-            </div>
-          </aside>
-        </div>
-      )}
-
-      <ConfirmDialog
-        open={!!pendingRefund}
-        title={t("pos.record_return")}
-        confirmLabel={t("pos.record_return")}
-        confirmDestructive
-        onConfirm={executeRefund}
-        onCancel={() => setPendingRefund(null)}
-      >
-        <p>{t("pos.sales.confirm_refund", { count: pendingRefund?.refundItems.length ?? 0, total: formatCurrency(pendingRefund?.refundTotal ?? 0) })}</p>
-        {pendingRefund?.refundReason && <p className="mt-1 text-xs" style={{ color: "var(--text-3)" }}>Reason: {pendingRefund.refundReason}</p>}
+      <ConfirmLayer open={!!pendingRefund} title={t("pos.record_return")} confirmLabel={t("pos.record_return")} confirmDestructive
+        onConfirm={executeRefund} onCancel={() => setPendingRefund(null)}>
+        <p>{t("rcpt.confirm_refund", { number: pendingRefund?.sale.saleNumber ?? "", count: pendingRefund?.refundItems.reduce((n, i) => n + i.quantity, 0) ?? 0, total: formatCurrency(pendingRefund?.refundTotal ?? 0) })}</p>
+        {pendingRefund?.refundReason && <p className="mt-1 text-xs" style={{ color: "var(--text-3)" }}>{t("rcpt.reason_is", { reason: pendingRefund.refundReason })}</p>}
         <p className="mt-2 text-xs font-semibold" style={{ color: "var(--text-2)" }}>
-          Stock will be restored and batch quantities returned. {pendingRefund?.sale.paymentMethod === "Debt" ? "Customer debt will be reduced." : ""}
+          {pendingRefund?.sale.paymentMethod === "Debt" ? t("rcpt.refund_effect_debt") : t("rcpt.refund_effect", { method: t(`rcpt.refund_method.${pendingRefund ? getRefundMethod(pendingRefund.sale) : "Cash"}`) })}
         </p>
-      </ConfirmDialog>
-
-      <ConfirmDialog
-        open={voidSaleId !== null}
-        title={t("pos.sales.void_sale_title")}
-        confirmLabel={t("pos.void")}
-        confirmDestructive
-        onConfirm={() => { if (voidSaleId) executeVoid(voidSaleId) }}
-        onCancel={() => setVoidSaleId(null)}
-      >
-        <p>{t("pos.sales.void_sale_message")}</p>
-        <p className="mt-2 text-xs font-semibold" style={{ color: "var(--rose-text)" }}>
-          This will reverse the sale, restore inventory, and remove any customer debt. This cannot be undone.
-        </p>
-      </ConfirmDialog>
+      </ConfirmLayer>
+      <ConfirmLayer open={voidSaleId !== null} title={t("pos.sales.void_sale_title")} confirmLabel={t("pos.void")} confirmDestructive
+        onConfirm={() => { if (voidSaleId) executeVoid(voidSaleId) }} onCancel={() => setVoidSaleId(null)}>
+        {(() => { const s = sales.find((x) => x.id === voidSaleId); return <p>{t("rcpt.void_text", { number: s?.saleNumber ?? "", total: formatCurrency(s?.total ?? 0) })}</p> })()}
+        <p className="mt-2 text-xs font-semibold" style={{ color: "var(--rose-text)" }}>{t("rcpt.void_effect")}</p>
+      </ConfirmLayer>
     </main>
   )
 }
 
-// ── Compact sale row for grouped view ──
-function SaleRow({ sale, selected, refunds, onSelect, onView, onPrint }: {
-  sale: Sale; selected: boolean; refunds: SaleRefund[]
-  onSelect: () => void; onView: () => void; onPrint: () => void
-}) {
-  const saleRefunds = refunds.filter((r) => r.saleId === sale.id)
-  // totalLbp isn't a Sale field — it must be computed the same way the
-  // checkout screen and receipt do, using the sale's OWN historical exchange
-  // rate (tender.exchangeRate), not today's rate, since it may have changed
-  // since the sale. Previously compared against sale.totalLbp directly,
-  // which was always undefined, so this was really just Boolean(payableLbp)
-  // — true for every cash sale that had a payableLbp, even ones with no
-  // actual rounding.
-  const saleExchangeRate = getSaleExchangeRate(sale, getSettings().usdToLbpRate)
-  const saleTotalLbp = usdToLbp(sale.total, saleExchangeRate)
-  const hasRounding = Boolean(sale.payableLbp) && sale.payableLbp !== saleTotalLbp
+function GroupRows({ label, summary, children }: { label: string; summary: string; children: ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      onDoubleClick={onView}
-      aria-label={`Sale ${sale.saleNumber}, ${sale.paymentMethod}, ${formatCurrency(sale.total)}${sale.customerName ? `, ${sale.customerName}` : ""}${saleRefunds.length > 0 ? `, ${saleRefunds.length} refunds` : ""}`}
-      className="w-full rounded-xl border px-4 py-3 text-start transition"
-      style={selected
-        ? { borderColor: "var(--brand)", background: "var(--brand-soft)" }
-        : { borderColor: "var(--border)", background: "var(--surface)" }
-      }
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className={`chip ${PM_COLORS[sale.paymentMethod] ?? "chip-neutral"}`}>
-            {sale.paymentMethod}
-          </span>
-          <span className="text-[13px] font-bold truncate" style={{ color: "var(--text)" }}>{sale.saleNumber}</span>
-          {saleRefunds.length > 0 && (
-            <span className="chip chip-warning">↩ {saleRefunds.length}</span>
-          )}
-          {hasRounding && (
-            <span className="chip text-[10px] px-1.5 py-0.5 rounded font-bold"
-              style={{ background: "var(--warning-soft)", color: "var(--warning-text)" }}>
-              rounded
-            </span>
-          )}
-        </div>
-        <span className="text-[14px] font-bold tabular-nums shrink-0" style={{ color: "var(--text)" }}>
-          {formatCurrency(sale.total)}
-        </span>
-      </div>
-      {(sale.customerName || sale.cashier) && (
-        <div className="mt-1 flex gap-3 text-[11px]" style={{ color: "var(--text-3)" }}>
-          {sale.customerName && <span>{sale.customerName}</span>}
-          {sale.cashier && <span>{sale.cashier}</span>}
-          <span className="ms-auto">{new Date(sale.createdAt).toLocaleTimeString("en-LB", { hour: "2-digit", minute: "2-digit" })}</span>
-        </div>
-      )}
-    </button>
+    <>
+      {label && <tr className="mg2-dayrow"><td colSpan={6}><span style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><span>{label}</span><span>{summary}</span></span></td></tr>}
+      {children}
+    </>
   )
 }
 
-function EmptyResult() {
+/** One receipt: lines, totals (USD, LBP at the sale's own rate, cash rounding as recorded), tender, refunds, returns and void. */
+function ReceiptDrawer({ sale, refunds, rate, canRefund, canReprint, canVoid, quantities, reason, status, onClose, onPrint, onQuantity, onReason, onRefund, onVoid }: {
+  sale: Sale; refunds: SaleRefund[]; rate: number; canRefund: boolean; canReprint: boolean; canVoid: boolean
+  quantities: Record<string, string>; reason: string; status: { tone: "ok" | "err" | "info"; text: string } | null
+  onClose: () => void; onPrint: () => void; onQuantity: (key: string, v: string) => void; onReason: (v: string) => void; onRefund: () => void; onVoid: () => void
+}) {
+  const { t } = useI18n()
+  const date = useDate()
+  const [returning, setReturning] = useState(false)
+  const saleRate = getSaleExchangeRate(sale, rate)
+  const totalLbp = usdToLbp(sale.total, saleRate)
+  const rounded = Boolean(sale.payableLbp) && sale.payableLbp !== totalLbp
+  const discount = sale.discountTotal ?? 0
+  const saleRefunds = getSaleRefunds(refunds, sale.id)
+  const refunded = getSaleRefundTotal(refunds, sale.id)
+  const refundable = sale.status !== "Voided" && sale.items.some((i) => getRefundableQuantity(sale, i, refunds) > 0)
+  const draft = sale.items.map((i) => {
+    const qty = Math.min(parseReturnQuantity(quantities[refundLineKeyOf(i)] ?? ""), getRefundableQuantity(sale, i, refunds))
+    return { ...i, quantity: qty, total: i.unitPrice * qty }
+  }).filter((i) => i.quantity > 0)
+  const draftTotal = Math.min(Math.max(0, sale.total - refunded), getRefundTotal(sale, draft))
+  const refundBlocked = !canRefund ? t("rcpt.needs_refund") : !refundable ? t(sale.status === "Voided" ? "pos.refund.error_sale_voided" : "pos.sales.no_refundable_balance") : ""
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <ReceiptText size={40} style={{ color: "var(--text-3)" }} className="mb-4" />
-      <p className="text-[15px] font-semibold" style={{ color: "var(--text-2)" }}>No sales match your filters</p>
-      <p className="text-[13px] mt-1" style={{ color: "var(--text-3)" }}>Try adjusting the date range or clearing filters</p>
-    </div>
+    <Drawer open wide title={t("rcpt.receipt_title", { number: sale.saleNumber })} onClose={onClose}
+      subtitle={<span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>{date.full(sale.createdAt)}
+        {sale.status === "Voided" && <Badge tone="err">{t("pos.sales.status_voided")}</Badge>}
+        {sale.status === "Debt" && <Badge tone="warn">{t("rcpt.on_account")}</Badge>}
+        {sale.soldAtCost && <Badge tone="muted">{t("rcpt.at_cost")}</Badge>}</span>}
+      footer={<>
+        {canReprint ? <button type="button" className="mg2-btn" onClick={onPrint} data-autofocus><Printer size={16} />{t("pos.print")}</button> : null}
+        <button type="button" className="mg2-btn" disabled={!!refundBlocked} aria-describedby={refundBlocked ? "rc-refund-why" : undefined} aria-expanded={returning} onClick={() => setReturning((r) => !r)}><RotateCcw size={16} />{t("rcpt.return_items")}</button>
+        {sale.status !== "Voided" && (canVoid
+          ? <button type="button" className="mg2-btn mg2-btn-danger" onClick={onVoid}><XCircle size={16} />{t("pos.void")}</button>
+          : <span className="mg2-cap" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><Lock size={14} aria-hidden="true" />{t("rcpt.needs_void")}</span>)}
+      </>}>
+      {refundBlocked && <p className="mg2-cap" id="rc-refund-why" style={{ margin: 0, display: "flex", gap: 6, alignItems: "center" }}>{!canRefund && <Lock size={14} aria-hidden="true" />}{refundBlocked}</p>}
+      {status && (
+        <div className={`mg2-banner ${status.tone === "ok" ? "mg2-t-ok" : status.tone === "err" ? "mg2-t-err" : "mg2-t-info"}`} role={status.tone === "err" ? "alert" : "status"}>
+          {status.tone === "ok" ? <CheckCircle2 size={18} aria-hidden="true" /> : <AlertTriangle size={18} aria-hidden="true" />}<span style={{ flex: 1, color: "var(--text)" }}>{status.text}</span>
+        </div>
+      )}
+      <dl className="mg2-kv">
+        <div><dt>{t("rcpt.payment")}</dt><dd>{t(`pos.payment.${sale.paymentMethod.toLowerCase()}`)}</dd></div>
+        <div><dt>{t("rcpt.col.customer")}</dt><dd>{sale.customerName ?? t("pos.walk_in")}</dd></div>
+        <div><dt>{t("rcpt.cashier")}</dt><dd>{sale.cashier}</dd></div>
+        {sale.shiftNumber && <div><dt>{t("rcpt.shift")}</dt><dd className="num-ltr">{sale.shiftNumber}</dd></div>}
+      </dl>
+      <div className="mg2-table-wrap">
+        <table className="mg2-table" aria-label={t("rcpt.lines")}>
+          <thead><tr><th>{t("acct.s.col.item")}</th><th className="num">{t("acct.col.qty")}</th><th className="num p3">{t("rcpt.col.unit")}</th><th className="num">{t("acct.col.total")}</th></tr></thead>
+          <tbody>
+            {sale.items.map((i, n) => {
+              const back = getRefundedQuantity(refunds, sale.id, i)
+              return (
+                <tr key={`${i.lineId ?? i.id}-${n}`} className="mg2-static">
+                  <td style={{ fontWeight: 600 }}>{itemName(i) || "—"}{back > 0 && <span className="sub">{t("rcpt.returned_n", { n: formatNumber(back) })}</span>}</td>
+                  <td className="num">{formatNumber(i.quantity)}</td>
+                  <td className="num p3">{formatCurrency(i.unitPrice)}</td>
+                  <td className="num">{formatCurrency(i.total)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="mg2-card" style={{ padding: 12 }}>
+        {discount > 0 && <>
+          <div className="mg2-sum"><span>{t("pos.items_subtotal")}</span><strong>{formatCurrency(getSaleGrossSubtotal(sale))}</strong></div>
+          <div className="mg2-sum"><span>{t("pos.discount")}</span><strong>−{formatCurrency(discount)}</strong></div>
+        </>}
+        <div className="mg2-sum"><span>{t("pos.subtotal")}</span><strong>{formatCurrency(sale.subtotal)}</strong></div>
+        <div className="mg2-sum"><span>{t("pos.vat")}</span><strong>{formatCurrency(sale.tax)}</strong></div>
+        <div className="mg2-sum" style={{ fontSize: 18, borderTop: "1px solid var(--border)", marginTop: 4, paddingTop: 8 }}><span style={{ fontWeight: 700 }}>{t("pos.total_usd")}</span><strong>{formatCurrency(sale.total)}</strong></div>
+        <div className="mg2-sum"><span>{t("pos.total_lbp")}</span><strong>{formatLbpCurrency(totalLbp)}</strong></div>
+        <p className="mg2-cap" style={{ margin: 0, fontSize: 13 }}>{t("rcpt.at_rate", { rate: formatNumber(saleRate) })}</p>
+        {rounded && <div className="mg2-sum"><span>{t("rcpt.cash_payable")}</span><strong>{formatLbpCurrency(sale.payableLbp!)}</strong></div>}
+        {refunded > 0 && <>
+          <div className="mg2-sum"><span>{t("pos.refunded")}</span><strong className="t-pos">−{formatCurrency(refunded)}</strong></div>
+          <div className="mg2-sum" style={{ borderTop: "1px solid var(--border)", marginTop: 4, paddingTop: 8 }}><span style={{ fontWeight: 700 }}>{t("pos.net_receipt")}</span><strong>{formatCurrency(Math.max(0, sale.total - refunded))}</strong></div>
+        </>}
+      </div>
+      {sale.tender && (
+        <dl className="mg2-kv">
+          <div><dt>{t("pos.paid_total")}</dt><dd>{formatCurrency(sale.tender.paidTotalUsd)} · {formatLbpCurrency(sale.tender.paidTotalLbp)}</dd></div>
+          <div><dt>{t("pos.change_usd")}</dt><dd>{formatCurrency(sale.tender.changeUsd)}</dd></div>
+          <div><dt>{t("pos.change_lbp")}</dt><dd>{formatLbpCurrency(sale.tender.changeLbp)}</dd></div>
+        </dl>
+      )}
+      {saleRefunds.length > 0 && (
+        <section aria-label={t("rcpt.refunds")}>
+          <h3 className="mg2-section-title" style={{ marginBottom: 8 }}>{t("rcpt.refunds")} <span className="mg2-count num">{saleRefunds.length}</span></h3>
+          {saleRefunds.map((r) => (
+            <div key={r.id} className="mg2-sum"><span><span className="num-ltr" style={{ fontWeight: 600 }}>{r.refundNumber}</span> · {date.stamp(r.createdAt)}{r.reason ? ` · ${r.reason}` : ""}</span><strong className="t-pos">−{formatCurrency(r.total)}</strong></div>
+          ))}
+        </section>
+      )}
+      {returning && !refundBlocked && (
+        <section className="mg2-card" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }} aria-label={t("rcpt.return_items")}>
+          <div className="mg2-sum"><h3 className="mg2-section-title">{t("rcpt.return_items")}</h3><Badge tone="muted">{t("rcpt.refund_to", { method: t(`rcpt.refund_method.${getRefundMethod(sale)}`) })}</Badge></div>
+          {sale.items.map((i, n) => {
+            const left = getRefundableQuantity(sale, i, refunds)
+            const id = `rq-${sale.id}-${n}`
+            return (
+              <div key={`${refundLineKeyOf(i)}-${n}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 96px", gap: 8, alignItems: "center" }}>
+                <label htmlFor={id} style={{ minWidth: 0 }}>
+                  <span style={{ fontWeight: 600, display: "block", overflowWrap: "anywhere" }}>{itemName(i)}</span>
+                  <span className="mg2-cap" style={{ fontSize: 13 }}>{t("rcpt.can_return", { n: formatNumber(left), sold: formatNumber(i.quantity) })}</span>
+                </label>
+                <input id={id} className="mg2-input num" type="number" min="0" max={left} step="1" inputMode="numeric" dir="ltr" disabled={left === 0}
+                  value={quantities[refundLineKeyOf(i)] ?? ""} onChange={(e) => onQuantity(refundLineKeyOf(i), e.target.value)} />
+              </div>
+            )
+          })}
+          <label className="mg2-field"><span className="lbl">{t("pos.return_reason")}</span><input className="mg2-input" value={reason} onChange={(e) => onReason(e.target.value)} /></label>
+          <div className="mg2-sum" style={{ fontSize: 16 }}><span>{t("pos.refund_amount")}</span><strong className="t-pos">{formatCurrency(draftTotal)}</strong></div>
+          <button type="button" className="mg2-btn mg2-btn-danger" onClick={onRefund}><RotateCcw size={16} />{t("pos.record_return")}</button>
+        </section>
+      )}
+    </Drawer>
   )
 }

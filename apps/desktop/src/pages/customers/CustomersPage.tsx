@@ -1,911 +1,535 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useSearchParams } from "react-router"
+import {
+  AlertTriangle, ArrowDown, ArrowUp, CheckCircle2, Download, HandCoins, Info, MessageCircle, Pencil, Phone, Plus, Printer, Search, UsersRound,
+} from "lucide-react"
+import { useI18n } from "@lebanonpos/shared"
+
 import { useDebounce } from "../../hooks/useDebounce"
 import { useHotkeys } from "../../hooks/useHotkey"
+import { Badge, ConfirmLayer, Drawer, EmptyState, Field, FilterChip, PageHeader, SkeletonRows, StatTile } from "../../features/pos/components/backoffice/BackOffice"
+import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
+import { debtReminderMessage, openWhatsApp } from "../../features/pos/lib/whatsapp"
 import {
-  CalendarClock,
-  CreditCard,
-  Download,
-  HandCoins,
-  MessageCircle,
-  Pencil,
-  Phone,
-  Plus,
-  Printer,
-  ReceiptText,
-  Search,
-  UserPlus,
-  UsersRound,
-  WalletCards,
-  X,
-} from "lucide-react"
-import { formatCurrency, formatLbpCurrency, formatNumber, usdToLbp } from "../../features/pos/lib/currency"
-import {
-  addCustomer,
-  archiveCustomer,
-  buildCustomerStatement,
-  customerHasHistory,
-  deleteCustomer,
-  getCustomerActivity,
-  getCustomerLedger,
-  getLedgerTotals,
-  recordDebtPayment,
-  restoreCustomer,
-  subscribeLedger,
-  updateCustomer,
-  type CustomerLedger,
-  type DebtPayment,
+  addCustomer, archiveCustomer, buildCustomerStatement, customerHasHistory, deleteCustomer, getCustomerActivity, getCustomerLedger,
+  getLedgerTotals, recordDebtPayment, restoreCustomer, subscribeLedger, updateCustomer, type CustomerLedger, type DebtPayment,
 } from "../../features/pos/services/customer.service"
 import { getSettings } from "../../features/pos/services/settings.service"
-import { openWhatsApp, debtReminderMessage } from "../../features/pos/lib/whatsapp"
-import { showToast } from "../../features/pos/services/toast.service"
-import ConfirmDialog from "../../components/ConfirmDialog"
-import { useI18n } from "@lebanonpos/shared"
-import Spinner from "../../components/ui/Spinner"
-import WorkspaceTabs from "../../components/ui/WorkspaceTabs"
 
-type NewCustomerForm = {
-  name: string
-  mobile: string
-  creditLimit: number
-  isWholesale: boolean
-  sellAtCost: boolean
-  notes: string
-}
-
-type PaymentForm = {
-  customerId: string
-  amount: number
-  method: DebtPayment["method"]
-  reference: string
-}
-
-type EditCustomerForm = {
-  id: string
-  name: string
-  mobile: string
-  creditLimit: number
-  isWholesale: boolean
-  sellAtCost: boolean
-  notes: string
-}
-
-type CustomerPanel = "Ledger" | "Pay debt" | "Add customer"
-
-const emptyCustomerForm: NewCustomerForm = {
-  name: "",
-  mobile: "",
-  creditLimit: 0,
-  isWholesale: false,
-  sellAtCost: false,
-  notes: "",
-}
-
-const paymentMethods: Array<{
-  label: DebtPayment["method"]
-  icon: typeof HandCoins
-}> = [
-  {
-    label: "Cash",
-    icon: HandCoins,
-  },
-  {
-    label: "Card",
-    icon: CreditCard,
-  },
-  {
-    label: "Wallet",
-    icon: WalletCards,
-  },
-  {
-    label: "Bank Transfer",
-    icon: HandCoins,
-  },
-  {
-    label: "Refund Credit",
-    icon: HandCoins,
-  },
-]
+// Midnight Gold v2 — Customers & debt (DESIGN-SYSTEM §6–§8). Same anatomy as Products: header,
+// stat tiles, filters, table (cards on phones), details drawer. Every action calls the existing
+// customer service; balances are debt sales minus payments (FIFO aging), never edited here.
+type View = "all" | "owing" | "overdue" | "over_limit" | "archived"
+const VIEWS: View[] = ["all", "owing", "overdue", "over_limit", "archived"]
+type SortKey = "name" | "balance" | "lastActivity"
+const METHODS: DebtPayment["method"][] = ["Cash", "Card", "Wallet", "Bank Transfer", "Refund Credit"]
+const METHOD_KEY: Record<DebtPayment["method"], string> = { Cash: "cash", Card: "card", Wallet: "wallet", "Bank Transfer": "bank_transfer", "Refund Credit": "refund_credit" }
+const AGES = ["0", "30", "60", "90"] as const
 
 /** One id per payment attempt: a double tap or a retry of the same attempt records it once. */
 const newPaymentAttempt = () => `pay-${globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`}`
 
-function normalizeNumber(value: string) {
-  const parsedValue = Number(value)
-
-  return Number.isFinite(parsedValue) ? parsedValue : 0
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "No activity"
+function useDate() {
+  const { locale } = useI18n()
+  const tag = locale === "ar" ? "ar-LB" : "en-GB"
+  return {
+    day: (v: string) => new Intl.DateTimeFormat(tag, { day: "2-digit", month: "short", year: "numeric" }).format(new Date(v)),
+    stamp: (v: string) => new Intl.DateTimeFormat(tag, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(v)),
   }
-
-  return new Intl.DateTimeFormat("en-LB", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value))
 }
+const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
+const methodKey = (m: string) => METHOD_KEY[m as DebtPayment["method"]] ?? "cash"
 
 export default function CustomersPage() {
-  const [isLoading, setIsLoading] = useState(true)
-  const [customers, setCustomers] = useState<CustomerLedger[]>([])
+  const { t } = useI18n()
+  const date = useDate()
+  const [params, setParams] = useSearchParams()
+  const loading = false // ledgers are read synchronously from this device
+  const [customers, setCustomers] = useState<CustomerLedger[]>(() => getCustomerLedger({ includeArchived: true }))
   const [totals, setTotals] = useState(getLedgerTotals())
   const [search, setSearch] = useState("")
+  const q = useDebounce(search, 150)
   const searchRef = useRef<HTMLInputElement>(null)
   useHotkeys([{ key: "f", modifiers: ["ctrl"], handler: () => searchRef.current?.focus() }])
-  const debouncedSearch = useDebounce(search, 200)
-  const [selectedCustomerId, setSelectedCustomerId] = useState("")
-  const [newCustomer, setNewCustomer] =
-    useState<NewCustomerForm>(emptyCustomerForm)
-  const [payment, setPayment] = useState<PaymentForm>({
-    customerId: "",
-    amount: 0,
-    method: "Cash",
-    reference: "",
-  })
-  const [activePanel, setActivePanel] = useState<CustomerPanel>("Ledger")
-  const [formErrors, setFormErrors] = useState<Partial<Record<"name" | "mobile", string>>>({})
-  const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null)
-  const [editCustomer, setEditCustomer] = useState<EditCustomerForm | null>(null)
-  const [sortBy, setSortBy] = useState<"name" | "balance" | "lastActivity">("name")
+  const view = (VIEWS.includes(params.get("view") as View) ? params.get("view") : "all") as View
+  const [age, setAge] = useState("")
+  const [sortKey, setSortKey] = useState<SortKey>("name")
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
-  const [agingFilter, setAgingFilter] = useState<string>("")
-  const [showArchived, setShowArchived] = useState(false)
-  const paymentAttempt = useRef(newPaymentAttempt())
-  // A changed form is a new attempt; pressing again without a change is the same one.
-  useEffect(() => { paymentAttempt.current = newPaymentAttempt() }, [payment.customerId, payment.amount, payment.method, payment.reference])
-  const { t } = useI18n()
+  const detailId = params.get("customer")
+  const [editor, setEditor] = useState<{ mode: "create" } | { mode: "edit"; id: string } | null>(null)
+  const [paying, setPaying] = useState<{ customerId: string } | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [notice, setNotice] = useState<{ tone: "ok" | "err"; text: string } | null>(null)
 
-  function refreshLedger(preferredCustomerId?: string) {
-    const nextCustomers = getCustomerLedger({ includeArchived: true })
-
-    setCustomers(nextCustomers)
+  function refresh() {
+    setCustomers(getCustomerLedger({ includeArchived: true }))
     setTotals(getLedgerTotals())
-
-    const nextSelectedId =
-      preferredCustomerId ||
-      selectedCustomerId ||
-      nextCustomers.find((customer) => customer.balance > 0)?.id ||
-      nextCustomers[0]?.id ||
-      ""
-
-    setSelectedCustomerId(nextSelectedId)
-    setPayment((currentPayment) => ({
-      ...currentPayment,
-      customerId: preferredCustomerId || currentPayment.customerId || nextSelectedId,
-    }))
   }
+  useEffect(() => subscribeLedger(refresh), [])
 
-  useEffect(() => {
-    refreshLedger()
-    setIsLoading(false)
+  const active = useMemo(() => customers.filter((c) => !c.archived), [customers])
+  const inView = (c: CustomerLedger, v: View) =>
+    v === "archived" ? !!c.archived
+      : c.archived ? false
+      : v === "all" ? true
+      : v === "owing" ? c.balance > 0.001
+      : v === "overdue" ? c.overdue
+      : c.overLimit
+  const counts = Object.fromEntries(VIEWS.map((v) => [v, customers.filter((c) => inView(c, v)).length])) as Record<View, number>
+  const aging = useMemo(() => active.reduce((a, c) => ({
+    current: a.current + c.aging.current, days30: a.days30 + c.aging.days30, days60: a.days60 + c.aging.days60, days90: a.days90 + c.aging.days90,
+  }), { current: 0, days30: 0, days60: 0, days90: 0 }), [active])
+  const ageAmount: Record<(typeof AGES)[number], number> = { "0": aging.current, "30": aging.days30, "60": aging.days60, "90": aging.days90 }
 
-    return subscribeLedger(() => refreshLedger())
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const agingTotals = useMemo(() => {
-    return customers.reduce(
-      (acc, c) => ({
-        current: acc.current + c.aging.current,
-        days30: acc.days30 + c.aging.days30,
-        days60: acc.days60 + c.aging.days60,
-        days90: acc.days90 + c.aging.days90,
-      }),
-      { current: 0, days30: 0, days60: 0, days90: 0 }
-    )
-  }, [customers])
-
-  const filteredCustomers = useMemo(() => {
-    let list = customers.filter(c => showArchived ? c.archived === true : !c.archived)
-
-    if (agingFilter) {
-      const days = parseInt(agingFilter)
-      if (!isNaN(days)) {
-        list = list.filter(c => {
-          const total = c.aging.current + c.aging.days30 + c.aging.days60 + c.aging.days90
-          return total > 0.001 && c.oldestUnpaidDays >= days && c.oldestUnpaidDays < days + 30
-        })
-      }
+  const query = q.trim().toLowerCase()
+  const list = customers.filter((c) => {
+    if (!inView(c, view)) return false
+    if (age) {
+      // The customer's oldest unpaid debt falls in [days, days + 30); the last bucket is open-ended.
+      const days = parseInt(age, 10)
+      const owed = c.aging.current + c.aging.days30 + c.aging.days60 + c.aging.days90
+      if (!(owed > 0.001 && c.oldestUnpaidDays >= days && (days === 90 || c.oldestUnpaidDays < days + 30))) return false
     }
+    return !query || c.name.toLowerCase().includes(query) || c.mobile.includes(query)
+  }).sort((a, b) => {
+    const cmp = sortDir === "asc" ? 1 : -1
+    if (sortKey === "balance") return (b.balance - a.balance) * cmp
+    if (sortKey === "lastActivity") return (b.lastActivityAt ?? "").localeCompare(a.lastActivityAt ?? "") * cmp
+    return a.name.localeCompare(b.name) * cmp
+  })
+  const detail = detailId ? customers.find((c) => c.id === detailId) : undefined
 
-    const query = search.trim().toLowerCase()
-    if (query) {
-      list = list.filter(c => c.name.toLowerCase().includes(query) || c.mobile.includes(query))
-    }
-
-    return list.sort((a, b) => {
-      const cmp = sortDir === "asc" ? 1 : -1
-      if (sortBy === "balance") return (b.balance - a.balance) * cmp
-      if (sortBy === "lastActivity") return ((a.lastActivityAt ?? "").localeCompare(b.lastActivityAt ?? "")) * cmp
-      return a.name.localeCompare(b.name) * cmp
-    })
-  }, [customers, debouncedSearch, sortBy, sortDir, agingFilter, showArchived])
-
-  const selectedCustomer = customers.find(
-    (customer) => customer.id === selectedCustomerId
+  function setView(v: View) {
+    const next = new URLSearchParams(params); if (v === "all") next.delete("view"); else next.set("view", v)
+    setParams(next, { replace: true })
+  }
+  function openDetail(id: string | null) {
+    const next = new URLSearchParams(params); if (id) next.set("customer", id); else next.delete("customer")
+    setParams(next, { replace: true })
+  }
+  function toggleSort(k: SortKey) {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc")); else { setSortKey(k); setSortDir("asc") }
+  }
+  function exportCsv() {
+    const rows = [["Name", "Phone", "Credit limit", "Sold on account", "Paid", "Balance", "Oldest unpaid days", "Overdue", "Archived"],
+      ...list.map((c) => [c.name, c.mobile, c.creditLimit, c.debtTotal, c.paidTotal, c.balance, c.oldestUnpaidDays, c.overdue ? "yes" : "", c.archived ? "yes" : ""])]
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n")
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
+    const a = document.createElement("a"); a.href = url; a.download = `customers-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url)
+  }
+  const firstOwing = active.find((c) => c.balance > 0.001)
+  const sortHead = (k: SortKey, label: string, className?: string) => (
+    <th className={className} aria-sort={sortKey === k ? (sortDir === "asc" ? "ascending" : "descending") : "none"}>
+      <button type="button" className="mg2-sort" onClick={() => toggleSort(k)}>
+        {label}{sortKey === k && (sortDir === "asc" ? <ArrowUp size={13} aria-hidden="true" /> : <ArrowDown size={13} aria-hidden="true" />)}
+      </button>
+    </th>
   )
-  const selectedActivity = selectedCustomer
-    ? getCustomerActivity(selectedCustomer.id)
-    : []
-
-  function handleAddCustomer() {
-    const errors: typeof formErrors = {}
-    if (!newCustomer.name.trim()) {
-      errors.name = "Name is required"
-    }
-    if (!newCustomer.mobile.trim()) {
-      errors.mobile = "Mobile is required"
-    }
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors)
-      return
-    }
-
-    try {
-      const customer = addCustomer(newCustomer)
-      setNewCustomer(emptyCustomerForm)
-      setFormErrors({})
-      showToast(`${customer.name} was added.`)
-      setActivePanel("Ledger")
-      refreshLedger(customer.id)
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : "Customer not added.", "error")
-    }
-  }
-
-  function openEdit(customer: CustomerLedger) {
-    setEditCustomer({
-      id: customer.id,
-      name: customer.name,
-      mobile: customer.mobile,
-      creditLimit: customer.creditLimit,
-      isWholesale: customer.isWholesale ?? false,
-      sellAtCost: customer.sellAtCost ?? false,
-      notes: customer.notes,
-    })
-  }
-
-  function saveEdit() {
-    if (!editCustomer) return
-    updateCustomer(editCustomer.id, {
-      name: editCustomer.name,
-      mobile: editCustomer.mobile,
-      creditLimit: editCustomer.creditLimit,
-      isWholesale: editCustomer.isWholesale,
-      sellAtCost: editCustomer.sellAtCost,
-      notes: editCustomer.notes,
-    })
-    showToast(`${editCustomer.name} updated.`)
-    setEditCustomer(null)
-  }
-
-  function quickToggleSellAtCost(customer: CustomerLedger) {
-    updateCustomer(customer.id, { sellAtCost: !customer.sellAtCost })
-    showToast(`${customer.name}: sell at cost ${!customer.sellAtCost ? "ON" : "OFF"}`)
-  }
-
-  function handleRecordPayment() {
-    const customer = customers.find(
-      (currentCustomer) => currentCustomer.id === payment.customerId
-    )
-
-    if (!customer || customer.balance <= 0) {
-      showToast("Choose a customer with an outstanding balance.", "error")
-      return
-    }
-
-    if (!payment.customerId) {
-      showToast("Please select a customer.", "error")
-      return
-    }
-
-    if (payment.amount <= 0) {
-      showToast("Payment amount must be greater than 0.", "error")
-      return
-    }
-
-    const amount = Math.min(payment.amount, customer.balance)
-    const wasCapped = payment.amount > customer.balance
-
-    try {
-      recordDebtPayment({
-        id: paymentAttempt.current,
-        customerId: customer.id,
-        amount,
-        method: payment.method,
-        reference: payment.reference,
-      })
-      setPayment((currentPayment) => ({
-        ...currentPayment,
-        amount: 0,
-        reference: "",
-      }))
-      setFormErrors({})
-      if (wasCapped) {
-        showToast(`Amount capped to ${formatCurrency(amount)} (outstanding balance).`, "error")
-      }
-      showToast(`${formatCurrency(amount)} received from ${customer.name}.`)
-      setActivePanel("Ledger")
-      refreshLedger(customer.id)
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : "Payment not saved.", "error")
-    }
-  }
+  const badges = (c: CustomerLedger) => (
+    <>
+      {c.archived && <Badge tone="muted">{t("acct.archived")}</Badge>}
+      {c.overdue && <Badge tone="err" icon={<AlertTriangle size={13} aria-hidden="true" />}>{t("acct.c.overdue_days", { n: c.oldestUnpaidDays })}</Badge>}
+      {c.overLimit && <Badge tone="warn">{t("acct.c.over_limit")}</Badge>}
+      {c.sellAtCost && <Badge tone="info">{t("acct.c.sell_at_cost")}</Badge>}
+      {c.isWholesale && <Badge tone="muted">{t("acct.c.wholesale")}</Badge>}
+    </>
+  )
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto bg-page p-3 sm:p-5 xl:p-6">
-      {isLoading ? (
-        <div className="p-6 space-y-2">
-          {[1,2,3,4,5,6].map(i => (
-            <div key={i} className="skeleton h-14 rounded-lg" style={{ background: "var(--surface-3)", animation: "pulse 1.5s infinite" }} />
+    <main className="mg2 mg2-bo min-h-0 flex-1 overflow-y-auto">
+      <div className="mg2-wrap">
+        <PageHeader eyebrow={t("acct.money")} title={t("acct.c.title")} actions={<>
+          <button type="button" className="mg2-btn" onClick={exportCsv} aria-label={t("acct.export")}><Download size={16} /><span className="hidden sm:inline">{t("acct.export")}</span></button>
+          <button type="button" className="mg2-btn" onClick={() => setEditor({ mode: "create" })}><Plus size={16} />{t("acct.c.add")}</button>
+          <button type="button" className="mg2-btn mg2-btn-primary" disabled={!firstOwing} aria-describedby={firstOwing ? undefined : "cust-pay-why"}
+            onClick={() => firstOwing && setPaying({ customerId: detail && detail.balance > 0.001 && !detail.archived ? detail.id : firstOwing.id })}>
+            <HandCoins size={16} />{t("acct.c.receive")}
+          </button>
+        </>} />
+        {!firstOwing && !loading && <p className="mg2-cap" id="cust-pay-why" style={{ marginTop: 8 }}>{t("acct.c.nobody_owes")}</p>}
+
+        <div className="mg2-stats" style={{ marginBlock: 16 }}>
+          <StatTile label={t("acct.c.kpi.customers")} value={formatNumber(totals.customers)} />
+          <StatTile label={t("acct.c.kpi.outstanding")} value={<span className={totals.outstanding > 0.001 ? "t-pos" : undefined}>{formatCurrency(totals.outstanding)}</span>} />
+          <StatTile label={t("acct.c.kpi.on_account")} value={formatCurrency(totals.debtTotal)} />
+          <StatTile label={t("acct.c.kpi.collected")} value={formatCurrency(totals.paidTotal)} />
+        </div>
+
+        {notice && (
+          <div className={`mg2-banner ${notice.tone === "ok" ? "mg2-t-ok" : "mg2-t-err"}`} role={notice.tone === "ok" ? "status" : "alert"} style={{ marginBottom: 12 }}>
+            {notice.tone === "ok" ? <CheckCircle2 size={18} aria-hidden="true" /> : <AlertTriangle size={18} aria-hidden="true" />}
+            <span style={{ flex: 1, color: "var(--text)" }}>{notice.text}</span>
+            <button type="button" className="mg2-btn mg2-btn-ghost" onClick={() => setNotice(null)}>{t("acct.dismiss")}</button>
+          </div>
+        )}
+
+        <div className="mg2-toolbar">
+          <div className="mg2-search">
+            <Search size={16} aria-hidden="true" />
+            <input ref={searchRef} className="mg2-input" type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("acct.c.search")} aria-label={t("acct.c.search")} />
+          </div>
+        </div>
+        <div className="mg2-chips" role="group" aria-label={t("acct.views")} style={{ marginBottom: 8 }}>
+          {VIEWS.map((v) => (
+            <FilterChip key={v} pressed={view === v} onClick={() => setView(v)} label={t(`acct.c.view.${v}`)} count={counts[v]}
+              tone={v === "overdue" ? "err" : v === "over_limit" || v === "owing" ? "warn" : undefined} />
           ))}
         </div>
-      ) : (
-      <>
-      {/* KPI cards */}
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>{t("pos.customers")}</p>
-          <p className="mt-1 text-[22px] font-black tabular-nums" style={{ color: "var(--text)" }}>{formatNumber(totals.customers)}</p>
-        </div>
-        <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Outstanding</p>
-          <p className="mt-1 text-[22px] font-black tabular-nums" style={{ color: "var(--rose-text)" }}>{formatCurrency(totals.outstanding)}</p>
-        </div>
-        <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Credit sales</p>
-          <p className="mt-1 text-[22px] font-black tabular-nums" style={{ color: "var(--text)" }}>{formatCurrency(totals.debtTotal)}</p>
-        </div>
-        <div className="rounded-xl border p-3" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Collected</p>
-          <p className="mt-1 text-[22px] font-black tabular-nums" style={{ color: "var(--success-text)" }}>{formatCurrency(totals.paidTotal)}</p>
-        </div>
-      </section>
-
-      {/* Debt aging breakdown */}
-      {totals.outstanding > 0 && (
-        <section className="mt-3 rounded-xl border p-3" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
-          <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--text-3)" }}>Outstanding by age</p>
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { label: "0–30 days", value: agingTotals.current, color: "var(--brand-text)", bg: "var(--brand-soft)", days: "0" },
-              { label: "30–60 days", value: agingTotals.days30, color: "var(--amber-text)", bg: "var(--amber-soft)", days: "30" },
-              { label: "60–90 days", value: agingTotals.days60, color: "#EA580C", bg: "rgba(234,88,12,0.12)", days: "60" },
-              { label: "90+ days", value: agingTotals.days90, color: "var(--rose-text)", bg: "var(--rose-soft)", days: "90" },
-            ].map((b) => (
-              <button key={b.label} onClick={() => setAgingFilter(a => a === b.days ? "" : b.days)}
-                className="rounded-lg p-2.5 text-left transition cursor-pointer"
-                style={{ background: b.bg, outline: agingFilter === b.days ? `2px solid ${b.color}` : undefined }}
-                aria-pressed={agingFilter === b.days}
-                aria-label={`Filter by ${b.label} debt`}>
-                <p className="text-[10px] font-semibold" style={{ color: b.color }}>{b.label}</p>
-                <p className="mt-0.5 text-[15px] font-bold tabular-nums" style={{ color: b.color }}>{formatCurrency(b.value)}</p>
+        {totals.outstanding > 0.001 && (
+          <div className="mg2-chips" role="group" aria-label={t("acct.c.by_age")} style={{ marginBottom: 12 }}>
+            {AGES.map((a) => (
+              <button key={a} type="button" className="mg2-chip" aria-pressed={age === a} onClick={() => setAge((x) => (x === a ? "" : a))}>
+                {t(`acct.c.age.${a}`)}<span className="num">{formatCurrency(ageAmount[a])}</span>
               </button>
             ))}
           </div>
-        </section>
-      )}
+        )}
 
-      {/* Toolbar */}
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <WorkspaceTabs<CustomerPanel>
-            active={activePanel}
-            onChange={setActivePanel}
-            tabs={[
-              { label: "Ledger", count: filteredCustomers.length },
-              { label: "Pay debt", count: customers.filter((customer) => customer.balance > 0).length },
-            ]}
-          />
-          <label className="flex items-center gap-1.5 text-[11px] font-semibold cursor-pointer shrink-0" style={{ color: "var(--text-3)" }}>
-            <input type="checkbox" checked={showArchived} onChange={e => setShowArchived(e.target.checked)} className="h-3.5 w-3.5" />
-            Archived
-          </label>
-          {agingFilter && (
-            <button onClick={() => setAgingFilter("")} className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
-              {agingFilter === "0" ? "0–30d" : agingFilter === "30" ? "30–60d" : agingFilter === "60" ? "60–90d" : "90+d"} ✕
-            </button>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Search */}
-          <label className="relative min-w-[160px] flex-1 sm:flex-none sm:w-52">
-            <Search size={13} className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-3)" }} />
-            <input
-              ref={searchRef}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search name or mobile"
-              className="input w-full ps-8"
-              style={{ height: 34 }}
-            />
-            {search && (
-              <button type="button" onClick={() => setSearch("")} className="absolute end-2 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100">
-                <X size={13} style={{ color: "var(--text-3)" }} />
-              </button>
-            )}
-          </label>
-
-          <button
-            type="button"
-            onClick={() => setActivePanel("Add customer")}
-            className="btn btn-default h-[34px] gap-1.5 px-2.5 text-[12px] font-bold"
-          >
-            <Plus size={14} />
-            Add
-          </button>
-
-          <button type="button" onClick={() => {
-            const csv = ["Name,Phone,Credit Limit,Debt Total,Paid Total,Balance,Oldest Unpaid Days,Overdue"].concat(
-              customers.map((c) => `"${c.name}","${c.mobile}",${c.creditLimit},${c.debtTotal},${c.paidTotal},${c.balance},${c.oldestUnpaidDays},${c.overdue}`)
-            ).join("\n")
-            const b = new Blob([csv], { type: "text/csv" })
-            const u = URL.createObjectURL(b)
-            const a = document.createElement("a"); a.href = u; a.download = `customers-${new Date().toISOString().slice(0,10)}.csv`; a.click()
-            URL.revokeObjectURL(u)
-          }}
-            className="btn btn-default h-[34px] gap-1.5 px-2.5 text-[12px] font-bold">
-            <Download size={14} /> Export
-          </button>
-        </div>
-      </div>
-
-      {/* Two-pane layout */}
-      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(320px,440px)_minmax(0,1fr)]">
-        {/* Left: Customer cards */}
-        <section className="min-w-0">
-          <div className="rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-            <div className="max-h-[70vh] space-y-1.5 overflow-y-auto p-2">
-              {filteredCustomers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <UsersRound size={28} style={{ color: "var(--text-3)" }} />
-                  <p className="mt-2 text-[13px] font-bold" style={{ color: "var(--text-2)" }}>No customers found</p>
-                  <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>Try a different search, or add a customer.</p>
-                </div>
-              ) : null}
-
-              {filteredCustomers.map((customer) => {
-                const active = selectedCustomerId === customer.id
-
-                return (
-                  <article
-                    key={customer.id}
-                    role="button"
-                    aria-pressed={active}
-                    className="rounded-lg border transition cursor-pointer"
-                    style={active
-                      ? { borderColor: "var(--brand-border)", background: "var(--brand-soft)", boxShadow: "inset 3px 0 0 var(--brand)" }
-                      : { borderColor: "var(--border)", background: "var(--surface)" }}
-                    onClick={() => {
-                      setSelectedCustomerId(customer.id)
-                      setActivePanel((p) => p === "Pay debt" ? "Pay debt" : "Ledger")
-                      setPayment((currentPayment) => ({
-                        ...currentPayment,
-                        customerId: customer.id,
-                      }))
-                    }}
-                  >
-                    <div className="px-3 py-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-[13px] font-bold truncate" style={{ color: "var(--text)" }}>{customer.name}</span>
-                          {customer.overdue && (
-                            <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>
-                              {customer.oldestUnpaidDays}d
-                            </span>
-                          )}
-                          {customer.overLimit && (
-                            <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>LIMIT</span>
-                          )}
-                          {customer.sellAtCost && (
-                            <span className="rounded px-1 py-0.5 text-[9px] font-bold uppercase shrink-0" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>COST</span>
-                          )}
-                          {customer.isWholesale && (
-                            <span className="rounded border px-1 py-0.5 text-[9px] font-bold uppercase shrink-0" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>WS</span>
-                          )}
-                        </div>
-                        <span className="shrink-0 text-[15px] font-black tabular-nums" style={{ color: customer.balance > 0 ? "var(--rose-text)" : "var(--text)" }}>
-                          {formatCurrency(customer.balance)}
-                        </span>
-                      </div>
-
-                      <div className="mt-1 flex items-center gap-2 text-[11px]" style={{ color: "var(--text-3)" }}>
-                        {customer.mobile && (
-                          <a href={`tel:${customer.mobile}`} onClick={e => e.stopPropagation()} className="hover:underline">{customer.mobile}</a>
-                        )}
-                        {customer.mobile && customer.lastActivityAt && <span className="opacity-40">·</span>}
-                        {customer.lastActivityAt && <span>{formatDate(customer.lastActivityAt)}</span>}
-                      </div>
-
-                      {customer.notes && (
-                        <p className="mt-0.5 truncate text-[11px]" style={{ color: "var(--text-3)" }}>{customer.notes}</p>
-                      )}
-
-                      {customer.creditLimit > 0 && customer.balance > 0 && (
-                        <div className="mt-1.5 h-1 w-full rounded-full" style={{ background: "var(--surface-3)" }}>
-                          <div className="h-1 rounded-full transition-all" style={{
-                            width: `${Math.min(100, (customer.balance / customer.creditLimit) * 100)}%`,
-                            background: customer.overLimit ? "var(--danger)" : customer.balance > customer.creditLimit * 0.8 ? "var(--warning)" : "var(--success)",
-                          }} />
-                        </div>
-                      )}
-                    </div>
-
-                  </article>
-                )
-              })}
+        {loading ? <SkeletonRows /> : customers.length === 0 ? (
+          <div className="mg2-card"><EmptyState icon={<UsersRound size={28} aria-hidden="true" />} title={t("acct.c.empty_title")} text={t("acct.c.empty_text")}
+            action={<button type="button" className="mg2-btn mg2-btn-primary" onClick={() => setEditor({ mode: "create" })}><Plus size={16} />{t("acct.c.add")}</button>} /></div>
+        ) : list.length === 0 ? (
+          <div className="mg2-card"><EmptyState title={t("acct.no_match")} text={t("acct.no_match_text")}
+            action={<button type="button" className="mg2-btn" onClick={() => { setSearch(""); setAge(""); setView("all") }}>{t("acct.clear_filters")}</button>} /></div>
+        ) : (
+          <>
+            <div className="mg2-table-wrap wide-only">
+              <table className="mg2-table" aria-label={t("acct.c.table")}>
+                <thead>
+                  <tr>
+                    {sortHead("name", t("acct.c.col.customer"))}
+                    {sortHead("balance", t("acct.col.balance"), "num")}
+                    <th className="p4">{t("acct.c.col.limit")}</th>
+                    <th className="p3">{t("acct.c.col.oldest")}</th>
+                    {sortHead("lastActivity", t("acct.col.last_activity"), "p4")}
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((c) => (
+                    <tr key={c.id} aria-selected={detailId === c.id} onClick={() => openDetail(c.id)}>
+                      <td>
+                        <button type="button" className="mg2-sort" style={{ fontWeight: 600, textAlign: "start" }} onClick={(e) => { e.stopPropagation(); openDetail(c.id) }}>{c.name}</button>
+                        <span className="sub" style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}><span className="num-ltr">{c.mobile}</span>{badges(c)}</span>
+                      </td>
+                      <td className={`num ${c.balance > 0.001 ? "t-pos" : ""}`} style={{ fontWeight: 700 }}>{formatCurrency(c.balance)}</td>
+                      <td className="p4">
+                        {c.creditLimit > 0 ? (
+                          <div style={{ minWidth: 140 }}>
+                            <span className="mg2-cap">{t("acct.c.of_limit", { used: formatCurrency(c.balance), limit: formatCurrency(c.creditLimit) })}</span>
+                            <div className={`mg2-bar ${c.overLimit ? "t-err" : c.balance > c.creditLimit * 0.8 ? "t-warn" : ""}`} style={{ marginTop: 4 }}><span style={{ width: `${Math.min(100, (c.balance / c.creditLimit) * 100)}%` }} /></div>
+                          </div>
+                        ) : <span style={{ color: "var(--text-3)" }}>{t("acct.c.no_limit")}</span>}
+                      </td>
+                      <td className="p3">{c.balance > 0.001 ? t("acct.c.days", { n: c.oldestUnpaidDays }) : <span style={{ color: "var(--text-3)" }}>—</span>}</td>
+                      <td className="p4" style={{ color: "var(--text-2)" }}>{c.lastActivityAt ? date.stamp(c.lastActivityAt) : t("acct.no_activity")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        </section>
-
-        {/* Right: Detail panel */}
-        <aside className="hidden xl:block">
-          <div className="sticky top-4 space-y-4">
-
-            {/* Add customer panel */}
-            {activePanel === "Add customer" && (
-              <section className="rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>
-                    <UserPlus size={18} />
-                  </div>
-                  <div>
-                    <h2 className="text-[15px] font-bold" style={{ color: "var(--text)" }}>Add customer</h2>
-                    <p className="text-[11px]" style={{ color: "var(--text-3)" }}>Name and mobile are required.</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2.5">
-                  <input value={newCustomer.name} onChange={(event) => { setNewCustomer((c) => ({ ...c, name: event.target.value })); if (formErrors.name) setFormErrors((e) => ({ ...e, name: undefined })) }}
-                    placeholder="Customer name"
-                    className={`input w-full h-9 text-[13px] ${formErrors.name ? "border-rose-300" : ""}`}
-                  />
-                  {formErrors.name && <p className="text-[11px] font-medium" style={{ color: "var(--rose-text)" }}>{formErrors.name}</p>}
-                  <input value={newCustomer.mobile} onChange={(event) => { setNewCustomer((c) => ({ ...c, mobile: event.target.value })); if (formErrors.mobile) setFormErrors((e) => ({ ...e, mobile: undefined })) }}
-                    placeholder="Mobile number"
-                    className={`input w-full h-9 text-[13px] ${formErrors.mobile ? "border-rose-300" : ""}`}
-                  />
-                  {formErrors.mobile && <p className="text-[11px] font-medium" style={{ color: "var(--rose-text)" }}>{formErrors.mobile}</p>}
-                  <input type="number" min="0" value={newCustomer.creditLimit} onChange={(event) => setNewCustomer((c) => ({ ...c, creditLimit: normalizeNumber(event.target.value) }))}
-                    placeholder="Credit limit" className="input w-full h-9 text-[13px]"
-                  />
-                  <textarea value={newCustomer.notes} onChange={(event) => setNewCustomer((c) => ({ ...c, notes: event.target.value }))}
-                    placeholder="Notes" rows={2} className="input w-full resize-none text-[13px]" style={{ minHeight: 60 }}
-                  />
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-[12px] font-medium" style={{ color: "var(--text-2)" }}>
-                    <input type="checkbox" checked={newCustomer.isWholesale} onChange={(e) => setNewCustomer((c) => ({ ...c, isWholesale: e.target.checked }))} className="h-3.5 w-3.5" />
-                    Wholesale prices by default
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer select-none text-[12px] font-medium" style={{ color: "var(--text-2)" }}>
-                    <input type="checkbox" checked={newCustomer.sellAtCost} onChange={(e) => setNewCustomer((c) => ({ ...c, sellAtCost: e.target.checked }))} className="h-3.5 w-3.5" />
-                    Sell at cost by default
-                  </label>
-                  <button type="button" onClick={handleAddCustomer}
-                    className="btn h-9 w-full gap-1.5 text-[12px] font-bold"
-                    style={{ background: "var(--text)", color: "var(--surface)" }}>
-                    <Plus size={14} /> Add Customer
-                  </button>
-                </div>
-              </section>
-            )}
-
-            {/* Pay debt panel */}
-            {activePanel === "Pay debt" && (
-              <section className="rounded-xl border p-4" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>
-                    <HandCoins size={18} />
-                  </div>
-                  <div>
-                    <h2 className="text-[15px] font-bold" style={{ color: "var(--text)" }}>Pay debt</h2>
-                    <p className="text-[11px]" style={{ color: "var(--text-3)" }}>Record a payment against an account.</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2.5">
-                  <select value={payment.customerId || selectedCustomerId} onChange={(event) => { setSelectedCustomerId(event.target.value); setPayment((p) => ({ ...p, customerId: event.target.value })) }}
-                    className="input w-full h-9 text-[13px]"
-                  >
-                    <option value="">Choose customer</option>
-                    {customers.map((c) => (<option key={c.id} value={c.id}>{c.name} — {formatCurrency(c.balance)}</option>))}
-                  </select>
-
-                  <input type="number" min="0" step="0.01" value={payment.amount} onChange={(event) => setPayment((p) => ({ ...p, amount: normalizeNumber(event.target.value) }))}
-                    placeholder="Payment amount" className="input w-full h-9 text-[13px]"
-                  />
-
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {paymentMethods.map((method) => {
-                      const Icon = method.icon
-                      const active = payment.method === method.label
-                      return (
-                        <button key={method.label} type="button" onClick={() => setPayment((p) => ({ ...p, method: method.label }))}
-                          aria-pressed={active}
-                          className="h-9 rounded-lg border text-[11px] font-bold transition"
-                          style={active ? { background: "var(--brand-soft)", borderColor: "var(--brand)", color: "var(--brand-text)" } : { borderColor: "var(--border)", color: "var(--text-3)" }}>
-                          <Icon size={13} className="inline me-1" />{method.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  <input value={payment.reference} onChange={(event) => setPayment((p) => ({ ...p, reference: event.target.value }))}
-                    placeholder="Reference or note" className="input w-full h-9 text-[13px]"
-                  />
-
-                  <button type="button" onClick={handleRecordPayment}
-                    className="btn h-9 w-full gap-1.5 text-[12px] font-bold"
-                    style={{ background: "var(--brand)", color: "#fff" }}>
-                    <HandCoins size={14} /> Record Payment
-                  </button>
-                </div>
-              </section>
-            )}
-
-            {/* Ledger panel */}
-            {activePanel === "Ledger" && (
-              <section className="rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-                {/* Header with summary */}
-                <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
-                  <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Ledger</p>
-                  {selectedCustomer && (
-                    <div className="flex items-center gap-3 text-[11px] tabular-nums">
-                      <span style={{ color: "var(--text-3)" }}>Charged <strong style={{ color: "var(--text)" }}>{formatCurrency(selectedCustomer.debtTotal)}</strong></span>
-                      <span style={{ color: "var(--text-3)" }}>Paid <strong style={{ color: "var(--text)" }}>{formatCurrency(selectedCustomer.paidTotal)}</strong></span>
-                    </div>
-                  )}
-                </div>
-
-                {selectedCustomer ? (
-                  <>
-                    {/* Customer info + balance + actions */}
-                    <div className="border-b p-4" style={{ borderColor: "var(--border)" }}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-[15px] font-bold truncate" style={{ color: "var(--text)" }}>{selectedCustomer.name}</p>
-                            {selectedCustomer.overdue && (
-                              <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--rose-soft)", color: "var(--rose-text)" }}>{selectedCustomer.oldestUnpaidDays}d</span>
-                            )}
-                            {selectedCustomer.overLimit && (
-                              <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--amber-soft)", color: "var(--amber-text)" }}>LIMIT</span>
-                            )}
-                            {selectedCustomer.sellAtCost && (
-                              <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}>COST</span>
-                            )}
-                            {selectedCustomer.isWholesale && (
-                              <span className="rounded px-1 py-0.5 text-[9px] font-bold shrink-0" style={{ borderColor: "var(--border)", color: "var(--text-3)" }}>WS</span>
-                            )}
-                          </div>
-                          {selectedCustomer.mobile && (
-                            <p className="mt-0.5 text-[12px]" style={{ color: "var(--text-3)" }}>{selectedCustomer.mobile}</p>
-                          )}
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>Balance</p>
-                          <p className="text-[22px] font-black tabular-nums leading-none mt-0.5" style={{ color: selectedCustomer.balance > 0 ? "var(--rose-text)" : "var(--text)" }}>
-                            {formatCurrency(selectedCustomer.balance)}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Quick action buttons */}
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {selectedCustomer.mobile && (
-                          <button type="button" onClick={(e) => { e.stopPropagation(); openWhatsApp(selectedCustomer.mobile, debtReminderMessage({ storeName: getSettings().storeName, customerName: selectedCustomer.name, balance: selectedCustomer.balance, oldestDays: selectedCustomer.oldestUnpaidDays })) }}
-                            className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                            style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
-                            <MessageCircle size={11} style={{ color: "#25D366" }} /> WhatsApp
-                          </button>
-                        )}
-                        {selectedCustomer.mobile && (
-                          <a href={`tel:${selectedCustomer.mobile}`} onClick={e => e.stopPropagation()}
-                            className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                            style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
-                            <Phone size={11} /> Call
-                          </a>
-                        )}
-                        <button type="button" onClick={() => openEdit(selectedCustomer)}
-                          className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
-                          <Pencil size={11} /> Edit
-                        </button>
-                        <button type="button" onClick={() => { const text = buildCustomerStatement(selectedCustomer.id, getSettings().storeName); const blob = new Blob([text], { type: "text/plain" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `statement-${selectedCustomer.name.replace(/\s+/g, "-")}.txt`; a.click(); URL.revokeObjectURL(url) }}
-                          className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
-                          <Download size={11} /> Statement
-                        </button>
-                        <button type="button" onClick={() => { const text = buildCustomerStatement(selectedCustomer.id, getSettings().storeName); const w = window.open("", "_blank", "width=420,height=600"); if (w) { w.document.write(`<html><head><title>${selectedCustomer.name}</title><style>body{font-family:monospace;white-space:pre;padding:20px;font-size:12px}</style></head><body>${text.replace(/\n/g,"<br>")}</body></html>`); w.document.close(); w.focus(); setTimeout(() => w.print(), 250) } }}
-                          className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
-                          <Printer size={11} /> Print
-                        </button>
-                        <button type="button"
-                          onClick={() => {
-                            if (selectedCustomer.archived) { restoreCustomer(selectedCustomer.id); showToast(`${selectedCustomer.name} restored.`) }
-                            else { archiveCustomer(selectedCustomer.id); showToast(`${selectedCustomer.name} archived.`) }
-                            refreshLedger()
-                          }}
-                          className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                          style={{ background: "var(--surface-2)", borderColor: "var(--border)", color: "var(--text-2)" }}>
-                          {selectedCustomer.archived ? "Restore" : "Archive"}
-                        </button>
-                        {!customerHasHistory(selectedCustomer.id) && <button type="button"
-                          onClick={() => setDeleteCustomerId(selectedCustomer.id)}
-                          aria-label={`Delete ${selectedCustomer.name}`}
-                          className="flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[10px] font-bold transition"
-                          style={{ background: "var(--danger-soft)", borderColor: "var(--danger)", color: "var(--danger-text)" }}>
-                          <X size={11} /> Delete
-                        </button>}
-                      </div>
-                    </div>
-
-                    <div className="p-4 space-y-4">
-                      {/* Aging breakdown — stacked bar */}
-                      <div>
-                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Aging</p>
-                        {(() => {
-                          const { current, days30, days60, days90 } = selectedCustomer.aging
-                          const total = current + days30 + days60 + days90
-                          const pct = (v: number) => total > 0 ? (v / total) * 100 : 0
-                          const fmt = (v: number) => formatCurrency(v)
-                          return (
-                            <>
-                              <div className="flex h-5 w-full overflow-hidden rounded-md" style={{ background: "var(--surface-3)" }}>
-                                {current > 0 && <div style={{ width: `${pct(current)}%`, background: "var(--success)" }} title={`Current: ${fmt(current)}`} />}
-                                {days30 > 0 && <div style={{ width: `${pct(days30)}%`, background: "var(--warning)" }} title={`30d: ${fmt(days30)}`} />}
-                                {days60 > 0 && <div style={{ width: `${pct(days60)}%`, background: "#f97316" }} title={`60d: ${fmt(days60)}`} />}
-                                {days90 > 0 && <div style={{ width: `${pct(days90)}%`, background: "var(--rose)" }} title={`90d+: ${fmt(days90)}`} />}
-                              </div>
-                              <div className="mt-1.5 grid grid-cols-4 gap-1 text-[10px] tabular-nums" style={{ color: "var(--text-3)" }}>
-                                <span>Current <strong style={{ color: "var(--text)" }}>{fmt(current)}</strong></span>
-                                <span>1–30d <strong style={{ color: "var(--text)" }}>{fmt(days30)}</strong></span>
-                                <span>31–60d <strong style={{ color: "var(--text)" }}>{fmt(days60)}</strong></span>
-                                <span>60d+ <strong style={{ color: "var(--text)" }}>{fmt(days90)}</strong></span>
-                              </div>
-                            </>
-                          )
-                        })()}
-                      </div>
-
-                      {/* Credit-limit usage */}
-                      {selectedCustomer.creditLimit > 0 && (
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
-                            <span>Credit limit</span>
-                            <span className="tabular-nums">{formatCurrency(selectedCustomer.balance)} / {formatCurrency(selectedCustomer.creditLimit)}</span>
-                          </div>
-                          <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: "var(--surface-3)" }}>
-                            {(() => {
-                              const pct = Math.min(100, (selectedCustomer.balance / selectedCustomer.creditLimit) * 100)
-                              const color = pct >= 100 ? "var(--danger)" : pct >= 75 ? "var(--warning)" : "var(--success)"
-                              return <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.max(pct, 2)}%`, background: color }} role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100} aria-label="Credit limit used" />
-                            })()}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Promise-to-pay note */}
-                      <div>
-                        <label className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: "var(--text-3)" }}>
-                          <CalendarClock size={12} />
-                          Promise to pay / note
-                        </label>
-                        <input key={selectedCustomer.id} defaultValue={selectedCustomer.notes} placeholder="e.g. will pay Friday" maxLength={160}
-                          className="input h-9 w-full text-[12px]" onKeyDown={(e) => { if (e.key !== "Enter") return; const value = (e.target as HTMLInputElement).value.trim(); updateCustomer(selectedCustomer.id, { notes: value }); showToast("Note saved.") }} />
-                        <p className="mt-1 text-[10px]" style={{ color: "var(--text-3)" }}>Enter to save</p>
-                      </div>
-                    </div>
-
-                    {/* Activity timeline */}
-                    <div className="border-t p-4" style={{ borderColor: "var(--border)" }}>
-                      <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--text-3)" }}>Activity</p>
-                      <div className="max-h-72 space-y-1.5 overflow-y-auto">
-                        {selectedActivity.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-8 text-center">
-                            <ReceiptText size={24} style={{ color: "var(--text-3)" }} />
-                            <p className="mt-2 text-[12px] font-medium" style={{ color: "var(--text-3)" }}>No activity yet</p>
-                          </div>
-                        ) : selectedActivity.map((activity) => (
-                          <div key={`${activity.type}-${activity.id}`}
-                            className="flex items-start gap-3 rounded-lg p-2.5 transition hover:bg-zinc-50"
-                            style={{ borderColor: "var(--border)" }}>
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
-                              style={{ background: activity.type === "Sale" ? "var(--rose-soft)" : "var(--brand-soft)" }}>
-                              {activity.type === "Sale" ? <ReceiptText size={13} style={{ color: "var(--rose-text)" }} /> : <HandCoins size={13} style={{ color: "var(--brand-text)" }} />}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center justify-between gap-2">
-                                <p className="text-[12px] font-bold truncate" style={{ color: "var(--text)" }}>{activity.title}</p>
-                                <span className="shrink-0 text-[13px] font-black tabular-nums" style={{ color: activity.type === "Sale" ? "var(--rose-text)" : "var(--success)" }}>
-                                  {activity.type === "Sale" ? "+" : "-"}{formatCurrency(activity.amount)}
-                                </span>
-                              </div>
-                              <p className="text-[11px]" style={{ color: "var(--text-3)" }}>{activity.detail}</p>
-                              <p className="mt-0.5 flex items-center gap-1 text-[10px]" style={{ color: "var(--text-3)" }}>
-                                <CalendarClock size={10} /> {formatDate(activity.createdAt)}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-14 text-center">
-                    <UsersRound size={32} style={{ color: "var(--text-3)" }} />
-                    <p className="mt-3 text-[13px] font-bold" style={{ color: "var(--text-2)" }}>Select a customer</p>
-                    <p className="mt-1 text-[11px]" style={{ color: "var(--text-3)" }}>Choose a customer from the list to view their ledger.</p>
-                  </div>
-                )}
-              </section>
-            )}
-          </div>
-        </aside>
+            <div className="mg2-rowcards phone-only" role="list" aria-label={t("acct.c.table")}>
+              {list.map((c) => (
+                <button key={c.id} type="button" role="listitem" className="mg2-rowcard" aria-current={detailId === c.id || undefined} onClick={() => openDetail(c.id)}>
+                  <span className="top"><span className="name">{c.name}</span><span className={`amt ${c.balance > 0.001 ? "t-pos" : ""}`}>{formatCurrency(c.balance)}</span></span>
+                  <span className="meta"><span className="num-ltr">{c.mobile}</span>{c.lastActivityAt && <span>{date.stamp(c.lastActivityAt)}</span>}</span>
+                  {(c.archived || c.overdue || c.overLimit || c.sellAtCost || c.isWholesale) && <span className="meta">{badges(c)}</span>}
+                </button>
+              ))}
+            </div>
+            <p className="mg2-cap" style={{ marginTop: 8 }}>{t("acct.c.footer", { n: list.length, total: formatCurrency(list.reduce((s, c) => s + c.balance, 0)) })}</p>
+          </>
+        )}
       </div>
-      <ConfirmDialog
-        open={deleteCustomerId !== null}
-        title="Delete customer"
-        confirmLabel={t("pos.delete")}
-        confirmDestructive
+
+      {detail && (
+        <CustomerDrawer key={detail.id} customer={detail} onClose={() => openDetail(null)}
+          onPay={() => setPaying({ customerId: detail.id })}
+          onEdit={() => setEditor({ mode: "edit", id: detail.id })}
+          onDelete={() => setDeleteId(detail.id)}
+          onNotice={setNotice} />
+      )}
+      {editor && (
+        <CustomerEditor customer={editor.mode === "edit" ? customers.find((c) => c.id === editor.id) : undefined}
+          onClose={() => setEditor(null)}
+          onSaved={(id, text) => { setEditor(null); refresh(); openDetail(id); setNotice({ tone: "ok", text }) }} />
+      )}
+      {paying && (
+        <PaymentDrawer customers={active} initialId={paying.customerId} onClose={() => setPaying(null)}
+          onRecorded={(text, id) => { setPaying(null); refresh(); openDetail(id); setNotice({ tone: "ok", text }) }} />
+      )}
+      <ConfirmLayer open={deleteId !== null} title={t("acct.c.delete_title")} confirmLabel={t("acct.delete")} confirmDestructive
         onConfirm={() => {
-          if (deleteCustomerId !== null) {
-            try { deleteCustomer(deleteCustomerId) } catch (error) { showToast(error instanceof Error ? error.message : String(error), "error") }
-            setDeleteCustomerId(null)
-          }
+          const c = customers.find((x) => x.id === deleteId)
+          try { if (deleteId) deleteCustomer(deleteId); openDetail(null); if (c) setNotice({ tone: "ok", text: t("acct.c.deleted", { name: c.name }) }) }
+          catch (error) { setNotice({ tone: "err", text: message(error) }) }
+          setDeleteId(null)
         }}
-        onCancel={() => setDeleteCustomerId(null)}
-      >
-        <p>Delete this customer and their ledger? This cannot be undone.</p>
-      </ConfirmDialog>
+        onCancel={() => setDeleteId(null)}>
+        <p>{t("acct.c.delete_text", { name: customers.find((x) => x.id === deleteId)?.name ?? "" })}</p>
+      </ConfirmLayer>
+    </main>
+  )
+}
 
-      {/* Edit Customer Modal */}
-      {editCustomer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => setEditCustomer(null)}>
-          <div className="w-full max-w-md rounded-xl border bg-white p-6 shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-zinc-950">Edit Customer</h3>
-              <button onClick={() => setEditCustomer(null)} className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"><X size={16} /></button>
-            </div>
-            <div className="space-y-3">
-              <label className="block text-sm font-bold text-zinc-700">
-                Name
-                <input value={editCustomer.name} onChange={(e) => setEditCustomer((c) => c ? { ...c, name: e.target.value } : null)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
-              </label>
-              <label className="block text-sm font-bold text-zinc-700">
-                Mobile
-                <input value={editCustomer.mobile} onChange={(e) => setEditCustomer((c) => c ? { ...c, mobile: e.target.value } : null)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
-              </label>
-              <label className="block text-sm font-bold text-zinc-700">
-                Credit limit
-                <input type="number" min="0" value={editCustomer.creditLimit} onChange={(e) => setEditCustomer((c) => c ? { ...c, creditLimit: normalizeNumber(e.target.value) } : null)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
-              </label>
-              <label className="block text-sm font-bold text-zinc-700">
-                Notes
-                <input value={editCustomer.notes} onChange={(e) => setEditCustomer((c) => c ? { ...c, notes: e.target.value } : null)} className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100" />
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" checked={editCustomer.isWholesale} onChange={(e) => setEditCustomer((c) => c ? { ...c, isWholesale: e.target.checked } : null)} className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500" />
-                <span className="text-sm font-medium text-zinc-700">Wholesale prices</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" checked={editCustomer.sellAtCost} onChange={(e) => setEditCustomer((c) => c ? { ...c, sellAtCost: e.target.checked } : null)} className="h-4 w-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500" />
-                <span className="text-sm font-medium text-zinc-700">Sell at cost by default</span>
-              </label>
-              <button onClick={saveEdit} className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-bold text-white transition hover:bg-zinc-800">
-                <Plus size={17} /> Save Changes
-              </button>
-            </div>
-          </div>
+/** Details: balance, limit, aging, statement (running balance) and payment history. */
+function CustomerDrawer({ customer: c, onClose, onPay, onEdit, onDelete, onNotice }: {
+  customer: CustomerLedger; onClose: () => void; onPay: () => void; onEdit: () => void; onDelete: () => void
+  onNotice: (n: { tone: "ok" | "err"; text: string }) => void
+}) {
+  const { t } = useI18n()
+  const date = useDate()
+  const [tab, setTab] = useState<"statement" | "payments">("statement")
+  const [note, setNote] = useState(c.notes)
+  const [error, setError] = useState("")
+  const activity = getCustomerActivity(c.id)
+  // Running balance, oldest first: a sale on account adds, a payment subtracts.
+  const statement = activity.reduceRight<Array<(typeof activity)[number] & { running: number }>>((acc, a) => {
+    const prev = acc.length ? acc[0].running : 0
+    return [{ ...a, running: prev + (a.type === "Payment" ? -a.amount : a.amount) }, ...acc]
+  }, [])
+  const payments = activity.filter((a) => a.type === "Payment")
+  const owed = c.aging.current + c.aging.days30 + c.aging.days60 + c.aging.days90
+  const pct = (v: number) => (owed > 0 ? (v / owed) * 100 : 0)
+  const hasHistory = customerHasHistory(c.id)
+  const store = getSettings().storeName
+  const limitPct = c.creditLimit > 0 ? Math.min(100, (c.balance / c.creditLimit) * 100) : 0
+
+  function act(fn: () => void, ok: string) {
+    setError("")
+    try { fn(); onNotice({ tone: "ok", text: ok }) } catch (e) { setError(message(e)) }
+  }
+  function downloadStatement() {
+    const url = URL.createObjectURL(new Blob([buildCustomerStatement(c.id, store)], { type: "text/plain" }))
+    const a = document.createElement("a"); a.href = url; a.download = `statement-${c.name.replace(/\s+/g, "-")}.txt`; a.click(); URL.revokeObjectURL(url)
+  }
+  function printStatement() {
+    const text = buildCustomerStatement(c.id, store)
+    const w = window.open("", "_blank", "width=420,height=600")
+    if (!w) { setError(t("acct.popup_blocked")); return }
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    w.document.write(`<html><head><title>${esc(c.name)}</title><style>body{font-family:monospace;white-space:pre;padding:20px;font-size:12px}</style></head><body>${esc(text)}</body></html>`)
+    w.document.close(); w.focus(); setTimeout(() => w.print(), 250)
+  }
+
+  return (
+    <Drawer open wide title={c.name} onClose={onClose}
+      subtitle={<span style={{ display: "inline-flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}><span className="num-ltr">{c.mobile}</span>
+        {c.archived && <Badge tone="muted">{t("acct.archived")}</Badge>}
+        {c.overdue && <Badge tone="err">{t("acct.c.overdue_days", { n: c.oldestUnpaidDays })}</Badge>}
+        {c.overLimit && <Badge tone="warn">{t("acct.c.over_limit")}</Badge>}
+        {c.sellAtCost && <Badge tone="info">{t("acct.c.sell_at_cost")}</Badge>}
+        {c.isWholesale && <Badge tone="muted">{t("acct.c.wholesale")}</Badge>}</span>}
+      footer={<>
+        <button type="button" className="mg2-btn mg2-btn-primary" disabled={c.balance <= 0.001 || !!c.archived} aria-describedby={c.balance <= 0.001 ? "cd-pay-why" : undefined} onClick={onPay} data-autofocus><HandCoins size={16} />{t("acct.c.receive")}</button>
+        <button type="button" className="mg2-btn" onClick={onEdit}><Pencil size={16} />{t("acct.edit")}</button>
+        {c.archived
+          ? <button type="button" className="mg2-btn" onClick={() => act(() => restoreCustomer(c.id), t("acct.restored", { name: c.name }))}>{t("acct.restore")}</button>
+          : <button type="button" className="mg2-btn" onClick={() => act(() => archiveCustomer(c.id), t("acct.archived_done", { name: c.name }))}>{t("acct.archive")}</button>}
+        {!hasHistory && <button type="button" className="mg2-btn mg2-btn-danger" onClick={onDelete}>{t("acct.delete")}</button>}
+      </>}>
+      {c.balance <= 0.001 && <p className="mg2-cap" id="cd-pay-why" style={{ margin: 0 }}>{t("acct.c.nothing_owed")}</p>}
+      {error && <div className="mg2-banner mg2-t-err" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span style={{ flex: 1, color: "var(--text)" }}>{error}</span></div>}
+      <div className="mg2-stats">
+        <StatTile label={t("acct.col.balance")} value={<span className={c.balance > 0.001 ? "t-pos" : undefined}>{formatCurrency(c.balance)}</span>} />
+        <StatTile label={t("acct.c.sold_on_account")} value={formatCurrency(c.debtTotal)} />
+        <StatTile label={t("acct.paid")} value={formatCurrency(c.paidTotal)} />
+        <StatTile label={t("acct.c.col.oldest")} value={c.balance > 0.001 ? t("acct.c.days", { n: c.oldestUnpaidDays }) : "—"} />
+      </div>
+      {c.creditLimit > 0 && (
+        <div>
+          <div className="mg2-sum"><span className="mg2-cap">{t("acct.c.col.limit")}</span><strong>{t("acct.c.of_limit", { used: formatCurrency(c.balance), limit: formatCurrency(c.creditLimit) })}</strong></div>
+          <div className={`mg2-bar ${c.overLimit ? "t-err" : c.balance > c.creditLimit * 0.8 ? "t-warn" : ""}`} role="progressbar" aria-label={t("acct.c.limit_used")}
+            aria-valuenow={Math.round(limitPct)} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${limitPct}%` }} /></div>
         </div>
       )}
-
-      </>
+      {owed > 0.001 && (
+        <section aria-label={t("acct.c.by_age")}>
+          <h3 className="mg2-section-title" style={{ marginBottom: 8 }}>{t("acct.c.by_age")}</h3>
+          <div className="mg2-age" aria-hidden="true">
+            <span className="a0" style={{ width: `${pct(c.aging.current)}%` }} /><span className="a1" style={{ width: `${pct(c.aging.days30)}%` }} />
+            <span className="a2" style={{ width: `${pct(c.aging.days60)}%` }} /><span className="a3" style={{ width: `${pct(c.aging.days90)}%` }} />
+          </div>
+          <div className="mg2-age-legend">
+            <span>{t("acct.c.age.0")}<strong>{formatCurrency(c.aging.current)}</strong></span>
+            <span>{t("acct.c.age.30")}<strong>{formatCurrency(c.aging.days30)}</strong></span>
+            <span>{t("acct.c.age.60")}<strong>{formatCurrency(c.aging.days60)}</strong></span>
+            <span>{t("acct.c.age.90")}<strong>{formatCurrency(c.aging.days90)}</strong></span>
+          </div>
+        </section>
       )}
-    </main>
+      <div className="mg2-actions">
+        {c.mobile && <button type="button" className="mg2-btn" onClick={() => openWhatsApp(c.mobile, debtReminderMessage({ storeName: store, customerName: c.name, balance: c.balance, oldestDays: c.oldestUnpaidDays }))}><MessageCircle size={16} />{t("acct.c.whatsapp")}</button>}
+        {c.mobile && <a className="mg2-btn" style={{ textDecoration: "none" }} href={`tel:${c.mobile}`}><Phone size={16} />{t("acct.call")}</a>}
+        <button type="button" className="mg2-btn" onClick={downloadStatement}><Download size={16} />{t("acct.c.statement_download")}</button>
+        <button type="button" className="mg2-btn" onClick={printStatement}><Printer size={16} />{t("acct.c.statement_print")}</button>
+      </div>
+      <form onSubmit={(e) => { e.preventDefault(); act(() => updateCustomer(c.id, { notes: note.trim() }), t("acct.c.note_saved")) }} style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 240px" }}>
+          <Field label={t("acct.c.promise")} help={t("acct.c.promise_help")}>
+            {(a) => <input {...a} className="mg2-input" maxLength={160} value={note} onChange={(e) => setNote(e.target.value)} />}
+          </Field>
+        </div>
+        <button type="submit" className="mg2-btn" disabled={note.trim() === (c.notes ?? "").trim()} style={{ marginBottom: 26 }}>{t("acct.save")}</button>
+      </form>
+
+      <div className="mg2-chips" role="group" aria-label={t("acct.c.history")}>
+        {(["statement", "payments"] as const).map((k) => (
+          <FilterChip key={k} pressed={tab === k} onClick={() => setTab(k)} label={t(`acct.c.tab.${k}`)} count={k === "statement" ? statement.length : payments.length} />
+        ))}
+      </div>
+      {(tab === "statement" ? statement.length : payments.length) === 0 ? (
+        <EmptyState title={t(tab === "statement" ? "acct.c.no_statement" : "acct.c.no_payments")} text={t("acct.c.no_history_text")} />
+      ) : tab === "statement" ? (
+        <div className="mg2-table-wrap">
+          <table className="mg2-table mg2-trace" aria-label={t("acct.c.tab.statement")}>
+            <thead><tr><th>{t("acct.col.date")}</th><th>{t("acct.col.what")}</th><th className="num">{t("acct.c.col.charge")}</th><th className="num">{t("acct.c.col.payment")}</th><th className="num">{t("acct.col.balance")}</th></tr></thead>
+            <tbody>
+              {statement.map((a) => (
+                <tr key={`${a.type}-${a.id}`} className="mg2-static">
+                  <td style={{ whiteSpace: "nowrap" }}>{date.day(a.createdAt)}</td>
+                  <td>{a.type === "Sale"
+                    ? <><span className="num-ltr" style={{ fontWeight: 600 }}>{a.title}</span><span className="sub">{t("acct.c.sale_lines", { n: Number.parseInt(a.detail, 10) || 0 })}</span></>
+                    : <>{t(`acct.pay.${methodKey(a.title)}`)}{a.detail && a.detail !== "Debt payment" && <span className="sub">{a.detail}</span>}</>}</td>
+                  <td className="num">{a.type === "Sale" ? formatCurrency(a.amount) : ""}</td>
+                  <td className="num t-neg">{a.type === "Payment" ? formatCurrency(a.amount) : ""}</td>
+                  <td className="num" style={{ fontWeight: 600 }}>{formatCurrency(a.running)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="mg2-table-wrap">
+          <table className="mg2-table" aria-label={t("acct.c.tab.payments")}>
+            <thead><tr><th>{t("acct.col.date")}</th><th>{t("acct.col.method")}</th><th className="p3">{t("acct.col.reference")}</th><th className="num">{t("acct.col.amount")}</th></tr></thead>
+            <tbody>
+              {payments.map((p) => (
+                <tr key={p.id} className="mg2-static">
+                  <td style={{ whiteSpace: "nowrap" }}>{date.stamp(p.createdAt)}</td>
+                  <td>{t(`acct.pay.${methodKey(p.title)}`)}</td>
+                  <td className="p3" style={{ color: "var(--text-2)" }}>{p.detail === "Debt payment" ? "—" : p.detail}</td>
+                  <td className="num t-neg" style={{ fontWeight: 600 }}>{formatCurrency(p.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Drawer>
+  )
+}
+
+/** Add / edit a customer. Name and mobile are required; Save moves focus to the first problem. */
+function CustomerEditor({ customer, onClose, onSaved }: { customer?: CustomerLedger; onClose: () => void; onSaved: (id: string, text: string) => void }) {
+  const { t } = useI18n()
+  const [name, setName] = useState(customer?.name ?? "")
+  const [mobile, setMobile] = useState(customer?.mobile ?? "")
+  const [limit, setLimit] = useState(customer ? String(customer.creditLimit || "") : "")
+  const [notes, setNotes] = useState(customer?.notes ?? "")
+  const [wholesale, setWholesale] = useState(customer?.isWholesale ?? false)
+  const [atCost, setAtCost] = useState(customer?.sellAtCost ?? false)
+  const [errors, setErrors] = useState<{ name?: string; mobile?: string; limit?: string }>({})
+  const [failure, setFailure] = useState("")
+  const formRef = useRef<HTMLFormElement>(null)
+
+  function save() {
+    const e: typeof errors = {}
+    if (!name.trim()) e.name = t("acct.c.err.name")
+    if (!mobile.trim()) e.mobile = t("acct.c.err.mobile")
+    const lim = limit.trim() === "" ? 0 : Number(limit)
+    if (!Number.isFinite(lim) || lim < 0) e.limit = t("acct.c.err.limit")
+    setErrors(e)
+    if (Object.keys(e).length) { requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>("[aria-invalid=true]")?.focus()); return }
+    setFailure("")
+    try {
+      if (customer) {
+        updateCustomer(customer.id, { name: name.trim(), mobile: mobile.trim(), creditLimit: lim, isWholesale: wholesale, sellAtCost: atCost, notes: notes.trim() })
+        onSaved(customer.id, t("acct.c.saved", { name: name.trim() }))
+      } else {
+        const c = addCustomer({ name, mobile, creditLimit: lim, isWholesale: wholesale, sellAtCost: atCost, notes })
+        onSaved(c.id, t("acct.c.added", { name: c.name }))
+      }
+    } catch (err) { setFailure(message(err)) }
+  }
+  return (
+    <Drawer open title={customer ? t("acct.c.edit_title", { name: customer.name }) : t("acct.c.add")} onClose={onClose}
+      footer={<><button type="button" className="mg2-btn mg2-btn-primary" onClick={save}>{t("acct.save")}</button><button type="button" className="mg2-btn mg2-btn-ghost" onClick={onClose}>{t("acct.cancel")}</button></>}>
+      <form ref={formRef} onSubmit={(e) => { e.preventDefault(); save() }} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {failure && <div className="mg2-banner mg2-t-err" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span style={{ flex: 1, color: "var(--text)" }}>{failure}</span></div>}
+        <Field label={t("acct.c.f.name")} error={errors.name}>{(a) => <input {...a} className="mg2-input" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />}</Field>
+        <Field label={t("acct.c.f.mobile")} error={errors.mobile}>{(a) => <input {...a} className="mg2-input" dir="ltr" inputMode="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} />}</Field>
+        <Field label={t("acct.c.f.limit")} help={t("acct.c.f.limit_help")} error={errors.limit}>
+          {(a) => <span className="mg2-money"><span className="mg2-adorn">$</span><input {...a} type="number" min="0" step="0.01" inputMode="decimal" dir="ltr" value={limit} onChange={(e) => setLimit(e.target.value)} /></span>}
+        </Field>
+        <Field label={t("acct.c.f.notes")}>{(a) => <textarea {...a} className="mg2-input" rows={2} style={{ paddingBlock: 8 }} value={notes} onChange={(e) => setNotes(e.target.value)} />}</Field>
+        <label style={{ display: "flex", gap: 10, alignItems: "center" }}><input type="checkbox" className="mg2-check" checked={wholesale} onChange={(e) => setWholesale(e.target.checked)} />{t("acct.c.f.wholesale")}</label>
+        <label style={{ display: "flex", gap: 10, alignItems: "center" }}><input type="checkbox" className="mg2-check" checked={atCost} onChange={(e) => setAtCost(e.target.checked)} />{t("acct.c.f.at_cost")}</label>
+        <button type="submit" hidden />
+      </form>
+    </Drawer>
+  )
+}
+
+/** Record a payment against a balance. Never more than is owed: an amount above it says so and offers the balance. */
+function PaymentDrawer({ customers, initialId, onClose, onRecorded }: {
+  customers: CustomerLedger[]; initialId: string; onClose: () => void; onRecorded: (text: string, customerId: string) => void
+}) {
+  const { t } = useI18n()
+  const owing = customers.filter((c) => c.balance > 0.001)
+  const [customerId, setCustomerId] = useState(initialId)
+  const [amount, setAmount] = useState("")
+  const [method, setMethod] = useState<DebtPayment["method"]>("Cash")
+  const [reference, setReference] = useState("")
+  const [error, setError] = useState("")
+  const [failure, setFailure] = useState("")
+  const attempt = useRef(newPaymentAttempt())
+  // A changed form is a new attempt; pressing again without a change is the same one.
+  useEffect(() => { attempt.current = newPaymentAttempt() }, [customerId, amount, method, reference])
+  const customer = customers.find((c) => c.id === customerId)
+  const balance = customer?.balance ?? 0
+  const value = Number(amount)
+  const over = Number.isFinite(value) && value > balance + 0.001
+  const full = String(Math.round(balance * 100) / 100)
+
+  function record() {
+    setFailure("")
+    if (!customer || balance <= 0.001) { setError(t("acct.c.err.choose")); return }
+    if (!amount.trim() || !Number.isFinite(value) || value <= 0) { setError(t("acct.err.amount")); return }
+    if (over) { setError(t("acct.err.over", { amount: formatCurrency(balance) })); return }
+    setError("")
+    try {
+      const p = recordDebtPayment({ id: attempt.current, customerId: customer.id, amount: Math.min(value, balance), method, reference })
+      onRecorded(t("acct.c.received", { amount: formatCurrency(p.amount), name: customer.name }), customer.id)
+    } catch (err) { setFailure(message(err)) }
+  }
+  return (
+    <Drawer open title={t("acct.c.receive")} subtitle={customer ? t("acct.c.owes", { name: customer.name, amount: formatCurrency(balance) }) : undefined} onClose={onClose}
+      footer={<><button type="button" className="mg2-btn mg2-btn-primary" onClick={record}>{t("acct.c.record_payment")}</button><button type="button" className="mg2-btn mg2-btn-ghost" onClick={onClose}>{t("acct.cancel")}</button></>}>
+      <form onSubmit={(e) => { e.preventDefault(); record() }} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {failure && <div className="mg2-banner mg2-t-err" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span style={{ flex: 1, color: "var(--text)" }}>{failure}</span></div>}
+        <Field label={t("acct.c.f.customer")}>
+          {(a) => <select {...a} className="mg2-select" value={customerId} onChange={(e) => { setCustomerId(e.target.value); setError("") }}>
+            {owing.map((c) => <option key={c.id} value={c.id}>{c.name} · {formatCurrency(c.balance)}</option>)}
+          </select>}
+        </Field>
+        <Field label={t("acct.f.amount")} help={t("acct.f.amount_max", { amount: formatCurrency(balance) })} error={error || undefined}>
+          {(a) => <span className="mg2-money"><span className="mg2-adorn">$</span><input {...a} type="number" min="0" step="0.01" inputMode="decimal" dir="ltr" value={amount} onChange={(e) => { setAmount(e.target.value); setError("") }} /></span>}
+        </Field>
+        <div className="mg2-actions">
+          <button type="button" className="mg2-btn" onClick={() => { setAmount(full); setError("") }}>{over ? t("acct.record_instead", { amount: formatCurrency(balance) }) : t("acct.full_balance", { amount: formatCurrency(balance) })}</button>
+        </div>
+        <div>
+          <span className="mg2-label" id="cust-pay-method">{t("acct.f.method")}</span>
+          <div className="mg2-seg" role="radiogroup" aria-labelledby="cust-pay-method" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))" }}>
+            {METHODS.map((m) => (
+              <label key={m}><input type="radio" name="cust-pay-method" checked={method === m} onChange={() => setMethod(m)} /><CheckCircle2 size={14} className="mg2-chk" aria-hidden="true" />{t(`acct.pay.${METHOD_KEY[m]}`)}</label>
+            ))}
+          </div>
+        </div>
+        <Field label={t("acct.f.reference")}>{(a) => <input {...a} className="mg2-input" value={reference} onChange={(e) => setReference(e.target.value)} />}</Field>
+        <p className="mg2-cap" style={{ margin: 0, display: "flex", gap: 6, alignItems: "center" }}><Info size={14} aria-hidden="true" />{t("acct.c.pay_note")}</p>
+        <button type="submit" hidden />
+      </form>
+    </Drawer>
   )
 }

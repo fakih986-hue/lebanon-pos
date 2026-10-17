@@ -1,12 +1,13 @@
 // Midnight Gold v2 back-office building blocks (DESIGN-SYSTEM §7). One
 // implementation each, used by Products, Lots and Receiving. Styles:
 // features/pos/backoffice-v2.css.
-import { useEffect, useId, useRef, type ReactNode } from "react"
+import { useEffect, useId, useRef, type ComponentProps, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { Link, useLocation } from "react-router"
 import { CalendarClock, Inbox, X } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
+import ConfirmDialog from "../../../../components/ConfirmDialog"
 import { daysToExpiry, expiryTone } from "../../lib/lotTrace"
 
 export type Tone = "ok" | "warn" | "err" | "info" | "muted"
@@ -26,6 +27,21 @@ export function StockNav({ counts }: { counts?: Partial<Record<"products" | "lot
         <Link key={i.to} to={i.to} aria-current={pathname === i.to ? "page" : undefined}>
           {i.label}
           {counts?.[i.key] !== undefined && <span className="mg2-count num">{counts[i.key]}</span>}
+        </Link>
+      ))}
+    </nav>
+  )
+}
+
+/** Page tabs (§7): links with a stable ?tab= value (linkable, survive reload), aria-current. */
+export function PageTabs({ label, current, items }: { label: string; current: string; items: Array<{ value: string; label: string; count?: number }> }) {
+  const { pathname } = useLocation()
+  return (
+    <nav className="mg2-nav" aria-label={label}>
+      {items.map((i) => (
+        <Link key={i.value} to={`${pathname}?tab=${i.value}`} aria-current={current === i.value ? "page" : undefined}>
+          {i.label}
+          {i.count !== undefined && <span className="mg2-count num">{i.count}</span>}
         </Link>
       ))}
     </nav>
@@ -108,6 +124,25 @@ export function Field({ label, help, error, children, id }: { label: string; hel
 }
 
 /**
+ * A confirmation that works over an open Drawer: mounted only while open and portalled to <body>
+ * (a Drawer makes the page behind it inert, which would also catch a dialog rendered inside the
+ * page). Focus moves to Cancel, the safe choice; Esc cancels.
+ */
+export function ConfirmLayer(props: ComponentProps<typeof ConfirmDialog>) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!props.open) return
+    const id = window.requestAnimationFrame(() => {
+      const buttons = ref.current?.querySelectorAll<HTMLElement>("[role=alertdialog] button")
+      buttons?.[buttons.length - 2]?.focus()
+    })
+    return () => window.cancelAnimationFrame(id)
+  }, [props.open])
+  if (!props.open) return null
+  return createPortal(<div ref={ref}><ConfirmDialog {...props} /></div>, document.body)
+}
+
+/**
  * Drawer (§7): inline-end, 480 / 640 px, header · scroll body · sticky footer; full width on phones.
  * Modal: focus moves in, Tab stays inside, Esc closes, focus returns to what opened it; the page
  * behind is inert while it is open.
@@ -124,7 +159,8 @@ export function Drawer({ open, title, subtitle, onClose, children, footer, wide 
     if (!open) return
     returnTo.current = document.activeElement as HTMLElement | null
     const id = window.setTimeout(() => {
-      const first = ref.current?.querySelector<HTMLElement>("[data-autofocus], input:not([disabled]), select:not([disabled]), textarea:not([disabled])")
+      // An explicit [data-autofocus] wins; otherwise the first field.
+      const first = ref.current?.querySelector<HTMLElement>("[data-autofocus]:not([disabled])") ?? ref.current?.querySelector<HTMLElement>("input:not([disabled]), select:not([disabled]), textarea:not([disabled])")
       ;(first ?? ref.current)?.focus()
     }, 30)
     // Inert background (siblings of the layer up to <body>), restored on close.

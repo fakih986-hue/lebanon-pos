@@ -49,7 +49,7 @@ export default function Topbar() {
 
   const isPosRoute = location.pathname === "/"
   // Midnight Gold v2 pages carry their own page header (eyebrow + title + workspace nav); the bar shows only the date there.
-  const ownsHeader = ["/products", "/stock", "/products/new"].includes(location.pathname)
+  const ownsHeader = ["/products", "/stock", "/products/new", "/customers", "/suppliers", "/sales"].includes(location.pathname)
 
   return (
     <header className={`topbar-shell flex shrink-0 items-center justify-between gap-2 border-b px-3 sm:gap-3 sm:px-6 ${isPosRoute ? "min-h-[56px]" : "min-h-[64px]"}`}>

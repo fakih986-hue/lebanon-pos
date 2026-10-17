@@ -153,7 +153,10 @@ describe("pages: a second press records nothing more", () => {
     security.openShift(100)
     const { default: SalesPage } = await import("../pages/sales/SalesPage")
     await render(createElement(SalesPage))
-    const open = all("button").find((b) => /^returns|^refund/i.test(nameOf(b)))
+    // The receipt (a row, or the panel already showing it), then its returns.
+    const row = all("button").find((b) => nameOf(b) === "S-1")
+    if (row) await click(row)
+    const open = all("button").find((b) => /^returns|^return items|^refund/i.test(nameOf(b)))
     if (open) await click(open)
     const qty = [...document.querySelectorAll<HTMLInputElement>("input[type=number]")].find((i) => !i.disabled)!
     await act(async () => { type(qty, "2") })
