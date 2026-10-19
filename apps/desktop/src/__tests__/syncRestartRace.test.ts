@@ -57,3 +57,28 @@ describe("an old instance's late response after a restart", () => {
     expect(op?.status).toBe("Synced")
   })
 })
+
+describe("rejection notices", () => {
+  it("a late rejection of an operation already synced shows no rejection notice", async () => {
+    const notices: unknown[] = []
+    const on = (e: Event) => notices.push((e as CustomEvent).detail)
+    window.addEventListener("sync:operation-rejected", on)
+    try {
+      await scenario((h) => { answer = "rejected"; h.resolve(undefined as never) })
+      expect(notices).toEqual([])
+    } finally { window.removeEventListener("sync:operation-rejected", on) }
+  })
+
+  it("a real rejection of a waiting operation still shows its notice", async () => {
+    const notices: unknown[] = []
+    const on = (e: Event) => notices.push((e as CustomEvent).detail)
+    window.addEventListener("sync:operation-rejected", on)
+    try {
+      mode = "answer"; answer = "rejected"
+      const s = await import("../features/pos/services/sync.service")
+      await s.enqueueSyncOperation({ id: "op-real", entity: "supplier", action: "update", summary: "s", payload: { id: "sup" } })
+      expect(queue().find((o) => o.id === "op-real")?.status).toBe("Rejected")
+      expect(notices).toHaveLength(1)
+    } finally { window.removeEventListener("sync:operation-rejected", on) }
+  })
+})

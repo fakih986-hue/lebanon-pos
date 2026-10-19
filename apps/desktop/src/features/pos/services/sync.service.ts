@@ -1480,6 +1480,12 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
   // Only an operation still waiting is updated: a newer instance (after a restart) or a flush may
   // already have settled it, and this late answer must not overwrite that.
   const stillOpen = (op: SyncOperation) => op.status === "Pending" || op.status === "Failed"
+  /** Settles this operation only if it is still waiting; true when it did (so a notice is due). */
+  const settleIfOpen = (next: (op: SyncOperation) => SyncOperation) => {
+    let settled = false
+    updateQueueOps((op) => { if (op.id !== operation.id || !stillOpen(op)) return op; settled = true; return next(op) })
+    return settled
+  }
   if (apiUrl && token && !isSuspended()) {
     try {
       const response = await fetch(`${apiUrl}/api/sync/push`, {
@@ -1492,8 +1498,7 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
         const body = await response.json().catch(() => ({ results: [] as any[] }))
         if (body.code === "DEVICE_NOT_APPROVED") {
           const rejected = { ...operation, status: "Rejected" as const, attempts: 5, lastAttemptAt: new Date().toISOString(), error: body.error ?? "Device not approved" }
-          updateQueueOps((op) => op.id === operation.id && stillOpen(op) ? rejected : op)
-          dispatchOperationRejected(rejected)
+          if (settleIfOpen(() => rejected)) dispatchOperationRejected(rejected)
           dispatchSyncChanged()
           return operation
         }
@@ -1501,14 +1506,13 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
         const result = body.results?.find((r: { id: string }) => r.id === operation.id)
         if (result?.status === "rejected") {
           const rejected = { ...operation, status: "Rejected" as const, attempts: 5, lastAttemptAt: new Date().toISOString(), error: result.error ?? "Rejected by server" }
-          updateQueueOps((op) => op.id === operation.id && stillOpen(op) ? rejected : op)
-          dispatchOperationRejected(rejected)
+          if (settleIfOpen(() => rejected)) dispatchOperationRejected(rejected)
           dispatchSyncChanged()
           return operation
         }
         if (!result || result.status === "ok") {
           recordAcknowledged([operation])
-          updateQueueOps((op) => op.id === operation.id && stillOpen(op) ? { ...op, status: "Synced" as const, syncedAt: new Date().toISOString() } : op)
+          settleIfOpen((op) => ({ ...op, status: "Synced" as const, syncedAt: new Date().toISOString() }))
           dispatchSyncChanged()
           return operation
         }
