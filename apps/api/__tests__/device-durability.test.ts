@@ -25,7 +25,21 @@ const storage = new MemoryStorage()
 const events = new EventTarget()
 const g = globalThis as unknown as Record<string, unknown>
 g.localStorage = storage
-g.window = globalThis
+// HARNESS: the device sees a window whose timers are tracked, so a simulated restart can cancel
+// the old instance's pending work (auto-flush) instead of letting it run into the next instance.
+const deviceTimers = new Set<ReturnType<typeof setTimeout>>()
+const trackedSetTimeout = (fn: (...a: unknown[]) => void, ms?: number, ...a: unknown[]) => {
+  const id = setTimeout(() => { deviceTimers.delete(id); fn(...a) }, ms)
+  deviceTimers.add(id)
+  return id
+}
+g.window = new Proxy(globalThis, {
+  get(t, k) {
+    if (k === "setTimeout") return trackedSetTimeout
+    if (k === "clearTimeout") return (id: ReturnType<typeof setTimeout>) => { deviceTimers.delete(id); clearTimeout(id) }
+    return Reflect.get(t, k)
+  },
+})
 g.addEventListener = events.addEventListener.bind(events)
 g.removeEventListener = events.removeEventListener.bind(events)
 g.dispatchEvent = events.dispatchEvent.bind(events)
@@ -65,13 +79,34 @@ let hubLost = false
 // "dropPush": the till's push fails before it is sent; the till gets no answer.
 let dropPush = false
 const realFetch = globalThis.fetch
-g.fetch = (async (url: string, init?: RequestInit) => {
+// HARNESS: every device request is tracked until settled (see dispose()).
+const inflight = new Set<Promise<unknown>>()
+const deviceFetch = (async (url: string, init?: RequestInit) => {
   if (hubLost && !String(url).includes("/api/sync/push")) throw new Error("hub unreachable")
   if (dropPush && String(url).includes("/api/sync/push")) throw new Error("request timed out")
   const res = await realFetch(url, init)
   if ((lose || hubLost) && String(url).includes("/api/sync/push")) { await res.text(); throw new Error("connection reset: response lost") }
   return res
+})
+g.fetch = ((url: string, init?: RequestInit) => {
+  const p = deviceFetch(url, init)
+  inflight.add(p)
+  void p.catch(() => undefined).finally(() => inflight.delete(p))
+  return p
 }) as typeof fetch
+/**
+ * HARNESS: deterministic shutdown of a device instance: cancel its timers, wait for its requests
+ * and what it does with their answers, so nothing it started writes after it is disposed.
+ */
+async function dispose() {
+  for (const id of deviceTimers) clearTimeout(id)
+  deviceTimers.clear()
+  for (let round = 0; round < 20 && (inflight.size > 0 || round < 3); round++) {
+    await Promise.allSettled([...inflight])
+    await new Promise((r) => setImmediate(r))
+  }
+  if (inflight.size > 0) throw new Error("device work still in flight after dispose")
+}
 
 const token = (tenantId: string) => jwt.sign({ userId: ADMIN, tenantId, role: "Admin" }, process.env.JWT_SECRET!, { expiresIn: "1h" })
 async function device() {
@@ -88,6 +123,7 @@ async function device() {
 }
 type Device = Awaited<ReturnType<typeof device>>
 async function restart(): Promise<Device> {
+  await dispose()
   vi.resetModules()
   const d = await device()
   d.sync.recoverStagedSyncOperations() // startup recovery (journal first)
@@ -152,6 +188,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  await dispose()
   for (const t of [TENANT, OTHER]) {
     const where = { tenantId: t }
     await prisma.stockMovement.deleteMany({ where })
