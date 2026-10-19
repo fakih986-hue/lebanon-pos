@@ -1467,4 +1467,50 @@ describe("POST /api/sync/push — permission enforcement (POS-PERMISSIONS-1)", (
     const res = await pushVoid()
     expect(res.body.results[0].status).toBe("ok")
   })
+
+  // A refund pushed by an account without sales.refund (a tampered or stale client): refused.
+  const pushRefund = () => request("POST", "/api/sync/push", {
+    token,
+    body: { operations: [{ id: "op-rf-" + Math.random().toString(36).slice(2), entity: "refund", action: "create", payload: { id: "rf1", saleId: "s1", refundNumber: "R-1", total: 5, items: [] } }] },
+  })
+  it("blocks a refund from an account without sales.refund, and audits it", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockResolvedValue({ role: "Cashier", permissions: ["sales.checkout", "sales.void"] } as any)
+    const res = await pushRefund()
+    expect(res.body.results[0].status).toBe("error")
+    expect(res.body.results[0].error).toMatch(/permission to create refund/i)
+    expect(vi.mocked(prisma.auditEvent.create)).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ action: "security.permission.denied", entity: "refund" }) }))
+    expect(vi.mocked(prisma.$transaction)).not.toHaveBeenCalled()
+  })
+  it("does not refuse a refund from an account with sales.refund", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockResolvedValue({ role: "Cashier", permissions: ["sales.checkout", "sales.refund"] } as any)
+    const res = await pushRefund()
+    expect(res.body.results[0].error ?? "").not.toMatch(/permission/i)
+  })
+
+  const pushSupplierUpdate = (payload: Record<string, unknown>) => request("POST", "/api/sync/push", {
+    token,
+    body: { operations: [{ id: "op-su-" + Math.random().toString(36).slice(2), entity: "supplier", action: "update", payload }] },
+  })
+  it("blocks a supplier edit without suppliers.manage", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockResolvedValue({ role: "Cashier", permissions: ["sales.checkout", "inventory.receive"] } as any)
+    const res = await pushSupplierUpdate({ id: "sup1", name: "Renamed" })
+    expect(res.body.results[0].status).toBe("error")
+    expect(vi.mocked(prisma.supplier.updateMany)).not.toHaveBeenCalled()
+  })
+  it("a supplier edit changes only the supplier's details (never its tenant or id)", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockResolvedValue({ role: "Manager", permissions: [] } as any)
+    vi.mocked(prisma.supplier.updateMany).mockResolvedValue({ count: 1 } as any)
+    const res = await pushSupplierUpdate({ id: "sup1", name: "Malia Group SAL", mobile: "01555999", contact: "Hadi", address: "Dora", notes: "n", tenantId: "other-tenant", createdAt: "2020-01-01" })
+    expect(res.body.results[0].status).toBe("ok")
+    const call = vi.mocked(prisma.supplier.updateMany).mock.calls[0][0] as { where: Record<string, unknown>; data: Record<string, unknown> }
+    expect(call.where).toMatchObject({ id: "sup1" })
+    expect(call.where.tenantId).not.toBe("other-tenant")
+    expect(call.data).toEqual({ name: "Malia Group SAL", mobile: "01555999", contact: "Hadi", address: "Dora", notes: "n" })
+  })
+  it("still lets receiving create a supplier without suppliers.manage", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockResolvedValue({ role: "Cashier", permissions: ["sales.checkout", "inventory.receive"] } as any)
+    vi.mocked(prisma.supplier.upsert).mockResolvedValue({} as any)
+    const res = await request("POST", "/api/sync/push", { token, body: { operations: [{ id: "op-sc-" + Math.random().toString(36).slice(2), entity: "supplier", action: "create", payload: { id: "sup2", name: "New" } }] } })
+    expect(res.body.results[0].status).toBe("ok")
+  })
 })

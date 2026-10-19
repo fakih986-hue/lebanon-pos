@@ -81,6 +81,7 @@ async function device() {
     security: await import("../../desktop/src/features/pos/services/security.service.js"),
     batches: await import("../../desktop/src/features/pos/services/inventoryBatch.service.js"),
     customer: await import("../../desktop/src/features/pos/services/customer.service.js"),
+    supplier: await import("../../desktop/src/features/pos/services/supplier.service.js"),
     journal: await import("../../desktop/src/features/pos/services/businessJournal.service.js"),
     hub: await import("../../desktop/src/features/pos/services/hubCheckout.service.js"),
   }
@@ -161,6 +162,9 @@ afterAll(async () => {
     await prisma.debtSale.deleteMany({ where })
     await prisma.inventoryBatch.deleteMany({ where })
     await prisma.syncOperation.deleteMany({ where })
+    await prisma.supplierPayment.deleteMany({ where }).catch(() => undefined)
+    await prisma.purchaseOrder.deleteMany({ where }).catch(() => undefined)
+    await prisma.supplier.deleteMany({ where }).catch(() => undefined)
     await prisma.auditEvent.deleteMany({ where }).catch(() => undefined)
     await prisma.shift.deleteMany({ where }).catch(() => undefined)
     await prisma.customer.deleteMany({ where })
@@ -478,5 +482,31 @@ describe("hub checkout race (real Postgres): a pending attempt is settled only t
     expect(deviceStock()).toBe(local0 - 2)
     expect(d.hub.getPendingHubSale()).toBeNull()
     expect(await d.sync.hubCheckoutAttemptState(pending.sale.id)).toBe("committed")
+  })
+})
+
+describe("supplier edit (real Postgres)", () => {
+  it("an edit whose answer is lost is retried and applied once; orders, payments and tenant are untouched", async () => {
+    const SUP = `sup-${TENANT.slice(0, 8)}`
+    await prisma.supplier.create({ data: { id: SUP, tenantId: TENANT, name: "Malia Group", mobile: "01555123" } })
+    await prisma.purchaseOrder.create({ data: { id: `po-${SUP}`, tenantId: TENANT, poNumber: "PO-SE-1", supplierId: SUP, supplierName: "Malia Group", total: 100, paidTotal: 40, paymentStatus: "Partial", status: "Received", createdBy: "IT" } as any })
+    await prisma.supplierPayment.create({ data: { id: `sp-${SUP}`, tenantId: TENANT, supplierId: SUP, supplierName: "Malia Group", purchaseOrderId: `po-${SUP}`, amount: 40, method: "Cash", recordedBy: "IT" } as any })
+    storage.setItem("lebanonpos.suppliers.v1", JSON.stringify([{ id: SUP, name: "Malia Group", mobile: "01555123", contact: "", address: "", notes: "", createdAt: "2026-01-01T00:00:00.000Z" }]))
+    let d = await restart()
+    const edit = { name: "Malia Group SAL", mobile: "01555999", contact: "Hadi Nasr", address: "Dora, Beirut", notes: "Tuesdays" }
+    d.supplier.updateSupplier(SUP, edit, { opId: `op-edit-${SUP}` })
+    d.supplier.updateSupplier(SUP, edit, { opId: `op-edit-${SUP}` }) // a second press
+    lose = true
+    await flush(d)
+    lose = false
+    d = await restart()
+    await flush(d)
+    const row = await prisma.supplier.findUnique({ where: { id: SUP } })
+    expect(row).toMatchObject({ ...edit, tenantId: TENANT, archived: false })
+    expect(await prisma.syncOperation.count({ where: { id: `op-edit-${SUP}`, tenantId: TENANT, appliedAt: { not: null } } })).toBe(1)
+    const po = (await prisma.purchaseOrder.findUnique({ where: { id: `po-${SUP}` } }))!
+    expect([Number(po.total), Number(po.paidTotal), po.supplierName, po.supplierId]).toEqual([100, 40, "Malia Group", SUP])
+    expect(await prisma.supplierPayment.count({ where: { supplierId: SUP } })).toBe(1)
+    expect(pendingOps().filter((o) => (o as { entity?: string }).entity === "supplier")).toEqual([])
   })
 })

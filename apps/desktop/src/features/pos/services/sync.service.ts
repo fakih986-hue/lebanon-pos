@@ -1121,6 +1121,14 @@ function stagedRecordState(op: SyncOperation): { state: "present" | "missing" | 
     const same = !!po && po.status === want?.status && Number(po.paidTotal ?? 0) === Number(want?.paidTotal ?? 0) && po.paymentStatus === want?.paymentStatus
     return { state: same ? "present" : "missing" }
   }
+  if (k === "supplier/update") {
+    // Present only when the stored supplier says what the update says (an interrupted edit is dropped).
+    const want = (op.payload ?? {}) as Record<string, unknown>
+    const sup = readArray("lebanonpos.suppliers.v1").find((r) => String(r.id) === recordIdOf(op.payload))
+    const fields = ["name", "mobile", "contact", "address", "notes", "archived"].filter((f) => f in want)
+    const same = !!sup && fields.every((f) => (sup[f] ?? (f === "archived" ? false : "")) === want[f])
+    return { state: same ? "present" : "missing" }
+  }
   if (k === "inventory/receive") {
     const ids = (Array.isArray(op.payload) ? op.payload : []).map((b) => String((b as { id?: unknown }).id))
     const lots = new Set(readArray("lebanonpos.inventory-batches.v1").map((b) => String(b.id)))

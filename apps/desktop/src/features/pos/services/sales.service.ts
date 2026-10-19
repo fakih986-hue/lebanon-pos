@@ -17,7 +17,9 @@ import { canUseStorage, createId } from "../lib/storage"
 import {
   getActiveShift,
   getCurrentUser,
+  PermissionError,
   recordAuditEvent,
+  userCan,
 } from "./security.service"
 import {
   assertCanWrite, commitStagedSyncOperation, discardStagedSyncOperation, getCurrentTenantId, getDeviceId, getDeviceTag, getSyncQueue,
@@ -721,6 +723,8 @@ export function previewRefund(input: ProcessRefundInput) {
 
 export function processRefund(input: ProcessRefundInput): SaleRefund {
   assertCanWrite("record refund")
+  // The service is the boundary, not the button: the Sales page hides it, this refuses it.
+  if (!userCan("sales.refund")) throw new PermissionError("Refunds need the Refunds permission.")
   const currentUser = getCurrentUser()
   const activeShift = getActiveShift()
   // Pilot policy: all refunds require an open shift.
@@ -855,6 +859,7 @@ export function recoverRefundJournal(): { rolledBack: number; completed: number 
  */
 export function voidSale(saleId: string, restoreStock = true) {
   assertCanWrite("void sale")
+  if (!userCan("sales.void")) throw new PermissionError("Voiding needs the Void permission.")
   const sales = readSales()
   const sale = sales.find((item) => item.id === saleId)
   if (!sale) return

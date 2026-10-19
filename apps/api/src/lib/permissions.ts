@@ -90,6 +90,8 @@ export function requiredPermissionForOp(entity: string, action: string, payload:
     case "daily-close": return "accounting.manage"
     case "staff": return "staff.manage"
     case "settings": return "settings.manage"
+    // Supplier edits, archive and delete; create stays open (receiving and imports add suppliers).
+    case "supplier": return action === "update" || action === "delete" ? "suppliers.manage" : null
     case "supplier-payment": return "suppliers.manage"
     case "purchase-order": return "suppliers.manage"
     default: return null

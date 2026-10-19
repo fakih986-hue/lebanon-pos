@@ -438,6 +438,8 @@ describe("REFUND-INTEGRITY-1 — server-rejected refunds", () => {
 
   it("only a manager can settle; a note is required; 'recovered' requires how and a reference", async () => {
     seed({ role: "Cashier" })
+    // A cashier who was granted refunds (the service refuses a refund without sales.refund).
+    window.localStorage.setItem(USERS_KEY, JSON.stringify([{ id: "u1", name: "Owner", role: "Cashier", pin: "HASH", code: "OWN", active: true, permissions: ["sales.checkout", "sales.refund"] }]))
     let s = await issueThenReject()
     expect(() => s.conflicts.settleMoneyConflict({ opId: s.opId, resolution: "loss", note: "lost" })).toThrow(/manager/i)
     window.localStorage.setItem(USERS_KEY, JSON.stringify([{ id: "u1", name: "Owner", role: "Admin", pin: "HASH", code: "OWN", active: true, permissions: [] }]))

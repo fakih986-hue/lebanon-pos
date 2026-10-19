@@ -1,7 +1,9 @@
 import {
   getActiveShift,
   getCurrentUser,
+  PermissionError,
   recordAuditEvent,
+  userCan,
 } from "./security.service"
 import {
   assertCanWrite, commitStagedSyncOperation, enqueueSyncOperation, getDeviceId, isSyncOperationRecorded, nextDocumentReference,
@@ -175,6 +177,7 @@ export function getSupplierPayments() {
 
 export function archiveSupplier(supplierId: string) {
   assertCanWrite("delete supplier")
+  if (!userCan("suppliers.manage")) throw new PermissionError("Changing suppliers needs the Suppliers permission.")
   const suppliers = getSuppliers()
   const supplier = suppliers.find((item) => item.id === supplierId)
   if (!supplier) return
@@ -192,6 +195,7 @@ export function archiveSupplier(supplierId: string) {
 
 export function restoreSupplier(supplierId: string) {
   assertCanWrite("delete supplier")
+  if (!userCan("suppliers.manage")) throw new PermissionError("Changing suppliers needs the Suppliers permission.")
   const suppliers = getSuppliers()
   const supplier = suppliers.find((item) => item.id === supplierId)
   if (!supplier) return
@@ -207,6 +211,48 @@ export function restoreSupplier(supplierId: string) {
   })
 }
 
+export type SupplierEdit = Pick<Supplier, "name" | "mobile" | "contact" | "address" | "notes">
+
+/**
+ * Edit a supplier's details. The id stays, so purchase orders, payments and the balance stay
+ * attached (orders and payments keep the name they were recorded under). The operation is saved
+ * before the change; opId (one per edit attempt) makes a repeated press or a retry record it once.
+ */
+export function updateSupplier(supplierId: string, edit: SupplierEdit, opts?: { opId?: string }) {
+  assertCanWrite("update supplier")
+  if (!userCan("suppliers.manage")) throw new PermissionError("Changing suppliers needs the Suppliers permission.")
+  const suppliers = getSuppliers()
+  const current = suppliers.find((item) => item.id === supplierId)
+  if (!current) throw new Error("Supplier not found.")
+  const next: Supplier = {
+    ...current,
+    name: cleanText(edit.name),
+    mobile: cleanText(edit.mobile),
+    contact: cleanText(edit.contact),
+    address: cleanText(edit.address),
+    notes: cleanText(edit.notes),
+  }
+  if (!next.name) throw new Error("Supplier name is required.")
+  if (opts?.opId && isSyncOperationRecorded(opts.opId)) return getSuppliers().find((s) => s.id === supplierId) ?? next
+  const staged = stageSyncOperation({
+    id: opts?.opId,
+    entity: "supplier",
+    action: "update",
+    summary: `${next.name} supplier updated.`,
+    payload: { id: next.id, name: next.name, mobile: next.mobile, contact: next.contact, address: next.address, notes: next.notes },
+  })
+  try {
+    writeCollection(SUPPLIERS_KEY, getSuppliers().map((item) => (item.id === supplierId ? next : item)))
+  } catch (error) {
+    settleStagedSyncOperation(staged.id)
+    throw error
+  }
+  commitStagedSyncOperation(staged.id)
+  try { recordAuditEvent({ action: "supplier.update", entity: "supplier", summary: `${current.name} supplier details updated.`, metadata: { supplierId } }) }
+  catch (error) { console.error("[supplier] update audit write failed:", error) }
+  return next
+}
+
 // Legacy delete — prefer archiveSupplier() unless no history exists
 /** True when the supplier has any purchase order or payment: what is owed and paid must be kept. */
 export function supplierHasHistory(supplierId: string) {
@@ -216,6 +262,7 @@ export function supplierHasHistory(supplierId: string) {
 // Delete only a supplier with no purchase orders or payments; one with history is archived instead.
 export function deleteSupplier(supplierId: string) {
   assertCanWrite("delete supplier")
+  if (!userCan("suppliers.manage")) throw new PermissionError("Changing suppliers needs the Suppliers permission.")
   const suppliers = getSuppliers()
   const supplier = suppliers.find((item) => item.id === supplierId)
   if (!supplier) return

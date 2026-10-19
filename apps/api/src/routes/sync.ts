@@ -1446,9 +1446,17 @@ async function processOperation(
           update: { ...payload } as any,
         })
       } else if (action === "update") {
-        const { id, ...patch } = (payload ?? {}) as Record<string, unknown>
-        if (id !== undefined) {
-          await db.supplier.updateMany({ where: { tenantId, id: id as string }, data: patch as any })
+        // Only a supplier's own details change: never its id, tenant or history (orders and
+        // payments reference it by id and keep the name they were recorded under).
+        const { id } = (payload ?? {}) as Record<string, unknown>
+        const data: Record<string, unknown> = {}
+        for (const k of ["name", "mobile", "contact", "address", "notes"] as const) {
+          if (typeof payload?.[k] === "string") data[k] = payload[k]
+        }
+        if (typeof payload?.archived === "boolean") data.archived = payload.archived
+        if (typeof data.name === "string" && !data.name.trim()) throw new Error("Supplier name is required")
+        if (id !== undefined && Object.keys(data).length > 0) {
+          await db.supplier.updateMany({ where: { tenantId, id: id as string }, data: data as any })
         }
       } else if (action === "delete") {
         await db.supplier.deleteMany({ where: { tenantId, id: payload?.id as string } })
