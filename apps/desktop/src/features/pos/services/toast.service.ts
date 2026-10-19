@@ -24,19 +24,19 @@ export const useToastStore = create<ToastStore>((set) => ({
   },
   success: (message) => {
     const id = `toast-${++counter}`
-    set((state) => ({ toasts: [...state.toasts, { id, type: "success", message }].slice(-2) }))
+    set((state) => ({ toasts: [...state.toasts, { id, type: "success" as const, message }].slice(-2) }))
   },
   error: (message) => {
     const id = `toast-${++counter}`
-    set((state) => ({ toasts: [...state.toasts, { id, type: "error", message }].slice(-2) }))
+    set((state) => ({ toasts: [...state.toasts, { id, type: "error" as const, message }].slice(-2) }))
   },
   info: (message) => {
     const id = `toast-${++counter}`
-    set((state) => ({ toasts: [...state.toasts, { id, type: "info", message }].slice(-2) }))
+    set((state) => ({ toasts: [...state.toasts, { id, type: "info" as const, message }].slice(-2) }))
   },
   warning: (message) => {
     const id = `toast-${++counter}`
-    set((state) => ({ toasts: [...state.toasts, { id, type: "warning", message }].slice(-2) }))
+    set((state) => ({ toasts: [...state.toasts, { id, type: "warning" as const, message }].slice(-2) }))
   },
 }))
 
