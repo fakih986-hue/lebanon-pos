@@ -897,6 +897,8 @@ export const en = {
   /* POS - Staff Page */
   "pos.staff.role_admin": "Admin",
   "pos.staff.role_admin_taken": "Admin (the store's admin is {name})",
+  "pos.staff.admin_transfer_required": "This is the store's admin. To change their role or disable them, transfer the admin role to someone else in the owner portal first.",
+  "pos.staff.save_failed": "Could not save the change.",
   "pos.staff.role_manager": "Manager",
   "pos.staff.role_cashier": "Cashier",
   "pos.staff.role_full_control": "Full control",

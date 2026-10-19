@@ -814,6 +814,12 @@ export async function updateUser(userId: string, patch: Partial<StaffUser>) {
     (patch.active !== undefined && patch.active !== prior.active))
   // The server bumps roleVersion when it applies an access change; mirror it so a second change
   // made here before the next sync is not taken for a stale one.
+  // The store's admin is never demoted or deactivated from a device: the owner portal transfers
+  // the role atomically, so the store is never left without one.
+  if (accessChanged && prior && prior.role === "Admin" && prior.active &&
+      ((patch.role ?? prior.role) !== "Admin" || (patch.active ?? prior.active) === false)) {
+    throw new Error(`LAST_ADMIN: ${prior.name} is the store's admin and cannot be demoted or deactivated. Transfer the admin role in the owner portal first.`)
+  }
   if (accessChanged) resolvedPatch.roleVersion = (prior?.roleVersion ?? 1) + 1
   const nextUsers = users.map((user) =>
     user.id === userId
@@ -868,11 +874,13 @@ export async function updateUser(userId: string, patch: Partial<StaffUser>) {
         entity: "staff",
         action: "update",
         summary: `${updatedUser.name} staff update queued for sync.`,
-        payload: {
-          id: updatedUser.id, name: updatedUser.name, mobile: updatedUser.mobile,
-          role: updatedUser.role, permissions: updatedUser.permissions, active: updatedUser.active,
-          roleVersion: accessChanged ? (prior?.roleVersion ?? 1) : (updatedUser.roleVersion ?? 1),
-        },
+        // Access fields travel only with an access change, so a rename made on an outdated copy
+        // never carries (or conflicts over) an old role.
+        payload: accessChanged
+          ? { id: updatedUser.id, name: updatedUser.name, mobile: updatedUser.mobile,
+              role: updatedUser.role, permissions: updatedUser.permissions, active: updatedUser.active,
+              roleVersion: prior?.roleVersion ?? 1 }
+          : { id: updatedUser.id, name: updatedUser.name, mobile: updatedUser.mobile, roleVersion: updatedUser.roleVersion ?? 1 },
       })
     }
     if (patch.pin) {

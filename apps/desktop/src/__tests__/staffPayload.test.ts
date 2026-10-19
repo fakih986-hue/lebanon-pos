@@ -19,11 +19,11 @@ beforeEach(() => {
 })
 
 describe("staff sync payloads", () => {
-  it("a rename sends profile and access only, with the access version it was made on", async () => {
+  it("a rename sends profile only, with the access version of its copy", async () => {
     const s = await import("../features/pos/services/security.service")
     await s.updateUser("u-cash", { name: "Rami K." })
     const [op] = staffOps()
-    expect(op).toMatchObject({ action: "update", payload: { id: "u-cash", name: "Rami K.", role: "Cashier", roleVersion: 5 } })
+    expect(op).toMatchObject({ action: "update", payload: { id: "u-cash", name: "Rami K.", roleVersion: 5 } })
     for (const k of ["pin", "pinVersion", "lastVerifiedPinVersion", "tokenVersion", "pinChanged"]) expect(op.payload).not.toHaveProperty(k)
   })
 
@@ -44,5 +44,22 @@ describe("staff sync payloads", () => {
     expect(typeof ops[0].payload.pin).toBe("string")
     const unlocked = await s.unlockWithPin("8642") // offline (fetch rejects): local check
     expect(unlocked?.id).toBe("u-cash")
+  })
+})
+
+describe("the store's admin (device side)", () => {
+  it("cannot be demoted or deactivated here; nothing is queued", async () => {
+    const s = await import("../features/pos/services/security.service")
+    await expect(s.updateUser("u-owner", { role: "Manager" })).rejects.toThrow(/^LAST_ADMIN:/)
+    await expect(s.updateUser("u-owner", { active: false })).rejects.toThrow(/^LAST_ADMIN:/)
+    expect(staffOps()).toEqual([])
+    expect(s.getUsers().find((u) => u.id === "u-owner")).toMatchObject({ role: "Admin", active: true })
+  })
+
+  it("a rename sends no access fields, so an outdated role in the copy never travels", async () => {
+    const s = await import("../features/pos/services/security.service")
+    await s.updateUser("u-cash", { name: "Rami K." })
+    const [op] = staffOps()
+    for (const k of ["role", "permissions", "active"]) expect(op.payload).not.toHaveProperty(k)
   })
 })

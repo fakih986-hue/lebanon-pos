@@ -74,13 +74,20 @@ describe("a stale offline staff edit cannot undo the owner's change", () => {
     const stale = await deviceCopy(X, "4321") // the till's copy before the reset
     const reset = await owner(`/users/${X}/reset-pin`, { pin: "8765" })
     expect(reset.status).toBe(200)
-    // The till, offline during the reset, renames the cashier and syncs its whole record.
+    // A 1.0.49 till, offline during the reset, renames the cashier and syncs its whole record
+    // (with its older PIN hash): rejected visibly, never applied over the reset.
     const r = await push({ id: `op-ren-${X}`, entity: "staff", action: "update", payload: { ...stale, name: "Cashier (renamed)" } })
-    expect(r.status).toBe("ok")
+    expect(r.status).toBe("rejected")
+    expect(r.error).toMatch(/^STALE_STAFF:/)
+    expect(await login("4321")).toBe(401)
+    expect(await login("8765")).toBe(200)
+    // A 1.0.50 till sends the rename alone: applied, and the reset still stands.
+    const r2 = await push({ id: `op-ren2-${X}`, entity: "staff", action: "update", payload: { id: X, name: "Cashier (renamed)", mobile: stale.mobile, roleVersion: 1 } })
+    expect(r2.status).toBe("ok")
     expect(await login("4321")).toBe(401)
     expect(await login("8765")).toBe(200)
     const row = (await prisma.staffUser.findUnique({ where: { id: X } }))!
-    expect(row.name).toBe("Cashier (renamed)") // the ordinary edit itself is kept
+    expect(row.name).toBe("Cashier (renamed)")
     expect(row.pinVersion).toBe(2)
   })
 
@@ -92,8 +99,9 @@ describe("a stale offline staff edit cannot undo the owner's change", () => {
     expect((await owner("/transfer-admin", { toUserId: M, confirm: SUB })).status).toBe(200)
     const r1 = await push({ id: `op-sf-${M}`, entity: "staff", action: "update", payload: { ...staleFormer, name: "Store admin (edited offline)" } })
     const r2 = await push({ id: `op-ss-${M}`, entity: "staff", action: "update", payload: { ...staleSuccessor, mobile: `ss-m2-${T.slice(0, 6)}` } })
-    expect(r1.status).not.toBe("error")
-    expect(r2.status).not.toBe("error")
+    // Both copies name an old role: rejected visibly (not acknowledged), nothing applied.
+    expect([r1.status, r2.status]).toEqual(["rejected", "rejected"])
+    expect(r1.error).toMatch(/^STALE_STAFF:/)
     expect((await prisma.staffUser.findUnique({ where: { id: OWNER_ADMIN } }))?.role).toBe("Manager")
     expect((await prisma.staffUser.findUnique({ where: { id: M } }))?.role).toBe("Admin")
     expect(await prisma.staffUser.count({ where: { tenantId: T, role: "Admin", active: true } })).toBe(1)

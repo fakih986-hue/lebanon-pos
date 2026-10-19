@@ -273,6 +273,13 @@ function AuditRow({ event }: { event: AuditEvent }) {
   )
 }
 
+/** A staff-rule error as shown to the user (the store's admin is moved only by an owner transfer). */
+function staffErrorMessage(e: unknown, t: (key: string) => string): string {
+  const msg = e instanceof Error ? e.message : ""
+  if (msg.startsWith("LAST_ADMIN:")) return t("pos.staff.admin_transfer_required")
+  return msg || t("pos.staff.save_failed")
+}
+
 export default function StaffPage() {
   const { t } = useI18n()
   const [isLoading, setIsLoading] = useState(true)
@@ -486,7 +493,7 @@ export default function StaffPage() {
       showToast(t("pos.staff.access_saved", { name: editName.trim() }))
       setEditUserId(null)
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Failed to save", "error")
+      showToast(staffErrorMessage(e, t), "error")
     }
   }
 
@@ -774,7 +781,11 @@ export default function StaffPage() {
                           confirmLabel: label,
                           confirmDestructive: user.active,
                           onConfirm: async () => {
-                            await updateUser(user.id, { active: !user.active })
+                            try {
+                              await updateUser(user.id, { active: !user.active })
+                            } catch (e) {
+                              showToast(staffErrorMessage(e, t), "error")
+                            }
                           },
                         })
                       }}

@@ -897,6 +897,8 @@ export const ar = {
   /* POS - Staff Page */
   "pos.staff.role_admin": "مدير",
   "pos.staff.role_admin_taken": "مدير (مدير المتجر هو {name})",
+  "pos.staff.admin_transfer_required": "هذا هو مدير المتجر. لتغيير دوره أو تعطيله، انقل دور المدير إلى شخص آخر من بوابة المالك أولاً.",
+  "pos.staff.save_failed": "تعذّر حفظ التغيير.",
   "pos.staff.role_manager": "مشرف",
   "pos.staff.role_cashier": "كاشير",
   "pos.staff.role_full_control": "تحكم كامل",

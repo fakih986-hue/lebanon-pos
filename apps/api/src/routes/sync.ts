@@ -353,6 +353,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         errorMessage.includes("Insufficient stock in batch") ||
         errorMessage.includes("PIN is already in use by") ||
         errorMessage.startsWith("ONE_ADMIN:") ||
+        errorMessage.startsWith("LAST_ADMIN:") ||
         err instanceof StaleStaffError
       const opStatus = isRejected ? "Rejected" : "Failed"
 
@@ -1935,13 +1936,17 @@ function buildActivitySummary(entity: string, action: string, payload: unknown):
 // ─── Staff writes (STAFF-AUTH) ───────────────────────────────────────────────
 // Field groups for a staff record coming from a device:
 //  - profile (name, mobile, code): always applied.
-//  - access (role, permissions, active): applied only when the sender's copy is at the server's
-//    current roleVersion (bumped on every access change). An older copy - an offline device after
-//    an owner-portal transfer, or a 1.0.49 device that does not send the version - cannot change
-//    access; the stale part is ignored and audited, the rest of the edit applies.
+//  - access (role, permissions, active): applied only when the sender names the server's current
+//    roleVersion, by a conditional write (two devices editing from the same version: one applies,
+//    the other is rejected). An older copy - an offline device after an owner-portal transfer, or a
+//    1.0.49 device that does not send the version - is rejected as STALE_STAFF, never acknowledged.
+//    Every applied access change revokes the person's sessions (tokenVersion). The store's active
+//    Admin cannot be demoted or deactivated here (LAST_ADMIN): only the owner portal's atomic
+//    transfer moves the role, and it is also the recovery action for a store with no admin.
 //  - authentication (pin, pinVersion, tokenVersion, pinChanged): never taken from an update. A PIN
-//    change is its own action ("pin") naming the PIN version it was made on; an older device that
-//    still carries the PIN inside an update is accepted only at the current pinVersion.
+//    change is its own action ("pin") naming the PIN version it was made on. A 1.0.49 device sends
+//    its PIN change inside an update (a SHA-256 hash): accepted at the current pinVersion (which it
+//    then bumps), rejected as STALE_STAFF on an older one.
 //  - device-only fields (lastVerifiedPinVersion, ...): dropped.
 const STAFF_PROFILE = ["name", "mobile", "code"] as const
 export class StaleStaffError extends Error {
@@ -1960,7 +1965,10 @@ async function assertOneAdmin(db: typeof prisma, tenantId: string, id: string, r
   const other = await db.staffUser.findFirst({ where: { tenantId, role: "Admin", active: true, id: { not: id } }, select: { name: true } })
   if (other) throw new Error(`ONE_ADMIN: This store already has an admin (${other.name}). Make this person a Manager instead.`)
 }
-const sameAccess = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
+const sameAccess = (a: unknown, b: unknown) => {
+  const set = (v: unknown) => JSON.stringify(Array.isArray(v) ? [...new Set(v.map(String))].sort() : v ?? null)
+  return set(a) === set(b)
+}
 
 export async function applyStaffWrite(db: typeof prisma, tenantId: string, action: string, payload: Record<string, unknown>) {
   const id = String(payload.id ?? "")
@@ -1994,44 +2002,61 @@ export async function applyStaffWrite(db: typeof prisma, tenantId: string, actio
       const pin = typeof payload.pin === "string" ? payload.pin : ""
       if (!pin) throw new Error("PIN is required")
       await assertPinFree(db, tenantId, pin, id)
-      await db.staffUser.update({ where: { id }, data: { pin: String((await hashStaffPayload({ pin })).pin), pinVersion: { increment: 1 }, pinChanged: true } })
+      const { count } = await db.staffUser.updateMany({ where: { id, tenantId, pinVersion: base }, data: { pin: String((await hashStaffPayload({ pin })).pin), pinVersion: { increment: 1 }, pinChanged: true } })
+      if (count === 0) throw new StaleStaffError(`${current.name}'s PIN was changed elsewhere at the same time; this PIN change was not applied.`)
       return
     }
 
     // create (a retry or a forward of someone the server already has) or update.
     const data: Record<string, unknown> = {}
     for (const k of STAFF_PROFILE) if (typeof payload[k] === "string") data[k] = payload[k]
+    let guard: { roleVersion?: number; pinVersion?: number } = {}
 
     const wantsAccess =
       (typeof payload.role === "string" && payload.role !== current.role) ||
       (Array.isArray(payload.permissions) && !sameAccess(payload.permissions, current.permissions)) ||
       (typeof payload.active === "boolean" && payload.active !== current.active)
     if (wantsAccess) {
-      if (payload.roleVersion === current.roleVersion) {
-        if (typeof payload.role === "string") data.role = payload.role
-        if (Array.isArray(payload.permissions)) data.permissions = payload.permissions
-        if (typeof payload.active === "boolean") data.active = payload.active
-        data.roleVersion = { increment: 1 }
-        if (data.role !== undefined && data.role !== current.role) data.tokenVersion = { increment: 1 } // the role is in the token
-        await assertOneAdmin(db, tenantId, id, data.role ?? current.role, data.active ?? current.active)
-      } else {
-        // Stale access change: ignored (the owner's newer choice stands), recorded for review.
-        await db.auditEvent.create({ data: {
-          tenantId, action: "staff.stale_access_ignored", entity: "staff",
-          summary: `An older change to ${current.name}'s role or access was not applied: it was made on an older copy of the record.`,
-          metadata: { staffUserId: id, sent: { role: payload.role ?? null, permissions: payload.permissions ?? null, active: payload.active ?? null, roleVersion: payload.roleVersion ?? null }, current: { role: current.role, roleVersion: current.roleVersion } },
-          userId: "__system__", userName: "Sync", userRole: "Admin",
-        } })
+      if (typeof payload.roleVersion !== "number") {
+        throw new StaleStaffError(`A role or access change to ${current.name} came from a device on an older app version (or an outdated copy) and was not applied. Update the device to 1.0.50, or change roles in the owner portal.`)
       }
+      if (payload.roleVersion !== current.roleVersion) {
+        throw new StaleStaffError(`${current.name}'s role or access was changed elsewhere since this device's copy; this change was not applied. Review it after the next sync.`)
+      }
+      const role = typeof payload.role === "string" ? payload.role : current.role
+      const active = typeof payload.active === "boolean" ? payload.active : current.active
+      if (current.role === "Admin" && current.active && (role !== "Admin" || !active)) {
+        throw new Error(`LAST_ADMIN: ${current.name} is the store's admin and cannot be demoted or deactivated. Transfer the admin role in the owner portal first.`)
+      }
+      if (typeof payload.role === "string") data.role = payload.role
+      if (Array.isArray(payload.permissions)) data.permissions = payload.permissions
+      if (typeof payload.active === "boolean") data.active = payload.active
+      data.roleVersion = { increment: 1 }
+      data.tokenVersion = { increment: 1 } // revoke sessions issued under the old access
+      guard.roleVersion = current.roleVersion
+      await assertOneAdmin(db, tenantId, id, role, active)
     }
 
-    // Legacy PIN inside an update (1.0.49 devices): only at the current pinVersion.
-    if (typeof payload.pin === "string" && payload.pin && payload.pinVersion === current.pinVersion && payload.pin !== current.pin) {
-      await assertPinFree(db, tenantId, payload.pin, id)
-      data.pin = (await hashStaffPayload({ pin: payload.pin })).pin
+    // A 1.0.49 device's PIN change travels inside the update as a SHA-256 hash. A server-issued
+    // (bcrypt) hash, or the current one, is just the device's copy: no PIN change intended.
+    const legacyPin = typeof payload.pin === "string" ? payload.pin : ""
+    if (legacyPin && legacyPin !== current.pin && isSha256Base64(legacyPin)) {
+      if (payload.pinVersion !== current.pinVersion) {
+        throw new StaleStaffError(`${current.name}'s PIN was changed elsewhere (e.g. reset by the owner); this device's change was made on an older copy and was not applied.`)
+      }
+      await assertPinFree(db, tenantId, legacyPin, id)
+      data.pin = legacyPin
+      data.pinVersion = { increment: 1 }
+      data.pinChanged = true
+      guard.pinVersion = current.pinVersion
     }
 
-    if (Object.keys(data).length > 0) await db.staffUser.update({ where: { id }, data: data as any })
+    if (Object.keys(data).length > 0) {
+      // Conditional on the versions read above: a concurrent access change or PIN reset in between
+      // makes this a stale write, rejected rather than applied over it.
+      const { count } = await db.staffUser.updateMany({ where: { id, tenantId, ...guard }, data: data as any })
+      if (count === 0) throw new StaleStaffError(`${current.name} was changed elsewhere at the same time; this change was not applied.`)
+    }
   } catch (err) {
     // Two admin writes racing past the check: the database index keeps one.
     if (isOneAdminViolation(err)) throw new Error("ONE_ADMIN: This store already has an admin. Make this person a Manager instead.")

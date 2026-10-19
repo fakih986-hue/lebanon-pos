@@ -211,11 +211,12 @@ describe("cloud -> hub -> till: an offline hub's stale staff edits cannot undo a
       expect(await owner(`/users/${X}/reset-pin`, { pin: "8765" })).toBe(200)
       expect(await owner("/transfer-admin", { toUserId: S, confirm: SUB })).toBe(200)
 
-      // Offline: the till keeps working against the hub with its stale copies.
+      // Offline: a 1.0.50 till keeps working against the hub with its stale copies. Ordinary edits
+      // carry no access fields; one is an access change made on the successor's old version.
       for (const op of [
-        { id: `op-chain-x-${X}`, entity: "staff", action: "update", payload: { ...staleX, name: "Cashier (renamed offline)" } },
-        { id: `op-chain-a-${X}`, entity: "staff", action: "update", payload: { ...staleAdmin, mobile: `dd-a2-${TENANT.slice(0, 6)}` } },
-        { id: `op-chain-s-${X}`, entity: "staff", action: "update", payload: { ...staleS, name: "Successor (edited offline)" } },
+        { id: `op-chain-x-${X}`, entity: "staff", action: "update", payload: { id: X, name: "Cashier (renamed offline)", mobile: staleX.mobile, roleVersion: staleX.roleVersion } },
+        { id: `op-chain-a-${X}`, entity: "staff", action: "update", payload: { id: ADMIN, name: staleAdmin.name, mobile: `dd-a2-${TENANT.slice(0, 6)}`, roleVersion: staleAdmin.roleVersion } },
+        { id: `op-chain-s-${X}`, entity: "staff", action: "update", payload: { id: S, name: "Successor (edited offline)", mobile: staleS.mobile, role: "Manager", active: true, permissions: ["reports.view"], roleVersion: staleS.roleVersion } },
         { id: `op-chain-c-${X}`, entity: "customer", action: "create", payload: { id: CUST, name: "New customer offline", mobile: `dd-c-${TENANT.slice(0, 6)}`, creditLimit: 0, notes: "", createdAt: new Date().toISOString() } },
       ]) expect((await push(op)).status).toBe("ok")
 
@@ -232,7 +233,12 @@ describe("cloud -> hub -> till: an offline hub's stale staff edits cannot undo a
         expect([where, (await db.staffUser.findUnique({ where: { id: X } }))?.name]).toEqual([where, "Cashier (renamed offline)"]) // ordinary edit kept
         expect([where, await db.customer.count({ where: { id: CUST } })]).toEqual([where, 1]) // business work arrived
       }
-      expect(await cloudPrisma.auditEvent.count({ where: { tenantId: TENANT, action: "staff.stale_access_ignored" } })).toBeGreaterThanOrEqual(1)
+      // The stale access change was accepted by the offline hub, then refused by the cloud: the
+      // conflict is recorded on the hub (visible in its sync status), not acknowledged.
+      const forwarded = await prisma.syncOperation.findFirst({ where: { id: `op-chain-s-${X}` } })
+      expect(forwarded?.status).toBe("Rejected")
+      expect(forwarded?.error).toMatch(/^STALE_STAFF:/)
+      expect((await cloudPrisma.staffUser.findUnique({ where: { id: S } }))?.name).toBe("Successor")
     } finally {
       if (saved === null) fs.rmSync(stateFile, { force: true }); else fs.writeFileSync(stateFile, saved)
       for (const db of [prisma, cloudPrisma]) {
