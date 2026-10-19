@@ -42,6 +42,7 @@ beforeAll(startServer)
 afterAll(stopServer)
 
 describe("POST /api/setup/discover", () => {
+  beforeEach(async () => { (await import("../src/routes/setup.js")).resetDiscoverRateLimitForTests() })
   it("backfills a missing cloudApiKey and persists it", async () => {
     vi.mocked(prisma.tenant.findUnique).mockResolvedValue({
       id: "t1",
@@ -50,11 +51,11 @@ describe("POST /api/setup/discover", () => {
       cloudApiKey: "", // legacy tenant, backfilled with empty string by the migration
       suspended: false,
     } as any)
-    vi.mocked(prisma.staffUser.findFirst).mockResolvedValue({
+    vi.mocked(prisma.staffUser.findMany).mockResolvedValue([{
       id: "u1",
       name: "Admin",
       pin: PIN_HASH,
-    } as any)
+    }] as any)
     vi.mocked(prisma.tenant.update).mockResolvedValue({} as any)
 
     const res = await request("POST", "/api/setup/discover", {
@@ -82,11 +83,11 @@ describe("POST /api/setup/discover", () => {
       cloudApiKey: "existing-real-key-abc123",
       suspended: false,
     } as any)
-    vi.mocked(prisma.staffUser.findFirst).mockResolvedValue({
+    vi.mocked(prisma.staffUser.findMany).mockResolvedValue([{
       id: "u2",
       name: "Admin",
       pin: PIN_HASH,
-    } as any)
+    }] as any)
     vi.mocked(prisma.tenant.update).mockClear()
 
     const res = await request("POST", "/api/setup/discover", {
@@ -96,6 +97,19 @@ describe("POST /api/setup/discover", () => {
     expect(res.status).toBe(200)
     expect(res.body.cloudApiKey).toBe("existing-real-key-abc123")
     expect(vi.mocked(prisma.tenant.update)).not.toHaveBeenCalled()
+  })
+
+  it("accepts the PIN of any active admin when the store has several (not only the first found)", async () => {
+    vi.mocked(prisma.tenant.findUnique).mockResolvedValue({ id: "t3", name: "Two admins", subdomain: "two", cloudApiKey: "key-3", suspended: false } as any)
+    vi.mocked(prisma.staffUser.findMany).mockResolvedValue([
+      { id: "u-other", name: "test", pin: "$2a$12$someoneelseshashsomeoneelseshashsomeoneelseshash12" },
+      { id: "u-admin", name: "Admin", pin: PIN_HASH },
+    ] as any)
+    const ok = await request("POST", "/api/setup/discover", { body: { subdomain: "two", pin: PIN } })
+    expect(ok.status).toBe(200)
+    expect(ok.body.tenantId).toBe("t3")
+    const wrong = await request("POST", "/api/setup/discover", { body: { subdomain: "two", pin: "0000" } })
+    expect(wrong.status).toBe(401)
   })
 
   it("proxies discovery entirely to the cloud when running as a hub, even with no local tenant row at all", async () => {

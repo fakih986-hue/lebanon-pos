@@ -245,6 +245,9 @@ const discoverAttempts = new Map<string, { count: number; resetAt: number }>()
 const DISCOVER_MAX_ATTEMPTS = 5
 const DISCOVER_WINDOW_MS = 60_000
 
+/** Tests only: forget all discovery attempts. */
+export function resetDiscoverRateLimitForTests() { discoverAttempts.clear() }
+
 function getDiscoverRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
   const now = Date.now()
   const entry = discoverAttempts.get(ip)
@@ -363,20 +366,23 @@ router.post("/discover", async (req: Req, res: Response) => {
       return
     }
 
-    // Find an admin user in this tenant and verify the PIN
-    const adminUser = await prisma.staffUser.findFirst({
+    // The PIN may belong to any active admin of this store (a store can have several):
+    // checking only the first one found refused a valid admin PIN.
+    const admins = await prisma.staffUser.findMany({
       where: { tenantId: tenant.id, role: "Admin", active: true },
       select: { id: true, name: true, pin: true },
     })
 
-    if (!adminUser) {
+    if (admins.length === 0) {
       res.status(404).json({ error: "No admin user found for this store." })
       return
     }
 
-    const pinMatches = adminUser.pin.startsWith("$2")
-      ? await bcrypt.compare(pin, adminUser.pin)
-      : adminUser.pin === createHash("sha256").update(pin).digest("base64")
+    const sha = createHash("sha256").update(pin).digest("base64")
+    let pinMatches = false
+    for (const a of admins) {
+      if (a.pin.startsWith("$2") ? await bcrypt.compare(pin, a.pin) : a.pin === sha) { pinMatches = true; break }
+    }
 
     if (!pinMatches) {
       res.status(401).json({ error: "Incorrect PIN. Check with the store owner." })
