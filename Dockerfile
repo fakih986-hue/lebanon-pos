@@ -57,7 +57,9 @@ COPY --from=builder /app/apps/desktop/dist ./public
 
 # Install only production dependencies for the API
 COPY --from=builder /app/apps/api/package.json ./package.json
-RUN npm install --production
+# The runtime needs only dependencies: drop the dev list before npm reads it (newer npm in
+# node:22-alpine crashed here with "Cannot read properties of null (reading 'edgesOut')").
+RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));delete p.devDependencies;fs.writeFileSync('package.json',JSON.stringify(p,null,2))"  && npm install --omit=dev --no-audit --no-fund
 
 EXPOSE 3001
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
