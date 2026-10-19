@@ -896,6 +896,7 @@ export const ar = {
 
   /* POS - Staff Page */
   "pos.staff.role_admin": "مدير",
+  "pos.staff.role_admin_taken": "مدير (مدير المتجر هو {name})",
   "pos.staff.role_manager": "مشرف",
   "pos.staff.role_cashier": "كاشير",
   "pos.staff.role_full_control": "تحكم كامل",

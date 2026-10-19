@@ -711,6 +711,16 @@ export function setCurrentUser(userId: string) {
   dispatchSecurityChanged()
 }
 
+/** The other active admin of this store, if any: a store has one admin (its owner account). */
+export function otherActiveAdmin(exceptUserId?: string): StaffUser | undefined {
+  return getUsers().find((u) => u.role === "Admin" && u.active && u.id !== exceptUserId)
+}
+function assertOneAdmin(role: UserRole | undefined, active: boolean | undefined, userId?: string) {
+  if (role !== "Admin" || active === false) return
+  const other = otherActiveAdmin(userId)
+  if (other) throw new Error(`ONE_ADMIN: This store already has an admin (${other.name}). Make this person a Manager instead.`)
+}
+
 export async function createUser(input: {
   name: string
   mobile: string
@@ -719,6 +729,7 @@ export async function createUser(input: {
   permissions?: Permission[]
 }) {
   const cleanPin = input.pin.trim()
+  assertOneAdmin(input.role, true)
 
   // ── Enforce PIN uniqueness per tenant ────────────────────────────────
   const existingUsers = getUsers()
@@ -772,6 +783,8 @@ export function mustChangePin(user: StaffUser): boolean {
 
 export async function updateUser(userId: string, patch: Partial<StaffUser>) {
   const users = getUsers()
+  const before = users.find((u) => u.id === userId)
+  assertOneAdmin(patch.role ?? before?.role, patch.active ?? before?.active, userId)
   const resolvedPatch = { ...patch }
   if (resolvedPatch.pin) {
     const cleanPin = String(resolvedPatch.pin).trim()

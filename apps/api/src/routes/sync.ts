@@ -350,7 +350,8 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         errorMessage.includes("Insufficient stock") ||
         errorMessage.includes("was voided") ||
         errorMessage.includes("Insufficient stock in batch") ||
-        errorMessage.includes("PIN is already in use by")
+        errorMessage.includes("PIN is already in use by") ||
+        errorMessage.startsWith("ONE_ADMIN:")
       const opStatus = isRejected ? "Rejected" : "Failed"
 
       // Record the failure — but never on a row that was applied (it would stop its onward
@@ -1484,6 +1485,16 @@ async function processOperation(
               throw new Error(`PIN is already in use by ${u.name}`)
             }
           }
+        }
+
+        // ── One active admin per store ───────────────────────────────
+        // The store's admin is its owner account; everyone else is Manager or below.
+        const current = payload?.id ? await db.staffUser.findFirst({ where: { tenantId, id: payload.id as string }, select: { role: true, active: true } }) : null
+        const role = (payload?.role as string | undefined) ?? current?.role
+        const active = typeof payload?.active === "boolean" ? payload.active : (current?.active ?? true)
+        if (role === "Admin" && active) {
+          const other = await db.staffUser.findFirst({ where: { tenantId, role: "Admin", active: true, id: { not: (payload?.id as string) ?? "" } }, select: { name: true } })
+          if (other) throw new Error(`ONE_ADMIN: This store already has an admin (${other.name}). Make this person a Manager instead.`)
         }
 
         await db.staffUser.upsert({

@@ -896,6 +896,7 @@ export const en = {
 
   /* POS - Staff Page */
   "pos.staff.role_admin": "Admin",
+  "pos.staff.role_admin_taken": "Admin (the store's admin is {name})",
   "pos.staff.role_manager": "Manager",
   "pos.staff.role_cashier": "Cashier",
   "pos.staff.role_full_control": "Full control",

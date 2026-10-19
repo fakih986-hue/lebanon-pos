@@ -53,6 +53,7 @@ import {
   PERMISSION_GROUP_LABEL_KEYS,
   type AuditEvent,
   type Permission,
+  otherActiveAdmin,
   type Shift,
   type StaffUser,
   type UserRole,
@@ -883,7 +884,7 @@ export default function StaffPage() {
                 >
                   <option value="Cashier">{t("pos.staff.role_cashier")}</option>
                   <option value="Manager">{t("pos.staff.role_manager")}</option>
-                  <option value="Admin">{t("pos.staff.role_admin")}</option>
+                  <option value="Admin" disabled={!!otherActiveAdmin()}>{otherActiveAdmin() ? t("pos.staff.role_admin_taken", { name: otherActiveAdmin()!.name }) : t("pos.staff.role_admin")}</option>
                 </select>
               </label>
             </div>
@@ -1289,7 +1290,7 @@ export default function StaffPage() {
                   className="input flex-1 disabled:opacity-60">
                   <option value="Cashier">{t("pos.staff.role_cashier")}</option>
                   <option value="Manager">{t("pos.staff.role_manager")}</option>
-                  <option value="Admin">{t("pos.staff.role_admin")}</option>
+                  <option value="Admin" disabled={!!otherActiveAdmin(editingUser.id)}>{otherActiveAdmin(editingUser.id) ? t("pos.staff.role_admin_taken", { name: otherActiveAdmin(editingUser.id)!.name }) : t("pos.staff.role_admin")}</option>
                   {editingUser.role === "Driver" && <option value="Driver">{t("pos.staff.role_driver_name")}</option>}
                 </select>
                 <button type="button" disabled={isSelfEdit}

@@ -1467,6 +1467,17 @@ describe("POST /api/sync/push — permission enforcement (POS-PERMISSIONS-1)", (
     expect(res.body.results[0].status).toBe("ok")
   })
 
+  it("refuses a second active admin for the store (permanently, not retried)", async () => {
+    vi.mocked(prisma.staffUser.findUnique).mockImplementation((async (args: any) => (args?.where?.id === "u-new" ? null : { role: "Admin", permissions: [], tenantId: "t1" })) as any)
+    vi.mocked(prisma.staffUser.findFirst).mockImplementation((async (args: any) => (args?.where?.role === "Admin" ? { name: "Owner" } : null)) as any)
+    vi.mocked(prisma.staffUser.findMany).mockResolvedValue([] as any)
+    vi.mocked(prisma.staffUser.upsert).mockClear()
+    const res = await request("POST", "/api/sync/push", { token, body: { operations: [{ id: "op-st-" + Math.random().toString(36).slice(2), entity: "staff", action: "create", payload: { id: "u-new", name: "Second", mobile: "9", role: "Admin", active: true, pin: "$2a$12$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" } }] } })
+    expect(res.body.results[0].status).toBe("rejected")
+    expect(res.body.results[0].error).toMatch(/ONE_ADMIN/)
+    expect(vi.mocked(prisma.staffUser.upsert)).not.toHaveBeenCalled()
+  })
+
   // A refund pushed by an account without sales.refund (a tampered or stale client): refused.
   const pushRefund = () => request("POST", "/api/sync/push", {
     token,
