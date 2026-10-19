@@ -798,6 +798,18 @@ router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest,
 })
 
 /** A push referenced a record id that belongs to another tenant. Never retried. */
+/** The partial unique index "one active admin per store" refused a write (Prisma P2002 / SQL 23505). */
+export function isOneAdminViolation(err: unknown): boolean {
+  const e = err as { code?: string; meta?: unknown; message?: string }
+  const text = `${JSON.stringify(e?.meta ?? "")} ${e?.message ?? ""}`
+  if (!(e?.code === "P2002" || e?.code === "23505" || /unique constraint/i.test(e?.message ?? ""))) return false
+  if (/one_active_admin/.test(text)) return true
+  // Prisma names the fields, not the index: on StaffUser the only unique constraint on tenantId
+  // alone is this index (the mobile one is tenantId + mobile).
+  const target = (e?.meta as { target?: unknown } | undefined)?.target
+  return (Array.isArray(target) && target.length === 1 && target[0] === "tenantId") || /fields: (`tenantId`)/.test(e?.message ?? "")
+}
+
 /** Test-only pauses around the claim (real-Postgres race tests); never set in production code. */
 export const syncTestHooks: { beforeClaim?: (opId: string) => Promise<void>; afterClaim?: (opId: string) => Promise<void> } = {}
 
@@ -1497,11 +1509,17 @@ async function processOperation(
           if (other) throw new Error(`ONE_ADMIN: This store already has an admin (${other.name}). Make this person a Manager instead.`)
         }
 
-        await db.staffUser.upsert({
-          where: { id: payload?.id as string },
-          create: { ...securePayload, tenantId } as any,
-          update: { ...securePayload } as any,
-        })
+        try {
+          await db.staffUser.upsert({
+            where: { id: payload?.id as string },
+            create: { ...securePayload, tenantId } as any,
+            update: { ...securePayload } as any,
+          })
+        } catch (err) {
+          // Two admin writes racing past the check above: the database index keeps one.
+          if (isOneAdminViolation(err)) throw new Error("ONE_ADMIN: This store already has an admin. Make this person a Manager instead.")
+          throw err
+        }
       }
       break
     }

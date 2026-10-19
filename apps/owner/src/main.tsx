@@ -186,6 +186,22 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
     } catch (err) { setStaffError((err as Error).message); setSettingPin(null) }
   }
 
+  // One active admin per store: hand the role over in one step (the server does both changes in
+  // one transaction). Confirmed by typing the store's subdomain.
+  async function handleTransferAdmin(user: StaffUser) {
+    if (!staffTenant) return
+    const current = staffUsers.find((u) => u.role === "Admin" && u.active)
+    const typed = window.prompt(t("owner.transfer_confirm", { to: user.name, from: current?.name ?? "-", subdomain: staffTenant.subdomain }))
+    if (typed === null) return
+    if (typed.trim().toLowerCase() !== staffTenant.subdomain.toLowerCase()) { setStaffError(t("admin.delete_mismatch")); return }
+    setStaffError("")
+    try {
+      await api(`/api/admin/tenants/${staffTenant.id}/transfer-admin`, { method: "POST", body: JSON.stringify({ toUserId: user.id, confirm: typed.trim() }) })
+      setStaffUsers(await api<StaffUser[]>(`/api/admin/tenants/${staffTenant.id}/users`))
+      setStaffError(t("owner.transfer_done", { name: user.name }))
+    } catch (err) { setStaffError((err as Error).message) }
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setFormError("")
@@ -452,12 +468,22 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
                         </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => { setSettingPin(u.id); setPinInput(""); setStaffError("") }}
-                        className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600/10 text-amber-400 text-xs border border-amber-600/30 hover:bg-amber-600/20 transition-colors"
-                      >
-                        {t("admin.set_pin")}
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {u.active && u.role !== "Admin" && u.role !== "Driver" && (
+                          <button
+                            onClick={() => void handleTransferAdmin(u)}
+                            className="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600/10 text-indigo-300 text-xs border border-indigo-600/30 hover:bg-indigo-600/20 transition-colors"
+                          >
+                            {t("owner.make_admin")}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => { setSettingPin(u.id); setPinInput(""); setStaffError("") }}
+                          className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-600/10 text-amber-400 text-xs border border-amber-600/30 hover:bg-amber-600/20 transition-colors"
+                        >
+                          {t("admin.set_pin")}
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}

@@ -780,13 +780,25 @@ async function upsertPulledData(
     )
   }
 
-  // Staff users
+  // Staff users. The cloud is authoritative for staff: when it says this person is the active
+  // admin, any other active admin on this hub (a local promotion the cloud refused, or a hub that
+  // missed a transfer while offline) becomes Manager in the same transaction, so the hub never
+  // holds two admins and never refuses the cloud's choice.
   for (const u of data.users ?? []) {
+    const row = u as any
     await run("staffUser", () =>
-      prisma.staffUser.upsert({
-        where:  { id: (u as any).id },
-        create: { ...u, tenantId } as any,
-        update: u as any,
+      prisma.$transaction(async (tx) => {
+        if (row.role === "Admin" && row.active !== false) {
+          await tx.staffUser.updateMany({
+            where: { tenantId, role: "Admin", active: true, id: { not: row.id } },
+            data: { role: "Manager" },
+          })
+        }
+        await tx.staffUser.upsert({
+          where:  { id: row.id },
+          create: { ...row, tenantId } as any,
+          update: row as any,
+        })
       })
     )
   }

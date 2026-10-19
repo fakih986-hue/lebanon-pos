@@ -1212,6 +1212,9 @@ export const en = {
   "owner.created_hint": "Give these two values to the store owner. They enter them in the desktop app to connect.",
   "owner.pin_hint": "Used to log in on the desktop app",
   "owner.pin_too_short": "PIN must be at least 4 characters",
+  "owner.make_admin": "Make store admin",
+  "owner.transfer_confirm": "Make {to} the store admin? {from} becomes a Manager. Their PINs, sales and pending work are kept; both sign in again on their devices.\n\nType the store subdomain ({subdomain}) to confirm:",
+  "owner.transfer_done": "{name} is now the store admin.",
 
   /* Midnight Gold v2 — register slice */
   "pos.v2.lbp": "LBP",

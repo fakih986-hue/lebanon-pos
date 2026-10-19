@@ -535,7 +535,7 @@ describe("owner resets a PIN: what each device accepts (real API + Postgres)", (
     const bcrypt = (await import("bcryptjs")).default
     const OWNER = randomUUID()
     const SUB = `dv-${TENANT.slice(0, 8)}`
-    await prisma.staffUser.create({ data: { id: OWNER, tenantId: TENANT, name: "Store admin", mobile: `dv-o-${TENANT.slice(0, 6)}`, pin: await bcrypt.hash("4321", 12), role: "Admin" } })
+    await prisma.staffUser.create({ data: { id: OWNER, tenantId: TENANT, name: "Store manager", mobile: `dv-o-${TENANT.slice(0, 6)}`, pin: await bcrypt.hash("4321", 12), role: "Manager" } })
     const offline = () => { hubLost = true } // every request fails, as with no internet
     const online = () => { hubLost = false; lose = false }
     // pushes too: hubLost only drops non-push requests, so also drop pushes while offline

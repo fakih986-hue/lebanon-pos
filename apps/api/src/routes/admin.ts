@@ -407,4 +407,60 @@ router.post("/tenants/:id/users/:userId/reset-pin", requireAuth, requireAdmin, a
   }
 })
 
+// ── Admin transfer (one active admin per store) ──────────────────────────────
+// Promotes a successor and demotes the current admin in ONE transaction: the store's staff rows
+// are locked first, so concurrent transfers (and admin writes from sync) queue up, and either both
+// role changes commit or neither does. Both people's tokens are revoked (their role changed);
+// PINs, sales and pending operations are untouched. Confirmation: the store's subdomain, typed.
+export class AdminTransferError extends Error {
+  constructor(public status: number, message: string) { super(message); this.name = "AdminTransferError" }
+}
+/** Test-only: a failure injected between the demotion and the promotion (rollback test). */
+export const adminTransferTestHooks: { afterDemote?: () => Promise<void> } = {}
+
+export async function transferStoreAdmin(tenantId: string, toUserId: string) {
+  return prisma.$transaction(async (tx) => {
+    // Serialize per store: lock every staff row of this tenant.
+    await (tx as typeof prisma).$queryRaw`SELECT "id" FROM "StaffUser" WHERE "tenantId" = ${tenantId} FOR UPDATE`
+    const successor = await tx.staffUser.findFirst({ where: { id: toUserId, tenantId }, select: { id: true, name: true, role: true, active: true } })
+    if (!successor) throw new AdminTransferError(404, "That person is not in this store.")
+    if (!successor.active) throw new AdminTransferError(400, `${successor.name} is inactive. Reactivate them first.`)
+    if (successor.role === "Admin") throw new AdminTransferError(400, `${successor.name} is already the store's admin.`)
+    if (successor.role === "Driver") throw new AdminTransferError(400, "A driver account cannot be the store's admin.")
+    const current = await tx.staffUser.findFirst({ where: { tenantId, role: "Admin", active: true }, select: { id: true, name: true } })
+    if (current) {
+      await tx.staffUser.update({ where: { id: current.id }, data: { role: "Manager", tokenVersion: { increment: 1 } } })
+    }
+    await adminTransferTestHooks.afterDemote?.()
+    await tx.staffUser.update({ where: { id: successor.id }, data: { role: "Admin", tokenVersion: { increment: 1 } } })
+    await tx.auditEvent.create({
+      data: {
+        tenantId, action: "staff.admin_transfer", entity: "staff",
+        summary: current ? `Store admin transferred from ${current.name} to ${successor.name}.` : `${successor.name} made the store admin.`,
+        metadata: { fromUserId: current?.id ?? null, toUserId: successor.id, by: "owner-portal" },
+        userId: "__admin__", userName: "Owner portal", userRole: "Admin",
+      },
+    })
+    return { from: current ? { id: current.id, name: current.name } : null, to: { id: successor.id, name: successor.name } }
+  })
+}
+
+const transferSchema = z.object({ toUserId: z.string().min(1), confirm: z.string() })
+router.post("/tenants/:id/transfer-admin", requireAuth, requireAdmin, async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const tenant = await prisma.tenant.findUnique({ where: { id: req.params?.id }, select: { id: true, subdomain: true } })
+    if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
+    const parsed = transferSchema.safeParse(req.body)
+    if (!parsed.success) { json(res, { error: "toUserId and confirm are required" }, 400); return }
+    if (parsed.data.confirm.trim().toLowerCase() !== tenant.subdomain.toLowerCase()) {
+      json(res, { error: `Type the store's subdomain (${tenant.subdomain}) to confirm.` }, 400); return
+    }
+    json(res, await transferStoreAdmin(tenant.id, parsed.data.toUserId))
+  } catch (err) {
+    if (err instanceof AdminTransferError) { json(res, { error: err.message }, err.status); return }
+    console.error("Admin transfer error:", err)
+    json(res, { error: "Failed to transfer the store admin" }, 500)
+  }
+})
+
 export default router
