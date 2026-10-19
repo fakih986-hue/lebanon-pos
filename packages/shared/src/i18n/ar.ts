@@ -2058,5 +2058,9 @@ export const ar = {
   "rcpt.void_text": "إلغاء {number} · {total}؟",
   "rcpt.void_effect": "يُعكس البيع وتُعاد الكميات إلى المخزون ويُزال أي دين ناتج عنه. لا يمكن التراجع عن ذلك.",
   "rcpt.voided": "أُلغي البيع.",
+  "acct.s.edit_title": "تعديل {name}",
+  "acct.s.saved": "حُفظ {name}.",
+  "acct.s.edit_note": "تحتفظ أوامر الشراء والدفعات بالاسم الذي سُجّلت به، ويبقى الرصيد مع هذا المورد.",
+  "acct.s.needs_manage": "يحتاج صلاحية الموردين.",
   /* /acct */
 }

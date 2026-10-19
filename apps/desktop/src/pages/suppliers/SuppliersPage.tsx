@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useSearchParams } from "react-router"
-import { AlertTriangle, Building2, CheckCircle2, Download, HandCoins, Info, PackagePlus, Phone, Plus, Search, Truck } from "lucide-react"
+import { AlertTriangle, Building2, CheckCircle2, Download, HandCoins, Info, Lock, PackagePlus, Pencil, Phone, Plus, Search, Truck } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
 import { useDebounce } from "../../hooks/useDebounce"
@@ -10,7 +10,7 @@ import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import { parseMoney } from "../../features/pos/lib/helpers"
 import { userCan } from "../../features/pos/services/security.service"
 import {
-  archiveSupplier, createSupplier, deleteSupplier, getPurchaseOrders, getSupplierActivity, getSupplierLedger, getSupplierPayments, getSupplierTotals,
+  archiveSupplier, createSupplier, deleteSupplier, updateSupplier, getPurchaseOrders, getSupplierActivity, getSupplierLedger, getSupplierPayments, getSupplierTotals,
   recordSupplierPayment, restoreSupplier, subscribeSuppliers, supplierHasHistory,
   type PurchaseOrder, type SupplierLedger, type SupplierPaymentMethod,
 } from "../../features/pos/services/supplier.service"
@@ -59,6 +59,7 @@ export default function SuppliersPage() {
   const detailId = params.get("supplier")
   const orderId = params.get("order")
   const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [paying, setPaying] = useState<{ supplierId: string; orderId?: string } | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [notice, setNotice] = useState<{ tone: "ok" | "err"; text: string } | null>(null)
@@ -215,7 +216,7 @@ export default function SuppliersPage() {
       {detail && (
         <SupplierDrawer key={detail.id} supplier={detail} orders={orders.filter((o) => o.supplierId === detail.id)} onClose={() => setParam("supplier", null)}
           onPay={(oid) => setPaying({ supplierId: detail.id, orderId: oid })} onOpenOrder={(oid) => setParam("order", oid)}
-          onDelete={() => setDeleteId(detail.id)} onNotice={(n) => { setNotice(n); refresh() }} />
+          onDelete={() => setDeleteId(detail.id)} onEdit={() => setEditingId(detail.id)} onNotice={(n) => { setNotice(n); refresh() }} />
       )}
       {order && (
         <OrderDrawer order={order} onClose={() => setParam("order", null)}
@@ -223,6 +224,10 @@ export default function SuppliersPage() {
           onOpenSupplier={() => { const next = new URLSearchParams(params); next.delete("order"); next.set("supplier", order.supplierId); setParams(next, { replace: true }) }} />
       )}
       {adding && <SupplierEditor onClose={() => setAdding(false)} onSaved={(id, text) => { setAdding(false); refresh(); setParam("supplier", id); setNotice({ tone: "ok", text }) }} />}
+      {editingId && suppliers.some((x) => x.id === editingId) && (
+        <SupplierEditor supplier={suppliers.find((x) => x.id === editingId)} onClose={() => setEditingId(null)}
+          onSaved={(_, text) => { setEditingId(null); refresh(); setNotice({ tone: "ok", text }) }} />
+      )}
       {paying && (
         <SupplierPaymentDrawer suppliers={suppliers.filter((s) => !s.archived)} orders={orders} initial={paying} onClose={() => setPaying(null)}
           onRecorded={(text) => { setPaying(null); refresh(); setNotice({ tone: "ok", text }) }} />
@@ -242,10 +247,11 @@ export default function SuppliersPage() {
 }
 
 /** Supplier details: owed / purchases / paid, contact, open orders, statement and payments. */
-function SupplierDrawer({ supplier: s, orders, onClose, onPay, onOpenOrder, onDelete, onNotice }: {
+function SupplierDrawer({ supplier: s, orders, onClose, onPay, onOpenOrder, onDelete, onEdit, onNotice }: {
   supplier: SupplierLedger; orders: PurchaseOrder[]; onClose: () => void; onPay: (orderId?: string) => void; onOpenOrder: (id: string) => void
-  onDelete: () => void; onNotice: (n: { tone: "ok" | "err"; text: string }) => void
+  onDelete: () => void; onEdit: () => void; onNotice: (n: { tone: "ok" | "err"; text: string }) => void
 }) {
+  const canManage = userCan("suppliers.manage")
   const { t } = useI18n()
   const date = useDate()
   const [tab, setTab] = useState<"statement" | "payments">("statement")
@@ -268,10 +274,12 @@ function SupplierDrawer({ supplier: s, orders, onClose, onPay, onOpenOrder, onDe
       subtitle={<span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>{s.contact && <span>{s.contact}</span>}{s.mobile && <span className="num-ltr">{s.mobile}</span>}{s.archived && <Badge tone="muted">{t("acct.archived")}</Badge>}</span>}
       footer={<>
         <button type="button" className="mg2-btn mg2-btn-primary" disabled={s.balance <= 0.001 || !!s.archived} aria-describedby={s.balance <= 0.001 ? "sd-pay-why" : undefined} onClick={() => onPay()} data-autofocus><HandCoins size={16} />{t("acct.s.pay")}</button>
+        <button type="button" className="mg2-btn" disabled={!canManage} aria-describedby={canManage ? undefined : "sd-manage-why"} onClick={onEdit}><Pencil size={16} />{t("acct.edit")}</button>
         {s.archived
-          ? <button type="button" className="mg2-btn" onClick={() => act(() => restoreSupplier(s.id), t("acct.restored", { name: s.name }))}>{t("acct.restore")}</button>
-          : <button type="button" className="mg2-btn" onClick={() => act(() => archiveSupplier(s.id), t("acct.archived_done", { name: s.name }))}>{t("acct.archive")}</button>}
-        {!hasHistory && <button type="button" className="mg2-btn mg2-btn-danger" onClick={onDelete}>{t("acct.delete")}</button>}
+          ? <button type="button" className="mg2-btn" disabled={!canManage} onClick={() => act(() => restoreSupplier(s.id), t("acct.restored", { name: s.name }))}>{t("acct.restore")}</button>
+          : <button type="button" className="mg2-btn" disabled={!canManage} onClick={() => act(() => archiveSupplier(s.id), t("acct.archived_done", { name: s.name }))}>{t("acct.archive")}</button>}
+        {!hasHistory && <button type="button" className="mg2-btn mg2-btn-danger" disabled={!canManage} onClick={onDelete}>{t("acct.delete")}</button>}
+        {!canManage && <span className="mg2-cap" id="sd-manage-why" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><Lock size={14} aria-hidden="true" />{t("acct.s.needs_manage")}</span>}
       </>}>
       {s.balance <= 0.001 && <p className="mg2-cap" id="sd-pay-why" style={{ margin: 0 }}>{t("acct.s.nothing_owed")}</p>}
       {error && <div className="mg2-banner mg2-t-err" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span style={{ flex: 1, color: "var(--text)" }}>{error}</span></div>}
@@ -399,9 +407,13 @@ function OrderDrawer({ order: o, onClose, onPay, onOpenSupplier }: { order: Purc
   )
 }
 
-function SupplierEditor({ onClose, onSaved }: { onClose: () => void; onSaved: (id: string, text: string) => void }) {
+/** Add a supplier, or edit one in place (same id: its orders, payments and balance stay attached). */
+function SupplierEditor({ supplier, onClose, onSaved }: { supplier?: SupplierLedger; onClose: () => void; onSaved: (id: string, text: string) => void }) {
   const { t } = useI18n()
-  const [form, setForm] = useState({ name: "", mobile: "", contact: "", address: "", notes: "" })
+  const [form, setForm] = useState({ name: supplier?.name ?? "", mobile: supplier?.mobile ?? "", contact: supplier?.contact ?? "", address: supplier?.address ?? "", notes: supplier?.notes ?? "" })
+  // One operation id per edit attempt: pressing Save again without a change records it once.
+  const attempt = useRef(newPaymentAttempt())
+  useEffect(() => { attempt.current = newPaymentAttempt() }, [form])
   const [errors, setErrors] = useState<{ name?: string; mobile?: string }>({})
   const [failure, setFailure] = useState("")
   const formRef = useRef<HTMLFormElement>(null)
@@ -409,14 +421,17 @@ function SupplierEditor({ onClose, onSaved }: { onClose: () => void; onSaved: (i
   function save() {
     const e: typeof errors = {}
     if (!form.name.trim()) e.name = t("acct.s.err.name")
-    if (!form.mobile.trim()) e.mobile = t("acct.c.err.mobile")
+    if (!supplier && !form.mobile.trim()) e.mobile = t("acct.c.err.mobile") // older suppliers may have none
     setErrors(e)
     if (Object.keys(e).length) { requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>("[aria-invalid=true]")?.focus()); return }
     setFailure("")
-    try { const s = createSupplier(form); onSaved(s.id, t("acct.s.added", { name: s.name })) } catch (err) { setFailure(message(err)) }
+    try {
+      if (supplier) { const s = updateSupplier(supplier.id, form, { opId: `op-sup-edit-${attempt.current}` }); onSaved(s.id, t("acct.s.saved", { name: s.name })) }
+      else { const s = createSupplier(form); onSaved(s.id, t("acct.s.added", { name: s.name })) }
+    } catch (err) { setFailure(message(err)) }
   }
   return (
-    <Drawer open title={t("acct.s.add")} onClose={onClose}
+    <Drawer open title={supplier ? t("acct.s.edit_title", { name: supplier.name }) : t("acct.s.add")} onClose={onClose}
       footer={<><button type="button" className="mg2-btn mg2-btn-primary" onClick={save}>{t("acct.save")}</button><button type="button" className="mg2-btn mg2-btn-ghost" onClick={onClose}>{t("acct.cancel")}</button></>}>
       <form ref={formRef} onSubmit={(e) => { e.preventDefault(); save() }} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {failure && <div className="mg2-banner mg2-t-err" role="alert"><AlertTriangle size={18} aria-hidden="true" /><span style={{ flex: 1, color: "var(--text)" }}>{failure}</span></div>}
@@ -425,6 +440,7 @@ function SupplierEditor({ onClose, onSaved }: { onClose: () => void; onSaved: (i
         <Field label={t("acct.s.f.contact")}>{(a) => <input {...a} className="mg2-input" value={form.contact} onChange={set("contact")} />}</Field>
         <Field label={t("acct.s.f.address")}>{(a) => <input {...a} className="mg2-input" value={form.address} onChange={set("address")} />}</Field>
         <Field label={t("acct.s.f.notes")}>{(a) => <textarea {...a} className="mg2-input" rows={2} style={{ paddingBlock: 8 }} value={form.notes} onChange={set("notes")} />}</Field>
+        {supplier && <p className="mg2-cap" style={{ margin: 0, display: "flex", gap: 6, alignItems: "center" }}><Info size={14} aria-hidden="true" />{t("acct.s.edit_note")}</p>}
         <button type="submit" hidden />
       </form>
     </Drawer>

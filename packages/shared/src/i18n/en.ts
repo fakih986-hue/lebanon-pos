@@ -2058,5 +2058,9 @@ export const en = {
   "rcpt.void_text": "Void {number} · {total}?",
   "rcpt.void_effect": "The sale is reversed, stock is restored and any debt from it is removed. This cannot be undone.",
   "rcpt.voided": "Sale voided.",
+  "acct.s.edit_title": "Edit {name}",
+  "acct.s.saved": "{name} saved.",
+  "acct.s.edit_note": "Orders and payments keep the name they were recorded under; the balance stays with this supplier.",
+  "acct.s.needs_manage": "Needs the Suppliers permission.",
   /* /acct */
 }
