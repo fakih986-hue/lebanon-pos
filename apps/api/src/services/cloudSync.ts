@@ -424,7 +424,9 @@ export async function pullFromCloud(opts: { isRestore?: boolean } = {}): Promise
   const state    = readState()
   // Older releases pulled staff by creation date only, so a hub may hold PINs reset since: the
   // first pull after this upgrade is a full one (existing inventory is still not overwritten).
-  const since    = (state.staffRefresh ?? 0) >= 1 ? state.lastPullAt : undefined
+  // 2: one-admin + access versions (1.0.50) - the full pull replaces the migration's fallback admin
+  // choice with the cloud's.
+  const since    = (state.staffRefresh ?? 0) >= 2 ? state.lastPullAt : undefined
   const pullStartedAt = new Date().toISOString()
 
   // POS-SYNC-AUTHORITY-1: only an explicit restore may overwrite existing hub
@@ -516,7 +518,7 @@ export async function pullFromCloud(opts: { isRestore?: boolean } = {}): Promise
   // Prefer JSON serverTime (new API), fall back to HTTP Date header (always
   // server-accurate), then pullStartedAt (hub's clock — least accurate).
   const serverTime = (data as any).serverTime ?? res.headers.get("Date") ?? pullStartedAt
-  writeState({ lastPullAt: serverTime, staffRefresh: 1 })
+  writeState({ lastPullAt: serverTime, staffRefresh: 2 })
   _lastSuccessfulPullAt = new Date().toISOString()
   _lastPullError = undefined
   broadcastToTenant(tenantId, "sync:data-changed", {})
@@ -789,10 +791,16 @@ async function upsertPulledData(
     await run("staffUser", () =>
       prisma.$transaction(async (tx) => {
         if (row.role === "Admin" && row.active !== false) {
-          await tx.staffUser.updateMany({
-            where: { tenantId, role: "Admin", active: true, id: { not: row.id } },
-            data: { role: "Manager" },
-          })
+          const others = await tx.staffUser.findMany({ where: { tenantId, role: "Admin", active: true, id: { not: row.id } }, select: { id: true, name: true } })
+          for (const o of others) {
+            await tx.staffUser.update({ where: { id: o.id }, data: { role: "Manager", roleVersion: { increment: 1 }, tokenVersion: { increment: 1 } } })
+            await tx.auditEvent.create({ data: {
+              tenantId, action: "staff.admin_reconciled", entity: "staff",
+              summary: `${o.name} was changed from Admin to Manager on this hub: the cloud says ${row.name ?? "another person"} is the store admin.`,
+              metadata: { staffUserId: o.id, cloudAdminId: row.id },
+              userId: "__system__", userName: "Cloud sync", userRole: "Admin",
+            } })
+          }
         }
         await tx.staffUser.upsert({
           where:  { id: row.id },

@@ -158,7 +158,7 @@ describe("installed hub: an owner-portal PIN reset reaches it through the bridge
       fs.writeFileSync(stateFile, JSON.stringify({ lastPullAt: new Date().toISOString() }))
       await bridge.pullFromCloud() // first pull after the upgrade: full, staff refreshed
       expect(await login("4321")).toBe(200)
-      expect(JSON.parse(fs.readFileSync(stateFile, "utf8")).staffRefresh).toBe(1)
+      expect(JSON.parse(fs.readFileSync(stateFile, "utf8")).staffRefresh).toBe(2)
 
       // The owner resets the PIN on the cloud (what the owner portal's reset-pin writes).
       await new Promise((r) => setTimeout(r, 30))
@@ -174,6 +174,73 @@ describe("installed hub: an owner-portal PIN reset reaches it through the bridge
       if (saved === null) fs.rmSync(stateFile, { force: true }); else fs.writeFileSync(stateFile, saved)
       await prisma.staffUser.deleteMany({ where: { id: STAFF } })
       await cloudPrisma.staffUser.deleteMany({ where: { id: STAFF } })
+    }
+  })
+})
+
+describe("cloud -> hub -> till: an offline hub's stale staff edits cannot undo a PIN reset or an Admin transfer", () => {
+  it("old PIN refused and new PIN works on hub and cloud; the transfer stands on both; the till's business work arrives", async () => {
+    const fs = await import("node:fs")
+    const path = await import("node:path")
+    const { createHash } = await import("node:crypto")
+    const bcrypt = (await import("bcryptjs")).default
+    const stateFile = path.resolve(__dirname, "../data/sync-state.json")
+    const saved = fs.existsSync(stateFile) ? fs.readFileSync(stateFile, "utf8") : null
+    const SUB = `dd-${TENANT.slice(0, 8)}`
+    const X = randomUUID(), S = randomUUID(), CUST = randomUUID()
+    const ownerTok = jwt.sign({ userId: "__admin__", tenantId: "", role: "Admin" }, process.env.JWT_SECRET!, { expiresIn: "1h" })
+    const owner = async (p: string, body: unknown) => (await fetch(`${cloudUrl}/api/admin/tenants/${TENANT}${p}`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${ownerTok}` }, body: JSON.stringify(body) })).status
+    const loginAt = async (base: string, pin: string) => (await fetch(`${base}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin, tenantSubdomain: SUB }) })).status
+    const sha = (pin: string) => createHash("sha256").update(pin).digest("base64")
+    const tillCopy = async (id: string, localPin: string) => {
+      const u = (await prisma.staffUser.findUnique({ where: { id } }))!
+      return { id: u.id, name: u.name, mobile: u.mobile, role: u.role, permissions: u.permissions, active: u.active, pin: sha(localPin), pinVersion: u.pinVersion, lastVerifiedPinVersion: u.pinVersion, roleVersion: u.roleVersion, createdAt: u.createdAt.toISOString() }
+    }
+    try {
+      // The cloud: the hub's admin (same id), a cashier and a manager.
+      await cloudPrisma.staffUser.create({ data: { id: ADMIN, tenantId: TENANT, name: "IT", mobile: `dd-${TENANT.slice(0, 6)}`, pin: await bcrypt.hash("1029", 12), role: "Admin" } })
+      await cloudPrisma.staffUser.create({ data: { id: X, tenantId: TENANT, name: "Cashier", mobile: `dd-x-${TENANT.slice(0, 6)}`, pin: await bcrypt.hash("4321", 12), role: "Cashier" } })
+      await cloudPrisma.staffUser.create({ data: { id: S, tenantId: TENANT, name: "Successor", mobile: `dd-m-${TENANT.slice(0, 6)}`, pin: await bcrypt.hash("5656", 12), role: "Manager" } })
+      fs.mkdirSync(path.dirname(stateFile), { recursive: true })
+      fs.writeFileSync(stateFile, JSON.stringify({}))
+      await bridge.pullFromCloud() // the hub gets everyone
+      expect(await loginAt(hubUrl, "4321")).toBe(200)
+      const staleX = await tillCopy(X, "4321"), staleAdmin = await tillCopy(ADMIN, "1029"), staleS = await tillCopy(S, "5656")
+
+      // The owner acts on the cloud while the hub is offline.
+      expect(await owner(`/users/${X}/reset-pin`, { pin: "8765" })).toBe(200)
+      expect(await owner("/transfer-admin", { toUserId: S, confirm: SUB })).toBe(200)
+
+      // Offline: the till keeps working against the hub with its stale copies.
+      for (const op of [
+        { id: `op-chain-x-${X}`, entity: "staff", action: "update", payload: { ...staleX, name: "Cashier (renamed offline)" } },
+        { id: `op-chain-a-${X}`, entity: "staff", action: "update", payload: { ...staleAdmin, mobile: `dd-a2-${TENANT.slice(0, 6)}` } },
+        { id: `op-chain-s-${X}`, entity: "staff", action: "update", payload: { ...staleS, name: "Successor (edited offline)" } },
+        { id: `op-chain-c-${X}`, entity: "customer", action: "create", payload: { id: CUST, name: "New customer offline", mobile: `dd-c-${TENANT.slice(0, 6)}`, creditLimit: 0, notes: "", createdAt: new Date().toISOString() } },
+      ]) expect((await push(op)).status).toBe("ok")
+
+      // Reconnect: the hub sends its queue, then pulls.
+      await bridge.pushToCloudOnce()
+      await bridge.pullFromCloud()
+
+      for (const [where, base, db] of [["cloud", cloudUrl, cloudPrisma], ["hub", hubUrl, prisma]] as const) {
+        expect([where, await loginAt(base, "4321")]).toEqual([where, 401])
+        expect([where, await loginAt(base, "8765")]).toEqual([where, 200])
+        expect([where, (await db.staffUser.findUnique({ where: { id: ADMIN } }))?.role]).toEqual([where, "Manager"])
+        expect([where, (await db.staffUser.findUnique({ where: { id: S } }))?.role]).toEqual([where, "Admin"])
+        expect([where, await db.staffUser.count({ where: { tenantId: TENANT, role: "Admin", active: true } })]).toEqual([where, 1])
+        expect([where, (await db.staffUser.findUnique({ where: { id: X } }))?.name]).toEqual([where, "Cashier (renamed offline)"]) // ordinary edit kept
+        expect([where, await db.customer.count({ where: { id: CUST } })]).toEqual([where, 1]) // business work arrived
+      }
+      expect(await cloudPrisma.auditEvent.count({ where: { tenantId: TENANT, action: "staff.stale_access_ignored" } })).toBeGreaterThanOrEqual(1)
+    } finally {
+      if (saved === null) fs.rmSync(stateFile, { force: true }); else fs.writeFileSync(stateFile, saved)
+      for (const db of [prisma, cloudPrisma]) {
+        await db.customer.deleteMany({ where: { id: CUST } })
+        await db.staffUser.deleteMany({ where: { id: { in: [X, S] } } })
+      }
+      await cloudPrisma.staffUser.deleteMany({ where: { id: ADMIN } })
+      await prisma.staffUser.updateMany({ where: { id: ADMIN }, data: { role: "Admin" } })
     }
   })
 })

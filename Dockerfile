@@ -23,7 +23,7 @@ COPY apps/ ./apps/
 RUN cd apps/admin && npx vite build
 
 # Build owner SPA
-RUN cd apps/owner && npx vite build
+RUN cd apps/owner && npx tsc -p . && npx vite build
 
 # Build driver SPA
 RUN cd apps/driver && npx vite build

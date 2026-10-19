@@ -1,21 +1,41 @@
 -- One active admin per store (tenant), enforced by the database so concurrent writes and every
 -- write path (cloud and hub) obey it.
 --
--- Heal first: a database may already hold several active admins (a hub that has not pulled the
--- cloud's change yet). The earliest-created one stays Admin; the others become Manager (login,
--- PIN and history unchanged). On a hub the next pull from the cloud then applies the cloud's
--- choice. updatedAt is bumped so devices receive the change.
-WITH ranked AS (
-  SELECT "id", row_number() OVER (PARTITION BY "tenantId" ORDER BY "createdAt", "id") AS rn
+-- Heal first. A database may already hold several active admins (a hub that has not pulled the
+-- cloud's change yet). This is a FALLBACK, not the owner's choice: the earliest-created admin stays
+-- Admin, the others become Manager (login, PIN and history unchanged), their access version and
+-- token version are bumped (old sessions and older copies of their record cannot restore the
+-- privilege), and each demotion is recorded in the audit log. On a hub, the first pull after the
+-- upgrade is a full one and applies the cloud's admin (cloudSync, staffRefresh 2).
+DROP TABLE IF EXISTS "_auto_demoted";
+CREATE TEMP TABLE "_auto_demoted" AS
+SELECT s."id", s."tenantId", s."name"
+FROM (
+  SELECT "id", "tenantId", "name",
+         row_number() OVER (PARTITION BY "tenantId" ORDER BY "createdAt", "id") AS rn
   FROM "StaffUser"
   WHERE "role" = 'Admin' AND "active" = true
-)
-UPDATE "StaffUser" s
-SET "role" = 'Manager', "updatedAt" = now()
-FROM ranked r
-WHERE s."id" = r."id" AND r.rn > 1;
+) s
+WHERE s.rn > 1;
 
--- Partial unique index (not expressible in schema.prisma; a schema diff reports it as extra).
+UPDATE "StaffUser" u
+SET "role" = 'Manager',
+    "roleVersion" = u."roleVersion" + 1,
+    "tokenVersion" = u."tokenVersion" + 1,
+    "updatedAt" = now()
+FROM "_auto_demoted" d
+WHERE u."id" = d."id";
+
+INSERT INTO "AuditEvent" ("id", "tenantId", "action", "entity", "summary", "metadata", "userId", "userName", "userRole", "createdAt")
+SELECT gen_random_uuid()::text, d."tenantId", 'staff.admin_auto_demoted', 'staff',
+       d."name" || ' was changed from Admin to Manager: a store may have only one active admin (automatic, earliest-created admin kept).',
+       jsonb_build_object('staffUserId', d."id", 'reason', 'one_active_admin_migration'),
+       '__system__', 'System', 'Admin', now()
+FROM "_auto_demoted" d;
+
+DROP TABLE "_auto_demoted";
+
+-- Partial unique index (not expressible in schema.prisma; Prisma's schema diff does not report it).
 CREATE UNIQUE INDEX IF NOT EXISTS "StaffUser_one_active_admin"
   ON "StaffUser" ("tenantId")
   WHERE "role" = 'Admin' AND "active" = true;

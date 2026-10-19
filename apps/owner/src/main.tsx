@@ -146,6 +146,7 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>([])
   const [staffLoading, setStaffLoading] = useState(false)
   const [staffError, setStaffError] = useState("")
+  const [staffNotice, setStaffNotice] = useState("")
   const [settingPin, setSettingPin] = useState<string | null>(null)
   const [pinInput, setPinInput] = useState("")
   const [newPinResult, setNewPinResult] = useState<{ userId: string; name: string; pin: string } | null>(null)
@@ -162,6 +163,7 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
     setStaffTenant(tenant)
     setStaffLoading(true)
     setStaffError("")
+    setStaffNotice("")
     setNewPinResult(null)
     try {
       setStaffUsers(await api<StaffUser[]>(`/api/admin/tenants/${tenant.id}/users`))
@@ -193,12 +195,13 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
     const current = staffUsers.find((u) => u.role === "Admin" && u.active)
     const typed = window.prompt(t("owner.transfer_confirm", { to: user.name, from: current?.name ?? "-", subdomain: staffTenant.subdomain }))
     if (typed === null) return
-    if (typed.trim().toLowerCase() !== staffTenant.subdomain.toLowerCase()) { setStaffError(t("admin.delete_mismatch")); return }
+    setStaffNotice("")
+    if (typed.trim().toLowerCase() !== staffTenant.subdomain.toLowerCase()) { setStaffError(t("owner.transfer_mismatch")); return }
     setStaffError("")
     try {
       await api(`/api/admin/tenants/${staffTenant.id}/transfer-admin`, { method: "POST", body: JSON.stringify({ toUserId: user.id, confirm: typed.trim() }) })
       setStaffUsers(await api<StaffUser[]>(`/api/admin/tenants/${staffTenant.id}/users`))
-      setStaffError(t("owner.transfer_done", { name: user.name }))
+      setStaffNotice(t("owner.transfer_done", { name: user.name }))
     } catch (err) { setStaffError((err as Error).message) }
   }
 
@@ -416,7 +419,8 @@ function TenantsPage({ onLogout }: { onLogout: () => void }) {
               <button onClick={() => { setStaffTenant(null); setNewPinResult(null) }} className="text-slate-500 hover:text-white transition-colors text-xl leading-none">&times;</button>
             </div>
 
-            {staffError && <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl">{staffError}</div>}
+            {staffError && <div role="alert" className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-xl">{staffError}</div>}
+            {staffNotice && !staffError && <div role="status" className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm rounded-xl">{staffNotice}</div>}
 
             {newPinResult && (
               <div className="mb-4 bg-emerald-950/30 border border-emerald-700/30 rounded-xl p-4 text-center">

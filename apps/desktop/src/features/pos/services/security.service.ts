@@ -80,6 +80,7 @@ export type StaffUser = {
   pin: string // SHA-256 hash
   pinVersion?: number       // from server — increments on PIN reset
   lastVerifiedPinVersion?: number // from last successful online login
+  roleVersion?: number      // from server — increments on every role / permission / active change
   role: UserRole
   // POS-PERMISSIONS-1: explicit effective permission set (source of truth for
   // enforcement). Absent/empty → fall back to the role preset (see
@@ -800,7 +801,20 @@ export async function updateUser(userId: string, patch: Partial<StaffUser>) {
 
     resolvedPatch.pin = pinHash
     resolvedPatch.pinChanged = true
+    // The change is made on the current PIN version; the server records it as the next one. Keep
+    // the same numbers here so this device keeps accepting the new PIN offline.
+    const base = users.find((u) => u.id === userId)?.pinVersion ?? 1
+    resolvedPatch.pinVersion = base + 1
+    resolvedPatch.lastVerifiedPinVersion = base + 1
   }
+  const prior = users.find((u) => u.id === userId)
+  const accessChanged = !!prior && (
+    (patch.role !== undefined && patch.role !== prior.role) ||
+    (patch.permissions !== undefined && JSON.stringify(patch.permissions) !== JSON.stringify(prior.permissions)) ||
+    (patch.active !== undefined && patch.active !== prior.active))
+  // The server bumps roleVersion when it applies an access change; mirror it so a second change
+  // made here before the next sync is not taken for a stale one.
+  if (accessChanged) resolvedPatch.roleVersion = (prior?.roleVersion ?? 1) + 1
   const nextUsers = users.map((user) =>
     user.id === userId
       ? {
@@ -846,12 +860,29 @@ export async function updateUser(userId: string, patch: Partial<StaffUser>) {
         active: updatedUser.active,
       },
     })
-    enqueueSyncOperation({
-      entity: "staff",
-      action: "update",
-      summary: `${updatedUser.name} staff update queued for sync.`,
-      payload: updatedUser,
-    })
+    // STAFF-AUTH: an update carries profile and access only (with the access version it was made
+    // on); authentication fields never travel in an update. A PIN change is its own operation.
+    const profileOrAccess = Object.keys(patch).some((k) => k !== "pin" && k !== "pinChanged")
+    if (profileOrAccess) {
+      enqueueSyncOperation({
+        entity: "staff",
+        action: "update",
+        summary: `${updatedUser.name} staff update queued for sync.`,
+        payload: {
+          id: updatedUser.id, name: updatedUser.name, mobile: updatedUser.mobile,
+          role: updatedUser.role, permissions: updatedUser.permissions, active: updatedUser.active,
+          roleVersion: accessChanged ? (prior?.roleVersion ?? 1) : (updatedUser.roleVersion ?? 1),
+        },
+      })
+    }
+    if (patch.pin) {
+      enqueueSyncOperation({
+        entity: "staff",
+        action: "pin",
+        summary: `${updatedUser.name} PIN change queued for sync.`,
+        payload: { id: updatedUser.id, pin: updatedUser.pin, basePinVersion: (updatedUser.pinVersion ?? 2) - 1 },
+      })
+    }
   }
 }
 

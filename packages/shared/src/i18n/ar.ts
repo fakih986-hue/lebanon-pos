@@ -1215,6 +1215,7 @@ export const ar = {
   "owner.make_admin": "تعيين مديراً للمتجر",
   "owner.transfer_confirm": "تعيين {to} مديراً للمتجر؟ يصبح {from} مشرفاً. تبقى أرقامهم السرية ومبيعاتهم والأعمال المعلّقة كما هي، ويسجّل كلاهما الدخول مجدداً على أجهزتهما.\n\nاكتب النطاق الفرعي للمتجر ({subdomain}) للتأكيد:",
   "owner.transfer_done": "أصبح {name} مدير المتجر.",
+  "owner.transfer_mismatch": "النطاق الفرعي غير مطابق. لم يتغيّر شيء.",
 
   /* Midnight Gold v2 — register slice */
   "pos.v2.lbp": "ل.ل",

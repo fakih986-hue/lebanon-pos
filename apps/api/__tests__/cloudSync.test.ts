@@ -258,6 +258,9 @@ describe("cloudSync", () => {
         id: "test-tenant-1", name: "Test Store", subdomain: "test",
       } as any)
       vi.mocked(prisma.staffUser.upsert).mockResolvedValue({} as any)
+      // Staff are applied in a transaction (cloud-authoritative admin): run it on the mock.
+      vi.mocked(prisma.$transaction).mockImplementation((async (fn: any) => fn(prisma)) as any)
+      vi.mocked(prisma.staffUser.findMany).mockResolvedValue([] as any)
 
       vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
         ok: true,

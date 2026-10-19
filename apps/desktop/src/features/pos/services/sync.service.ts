@@ -795,7 +795,7 @@ export type SyncEntity =
 
 export type SyncAction =
   | "create" | "update" | "delete" | "receive"
-  | "payment" | "close" | "open" | "adjust" | "count" | "void"
+  | "payment" | "close" | "open" | "adjust" | "count" | "void" | "pin"
 
 export type SyncOperationStatus = "Pending" | "Synced" | "Failed" | "Rejected"
 

@@ -78,8 +78,9 @@ describe("one active admin per store, under concurrency (sync push)", () => {
     const m1 = randomUUID(), m2 = randomUUID()
     await prisma.staffUser.createMany({ data: [person(m1, A, "Manager one", "Manager"), person(m2, A, "Manager two", "Manager")] as any })
     const [r1, r2] = await Promise.all([
-      push(A, ACTOR_A, [staffOp(`op-p1-${m1}`, person(m1, A, "Manager one", "Admin"), "update")]),
-      push(A, ACTOR_A, [staffOp(`op-p2-${m2}`, person(m2, A, "Manager two", "Admin"), "update")]),
+      // Both made on the current access version (1): two legitimate promotions racing.
+      push(A, ACTOR_A, [staffOp(`op-p1-${m1}`, { ...person(m1, A, "Manager one", "Admin"), roleVersion: 1 }, "update")]),
+      push(A, ACTOR_A, [staffOp(`op-p2-${m2}`, { ...person(m2, A, "Manager two", "Admin"), roleVersion: 1 }, "update")]),
     ])
     expect([r1.results[0].status, r2.results[0].status].sort()).toEqual(["ok", "rejected"])
     expect(await admins(A)).toHaveLength(1)

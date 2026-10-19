@@ -1215,6 +1215,7 @@ export const en = {
   "owner.make_admin": "Make store admin",
   "owner.transfer_confirm": "Make {to} the store admin? {from} becomes a Manager. Their PINs, sales and pending work are kept; both sign in again on their devices.\n\nType the store subdomain ({subdomain}) to confirm:",
   "owner.transfer_done": "{name} is now the store admin.",
+  "owner.transfer_mismatch": "The subdomain did not match. Nothing was changed.",
 
   /* Midnight Gold v2 — register slice */
   "pos.v2.lbp": "LBP",

@@ -429,10 +429,10 @@ export async function transferStoreAdmin(tenantId: string, toUserId: string) {
     if (successor.role === "Driver") throw new AdminTransferError(400, "A driver account cannot be the store's admin.")
     const current = await tx.staffUser.findFirst({ where: { tenantId, role: "Admin", active: true }, select: { id: true, name: true } })
     if (current) {
-      await tx.staffUser.update({ where: { id: current.id }, data: { role: "Manager", tokenVersion: { increment: 1 } } })
+      await tx.staffUser.update({ where: { id: current.id }, data: { role: "Manager", roleVersion: { increment: 1 }, tokenVersion: { increment: 1 } } })
     }
     await adminTransferTestHooks.afterDemote?.()
-    await tx.staffUser.update({ where: { id: successor.id }, data: { role: "Admin", tokenVersion: { increment: 1 } } })
+    await tx.staffUser.update({ where: { id: successor.id }, data: { role: "Admin", roleVersion: { increment: 1 }, tokenVersion: { increment: 1 } } })
     await tx.auditEvent.create({
       data: {
         tenantId, action: "staff.admin_transfer", entity: "staff",

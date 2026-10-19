@@ -129,6 +129,9 @@ model StaffUser {
   pin          String
   pinVersion   Int      @default(1)
   tokenVersion Int      @default(1)
+  /// Bumped by the server whenever role, permissions or active change: a staff update made on an
+  /// older copy cannot change them (stale-device protection).
+  roleVersion  Int      @default(1)
   role         UserRole
   // POS-PERMISSIONS-1: explicit per-user permission set. Empty → the client and
   // server fall back to the role preset (backward compatible with pre-1.0.44).
