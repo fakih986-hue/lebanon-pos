@@ -507,7 +507,7 @@
         ],
         [
           "open /Malia Group/",
-          "Malia Group | Pay supplier · Archive"
+          "Malia Group | Pay supplier · Edit · Archive"
         ]
       ],
       "facts": {
@@ -939,6 +939,115 @@
         "dir": "ltr",
         "theme": "dark",
         "active": "BODY",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers-edit.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Malia Group/",
+          "Malia Group | Pay supplier · Edit · Archive"
+        ],
+        [
+          "press /^Edit$/",
+          "Edit Malia Group | errors: "
+        ],
+        [
+          "edit the contact details",
+          "Malia Group SAL | 01 555 999 | Hadi Nasr | Dora highway, Beirut | Delivers on Tuesdays"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "INPUT",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers-edit.ar.dark.mobile",
+      "w": 390,
+      "h": 844,
+      "theme": "dark",
+      "lang": "ar",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Malia Group/",
+          "Malia Group | الدفع لمورد · تعديل · أرشفة"
+        ],
+        [
+          "press /^تعديل$/",
+          "تعديل Malia Group | errors: "
+        ]
+      ],
+      "facts": {
+        "dir": "rtl",
+        "theme": "dark",
+        "active": "INPUT",
+        "overflowX": false
+      }
+    },
+    {
+      "name": "suppliers-edited.en.dark.desktop",
+      "w": 1440,
+      "h": 900,
+      "theme": "dark",
+      "lang": "en",
+      "log": [
+        [
+          "seed customers, suppliers, receipts",
+          "customers 5, debt sales 6, suppliers 4, POs 4, sales 9, refunds 1"
+        ],
+        [
+          "reload",
+          1
+        ],
+        [
+          "open /Malia Group/",
+          "Malia Group | Pay supplier · Edit · Archive"
+        ],
+        [
+          "press /^Edit$/",
+          "Edit Malia Group | errors: "
+        ],
+        [
+          "edit the contact details",
+          "Malia Group SAL | 01 555 999 | Hadi Nasr | Dora highway, Beirut | Delivers on Tuesdays"
+        ],
+        [
+          "press /^Save$/",
+          "Malia Group SAL | errors: "
+        ],
+        [
+          "after save",
+          "Malia Group SAL | owed 181.20000000000005 | orders 2 | banner: Malia Group SAL saved.Dismiss"
+        ]
+      ],
+      "facts": {
+        "dir": "ltr",
+        "theme": "dark",
+        "active": "BUTTON",
         "overflowX": false
       }
     }

@@ -27,12 +27,13 @@
 |---|---|---|---|---|---|---|---|---|
 | `/` | Sell › Register | 01, 02 | ✅ | ✅ (built) | ✅ | ◐ | Synced, offline + waiting count, review overlay, cash rounding, change, low-stock feedback | Full checkout (v1 UI) |
 | `/` Quick mode | Sell › Register, Simple mode | 08 | ✅ | ✅ (built) | ✅ | ◐ | Offline, waiting, undo last scan | QuickPOSMode overlay |
-| `/sales` | Sell › Receipts | **10** | ✅ | ○ | ○ | ○ | Partly refunded, voided, on debt, waiting to send. **Refund dialog** with a per-line limit error, the original rate and cash rounding. Void disabled with its reason. Server-rejected refund. Empty search. Cashier without Refunds permission | Refunds and voids with REFUND-INTEGRITY-1 rules; `MoneyConflictsPanel` |
-| `/customers` | Money › Customers & debt | **11** | ✅ | ○ | ○ | ○ | Statement with refund credits. **Record payment dialog** with an over-balance error and an "allowed amount" button. Over-limit warning at checkout. Empty. No Debt permission | Customers, ledger, pay debt |
+| `/sales` (Receipts tab) | Sell › Receipts | **10** | ✅ | ✅ (built) | ✅ | ◐ | Built (2026-10-17): filters, refunded / voided / on account / cash-rounded marks, receipt drawer (LBP at the sale's rate, rounding as recorded), returns capped per line, void, permission reasons, empty. `qa/accounts-review.html`. Refund and void also refused by the services and the API without the permission (2026-10-19) | Same REFUND-INTEGRITY-1 services; `MoneyConflictsPanel` kept as is |
+| `/sales?tab=insights` | **Unmigrated.** Later group: Money › Dashboard & analytics | 05 | ○ | ○ | **○ v1 UI** | ○ | Not redesigned: the v1 `InsightsPanel` renders inside the v2 Receipts page, unchanged. Belongs with the dashboard/analytics design group, not with Receipts | Insights (v1) |
+| `/customers` | Money › Customers & debt | **11** | ✅ | ✅ (built) | ✅ | ◐ | Built (2026-10-17): views, owed by age, details (aging, limit, statement with running balance, payments), receive payment with the over-balance error and allowed amount, storage-full error, archived, empty. `qa/accounts-review.html` | Same customer service (FIFO aging, payment ids) |
 | `/products` | Stock › Products | 03 | ✅ | ○ | ○ | ○ | Waiting (capsule), Low / Out with icon and word, expiring lots | Products page |
 | `/products/new` | Stock › Receiving | 04 | ✅ | ○ | ○ | ○ | Unknown-barcode decision; Save enabled, leads to the row that needs a decision | Receiving |
 | `/stock` | Stock › Lots & counts | 03, **18** | ✅ | ○ | ○ | ○ | Reconciliation (matches / explained untracked returns / lot short), explanation drawer (how untracked stock sells), count in progress. **Post count dialog**. Stock moved during count. All match. Cashier counts, manager posts | Stock & batches, reconciliation |
-| `/suppliers` | Stock › Suppliers | **12** | ✅ | ○ | ○ | ○ | Statement. **Pay supplier dialog** that shows the drawer impact. Cash payment with no open shift. Empty. Archived supplier with a balance | Suppliers, POs, payments |
+| `/suppliers` | Stock › Suppliers | **12** | ✅ | ✅ (built) | ✅ | ◐ | Built (2026-10-17): accounts and purchase-order tabs, details with open orders, statement, purchase-order drawer, pay against an order or the balance, empty. **Edit supplier** (2026-10-19): same id, needs suppliers.manage (service and API). The drawer-impact and no-open-shift states of preview 12 are not built | Same supplier service |
 | `/dashboard` | Money › Today | 05 | ✅ | ○ | ○ | ○ | Money conflict (capsule, banner, primary "Review & settle", Close disabled with its reason), overdue debt, drawer short | Dashboard |
 | `/accounting` | Money › Today / Shift / Expenses / Reports | 05, **19** | ✅ | ○ | ○ | ○ | Close the day: steps, blind count of USD and LBP notes, shifts, pre-checks. **Review dialog** (short with required reason). Blocked by rejected refunds. Another register open. Unsent sales. Day closed + Z report. Cashier permission | Close day, expenses, cash flow |
 | `/delivery` | Delivery › Orders | **13** | ✅ | ○ | ○ | ○ | Board: new, preparing, out, delivered. No driver, late. **Assign driver dialog**. Driver offline. Online orders paused. Empty. Driver permission | Delivery orders |
@@ -64,11 +65,12 @@ The application shell (topbar and status capsule) is restyled on every route as 
 | Workflow | Static | Interactions | Production (v2) | Runtime | Notes |
 |---|---|---|---|---|---|
 | Scan → cart → cash with LBP rounding → change → receipt | ✅ 01, 02, 08 | ✅ | ✅ | ◐ | Built and exercised: cash-payable money rule on the total, pay button, review and receipt; F2–F5 / F8 / Enter / Esc; focus back on the scan field after review and after a sale; offline sale queued; Cashier permissions |
-| Refund part of a receipt (limits, original rate, method) | ✅ 10 | ○ | ○ | ○ | The rules are implemented and tested in v1 (REFUND-INTEGRITY-1) |
+| Refund part of a receipt (limits, original rate, method) | ✅ 10 | ✅ | ✅ | ◐ | Receipt drawer → returns → confirm; REFUND-INTEGRITY-1 services; sales.refund enforced in the service and the API |
 | Rejected offline refund → manager settles | ✅ 05, 06, 07, 10 | ○ | ○ | ○ | v1 `MoneyConflictsPanel` implements the settlement |
-| Record a customer payment | ✅ 11 | ○ | ○ | ○ | |
+| Record a customer payment | ✅ 11 | ✅ | ✅ | ◐ | Over-balance refused with the allowed amount; one payment per attempt |
 | Receive a delivery with an unknown barcode | ✅ 04 | ○ | ○ | ○ | |
-| Pay a supplier from the drawer | ✅ 12 | ○ | ○ | ○ | |
+| Pay a supplier from the drawer | ✅ 12 | ◐ | ◐ | ◐ | Paying a supplier is built; showing the drawer impact and the no-open-shift case is not |
+| Edit a supplier (same id; orders, payments, balance kept) | ○ | ✅ | ✅ | ◐ | Not in the previews; built 2026-10-19; real-Postgres retry test |
 | Assign a delivery driver | ✅ 13 | ○ | ○ | ○ | |
 | Add a person / reset a PIN | ✅ 14 | ○ | ○ | ○ | |
 | Lock / unlock / lockout | ✅ 16 | ○ | ○ | ○ | |

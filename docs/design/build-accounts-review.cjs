@@ -22,6 +22,8 @@ const sections = [
     ["Supplier accounts", "Tabs Accounts / Purchase orders; what you owe first", "suppliers.en.dark.desktop", "Phone: low-priority columns drop out", "suppliers.en.dark.mobile"],
     ["Supplier accounts (Arabic)", "Arabic, light, right-to-left", "suppliers.ar.light.desktop", "", null],
     ["Supplier details", "Owed, purchases, paid; contact; open purchase orders, each with its own Pay; statement with what you owe after each line", "suppliers-detail.en.dark.desktop", "", null],
+    ["Edit supplier", "Same supplier, new details: name, mobile, contact, address, notes. Orders and payments keep the name they were recorded under", "suppliers-edit.en.dark.desktop", "Phone, Arabic", "suppliers-edit.ar.dark.mobile"],
+    ["Edit supplier: saved", "After Save: the new name and details, the same balance ($181.20), the same orders and statement", "suppliers-edited.en.dark.desktop", "", null],
     ["Purchase orders", "Filter by payment status; owed per order", "suppliers-orders.en.dark.desktop", "Phone, Arabic", "suppliers-orders.ar.dark.mobile"],
     ["Purchase order", "Lines, totals, supplier invoice no., payments against it", "suppliers-order.en.dark.desktop", "", null],
     ["Pay supplier", "Against one purchase order (or the balance, oldest first); never more than is owed", "suppliers-pay.en.dark.desktop", "Phone, Arabic", "suppliers-pay.ar.dark.mobile"],
