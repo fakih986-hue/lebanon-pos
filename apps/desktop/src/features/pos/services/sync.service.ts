@@ -1477,6 +1477,9 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
   // This makes the hub the single authority — no local-first conflicts
   const apiUrl = getApiUrl()
   const token = getAuthToken()
+  // Only an operation still waiting is updated: a newer instance (after a restart) or a flush may
+  // already have settled it, and this late answer must not overwrite that.
+  const stillOpen = (op: SyncOperation) => op.status === "Pending" || op.status === "Failed"
   if (apiUrl && token && !isSuspended()) {
     try {
       const response = await fetch(`${apiUrl}/api/sync/push`, {
@@ -1489,7 +1492,7 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
         const body = await response.json().catch(() => ({ results: [] as any[] }))
         if (body.code === "DEVICE_NOT_APPROVED") {
           const rejected = { ...operation, status: "Rejected" as const, attempts: 5, lastAttemptAt: new Date().toISOString(), error: body.error ?? "Device not approved" }
-          updateQueueOps((op) => op.id === operation.id ? rejected : op)
+          updateQueueOps((op) => op.id === operation.id && stillOpen(op) ? rejected : op)
           dispatchOperationRejected(rejected)
           dispatchSyncChanged()
           return operation
@@ -1498,14 +1501,14 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
         const result = body.results?.find((r: { id: string }) => r.id === operation.id)
         if (result?.status === "rejected") {
           const rejected = { ...operation, status: "Rejected" as const, attempts: 5, lastAttemptAt: new Date().toISOString(), error: result.error ?? "Rejected by server" }
-          updateQueueOps((op) => op.id === operation.id ? rejected : op)
+          updateQueueOps((op) => op.id === operation.id && stillOpen(op) ? rejected : op)
           dispatchOperationRejected(rejected)
           dispatchSyncChanged()
           return operation
         }
         if (!result || result.status === "ok") {
           recordAcknowledged([operation])
-          updateQueueOps((op) => op.id === operation.id ? { ...op, status: "Synced" as const, syncedAt: new Date().toISOString() } : op)
+          updateQueueOps((op) => op.id === operation.id && stillOpen(op) ? { ...op, status: "Synced" as const, syncedAt: new Date().toISOString() } : op)
           dispatchSyncChanged()
           return operation
         }
