@@ -14,7 +14,6 @@ apps/api/public/favicon.svg
 apps/api/public/icons.svg
 apps/api/public/index.html
 apps/api/public/vendor/
-apps/api/scripts/
 apps/electron/dist-electron/
 apps/electron/assets/pg/
 mockups/
