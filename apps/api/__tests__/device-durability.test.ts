@@ -510,3 +510,84 @@ describe("supplier edit (real Postgres)", () => {
     expect(pendingOps().filter((o) => (o as { entity?: string }).entity === "supplier")).toEqual([])
   })
 })
+
+describe("PIN reset reaches hubs (real Postgres)", () => {
+  it("an incremental pull includes a staff member whose PIN was reset after their creation", async () => {
+    const CASHIER = randomUUID()
+    await prisma.staffUser.create({ data: { id: CASHIER, tenantId: TENANT, name: "Reset me", mobile: `dv-r-${TENANT.slice(0, 6)}`, pin: "$2a$12$oldhasholdhasholdhasholdhasholdhasholdhasholdhashold", role: "Cashier" } })
+    await new Promise((r) => setTimeout(r, 30))
+    const since = new Date().toISOString() // the hub's last pull happened here
+    await new Promise((r) => setTimeout(r, 30))
+    // What POST /api/admin/tenants/:id/users/:userId/reset-pin writes.
+    await prisma.staffUser.update({ where: { id: CASHIER }, data: { pin: "$2a$12$newhashnewhashnewhashnewhashnewhashnewhashnewhashnew", pinVersion: { increment: 1 }, tokenVersion: { increment: 1 } } })
+    const res = await realFetch(`${baseUrl}/api/sync/pull?since=${encodeURIComponent(since)}`, { headers: { Authorization: `Bearer ${token(TENANT)}` } })
+    expect(res.status).toBe(200)
+    const body = await res.json() as { users?: Array<{ id: string; pinVersion: number; pin: string }> }
+    const pulled = (body.users ?? []).find((u) => u.id === CASHIER)
+    expect(pulled?.pinVersion).toBe(2)
+    expect(pulled?.pin.startsWith("$2a$12$newhash")).toBe(true)
+    await prisma.staffUser.delete({ where: { id: CASHIER } })
+  })
+})
+
+describe("owner resets a PIN: what each device accepts (real API + Postgres)", () => {
+  it("online the old PIN stops and the new one works (and renews the sync token); offline only the last verified PIN works", async () => {
+    const bcrypt = (await import("bcryptjs")).default
+    const OWNER = randomUUID()
+    const SUB = `dv-${TENANT.slice(0, 8)}`
+    await prisma.staffUser.create({ data: { id: OWNER, tenantId: TENANT, name: "Store admin", mobile: `dv-o-${TENANT.slice(0, 6)}`, pin: await bcrypt.hash("4321", 12), role: "Admin" } })
+    const offline = () => { hubLost = true } // every request fails, as with no internet
+    const online = () => { hubLost = false; lose = false }
+    // pushes too: hubLost only drops non-push requests, so also drop pushes while offline
+    const realLose = lose
+
+    // 1. The till connects to the store with the admin's PIN (a real login: a token with tokenVersion).
+    const login = await (await realFetch(`${baseUrl}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: "4321", tenantSubdomain: SUB }) })).json() as { token: string }
+    expect(login.token).toBeTruthy()
+    storage.setItem("lebanonpos.auth-token", login.token)
+    let d = await restart()
+    d.sync.setStoreSubdomain(SUB)
+    await d.sync.pullFromServer(true)
+    expect((await d.security.unlockWithPin("4321"))?.id).toBe(OWNER) // verified online: kept for offline use
+
+    // 2. The owner resets the PIN (what POST /api/admin/tenants/:id/users/:userId/reset-pin writes).
+    await prisma.staffUser.update({ where: { id: OWNER }, data: { pin: await bcrypt.hash("8765", 12), pinVersion: { increment: 1 }, tokenVersion: { increment: 1 } } })
+
+    // 3a. Offline, before the device has heard of the reset: it cannot know; the last verified PIN works.
+    offline()
+    expect((await d.security.unlockWithPin("4321"))?.id).toBe(OWNER)
+    expect(await d.security.unlockWithPin("8765")).toBeNull() // never verified here
+    online()
+
+    // 3b. Online: the old PIN is refused by the server; the till's sync token was revoked by the reset.
+    expect(await d.security.unlockWithPin("4321")).toBeNull()
+    const revoked = await realFetch(`${baseUrl}/api/sync/pull`, { headers: { Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` } })
+    expect(revoked.status).toBe(401)
+    // The new PIN works, and the same user's unlock renews the device's sync token.
+    expect((await d.security.unlockWithPin("8765"))?.id).toBe(OWNER)
+    const renewed = await realFetch(`${baseUrl}/api/sync/pull`, { headers: { Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` } })
+    expect(renewed.status).toBe(200)
+
+    // 4. Offline again: the new PIN (verified online) works; the old one does not.
+    offline()
+    expect((await d.security.unlockWithPin("8765"))?.id).toBe(OWNER)
+    expect(await d.security.unlockWithPin("4321")).toBeNull()
+    online()
+
+    // 5. Another device that only pulled (never verified the new PIN) refuses the old PIN offline too.
+    d = await restart()
+    const users = JSON.parse(storage.getItem("lebanonpos.users.v1") ?? "[]") as Array<Record<string, unknown>>
+    // As a till that verified 4321 before the reset and then pulled the new version.
+    const sha = (await d.security.hashPin?.("4321")) ?? null
+    if (sha) {
+      storage.setItem("lebanonpos.users.v1", JSON.stringify(users.map((u) => (u.id === OWNER ? { ...u, pin: sha, lastVerifiedPinVersion: 1 } : u))))
+      await d.sync.pullFromServer(true)
+      offline()
+      expect(await d.security.unlockWithPin("4321")).toBeNull()
+      online()
+    }
+    void realLose
+    storage.setItem("lebanonpos.auth-token", token(TENANT))
+    storage.removeItem("lebanonpos.pin-attempts.v1")
+  })
+})

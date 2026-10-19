@@ -1,4 +1,4 @@
-import { enqueueSyncOperation, getApiUrl, getStoreSubdomain, isSuspensionGracePeriodExpired, assertCanWrite, getDeviceId, nextDocumentReference } from "./sync.service"
+import { adoptRefreshedToken, enqueueSyncOperation, getApiUrl, getStoreSubdomain, isSuspensionGracePeriodExpired, assertCanWrite, getDeviceId, nextDocumentReference } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getSettings } from "./settings.service"
@@ -510,6 +510,8 @@ export async function unlockWithPin(pin: string) {
       if (res.ok) {
         const data = await res.json()
         if (data?.user?.id) {
+          // The device's sync token may have been revoked by this PIN reset: renew it (same user only).
+          try { adoptRefreshedToken(data.token, data.user.id) } catch { /* sync renews later */ }
           apiUser = users.find((u) => u.id === data.user.id) ?? null
           const serverPinVersion = data.user.pinVersion ?? 1
           if (apiUser) {

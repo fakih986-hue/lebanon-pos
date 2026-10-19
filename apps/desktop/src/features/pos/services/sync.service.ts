@@ -303,6 +303,24 @@ function tenantIdFromToken(token: string | null): string | null {
     return typeof json?.tenantId === "string" && json.tenantId ? json.tenantId : null
   } catch { return null }
 }
+/**
+ * A PIN reset revokes the user's tokens (tokenVersion), including the token this device syncs
+ * with when it was connected with that user's PIN. When the same user then unlocks online with the
+ * new PIN, the server hands a fresh token: keep syncing with it. Only for the same user and the
+ * same store, so a cashier's unlock never changes whose token the device pushes with.
+ */
+export function adoptRefreshedToken(token: string | undefined, userId: string | undefined): boolean {
+  if (!token || !userId) return false
+  const current = getAuthToken()
+  if (!current) return false
+  const claims = (t: string) => { try { const p = t.split(".")[1]; return JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(p.length / 4) * 4, "="))) } catch { return null } }
+  const was = claims(current), now = claims(token)
+  if (!was || !now || was.userId !== userId || now.userId !== userId || !was.tenantId || was.tenantId !== now.tenantId) return false
+  if (current === token) return false
+  localStorage.setItem(AUTH_TOKEN_KEY, token)
+  flushSyncQueue().catch(() => undefined)
+  return true
+}
 export function getCurrentTenantId(): string | null {
   return tenantIdFromToken(getAuthToken()) ?? localStorage.getItem(TENANT_ID_KEY)
 }

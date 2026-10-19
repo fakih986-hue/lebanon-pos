@@ -179,6 +179,9 @@ interface SyncState {
    *  hard-deleted customer) can't wedge the cursor forever. */
   lastFailedEntitiesSignature?: string
   consecutiveIdenticalFailures?: number
+  /** 1 once a full pull has run with the staff fix (PIN resets were only pulled for new staff
+   *  before): a hub upgraded from an older release refreshes every staff member once. */
+  staffRefresh?: number
 }
 
 /** After this many consecutive pulls failing on the EXACT same set of
@@ -419,7 +422,9 @@ function fixDecimalObjects(value: unknown): unknown {
 export async function pullFromCloud(opts: { isRestore?: boolean } = {}): Promise<void> {
   const tenantId = CLOUD_TENANT!
   const state    = readState()
-  const since    = state.lastPullAt
+  // Older releases pulled staff by creation date only, so a hub may hold PINs reset since: the
+  // first pull after this upgrade is a full one (existing inventory is still not overwritten).
+  const since    = (state.staffRefresh ?? 0) >= 1 ? state.lastPullAt : undefined
   const pullStartedAt = new Date().toISOString()
 
   // POS-SYNC-AUTHORITY-1: only an explicit restore may overwrite existing hub
@@ -511,7 +516,7 @@ export async function pullFromCloud(opts: { isRestore?: boolean } = {}): Promise
   // Prefer JSON serverTime (new API), fall back to HTTP Date header (always
   // server-accurate), then pullStartedAt (hub's clock — least accurate).
   const serverTime = (data as any).serverTime ?? res.headers.get("Date") ?? pullStartedAt
-  writeState({ lastPullAt: serverTime })
+  writeState({ lastPullAt: serverTime, staffRefresh: 1 })
   _lastSuccessfulPullAt = new Date().toISOString()
   _lastPullError = undefined
   broadcastToTenant(tenantId, "sync:data-changed", {})

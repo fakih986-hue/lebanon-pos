@@ -266,16 +266,15 @@ describe("GET /api/sync/pull", () => {
     expect(res.status).toBe(400)
   })
 
-  it("uses createdFilter (createdAt only) for staff when since is provided", async () => {
+  it("sends staff created OR updated since (a PIN reset must reach hubs and tills)", async () => {
     mockAllEmpty()
     await request("GET", "/api/sync/pull?since=2026-01-01T00:00:00Z", { token })
 
     const staffWhere = vi.mocked(prisma.staffUser.findMany).mock.calls[0][0]?.where
     expect(staffWhere).toBeDefined()
     expect(staffWhere.tenantId).toBe("t1")
-    // StaffUser has no updatedAt — use createdAt filter only
-    expect(staffWhere.createdAt).toBeDefined()
-    expect(staffWhere.OR).toBeUndefined()
+    // A PIN reset, role or permission change updates the row (updatedAt), not createdAt.
+    expect(staffWhere.OR).toEqual([{ createdAt: { gte: new Date("2026-01-01T00:00:00Z") } }, { updatedAt: { gte: new Date("2026-01-01T00:00:00Z") } }])
   })
 
   it("uses updatedFilter (not createdFilter) for products with since", async () => {

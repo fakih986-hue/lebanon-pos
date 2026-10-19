@@ -586,8 +586,10 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
       orderBy: { createdAt: "desc" },
       take: sinceDate ? 1000 : undefined,
     }),
+    // Staff changed since the last pull too, not only new staff: a PIN reset, a role or permission
+    // change, a deactivation must reach hubs and tills (they verify PINs against this copy).
     prisma.staffUser.findMany({
-      where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) },
+      where: { tenantId, ...(sinceDate ? updatedFilter : {}) },
     }),
     prisma.shift.findMany({
       where: { tenantId, ...(createdFilter ? { openedAt: createdFilter } : {}) },

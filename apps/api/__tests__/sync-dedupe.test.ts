@@ -139,6 +139,45 @@ afterAll(async () => {
   await cloudPrisma.$disconnect()
 })
 
+describe("installed hub: an owner-portal PIN reset reaches it through the bridge (real Postgres)", () => {
+  it("after the next pull the hub accepts the new PIN and refuses the old one; a hub upgraded from an older release refreshes staff once", async () => {
+    const fs = await import("node:fs")
+    const path = await import("node:path")
+    const bcrypt = (await import("bcryptjs")).default
+    const stateFile = path.resolve(__dirname, "../data/sync-state.json")
+    const saved = fs.existsSync(stateFile) ? fs.readFileSync(stateFile, "utf8") : null
+    const SUB = `dd-${TENANT.slice(0, 8)}`
+    const STAFF = randomUUID()
+    const login = async (pin: string) => (await fetch(`${hubUrl}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin, tenantSubdomain: SUB }) })).status
+    try {
+      // The store admin exists on the cloud; the hub gets them through its regular pull.
+      await cloudPrisma.staffUser.create({ data: { id: STAFF, tenantId: TENANT, name: "Store admin", mobile: `dd-s-${TENANT.slice(0, 6)}`, pin: await bcrypt.hash("4321", 12), role: "Admin" } })
+      // A hub from an older release: a cursor already past this staff member's creation, no refresh marker.
+      await new Promise((r) => setTimeout(r, 30))
+      fs.mkdirSync(path.dirname(stateFile), { recursive: true })
+      fs.writeFileSync(stateFile, JSON.stringify({ lastPullAt: new Date().toISOString() }))
+      await bridge.pullFromCloud() // first pull after the upgrade: full, staff refreshed
+      expect(await login("4321")).toBe(200)
+      expect(JSON.parse(fs.readFileSync(stateFile, "utf8")).staffRefresh).toBe(1)
+
+      // The owner resets the PIN on the cloud (what the owner portal's reset-pin writes).
+      await new Promise((r) => setTimeout(r, 30))
+      await cloudPrisma.staffUser.update({ where: { id: STAFF }, data: { pin: await bcrypt.hash("8765", 12), pinVersion: { increment: 1 }, tokenVersion: { increment: 1 } } })
+      // Hub offline from the cloud: it cannot know yet; the old PIN still works on the LAN.
+      expect(await login("4321")).toBe(200)
+      // Hub back online: the next (incremental) pull brings the reset.
+      await bridge.pullFromCloud()
+      expect(await login("8765")).toBe(200)
+      expect(await login("4321")).toBe(401)
+      expect((await prisma.staffUser.findUnique({ where: { id: STAFF } }))?.pinVersion).toBe(2)
+    } finally {
+      if (saved === null) fs.rmSync(stateFile, { force: true }); else fs.writeFileSync(stateFile, saved)
+      await prisma.staffUser.deleteMany({ where: { id: STAFF } })
+      await cloudPrisma.staffUser.deleteMany({ where: { id: STAFF } })
+    }
+  })
+})
+
 describe("applied once on this server (real Postgres)", () => {
   it("a lost response: the resend is acknowledged and nothing is applied twice", async () => {
     const before = await hubStock()
