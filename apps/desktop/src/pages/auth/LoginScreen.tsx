@@ -22,6 +22,7 @@ import {
   pullFromServer,
   restoreStashedMoneyConflicts,
   rememberStore,
+  setStoreSubdomain,
   setApiUrl,
   setAuthToken,
   setConnectionMode,
@@ -245,6 +246,8 @@ export default function LoginScreen() {
       await clearStoreData()
       setConnectionMode(cMode)
       setAuthToken(data.token)
+      // The lock screen names this store when it checks a PIN with the server (multi-store cloud).
+      setStoreSubdomain(cSubdomain.trim())
       rememberStore({
         name: data.user?.tenantName ?? cSubdomain.trim() ?? "Store",
         apiUrl: url,

@@ -1,4 +1,4 @@
-import { enqueueSyncOperation, getApiUrl, isSuspensionGracePeriodExpired, assertCanWrite, getDeviceId, nextDocumentReference } from "./sync.service"
+import { enqueueSyncOperation, getApiUrl, getStoreSubdomain, isSuspensionGracePeriodExpired, assertCanWrite, getDeviceId, nextDocumentReference } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getSettings } from "./settings.service"
@@ -443,19 +443,6 @@ export function isSessionUnlocked() {
   return getUsers().some((user) => user.id === session.userId && user.active)
 }
 
-// The store subdomain, if this device is bound to one. Lets the login call name
-// its tenant so the multi-tenant cloud can resolve the right store's users.
-function getStoreSubdomain(): string | undefined {
-  try {
-    const raw = localStorage.getItem("lebanonpos.settings.v1")
-    if (!raw) return undefined
-    const settings = JSON.parse(raw)
-    const sd = Array.isArray(settings) ? settings[0]?.subdomain : settings?.subdomain
-    return typeof sd === "string" && sd.trim() ? sd.trim() : undefined
-  } catch {
-    return undefined
-  }
-}
 
 export async function unlockWithPin(pin: string) {
   if (!canUseStorage()) {

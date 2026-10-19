@@ -446,6 +446,37 @@ export function nextDocumentReference(prefix: string, digits: number, existing: 
 
 // ── Multi-store support ──────────────────────────────────────────────
 const KNOWN_STORES_KEY = "lebanonpos.known-stores.v1"
+const STORE_SUBDOMAIN_KEY = "lebanonpos.store-subdomain.v1"
+
+/** The store (tenant subdomain) this device signed in to; set by Connect. */
+export function setStoreSubdomain(subdomain: string) {
+  try {
+    const sd = subdomain.trim().toLowerCase()
+    if (sd) localStorage.setItem(STORE_SUBDOMAIN_KEY, sd); else localStorage.removeItem(STORE_SUBDOMAIN_KEY)
+  } catch { /* storage unavailable: the known-stores fallback below still applies */ }
+}
+
+/**
+ * The store subdomain to name when this device logs in. A multi-store server (the cloud) cannot
+ * tell whose staff a bare PIN belongs to and answers 400, so the lock screen must name the store.
+ * Order: what Connect recorded; the store settings (if they carry it); the one known store for
+ * this server URL (devices connected before the subdomain was recorded).
+ */
+export function getStoreSubdomain(): string | undefined {
+  try {
+    const own = localStorage.getItem(STORE_SUBDOMAIN_KEY)?.trim()
+    if (own) return own
+    const raw = localStorage.getItem("lebanonpos.settings.v1")
+    const settings = raw ? JSON.parse(raw) : null
+    const fromSettings = Array.isArray(settings) ? settings[0]?.subdomain : settings?.subdomain
+    if (typeof fromSettings === "string" && fromSettings.trim()) return fromSettings.trim()
+    const url = (getApiUrl() ?? "").replace(/\/+$/, "").toLowerCase()
+    const forServer = new Set(getKnownStores().filter((s) => s.apiUrl.replace(/\/+$/, "").toLowerCase() === url && s.subdomain.trim()).map((s) => s.subdomain.trim().toLowerCase()))
+    return forServer.size === 1 ? [...forServer][0] : undefined
+  } catch {
+    return undefined
+  }
+}
 
 export type KnownStore = {
   name: string
