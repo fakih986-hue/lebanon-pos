@@ -49,3 +49,28 @@ Installer `Titan-POS-Setup-1.0.51.exe`, SHA-256 `225D9349505B7D5043A76302DA1C4A0
 Found during acceptance (not blocking):
 - After the hub stops, the till header keeps showing "Hub connected" until its next health check. Offline unlock still works.
 - Hard-killing a hub can orphan its embedded Postgres, which blocks the next start ("pre-existing shared memory block"). This was already the case before 1.0.51.
+
+## Release checks (2026-10-29, commit `d3899d4`)
+
+**Historical stock policy is established by the server.** Each product carries a server-owned `stockPolicyHistory` (migration `20261029140000_stock_policy_history`): one entry per policy version, written only by the server when a product update changes the policy (client-sent versions and history are discarded). A sale line names the version it was sold under:
+
+| Line | Policy applied | Result |
+|---|---|---|
+| current version | today's | claim must match, else STOCK_POLICY_MISMATCH (not applied) |
+| older version in the history | that version's | claim must match, else refused; flagged `changed` if ≠ today's |
+| version newer than the server's | — | refused |
+| no version (older till), policy unchanged since the sale | today's | no conflict |
+| no version and changed since, or an older version missing from the history | **today's** (never the claim) | flagged `unknown` + audit event |
+
+Stock effects follow the applied policy: tracked → stock decremented, lots consumed, refund/void restocks; untracked → none. Tested tracked → untracked → tracked (v1/v2/v3) in `cafe-device.test.ts`; negative control: letting the `unknown` path use the claim makes the test fail.
+
+**Mixed versions (live):**
+- New till UI → 1.0.50 hub: the old hub strips the policy; drinks arrive as tracked with stock 0, so the tile is disabled ("Espresso is out of stock") and every pull resets them. With the drink cached as made-to-order and the hub unreachable, Confirm and pay is refused: "This hub (or cloud) has not confirmed it can record made-to-order items. Nothing was charged." No sale stored; cart kept.
+- 1.0.50 till UI → new cloud with untracked drinks: drinks arrive tracked with stock 0; tile disabled, and the scan field also refuses ("Out of stock").
+- Store-wide gate: cloud first; made-to-order sales need the till's own server (hub, or cloud for direct tills) and the till on 1.0.51. Residual gap: a 1.0.51 hub syncing to an older cloud (prevented only by deploy order). Residual edge: a hub and the cloud bump a product's version independently; concurrent conflicting policy edits on two servers could make a hub-accepted line contradict the cloud's history.
+
+**Installer test isolation:** `apps/electron/scripts/it-hub.mjs` is the only way to start/restart a test hub. It refuses a non-loopback cloud and a non-scratch user-data dir, verifies the freshly written `.env` names the loopback cloud, blocks Chromium-level DNS, stops the hub on any non-loopback TCP connection from its process tree (logged to `<userData>/it-hub-network.log`), and stops cleanly (no orphaned embedded Postgres). Background: the hub rewrites `.env` with `LBPOS_CLOUD_URL` (default production) on every launch, and keeps cloud credentials in `<install dir>\data\cloud-config.json`. The watchdog detects and stops; it is not a firewall (a per-program outbound firewall rule needs an administrator).
+
+**Test status:** the S4 staff-attribution test is an expected-failure probe (`it.fails`, known defect, fix planned for Sprint 2). Vitest reports it as "1 expected fail".
+
+**Rebuilt candidate at `d3899d4`** (unpacked build, started only through `it-hub.mjs`): `Titan-POS-Setup-1.0.51.exe` SHA-256 `21DC64343F1ECE190CD37D41DBFB716AE8D5A647C97799CB339E64DEFA97303D`. Fresh store: scenario main phase 25/25, then restart, after-restart 3/3. Upgrade: the previous candidate's hub database applied `20261029140000_stock_policy_history` at startup (products keep version 1, empty history). Every launcher run logged 0 outbound violations. The launcher's first stop of the 1.0.50 hub left an orphaned embedded Postgres holding port 5434 (Windows returned no executable path for it); the launcher now matches by command line, and later stops left the ports free.

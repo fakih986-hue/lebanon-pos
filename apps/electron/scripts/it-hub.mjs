@@ -41,7 +41,7 @@ const log = (m) => { const line = `${new Date().toISOString()} ${m}`; console.lo
 
 const ps = (script) => execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { encoding: "utf8" })
 function tree(rootPid) {
-  const rows = JSON.parse(ps("Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,ExecutablePath | ConvertTo-Json -Compress") || "[]")
+  const rows = JSON.parse(ps("Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine | ConvertTo-Json -Compress") || "[]")
   const pids = new Set([rootPid])
   for (let grew = true; grew;) { grew = false; for (const r of rows) if (pids.has(r.ParentProcessId) && !pids.has(r.ProcessId)) { pids.add(r.ProcessId); grew = true } }
   return { pids, rows }
@@ -52,9 +52,11 @@ function stopHub(state, why) {
   for (let i = 0; i < 20 && alive(state.pid); i++) execFileSync("powershell.exe", ["-NoProfile", "-Command", "Start-Sleep -Milliseconds 500"])
   if (alive(state.pid)) try { execFileSync("taskkill", ["/PID", String(state.pid), "/T", "/F"], { stdio: "ignore" }) } catch { /* gone */ }
   // orphaned embedded Postgres of this build
+  // (ExecutablePath can be empty for these processes; the command line always names the binary)
   const pgDir = path.join(path.dirname(state.exe), "resources", "pg").toLowerCase()
+  const norm = (s) => String(s ?? "").replace(/\//g, "\\").toLowerCase()
   const { rows } = tree(-1)
-  for (const r of rows) if (r.ExecutablePath && r.ExecutablePath.toLowerCase().startsWith(pgDir)) {
+  for (const r of rows) if (norm(r.ExecutablePath).startsWith(pgDir) || norm(r.CommandLine).replace(/^"/, "").startsWith(pgDir)) {
     try { execFileSync("taskkill", ["/PID", String(r.ProcessId), "/F"], { stdio: "ignore" }); log(`killed orphaned embedded postgres ${r.ProcessId}`) } catch { /* gone */ }
   }
 }
