@@ -21,6 +21,11 @@ No mix of versions takes payment for a made-to-order item and rejects the sale a
 
 - A till the owner retired cannot take payment when it comes back on an older version (connected to a hub): checkout is refused before payment with "update this till, or ask the owner to re-admit it". Updating the till, or re-admitting it (manager, with a note; audited), restores it. Sales an older till completed offline are recorded as sold from stock, never left waiting. Tills connected directly to the cloud cannot be stopped this way: update them first.
 
+## Before enabling café stock settings in a store
+- Update every till that connects **directly to the cloud** (not through a hub) first. Find them with the read-only report `apps/api/scripts/report-direct-tills.mjs` — do not rely on these notes alone.
+- Retiring a till never erases sales it already completed; it only stops an older till's new checkouts.
+- Lines marked "legacy" came from an older till, which always sells from stock. That says how the till handled the sale, not what the product's stock setting was at the time.
+
 ## Known, not in this release
 - Stock-decision approval checks the manager named by the till (they must exist, be active and have Manage inventory) but not proof that this manager made the decision. Every decision is in the audit log. Planned for Sprint 2.
 - Staff attribution (S4): the server records the cashier the till names. Tracked by an expected-failure test probe; fix planned for Sprint 2.
