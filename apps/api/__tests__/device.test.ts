@@ -24,7 +24,9 @@ vi.mock("../src/lib/prisma", () => {
   })
 
   const mock = {
-    staffUser: model(),
+    // SPRINT-2: the push refuses accounts that are not active staff of the token's store; the
+    // tokens in this file are for user u1 of store t1 (an active admin unless a test says otherwise).
+    staffUser: { ...model(), findUnique: vi.fn(async (a: any) => (a?.where?.id === "u1" ? { role: "Admin", permissions: [], tenantId: "t1", active: true } : null)) },
     product: { ...model(), updateMany: vi.fn() },
     sale: { ...model() },
     saleItem: { ...model(), createMany: vi.fn() },

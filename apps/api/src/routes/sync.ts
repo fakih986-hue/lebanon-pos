@@ -234,8 +234,32 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
     return
   }
 
+
+  // ── Permission enforcement (POS-PERMISSIONS-1 phase 3) ──────────────
+  // Load the acting staff user's effective permissions once. When there is no
+  // matching staff row (cloud-bridge / system relays), enforcement is skipped —
+  // those ops were already authorized on the originating device. Role fallback
+  // (via effectivePermissions) keeps pre-1.0.44 clients and empty columns working.
+  // SPRINT-2: only the store-level relays may skip it. Any other account must be an ACTIVE staff
+  // member of THIS store; a token of another kind (an ordering-app customer, an unknown id) is
+  // refused outright instead of running with no permission checks at all.
+  let actorPermissions: string[] | null = null
+  if (req.auth!.userId !== "cloud-bridge" && req.auth!.userId !== "__admin__") {
+    let actor: { role: string; permissions: unknown; tenantId: string; active: boolean } | null = null
+    try {
+      actor = typeof req.auth!.userId === "string" && req.auth!.userId
+        ? await prisma.staffUser.findUnique({ where: { id: req.auth!.userId }, select: { role: true, permissions: true, tenantId: true, active: true } }) as any
+        : null
+    } catch { actor = null }
+    if (!actor || actor.tenantId !== tenantId || actor.active === false) {
+      json(res, { error: "This account cannot sync store operations.", code: "NOT_STAFF" }, 401)
+      return
+    }
+    actorPermissions = effectivePermissions(actor.permissions as any, actor.role)
+  }
+
   // SPRINT-1 upgrade gate: remember which clients trade, and with which sync schema. Recorded once
-  // the device is approved (an unapproved device cannot close the gate); never blocks the push.
+  // the device is approved and the account is known (an unapproved device cannot close the gate); never blocks the push.
   const pushSchema = clientSyncSchema(req as any)
   let retiredClient = false
   try {
@@ -250,19 +274,6 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
     retiredClient = (await recordSyncClient(prisma, tenantId, key, label, schema)).retired
   } catch (e) { console.error("[sync] could not record the sync client:", e) }
 
-  // ── Permission enforcement (POS-PERMISSIONS-1 phase 3) ──────────────
-  // Load the acting staff user's effective permissions once. When there is no
-  // matching staff row (cloud-bridge / system relays), enforcement is skipped —
-  // those ops were already authorized on the originating device. Role fallback
-  // (via effectivePermissions) keeps pre-1.0.44 clients and empty columns working.
-  let actorPermissions: string[] | null = null
-  try {
-    const actor = await prisma.staffUser.findUnique({
-      where: { id: req.auth!.userId },
-      select: { role: true, permissions: true },
-    })
-    if (actor) actorPermissions = effectivePermissions(actor.permissions, actor.role)
-  } catch { actorPermissions = null }
 
   // Returns a refusal message, or null when the op may run. Two checks:
   //  1. the pushing account (actorPermissions, when it is a staff user);

@@ -82,6 +82,12 @@ export const requireAuth: Handler = async (req, res, next) => {
   try {
     const token = header.slice(7)
     const payload = jwt.verify(token, getJwtSecret()) as AuthPayload
+    // SPRINT-2: ordering-app customer tokens are signed with the same secret but are not staff
+    // credentials; they have their own verifier (requireCustomerAuth) and are refused here.
+    if ((payload as { customerId?: unknown }).customerId !== undefined || (payload as { role?: unknown }).role === "Customer") {
+      json(res, { error: "Invalid or expired token" }, 401)
+      return
+    }
     // Check tokenVersion for revocation support
     if (payload.tokenVersion) {
       const prisma = (await import("../lib/prisma.js")).default
