@@ -79,7 +79,9 @@ app.use("/api", deviceRoutes)
 app.get("/api/health", async (_req: IncomingMessage, res: ServerResponse) => {
   try {
     await prisma.$queryRaw`SELECT 1`
-    json(res, { status: "ok", timestamp: new Date().toISOString() })
+    // syncSchema: what this server understands (3 = made-to-order / untracked products, SPRINT-1).
+    // Tills refuse made-to-order sales before payment when their server reports less (or nothing).
+    json(res, { status: "ok", timestamp: new Date().toISOString(), syncSchema: 3 })
   } catch {
     json(res, { status: "error", timestamp: new Date().toISOString() }, 503)
   }

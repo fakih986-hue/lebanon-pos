@@ -11,7 +11,8 @@ const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 import { decrementProductStock } from "../lib/inventory.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
-import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
+import { json, requireAuth, type AuthRequest, serializeDecimals } from "../middleware/auth.js"
+import { can } from "../middleware/permission.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
 import { broadcastToTenant } from "../ws/index.js"
 import {
@@ -47,9 +48,9 @@ function clientSyncSchema(req: { headers?: Record<string, unknown> }): number {
  */
 export function shapeProductsForSchema(rows: any[], schema: number): any[] {
   if (schema >= 3) return rows
-  return rows.map(({ stockPolicy: _p, ...product }: any) => product)
+  return rows.map(({ stockPolicy: _p, stockPolicyVersion: _v, stockPolicyChangedAt: _c, ...product }: any) => product)
 }
-const withoutLinePolicy = (sale: any) => Array.isArray(sale?.items) ? { ...sale, items: sale.items.map(({ stockPolicy: _p, ...item }: any) => item) } : sale
+const withoutLinePolicy = (sale: any) => Array.isArray(sale?.items) ? { ...sale, items: sale.items.map(({ stockPolicy: _p, stockPolicyConflict: _c, ...item }: any) => item) } : sale
 export function shapeSalesForSchema(rows: any[], schema: number): any[] {
   if (schema >= 3) return rows
   if (schema >= 2) return rows.map(withoutLinePolicy)
@@ -396,6 +397,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         errorMessage.includes("PIN is already in use by") ||
         errorMessage.startsWith("ONE_ADMIN:") ||
         errorMessage.startsWith("LAST_ADMIN:") ||
+        err instanceof StockPolicyMismatchError ||
         err instanceof StaleStaffError
       const opStatus = isRejected ? "Rejected" : "Failed"
 
@@ -564,6 +566,19 @@ router.get("/sale-committed/:saleId", requireCloudOrJwtAuth, async (req: AuthReq
 // for its LAN tills. Staff sessions (tills, back office, cashiers) never do. A till verifies
 // offline with the verifier it writes itself after a successful online login (security.service
 // unlockWithPin), so withholding server hashes does not change what works offline.
+/** SPRINT-0: cost data a caller without reports.cost does not receive through sync (selling prices,
+ *  including the wholesale price the till needs, stay). */
+const SYNC_COST_KEYS = new Set(["cost", "profit", "margin", "marginPct", "totalCost", "unitCost", "fallbackUnitCost", "valueImpact", "totalValueImpact", "costTotal"])
+export function withoutCost<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(withoutCost) as T
+  if (value && typeof value === "object" && !(value instanceof Date) && !("toNumber" in (value as object))) {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) if (!SYNC_COST_KEYS.has(k)) out[k] = withoutCost(v)
+    return out as T
+  }
+  return value
+}
+
 export function redactVerifiers<T>(rows: T[], req: AuthRequest): T[] {
   if (req.auth?.userId === "cloud-bridge") return rows
   return rows.map((r) => {
@@ -707,7 +722,8 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
     }),
   ])
 
-  json(res, {
+  const showCost = await can(req, "reports.cost")
+  const body = {
     serverTime: new Date().toISOString(),
     products: shapeProductsForSchema(products, clientSyncSchema(req as any)), sales: shapeSalesForSchema(sales, clientSyncSchema(req as any)), refunds: shapeRefundsForSchema(refunds, clientSyncSchema(req as any)), customers: redactVerifiers(customers, req), debtSales: shapeDebtSalesForSchema(debtSales, clientSyncSchema(req as any)), debtPayments,
     suppliers, purchaseOrders, supplierPayments, users: redactVerifiers(users, req), shifts,
@@ -719,7 +735,9 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
       saleNumber: (op.payload as any)?.saleNumber,
       deletedAt: op.createdAt,
     })),
-  })
+  }
+  // A caller without cost visibility gets no cost data and no purchase records (purchase prices).
+  json(res, showCost ? body : { ...(withoutCost(serializeDecimals(body)) as Record<string, unknown>), purchaseOrders: [], supplierPayments: [] })
   } catch (err) {
     console.error("Sync pull error:", err)
     json(res, { error: "Failed to pull sync data" }, 500)
@@ -844,14 +862,16 @@ router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest,
     if (hasMore) items.pop()
     const nextCursor = hasMore ? items[items.length - 1]?.id : null
 
+    const showCostFull = await can(req, "reports.cost")
+    const purchaseEntity = entity === "purchase-orders" || entity === "supplier-payments"
     json(res, {
       entity,
-      items: entity === "sales" ? shapeSalesForSchema(items, clientSyncSchema(req as any))
+      items: !showCostFull && purchaseEntity ? [] : (showCostFull ? (x: any) => x : (x: any) => withoutCost(serializeDecimals(x)))(entity === "sales" ? shapeSalesForSchema(items, clientSyncSchema(req as any))
         : entity === "products" ? shapeProductsForSchema(items, clientSyncSchema(req as any))
         : entity === "refunds" ? shapeRefundsForSchema(items, clientSyncSchema(req as any))
         : entity === "debt-sales" ? shapeDebtSalesForSchema(items, clientSyncSchema(req as any))
         : entity === "users" || entity === "customers" ? redactVerifiers(items, req)
-        : items,
+        : items),
       hasMore,
       nextCursor: nextCursor ?? null,
     })
@@ -1046,6 +1066,15 @@ async function processOperation(
           // is never persisted (and never trusted). `stock` is always stripped.
           const { id, syncId, tenantId: _t, _stockUpdate: _defunct, stock: _stock, ...patch } = { ...item } as Record<string, unknown>
           normalizeProductFields(patch)
+          if (typeof patch.stockPolicy === "string") {
+            const cur = syncId
+              ? await db.product.findFirst({ where: { tenantId, syncId: syncId as string }, select: { stockPolicy: true } })
+              : id !== undefined ? await db.product.findFirst({ where: { tenantId, id: id as number }, select: { stockPolicy: true } }) : null
+            if (cur && cur.stockPolicy !== patch.stockPolicy) {
+              patch.stockPolicyVersion = { increment: 1 }
+              patch.stockPolicyChangedAt = new Date()
+            }
+          }
           if (_stock !== undefined) {
             console.warn(`[sync] product.update: ignored a 'stock' field (server-side guard) for product ${syncId ?? id ?? patch.barcode ?? "?"} — stock only changes via approved stock operations.`)
           }
@@ -1225,7 +1254,8 @@ async function processOperation(
           const productId = await resolveProductId(item)
           // SPRINT-1: the line's stock policy is the SERVER's product policy at sale time (a client
           // cannot declare a packaged item untracked to skip stock control).
-          const product = productId ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { stockPolicy: true } }) : null
+          const product = productId ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { name: true, stockPolicy: true, stockPolicyVersion: true, stockPolicyChangedAt: true, cost: true } }) : null
+          const resolved = resolveLinePolicy(product, item, data.createdAt)
           return {
             productId,
             productName: item.name,
@@ -1233,10 +1263,21 @@ async function processOperation(
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             total: item.total,
-            cost: item.cost ?? 0,
-            stockPolicy: product?.stockPolicy === "untracked" ? "untracked" : "tracked",
+            // A till without cost visibility sends no cost: the server's product cost is used.
+            cost: Number.isFinite(Number(item.cost)) && item.cost !== null && item.cost !== "" ? item.cost : Number(product?.cost ?? 0),
+            costFromServer: !(Number.isFinite(Number(item.cost)) && item.cost !== null && item.cost !== ""),
+            stockPolicy: resolved.policy,
+            stockPolicyConflict: resolved.conflict,
           }
         }))
+        // Lines whose cost the till did not send: the sale's cost and profit come from the server.
+        if (prismaItems.some((i: any) => i.costFromServer)) {
+          const cost = prismaItems.reduce((sum: number, i: any) => sum + Number(i.cost) * Number(i.quantity), 0)
+          data.cost = cost
+          data.profit = Number(data.total ?? 0) - cost
+        }
+        for (const i of prismaItems as any[]) delete i.costFromServer
+        const policyConflicts = (prismaItems as any[]).filter((i) => i.stockPolicyConflict)
         const { saleId: _s, ...prismaTender } = data.tender ?? {}
         const hasTender = Object.keys(prismaTender).length > 0
         const { items: _i, tender: _t, ...saleData } = data
@@ -1347,6 +1388,16 @@ async function processOperation(
           if (lineId) seenLineIds.add(lineId)
           return { ...it, lineId, lineIndex: i, batchAllocations: appliedByLine[i] }
         })
+        for (const c of policyConflicts) {
+          await db.auditEvent.create({ data: {
+            tenantId, action: "sale.stock_policy_conflict", entity: "sale",
+            summary: c.stockPolicyConflict === "changed"
+              ? `${saleData.saleNumber ?? saleData.id}: "${c.productName}" was sold as ${c.stockPolicy}, but its stock setting changed before the sale synced. Applied the setting it was sold under; please check its stock.`
+              : `${saleData.saleNumber ?? saleData.id}: the stock setting "${c.productName}" was sold under is unknown (older till, setting changed since). Applied today's setting (${c.stockPolicy}); please check its stock.`,
+            metadata: { saleId: saleData.id, productId: c.productId, appliedPolicy: c.stockPolicy, conflict: c.stockPolicyConflict },
+            userId: "__system__", userName: "Sync", userRole: "Admin",
+          } })
+        }
         await db.sale.create({
           data: {
             ...saleData,
@@ -2145,9 +2196,47 @@ export async function applyStaffWrite(db: typeof prisma, tenantId: string, actio
  * none; '' would collide on the unique (tenantId, barcode) index). Identity is syncId.
  * stockPolicy accepts only "tracked" | "untracked" (anything else is dropped).
  */
+/**
+ * SPRINT-1: the stock policy a sale line was SOLD under. A till sends the policy and the product's
+ * policy version it knew. Rules:
+ *  - same version as the server: the policy must match (else the line is refused as inconsistent);
+ *  - older version: the policy changed after the till's view, so the till's (sale-time) policy
+ *    applies; if it differs from today's, the line is flagged "changed" (visible conflict);
+ *  - no version (older till): today's policy if the product's policy has not changed since the
+ *    sale; otherwise the sale-time policy cannot be established: today's policy applies, flagged
+ *    "unknown" (visible conflict). An unknown product is tracked (stock enforcement as before).
+ */
+export class StockPolicyMismatchError extends Error {
+  constructor(name: string) { super(`STOCK_POLICY_MISMATCH: "${name}" was sent with a stock setting that does not match its version; the sale was not applied.`); this.name = "StockPolicyMismatchError" }
+}
+function resolveLinePolicy(
+  product: { name: string; stockPolicy: string; stockPolicyVersion: number; stockPolicyChangedAt: Date | null } | null,
+  item: { stockPolicy?: unknown; stockPolicyVersion?: unknown },
+  saleCreatedAt: unknown,
+): { policy: "tracked" | "untracked"; conflict: "changed" | "unknown" | null } {
+  if (!product) return { policy: "tracked", conflict: null }
+  const today = product.stockPolicy === "untracked" ? "untracked" : "tracked"
+  const claimed = item.stockPolicy === "untracked" || item.stockPolicy === "tracked" ? item.stockPolicy : null
+  const v = Number(item.stockPolicyVersion)
+  if (!Number.isInteger(v) || v < 1) {
+    const soldAt = typeof saleCreatedAt === "string" ? new Date(saleCreatedAt) : null
+    const changedSince = !!product.stockPolicyChangedAt && (!soldAt || isNaN(soldAt.getTime()) || soldAt < product.stockPolicyChangedAt)
+    return { policy: today, conflict: changedSince ? "unknown" : null }
+  }
+  if (v === product.stockPolicyVersion) {
+    if (claimed && claimed !== today) throw new StockPolicyMismatchError(product.name)
+    return { policy: today, conflict: null }
+  }
+  if (v < product.stockPolicyVersion && claimed) return { policy: claimed, conflict: claimed !== today ? "changed" : null }
+  return { policy: today, conflict: "unknown" }
+}
+
 function normalizeProductFields(p: Record<string, unknown>) {
   if ("barcode" in p && (p.barcode == null || (typeof p.barcode === "string" && p.barcode.trim() === ""))) p.barcode = null
   if ("stockPolicy" in p && p.stockPolicy !== "tracked" && p.stockPolicy !== "untracked") delete p.stockPolicy
+  // The policy version and change time are server-owned (bumped below when the policy changes).
+  delete p.stockPolicyVersion
+  delete p.stockPolicyChangedAt
   if (Array.isArray(p.barcodeAliases)) p.barcodeAliases = (p.barcodeAliases as unknown[]).map((b) => String(b).trim()).filter(Boolean)
 }
 

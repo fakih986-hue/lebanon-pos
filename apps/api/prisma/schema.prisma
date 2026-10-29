@@ -197,6 +197,9 @@ model Product {
   barcodeAliases  String[]
   /// SPRINT-1: "tracked" (stock + lots enforced) | "untracked" (made to order: no stock, no lots)
   stockPolicy     String   @default("tracked")
+  /// SPRINT-1: +1 on every stock-policy change (server side); sale lines carry the version they were sold under
+  stockPolicyVersion   Int       @default(1)
+  stockPolicyChangedAt DateTime?
   category        String
   accent          String    @default("emerald")
   favorite        Boolean   @default(false)
@@ -279,6 +282,9 @@ model SaleItem {
   @@index([productId])
   /// SPRINT-1: the product's stock policy when sold; refunds/voids restore stock only for "tracked" lines
   stockPolicy      String   @default("tracked")
+  /// SPRINT-1: set when the sale-time policy differed from (or could not be established against) the product's
+  /// policy at sync time: "changed" | "unknown". Visible conflict for managers (audit sale.stock_policy_conflict).
+  stockPolicyConflict String?
 }
 
 model SaleTender {

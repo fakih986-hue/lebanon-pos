@@ -26,6 +26,8 @@ export type Product = {
   barcodeAliases?: string[]
   /** SPRINT-1: "tracked" (default: stock + lots) or "untracked" (made to order: no stock, no lots). */
   stockPolicy?: "tracked" | "untracked"
+  /** Server-owned: +1 on every stock-policy change; a sale line carries the version it was sold under. */
+  stockPolicyVersion?: number
   category: string
   accent: ProductAccent
   favorite?: boolean

@@ -55,7 +55,7 @@ import {
 import { recordAuditEvent, userCan, getActiveShift, subscribeSecurity } from "../services/security.service"
 import { showToast } from "../services/toast.service"
 import { consumeInventoryBatches } from "../services/inventoryBatch.service"
-import { getConnectionMode, pullFromServer, nextDocumentReference, getSyncStatus } from "../services/sync.service"
+import { getConnectionMode, pullFromServer, nextDocumentReference, getSyncStatus, serverSupportsMadeToOrder } from "../services/sync.service"
 import { createId } from "../lib/storage"
 
 import type { Product } from "../types/product"
@@ -212,6 +212,22 @@ export default function POSPage() {
       localStorage.setItem("lebanonpos.recent-sales.v1", JSON.stringify(recentSales))
     }
   }, [recentSales])
+
+  // SPRINT-1: a pull can replace a product's local numeric id with the server's (same syncId).
+  // Cart lines follow it, so the line keeps its stock, lots and identity.
+  useEffect(() => {
+    setItems((current) => {
+      let changed = false
+      const next = current.map((item) => {
+        if (products.some((p) => p.id === item.id) || !item.syncId) return item
+        const same = products.find((p) => p.syncId === item.syncId)
+        if (!same) return item
+        changed = true
+        return { ...item, id: same.id }
+      })
+      return changed ? next : current
+    })
+  }, [products])
 
   // --- Computed values ---
   const departmentSummaries = useMemo(() => {
@@ -707,6 +723,14 @@ export default function POSPage() {
     // success. For CONNECT_TO_HUB it's the LAN hub.
     const writeThrough = (mode === "CONNECT_TO_HUB" || mode === "STORE_HUB") && stockDecrementing
 
+    // SPRINT-1: an older hub or cloud cannot record made-to-order lines (it would reject the sale
+    // after payment). Refuse here, before any money is taken.
+    if (items.some((item) => item.stockPolicy === "untracked") && !(await serverSupportsMadeToOrder())) {
+      playErrorBuzz()
+      setScannerStatus(t("pos.err.server_too_old"))
+      showToast(t("pos.err.server_too_old"), "error")
+      return
+    }
     const saleNumber = nextDocumentReference("S", 6, () => getSales().map((s) => s.saleNumber))
     const saleId = createId() // client-generated UUID → hub commit is idempotent
 
@@ -731,8 +755,10 @@ export default function POSPage() {
         const allocatedCost = allocations.reduce((sum, a) => sum + a.unitCost * a.quantity, 0)
         const unitCost = allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost
         return {
-          id: item.id, productSyncId: item.syncId, name: item.name, barcode: item.barcode ?? "", cost: unitCost,
+          // No cost visibility on this till (SPRINT-0): no cost is sent; the server uses the product's.
+          id: item.id, productSyncId: item.syncId, name: item.name, barcode: item.barcode ?? "", cost: Number.isFinite(unitCost) ? unitCost : (undefined as unknown as number),
           stockPolicy: untrackedLine ? "untracked" as const : "tracked" as const,
+          stockPolicyVersion: item.stockPolicyVersion ?? 1,
           quantity: item.quantity, unitPrice: item.price,
           total: item.price * item.quantity, batchAllocations: allocations,
         }

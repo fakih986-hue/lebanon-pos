@@ -320,3 +320,87 @@ describe("J. tenant isolation", () => {
     expect((await fetch(`${base}/api/delivery/public/image/${b.id}?tenantId=${B}`)).status).toBe(200)
   })
 })
+
+describe("SPRINT-0/1 acceptance: permitted price rules still work, unauthorized overrides are refused", () => {
+  const setPerms = (id: string, permissions: string[]) => prisma.staffUser.update({ where: { id }, data: { permissions } })
+  const CASHIER_PERMS = ["sales.checkout", "sales.reprint", "inventory.view"]
+
+  it("a sale-level discount needs sales.discount: refused without it, accepted with it", async () => {
+    const pepsi = (await productBy(A, "Pepsi 330ml"))!
+    const discounted = () => salePayload([{ productId: pepsi.id, name: pepsi.name, qty: 2, price: Number(pepsi.price), barcode: pepsi.barcode }], { discountTotal: 0.5, total: 1.5 })
+    const denied = await push(cashierA, "sale", "create", discounted())
+    expect(denied.status).not.toBe("ok")
+    expect(denied.error).toMatch(/permission/)
+    await setPerms(CASHIER_A, [...CASHIER_PERMS, "sales.discount"])
+    try {
+      expect((await push(cashierA, "sale", "create", discounted())).status).toBe("ok")
+    } finally { await setPerms(CASHIER_A, CASHIER_PERMS) }
+  })
+
+  it("variants: a child sells at its own price; below it needs an override", async () => {
+    const parent = await prisma.product.create({ data: { tenantId: A, name: "Latte", price: 0, cost: 0, stock: 0, category: "Coffee", isParent: true, stockPolicy: "untracked", syncId: randomUUID() } as any })
+    const large = await prisma.product.create({ data: { tenantId: A, name: "Latte - Large", price: 3, cost: 0.9, stock: 0, category: "Coffee", parentId: parent.id, variantName: "Large", stockPolicy: "untracked", syncId: randomUUID() } as any })
+    expect((await push(cashierA, "sale", "create", salePayload([{ productId: large.id, name: large.name, qty: 1, price: 3 }]))).status).toBe("ok")
+    const low = await push(cashierA, "sale", "create", salePayload([{ productId: large.id, name: large.name, qty: 1, price: 2.5 }]))
+    expect([low.status, low.error?.slice(0, 15)]).toEqual(["rejected", "PRICE_OVERRIDE:"])
+  })
+
+  it("wholesale price: allowed for a sale to a named customer, refused without one; a higher price is fine", async () => {
+    const water = await prisma.product.create({ data: { tenantId: A, name: "Water 500ml", price: 1, wholesalePrice: 0.8, cost: 0.3, stock: 50, barcode: `W-${A.slice(0, 6)}`, category: "Drinks", syncId: randomUUID() } as any })
+    const cust = await prisma.customer.create({ data: { tenantId: A, name: "Office canteen", mobile: `ca-w-${A.slice(0, 6)}`, creditLimit: 100 } })
+    const line = [{ productId: water.id, name: water.name, qty: 1, price: 0.8, barcode: water.barcode }]
+    expect((await push(cashierA, "sale", "create", salePayload(line, { customerId: cust.id, customerName: cust.name }))).status).toBe("ok")
+    expect((await push(cashierA, "sale", "create", salePayload(line))).status).toBe("rejected")
+    expect((await push(cashierA, "sale", "create", salePayload([{ ...line[0], price: 1.25 }]))).status).toBe("ok")
+  })
+
+  it("a sale without line costs (a till without cost visibility): the server fills cost and profit from the product", async () => {
+    const water = (await productBy(A, "Water 500ml"))!
+    const p = salePayload([{ productId: water.id, name: water.name, qty: 2, price: 1, barcode: water.barcode }])
+    for (const it of p.items as Array<Record<string, unknown>>) delete it.cost
+    delete (p as Record<string, unknown>).cost; delete (p as Record<string, unknown>).profit
+    expect((await push(cashierA, "sale", "create", p)).status).toBe("ok")
+    const sale = (await prisma.sale.findUnique({ where: { id: p.id }, include: { items: true } }))!
+    expect([Number(sale.items[0].cost), Number(sale.cost), Number(sale.profit)]).toEqual([0.3, 0.6, 1.4])
+  })
+})
+
+describe("SPRINT-0 acceptance: cost/profit filtering covers sync, exports and nested data", () => {
+  const COSTY = /"(cost|profit|margin|marginPct|unitCost|valueImpact|totalCost)":/
+  it("a cashier's sync pull has no cost anywhere (products, lots, sale and refund lines) and no purchase records", async () => {
+    const water = (await productBy(A, "Water 500ml"))!
+    await prisma.inventoryBatch.create({ data: { id: `lot-${randomUUID()}`, tenantId: A, batchNumber: "W1", productId: water.id, productName: water.name, barcode: water.barcode ?? "", initialQuantity: 5, quantityRemaining: 5, unitCost: 0.3, unitPrice: 1 } as any })
+    const r = await call(cashierA, "GET", "/api/sync/pull")
+    expect(r.status).toBe(200)
+    expect(r.body.products.length).toBeGreaterThan(0)
+    expect(r.body.batches.length).toBeGreaterThan(0)
+    expect(r.body.sales.length).toBeGreaterThan(0)
+    expect(JSON.stringify(r.body)).not.toMatch(COSTY)
+    expect(r.body.purchaseOrders).toEqual([])
+    expect(r.body.supplierPayments).toEqual([])
+    expect(r.body.products.some((p: Record<string, unknown>) => "wholesalePrice" in p)).toBe(true) // a selling price stays
+    for (const entity of ["products", "batches", "sales", "refunds"]) {
+      const full = await call(cashierA, "GET", `/api/sync/pull/full/${entity}`)
+      expect([entity, COSTY.test(JSON.stringify(full.body))]).toEqual([entity, false])
+    }
+    expect((await call(cashierA, "GET", "/api/sync/pull/full/purchase-orders")).body.items).toEqual([])
+  })
+  it("the store admin's (and a hub's) pull keeps cost data", async () => {
+    const r = await call(adminA, "GET", "/api/sync/pull")
+    expect(JSON.stringify(r.body)).toMatch(COSTY)
+  })
+  it("exports: low-stock CSV has an empty cost column for a cashier; margin and x-report exports are refused", async () => {
+    await prisma.product.updateMany({ where: { tenantId: A, name: "Water 500ml" }, data: { reorderPoint: 100 } })
+    const res = await fetch(`${base}/api/reports/export/low-stock`, { headers: { Authorization: `Bearer ${cashierA}` } })
+    expect(res.status).toBe(200)
+    const csv = await res.text()
+    const header = csv.split("\n")[0].split(",")
+    const row = csv.split("\n").find((l) => l.includes("Water 500ml"))!.split(",")
+    expect(["", "\"\""]).toContain(row[header.indexOf("Cost")]) // an empty CSV cell
+    expect((await fetch(`${base}/api/reports/export/margin`, { headers: { Authorization: `Bearer ${cashierA}` } })).status).toBe(403)
+    expect((await fetch(`${base}/api/reports/export/x-report`, { headers: { Authorization: `Bearer ${cashierA}` } })).status).toBe(403)
+    const mgr = await (await fetch(`${base}/api/reports/export/low-stock`, { headers: { Authorization: `Bearer ${managerA}` } })).text()
+    const mrow = mgr.split("\n").find((l) => l.includes("Water 500ml"))!.split(",")
+    expect(mrow[header.indexOf("Cost")]).toBe("0.3")
+  })
+})

@@ -71,6 +71,7 @@ async function device() {
     product: await import("../../desktop/src/features/pos/services/product.service.js"),
     batches: await import("../../desktop/src/features/pos/services/inventoryBatch.service.js"),
     imports: await import("../../desktop/src/features/pos/services/import.service.js"),
+    held: await import("../../desktop/src/features/pos/services/heldSale.service.js"),
   }
 }
 type Device = Awaited<ReturnType<typeof device>>
@@ -85,7 +86,7 @@ async function flush(d: Device) {
 }
 const queue = () => JSON.parse(storage.getItem("lebanonpos.sync-queue.v1") ?? "[]") as Array<{ id: string; entity: string; action: string; status: string; error?: string; summary: string }>
 const notSynced = () => queue().filter((o) => o.status !== "Synced")
-type LocalProduct = { id: number; syncId: string; name: string; barcode: string | null; stock: number; price: number; cost: number; stockPolicy?: string }
+type LocalProduct = { id: number; syncId: string; name: string; barcode: string | null; stock: number; price: number; cost: number; stockPolicy?: string; stockPolicyVersion?: number }
 const localProducts = () => JSON.parse(storage.getItem("lebanonpos.products.v1") ?? "[]") as LocalProduct[]
 const local = (name: string) => localProducts().find((p) => p.name === name)!
 const server = (name: string) => prisma.product.findFirst({ where: { tenantId: T, name } })
@@ -103,7 +104,7 @@ function order(d: Device, lines: Array<{ name: string; qty: number }>) {
     saleNumber: `S-CAFE-${id.slice(0, 6)}`, paymentMethod: "Cash", subtotal: total, tax: 0, total,
     items: items.map(({ p, l }) => {
       const untracked = p.stockPolicy === "untracked"
-      return { id: p.id, productSyncId: p.syncId, name: p.name, barcode: p.barcode ?? "", cost: p.cost, stockPolicy: untracked ? "untracked" : "tracked", quantity: l.qty, unitPrice: p.price, total: l.qty * p.price, batchAllocations: untracked ? [] : dry.get(p.id) ?? [] }
+      return { id: p.id, productSyncId: p.syncId, name: p.name, barcode: p.barcode ?? "", cost: p.cost, stockPolicy: untracked ? "untracked" : "tracked", stockPolicyVersion: p.stockPolicyVersion ?? 1, quantity: l.qty, unitPrice: p.price, total: l.qty * p.price, batchAllocations: untracked ? [] : dry.get(p.id) ?? [] }
     }),
   } as Parameters<typeof d.sales.buildSale>[0], id)
   return { sale, lots, stock: tracked.map(({ p, l }) => ({ productId: p.id, quantity: l.qty })) }
@@ -360,5 +361,136 @@ describe("compatibility with existing stores and older tills", () => {
     const id = randomUUID()
     const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` }, body: JSON.stringify({ operations: [{ id, entity: "sale", action: "create", payload: { id, saleNumber: "S-CHEAT", paymentMethod: "Cash", subtotal: 0.75, tax: 0, total: 0.75, cashier: "x", status: "Completed", items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: p.barcode, stockPolicy: "untracked", quantity: 1, unitPrice: 0.75, total: 0.75, cost: 0.3 }] } }] }) })
     expect(((await r.json()) as { results: Array<{ status: string }> }).results[0].status).toBe("rejected")
+  })
+})
+
+// ── SPRINT-1 acceptance: stock-policy changes between an offline checkout and its sync ──────────
+async function adminPush(entity: string, action: string, payload: unknown) {
+  const id = randomUUID()
+  const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` }, body: JSON.stringify({ operations: [{ id, entity, action, payload }] }) })
+  return ((await r.json()) as { results: Array<{ status: string; error?: string }> }).results[0]
+}
+const saleLine = async (saleId: string, name: string) => (await prisma.saleItem.findFirst({ where: { saleId, productName: name } }))!
+
+describe("stock-policy change between an offline checkout and its sync: the sale-time policy is kept", () => {
+  it("sold as made-to-order offline; the owner switches it to tracked before the sale syncs", async () => {
+    const d = await device()
+    signIn(ADMIN); d.security.setCurrentUser(ADMIN)
+    d.product.createProduct({ name: "Flat white", barcode: "", price: 2.75, cost: 0.6, stock: 0, category: "Coffee", stockPolicy: "untracked" })
+    await flush(d)
+    offline = true
+    const o = order(d, [{ name: "Flat white", qty: 1 }])
+    try { expect(d.sales.checkoutLocalSale(o).status).toBe("completed"); await dispose() } finally { offline = false }
+    expect(o.sale.items[0]).toMatchObject({ stockPolicy: "untracked", stockPolicyVersion: 1 })
+    expect((await adminPush("product", "update", { syncId: local("Flat white").syncId, stockPolicy: "tracked" })).status).toBe("ok")
+    expect(await server("Flat white")).toMatchObject({ stockPolicy: "tracked", stockPolicyVersion: 2 })
+    await flush(d)
+    const line = await saleLine(o.sale.id, "Flat white")
+    expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["untracked", "changed"]) // sale-time policy kept, flagged
+    expect(Number((await server("Flat white"))!.stock)).toBe(0) // nothing taken from stock it never used
+    expect(await prisma.auditEvent.count({ where: { tenantId: T, action: "sale.stock_policy_conflict", metadata: { path: ["saleId"], equals: o.sale.id } } })).toBe(1)
+  })
+
+  it("sold as tracked offline; switched to made-to-order before the sale syncs: lots consumed, flagged", async () => {
+    const d = await device()
+    d.product.createProduct({ name: "Croissant", barcode: "", price: 1.25, cost: 0.4, stock: 5, category: "Bakery" })
+    await flush(d)
+    const lot = (await prisma.inventoryBatch.findFirst({ where: { tenantId: T, productName: "Croissant" } }))!
+    offline = true
+    const o = order(d, [{ name: "Croissant", qty: 1 }])
+    try { expect(d.sales.checkoutLocalSale(o).status).toBe("completed"); await dispose() } finally { offline = false }
+    expect((await adminPush("product", "update", { syncId: local("Croissant").syncId, stockPolicy: "untracked" })).status).toBe("ok")
+    await flush(d)
+    const line = await saleLine(o.sale.id, "Croissant")
+    expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["tracked", "changed"])
+    expect(Number((await prisma.inventoryBatch.findUnique({ where: { id: lot.id } }))!.quantityRemaining)).toBe(4)
+  })
+
+  it("an older till's line with no policy version, sold before the change: 'unknown' conflict, today's policy, visible", async () => {
+    const p = (await server("Croissant"))!
+    const id = randomUUID()
+    const before = new Date(Date.now() - 3600_000).toISOString()
+    const r = await adminPush("sale", "create", { id, saleNumber: "S-OLD-TILL", paymentMethod: "Cash", subtotal: 1.25, tax: 0, total: 1.25, cashier: "Old till", status: "Completed", createdAt: before, items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: "", quantity: 1, unitPrice: 1.25, total: 1.25, cost: 0.4 }] })
+    expect(r.status).toBe("ok")
+    const line = await saleLine(id, "Croissant")
+    expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["untracked", "unknown"])
+    expect(await prisma.auditEvent.count({ where: { tenantId: T, action: "sale.stock_policy_conflict", metadata: { path: ["saleId"], equals: id } } })).toBe(1)
+  })
+
+  it("a line claiming a policy that contradicts its own version is refused visibly (not applied)", async () => {
+    const p = (await server("Croissant"))!
+    const id = randomUUID()
+    const r = await adminPush("sale", "create", { id, saleNumber: "S-BAD", paymentMethod: "Cash", subtotal: 1.25, tax: 0, total: 1.25, cashier: "x", status: "Completed", items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: "", stockPolicy: "tracked", stockPolicyVersion: p.stockPolicyVersion, quantity: 1, unitPrice: 1.25, total: 1.25, cost: 0.4 }] })
+    expect(r.status).toBe("rejected")
+    expect(r.error).toMatch(/^STOCK_POLICY_MISMATCH:/)
+    expect(await prisma.sale.count({ where: { id } })).toBe(0)
+  })
+
+  it("a policy change made on this till, then a sale before syncing: same version on both sides, no conflict", async () => {
+    let d = await device()
+    await d.sync.pullFromServer(true); await dispose()
+    d = await device()
+    const v = local("Flat white").stockPolicyVersion ?? 1
+    d.product.updateProduct(local("Flat white").id, { stockPolicy: "untracked" })
+    expect(local("Flat white").stockPolicyVersion).toBe(v + 1)
+    const o = order(d, [{ name: "Flat white", qty: 1 }])
+    expect(d.sales.checkoutLocalSale(o).status).toBe("completed")
+    await flush(d)
+    expect(notSynced().map((x) => `${x.summary} ${x.error ?? ""}`)).toEqual([])
+    const line = await saleLine(o.sale.id, "Flat white")
+    expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["untracked", null])
+    expect((await server("Flat white"))!.stockPolicyVersion).toBe(v + 1)
+  })
+})
+
+describe("NULL barcodes in the database, barcode transitions, and id remapping", () => {
+  const dbBarcode = async (name: string) => (await prisma.$queryRaw<Array<{ barcode: string | null; isnull: boolean }>>`SELECT "barcode", "barcode" IS NULL AS isnull FROM "Product" WHERE "tenantId" = ${T} AND "name" = ${name}`)[0]
+  it("blank → NULL, blank → barcode, barcode → blank (NULL again); no '' barcodes anywhere in the store", async () => {
+    const d = await device()
+    d.product.createProduct({ name: "Mocha", barcode: "  ", price: 3, cost: 0.8, stock: 0, category: "Coffee", stockPolicy: "untracked" })
+    await flush(d)
+    expect(await dbBarcode("Mocha")).toEqual({ barcode: null, isnull: true })
+    d.product.updateProduct(local("Mocha").id, { barcode: `MOCHA-${T.slice(0, 4)}` })
+    await flush(d)
+    expect((await dbBarcode("Mocha")).barcode).toBe(`MOCHA-${T.slice(0, 4)}`)
+    d.product.updateProduct(local("Mocha").id, { barcode: "" })
+    expect(local("Mocha").barcode).toBeNull()
+    await flush(d)
+    expect(await dbBarcode("Mocha")).toEqual({ barcode: null, isnull: true })
+    const counts = (await prisma.$queryRaw<Array<{ empty: bigint; nulls: bigint }>>`SELECT count(*) FILTER (WHERE "barcode" = '') AS empty, count(*) FILTER (WHERE "barcode" IS NULL) AS nulls FROM "Product" WHERE "tenantId" = ${T}`)[0]
+    expect(Number(counts.empty)).toBe(0)
+    expect(Number(counts.nulls)).toBeGreaterThanOrEqual(8)
+  })
+
+  it("after a pull replaces a product's local id, its lots, movements, sale lines and held sales follow; a refund still restocks it", async () => {
+    let d = await device()
+    d.product.createProduct({ name: "House cookie", barcode: "", price: 0.75, cost: 0.2, stock: 3, category: "Bakery" })
+    const localId = local("House cookie").id
+    const o = order(d, [{ name: "House cookie", qty: 1 }])
+    expect(d.sales.checkoutLocalSale(o).status).toBe("completed")
+    d.held.holdSale({ items: [{ ...local("House cookie"), quantity: 1 }], paymentMethod: "Cash", selectedCustomerId: undefined, discountMode: "amount", discountValue: 0, note: "table 2" } as never)
+    // Another device created products meanwhile: the server's next id is not this till's local id.
+    for (let i = 0; i < 3; i++) await prisma.product.create({ data: { tenantId: T, name: `Other till item ${i}`, price: 1, cost: 0, stock: 0, category: "Other", syncId: randomUUID() } as any })
+    await flush(d)
+    const serverId = (await server("House cookie"))!.id
+    expect(serverId).not.toBe(localId)
+    await d.sync.pullFromServer(false); await dispose()
+    d = await device()
+    expect(local("House cookie").id).toBe(serverId)
+    expect(localProducts().filter((p) => p.name === "House cookie")).toHaveLength(1)
+    const lots = JSON.parse(storage.getItem("lebanonpos.inventory-batches.v1") ?? "[]") as Array<{ productName: string; productId: number }>
+    expect(lots.filter((l) => l.productName === "House cookie").length).toBeGreaterThan(0)
+    expect(lots.filter((l) => l.productName === "House cookie").every((l) => l.productId === serverId)).toBe(true)
+    const moves = JSON.parse(storage.getItem("lebanonpos.stock-movements.v1") ?? "[]") as Array<{ productName?: string; productId: number }>
+    expect(moves.filter((m) => m.productName === "House cookie").every((m) => m.productId === serverId)).toBe(true)
+    expect(d.sales.getSales().find((s) => s.id === o.sale.id)!.items[0].id).toBe(serverId)
+    expect(d.held.getHeldSales().find((h) => h.note === "table 2")!.items[0].id).toBe(serverId)
+    const stockBefore = local("House cookie").stock
+    const line = d.sales.getSales().find((s) => s.id === o.sale.id)!.items[0].lineId!
+    d.sales.processRefund({ saleId: o.sale.id, quantities: { [line]: 1 }, reason: "unopened" })
+    expect(local("House cookie").stock).toBe(stockBefore + 1)
+    await flush(d)
+    expect(notSynced().map((x) => `${x.summary} ${x.error ?? ""}`)).toEqual([])
+    expect(Number((await server("House cookie"))!.stock)).toBe(3)
   })
 })

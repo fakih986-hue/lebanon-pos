@@ -50,6 +50,10 @@ export type SaleTender = {
 export type SaleItem = Pick<Product, "id" | "name" | "barcode" | "cost"> & {
   /** SPRINT-1: the product's stock policy when sold. Refunds/voids restore stock only for tracked lines. */
   stockPolicy?: "tracked" | "untracked"
+  /** The product's policy version when sold (the server uses it to keep the sale-time policy). */
+  stockPolicyVersion?: number
+  /** Set by the server when the sale-time policy could not be applied cleanly ("changed" | "unknown"). */
+  stockPolicyConflict?: string | null
   quantity: number
   unitPrice: number
   total: number
@@ -196,6 +200,8 @@ function normalizeSaleItem(raw: any): SaleItem {
   if (typeof raw?.lineId === "string" && raw.lineId) item.lineId = raw.lineId
   // SPRINT-1: the line's stock policy when sold (refunds/voids depend on it). Absent = tracked.
   if (raw?.stockPolicy === "untracked" || raw?.stockPolicy === "tracked") item.stockPolicy = raw.stockPolicy
+  if (Number.isInteger(raw?.stockPolicyVersion)) item.stockPolicyVersion = raw.stockPolicyVersion
+  if (typeof raw?.stockPolicyConflict === "string") item.stockPolicyConflict = raw.stockPolicyConflict
   if (Array.isArray(raw?.batchAllocations)) {
     item.batchAllocations = raw.batchAllocations.map((a: any) => ({
       batchId: a?.batchId ?? "legacy-stock",
@@ -391,7 +397,7 @@ export function getRefundsForSale(saleId: string) {
  */
 export function buildSale(input: RecordSaleInput, id: string): Sale {
   assertCanWrite("record sale")
-  const cost = input.items.reduce((sum, item) => sum + item.cost * item.quantity, 0)
+  const cost = input.items.reduce((sum, item) => sum + (Number.isFinite(item.cost) ? item.cost : 0) * item.quantity, 0)
   const currentUser = getCurrentUser()
   const activeShift = getActiveShift()
   // Shift gate — every sale requires an open register shift

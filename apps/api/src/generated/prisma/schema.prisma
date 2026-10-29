@@ -173,42 +173,45 @@ model AppSettings {
 }
 
 model Product {
-  id              Int       @id @default(autoincrement())
+  id                   Int       @id @default(autoincrement())
   // Stable cross-system sync identity (see packages/types Product.syncId).
   // Numeric `id` stays the local/internal PK + FK target; `syncId` is the
   // globally stable identity matched across hub/client/cloud. Nullable during
   // the transition (legacy rows backfilled cloud-authoritatively); unique per
   // tenant. Nullable-unique is safe in Postgres — NULLs are treated as
   // distinct, so many not-yet-backfilled rows coexist without collision.
-  syncId          String?
-  tenantId        String
-  tenant          Tenant    @relation(fields: [tenantId], references: [id])
-  parentId        Int?
-  parent          Product?  @relation("ProductVariants", fields: [parentId], references: [id])
-  variants        Product[] @relation("ProductVariants")
-  isParent        Boolean   @default(false)
-  variantName     String?
-  name            String
-  price           Decimal   @db.Decimal(18, 4)
-  wholesalePrice  Decimal?  @db.Decimal(18, 4)
-  cost            Decimal   @default(0) @db.Decimal(18, 4)
-  stock           Float     @default(0) // quantity — stays Float
-  barcode         String?
-  barcodeAliases  String[]
+  syncId               String?
+  tenantId             String
+  tenant               Tenant    @relation(fields: [tenantId], references: [id])
+  parentId             Int?
+  parent               Product?  @relation("ProductVariants", fields: [parentId], references: [id])
+  variants             Product[] @relation("ProductVariants")
+  isParent             Boolean   @default(false)
+  variantName          String?
+  name                 String
+  price                Decimal   @db.Decimal(18, 4)
+  wholesalePrice       Decimal?  @db.Decimal(18, 4)
+  cost                 Decimal   @default(0) @db.Decimal(18, 4)
+  stock                Float     @default(0) // quantity — stays Float
+  barcode              String?
+  barcodeAliases       String[]
   /// SPRINT-1: "tracked" (stock + lots enforced) | "untracked" (made to order: no stock, no lots)
-  stockPolicy     String    @default("tracked")
-  category        String
-  accent          String    @default("emerald")
-  favorite        Boolean   @default(false)
-  reorderPoint    Int?
-  reorderQuantity Int?
-  supplierId      String?
-  supplierName    String?
-  expiryDate      String?
-  image           String?
-  archived        Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  stockPolicy          String    @default("tracked")
+  /// SPRINT-1: +1 on every stock-policy change (server side); sale lines carry the version they were sold under
+  stockPolicyVersion   Int       @default(1)
+  stockPolicyChangedAt DateTime?
+  category             String
+  accent               String    @default("emerald")
+  favorite             Boolean   @default(false)
+  reorderPoint         Int?
+  reorderQuantity      Int?
+  supplierId           String?
+  supplierName         String?
+  expiryDate           String?
+  image                String?
+  archived             Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   batches         InventoryBatch[]
   adjustments     StockAdjustment[]
@@ -259,23 +262,26 @@ model Sale {
 }
 
 model SaleItem {
-  id               String  @id @default(uuid())
-  saleId           String
-  sale             Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  productId        Int
-  productName      String
-  barcode          String
-  quantity         Float // quantity — stays Float
-  unitPrice        Decimal @db.Decimal(18, 4)
-  total            Decimal @db.Decimal(18, 4)
-  cost             Decimal @default(0) @db.Decimal(18, 4)
+  id                  String  @id @default(uuid())
+  saleId              String
+  sale                Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId           Int
+  productName         String
+  barcode             String
+  quantity            Float // quantity — stays Float
+  unitPrice           Decimal @db.Decimal(18, 4)
+  total               Decimal @db.Decimal(18, 4)
+  cost                Decimal @default(0) @db.Decimal(18, 4)
   /// REFUND-INTEGRITY-1: client-stamped line identity (null = legacy line, pooled per product).
-  lineId           String?
-  lineIndex        Int?
+  lineId              String?
+  lineIndex           Int?
   /// Lots actually consumed by the server for this line: [{batchId|null, quantity, unitCost?}].
-  batchAllocations Json?
+  batchAllocations    Json?
   /// SPRINT-1: the product's stock policy when sold; refunds/voids restore stock only for "tracked" lines
-  stockPolicy      String  @default("tracked")
+  stockPolicy         String  @default("tracked")
+  /// SPRINT-1: set when the sale-time policy differed from (or could not be established against) the product's
+  /// policy at sync time: "changed" | "unknown". Visible conflict for managers (audit sale.stock_policy_conflict).
+  stockPolicyConflict String?
 
   @@unique([saleId, lineId])
   @@index([productId])

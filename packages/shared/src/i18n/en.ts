@@ -930,6 +930,7 @@ export const en = {
   "pos.staff.permission_reports": "View reports",
   "pos.staff.permission_cost": "See cost & profit",
   "pos.err.price_override_needed": "Selling at cost needs the Price override permission.",
+  "pos.err.server_too_old": "This hub (or cloud) has not confirmed it can record made-to-order items. Nothing was charged. Update the hub, or connect once so it can confirm.",
   "pos.staff.permission_accounting": "Accounting & expenses",
   "pos.staff.permission_cash": "Cash in/out",
   "pos.staff.permission_settings": "Settings",

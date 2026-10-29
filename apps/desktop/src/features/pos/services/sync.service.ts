@@ -1291,6 +1291,28 @@ function scheduleAutoFlush() {
 
 export function getSyncQueue() { return readQueue() }
 
+const SERVER_SCHEMA_KEY = "lebanonpos.server-sync-schema.v1"
+/**
+ * SPRINT-1: can this till's server (hub or cloud) record made-to-order (untracked) lines?
+ * Asks /api/health (schema 3+); offline, uses the last answer seen. A server that never confirmed
+ * it (an older hub or cloud) gets "no": the till refuses before taking payment.
+ */
+export async function serverSupportsMadeToOrder(): Promise<boolean> {
+  const apiUrl = getApiUrl()
+  if (apiUrl) {
+    try {
+      const res = await fetch(`${apiUrl}/api/health`, { cache: "no-store", signal: AbortSignal.timeout(3000) })
+      if (res.ok) {
+        const body = await res.json().catch(() => ({}))
+        const schema = Number(body?.syncSchema) || 0
+        try { localStorage.setItem(SERVER_SCHEMA_KEY, String(schema)) } catch { /* storage */ }
+        return schema >= 3
+      }
+    } catch { /* offline: fall back to the last answer */ }
+  }
+  try { return Number(localStorage.getItem(SERVER_SCHEMA_KEY)) >= 3 } catch { return false }
+}
+
 export function getSyncStatus(): SyncStatus {
   const queue = readQueue()
   const recentErrors: string[] = []
@@ -1872,6 +1894,80 @@ const LOCAL_ONLY_PRESERVED: Record<string, string> = {
   "lebanonpos.refunds.v1": "refund",
   "lebanonpos.debt-payments.v1": "debt",
 }
+/**
+ * SPRINT-1: when a pull replaces this device's copy of a product (same syncId or barcode) with the
+ * server's row, the local numeric id disappears. Every local record that pointed at it — lots,
+ * stock movements, adjustments, counts, purchase/delivery lines, sale/refund/held-sale lines and
+ * variant parents — is rewritten to the server's id, so history and in-flight work stay linked.
+ */
+/**
+ * SPRINT-1: merge pulled product rows into this device's list. Identity is syncId, NOT the numeric
+ * id: a device's local ids and the server's come from independent counters and collide. (The old
+ * by-id merge overwrote a local product with a DIFFERENT server product that happened to have the
+ * same id, leaving lots, movements and sale lines pointing at the wrong product.)
+ *  - a local row whose syncId matches a server row is that product: the server row replaces it and
+ *    its local id maps to the server's;
+ *  - rows without a syncId (older data) keep the by-id rule, then the legacy barcode rule;
+ *  - a local-only row whose id is taken by a different server product is re-keyed to a free id.
+ * Returns the merged list and the id remapping to apply to local references.
+ */
+export function mergePulledProducts(local: any[], server: any[]): { merged: any[]; remap: Map<number, number> } {
+  const remap = new Map<number, number>()
+  const rows = server.filter((p) => p && typeof p.id !== "undefined")
+  const bySync = new Map(rows.filter((p) => p.syncId).map((p) => [String(p.syncId), p]))
+  const byId = new Map(rows.map((p) => [Number(p.id), p]))
+  const byBarcode = new Map<string, number[]>()
+  for (const p of rows) if (p.barcode) byBarcode.set(String(p.barcode), [...(byBarcode.get(String(p.barcode)) ?? []), Number(p.id)])
+  const kept: any[] = []
+  const collide: any[] = []
+  for (const p of local) {
+    if (!p || typeof p.id === "undefined") continue
+    const same = p.syncId ? bySync.get(String(p.syncId)) : undefined
+    if (same) { if (Number(same.id) !== Number(p.id)) remap.set(Number(p.id), Number(same.id)); continue }
+    const atId = byId.get(Number(p.id))
+    if (atId) {
+      if (p.syncId && atId.syncId && String(atId.syncId) !== String(p.syncId)) { collide.push(p); continue } // a different product
+      continue // same product by id (no syncId to tell otherwise): the server row replaces it
+    }
+    if (!p.syncId && p.barcode) {
+      const ids = byBarcode.get(String(p.barcode))
+      if (ids && ids.length === 1) { remap.set(Number(p.id), ids[0]); continue } // legacy: same barcode = same product
+    }
+    kept.push(p)
+  }
+  let next = Math.max(0, ...rows.map((p) => Number(p.id) || 0), ...local.map((p) => Number(p?.id) || 0)) + 1
+  for (const p of collide) { const id = next++; remap.set(Number(p.id), id); kept.push({ ...p, id }) }
+  const relinked = kept.map((p) => (typeof p.parentId === "number" && remap.has(p.parentId) ? { ...p, parentId: remap.get(p.parentId) } : p))
+  return { merged: [...relinked, ...rows], remap }
+}
+
+export function remapLocalProductIds(map: Map<number, number>) {
+  if (typeof window === "undefined" || map.size === 0) return
+  const read = (key: string): any[] | null => { try { const v = JSON.parse(window.localStorage.getItem(key) ?? "null"); return Array.isArray(v) ? v : null } catch { return null } }
+  const deep = (v: any): any => {
+    if (Array.isArray(v)) return v.map(deep)
+    if (v && typeof v === "object") {
+      const out: any = {}
+      for (const [k, x] of Object.entries(v)) out[k] = k === "productId" && typeof x === "number" && map.has(x) ? map.get(x) : deep(x)
+      return out
+    }
+    return v
+  }
+  const lineIds = (rows: any[]) => rows.map((r) => Array.isArray(r?.items) ? { ...r, items: r.items.map((it: any) => typeof it?.id === "number" && map.has(it.id) ? { ...it, id: map.get(it.id) } : it) } : r)
+  const plan: Array<[string, (rows: any[]) => any[]]> = [
+    ["lebanonpos.inventory-batches.v1", deep], ["lebanonpos.stock-movements.v1", deep], ["lebanonpos.inventory-adjustments.v1", deep],
+    ["lebanonpos.stock-counts.v1", deep], ["lebanonpos.purchase-orders.v1", deep], ["lebanonpos.delivery-orders.v1", deep],
+    ["lebanonpos.sales.v1", (rows) => deep(lineIds(rows))], ["lebanonpos.refunds.v1", (rows) => deep(lineIds(rows))], ["lebanonpos.held-sales.v1", lineIds],
+    ["lebanonpos.products.v1", (rows) => rows.map((p) => typeof p?.parentId === "number" && map.has(p.parentId) ? { ...p, parentId: map.get(p.parentId) } : p)],
+  ]
+  for (const [key, fn] of plan) {
+    const rows = read(key)
+    if (!rows || rows.length === 0) continue
+    const next = fn(rows)
+    if (JSON.stringify(next) !== JSON.stringify(rows)) writeLocalWithIndexedDB(key, next)
+  }
+}
+
 export function preserveLocalOnlyRecords(key: string, serverRows: any[]): any[] {
   const entity = LOCAL_ONLY_PRESERVED[key]
   if (!entity || typeof window === "undefined") return serverRows
@@ -1911,6 +2007,21 @@ async function pullFullEntity(apiUrl: string, token: string, entityPath: string,
     if (!page.hasMore) break
     cursor = page.nextCursor ? String(page.nextCursor) : undefined
     if (!cursor) break
+  }
+  // SPRINT-1: a full pull replaces this device's products with the server's rows. Where the
+  // server's id for the same product (same syncId) differs from the local one, local records that
+  // point at the local id (lots, movements, sale/held-sale lines, variants…) follow it.
+  if (target.key === PULL_TARGETS.products.key) {
+    try {
+      const localRows = JSON.parse(window.localStorage.getItem(target.key) ?? "[]") as Array<{ id?: number; syncId?: string | null }>
+      const serverIdBySync = new Map(all.filter((p) => p?.syncId).map((p) => [String(p.syncId), Number(p.id)]))
+      const remap = new Map<number, number>()
+      for (const p of Array.isArray(localRows) ? localRows : []) {
+        const sid = p?.syncId ? serverIdBySync.get(String(p.syncId)) : undefined
+        if (typeof p?.id === "number" && sid !== undefined && sid !== p.id) remap.set(p.id, sid)
+      }
+      if (remap.size > 0) remapLocalProductIds(remap)
+    } catch (error) { console.error("[sync] product id remap after full pull failed:", error) }
   }
   writeLocalWithIndexedDB(target.key, preserveLocalOnlyRecords(target.key, all))
   window.dispatchEvent(new Event(target.event))
@@ -2084,6 +2195,13 @@ async function _incrementalPull(apiUrl: string, token: string): Promise<void> {
     if (raw) {
       try {
         const local = JSON.parse(raw)
+        if (key === "products" && Array.isArray(local) && local.length > 0) {
+          const { merged: products, remap } = mergePulledProducts(local, arr)
+          if (remap.size > 0) remapLocalProductIds(remap)
+          writeLocalWithIndexedDB(target.key, products)
+          window.dispatchEvent(new Event(target.event))
+          continue
+        }
         if (Array.isArray(local) && local.length > 0) {
           const merged = local.slice()
           for (const item of arr) {
@@ -2104,42 +2222,6 @@ async function _incrementalPull(apiUrl: string, token: string): Promise<void> {
                 if (localPin !== undefined) merged[idx].pin = localPin
                 if (localVerifiedVersion !== undefined) merged[idx].lastVerifiedPinVersion = localVerifiedVersion
               } else merged.push(item)
-            }
-          }
-          if (key === "products" && arr.length > 0) {
-            // SPRINT-1: the server's row replaces this device's copy of the SAME product (same
-            // syncId) when their numeric ids differ — identity is syncId, not the barcode, so
-            // barcode-free products (drinks) are not duplicated after their first pull.
-            const serverSyncIds = new Map<string, Set<number>>()
-            for (const item of arr) {
-              if (item?.syncId && typeof item.id !== "undefined") {
-                if (!serverSyncIds.has(String(item.syncId))) serverSyncIds.set(String(item.syncId), new Set())
-                serverSyncIds.get(String(item.syncId))!.add(item.id)
-              }
-            }
-            if (serverSyncIds.size > 0) {
-              const kept = merged.filter((item) => !(item?.syncId && serverSyncIds.has(String(item.syncId)) && !serverSyncIds.get(String(item.syncId))!.has(item.id)))
-              merged.splice(0, merged.length, ...kept)
-            }
-            const serverBarcodes = new Map<string, Set<number>>()
-            for (const item of arr) {
-              if (item?.barcode && typeof item.id !== "undefined") {
-                const bc = String(item.barcode)
-                if (!serverBarcodes.has(bc)) serverBarcodes.set(bc, new Set())
-                serverBarcodes.get(bc)!.add(item.id)
-              }
-            }
-            if (serverBarcodes.size > 0) {
-              const deduped: typeof merged = []
-              for (const item of merged) {
-                if (item?.barcode && serverBarcodes.has(String(item.barcode))) {
-                  const validIds = serverBarcodes.get(String(item.barcode))!
-                  if (validIds.has(item.id)) deduped.push(item)
-                } else {
-                  deduped.push(item)
-                }
-              }
-              merged.splice(0, merged.length, ...deduped)
             }
           }
           writeLocalWithIndexedDB(target.key, merged)

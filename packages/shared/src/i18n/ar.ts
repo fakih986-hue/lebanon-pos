@@ -930,6 +930,7 @@ export const ar = {
   "pos.staff.permission_reports": "عرض التقارير",
   "pos.staff.permission_cost": "عرض التكلفة والربح",
   "pos.err.price_override_needed": "البيع بسعر التكلفة يتطلب صلاحية تعديل السعر.",
+  "pos.err.server_too_old": "لم يؤكّد الخادم (المحور أو السحابة) أنه يستطيع تسجيل الأصناف المحضّرة عند الطلب. لم يُحتسب أي مبلغ. حدّث المحور، أو اتصل مرة واحدة ليؤكّد ذلك.",
   "pos.staff.permission_accounting": "المحاسبة والمصاريف",
   "pos.staff.permission_cash": "إدخال/إخراج نقدية",
   "pos.staff.permission_settings": "الإعدادات",

@@ -507,6 +507,14 @@ export function updateProduct(productId: number, patch: Partial<Product>) {
   // and on the server, whatever screen calls this.
   assertCanManageCatalog("Editing a product")
   const cleanPatch = cleanProductPatch(patch)
+  // SPRINT-1: the server bumps stockPolicyVersion when the policy changes; mirror it so sales made
+  // here before the next sync carry the version they were really sold under.
+  {
+    const prior = getProductsSync().find((p) => p.id === productId)
+    if (prior && cleanPatch.stockPolicy && cleanPatch.stockPolicy !== (prior.stockPolicy ?? "tracked")) {
+      cleanPatch.stockPolicyVersion = (prior.stockPolicyVersion ?? 1) + 1
+    }
+  }
 
   // Block direct stock edits — stock must change through receiving/sale/adjustment
   if ("stock" in cleanPatch) {

@@ -7,7 +7,7 @@ import { Decimal } from "../generated/prisma/runtime/library.js"
  * Prisma's Decimal.toJSON() returns a string — this ensures the API
  * always sends numbers (not strings) to the desktop and ordering apps.
  */
-function serializeDecimals(value: unknown): unknown {
+export function serializeDecimals(value: unknown): unknown {
   if (value instanceof Decimal) return value.toNumber()
   // Fallback: Decimal-like object from Prisma that instanceof misses (ESM module duplication)
   if (value !== null && typeof value === "object" && !Array.isArray(value) && "s" in value && "d" in value && (value as any).toNumber) {
