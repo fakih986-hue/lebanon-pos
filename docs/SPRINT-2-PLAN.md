@@ -1,6 +1,6 @@
 # Sprint 2 — authenticated staff, device trust, approvals and offline safety
 
-**Canonical architecture document.** Status: **Phase A (architecture) for approval.** Policies live in their own documents and are not repeated here:
+**Canonical architecture document.** Status: **Phase A approved in principle (credential architecture). Phase B (observe mode) implemented; containment (Track A) implemented separately with a hotfix branch.** Defaults set by the owner: routine offline sales unchanged; queued completed work never expires; existing stores start in observe mode; no enforcement switches on automatically; plain-HTTP LAN supported with an explicit transport limitation; restricted actions use permissions (no invented thresholds); a cached manager grant is never used without fresh manager authentication. Offline elevated-action policy and thresholds remain open decisions. Policies live in their own documents and are not repeated here:
 [threat model](SPRINT-2-THREAT-MODEL.md) · [authorization matrix](SPRINT-2-AUTHORIZATION-MATRIX.md) · [offline policy](SPRINT-2-OFFLINE-POLICY.md) · [compatibility](SPRINT-2-COMPATIBILITY.md) · [acceptance](SPRINT-2-ACCEPTANCE.md).
 
 Base: `master` after Sprint 1. The preserved candidate `candidate/1.0.51-rc-097ed68` (`D:\TitanPOS-candidates\1.0.51-097ed68\`) is **not** part of Sprint 2 and is not modified.

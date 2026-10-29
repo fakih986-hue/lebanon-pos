@@ -11,6 +11,30 @@ Canonical record of what is tested and what passed. Real services, real API hand
 | Crypto runtime support | measured in the browser pane: plain-HTTP LAN origin vs loopback (PLAN §1) | recorded |
 | Full suites | API 473 + 1 expected fail (S4); desktop (unchanged) 415 + 2 | pass |
 
+## Containment (Track A) — separate from Sprint 2 architecture
+
+| Area | Evidence | Status |
+|---|---|---|
+| Token kinds per endpoint: /api/sync/* for staff, hub screen, hub cloud link only; setup JWT endpoints for staff and hub screen only |  — driver refused on push/pull/status; customer refused on sync and setup; staff still sync; driver lists orders, customer lists orders | pass () |
+| Permission rules for uncovered ops (stock adjust/count/receive, debt, customers, held orders, delivery orders) | cashier refused adjust/count/receive/customer edit/debt collection; manager allowed; cashier can still park an order | pass |
+| Ambiguous PIN: 409, no highest-role pick; staffId selects | shared-PIN pair refused; each signs in when named; wrong PIN with staffId refused | pass |
+| WebSocket: customers only their own order updates; sync events staff only; drivers keep order events | real WebSocket clients | pass |
+| Driver stock-adjustment probe (was expected failure) | now a normal regression test | pass |
+| Till: fresh PIN to switch staff; no fallback actor; ambiguous PIN refused offline and online |  (5) | pass (); Staff-page switch verified by code and type check, **not exercised in a rendered UI** |
+| Negative controls | one per guard (8 server on the hotfix tree, 6 server on master, 3 till): each fails its intended test | pass |
+| Hotfix branch  ( + docs ) from deployed  | 382 tests on a schema migrated with the deployed migrations; contents and compatibility in  on that branch | ready, **not deployed** |
+
+## Phase B — observe mode
+
+| Area | Evidence | Status |
+|---|---|---|
+| OperationEvidence per applied operation, same transaction; claimed vs authenticated fields separate; transport; acceptedBy |  (11) | pass () |
+| Labels distinct; nothing verified/hub-attested in observe mode; offline-claimed only when the client says so | same | pass |
+| Envelope outside operation identity (resend with different ev = same op, one evidence row) | same | pass |
+| New tokens carry typ; contradicting typ refused; old tokens accepted | same + full suite | pass |
+| Negative controls (mislabel verified, no evidence, typ contradiction accepted, connecting account as actor) | each fails its intended tests | pass |
+| Full API suite | 496 + 1 expected fail (S4 attribution, Sprint 2 C) | pass |
+
 ## Plan by phase (to be filled with evidence as implemented)
 - **B — observe mode:** token kinds (`typ/iss/aud`) on new tokens with old tokens still accepted; `requireCloudKeyOrJwt` refuses non-staff tokens; envelope parsing; derived `actorId`; claimed-vs-derived mismatch audited; evidence labels; no behaviour change for legacy clients (mixed-version tests).
 - **C — devices and sessions:** enrollment with single-use manager-created code; cross-tenant enrollment refused; device credential can't enroll/approve another device; staff session bound to device (use on another device refused); actor substitution refused; staff switch issues a new session and clears approvals; revocation of staff and device; storage deletion and credential recovery on the till.
