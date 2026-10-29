@@ -11,6 +11,7 @@ import {
   archiveProduct, deleteProduct, getProductHistory, productHasHistory, restoreProduct, toggleProductFavorite,
 } from "../../services/product.service"
 import { showToast } from "../../services/toast.service"
+import { userCan } from "../../services/security.service"
 import type { Product } from "../../types/product"
 import { Badge, Drawer, ExpiryChip, StatTile } from "./BackOffice"
 
@@ -68,7 +69,7 @@ export default function ProductDetailsDrawer({ product, products, lots, canManag
         <div className="mg2-stats">
           <StatTile label={t("inv.on_hand")} value={<span className="num">{product.isParent ? "—" : formatNumber(product.stock)}</span>} />
           <StatTile label={t("inv.reorder_at")} value={<span className="num">{formatNumber(product.reorderPoint ?? 10)}</span>} />
-          <StatTile label={t("inv.avg_cost")} value={<span className="num">{formatCurrency(avgCost)}</span>} />
+          {userCan("reports.cost") && <StatTile label={t("inv.avg_cost")} value={<span className="num">{formatCurrency(avgCost)}</span>} />}
           <StatTile label={t("inv.field.price")} value={<span className="num">{formatCurrency(product.price)}</span>} />
         </div>
 
@@ -86,7 +87,7 @@ export default function ProductDetailsDrawer({ product, products, lots, canManag
                     <ExpiryChip date={b.expiryDate} />
                   </div>
                   <div className={`mg2-bar${tone === "err" ? " t-err" : tone === "warn" ? " t-warn" : ""}`} aria-hidden="true"><span style={{ width: `${pct}%` }} /></div>
-                  <span className="mg2-cap" style={{ textAlign: "end" }}>{t("inv.lot.left_of", { left: formatNumber(b.quantityRemaining), of: formatNumber(b.initialQuantity) })} · {formatCurrency(b.unitCost)}</span>
+                  <span className="mg2-cap" style={{ textAlign: "end" }}>{t("inv.lot.left_of", { left: formatNumber(b.quantityRemaining), of: formatNumber(b.initialQuantity) })}{userCan("reports.cost") ? <> · {formatCurrency(b.unitCost)}</> : null}</span>
                 </button>
               )
             })}

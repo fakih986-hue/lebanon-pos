@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import { signInCatalogManager } from "./signInHelper"
 import type { Product } from "../features/pos/types/product"
 import {
   parseProductImport,
@@ -45,7 +46,7 @@ const movements = (): any[] => { try { return JSON.parse(window.localStorage.get
 beforeEach(() => {
   enqueueMock.mockClear()
   try {
-    window.localStorage.clear()
+    window.localStorage.clear(); signInCatalogManager()
     window.localStorage.setItem("lebanonpos.suppliers.v1", "[]")
   } catch { /* jsdom */ }
 })

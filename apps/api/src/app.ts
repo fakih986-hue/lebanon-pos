@@ -5,6 +5,7 @@ import fs from "node:fs"
 import { fileURLToPath } from "node:url"
 import { json } from "./middleware/auth.js"
 import { requireAuth, type AuthRequest } from "./middleware/auth.js"
+import { requirePermission, hideCostUnlessAllowed } from "./middleware/permission.js"
 import prisma from "./lib/prisma.js"
 import { Decimal } from "./generated/prisma/runtime/library.js"
 import cors from "cors"
@@ -84,9 +85,11 @@ app.get("/api/health", async (_req: IncomingMessage, res: ServerResponse) => {
   }
 })
 
-app.get("/api/products", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+app.get("/api/products", requireAuth, requirePermission("inventory.view", "sales.checkout"), hideCostUnlessAllowed, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    // SPRINT-0: always the caller's own store. A different ?tenantId= is refused, never honoured.
+    const tenantId = req.auth!.tenantId
+    if (req.query.tenantId && req.query.tenantId !== tenantId) { json(res, { error: "Not allowed for this store", code: "TENANT_SCOPE" }, 403); return }
     const search = (req.query.search as string) || ""
     const skip = parseInt(req.query.skip as string) || 0
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 200)
@@ -114,9 +117,11 @@ app.get("/api/products", requireAuth, async (req: AuthRequest, res: ServerRespon
   }
 })
 
-app.get("/api/customers", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+app.get("/api/customers", requireAuth, requirePermission("customers.manage", "sales.checkout"), async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    // SPRINT-0: always the caller's own store. A different ?tenantId= is refused, never honoured.
+    const tenantId = req.auth!.tenantId
+    if (req.query.tenantId && req.query.tenantId !== tenantId) { json(res, { error: "Not allowed for this store", code: "TENANT_SCOPE" }, 403); return }
     const search = (req.query.search as string) || ""
     const skip = parseInt(req.query.skip as string) || 0
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 200)
@@ -143,9 +148,11 @@ app.get("/api/customers", requireAuth, async (req: AuthRequest, res: ServerRespo
   }
 })
 
-app.get("/api/sales", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+app.get("/api/sales", requireAuth, requirePermission("reports.view"), hideCostUnlessAllowed, async (req: AuthRequest, res: ServerResponse) => {
   try {
-    const tenantId = (req.query.tenantId as string) || req.auth!.tenantId
+    // SPRINT-0: always the caller's own store. A different ?tenantId= is refused, never honoured.
+    const tenantId = req.auth!.tenantId
+    if (req.query.tenantId && req.query.tenantId !== tenantId) { json(res, { error: "Not allowed for this store", code: "TENANT_SCOPE" }, 403); return }
     const search = (req.query.search as string) || ""
     const skip = parseInt(req.query.skip as string) || 0
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 200)

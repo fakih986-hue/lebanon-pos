@@ -108,6 +108,13 @@ async function requireCloudKeyOrJwt(req: Req, res: Response): Promise<boolean> {
       res.status(401).json({ error: "Invalid token" })
       return false
     }
+    // SPRINT-0: a JWT caller is bound to its own store; X-Tenant-Id cannot select another one.
+    const asked = req.headers["x-tenant-id"] as string | undefined
+    if (asked && asked !== payload.tenantId) {
+      res.status(403).json({ error: "Not allowed for this store", code: "TENANT_SCOPE" })
+      return false
+    }
+    ;(req as { jwtTenantId?: string }).jwtTenantId = payload.tenantId
     return true
   } catch {
     res.status(401).json({ error: "Invalid or expired token" })
@@ -210,7 +217,7 @@ router.post("/force-full-pull", async (req: Req, res: Response) => {
 router.get("/tenant-info", async (req: Req, res: Response) => {
   if (!(await requireCloudKeyOrJwt(req, res))) return
 
-  const tenantId = req.headers["x-tenant-id"] as string | undefined
+  const tenantId = (req as { jwtTenantId?: string }).jwtTenantId ?? (req.headers["x-tenant-id"] as string | undefined)
   if (!tenantId) {
     res.status(400).json({ error: "X-Tenant-Id header required" })
     return
@@ -516,6 +523,10 @@ router.post("/auto-login", (req: Req, res: Response) => {
 
 // Admin diagnostics — protected, returns system info without secrets
 router.get("/diagnostics", async (req: Req, res: Response) => {
+  if (!isLocalRequest(req)) {
+    res.status(403).json({ error: "Diagnostics are only available on this machine" })
+    return
+  }
   try {
     const dbConnected = await prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false)
     const tenantCount = dbConnected ? await prisma.tenant.count() : null

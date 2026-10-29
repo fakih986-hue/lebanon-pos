@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import { signInCatalogManager } from "./signInHelper"
 
 // POS-PRODUCT-CREATE-STOCK-1 — regression guard for the opening-stock
 // double-count. createProduct() must send the product `create` op with
@@ -45,7 +46,7 @@ describe("POS-PRODUCT-CREATE-STOCK-1 — createProduct opening stock", () => {
   beforeEach(() => {
     enqueueMock.mockClear()
     try {
-      window.localStorage.clear()
+      window.localStorage.clear(); signInCatalogManager()
     } catch {
       /* jsdom always has localStorage; guard for safety */
     }

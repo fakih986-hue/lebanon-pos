@@ -919,6 +919,8 @@ export const en = {
   "pos.staff.permission_customers": "Manage customers",
   "pos.staff.permission_suppliers": "Manage suppliers",
   "pos.staff.permission_reports": "View reports",
+  "pos.staff.permission_cost": "See cost & profit",
+  "pos.err.price_override_needed": "Selling at cost needs the Price override permission.",
   "pos.staff.permission_accounting": "Accounting & expenses",
   "pos.staff.permission_cash": "Cash in/out",
   "pos.staff.permission_settings": "Settings",

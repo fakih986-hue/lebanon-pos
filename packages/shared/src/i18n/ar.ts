@@ -919,6 +919,8 @@ export const ar = {
   "pos.staff.permission_customers": "إدارة العملاء",
   "pos.staff.permission_suppliers": "إدارة الموردين",
   "pos.staff.permission_reports": "عرض التقارير",
+  "pos.staff.permission_cost": "عرض التكلفة والربح",
+  "pos.err.price_override_needed": "البيع بسعر التكلفة يتطلب صلاحية تعديل السعر.",
   "pos.staff.permission_accounting": "المحاسبة والمصاريف",
   "pos.staff.permission_cash": "إدخال/إخراج نقدية",
   "pos.staff.permission_settings": "الإعدادات",

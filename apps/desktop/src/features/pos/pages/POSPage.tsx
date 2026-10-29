@@ -198,9 +198,9 @@ export default function POSPage() {
     return () => window.removeEventListener("sync:operation-rejected", onRejected)
   }, [])
 
-  // Auto-activate sellAtCost when selecting a cost-customer
+  // Auto-activate sellAtCost when selecting a cost-customer (only for staff allowed to override prices)
   useEffect(() => {
-    if (selectedCustomer?.sellAtCost) {
+    if (selectedCustomer?.sellAtCost && userCan("sales.price_override")) {
       setSellAtCost(true)
     }
   }, [selectedCustomerId])
@@ -331,6 +331,7 @@ export default function POSPage() {
   }
 
   function toggleSellAtCost() {
+    if (!userCan("sales.price_override")) { playErrorBuzz(); setScannerStatus(t("pos.err.price_override_needed")); return }
     setSellAtCost((prev) => {
       const next = !prev
       setItems((currentItems) =>

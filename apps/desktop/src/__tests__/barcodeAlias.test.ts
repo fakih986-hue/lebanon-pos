@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest"
+import { signInCatalogManager } from "./signInHelper"
 import {
   detectDuplicateBarcodes,
   findProductByBarcode,
@@ -32,7 +33,7 @@ const base = (over: Partial<Product>): Product => ({
 describe("POS-BARCODE-ALIAS-1 — barcode matching", () => {
   beforeEach(() => {
     try {
-      window.localStorage.clear()
+      window.localStorage.clear(); signInCatalogManager()
     } catch {
       /* jsdom always has localStorage */
     }

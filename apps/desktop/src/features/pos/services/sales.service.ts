@@ -972,6 +972,8 @@ export type LocalCheckoutResult = { sale: Sale; status: "completed" | "blocked";
  */
 export function checkoutLocalSale(input: LocalCheckoutInput): LocalCheckoutResult {
   assertCanWrite("record sale")
+  // SPRINT-0: selling at cost is a price override (the server enforces the same rule).
+  if (input.sale.soldAtCost && !userCan("sales.price_override")) throw new PermissionError("Selling at cost needs the Price override permission.")
   const sale = input.sale
   const slices = lotSlices(sale.items.flatMap((item) => item.batchAllocations ?? []))
   const lotIds = slices.map((s) => s.batchId)

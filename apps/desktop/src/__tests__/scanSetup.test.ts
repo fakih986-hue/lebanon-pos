@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
+import { signInCatalogManager } from "./signInHelper"
 import type { Product } from "../features/pos/types/product"
 import {
   resolveScannedBarcode,
@@ -42,7 +43,7 @@ const seed = (list: Product[]) => window.localStorage.setItem(PRODUCTS_KEY, JSON
 
 beforeEach(() => {
   enqueueMock.mockClear()
-  try { window.localStorage.clear(); window.localStorage.setItem("lebanonpos.suppliers.v1", "[]") } catch { /* jsdom */ }
+  try { window.localStorage.clear(); signInCatalogManager(); window.localStorage.setItem("lebanonpos.suppliers.v1", "[]") } catch { /* jsdom */ }
 })
 
 describe("POS-FIRST-SETUP-CATALOG-1D — resolveScannedBarcode (pure)", () => {

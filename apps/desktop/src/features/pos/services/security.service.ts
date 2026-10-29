@@ -35,6 +35,7 @@ export type Permission =
   | "staff.manage"
   | "settings.manage"
   | "delivery.manage"
+  | "reports.cost"
 
 export type PermissionGroup = "Sales" | "Inventory" | "People" | "Money" | "Admin"
 
@@ -63,6 +64,7 @@ export const PERMISSION_CATALOG: Array<{ id: Permission; group: PermissionGroup;
   { id: "customers.manage", group: "People", labelKey: "pos.staff.permission_customers" },
   { id: "suppliers.manage", group: "People", labelKey: "pos.staff.permission_suppliers" },
   { id: "reports.view", group: "Money", labelKey: "pos.staff.permission_reports" },
+  { id: "reports.cost", group: "Money", labelKey: "pos.staff.permission_cost" },
   { id: "accounting.manage", group: "Money", labelKey: "pos.staff.permission_accounting" },
   { id: "cash.manage", group: "Money", labelKey: "pos.staff.permission_cash" },
   { id: "shifts.manage", group: "Money", labelKey: "pos.staff.permission_shifts" },
@@ -162,6 +164,10 @@ export function expandLegacyPermissions(perms: Permission[] | undefined): Permis
   }
   if (set.has("inventory.receive") || set.has("inventory.adjust")) set.add("inventory.view")
   if (set.has("accounting.manage")) { set.add("suppliers.manage"); set.add("cash.manage") }
+  // SPRINT-0: cost/profit visibility became its own permission. Sets saved before it existed keep
+  // it when they already see money reports or manage the catalogue or the books; a Cashier
+  // (checkout, reprint, catalogue view) does not get it.
+  if (set.has("reports.view") || set.has("inventory.manage") || set.has("accounting.manage")) set.add("reports.cost")
   return [...set]
 }
 

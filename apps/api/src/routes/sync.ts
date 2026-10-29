@@ -227,10 +227,39 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
     const existing = payload?.id ? await prisma.shift.findFirst({ where: { id: String(payload.id), tenantId }, select: { openedById: true } }) : null
     return existing?.openedById ?? (typeof payload?.openedById === "string" ? payload.openedById : null)
   }
+  // SPRINT-0 price policy: a sale line below the product's current catalogue price (or a
+  // sell-at-cost sale) needs sales.price_override on the pushing account. A wholesale price is
+  // honoured for a sale to a named customer. Unknown products are left to the sale handler.
+  async function priceOverrideViolation(payload: unknown): Promise<string | null> {
+    const p = (payload ?? {}) as Record<string, unknown>
+    if (p.soldAtCost === true) return "PRICE_OVERRIDE: a sale at cost needs a manager's price-override permission."
+    const items = Array.isArray(p.items) ? (p.items as Array<Record<string, unknown>>) : []
+    for (const item of items) {
+      const syncId = typeof item.productSyncId === "string" && item.productSyncId ? item.productSyncId : null
+      const id = Number(item.id)
+      const product = syncId
+        ? await prisma.product.findFirst({ where: { tenantId, syncId }, select: { name: true, price: true, wholesalePrice: true } })
+        : Number.isInteger(id) && id > 0 ? await prisma.product.findFirst({ where: { tenantId, id }, select: { name: true, price: true, wholesalePrice: true } }) : null
+      if (!product) continue
+      const list = Number(product.price)
+      const wholesale = Number(product.wholesalePrice ?? 0)
+      const floor = wholesale > 0 && p.customerId ? Math.min(list, wholesale) : list
+      const unit = Number(item.unitPrice)
+      if (Number.isFinite(unit) && unit < floor - 0.005) {
+        return `PRICE_OVERRIDE: "${product.name}" was sold at ${unit}, below its price ${floor}. A manager must approve price changes.`
+      }
+    }
+    return null
+  }
+
   async function authorizeOp(op: { entity: string; action: string; payload?: unknown }): Promise<string | null> {
     if (actorPermissions) {
       const required = requiredPermissionForOp(op.entity, op.action, op.payload)
       if (required && !actorPermissions.includes(required)) return `You don't have permission to ${op.action} ${op.entity}`
+      if (op.entity === "sale" && op.action === "create" && !actorPermissions.includes("sales.price_override")) {
+        const price = await priceOverrideViolation(op.payload)
+        if (price) return price
+      }
       if (op.entity === "shift" && !shiftOpAllowed(op.action, actorPermissions, req.auth!.userId, op.action === "close" ? await shiftOpener(op.payload) : null)) {
         return op.action === "close" ? "Only the person who opened this shift or a manager can close it" : "Opening a shift needs the Checkout or Shifts permission"
       }
@@ -287,7 +316,9 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
             },
           })
         } catch { /* best-effort audit */ }
-        results.push({ id: op.id, status: "error", error: denial })
+        // A refused price is a money decision a manager settles (never retried); other refusals
+        // stay retryable (the permission may be granted later).
+        results.push({ id: op.id, status: denial.startsWith("PRICE_OVERRIDE:") ? "rejected" : "error", error: denial })
         continue
       }
 
@@ -516,6 +547,20 @@ router.get("/sale-committed/:saleId", requireCloudOrJwtAuth, async (req: AuthReq
   json(res, { committed: !!sale })
 })
 
+// SPRINT-0: staff and customer PIN hashes are verifiers. Only a hub's sync connection
+// (authenticated by the store's cloud key → "cloud-bridge") receives them: the hub verifies PINs
+// for its LAN tills. Staff sessions (tills, back office, cashiers) never do. A till verifies
+// offline with the verifier it writes itself after a successful online login (security.service
+// unlockWithPin), so withholding server hashes does not change what works offline.
+export function redactVerifiers<T>(rows: T[], req: AuthRequest): T[] {
+  if (req.auth?.userId === "cloud-bridge") return rows
+  return rows.map((r) => {
+    if (!r || typeof r !== "object" || !("pin" in (r as object))) return r
+    const { pin: _pin, ...rest } = r as Record<string, unknown>
+    return rest as T
+  })
+}
+
 router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
   try {
   const tenantId = req.auth!.tenantId
@@ -652,8 +697,8 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
 
   json(res, {
     serverTime: new Date().toISOString(),
-    products, sales: shapeSalesForSchema(sales, clientSyncSchema(req as any)), refunds: shapeRefundsForSchema(refunds, clientSyncSchema(req as any)), customers, debtSales: shapeDebtSalesForSchema(debtSales, clientSyncSchema(req as any)), debtPayments,
-    suppliers, purchaseOrders, supplierPayments, users, shifts,
+    products, sales: shapeSalesForSchema(sales, clientSyncSchema(req as any)), refunds: shapeRefundsForSchema(refunds, clientSyncSchema(req as any)), customers: redactVerifiers(customers, req), debtSales: shapeDebtSalesForSchema(debtSales, clientSyncSchema(req as any)), debtPayments,
+    suppliers, purchaseOrders, supplierPayments, users: redactVerifiers(users, req), shifts,
     auditEvents, settings: settings ? [settings] : [], expenses, batches,
     adjustments, stockCounts: counts, dailyCloses, deliveryOrders,
     deletions: deletions.map((op) => ({
@@ -695,6 +740,7 @@ const PULL_FULL_ENTITIES: Record<string, EntityConfig> = {
   users:             { cursorType: "string" },
   shifts:            { cursorType: "string" },
   "audit-events":    { cursorType: "string" },
+  "cash-movements":  { cursorType: "string" },
 }
 
 const MODEL_MAP: Record<string, string> = {
@@ -716,6 +762,7 @@ const MODEL_MAP: Record<string, string> = {
   users:             "staffUser",
   shifts:            "shift",
   "audit-events":    "auditEvent",
+  "cash-movements":  "cashMovement",
 }
 
 router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
@@ -790,6 +837,7 @@ router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest,
       items: entity === "sales" ? shapeSalesForSchema(items, clientSyncSchema(req as any))
         : entity === "refunds" ? shapeRefundsForSchema(items, clientSyncSchema(req as any))
         : entity === "debt-sales" ? shapeDebtSalesForSchema(items, clientSyncSchema(req as any))
+        : entity === "users" || entity === "customers" ? redactVerifiers(items, req)
         : items,
       hasMore,
       nextCursor: nextCursor ?? null,

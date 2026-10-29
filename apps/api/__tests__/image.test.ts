@@ -75,6 +75,14 @@ vi.mock("node:https", () => ({
   },
 }))
 
+// Route permissions (SPRINT-0) are covered against real Postgres in cafe-audit.test.ts; this
+// file mocks Prisma and tests the route logic, so the guard is passed through here.
+vi.mock("../src/middleware/permission", async (orig) => {
+  const real = await orig<typeof import("../src/middleware/permission")>()
+  const pass = () => async (_req: unknown, _res: unknown, next: () => void) => next()
+  return { ...real, requirePermission: pass, requirePermissionOrPlatformOwner: pass, hideCostUnlessAllowed: async (_req: unknown, _res: unknown, next: () => void) => next(), can: async () => true }
+})
+
 vi.mock("../src/lib/prisma", () => {
   const model = () => ({
     findFirst: vi.fn(),

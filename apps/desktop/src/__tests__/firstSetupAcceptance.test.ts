@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeAll } from "vitest"
+import { signInCatalogManager } from "./signInHelper"
 
 // POS-FIRST-SETUP-QA-1 — fresh-store acceptance drill. Walks the real 1.0.39
 // first-setup code paths against ONE disposable store (jsdom localStorage,
@@ -48,7 +49,7 @@ function runImport(body: string) {
 
 beforeAll(() => {
   try {
-    window.localStorage.clear()
+    window.localStorage.clear(); signInCatalogManager()
     // A connected hub on a fresh tenant has done a full pull, which writes an
     // empty products array (sync.service full-pull → writeLocalWithIndexedDB
     // key,[]). That empty key — NOT the bundled demo fallback getProductsSync()

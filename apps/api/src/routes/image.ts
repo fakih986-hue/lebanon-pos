@@ -3,6 +3,7 @@ import type { ServerResponse } from "node:http"
 import https from "node:https"
 import prisma from "../lib/prisma.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
+import { requirePermission, requirePermissionOrPlatformOwner } from "../middleware/permission.js"
 
 const router = Router()
 
@@ -167,7 +168,7 @@ async function generateImage(productName: string, category?: string | null, barc
 }
 
 // Save a client-generated image for a single product
-router.post("/save", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/save", requireAuth, requirePermission("inventory.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const { productId, image } = (req as any).body ?? {}
     if (!productId || typeof image !== "string") {
@@ -189,7 +190,7 @@ router.post("/save", requireAuth, async (req: AuthRequest, res: ServerResponse) 
 })
 
 // Save client-generated images for multiple products at once
-router.post("/save-all", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/save-all", requireAuth, requirePermission("inventory.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const { products } = (req as any).body ?? {}
     if (!Array.isArray(products)) {
@@ -213,7 +214,7 @@ router.post("/save-all", requireAuth, async (req: AuthRequest, res: ServerRespon
   }
 })
 
-router.post("/generate", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/generate", requireAuth, requirePermission("inventory.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const { name, category, barcode } = (req as any).body ?? {}
     if (!name || typeof name !== "string") {
@@ -232,7 +233,7 @@ router.post("/generate", requireAuth, async (req: AuthRequest, res: ServerRespon
   }
 })
 
-router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/generate-product/:id", requireAuth, requirePermission("inventory.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const productId = Number(req.params?.id)
     const tenantId = req.auth!.tenantId
@@ -253,7 +254,7 @@ router.post("/generate-product/:id", requireAuth, async (req: AuthRequest, res: 
   }
 })
 
-router.post("/generate-all", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/generate-all", requireAuth, requirePermissionOrPlatformOwner("inventory.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const body = (req as any).body ?? {}
     // Admin JWT has empty tenantId: only then fall back to the body parameter.
@@ -349,7 +350,7 @@ router.get("/serve/:id", requireAuth, async (req: AuthRequest, res: ServerRespon
 })
 
 // Debug: show product image status
-router.get("/debug", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/debug", requireAuth, requirePermission("settings.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const products = await prisma.product.findMany({

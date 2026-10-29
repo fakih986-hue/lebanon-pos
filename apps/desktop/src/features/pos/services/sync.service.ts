@@ -1951,13 +1951,16 @@ async function _pullFromServer(full = false) {
         }
       }
 
-      for (const [key, target] of Object.entries(PULL_TARGETS)) {
-        const entityPath = FULL_PULL_ENTITY_MAP[key]
-        if (entityPath) {
-          await pullFullEntity(apiUrl, token, entityPath, target)
+      // The users collection may already be replaced when a LATER entity fails: restore this
+      // device's offline PIN verifiers whatever happens (they used to be lost on any failed full pull).
+      try {
+        for (const [key, target] of Object.entries(PULL_TARGETS)) {
+          const entityPath = FULL_PULL_ENTITY_MAP[key]
+          if (entityPath) {
+            await pullFullEntity(apiUrl, token, entityPath, target)
+          }
         }
-      }
-
+      } finally {
       // Restore local SHA-256 pins + update pinVersion from server
       if (usersTarget) {
         const raw = localStorage.getItem(usersTarget.key)
@@ -1967,8 +1970,8 @@ async function _pullFromServer(full = false) {
             if (Array.isArray(users)) {
               let changed = false
               for (const u of users) {
-                // Restore SHA-256 pin if server returned bcrypt
-                if (u?.id && priorPins[u.id] && String(u.pin ?? "").startsWith("$2")) {
+                // Restore this device's own verifier when the server returned bcrypt or no pin at all
+                if (u?.id && priorPins[u.id] && (u.pin == null || u.pin === "" || String(u.pin).startsWith("$2"))) {
                   u.pin = priorPins[u.id]
                   changed = true
                 }
@@ -1989,6 +1992,7 @@ async function _pullFromServer(full = false) {
             }
           } catch { /* ignore */ }
         }
+      }
       }
       // Fetch settings as a single-page entity
       {

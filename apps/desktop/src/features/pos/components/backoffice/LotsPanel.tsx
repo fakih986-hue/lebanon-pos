@@ -7,6 +7,7 @@ import { formatCurrency, formatNumber } from "../../lib/currency"
 import { daysToExpiry, expiryTone, lotTrace, type LotTraceKind } from "../../lib/lotTrace"
 import { getInventoryBatches, getStockMovements, subscribeInventoryBatches, type InventoryBatch } from "../../services/inventoryBatch.service"
 import { getRefunds, getSales, subscribeSales } from "../../services/sales.service"
+import { userCan } from "../../services/security.service"
 import { Badge, Drawer, EmptyState, ExpiryChip, FilterChip, StatTile, type Tone } from "./BackOffice"
 
 type LotView = "open" | "expiring" | "expired" | "depleted" | "all"
@@ -114,7 +115,7 @@ export default function LotsPanel({ initialLotId, productFilter, canAdjust, onAd
                 <th className="p4">{t("inv.field.supplier")}</th>
                 {head("remaining", t("inv.lots.col.remaining"), "num")}
                 {head("expiry", t("inv.lots.col.expiry"))}
-                <th className="num p4">{t("inv.field.cost")}</th>
+                {userCan("reports.cost") && <th className="num p4">{t("inv.field.cost")}</th>}
                 <th className="num p4">{t("inv.lots.col.value")}</th>
               </tr>
             </thead>
@@ -139,8 +140,8 @@ export default function LotsPanel({ initialLotId, productFilter, canAdjust, onAd
                       <div className={`mg2-bar${tone === "err" ? " t-err" : tone === "warn" ? " t-warn" : ""}`} style={{ marginTop: 6 }} aria-hidden="true"><span style={{ width: `${pct}%` }} /></div>
                     </td>
                     <td><ExpiryChip date={b.expiryDate} /></td>
-                    <td className="num p4">{formatCurrency(b.unitCost)}</td>
-                    <td className="num p4">{formatCurrency(b.quantityRemaining * b.unitCost)}</td>
+                    {userCan("reports.cost") && <td className="num p4">{formatCurrency(b.unitCost)}</td>}
+                    {userCan("reports.cost") && <td className="num p4">{formatCurrency(b.quantityRemaining * b.unitCost)}</td>}
                   </tr>
                 )
               })}
@@ -148,7 +149,7 @@ export default function LotsPanel({ initialLotId, productFilter, canAdjust, onAd
           </table>
         </div>
       )}
-      {list.length > 0 && <p className="mg2-cap" style={{ marginTop: 8 }}>{t("inv.lots.footer", { n: list.length, units: formatNumber(list.reduce((s, b) => s + b.quantityRemaining, 0)), value: formatCurrency(list.reduce((s, b) => s + b.quantityRemaining * b.unitCost, 0)) })}</p>}
+      {list.length > 0 && userCan("reports.cost") && <p className="mg2-cap" style={{ marginTop: 8 }}>{t("inv.lots.footer", { n: list.length, units: formatNumber(list.reduce((s, b) => s + b.quantityRemaining, 0)), value: formatCurrency(list.reduce((s, b) => s + b.quantityRemaining * b.unitCost, 0)) })}</p>}
 
       {open && trace && (
         <Drawer open wide title={t("inv.lots.drawer_title", { lot: open.batchNumber, product: open.productName })} onClose={() => setOpenId(null)}
@@ -162,8 +163,8 @@ export default function LotsPanel({ initialLotId, productFilter, canAdjust, onAd
           <div className="mg2-stats">
             <StatTile label={t("inv.lots.col.remaining")} value={<span className="num">{formatNumber(open.quantityRemaining)}</span>} />
             <StatTile label={t("inv.lots.received_qty")} value={<span className="num">{formatNumber(open.initialQuantity)}</span>} />
-            <StatTile label={t("inv.field.cost")} value={<span className="num">{formatCurrency(open.unitCost)}</span>} />
-            <StatTile label={t("inv.lots.col.value")} value={<span className="num">{formatCurrency(open.quantityRemaining * open.unitCost)}</span>} />
+            {userCan("reports.cost") && <StatTile label={t("inv.field.cost")} value={<span className="num">{formatCurrency(open.unitCost)}</span>} />}
+            {userCan("reports.cost") && <StatTile label={t("inv.lots.col.value")} value={<span className="num">{formatCurrency(open.quantityRemaining * open.unitCost)}</span>} />}
           </div>
           <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <h3 className="mg2-section-title">{t("inv.lots.trace")}</h3>

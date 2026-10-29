@@ -557,12 +557,20 @@ describe("PIN reset reaches hubs (real Postgres)", () => {
     await new Promise((r) => setTimeout(r, 30))
     // What POST /api/admin/tenants/:id/users/:userId/reset-pin writes.
     await prisma.staffUser.update({ where: { id: CASHIER }, data: { pin: "$2a$12$newhashnewhashnewhashnewhashnewhashnewhashnewhashnew", pinVersion: { increment: 1 }, tokenVersion: { increment: 1 } } })
-    const res = await realFetch(`${baseUrl}/api/sync/pull?since=${encodeURIComponent(since)}`, { headers: { Authorization: `Bearer ${token(TENANT)}` } })
+    // A hub pulls with the store's cloud key (its sync connection): it receives the new verifier.
+    const key = `dv-key-${randomUUID()}`
+    await prisma.tenant.update({ where: { id: TENANT }, data: { cloudApiKey: key } })
+    const res = await realFetch(`${baseUrl}/api/sync/pull?since=${encodeURIComponent(since)}`, { headers: { "X-Cloud-Key": key, "X-Tenant-Id": TENANT } })
     expect(res.status).toBe(200)
     const body = await res.json() as { users?: Array<{ id: string; pinVersion: number; pin: string }> }
     const pulled = (body.users ?? []).find((u) => u.id === CASHIER)
     expect(pulled?.pinVersion).toBe(2)
     expect(pulled?.pin.startsWith("$2a$12$newhash")).toBe(true)
+    // A staff session (a till) receives the new version (so its old offline verifier stops) but no verifier (SPRINT-0).
+    const tillRes = await realFetch(`${baseUrl}/api/sync/pull?since=${encodeURIComponent(since)}`, { headers: { Authorization: `Bearer ${token(TENANT)}` } })
+    const tillPulled = ((await tillRes.json()) as { users?: Array<Record<string, unknown>> }).users?.find((u) => u.id === CASHIER)
+    expect(tillPulled?.pinVersion).toBe(2)
+    expect(tillPulled && "pin" in tillPulled).toBe(false)
     await prisma.staffUser.delete({ where: { id: CASHIER } })
   })
 })

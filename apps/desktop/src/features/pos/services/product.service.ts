@@ -495,6 +495,9 @@ export function applyReceiveFollowUps(input: {
 
 export function updateProduct(productId: number, patch: Partial<Product>) {
   assertCanWrite("update product")
+  // SPRINT-0: catalogue edits (price, cost, names, barcodes, images) need Manage inventory, here
+  // and on the server, whatever screen calls this.
+  assertCanManageCatalog("Editing a product")
   const cleanPatch = cleanProductPatch(patch)
 
   // Block direct stock edits — stock must change through receiving/sale/adjustment
@@ -586,6 +589,7 @@ export function createProduct(input: {
   opening?: boolean
 }): Product | undefined {
   assertCanWrite("create product")
+  if (!userCan("inventory.receive")) throw new PermissionError("Creating a product needs the Receive stock or Manage inventory permission.")
   const currentProducts = getProductsSync()
   const normalizedBarcode = normalizeBarcode(input.barcode)
   const inputAliases = normalizeBarcodeList(input.barcodeAliases).filter((b) => b !== normalizedBarcode)

@@ -73,6 +73,7 @@ export default function ProductsPage() {
   const [bulkValue, setBulkValue] = useState("")
   const [generating, setGenerating] = useState(false)
   const canManage = userCan("inventory.manage")
+  const showCost = userCan("reports.cost")
   const canReceive = userCan("inventory.receive")
 
   useEffect(() => {
@@ -173,7 +174,7 @@ export default function ProductsPage() {
   function exportCsv(rows: Product[]) {
     downloadCsv(`products-${new Date().toISOString().slice(0, 10)}.csv`,
       ["Name", "Category", "Barcode", "Aliases", "Price", "Cost", "Stock", "Reorder point", "Reorder qty", "Supplier", "Archived"],
-      rows.map((p) => [p.name, p.category, p.barcode ?? "", (p.barcodeAliases ?? []).join(" "), p.price, p.cost, p.stock, p.reorderPoint ?? "", p.reorderQuantity ?? "", p.supplierName ?? "", p.archived ? "yes" : ""]))
+      rows.map((p) => [p.name, p.category, p.barcode ?? "", (p.barcodeAliases ?? []).join(" "), p.price, showCost ? p.cost : "", p.stock, p.reorderPoint ?? "", p.reorderQuantity ?? "", p.supplierName ?? "", p.archived ? "yes" : ""]))
   }
   async function generateImages() {
     const apiUrl = getApiUrl(); const token = getAuthToken()
@@ -300,8 +301,8 @@ export default function ProductsPage() {
                   {sortHead("name", t("inv.col.product"))}
                   {sortHead("category", t("inv.col.category"), "p3")}
                   {sortHead("price", t("inv.col.price"), "num")}
-                  {sortHead("cost", t("inv.col.cost"), "num p4")}
-                  {sortHead("margin", t("inv.col.margin"), "num p4")}
+                  {showCost && sortHead("cost", t("inv.col.cost"), "num p4")}
+                  {showCost && sortHead("margin", t("inv.col.margin"), "num p4")}
                   {sortHead("stock", t("inv.col.stock"), "num")}
                   <th className="end p3">{t("inv.col.lots")}</th>
                 </tr>
@@ -331,8 +332,8 @@ export default function ProductsPage() {
                       </td>
                       <td className="p3">{p.category}</td>
                       <td className="num">{formatCurrency(p.price)}</td>
-                      <td className="num p4" style={{ color: "var(--text-2)" }}>{formatCurrency(p.cost)}</td>
-                      <td className="num p4" style={{ color: m === null ? "var(--text-3)" : m < 10 ? "var(--v2-err)" : m < 25 ? "var(--v2-warn)" : "var(--text-2)" }}>{m === null ? "—" : `${Math.round(m)}%`}</td>
+                      {showCost && <td className="num p4" style={{ color: "var(--text-2)" }}>{formatCurrency(p.cost)}</td>}
+                      {showCost && <td className="num p4" style={{ color: m === null ? "var(--text-3)" : m < 10 ? "var(--v2-err)" : m < 25 ? "var(--v2-warn)" : "var(--text-2)" }}>{m === null ? "—" : `${Math.round(m)}%`}</td>}
                       <td className="num">
                         {p.isParent ? <span style={{ color: "var(--text-3)" }}>—</span>
                           : stockTone === "err" ? <Badge tone="err" icon={<XCircle size={13} aria-hidden="true" />}>{t("inv.stock_out", { n: formatNumber(p.stock) })}</Badge>
@@ -350,7 +351,7 @@ export default function ProductsPage() {
             </table>
           </div>
         )}
-        {!loading && list.length > 0 && <p className="mg2-cap" style={{ marginTop: 8 }}>{t("inv.products.footer", { shown: list.length, value: formatCurrency(activeProducts.reduce((s, p) => s + p.stock * p.cost, 0)) })}</p>}
+        {!loading && list.length > 0 && showCost && <p className="mg2-cap" style={{ marginTop: 8 }}>{t("inv.products.footer", { shown: list.length, value: formatCurrency(activeProducts.reduce((s, p) => s + p.stock * p.cost, 0)) })}</p>}
       </div>
 
       <datalist id="inv-categories">{categories.map((c) => <option key={c} value={c} />)}</datalist>
