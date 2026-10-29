@@ -443,6 +443,71 @@ describe("stock-policy change between an offline checkout and its sync: the sale
   })
 })
 
+describe("historical stock policy across versions (tracked → untracked → tracked): the server's history decides", () => {
+  const sellLine = async (extra: Record<string, unknown>) => {
+    const p = (await server("Latte"))!
+    const id = randomUUID()
+    const r = await adminPush("sale", "create", { id, saleNumber: `S-H-${id.slice(0, 6)}`, paymentMethod: "Cash", subtotal: 3, tax: 0, total: 3, cashier: "x", status: "Completed", createdAt: new Date().toISOString(), items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: "", quantity: 1, unitPrice: 3, total: 3, cost: 0.7, ...extra }] })
+    return { id, r }
+  }
+  const stock = async () => Number((await server("Latte"))!.stock)
+
+  it("three versions are recorded server-side; a client cannot write the history or the version", async () => {
+    const d = await device()
+    d.product.createProduct({ name: "Latte", barcode: "", price: 3, cost: 0.7, stock: 10, category: "Coffee" })
+    await flush(d)
+    const syncId = local("Latte").syncId
+    expect((await adminPush("product", "update", { syncId, stockPolicy: "untracked" })).status).toBe("ok")
+    expect((await adminPush("product", "update", { syncId, stockPolicy: "tracked", stockPolicyVersion: 99, stockPolicyHistory: [{ version: 1, policy: "untracked", from: null }] })).status).toBe("ok")
+    const p = (await server("Latte"))!
+    expect([p.stockPolicy, p.stockPolicyVersion]).toEqual(["tracked", 3])
+    expect((p.stockPolicyHistory as any[]).map((e) => [e.version, e.policy])).toEqual([[1, "tracked"], [2, "untracked"], [3, "tracked"]])
+  })
+
+  it("v1 line: tracked (v1's policy) → stock taken, no conflict", async () => {
+    const before = await stock()
+    const { id, r } = await sellLine({ stockPolicyVersion: 1 })
+    expect(r.status).toBe("ok")
+    expect([(await saleLine(id, "Latte")).stockPolicy, (await saleLine(id, "Latte")).stockPolicyConflict]).toEqual(["tracked", null])
+    expect(await stock()).toBe(before - 1)
+  })
+
+  it("v2 line: untracked (v2's policy, though today is tracked) → no stock effect, flagged 'changed'", async () => {
+    const before = await stock()
+    const { id, r } = await sellLine({ stockPolicyVersion: 2, stockPolicy: "untracked" })
+    expect(r.status).toBe("ok")
+    const line = await saleLine(id, "Latte")
+    expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["untracked", "changed"])
+    expect(await stock()).toBe(before)
+  })
+
+  it("a claim that contradicts the server's record for that version is refused (v2 claimed tracked, v1 claimed untracked)", async () => {
+    for (const extra of [{ stockPolicyVersion: 2, stockPolicy: "tracked" }, { stockPolicyVersion: 1, stockPolicy: "untracked" }]) {
+      const { id, r } = await sellLine(extra)
+      expect(r.status).toBe("rejected")
+      expect(r.error).toMatch(/^STOCK_POLICY_MISMATCH:/)
+      expect(await prisma.sale.count({ where: { id } })).toBe(0)
+    }
+  })
+
+  it("a version newer than the server's is refused", async () => {
+    const { r } = await sellLine({ stockPolicyVersion: 4, stockPolicy: "untracked" })
+    expect(r.status).toBe("rejected")
+  })
+
+  it("an older version missing from the history: 'unknown', TODAY's policy and stock effects; the claim is ignored", async () => {
+    const p = (await server("Latte"))!
+    await prisma.product.update({ where: { id: p.id }, data: { stockPolicyHistory: [] } }) // e.g. history lost
+    const before = await stock()
+    const { id, r } = await sellLine({ stockPolicyVersion: 2, stockPolicy: "untracked" })
+    expect(r.status).toBe("ok")
+    const line = await saleLine(id, "Latte")
+    expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["tracked", "unknown"]) // not the client's "untracked"
+    expect(await stock()).toBe(before - 1)
+    expect(await prisma.auditEvent.count({ where: { tenantId: T, action: "sale.stock_policy_conflict", metadata: { path: ["saleId"], equals: id } } })).toBe(1)
+  })
+})
+
 describe("NULL barcodes in the database, barcode transitions, and id remapping", () => {
   const dbBarcode = async (name: string) => (await prisma.$queryRaw<Array<{ barcode: string | null; isnull: boolean }>>`SELECT "barcode", "barcode" IS NULL AS isnull FROM "Product" WHERE "tenantId" = ${T} AND "name" = ${name}`)[0]
   it("blank → NULL, blank → barcode, barcode → blank (NULL again); no '' barcodes anywhere in the store", async () => {

@@ -71,7 +71,7 @@ export async function attachProductSyncIds(tenantId: string, data: { sales?: any
 
 export function shapeProductsForSchema(rows: any[], schema: number): any[] {
   if (schema >= 3) return rows
-  return rows.map(({ stockPolicy: _p, stockPolicyVersion: _v, stockPolicyChangedAt: _c, ...product }: any) => product)
+  return rows.map(({ stockPolicy: _p, stockPolicyVersion: _v, stockPolicyChangedAt: _c, stockPolicyHistory: _h, ...product }: any) => product)
 }
 const withoutLinePolicy = (sale: any) => Array.isArray(sale?.items) ? { ...sale, items: sale.items.map(({ stockPolicy: _p, stockPolicyConflict: _c, ...item }: any) => item) } : sale
 export function shapeSalesForSchema(rows: any[], schema: number): any[] {
@@ -1091,12 +1091,15 @@ async function processOperation(
           const { id, syncId, tenantId: _t, _stockUpdate: _defunct, stock: _stock, ...patch } = { ...item } as Record<string, unknown>
           normalizeProductFields(patch)
           if (typeof patch.stockPolicy === "string") {
+            const policySelect = { stockPolicy: true, stockPolicyVersion: true, stockPolicyChangedAt: true, stockPolicyHistory: true }
             const cur = syncId
-              ? await db.product.findFirst({ where: { tenantId, syncId: syncId as string }, select: { stockPolicy: true } })
-              : id !== undefined ? await db.product.findFirst({ where: { tenantId, id: id as number }, select: { stockPolicy: true } }) : null
+              ? await db.product.findFirst({ where: { tenantId, syncId: syncId as string }, select: policySelect })
+              : id !== undefined ? await db.product.findFirst({ where: { tenantId, id: id as number }, select: policySelect }) : null
             if (cur && cur.stockPolicy !== patch.stockPolicy) {
-              patch.stockPolicyVersion = { increment: 1 }
-              patch.stockPolicyChangedAt = new Date()
+              const at = new Date()
+              patch.stockPolicyVersion = cur.stockPolicyVersion + 1
+              patch.stockPolicyChangedAt = at
+              patch.stockPolicyHistory = nextPolicyHistory(cur, patch.stockPolicy as string, at)
             }
           }
           if (_stock !== undefined) {
@@ -1278,7 +1281,7 @@ async function processOperation(
           const productId = await resolveProductId(item)
           // SPRINT-1: the line's stock policy is the SERVER's product policy at sale time (a client
           // cannot declare a packaged item untracked to skip stock control).
-          const product = productId ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { name: true, stockPolicy: true, stockPolicyVersion: true, stockPolicyChangedAt: true, cost: true } }) : null
+          const product = productId ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { name: true, stockPolicy: true, stockPolicyVersion: true, stockPolicyChangedAt: true, stockPolicyHistory: true, cost: true } }) : null
           const resolved = resolveLinePolicy(product, item, data.createdAt)
           return {
             productId,
@@ -2221,25 +2224,54 @@ export async function applyStaffWrite(db: typeof prisma, tenantId: string, actio
  * stockPolicy accepts only "tracked" | "untracked" (anything else is dropped).
  */
 /**
- * SPRINT-1: the stock policy a sale line was SOLD under. A till sends the policy and the product's
- * policy version it knew. Rules:
- *  - same version as the server: the policy must match (else the line is refused as inconsistent);
- *  - older version: the policy changed after the till's view, so the till's (sale-time) policy
- *    applies; if it differs from today's, the line is flagged "changed" (visible conflict);
- *  - no version (older till): today's policy if the product's policy has not changed since the
- *    sale; otherwise the sale-time policy cannot be established: today's policy applies, flagged
- *    "unknown" (visible conflict). An unknown product is tracked (stock enforcement as before).
+ * SPRINT-1: the stock policy a sale line was SOLD under, established by the SERVER. The till's
+ * claimed policy never decides it; it is only checked against the server's record.
+ *
+ * Each product carries a server-owned history: one entry per policy version (the policy that
+ * version stood for). A version is created only by the server, when a product update changes the
+ * policy. A line names the version it was sold under (stockPolicyVersion), and:
+ *  - known version (the current one, or one in the history): that version's policy applies. A
+ *    claimed policy that disagrees with it is refused (STOCK_POLICY_MISMATCH, the sale is not
+ *    applied). If it differs from today's policy, the line is flagged "changed" (visible conflict);
+ *  - version newer than the server's: impossible, refused (STOCK_POLICY_MISMATCH);
+ *  - no version (older till), or an older version missing from the history: the sale-time policy
+ *    cannot be established. TODAY's server policy applies (never the claim), with today's stock
+ *    effects (tracked: stock decremented and lots consumed, a refund/void restocks; untracked: no
+ *    stock or lot effect). The line is flagged "unknown" (visible conflict + audit event) unless
+ *    the policy is known not to have changed since the sale (an older till's line for a product
+ *    whose policy never changed is not a conflict).
+ * An unknown product is tracked (stock enforcement as before).
  */
 export class StockPolicyMismatchError extends Error {
   constructor(name: string) { super(`STOCK_POLICY_MISMATCH: "${name}" was sent with a stock setting that does not match its version; the sale was not applied.`); this.name = "StockPolicyMismatchError" }
 }
-function resolveLinePolicy(
-  product: { name: string; stockPolicy: string; stockPolicyVersion: number; stockPolicyChangedAt: Date | null } | null,
+type PolicyHistoryEntry = { version: number; policy: "tracked" | "untracked"; from: string | null }
+const asPolicy = (p: unknown): "tracked" | "untracked" => (p === "untracked" ? "untracked" : "tracked")
+function readPolicyHistory(raw: unknown): PolicyHistoryEntry[] {
+  return Array.isArray(raw)
+    ? raw.filter((e: any) => e && Number.isInteger(e.version) && (e.policy === "tracked" || e.policy === "untracked"))
+    : []
+}
+/** The history after a policy change: records the outgoing version (if not yet recorded) and the new one. */
+export function nextPolicyHistory(
+  cur: { stockPolicy: string; stockPolicyVersion: number; stockPolicyChangedAt: Date | null; stockPolicyHistory: unknown },
+  newPolicy: string,
+  at: Date,
+): PolicyHistoryEntry[] {
+  const history = readPolicyHistory(cur.stockPolicyHistory)
+  if (!history.some((e) => e.version === cur.stockPolicyVersion)) {
+    history.push({ version: cur.stockPolicyVersion, policy: asPolicy(cur.stockPolicy), from: cur.stockPolicyChangedAt ? cur.stockPolicyChangedAt.toISOString() : null })
+  }
+  history.push({ version: cur.stockPolicyVersion + 1, policy: asPolicy(newPolicy), from: at.toISOString() })
+  return history
+}
+export function resolveLinePolicy(
+  product: { name: string; stockPolicy: string; stockPolicyVersion: number; stockPolicyChangedAt: Date | null; stockPolicyHistory?: unknown } | null,
   item: { stockPolicy?: unknown; stockPolicyVersion?: unknown },
   saleCreatedAt: unknown,
 ): { policy: "tracked" | "untracked"; conflict: "changed" | "unknown" | null } {
   if (!product) return { policy: "tracked", conflict: null }
-  const today = product.stockPolicy === "untracked" ? "untracked" : "tracked"
+  const today = asPolicy(product.stockPolicy)
   const claimed = item.stockPolicy === "untracked" || item.stockPolicy === "tracked" ? item.stockPolicy : null
   const v = Number(item.stockPolicyVersion)
   if (!Number.isInteger(v) || v < 1) {
@@ -2247,12 +2279,13 @@ function resolveLinePolicy(
     const changedSince = !!product.stockPolicyChangedAt && (!soldAt || isNaN(soldAt.getTime()) || soldAt < product.stockPolicyChangedAt)
     return { policy: today, conflict: changedSince ? "unknown" : null }
   }
-  if (v === product.stockPolicyVersion) {
-    if (claimed && claimed !== today) throw new StockPolicyMismatchError(product.name)
-    return { policy: today, conflict: null }
-  }
-  if (v < product.stockPolicyVersion && claimed) return { policy: claimed, conflict: claimed !== today ? "changed" : null }
-  return { policy: today, conflict: "unknown" }
+  if (v > product.stockPolicyVersion) throw new StockPolicyMismatchError(product.name)
+  const atVersion = v === product.stockPolicyVersion
+    ? today
+    : readPolicyHistory(product.stockPolicyHistory).find((e) => e.version === v)?.policy ?? null
+  if (!atVersion) return { policy: today, conflict: "unknown" }
+  if (claimed && claimed !== atVersion) throw new StockPolicyMismatchError(product.name)
+  return { policy: atVersion, conflict: atVersion !== today ? "changed" : null }
 }
 
 function normalizeProductFields(p: Record<string, unknown>) {
@@ -2261,6 +2294,7 @@ function normalizeProductFields(p: Record<string, unknown>) {
   // The policy version and change time are server-owned (bumped below when the policy changes).
   delete p.stockPolicyVersion
   delete p.stockPolicyChangedAt
+  delete p.stockPolicyHistory
   if (Array.isArray(p.barcodeAliases)) p.barcodeAliases = (p.barcodeAliases as unknown[]).map((b) => String(b).trim()).filter(Boolean)
 }
 

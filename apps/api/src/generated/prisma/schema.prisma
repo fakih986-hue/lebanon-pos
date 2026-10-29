@@ -200,6 +200,8 @@ model Product {
   /// SPRINT-1: +1 on every stock-policy change (server side); sale lines carry the version they were sold under
   stockPolicyVersion   Int       @default(1)
   stockPolicyChangedAt DateTime?
+  /// SPRINT-1: server-owned [{version, policy, from}] — the policy each version stood for
+  stockPolicyHistory   Json      @default("[]")
   category             String
   accent               String    @default("emerald")
   favorite             Boolean   @default(false)

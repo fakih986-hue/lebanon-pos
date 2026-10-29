@@ -202,6 +202,7 @@ exports.Prisma.ProductScalarFieldEnum = {
   stockPolicy: 'stockPolicy',
   stockPolicyVersion: 'stockPolicyVersion',
   stockPolicyChangedAt: 'stockPolicyChangedAt',
+  stockPolicyHistory: 'stockPolicyHistory',
   category: 'category',
   accent: 'accent',
   favorite: 'favorite',
@@ -662,6 +663,10 @@ exports.Prisma.StockMovementScalarFieldEnum = {
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
+};
+
+exports.Prisma.JsonNullValueInput = {
+  JsonNull: Prisma.JsonNull
 };
 
 exports.Prisma.NullableJsonNullValueInput = {

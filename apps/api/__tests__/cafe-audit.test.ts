@@ -168,7 +168,10 @@ describe("A. staff attribution and server authorization", () => {
     expect(r.status).toBe("rejected")
   })
 
-  it.fails("CONFIRMED DEFECT: a cashier cannot record a sale attributed to another staff member", async () => {
+  // EXPECTED-FAILURE PROBE (known defect S4, fix planned for Sprint 2): the server records the cashier the
+  // till names, not the signed-in account. Vitest counts this as passing while the defect exists; it
+  // turns red when S4 is fixed (then flip it to a plain `it`).
+  it.fails("EXPECTED-FAILURE PROBE (S4, Sprint 2): a cashier cannot record a sale attributed to another staff member", async () => {
     const pepsi = (await productBy(A, "Pepsi 330ml"))!
     const sale = salePayload([{ productId: pepsi.id, name: pepsi.name, qty: 1, price: 1, barcode: pepsi.barcode }], { cashier: "Owner A", cashierId: ADMIN_A })
     const r = await push(cashierA, "sale", "create", sale)
