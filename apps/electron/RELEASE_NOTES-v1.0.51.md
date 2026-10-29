@@ -12,7 +12,7 @@
 - Products are matched by their stable identity when syncing: a till no longer mixes up two products that had the same local and server number.
 
 ## Upgrade order and mixed versions
-**Cloud first, then hubs, then tills.** Database migrations (applied automatically): `20261029100000_product_stock_policy`, `20261029120000_stock_policy_version`, `20261029140000_stock_policy_history`, `20261029160000_stock_policy_rev`, `20261029180000_sync_client_gate` — all add columns only.
+**Cloud first, then hubs, then tills.** Database migrations (applied automatically): `20261029100000_product_stock_policy`, `20261029120000_stock_policy_version`, `20261029140000_stock_policy_history`, `20261029160000_stock_policy_rev`, `20261029180000_sync_client_gate` — all additive (new columns, and one new table for the upgrade check).
 
 No mix of versions takes payment for a made-to-order item and rejects the sale afterwards:
 - New till on an older hub (1.0.50 or earlier): drinks show as out of stock and cannot be added; a till that still has them cached as made-to-order refuses at payment ("Nothing was charged. Update the hub…").
