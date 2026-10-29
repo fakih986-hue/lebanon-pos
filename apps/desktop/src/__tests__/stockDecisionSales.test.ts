@@ -25,8 +25,8 @@ beforeEach(() => {
 describe("held sales", () => {
   it("are listed with the money already collected, the product and the revision it was sold under", async () => {
     localStorage.setItem(QUEUE, JSON.stringify([op()]))
-    const { getHeldSales } = await import("../features/pos/services/sync.service")
-    const [h] = getHeldSales()
+    const { getPolicyHeldSales } = await import("../features/pos/services/sync.service")
+    const [h] = getPolicyHeldSales()
     expect(h).toMatchObject({ operationId: "op-1", saleNumber: "S-HELD-1", total: 3, paymentMethod: "Cash", productName: "Tea", revision: "rev-lost", cashier: "Rana" })
     expect(h.lines.filter((l) => l.held).map((l) => l.name)).toEqual(["Tea"])
   })
@@ -38,25 +38,25 @@ describe("held sales", () => {
     await s.flushSyncQueue()
     const q = JSON.parse(localStorage.getItem(QUEUE)!)
     expect(q[0]).toMatchObject({ status: "Failed", attempts: 4, error: HELD })
-    expect(s.getHeldSales()).toHaveLength(1)
+    expect(s.getPolicyHeldSales()).toHaveLength(1)
   })
 
   it("a manager's decision re-sends the same operation (same sale, same total) with the decision on the held lines only", async () => {
     localStorage.setItem(QUEUE, JSON.stringify([op()]))
     localStorage.setItem("lebanonpos.sales.v1", JSON.stringify([sale]))
     const s = await import("../features/pos/services/sync.service")
-    expect(s.resolveHeldSale("op-1", "tracked", "Tea bags come from stock", { id: "mgr-1", name: "Owner" })).toBe(true)
+    expect(s.resolvePolicyHeldSale("op-1", "tracked", "Tea bags come from stock", { id: "mgr-1", name: "Owner" })).toBe(true)
     const [q] = JSON.parse(localStorage.getItem(QUEUE)!)
     expect([q.id, q.status, q.error, q.payload.total, q.payload.id]).toEqual(["op-1", "Pending", undefined, 3, "sale-1"])
     expect(q.payload.items[0]).toMatchObject({ stockPolicy: "tracked", stockPolicyResolution: { policy: "tracked", note: "Tea bags come from stock", resolvedBy: "mgr-1", resolvedByName: "Owner" } })
     expect(q.payload.items[1].stockPolicyResolution).toBeUndefined()
     expect(JSON.parse(localStorage.getItem("lebanonpos.sales.v1")!)[0].items[0].stockPolicy).toBe("tracked")
-    expect(s.getHeldSales()).toHaveLength(0)
+    expect(s.getPolicyHeldSales()).toHaveLength(0)
   })
 
   it("only a held operation can be settled this way", async () => {
     localStorage.setItem(QUEUE, JSON.stringify([op({ error: "Server error" })]))
     const s = await import("../features/pos/services/sync.service")
-    expect(s.resolveHeldSale("op-1", "untracked", "note", { id: "m", name: "M" })).toBe(false)
+    expect(s.resolvePolicyHeldSale("op-1", "untracked", "note", { id: "m", name: "M" })).toBe(false)
   })
 })

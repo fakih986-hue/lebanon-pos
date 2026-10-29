@@ -2083,7 +2083,7 @@ export const ar = {
   "acct.s.needs_manage": "يحتاج صلاحية الموردين.",
   /* /acct */
   /* SPRINT-1: held sales + stock-setting upgrade gate */
-  "sync.held.title": "مبيعات معلّقة — يجب أن يقرّر مدير",
+  "sync.held.title": "مبيعات بانتظار قرار المخزون — يجب أن يقرّر مدير",
   "sync.held.help": "دفع الزبون. لا يعرف الخادم إعداد المخزون الذي بيع به \"{product}\"، لذلك لم يُسجَّل شيء بعد. اختر طريقة تسجيله. لا تطلب من الزبون الدفع مرة أخرى.",
   "sync.held.sale": "البيع {number} · {time} · {cashier}",
   "sync.held.paid": "مدفوع مسبقاً: {amount} ({method})",

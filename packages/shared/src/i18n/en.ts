@@ -2083,7 +2083,7 @@ export const en = {
   "acct.s.needs_manage": "Needs the Suppliers permission.",
   /* /acct */
   /* SPRINT-1: held sales + stock-setting upgrade gate */
-  "sync.held.title": "Held sales — a manager must decide",
+  "sync.held.title": "Sales waiting for a stock decision — a manager must decide",
   "sync.held.help": "The customer has paid. The server does not know which stock setting \"{product}\" was sold under, so nothing has been recorded yet. Choose how to record it. Do not charge the customer again.",
   "sync.held.sale": "Sale {number} · {time} · {cashier}",
   "sync.held.paid": "Already paid: {amount} ({method})",

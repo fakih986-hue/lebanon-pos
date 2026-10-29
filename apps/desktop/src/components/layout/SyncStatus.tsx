@@ -3,7 +3,7 @@ import { createPortal } from "react-dom"
 import { AlertTriangle, Cloud, CloudOff, RotateCw, X } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
-import HeldSales from "./HeldSales"
+import StockDecisionSales from "./StockDecisionSales"
 import { closeBlockedJournalEntry, getBlockedJournalEntries, previewBlockedJournalEntry, type JournalEntry } from "../../features/pos/services/businessJournal.service"
 import {
   clearSyncQueue,
@@ -213,7 +213,7 @@ export default function SyncStatus() {
             </span>
           </div>
 
-          <HeldSales />
+          <StockDecisionSales />
 
           {blocked.length > 0 && (
             <div className="mb-3 flex flex-col gap-2" role="alert">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useI18n } from "@lebanonpos/shared"
-import { getHeldSales, resolveHeldSale, subscribeSync, type HeldSale } from "../../features/pos/services/sync.service"
+import { getPolicyHeldSales, resolvePolicyHeldSale, subscribeSync, type PolicyHeldSale } from "../../features/pos/services/sync.service"
 import { getCurrentUser, recordAuditEvent, userCan } from "../../features/pos/services/security.service"
 
 /**
@@ -9,22 +9,22 @@ import { getCurrentUser, recordAuditEvent, userCan } from "../../features/pos/se
  * note (audited here and on the server); the same sale is re-sent, so nothing is charged again and
  * the stock setting is never silently re-read with today's value.
  */
-export default function HeldSales() {
+export default function StockDecisionSales() {
   const { t } = useI18n()
-  const [held, setHeld] = useState<HeldSale[]>(() => getHeldSales())
+  const [held, setHeld] = useState<PolicyHeldSale[]>(() => getPolicyHeldSales())
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [message, setMessage] = useState<Record<string, { text: string; error: boolean }>>({})
-  useEffect(() => subscribeSync(() => setHeld(getHeldSales())), [])
+  useEffect(() => subscribeSync(() => setHeld(getPolicyHeldSales())), [])
   if (held.length === 0) return null
 
   const user = getCurrentUser()
   const canDecide = !!user && userCan("inventory.manage" as never)
 
-  function decide(sale: HeldSale, policy: "tracked" | "untracked") {
+  function decide(sale: PolicyHeldSale, policy: "tracked" | "untracked") {
     const note = (notes[sale.operationId] ?? "").trim()
     if (!user || !canDecide) { setMessage((m) => ({ ...m, [sale.operationId]: { text: t("sync.held.need_manager"), error: true } })); return }
     if (note.length < 3) { setMessage((m) => ({ ...m, [sale.operationId]: { text: t("sync.held.note_required"), error: true } })); return }
-    if (!resolveHeldSale(sale.operationId, policy, note, { id: user.id, name: user.name })) return
+    if (!resolvePolicyHeldSale(sale.operationId, policy, note, { id: user.id, name: user.name })) return
     recordAuditEvent({
       action: "sale.stock_policy_resolved", entity: "sale",
       summary: `${sale.saleNumber}: "${sale.productName ?? ""}" recorded as ${policy} by ${user.name} (held: stock setting not known to the server). Already paid ${sale.total.toFixed(2)}. Note: ${note}`,

@@ -1350,7 +1350,7 @@ export function isHeldError(error: string | undefined | null): boolean {
   return typeof error === "string" && error.startsWith("STOCK_POLICY_HELD:")
 }
 
-export type HeldSale = {
+export type PolicyHeldSale = {
   operationId: string
   saleId: string
   saleNumber: string
@@ -1366,7 +1366,7 @@ export type HeldSale = {
 }
 
 /** Sales this till has taken payment for that the server is holding (see isHeldError). */
-export function getHeldSales(): HeldSale[] {
+export function getPolicyHeldSales(): PolicyHeldSale[] {
   return readQueue().filter((op) => op.entity === "sale" && op.action === "create" && op.status !== "Synced" && isHeldError(op.error)).map((op) => {
     const sale = (op.payload ?? {}) as any
     const error = op.error ?? ""
@@ -1388,7 +1388,7 @@ export function getHeldSales(): HeldSale[] {
  * collected is untouched: the same sale is re-sent, nothing is charged again. The server accepts
  * the decision only from an account that may manage inventory, and audits it.
  */
-export function resolveHeldSale(operationId: string, policy: "tracked" | "untracked", note: string, manager: { id: string; name: string }): boolean {
+export function resolvePolicyHeldSale(operationId: string, policy: "tracked" | "untracked", note: string, manager: { id: string; name: string }): boolean {
   let resolvedSaleId: string | null = null
   let productName: string | null = null
   const at = new Date().toISOString()
