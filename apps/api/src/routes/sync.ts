@@ -41,8 +41,19 @@ function clientSyncSchema(req: { headers?: Record<string, unknown> }): number {
   const value = Number(req.headers?.[SYNC_SCHEMA_HEADER])
   return Number.isFinite(value) ? value : 1
 }
+/**
+ * SPRINT-1 (schema 3): Product.stockPolicy and SaleItem.stockPolicy reach only clients that send
+ * x-titan-sync-schema >= 3. Older hubs insert pulled rows verbatim and have no such column.
+ */
+export function shapeProductsForSchema(rows: any[], schema: number): any[] {
+  if (schema >= 3) return rows
+  return rows.map(({ stockPolicy: _p, ...product }: any) => product)
+}
+const withoutLinePolicy = (sale: any) => Array.isArray(sale?.items) ? { ...sale, items: sale.items.map(({ stockPolicy: _p, ...item }: any) => item) } : sale
 export function shapeSalesForSchema(rows: any[], schema: number): any[] {
-  if (schema >= 2) return rows
+  if (schema >= 3) return rows
+  if (schema >= 2) return rows.map(withoutLinePolicy)
+  rows = rows.map(withoutLinePolicy)
   return rows.map(({ refundVersion: _v, ...sale }: any) => ({
     ...sale,
     ...(Array.isArray(sale.items) ? { items: sale.items.map(({ lineId: _l, lineIndex: _i, batchAllocations: _b, ...item }: any) => item) } : {}),
@@ -458,7 +469,7 @@ router.post("/validate-stock", requireCloudOrJwtAuth, async (req: AuthRequest, r
   const productIds = [...new Set(items.map((i) => i.productId))]
   const products = await prisma.product.findMany({
     where: { tenantId, id: { in: productIds } },
-    select: { id: true, name: true, stock: true, archived: true },
+    select: { id: true, name: true, stock: true, archived: true, stockPolicy: true },
   })
   const byId = new Map(products.map((p) => [p.id, p]))
 
@@ -466,6 +477,7 @@ router.post("/validate-stock", requireCloudOrJwtAuth, async (req: AuthRequest, r
   for (const item of items) {
     const product = byId.get(item.productId)
     const available = product ? Number(product.stock) : 0
+    if (product && !product.archived && product.stockPolicy === "untracked") continue // made to order: no stock to check
     if (!product || product.archived || available < item.quantity) {
       insufficientItems.push({
         productId: item.productId,
@@ -697,7 +709,7 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
 
   json(res, {
     serverTime: new Date().toISOString(),
-    products, sales: shapeSalesForSchema(sales, clientSyncSchema(req as any)), refunds: shapeRefundsForSchema(refunds, clientSyncSchema(req as any)), customers: redactVerifiers(customers, req), debtSales: shapeDebtSalesForSchema(debtSales, clientSyncSchema(req as any)), debtPayments,
+    products: shapeProductsForSchema(products, clientSyncSchema(req as any)), sales: shapeSalesForSchema(sales, clientSyncSchema(req as any)), refunds: shapeRefundsForSchema(refunds, clientSyncSchema(req as any)), customers: redactVerifiers(customers, req), debtSales: shapeDebtSalesForSchema(debtSales, clientSyncSchema(req as any)), debtPayments,
     suppliers, purchaseOrders, supplierPayments, users: redactVerifiers(users, req), shifts,
     auditEvents, settings: settings ? [settings] : [], expenses, batches,
     adjustments, stockCounts: counts, dailyCloses, deliveryOrders,
@@ -835,6 +847,7 @@ router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest,
     json(res, {
       entity,
       items: entity === "sales" ? shapeSalesForSchema(items, clientSyncSchema(req as any))
+        : entity === "products" ? shapeProductsForSchema(items, clientSyncSchema(req as any))
         : entity === "refunds" ? shapeRefundsForSchema(items, clientSyncSchema(req as any))
         : entity === "debt-sales" ? shapeDebtSalesForSchema(items, clientSyncSchema(req as any))
         : entity === "users" || entity === "customers" ? redactVerifiers(items, req)
@@ -1032,6 +1045,7 @@ async function processOperation(
           // `_stockUpdate` is a now-defunct transition marker — discard it so it
           // is never persisted (and never trusted). `stock` is always stripped.
           const { id, syncId, tenantId: _t, _stockUpdate: _defunct, stock: _stock, ...patch } = { ...item } as Record<string, unknown>
+          normalizeProductFields(patch)
           if (_stock !== undefined) {
             console.warn(`[sync] product.update: ignored a 'stock' field (server-side guard) for product ${syncId ?? id ?? patch.barcode ?? "?"} — stock only changes via approved stock operations.`)
           }
@@ -1065,6 +1079,7 @@ async function processOperation(
           // The client's numeric id is local-only and must never be forwarded
           // (an explicit id in an INSERT bypasses the sequence and collides).
           const { id: _localId, ...rest } = item as Record<string, unknown>
+          normalizeProductFields(rest)
           let syncId = (rest.syncId as string | null | undefined) || undefined
           const barcode = (rest.barcode as string | null | undefined) || undefined
 
@@ -1178,6 +1193,8 @@ async function processOperation(
           })
 
           for (const p of planned) {
+            // SPRINT-1: a made-to-order line never returns to stock (its policy when sold decides).
+            if ((sale?.items as any[] | undefined)?.find((it: any) => (it.lineId ?? legacyLineKey(it.productId)) === p.key)?.stockPolicy === "untracked") continue
             await db.product.updateMany({
               where: { tenantId, id: p.productId },
               data: { stock: { increment: p.quantity }, updatedAt: new Date() },
@@ -1204,15 +1221,22 @@ async function processOperation(
         }
       } else if (action === "create") {
         const data = payload as any
-        const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => ({
-          productId: await resolveProductId(item),
-          productName: item.name,
-          barcode: item.barcode,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          total: item.total,
-          cost: item.cost ?? 0,
-        })))
+        const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => {
+          const productId = await resolveProductId(item)
+          // SPRINT-1: the line's stock policy is the SERVER's product policy at sale time (a client
+          // cannot declare a packaged item untracked to skip stock control).
+          const product = productId ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { stockPolicy: true } }) : null
+          return {
+            productId,
+            productName: item.name,
+            barcode: typeof item.barcode === "string" ? item.barcode : "",
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.total,
+            cost: item.cost ?? 0,
+            stockPolicy: product?.stockPolicy === "untracked" ? "untracked" : "tracked",
+          }
+        }))
         const { saleId: _s, ...prismaTender } = data.tender ?? {}
         const hasTender = Object.keys(prismaTender).length > 0
         const { items: _i, tender: _t, ...saleData } = data
@@ -1239,7 +1263,7 @@ async function processOperation(
         }
 
         // Decrement product stock
-        await decrementProductStock(db, tenantId, prismaItems.map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+        await decrementProductStock(db, tenantId, prismaItems.filter((i: any) => i.stockPolicy !== "untracked").map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
         // Atomic batch decrement — updateMany with quantityRemaining >= quantity is atomic.
         // REFUND-INTEGRITY-1: record the lots ACTUALLY consumed per line (including
         // FEFO-fallback lots the client never knew about, and any untracked
@@ -1252,6 +1276,7 @@ async function processOperation(
           const item = rawItems[i]
           const resolvedProductId = prismaItems[i]?.productId
           const applied = appliedByLine[i]
+          if (prismaItems[i]?.stockPolicy === "untracked") continue // no lots for made-to-order lines
           for (const allocation of item.batchAllocations ?? []) {
             const quantity = Number(allocation.quantity ?? 0)
             if (quantity <= 0) continue
@@ -1443,6 +1468,9 @@ async function processOperation(
         })
 
         for (const p of planned) {
+          // SPRINT-1: a financial refund of a made-to-order line (its policy when sold) restores
+          // nothing physical: the drink was made and cannot go back on the shelf.
+          if ((saleItemFor(p.key) as any)?.stockPolicy === "untracked") continue
           await db.product.updateMany({
             where: { tenantId, id: p.productId },
             data: { stock: { increment: p.quantity }, updatedAt: new Date() },
@@ -2110,6 +2138,17 @@ export async function applyStaffWrite(db: typeof prisma, tenantId: string, actio
     if (isOneAdminViolation(err)) throw new Error("ONE_ADMIN: This store already has an admin. Make this person a Manager instead.")
     throw err
   }
+}
+
+/**
+ * SPRINT-1: a blank barcode means "no barcode" and is stored as NULL (many products may have
+ * none; '' would collide on the unique (tenantId, barcode) index). Identity is syncId.
+ * stockPolicy accepts only "tracked" | "untracked" (anything else is dropped).
+ */
+function normalizeProductFields(p: Record<string, unknown>) {
+  if ("barcode" in p && (p.barcode == null || (typeof p.barcode === "string" && p.barcode.trim() === ""))) p.barcode = null
+  if ("stockPolicy" in p && p.stockPolicy !== "tracked" && p.stockPolicy !== "untracked") delete p.stockPolicy
+  if (Array.isArray(p.barcodeAliases)) p.barcodeAliases = (p.barcodeAliases as unknown[]).map((b) => String(b).trim()).filter(Boolean)
 }
 
 async function hashStaffPayload(payload?: Record<string, unknown>) {

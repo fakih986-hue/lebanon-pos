@@ -116,9 +116,14 @@ describe("POS-PRODUCT-ONBOARDING-1 — analyze (pure dry-run)", () => {
   })
 
   it("reports invalid rows instead of silently skipping", () => {
-    const plan = analyzeProductImport(parse("NoBarcode,,,C,1,2,1,,,,\nBadCost,X1,,C,abc,2,1,,,,"), catalog)
+    const plan = analyzeProductImport(parse(",X2,,C,1,2,1,,,,\nBadCost,X1,,C,abc,2,1,,,,"), catalog)
     expect(plan.counts.invalid).toBe(2)
     expect(plan.actions.every((a) => a.kind === "invalid")).toBe(true)
+  })
+
+  it("SPRINT-1: rows without a barcode are new products with no barcode (never matched by barcode, never merged)", () => {
+    const plan = analyzeProductImport(parse("Espresso,,,Coffee,0.3,1.5,0,,,,\nCappuccino,,,Coffee,0.5,2.5,0,,,,"), catalog)
+    expect(plan.counts).toMatchObject({ create: 2, invalid: 0, conflict: 0 })
   })
 
   it("warns (but still creates) when a new product's name already exists", () => {

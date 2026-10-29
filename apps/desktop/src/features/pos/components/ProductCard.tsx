@@ -56,8 +56,9 @@ const ProductCard = memo(function ProductCard({
   searchQuery,
 }: Props) {
   const { t } = useI18n()
-  const outOfStock     = product.stock <= 0
-  const lowStock       = !outOfStock && product.stock <= 5
+  const untracked      = product.stockPolicy === "untracked"
+  const outOfStock     = !untracked && product.stock <= 0
+  const lowStock       = !untracked && !outOfStock && product.stock <= 5
   const accent         = accents[product.accent] ?? accents.emerald
   const effectivePrice = wholesale && product.wholesalePrice != null
     ? Number(product.wholesalePrice)
@@ -102,15 +103,15 @@ const ProductCard = memo(function ProductCard({
   const selected = cartQuantity > 0
   const stockLabel = outOfStock
     ? t("pos.out_of_stock")
-    : lowStock || selected
-    ? `${product.stock} left`
+    : !untracked && (lowStock || selected)
+    ? t("pos.n_left", { n: product.stock })
     : null
 
   const stockColor = outOfStock ? "var(--rose)" : lowStock ? "var(--warning)" : "var(--text-3)"
 
   const handleClick = useCallback(() => {
     if (longPressed.current) { longPressed.current = false; return } // the long press only revealed the name
-    if (outOfStock) return
+    if (outOfStock) { onClick(); return } // the POS explains why it can't be added (no silent tap)
     onClick()
     setJustAdded(true)
     setAddCount((c) => c + 1)
@@ -144,7 +145,8 @@ const ProductCard = memo(function ProductCard({
           onPointerCancel={endPress}
           onPointerLeave={endPress}
           onContextMenu={(e) => { if (clipped) e.preventDefault() }}
-          disabled={outOfStock}
+          // Not `disabled`: a tap must reach the POS so it can say why the item cannot be added.
+          aria-disabled={outOfStock || undefined}
           aria-describedby={clipped ? tipId : undefined}
           className="pos-tile-button flex w-full flex-col gap-1.5 p-2.5 text-start"
         >
@@ -180,8 +182,8 @@ const ProductCard = memo(function ProductCard({
                   )}
                 </p>
               )}
-              {!product.barcode && (
-                <p className="text-[9px] font-bold mt-0.5" style={{ color: "var(--amber)" }}>No barcode</p>
+              {!product.barcode && !untracked && (
+                <p className="text-[9px] font-bold mt-0.5" style={{ color: "var(--amber)" }}>{t("inv.no_barcode")}</p>
               )}
             </div>
 

@@ -48,6 +48,8 @@ export type SaleTender = {
 }
 
 export type SaleItem = Pick<Product, "id" | "name" | "barcode" | "cost"> & {
+  /** SPRINT-1: the product's stock policy when sold. Refunds/voids restore stock only for tracked lines. */
+  stockPolicy?: "tracked" | "untracked"
   quantity: number
   unitPrice: number
   total: number
@@ -192,6 +194,8 @@ function normalizeSaleItem(raw: any): SaleItem {
   }
   if (typeof raw?.productSyncId === "string") (item as any).productSyncId = raw.productSyncId
   if (typeof raw?.lineId === "string" && raw.lineId) item.lineId = raw.lineId
+  // SPRINT-1: the line's stock policy when sold (refunds/voids depend on it). Absent = tracked.
+  if (raw?.stockPolicy === "untracked" || raw?.stockPolicy === "tracked") item.stockPolicy = raw.stockPolicy
   if (Array.isArray(raw?.batchAllocations)) {
     item.batchAllocations = raw.batchAllocations.map((a: any) => ({
       batchId: a?.batchId ?? "legacy-stock",
@@ -535,7 +539,8 @@ type RefundJournalEntry = {
   refundId: string
   startedAt: string
   refund: SaleRefund
-  plan: Array<{ productId: number; productName: string; barcode: string; quantity: number; allocations: AllocationSlice[] | null }>
+  /** restock=false: a made-to-order line (SPRINT-1) — the refund is financial only. Absent on older journals = restock. */
+  plan: Array<{ productId: number; productName: string; barcode: string; quantity: number; allocations: AllocationSlice[] | null; restock?: boolean }>
   debt?: { customerId: string; amount: number; reference: string }
   steps: { lots: boolean; stock: boolean; committed: boolean; debt: boolean; ledger: boolean }
   /** Tenant whose data the refund was applied to; recovery never replays it into another tenant. */
@@ -568,7 +573,7 @@ export function getPendingRefundJournal() {
 }
 
 function planSlices(entry: RefundJournalEntry): AllocationSlice[] {
-  return entry.plan.flatMap((line) => line.allocations ?? [])
+  return entry.plan.filter((line) => line.restock !== false).flatMap((line) => line.allocations ?? [])
 }
 
 /** Queued, staged or already acknowledged (its queue entry may have been pruned since). */
@@ -613,10 +618,15 @@ function commitRefundEntry(entry: RefundJournalEntry) {
   saveJournalEntry(entry)
 }
 
+/** The refund lines that go back to stock (SPRINT-1: not made-to-order lines). */
+function restockLines(entry: RefundJournalEntry) {
+  return entry.plan.filter((line) => line.restock !== false)
+}
+
 /** Undo the reversible pre-commit effects (stock, lots). */
 function rollbackRefundEntry(entry: RefundJournalEntry) {
   if (entry.steps.stock) {
-    decreaseProductStock(entry.plan.map((line) => ({ productId: line.productId, quantity: line.quantity })))
+    decreaseProductStock(restockLines(entry).map((line) => ({ productId: line.productId, quantity: line.quantity })))
     entry.steps.stock = false
   }
   if (entry.steps.lots) {
@@ -644,7 +654,7 @@ function finishRefundEntry(entry: RefundJournalEntry) {
     saveJournalEntry(entry)
   }
   if (!entry.steps.ledger) {
-    for (const line of entry.plan) {
+    for (const line of restockLines(entry)) {
       recordStockMovement({
         productId: line.productId, productName: line.productName, type: "Refund", quantity: line.quantity,
         reference: entry.refund.refundNumber, note: `Refund of ${entry.refund.saleNumber}`,
@@ -773,7 +783,8 @@ export function processRefund(input: ProcessRefundInput): SaleRefund {
     refund,
     plan: planned.map((line) => {
       const saleItem = itemFor(line.key)!
-      return { productId: line.productId, productName: saleItem.name, barcode: saleItem.barcode, quantity: line.quantity, allocations: line.allocations }
+      // SPRINT-1: the line's stock policy WHEN SOLD decides: a made-to-order item is refunded in money only.
+      return { productId: line.productId, productName: saleItem.name, barcode: saleItem.barcode ?? "", quantity: line.quantity, allocations: line.allocations, restock: saleItem.stockPolicy !== "untracked" }
     }),
     ...(sale.paymentMethod === "Debt" && sale.customerId
       ? { debt: { customerId: sale.customerId, amount: total, reference: `${refund.refundNumber} return for ${sale.saleNumber}` } }
@@ -789,7 +800,7 @@ export function processRefund(input: ProcessRefundInput): SaleRefund {
     saveJournalEntry(entry)
     refundFaults.afterStep?.("lots")
 
-    increaseProductStock(entry.plan.map((line) => ({ productId: line.productId, quantity: line.quantity })))
+    increaseProductStock(restockLines(entry).map((line) => ({ productId: line.productId, quantity: line.quantity })))
     entry.steps.stock = true
     saveJournalEntry(entry)
     refundFaults.afterStep?.("stock")
@@ -867,7 +878,10 @@ export function voidSale(saleId: string, restoreStock = true) {
   // Guard: already voided — do nothing (prevents double-restock)
   if (sale.status === "Voided") return
 
+  // SPRINT-1: a made-to-order line (its policy when sold) never returns to stock.
+  const untrackedKeys = new Set((sale.items ?? []).filter((item) => item.stockPolicy === "untracked").map((item) => item.lineId ?? legacyLineKey(item.id)))
   const plan = planVoidRestoration(refundableLinesOf(sale), priorRefundLinesOf(getRefunds(), sale.id))
+    .filter((line) => !untrackedKeys.has(line.key))
   const slices = lotSlices(plan.flatMap((line) => line.allocations ?? []))
   const stock = restoreStock ? plan.map((line) => ({ productId: line.productId, quantity: line.quantity })) : []
   const isDebt = sale.paymentMethod === "Debt" || sale.status === "Debt"
@@ -972,6 +986,11 @@ export type LocalCheckoutResult = { sale: Sale; status: "completed" | "blocked";
  */
 export function checkoutLocalSale(input: LocalCheckoutInput): LocalCheckoutResult {
   assertCanWrite("record sale")
+  // SPRINT-1: made-to-order (untracked) products have no lots and no stock.
+  {
+    const untracked = new Set(getProductsSync().filter((p) => p.stockPolicy === "untracked").map((p) => p.id))
+    if (untracked.size) input = { ...input, lots: input.lots.filter((l) => !untracked.has(l.productId)), stock: input.stock.filter((l) => !untracked.has(l.productId)) }
+  }
   // SPRINT-0: selling at cost is a price override (the server enforces the same rule).
   if (input.sale.soldAtCost && !userCan("sales.price_override")) throw new PermissionError("Selling at cost needs the Price override permission.")
   const sale = input.sale

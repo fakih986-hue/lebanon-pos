@@ -39,6 +39,8 @@ export type ProductImportRow = {
   category: string; cost: number; price: number; openingQty: number
   reorderPoint?: number; supplier?: string
   variantOf?: string; variantName?: string
+  /** SPRINT-1: false = made to order (untracked). Absent column = tracked. */
+  trackStock?: boolean
 }
 
 export type ImportActionKind = "create" | "existing" | "variant" | "conflict" | "invalid"
@@ -68,6 +70,7 @@ function headerField(h: string): string | null {
   if (["supplier", "supplier name"].includes(k)) return "supplier"
   if (["variant of", "parent"].includes(k)) return "variantOf"
   if (["variant name"].includes(k)) return "variantName"
+  if (["track stock", "stock tracking", "tracked"].includes(k)) return "trackStock"
   return null
 }
 
@@ -80,8 +83,9 @@ export function parseProductImport(text: string): { rows: ProductImportRow[]; er
   const split = (line: string) =>
     (line.includes("\t") ? line.split("\t") : line.split(",")).map((c) => c.trim().replace(/^"|"$/g, ""))
   const fields = split(lines[0]).map(headerField)
-  if (!fields.includes("name") || !fields.includes("primaryBarcode")) {
-    return { rows: [], error: "Header must include Name and Primary Barcode columns." }
+  // SPRINT-1: a barcode is optional (drinks and other made-to-order items have none).
+  if (!fields.includes("name")) {
+    return { rows: [], error: "Header must include a Name column." }
   }
   const rows: ProductImportRow[] = []
   for (let i = 1; i < lines.length; i++) {
@@ -100,6 +104,9 @@ export function parseProductImport(text: string): { rows: ProductImportRow[]; er
       supplier: get("supplier").trim() || undefined,
       variantOf: get("variantOf").trim() || undefined,
       variantName: get("variantName").trim() || undefined,
+      ...(fields.includes("trackStock") && get("trackStock").trim()
+        ? { trackStock: !["no", "n", "false", "0", "untracked", "لا"].includes(get("trackStock").trim().toLowerCase()) }
+        : {}),
     })
   }
   return { rows }
@@ -120,18 +127,19 @@ export function analyzeProductImport(rows: ProductImportRow[], products: Product
     const conflict = (reason: string) => actions.push({ ...base, kind: "conflict", detail: "", reason })
 
     if (!row.name) { invalid("Name is required"); continue }
-    if (!row.primaryBarcode) { invalid("Primary barcode is required"); continue }
     if (!Number.isFinite(row.cost) || row.cost < 0) { invalid("Invalid cost"); continue }
     if (!Number.isFinite(row.price) || row.price < 0) { invalid("Invalid price"); continue }
     if (!Number.isFinite(row.openingQty) || row.openingQty < 0) { invalid("Invalid opening qty"); continue }
-    if (seen.has(row.primaryBarcode)) { conflict(`Barcode "${row.primaryBarcode}" is repeated earlier in the file`); continue }
-    seen.add(row.primaryBarcode)
+    if (row.primaryBarcode) {
+      if (seen.has(row.primaryBarcode)) { conflict(`Barcode "${row.primaryBarcode}" is repeated earlier in the file`); continue }
+      seen.add(row.primaryBarcode)
+    }
 
     // Variant of an existing parent → new child product.
     if (row.variantOf) {
       const parent = products.find((p) => normName(p.name) === normName(row.variantOf!) || productHasBarcode(p, normalizeBarcode(row.variantOf!)))
       if (!parent) { conflict(`Variant parent "${row.variantOf}" not found`); continue }
-      const bcOwner = owner(row.primaryBarcode)
+      const bcOwner = row.primaryBarcode ? owner(row.primaryBarcode) : undefined
       if (bcOwner) { conflict(`Barcode "${row.primaryBarcode}" already used by "${bcOwner.name}"`); continue }
       const extraClash = row.extraBarcodes.map(owner).find(Boolean)
       if (extraClash) { conflict(`Extra barcode already used by "${extraClash.name}"`); continue }
@@ -139,7 +147,7 @@ export function analyzeProductImport(rows: ProductImportRow[], products: Product
       continue
     }
 
-    const match = owner(row.primaryBarcode)
+    const match = row.primaryBarcode ? owner(row.primaryBarcode) : undefined
     if (match) {
       if (row.name && normName(match.name) !== normName(row.name)) {
         conflict(`Barcode "${row.primaryBarcode}" belongs to "${match.name}", not "${row.name}"`); continue
@@ -215,7 +223,8 @@ export function commitProductImport(plan: ProductImportPlan, opts?: { opening?: 
       if (a.kind === "create") {
         const p = createProduct({
           name: row.name, price: row.price, cost: row.cost, stock: row.openingQty,
-          barcode: row.primaryBarcode, category: row.category,
+          barcode: row.primaryBarcode || null, category: row.category,
+          stockPolicy: row.trackStock === false ? "untracked" : "tracked",
           reorderPoint: row.reorderPoint, supplierId: sup.supplierId, supplierName: sup.supplierName,
           barcodeAliases: a.aliases, opening,
         })
@@ -227,7 +236,8 @@ export function commitProductImport(plan: ProductImportPlan, opts?: { opening?: 
         const p = createProduct({
           name: parent ? `${parent.name} - ${vname}` : row.name,
           price: row.price, cost: row.cost, stock: row.openingQty,
-          barcode: row.primaryBarcode, category: row.category,
+          barcode: row.primaryBarcode || null, category: row.category,
+          stockPolicy: row.trackStock === false ? "untracked" : "tracked",
           parentId: a.targetId, variantName: vname,
           reorderPoint: row.reorderPoint, supplierId: sup.supplierId, supplierName: sup.supplierName,
           barcodeAliases: a.aliases, opening,

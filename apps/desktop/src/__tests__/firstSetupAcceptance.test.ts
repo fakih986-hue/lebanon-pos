@@ -89,13 +89,13 @@ describe("POS-FIRST-SETUP-QA-1 — fresh store acceptance drill", () => {
         "Cola,COLA-1,,Beverages,0.40,0.75,12,,,,",           // existing restock
         "Chips,CHIPS-1,CHIPS-ALT,Snacks,0.30,0.60,0,,,,",    // existing + alias
         "Imposter,COLA-1,,Beverages,1,2,3,,,,",              // conflict (barcode owned by Cola, dup in file)
-        "NoBarcode,,,Beverages,1,2,1,,,,",                   // invalid
+        ",NONAME-1,,Beverages,1,2,1,,,,",                     // invalid (no name; a barcode is optional since SPRINT-1)
       ].join("\n"),
     )
     expect(plan.counts).toMatchObject({ variant: 1, existing: 2, conflict: 1, invalid: 1 })
     // valid rows commit; conflict + invalid do not
     expect(result.created).toBe(1)   // the variant
-    expect(getProductsSync().length).toBe(before + 1) // no Imposter/NoBarcode
+    expect(getProductsSync().length).toBe(before + 1) // no Imposter / nameless row
     expect(byId("Cola")?.stock).toBe(24 + 12)          // restocked
     expect(byId("Cola - 1L")?.parentId).toBe(byId("Cola")?.id)
     expect((byId("Chips")?.barcodeAliases ?? [])).toContain("CHIPS-ALT")

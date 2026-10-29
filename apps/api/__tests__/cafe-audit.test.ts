@@ -98,48 +98,48 @@ afterAll(async () => {
   await prisma.$disconnect()
 })
 
-describe("B. products without barcodes", () => {
-  it("several drinks can be created with no barcode (null) and stay distinct", async () => {
+describe("B. products without barcodes (SPRINT-1)", () => {
+  it("several drinks can be created with no barcode and stay distinct; they are made to order (untracked)", async () => {
     for (const name of ["Espresso", "Double espresso", "Cappuccino"]) {
-      const r = await push(adminA, "product", "create", { syncId: randomUUID(), name, price: 1.5, cost: 0.4, category: "Coffee", barcode: null })
+      const r = await push(adminA, "product", "create", { syncId: randomUUID(), name, price: 1.5, cost: 0.4, category: "Coffee", barcode: null, stockPolicy: "untracked" })
       expect([name, r.status]).toEqual([name, "ok"])
     }
-    expect(await prisma.product.count({ where: { tenantId: A, category: "Coffee", barcode: null } })).toBe(3)
+    expect(await prisma.product.count({ where: { tenantId: A, category: "Coffee", barcode: null, stockPolicy: "untracked" } })).toBe(3)
   })
 
-  it.fails("CONFIRMED DEFECT: two products sent with an empty-string barcode are both kept as separate products", async () => {
+  it("two products sent with an empty-string barcode are both kept, as separate products with no barcode", async () => {
     const r1 = await push(adminA, "product", "create", { syncId: randomUUID(), name: "Iced latte", price: 2.5, category: "Coffee", barcode: "" })
     const r2 = await push(adminA, "product", "create", { syncId: randomUUID(), name: "Nescafé", price: 1, category: "Coffee", barcode: "" })
     expect([r1.status, r2.status]).toEqual(["ok", "ok"])
-    expect(await productBy(A, "Iced latte")).not.toBeNull()
-    expect(await productBy(A, "Nescafé")).not.toBeNull()
+    expect((await productBy(A, "Iced latte"))?.barcode).toBeNull()
+    expect((await productBy(A, "Nescafé"))?.barcode).toBeNull()
   })
 
-  it.fails("CONFIRMED DEFECT (café blocker): a prepared drink with no stock count can be sold", async () => {
+  it("a prepared (untracked) drink with no stock count can be sold", async () => {
     const p = (await productBy(A, "Espresso"))!
     const r = await push(cashierA, "sale", "create", salePayload([{ productId: p.id, name: p.name, qty: 1, price: 1.5 }]))
     expect(r.status).toBe("ok")
+    expect(Number((await prisma.product.findUnique({ where: { id: p.id } }))!.stock)).toBe(0)
   })
 
-  it("a packaged item with stock sells and decrements stock; a drink kept at a placeholder stock also sells", async () => {
+  it("a mixed order: the packaged item decrements stock, the drink has no stock and needs none", async () => {
     const pepsi = await prisma.product.create({ data: { tenantId: A, name: "Pepsi 330ml", price: 1, cost: 0.5, stock: 10, barcode: `PEP-${A.slice(0, 6)}`, category: "Drinks" } })
     const esp = (await productBy(A, "Espresso"))!
-    await prisma.product.update({ where: { id: esp.id }, data: { stock: 1000 } }) // the only way a drink sells today
     const r = await push(cashierA, "sale", "create", salePayload([{ productId: esp.id, name: esp.name, qty: 2, price: 1.5 }, { productId: pepsi.id, name: pepsi.name, qty: 1, price: 1, barcode: pepsi.barcode }]))
     expect(r.status).toBe("ok")
     expect(Number((await prisma.product.findUnique({ where: { id: pepsi.id } }))!.stock)).toBe(9)
-    expect(Number((await prisma.product.findUnique({ where: { id: esp.id } }))!.stock)).toBe(998) // the drink's fake stock is consumed too
+    expect(Number((await prisma.product.findUnique({ where: { id: esp.id } }))!.stock)).toBe(0)
   })
 
-  it("refunding a prepared drink puts it back into product stock (no physical-return decision)", async () => {
+  it("refunding a prepared drink returns money only: nothing goes back to stock", async () => {
     const esp = (await productBy(A, "Espresso"))!
     const sale = salePayload([{ productId: esp.id, name: esp.name, qty: 1, price: 1.5 }])
     expect((await push(managerA, "sale", "create", sale)).status).toBe("ok")
-    const before = Number((await prisma.product.findUnique({ where: { id: esp.id } }))!.stock)
     const rid = randomUUID()
     const r = await push(managerA, "refund", "create", { id: rid, refundNumber: `R-${rid.slice(0, 8)}`, saleId: sale.id, saleNumber: sale.saleNumber, method: "Cash", reason: "spilled", total: 1.5, cashier: "Manager A", items: [{ id: esp.id, saleLineId: sale.items[0].lineId, name: esp.name, quantity: 1, unitPrice: 1.5, total: 1.5 }] })
     expect(r.status).toBe("ok")
-    expect(Number((await prisma.product.findUnique({ where: { id: esp.id } }))!.stock)).toBe(before + 1)
+    expect(Number((await prisma.product.findUnique({ where: { id: esp.id } }))!.stock)).toBe(0)
+    expect(Number((await prisma.saleRefund.findUnique({ where: { id: rid } }))!.total)).toBe(1.5)
   })
 })
 

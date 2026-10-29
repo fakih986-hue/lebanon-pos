@@ -91,7 +91,7 @@ export function fillRowFromBarcode(row: BatchRow, barcode: string, product: Prod
   return {
     ...row, mode: "matched", targetProductId: undefined, scannedBarcode: barcode, name: product.name, category: product.category,
     price: product.price, cost: product.cost, reorderPoint: product.reorderPoint ?? 10, reorderQuantity: product.reorderQuantity ?? 20,
-    expiryDate: row.expiryDate || "", barcode: product.barcode, accent: product.accent,
+    expiryDate: row.expiryDate || "", barcode: product.barcode ?? "", accent: product.accent,
   }
 }
 

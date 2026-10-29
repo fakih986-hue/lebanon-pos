@@ -121,7 +121,7 @@ describe("POS-FIRST-SETUP-CATALOG-1C — opening commit", () => {
   it("conflicts and invalid rows never commit", () => {
     const plan = planFrom(
       [base({ id: 1, name: "Pepsi", barcode: "PRIMARY-A" })],
-      "Totally Different,PRIMARY-A,,Bev,0.4,0.75,12,,,,\nNoBarcode,,,C,1,2,1,,,,",
+      "Totally Different,PRIMARY-A,,Bev,0.4,0.75,12,,,,\n,NONAME,,C,1,2,1,,,,",
     )
     const r = commitProductImport(plan, { opening: true })
     expect(r.created).toBe(0)

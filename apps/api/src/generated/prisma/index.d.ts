@@ -9117,6 +9117,7 @@ export namespace Prisma {
     cost: Decimal | null
     stock: number | null
     barcode: string | null
+    stockPolicy: string | null
     category: string | null
     accent: string | null
     favorite: boolean | null
@@ -9144,6 +9145,7 @@ export namespace Prisma {
     cost: Decimal | null
     stock: number | null
     barcode: string | null
+    stockPolicy: string | null
     category: string | null
     accent: string | null
     favorite: boolean | null
@@ -9172,6 +9174,7 @@ export namespace Prisma {
     stock: number
     barcode: number
     barcodeAliases: number
+    stockPolicy: number
     category: number
     accent: number
     favorite: number
@@ -9223,6 +9226,7 @@ export namespace Prisma {
     cost?: true
     stock?: true
     barcode?: true
+    stockPolicy?: true
     category?: true
     accent?: true
     favorite?: true
@@ -9250,6 +9254,7 @@ export namespace Prisma {
     cost?: true
     stock?: true
     barcode?: true
+    stockPolicy?: true
     category?: true
     accent?: true
     favorite?: true
@@ -9278,6 +9283,7 @@ export namespace Prisma {
     stock?: true
     barcode?: true
     barcodeAliases?: true
+    stockPolicy?: true
     category?: true
     accent?: true
     favorite?: true
@@ -9393,6 +9399,7 @@ export namespace Prisma {
     stock: number
     barcode: string | null
     barcodeAliases: string[]
+    stockPolicy: string
     category: string
     accent: string
     favorite: boolean
@@ -9440,6 +9447,7 @@ export namespace Prisma {
     stock?: boolean
     barcode?: boolean
     barcodeAliases?: boolean
+    stockPolicy?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -9476,6 +9484,7 @@ export namespace Prisma {
     stock?: boolean
     barcode?: boolean
     barcodeAliases?: boolean
+    stockPolicy?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -9506,6 +9515,7 @@ export namespace Prisma {
     stock?: boolean
     barcode?: boolean
     barcodeAliases?: boolean
+    stockPolicy?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -9536,6 +9546,7 @@ export namespace Prisma {
     stock?: boolean
     barcode?: boolean
     barcodeAliases?: boolean
+    stockPolicy?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -9550,7 +9561,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "syncId" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "wholesalePrice" | "cost" | "stock" | "barcode" | "barcodeAliases" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "archived" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "syncId" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "wholesalePrice" | "cost" | "stock" | "barcode" | "barcodeAliases" | "stockPolicy" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "archived" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
   export type ProductInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     parent?: boolean | Product$parentArgs<ExtArgs>
@@ -9595,6 +9606,10 @@ export namespace Prisma {
       stock: number
       barcode: string | null
       barcodeAliases: string[]
+      /**
+       * SPRINT-1: "tracked" (stock + lots enforced) | "untracked" (made to order: no stock, no lots)
+       */
+      stockPolicy: string
       category: string
       accent: string
       favorite: boolean
@@ -10050,6 +10065,7 @@ export namespace Prisma {
     readonly stock: FieldRef<"Product", 'Float'>
     readonly barcode: FieldRef<"Product", 'String'>
     readonly barcodeAliases: FieldRef<"Product", 'String[]'>
+    readonly stockPolicy: FieldRef<"Product", 'String'>
     readonly category: FieldRef<"Product", 'String'>
     readonly accent: FieldRef<"Product", 'String'>
     readonly favorite: FieldRef<"Product", 'Boolean'>
@@ -12070,6 +12086,7 @@ export namespace Prisma {
     cost: Decimal | null
     lineId: string | null
     lineIndex: number | null
+    stockPolicy: string | null
   }
 
   export type SaleItemMaxAggregateOutputType = {
@@ -12084,6 +12101,7 @@ export namespace Prisma {
     cost: Decimal | null
     lineId: string | null
     lineIndex: number | null
+    stockPolicy: string | null
   }
 
   export type SaleItemCountAggregateOutputType = {
@@ -12099,6 +12117,7 @@ export namespace Prisma {
     lineId: number
     lineIndex: number
     batchAllocations: number
+    stockPolicy: number
     _all: number
   }
 
@@ -12133,6 +12152,7 @@ export namespace Prisma {
     cost?: true
     lineId?: true
     lineIndex?: true
+    stockPolicy?: true
   }
 
   export type SaleItemMaxAggregateInputType = {
@@ -12147,6 +12167,7 @@ export namespace Prisma {
     cost?: true
     lineId?: true
     lineIndex?: true
+    stockPolicy?: true
   }
 
   export type SaleItemCountAggregateInputType = {
@@ -12162,6 +12183,7 @@ export namespace Prisma {
     lineId?: true
     lineIndex?: true
     batchAllocations?: true
+    stockPolicy?: true
     _all?: true
   }
 
@@ -12264,6 +12286,7 @@ export namespace Prisma {
     lineId: string | null
     lineIndex: number | null
     batchAllocations: JsonValue | null
+    stockPolicy: string
     _count: SaleItemCountAggregateOutputType | null
     _avg: SaleItemAvgAggregateOutputType | null
     _sum: SaleItemSumAggregateOutputType | null
@@ -12298,6 +12321,7 @@ export namespace Prisma {
     lineId?: boolean
     lineIndex?: boolean
     batchAllocations?: boolean
+    stockPolicy?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -12314,6 +12338,7 @@ export namespace Prisma {
     lineId?: boolean
     lineIndex?: boolean
     batchAllocations?: boolean
+    stockPolicy?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -12330,6 +12355,7 @@ export namespace Prisma {
     lineId?: boolean
     lineIndex?: boolean
     batchAllocations?: boolean
+    stockPolicy?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -12346,9 +12372,10 @@ export namespace Prisma {
     lineId?: boolean
     lineIndex?: boolean
     batchAllocations?: boolean
+    stockPolicy?: boolean
   }
 
-  export type SaleItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "saleId" | "productId" | "productName" | "barcode" | "quantity" | "unitPrice" | "total" | "cost" | "lineId" | "lineIndex" | "batchAllocations", ExtArgs["result"]["saleItem"]>
+  export type SaleItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "saleId" | "productId" | "productName" | "barcode" | "quantity" | "unitPrice" | "total" | "cost" | "lineId" | "lineIndex" | "batchAllocations" | "stockPolicy", ExtArgs["result"]["saleItem"]>
   export type SaleItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }
@@ -12383,6 +12410,10 @@ export namespace Prisma {
        * Lots actually consumed by the server for this line: [{batchId|null, quantity, unitCost?}].
        */
       batchAllocations: Prisma.JsonValue | null
+      /**
+       * SPRINT-1: the product's stock policy when sold; refunds/voids restore stock only for "tracked" lines
+       */
+      stockPolicy: string
     }, ExtArgs["result"]["saleItem"]>
     composites: {}
   }
@@ -12819,6 +12850,7 @@ export namespace Prisma {
     readonly lineId: FieldRef<"SaleItem", 'String'>
     readonly lineIndex: FieldRef<"SaleItem", 'Int'>
     readonly batchAllocations: FieldRef<"SaleItem", 'Json'>
+    readonly stockPolicy: FieldRef<"SaleItem", 'String'>
   }
     
 
@@ -44802,6 +44834,7 @@ export namespace Prisma {
     stock: 'stock',
     barcode: 'barcode',
     barcodeAliases: 'barcodeAliases',
+    stockPolicy: 'stockPolicy',
     category: 'category',
     accent: 'accent',
     favorite: 'favorite',
@@ -44858,7 +44891,8 @@ export namespace Prisma {
     cost: 'cost',
     lineId: 'lineId',
     lineIndex: 'lineIndex',
-    batchAllocations: 'batchAllocations'
+    batchAllocations: 'batchAllocations',
+    stockPolicy: 'stockPolicy'
   };
 
   export type SaleItemScalarFieldEnum = (typeof SaleItemScalarFieldEnum)[keyof typeof SaleItemScalarFieldEnum]
@@ -46097,6 +46131,7 @@ export namespace Prisma {
     stock?: FloatFilter<"Product"> | number
     barcode?: StringNullableFilter<"Product"> | string | null
     barcodeAliases?: StringNullableListFilter<"Product">
+    stockPolicy?: StringFilter<"Product"> | string
     category?: StringFilter<"Product"> | string
     accent?: StringFilter<"Product"> | string
     favorite?: BoolFilter<"Product"> | boolean
@@ -46132,6 +46167,7 @@ export namespace Prisma {
     stock?: SortOrder
     barcode?: SortOrderInput | SortOrder
     barcodeAliases?: SortOrder
+    stockPolicy?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -46172,6 +46208,7 @@ export namespace Prisma {
     stock?: FloatFilter<"Product"> | number
     barcode?: StringNullableFilter<"Product"> | string | null
     barcodeAliases?: StringNullableListFilter<"Product">
+    stockPolicy?: StringFilter<"Product"> | string
     category?: StringFilter<"Product"> | string
     accent?: StringFilter<"Product"> | string
     favorite?: BoolFilter<"Product"> | boolean
@@ -46207,6 +46244,7 @@ export namespace Prisma {
     stock?: SortOrder
     barcode?: SortOrderInput | SortOrder
     barcodeAliases?: SortOrder
+    stockPolicy?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -46243,6 +46281,7 @@ export namespace Prisma {
     stock?: FloatWithAggregatesFilter<"Product"> | number
     barcode?: StringNullableWithAggregatesFilter<"Product"> | string | null
     barcodeAliases?: StringNullableListFilter<"Product">
+    stockPolicy?: StringWithAggregatesFilter<"Product"> | string
     category?: StringWithAggregatesFilter<"Product"> | string
     accent?: StringWithAggregatesFilter<"Product"> | string
     favorite?: BoolWithAggregatesFilter<"Product"> | boolean
@@ -46419,6 +46458,7 @@ export namespace Prisma {
     lineId?: StringNullableFilter<"SaleItem"> | string | null
     lineIndex?: IntNullableFilter<"SaleItem"> | number | null
     batchAllocations?: JsonNullableFilter<"SaleItem">
+    stockPolicy?: StringFilter<"SaleItem"> | string
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
   }
 
@@ -46435,6 +46475,7 @@ export namespace Prisma {
     lineId?: SortOrderInput | SortOrder
     lineIndex?: SortOrderInput | SortOrder
     batchAllocations?: SortOrderInput | SortOrder
+    stockPolicy?: SortOrder
     sale?: SaleOrderByWithRelationInput
   }
 
@@ -46455,6 +46496,7 @@ export namespace Prisma {
     lineId?: StringNullableFilter<"SaleItem"> | string | null
     lineIndex?: IntNullableFilter<"SaleItem"> | number | null
     batchAllocations?: JsonNullableFilter<"SaleItem">
+    stockPolicy?: StringFilter<"SaleItem"> | string
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
   }, "id" | "saleId_lineId">
 
@@ -46471,6 +46513,7 @@ export namespace Prisma {
     lineId?: SortOrderInput | SortOrder
     lineIndex?: SortOrderInput | SortOrder
     batchAllocations?: SortOrderInput | SortOrder
+    stockPolicy?: SortOrder
     _count?: SaleItemCountOrderByAggregateInput
     _avg?: SaleItemAvgOrderByAggregateInput
     _max?: SaleItemMaxOrderByAggregateInput
@@ -46494,6 +46537,7 @@ export namespace Prisma {
     lineId?: StringNullableWithAggregatesFilter<"SaleItem"> | string | null
     lineIndex?: IntNullableWithAggregatesFilter<"SaleItem"> | number | null
     batchAllocations?: JsonNullableWithAggregatesFilter<"SaleItem">
+    stockPolicy?: StringWithAggregatesFilter<"SaleItem"> | string
   }
 
   export type SaleTenderWhereInput = {
@@ -49594,6 +49638,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -49629,6 +49674,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -49659,6 +49705,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -49694,6 +49741,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -49727,6 +49775,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -49752,6 +49801,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -49780,6 +49830,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -49985,6 +50036,7 @@ export namespace Prisma {
     lineId?: string | null
     lineIndex?: number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: string
     sale: SaleCreateNestedOneWithoutItemsInput
   }
 
@@ -50001,6 +50053,7 @@ export namespace Prisma {
     lineId?: string | null
     lineIndex?: number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: string
   }
 
   export type SaleItemUpdateInput = {
@@ -50015,6 +50068,7 @@ export namespace Prisma {
     lineId?: NullableStringFieldUpdateOperationsInput | string | null
     lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     sale?: SaleUpdateOneRequiredWithoutItemsNestedInput
   }
 
@@ -50031,6 +50085,7 @@ export namespace Prisma {
     lineId?: NullableStringFieldUpdateOperationsInput | string | null
     lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: StringFieldUpdateOperationsInput | string
   }
 
   export type SaleItemCreateManyInput = {
@@ -50046,6 +50101,7 @@ export namespace Prisma {
     lineId?: string | null
     lineIndex?: number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: string
   }
 
   export type SaleItemUpdateManyMutationInput = {
@@ -50060,6 +50116,7 @@ export namespace Prisma {
     lineId?: NullableStringFieldUpdateOperationsInput | string | null
     lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: StringFieldUpdateOperationsInput | string
   }
 
   export type SaleItemUncheckedUpdateManyInput = {
@@ -50075,6 +50132,7 @@ export namespace Prisma {
     lineId?: NullableStringFieldUpdateOperationsInput | string | null
     lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: StringFieldUpdateOperationsInput | string
   }
 
   export type SaleTenderCreateInput = {
@@ -53644,6 +53702,7 @@ export namespace Prisma {
     stock?: SortOrder
     barcode?: SortOrder
     barcodeAliases?: SortOrder
+    stockPolicy?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -53682,6 +53741,7 @@ export namespace Prisma {
     cost?: SortOrder
     stock?: SortOrder
     barcode?: SortOrder
+    stockPolicy?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -53709,6 +53769,7 @@ export namespace Prisma {
     cost?: SortOrder
     stock?: SortOrder
     barcode?: SortOrder
+    stockPolicy?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -53989,6 +54050,7 @@ export namespace Prisma {
     lineId?: SortOrder
     lineIndex?: SortOrder
     batchAllocations?: SortOrder
+    stockPolicy?: SortOrder
   }
 
   export type SaleItemAvgOrderByAggregateInput = {
@@ -54012,6 +54074,7 @@ export namespace Prisma {
     cost?: SortOrder
     lineId?: SortOrder
     lineIndex?: SortOrder
+    stockPolicy?: SortOrder
   }
 
   export type SaleItemMinOrderByAggregateInput = {
@@ -54026,6 +54089,7 @@ export namespace Prisma {
     cost?: SortOrder
     lineId?: SortOrder
     lineIndex?: SortOrder
+    stockPolicy?: SortOrder
   }
 
   export type SaleItemSumOrderByAggregateInput = {
@@ -59101,6 +59165,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -59134,6 +59199,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -60212,6 +60278,7 @@ export namespace Prisma {
     stock?: FloatFilter<"Product"> | number
     barcode?: StringNullableFilter<"Product"> | string | null
     barcodeAliases?: StringNullableListFilter<"Product">
+    stockPolicy?: StringFilter<"Product"> | string
     category?: StringFilter<"Product"> | string
     accent?: StringFilter<"Product"> | string
     favorite?: BoolFilter<"Product"> | boolean
@@ -61879,6 +61946,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -61913,6 +61981,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -61947,6 +62016,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -61980,6 +62050,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -62306,6 +62377,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -62340,6 +62412,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -62569,6 +62642,7 @@ export namespace Prisma {
     lineId?: string | null
     lineIndex?: number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: string
   }
 
   export type SaleItemUncheckedCreateWithoutSaleInput = {
@@ -62583,6 +62657,7 @@ export namespace Prisma {
     lineId?: string | null
     lineIndex?: number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: string
   }
 
   export type SaleItemCreateOrConnectWithoutSaleInput = {
@@ -62817,6 +62892,7 @@ export namespace Prisma {
     lineId?: StringNullableFilter<"SaleItem"> | string | null
     lineIndex?: IntNullableFilter<"SaleItem"> | number | null
     batchAllocations?: JsonNullableFilter<"SaleItem">
+    stockPolicy?: StringFilter<"SaleItem"> | string
   }
 
   export type SaleRefundUpsertWithWhereUniqueWithoutSaleInput = {
@@ -66967,6 +67043,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -67001,6 +67078,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -67190,6 +67268,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -67224,6 +67303,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -67397,6 +67477,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -67431,6 +67512,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -67585,6 +67667,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -67619,6 +67702,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -67937,6 +68021,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -67971,6 +68056,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -68049,6 +68135,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -68083,6 +68170,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -69867,6 +69955,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -69901,6 +69990,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -70055,6 +70145,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -70089,6 +70180,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -70137,6 +70229,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -70565,6 +70658,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -70598,6 +70692,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -70630,6 +70725,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -72065,6 +72161,7 @@ export namespace Prisma {
     stock?: number
     barcode?: string | null
     barcodeAliases?: ProductCreatebarcodeAliasesInput | string[]
+    stockPolicy?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -72153,6 +72250,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -72186,6 +72284,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -72218,6 +72317,7 @@ export namespace Prisma {
     stock?: FloatFieldUpdateOperationsInput | number
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     barcodeAliases?: ProductUpdatebarcodeAliasesInput | string[]
+    stockPolicy?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -72433,6 +72533,7 @@ export namespace Prisma {
     lineId?: string | null
     lineIndex?: number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: string
   }
 
   export type SaleRefundCreateManySaleInput = {
@@ -72466,6 +72567,7 @@ export namespace Prisma {
     lineId?: NullableStringFieldUpdateOperationsInput | string | null
     lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: StringFieldUpdateOperationsInput | string
   }
 
   export type SaleItemUncheckedUpdateWithoutSaleInput = {
@@ -72480,6 +72582,7 @@ export namespace Prisma {
     lineId?: NullableStringFieldUpdateOperationsInput | string | null
     lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: StringFieldUpdateOperationsInput | string
   }
 
   export type SaleItemUncheckedUpdateManyWithoutSaleInput = {
@@ -72494,6 +72597,7 @@ export namespace Prisma {
     lineId?: NullableStringFieldUpdateOperationsInput | string | null
     lineIndex?: NullableIntFieldUpdateOperationsInput | number | null
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
+    stockPolicy?: StringFieldUpdateOperationsInput | string
   }
 
   export type SaleRefundUpdateWithoutSaleInput = {

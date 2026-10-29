@@ -52,6 +52,7 @@ router.get("/low-stock", requireAuth, requirePermission("inventory.view", "repor
         tenantId,
         isParent: false,
         reorderPoint: { not: null },
+        stockPolicy: "tracked", // SPRINT-1: made-to-order items have no stock to run low
       },
       select: {
         id: true, name: true, barcode: true, category: true,
@@ -478,7 +479,7 @@ router.get("/export/:type", requireAuth, requirePermission("reports.view", "inve
       case "low-stock": {
         if (!(await can(req, "inventory.view")) && !(await can(req, "reports.view"))) { json(res, { error: "You don't have permission to do this", code: "FORBIDDEN" }, 403); return }
         const products = await prisma.product.findMany({
-          where: { tenantId, isParent: false },
+          where: { tenantId, isParent: false, stockPolicy: "tracked" },
           select: {
             name: true, barcode: true, category: true,
             stock: true, cost: true, price: true,

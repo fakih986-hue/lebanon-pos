@@ -136,6 +136,14 @@ function cleanProductPatch(patch: Partial<Product>) {
     cleanPatch.category = normalizeName(cleanPatch.category)
   }
 
+  // SPRINT-1: a blank barcode means "no barcode" (null). Only the two stock policies are accepted.
+  if ("barcode" in cleanPatch && (cleanPatch.barcode == null || normalizeBarcode(String(cleanPatch.barcode)) === "")) {
+    cleanPatch.barcode = null
+  } else if (typeof cleanPatch.barcode === "string") {
+    cleanPatch.barcode = normalizeBarcode(cleanPatch.barcode)
+  }
+  if ("stockPolicy" in cleanPatch && cleanPatch.stockPolicy !== "tracked" && cleanPatch.stockPolicy !== "untracked") delete cleanPatch.stockPolicy
+
   if (typeof cleanPatch.name === "string") {
     cleanPatch.name = normalizeName(cleanPatch.name)
   }
@@ -298,7 +306,7 @@ export function receiveProducts(
         productId: updatedTarget.id,
         productSyncId: updatedTarget.syncId ?? undefined,
         productName: updatedTarget.name,
-        barcode: updatedTarget.barcode,
+        barcode: updatedTarget.barcode ?? "",
         quantity: entry.stock,
         unitCost: entry.cost,
         unitPrice: entry.price,
@@ -360,7 +368,7 @@ export function receiveProducts(
         productId: updatedProduct.id,
         productSyncId: updatedProduct.syncId ?? undefined,
         productName: updatedProduct.name,
-        barcode: updatedProduct.barcode,
+        barcode: updatedProduct.barcode ?? "",
         quantity: entry.stock,
         unitCost: entry.cost,
         unitPrice: entry.price,
@@ -410,7 +418,7 @@ export function receiveProducts(
       productId: product.id,
       productSyncId: product.syncId ?? undefined,
       productName: product.name,
-      barcode: product.barcode,
+      barcode: product.barcode ?? "",
       quantity: entry.stock,
       unitCost: product.cost,
       unitPrice: product.price,
@@ -568,8 +576,11 @@ export function createProduct(input: {
   price: number
   cost: number
   stock: number
-  barcode: string
+  /** Optional: blank or absent = no barcode (stored as null). */
+  barcode?: string | null
   category: string
+  /** SPRINT-1: "untracked" for made-to-order items (no stock, no lots). Default "tracked". */
+  stockPolicy?: "tracked" | "untracked"
   accent?: ProductAccent
   parentId?: number | null
   variantName?: string
@@ -591,8 +602,9 @@ export function createProduct(input: {
   assertCanWrite("create product")
   if (!userCan("inventory.receive")) throw new PermissionError("Creating a product needs the Receive stock or Manage inventory permission.")
   const currentProducts = getProductsSync()
-  const normalizedBarcode = normalizeBarcode(input.barcode)
+  const normalizedBarcode = normalizeBarcode(input.barcode ?? "")
   const inputAliases = normalizeBarcodeList(input.barcodeAliases).filter((b) => b !== normalizedBarcode)
+  const untracked = input.stockPolicy === "untracked"
 
   // Check for barcode conflicts — primary AND aliases, incoming primary + aliases
   const conflictCandidates = [normalizedBarcode, ...inputAliases].filter(Boolean)
@@ -617,8 +629,11 @@ export function createProduct(input: {
     name: normalizeName(input.name),
     price: input.price,
     cost: input.cost,
-    stock: input.stock,
-    barcode: normalizedBarcode,
+    // An untracked (made-to-order) product has no stock: no opening quantity, no lots.
+    stock: untracked ? 0 : input.stock,
+    // No barcode = null (several products may have none; "" would collide on the server).
+    barcode: normalizedBarcode || null,
+    stockPolicy: untracked ? "untracked" : "tracked",
     category: normalizeName(input.category),
     accent: input.accent ?? chooseAccent(input.category, nextId),
     parentId: input.parentId ?? null,
@@ -650,7 +665,7 @@ export function createProduct(input: {
   // Create initial batch for opening stock. First-setup import routes this
   // through openingInventoryBatches → Opening movement (never a supplier
   // purchase); the normal create path keeps the Receive movement.
-  if (input.stock > 0) {
+  if (!untracked && input.stock > 0) {
     const receive = input.opening ? openingInventoryBatches : receiveInventoryBatches
     receive([{
       productId: product.id,
@@ -836,7 +851,7 @@ export function decreaseProductStock(items: ProductStockMovement[]) {
   const nextProducts = getProductsSync().map((product) => {
     const movement = items.find((item) => item.productId === product.id)
 
-    if (!movement) {
+    if (!movement || product.stockPolicy === "untracked") {
       return product
     }
 
@@ -855,7 +870,7 @@ export function increaseProductStock(items: ProductStockMovement[]) {
   const nextProducts = getProductsSync().map((product) => {
     const movement = items.find((item) => item.productId === product.id)
 
-    if (!movement) {
+    if (!movement || product.stockPolicy === "untracked") {
       return product
     }
 
@@ -880,6 +895,7 @@ export function findProductByBarcode(barcode: string) {
 
 export function productHasBarcode(product: Product, barcode: string) {
   const normalizedBarcode = normalizeBarcode(barcode)
+  if (!normalizedBarcode) return false // an empty scan never matches a product without a barcode
 
   return (
     product.barcode === normalizedBarcode ||
@@ -1007,7 +1023,7 @@ export function detectDuplicateBarcodes(products: Product[] = getProductsSync())
     productIdsByBarcode.set(normalized, ids)
   }
   for (const p of products) {
-    register(p.barcode, p.id)
+    register(p.barcode ?? undefined, p.id)
     for (const alias of normalizeBarcodeList(p.barcodeAliases)) register(alias, p.id)
   }
 
@@ -1039,7 +1055,8 @@ export function detectIncompleteProducts() {
 
 export function getLowStockProducts(products?: Product[]) {
   const list = products ?? getProductsSync()
-  return list.filter(p => !p.archived && p.stock <= (p.reorderPoint ?? 10) && p.stock >= 0)
+  // SPRINT-1: made-to-order (untracked) items have no stock to run low.
+  return list.filter(p => !p.archived && p.stockPolicy !== "untracked" && p.stock <= (p.reorderPoint ?? 10) && p.stock >= 0)
 }
 
 export function getNoBarcodeProducts(products?: Product[]) {

@@ -21,8 +21,11 @@ export type Product = {
   wholesalePrice?: number | null
   cost: number
   stock: number
+  /** Optional. A product without one has barcode null; identity is syncId (SPRINT-1). */
   barcode: string | null
   barcodeAliases?: string[]
+  /** SPRINT-1: "tracked" (default: stock + lots) or "untracked" (made to order: no stock, no lots). */
+  stockPolicy?: "tracked" | "untracked"
   category: string
   accent: ProductAccent
   favorite?: boolean

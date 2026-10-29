@@ -252,7 +252,7 @@ function applyStockAdjustment(
   const batchAllocations = adjustInventoryBatches({
     productId: product.id,
     productName: product.name,
-    barcode: product.barcode,
+    barcode: product.barcode ?? "",
     quantityDelta: quantityChange,
     unitCost: product.cost,
     unitPrice: product.price,
@@ -286,7 +286,7 @@ function applyStockAdjustment(
     adjustmentNumber: createAdjustmentNumber(existingAdjustments.length),
     productId: product.id,
     productName: product.name,
-    barcode: product.barcode,
+    barcode: product.barcode ?? "",
     quantityBefore,
     quantityChange,
     quantityAfter: quantityBefore + quantityChange,

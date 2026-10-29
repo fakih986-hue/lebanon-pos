@@ -37,6 +37,7 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
   const [supplierId, setSupplierId] = useState(p?.supplierId ?? "")
   const [image, setImage] = useState(p?.image ?? "")
   const [stock, setStock] = useState("0")
+  const [trackStock, setTrackStock] = useState(p ? p.stockPolicy !== "untracked" : true)
   const [isParent, setIsParent] = useState(!!p?.isParent)
   const [variantName, setVariantName] = useState(p?.variantName ?? "")
   const [errors, setErrors] = useState<Errors>({})
@@ -47,7 +48,7 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
   const [vName, setVName] = useState(""); const [vPrice, setVPrice] = useState(""); const [vBarcode, setVBarcode] = useState(""); const [vStock, setVStock] = useState("0")
   const variants = p ? products.filter((x) => x.parentId === p.id) : []
 
-  const usedBy = (c: string) => products.find((x) => x.id !== p?.id && ((x.barcode ?? "") === c || (x.barcodeAliases ?? []).includes(c)))
+  const usedBy = (c: string) => c ? products.find((x) => x.id !== p?.id && ((x.barcode ?? "") === c || (x.barcodeAliases ?? []).includes(c))) : undefined
   const priceN = Number(price), costN = Number(cost)
   const marginPct = priceN > 0 && Number.isFinite(costN) ? Math.round(((priceN - costN) / priceN) * 100) : null
 
@@ -56,8 +57,8 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
     if (!name.trim()) e.name = t("inv.err.name")
     if (!category.trim()) e.category = t("inv.err.category")
     const b = code(barcode)
-    if (mode === "create" && !b) e.barcode = t("inv.err.barcode")
-    else if (b && usedBy(b)) e.barcode = t("inv.err.barcode_used", { name: usedBy(b)!.name })
+    // SPRINT-1: a barcode is optional (drinks and other made-to-order items have none).
+    if (b && usedBy(b)) e.barcode = t("inv.err.barcode_used", { name: usedBy(b)!.name })
     for (const a of splitAliases(aliases)) {
       if (a === b) continue
       const u = usedBy(a)
@@ -68,7 +69,7 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
     for (const [k, v] of [["reorderPoint", reorderPoint], ["reorderQuantity", reorderQuantity]] as const) {
       const n = Number(v); if (v.trim() !== "" && (!Number.isFinite(n) || n < 0)) e[k] = t("inv.err.non_negative")
     }
-    if (mode === "create") { const n = Number(stock); if (!Number.isFinite(n) || n < 0) e.stock = t("inv.err.non_negative") }
+    if (mode === "create" && trackStock) { const n = Number(stock); if (!Number.isFinite(n) || n < 0) e.stock = t("inv.err.non_negative") }
     if (p?.parentId && !variantName.trim()) e.variantName = t("inv.err.variant_name")
     return e
   }
@@ -89,16 +90,17 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
       supplierId: supplier?.id ?? "", supplierName: supplier?.name ?? "",
       barcodeAliases: splitAliases(aliases).filter((a) => a !== code(barcode)),
       image: image || undefined,
+      stockPolicy: trackStock ? "tracked" as const : "untracked" as const,
     }
     setSaving(true)
     try {
       if (mode === "create") {
-        const created = createProduct({ ...common, barcode: code(barcode), stock: Number(stock) || 0 })
+        const created = createProduct({ ...common, barcode: code(barcode) || null, stock: trackStock ? Number(stock) || 0 : 0 })
         if (!created) { setErrors({ barcode: t("inv.err.barcode_taken") }); return }
         showToast(t("inv.created", { name: created.name }))
         onSaved(created)
       } else if (p) {
-        const updated = updateProduct(p.id, { ...common, barcode: code(barcode) || undefined, isParent, ...(p.parentId ? { variantName: variantName.trim() } : {}) })
+        const updated = updateProduct(p.id, { ...common, barcode: code(barcode) || null, isParent, ...(p.parentId ? { variantName: variantName.trim() } : {}) })
         if (!updated) { setErrors({ barcode: t("inv.err.barcode_taken") }); return }
         showToast(t("inv.saved", { name: updated.name }))
         onSaved(updated)
@@ -176,7 +178,11 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
           <Field label={t("inv.field.reorder_point")} error={errors.reorderPoint} help={t("inv.reorder_point_help")}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={reorderPoint} onChange={(e) => setReorderPoint(e.target.value)} />}</Field>
           <Field label={t("inv.field.reorder_qty")} error={errors.reorderQuantity}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={reorderQuantity} onChange={(e) => setReorderQuantity(e.target.value)} />}</Field>
         </div>
-        {mode === "create" ? (
+        <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontWeight: 600 }}>
+          <input type="checkbox" className="mg2-check" checked={trackStock} onChange={(e) => setTrackStock(e.target.checked)} />
+          <span>{t("inv.track_stock")}<span className="mg2-cap" style={{ display: "block", fontWeight: 400 }}>{trackStock ? t("inv.track_stock_on_help") : t("inv.track_stock_off_help")}</span></span>
+        </label>
+        {!trackStock ? null : mode === "create" ? (
           <Field label={t("inv.field.opening_stock")} error={errors.stock} help={t("inv.opening_stock_help")}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={stock} onChange={(e) => setStock(e.target.value)} />}</Field>
         ) : p && !p.isParent ? (
           <p className="mg2-cap" style={{ margin: 0 }}>{t("inv.stock_not_here", { n: formatNumber(p.stock) })}</p>

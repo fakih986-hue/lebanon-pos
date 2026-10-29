@@ -70,7 +70,7 @@ export function analyzeCatalog(products: Product[]): CatalogHealth {
     idsByBarcode.set(b, set)
   }
   for (const p of products) {
-    register(p.barcode, p.id)
+    register(p.barcode ?? undefined, p.id)
     for (const a of p.barcodeAliases ?? []) register(a, p.id)
   }
   const conflictedIds = new Set<number>()

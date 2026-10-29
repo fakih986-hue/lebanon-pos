@@ -3,7 +3,7 @@
 export type { ProductAccent }
 
 export type Product = SharedProduct & {
-  barcode: string
+  barcode: string | null
   variantName?: string
   supplierId?: string
   supplierName?: string

@@ -53,6 +53,7 @@ import {
   type HeldSale,
 } from "../services/heldSale.service"
 import { recordAuditEvent, userCan, getActiveShift, subscribeSecurity } from "../services/security.service"
+import { showToast } from "../services/toast.service"
 import { consumeInventoryBatches } from "../services/inventoryBatch.service"
 import { getConnectionMode, pullFromServer, nextDocumentReference, getSyncStatus } from "../services/sync.service"
 import { createId } from "../lib/storage"
@@ -230,13 +231,13 @@ export default function POSPage() {
 
       return {
         name: category,
-        label: category === "All" ? "All Items" : category,
+        label: category === "All" ? t("pos.category.all") : category === "Favorites" ? t("pos.category.favorites") : category,
         Icon,
         productCount: departmentProducts.length,
-        stockCount: departmentProducts.reduce((sum, p) => sum + p.stock, 0),
+        stockCount: departmentProducts.reduce((sum, p) => sum + (p.stockPolicy === "untracked" ? 0 : p.stock), 0),
       }
     })
-  }, [products])
+  }, [products, t])
 
   const filteredProducts = useMemo(() => {
     const query = (debouncedSearch || scanCode).trim().toLowerCase()
@@ -309,8 +310,10 @@ export default function POSPage() {
     (paymentMethod === "Debt" && (!selectedCustomer || creditLimitExceeded))
 
   // --- Cart operations ---
+  // SPRINT-1: the stock limit applies to tracked items only (made-to-order items have none).
+  const stockLimit = (p: { stock: number; stockPolicy?: string }) => p.stockPolicy === "untracked" ? Number.POSITIVE_INFINITY : p.stock
   function addItem(product: Product) {
-    if (product.stock <= 0) return
+    if (stockLimit(product) <= 0) return
     const effectivePrice = sellAtCost
       ? product.cost
       : selectedCustomer?.isWholesale && product.wholesalePrice != null
@@ -319,7 +322,7 @@ export default function POSPage() {
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.id === product.id)
       if (existingItem) {
-        if (existingItem.quantity >= product.stock) return currentItems
+        if (existingItem.quantity >= stockLimit(product)) return currentItems
         return currentItems.map((item) =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1, price: effectivePrice }
@@ -357,14 +360,20 @@ export default function POSPage() {
       }
     }
     const cartItem = items.find((item) => item.id === product.id)
-    if (product.stock <= 0) {
+    // SPRINT-1: made-to-order (untracked) items have no stock limit.
+    const tracked = product.stockPolicy !== "untracked"
+    if (tracked && product.stock <= 0) {
       playErrorBuzz()
-      setScannerStatus(t("pos.status.out_of_stock", { name: product.name }))
+      const message = t("pos.status.out_of_stock", { name: product.name })
+      setScannerStatus(message)
+      showToast(message, "error")
       return
     }
-    if (cartItem && cartItem.quantity >= product.stock) {
+    if (tracked && cartItem && cartItem.quantity >= product.stock) {
       playErrorBuzz()
-      setScannerStatus(t("pos.status.reached_stock", { name: product.name }))
+      const message = t("pos.status.reached_stock", { name: product.name })
+      setScannerStatus(message)
+      showToast(message, "error")
       return
     }
     addItem(product)
@@ -425,7 +434,7 @@ export default function POSPage() {
   const increaseQuantity = useCallback(function increaseQuantity(id: number) {
     setItems((currentItems) =>
       currentItems.map((item) =>
-        item.id === id && item.quantity < item.stock
+        item.id === id && item.quantity < stockLimit(item)
           ? { ...item, quantity: item.quantity + 1 }
           : item
       )
@@ -449,7 +458,7 @@ export default function POSPage() {
   const setItemQuantity = useCallback(function setItemQuantity(id: number, qty: number) {
     setItems((currentItems) =>
       currentItems.map((item) =>
-        item.id === id ? { ...item, quantity: Math.min(qty, item.stock) } : item
+        item.id === id ? { ...item, quantity: Math.min(qty, stockLimit(item)) } : item
       ).filter((item) => item.quantity > 0)
     )
   }, [])
@@ -701,10 +710,13 @@ export default function POSPage() {
     const saleNumber = nextDocumentReference("S", 6, () => getSales().map((s) => s.saleNumber))
     const saleId = createId() // client-generated UUID → hub commit is idempotent
 
-    const cartInputs = items.map((item) => ({
-      productId: item.id, productName: item.name, barcode: item.barcode,
+    // SPRINT-1: only tracked items consume lots and stock; made-to-order lines record money and cost only.
+    const trackedItems = items.filter((item) => item.stockPolicy !== "untracked")
+    const cartInputs = trackedItems.map((item) => ({
+      productId: item.id, productName: item.name, barcode: item.barcode ?? "",
       quantity: item.quantity, fallbackUnitCost: item.cost,
     }))
+    const stockLines = trackedItems.map((item) => ({ productId: item.id, quantity: item.quantity }))
 
 
     try {
@@ -713,12 +725,14 @@ export default function POSPage() {
       // know the sale is actually allowed.
       const dryAlloc = consumeInventoryBatches(cartInputs, { dryRun: true })
       const saleItems = items.map((item) => {
-        const allocations = dryAlloc.get(item.id) ?? []
+        const untrackedLine = item.stockPolicy === "untracked"
+        const allocations = untrackedLine ? [] : dryAlloc.get(item.id) ?? []
         const allocatedQuantity = allocations.reduce((sum, a) => sum + a.quantity, 0)
         const allocatedCost = allocations.reduce((sum, a) => sum + a.unitCost * a.quantity, 0)
         const unitCost = allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost
         return {
-          id: item.id, productSyncId: item.syncId, name: item.name, barcode: item.barcode, cost: unitCost,
+          id: item.id, productSyncId: item.syncId, name: item.name, barcode: item.barcode ?? "", cost: unitCost,
+          stockPolicy: untrackedLine ? "untracked" as const : "tracked" as const,
           quantity: item.quantity, unitPrice: item.price,
           total: item.price * item.quantity, batchAllocations: allocations,
         }
@@ -766,7 +780,7 @@ export default function POSPage() {
             fingerprint: cartFingerprint({ items: items.map((item) => ({ id: item.id, quantity: item.quantity, unitPrice: item.price })), paymentMethod, customerId: selectedCustomer?.id, total }),
             build: () => sale,
             lots: cartInputs,
-            stock: items.map((item) => ({ productId: item.id, quantity: item.quantity })),
+            stock: stockLines,
             debt: paymentMethod === "Debt" && selectedCustomer
               ? { customerId: selectedCustomer.id, saleNumber, subtotal, discountTotal, tax, total, items: saleItems }
               : undefined,
@@ -805,7 +819,7 @@ export default function POSPage() {
         const result = checkoutLocalSale({
           sale,
           lots: cartInputs,
-          stock: items.map((item) => ({ productId: item.id, quantity: item.quantity })),
+          stock: stockLines,
           debt: paymentMethod === "Debt" && selectedCustomer
             ? { customerId: selectedCustomer.id, saleNumber, subtotal, discountTotal, tax, total, items: saleItems }
             : undefined,

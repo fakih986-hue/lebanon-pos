@@ -30,6 +30,13 @@ function useBarcodeScanner(
   const [scanCode, setScanCode] = useState("")
   const { t } = useI18n()
   const [scannerStatus, setScannerStatus] = useState(() => t("pos.status.ready"))
+  // The idle "ready" message follows a language switch (it used to stay in the first language).
+  const lastReady = useRef(t("pos.status.ready"))
+  useEffect(() => {
+    const next = t("pos.status.ready")
+    setScannerStatus((prev) => (prev === lastReady.current ? next : prev))
+    lastReady.current = next
+  }, [t])
   const [cameraActive, setCameraActive] = useState(false)
   const [cameraEngine, setCameraEngine] = useState<"native" | "html5" | null>(null)
   const scanInputRef = useRef<HTMLInputElement>(null)

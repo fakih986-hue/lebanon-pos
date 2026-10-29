@@ -55,7 +55,7 @@ async function dispose() {
 const prisma = (await import("../src/lib/prisma.js")).default
 const app = (await import("../src/app.js")).default
 const bcrypt = (await import("bcryptjs")).default
-delete process.env.IS_LOCAL_SERVER
+process.env.IS_LOCAL_SERVER = "false" // pinned (not deleted): a module reset re-runs dotenv, which would fill a missing value from apps/api/.env
 vi.setConfig({ testTimeout: 60_000 })
 
 const T = randomUUID(), SUB = `oa-${T.slice(0, 8)}`

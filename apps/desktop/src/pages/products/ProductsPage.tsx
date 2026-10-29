@@ -107,7 +107,7 @@ export default function ProductsPage() {
       : p.archived ? false
       : v === "all" ? true
       : v === "low" ? lowIds.has(p.id)
-      : v === "out" ? !p.isParent && p.stock <= 0
+      : v === "out" ? !p.isParent && p.stockPolicy !== "untracked" && p.stock <= 0
       : v === "expiring" ? expiringIds.has(p.id)
       : v === "nobarcode" ? noBarcodeIds.has(p.id)
       : !!p.barcode && duplicateSet.has(p.barcode)
@@ -313,7 +313,7 @@ export default function ProductsPage() {
                   const soon = lots.filter((b) => { const n = daysToExpiry(b.expiryDate); return n !== null && n <= 30 }).length
                   const m = margin(p)
                   const reorderAt = p.reorderPoint ?? 10
-                  const stockTone = p.isParent ? null : p.stock <= 0 ? "err" : p.stock <= reorderAt ? "warn" : null
+                  const stockTone = p.isParent || p.stockPolicy === "untracked" ? null : p.stock <= 0 ? "err" : p.stock <= reorderAt ? "warn" : null
                   return (
                     <tr key={p.id} aria-selected={selected.has(p.id) || detailId === p.id} onClick={() => setDetailId(p.id)}>
                       <td onClick={(e) => e.stopPropagation()}>
@@ -336,6 +336,7 @@ export default function ProductsPage() {
                       {showCost && <td className="num p4" style={{ color: m === null ? "var(--text-3)" : m < 10 ? "var(--v2-err)" : m < 25 ? "var(--v2-warn)" : "var(--text-2)" }}>{m === null ? "—" : `${Math.round(m)}%`}</td>}
                       <td className="num">
                         {p.isParent ? <span style={{ color: "var(--text-3)" }}>—</span>
+                          : p.stockPolicy === "untracked" ? <Badge tone="muted">{t("inv.not_tracked")}</Badge>
                           : stockTone === "err" ? <Badge tone="err" icon={<XCircle size={13} aria-hidden="true" />}>{t("inv.stock_out", { n: formatNumber(p.stock) })}</Badge>
                           : stockTone === "warn" ? <Badge tone="warn" icon={<AlertTriangle size={13} aria-hidden="true" />}>{t("inv.stock_low", { n: formatNumber(p.stock) })}</Badge>
                           : formatNumber(p.stock)}

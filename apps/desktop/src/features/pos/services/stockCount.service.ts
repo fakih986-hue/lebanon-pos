@@ -95,7 +95,7 @@ export function startStockCount() {
   const lines = getProductsSync().map<StockCountLine>((product) => ({
     productId: product.id,
     productName: product.name,
-    barcode: product.barcode,
+    barcode: product.barcode ?? "",
     category: product.category,
     expectedQuantity: product.stock,
     variance: 0,

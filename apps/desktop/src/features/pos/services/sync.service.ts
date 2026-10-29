@@ -74,7 +74,7 @@ async function isServerReachable(): Promise<boolean> {
 
 // REFUND-INTEGRITY-1: this client understands sale line ids, sale lot
 // allocations and refund rates; servers omit them for older clients.
-const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "2" }
+const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "3" } // 3: stockPolicy on products and sale lines (SPRINT-1)
 
 /**
  * A rejected refund (or void) is a money conflict: the customer may already
@@ -2107,6 +2107,20 @@ async function _incrementalPull(apiUrl: string, token: string): Promise<void> {
             }
           }
           if (key === "products" && arr.length > 0) {
+            // SPRINT-1: the server's row replaces this device's copy of the SAME product (same
+            // syncId) when their numeric ids differ — identity is syncId, not the barcode, so
+            // barcode-free products (drinks) are not duplicated after their first pull.
+            const serverSyncIds = new Map<string, Set<number>>()
+            for (const item of arr) {
+              if (item?.syncId && typeof item.id !== "undefined") {
+                if (!serverSyncIds.has(String(item.syncId))) serverSyncIds.set(String(item.syncId), new Set())
+                serverSyncIds.get(String(item.syncId))!.add(item.id)
+              }
+            }
+            if (serverSyncIds.size > 0) {
+              const kept = merged.filter((item) => !(item?.syncId && serverSyncIds.has(String(item.syncId)) && !serverSyncIds.get(String(item.syncId))!.has(item.id)))
+              merged.splice(0, merged.length, ...kept)
+            }
             const serverBarcodes = new Map<string, Set<number>>()
             for (const item of arr) {
               if (item?.barcode && typeof item.id !== "undefined") {

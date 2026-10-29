@@ -24,7 +24,7 @@ function itemBlock(name: string, barcode: string, quantity: number, unit: number
 type CartItem = {
   id: number
   name: string
-  barcode: string
+  barcode: string | null
   quantity: number
   price: number
 }

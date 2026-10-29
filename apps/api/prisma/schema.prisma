@@ -195,6 +195,8 @@ model Product {
   stock           Float     @default(0)   // quantity — stays Float
   barcode         String?
   barcodeAliases  String[]
+  /// SPRINT-1: "tracked" (stock + lots enforced) | "untracked" (made to order: no stock, no lots)
+  stockPolicy     String   @default("tracked")
   category        String
   accent          String    @default("emerald")
   favorite        Boolean   @default(false)
@@ -275,6 +277,8 @@ model SaleItem {
 
   @@unique([saleId, lineId])
   @@index([productId])
+  /// SPRINT-1: the product's stock policy when sold; refunds/voids restore stock only for "tracked" lines
+  stockPolicy      String   @default("tracked")
 }
 
 model SaleTender {

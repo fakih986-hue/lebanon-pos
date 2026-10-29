@@ -3,6 +3,21 @@
 **Date:** 2026-10-29 · **Scope:** a small café selling prepared drinks (no barcode) and packaged goods (scanned) in the same order. Gaming stations, hourly billing and PC control are out of scope.
 **Status of this document:** findings and evidence only. Nothing in the product was changed by this study. Companion documents: [CAFE-FEATURE-TEST-MATRIX.md](CAFE-FEATURE-TEST-MATRIX.md), [CAFE-IMPLEMENTATION-PLAN.md](CAFE-IMPLEMENTATION-PLAN.md).
 
+## Status update (2026-10-29, after Sprint 0 and Sprint 1 — local only, not deployed)
+
+| Finding | Status | Where |
+|---|---|---|
+| S1 cross-store read, S2 PIN verifiers, S3 catalogue/price authorization, S5 gaps | **Fixed locally** | [SPRINT-0-SECURITY.md](SPRINT-0-SECURITY.md) |
+| Pre-existing: a full pull wiped every till's offline PIN verifiers | **Found and fixed** in Sprint 0 | same |
+| C1 barcode-free products, C2 untracked drinks, C3 drink refunds, C4 feedback and Arabic labels | **Fixed locally** | [SPRINT-1-CAFE.md](SPRINT-1-CAFE.md) |
+| Barcode-free products duplicated after a pull; device dropped the line's stock-policy snapshot | **Found during Sprint 1 and fixed** | same |
+| S4 authenticated staff attribution | Open (Sprint 2) — still an expected-failure probe | plan |
+| Modifiers, preparation tickets, recipes, shared tabs | Not built (Sprints 3–5) | plan |
+
+**Verdict after Sprint 0 + 1 (once deployed): ready for basic café use with restrictions** — takeaway sales of barcode-free made-to-order drinks next to scanned packaged goods, cash/card, shifts, refunds. Restrictions: no modifiers (use variants and the sale note), no preparation tickets, staff attribution is device-asserted, hubs must be on the new version before selling untracked items through them, and physical printers/scanners/drawers remain unvalidated.
+
+The findings below are the original audit (before these sprints).
+
 ## 0. Verified baseline
 
 | Item | Evidence |

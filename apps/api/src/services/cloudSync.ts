@@ -1107,7 +1107,7 @@ function fetchCloud(urlPath: string, init: RequestInit = {}): Promise<Response> 
       "x-tenant-id":   CLOUD_TENANT!,
       // REFUND-INTEGRITY-1: this hub understands sale line ids, sale lot
       // allocations and refund rates (schema 2), so the cloud may send them.
-      "x-titan-sync-schema": "2",
+      "x-titan-sync-schema": "3", // SPRINT-1: receives stockPolicy (product + sale line)
       ...(init.headers as Record<string, string> | undefined),
     },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
