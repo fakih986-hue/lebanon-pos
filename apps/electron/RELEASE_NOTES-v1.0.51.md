@@ -19,5 +19,8 @@ No mix of versions takes payment for a made-to-order item and rejects the sale a
 - Older till on an updated hub or cloud: drinks show as out of stock and cannot be added. An older till's sale of a product whose stock setting has been changed cannot say which setting it was sold under: it is held (shown as not synced on that till, nothing recorded) rather than recorded with today's setting. The app enforces this: a product's stock setting cannot change while a till or hub on an older version has traded in the last 14 days (the editor names them). Update them, or — for one no longer in use — retire it (manager, with a note; recorded in the audit log).
 - To sell made-to-order items, the store's hub (or the cloud, for direct tills) and the selling tills must be on 1.0.51. The only gap the apps cannot close themselves is a 1.0.51 hub syncing to an older cloud — the cloud is always updated first.
 
+- A till the owner retired cannot take payment when it comes back on an older version (connected to a hub): checkout is refused before payment with "update this till, or ask the owner to re-admit it". Updating the till, or re-admitting it (manager, with a note; audited), restores it. Sales an older till completed offline are recorded as sold from stock, never left waiting. Tills connected directly to the cloud cannot be stopped this way: update them first.
+
 ## Known, not in this release
+- Stock-decision approval checks the manager named by the till (they must exist, be active and have Manage inventory) but not proof that this manager made the decision. Every decision is in the audit log. Planned for Sprint 2.
 - Staff attribution (S4): the server records the cashier the till names. Tracked by an expected-failure test probe; fix planned for Sprint 2.
