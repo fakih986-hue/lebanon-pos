@@ -759,6 +759,7 @@ export default function POSPage() {
           id: item.id, productSyncId: item.syncId, name: item.name, barcode: item.barcode ?? "", cost: Number.isFinite(unitCost) ? unitCost : (undefined as unknown as number),
           stockPolicy: untrackedLine ? "untracked" as const : "tracked" as const,
           stockPolicyVersion: item.stockPolicyVersion ?? 1,
+          stockPolicyRev: item.stockPolicyRev ?? "initial",
           quantity: item.quantity, unitPrice: item.price,
           total: item.price * item.quantity, batchAllocations: allocations,
         }

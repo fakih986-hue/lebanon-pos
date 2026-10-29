@@ -9,6 +9,7 @@ import prisma from "../lib/prisma.js"
 const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
+import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "../lib/stockPolicy.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
 import { json, requireAuth, type AuthRequest, serializeDecimals } from "../middleware/auth.js"
@@ -71,9 +72,9 @@ export async function attachProductSyncIds(tenantId: string, data: { sales?: any
 
 export function shapeProductsForSchema(rows: any[], schema: number): any[] {
   if (schema >= 3) return rows
-  return rows.map(({ stockPolicy: _p, stockPolicyVersion: _v, stockPolicyChangedAt: _c, stockPolicyHistory: _h, ...product }: any) => product)
+  return rows.map(({ stockPolicy: _p, stockPolicyVersion: _v, stockPolicyChangedAt: _c, stockPolicyHistory: _h, stockPolicyRev: _r, ...product }: any) => product)
 }
-const withoutLinePolicy = (sale: any) => Array.isArray(sale?.items) ? { ...sale, items: sale.items.map(({ stockPolicy: _p, stockPolicyConflict: _c, ...item }: any) => item) } : sale
+const withoutLinePolicy = (sale: any) => Array.isArray(sale?.items) ? { ...sale, items: sale.items.map(({ stockPolicy: _p, stockPolicyConflict: _c, stockPolicyRev: _r, ...item }: any) => item) } : sale
 export function shapeSalesForSchema(rows: any[], schema: number): any[] {
   if (schema >= 3) return rows
   if (schema >= 2) return rows.map(withoutLinePolicy)
@@ -1089,17 +1090,26 @@ async function processOperation(
           // `_stockUpdate` is a now-defunct transition marker — discard it so it
           // is never persisted (and never trusted). `stock` is always stripped.
           const { id, syncId, tenantId: _t, _stockUpdate: _defunct, stock: _stock, ...patch } = { ...item } as Record<string, unknown>
+          // SPRINT-1: the policy changes only through its revision rules (lib/stockPolicy.ts).
+          const policyIn = { stockPolicy: patch.stockPolicy, stockPolicyRev: patch.stockPolicyRev, stockPolicyParentRev: patch.stockPolicyParentRev }
           normalizeProductFields(patch)
-          if (typeof patch.stockPolicy === "string") {
-            const policySelect = { stockPolicy: true, stockPolicyVersion: true, stockPolicyChangedAt: true, stockPolicyHistory: true }
+          delete patch.stockPolicy
+          if (typeof policyIn.stockPolicy === "string") {
+            const policySelect = { id: true, name: true, stockPolicy: true, stockPolicyRev: true, stockPolicyHistory: true }
             const cur = syncId
               ? await db.product.findFirst({ where: { tenantId, syncId: syncId as string }, select: policySelect })
               : id !== undefined ? await db.product.findFirst({ where: { tenantId, id: id as number }, select: policySelect }) : null
-            if (cur && cur.stockPolicy !== patch.stockPolicy) {
-              const at = new Date()
-              patch.stockPolicyVersion = cur.stockPolicyVersion + 1
-              patch.stockPolicyChangedAt = at
-              patch.stockPolicyHistory = nextPolicyHistory(cur, patch.stockPolicy as string, at)
+            if (cur) {
+              const { data: policyData, branch } = applyPolicyChange(cur, policyIn)
+              Object.assign(patch, policyData)
+              if (branch) {
+                await db.auditEvent.create({ data: {
+                  tenantId, action: "product.stock_policy_conflict", entity: "product",
+                  summary: `"${cur.name}": a stock-setting change (${branch.policy}) was made elsewhere at the same time as another one. It is recorded (sales made under it keep it), but the current setting stays ${cur.stockPolicy}; please check.`,
+                  metadata: { productId: cur.id, rev: branch.rev, parentRev: branch.parentRev, policy: branch.policy, currentRev: cur.stockPolicyRev, currentPolicy: cur.stockPolicy },
+                  userId: "__system__", userName: "Sync", userRole: "Admin",
+                } })
+              }
             }
           }
           if (_stock !== undefined) {
@@ -1143,7 +1153,7 @@ async function processOperation(
           if (syncId) {
             const bySync = await db.product.findFirst({ where: { tenantId, syncId }, select: { id: true } })
             if (bySync) {
-              const { syncId: _s, ...patch } = rest as Record<string, unknown>
+              const { syncId: _s, stockPolicy: _sp, ...patch } = rest as Record<string, unknown>
               await db.product.updateMany({ where: { tenantId, syncId }, data: patch as any })
               continue
             }
@@ -1157,7 +1167,7 @@ async function processOperation(
             const match = await matchProductByBarcode(barcode)
             if (match?.via === "primary") {
               const finalSyncId = match.syncId ?? syncId ?? (IS_CLOUD ? randomUUID() : undefined)
-              const { id: _i, syncId: _s, ...patch } = rest as Record<string, unknown>
+              const { id: _i, syncId: _s, stockPolicy: _sp, ...patch } = rest as Record<string, unknown>
               await db.product.update({
                 where: { id: match.id },
                 data: { ...patch, ...(finalSyncId ? { syncId: finalSyncId } : {}) } as any,
@@ -1281,8 +1291,8 @@ async function processOperation(
           const productId = await resolveProductId(item)
           // SPRINT-1: the line's stock policy is the SERVER's product policy at sale time (a client
           // cannot declare a packaged item untracked to skip stock control).
-          const product = productId ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { name: true, stockPolicy: true, stockPolicyVersion: true, stockPolicyChangedAt: true, stockPolicyHistory: true, cost: true } }) : null
-          const resolved = resolveLinePolicy(product, item, data.createdAt)
+          const product = productId ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { name: true, stockPolicy: true, stockPolicyRev: true, stockPolicyHistory: true, cost: true } }) : null
+          const resolved = resolveLinePolicy(product, item)
           return {
             productId,
             productName: item.name,
@@ -1295,6 +1305,7 @@ async function processOperation(
             costFromServer: !(Number.isFinite(Number(item.cost)) && item.cost !== null && item.cost !== ""),
             stockPolicy: resolved.policy,
             stockPolicyConflict: resolved.conflict,
+            stockPolicyRev: resolved.rev,
           }
         }))
         // Lines whose cost the till did not send: the sale's cost and profit come from the server.
@@ -1331,7 +1342,7 @@ async function processOperation(
         }
 
         // Decrement product stock
-        await decrementProductStock(db, tenantId, prismaItems.filter((i: any) => i.stockPolicy !== "untracked").map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+        await decrementProductStock(db, tenantId, { byLinePolicy: true }, prismaItems.filter((i: any) => i.stockPolicy !== "untracked").map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
         // Atomic batch decrement — updateMany with quantityRemaining >= quantity is atomic.
         // REFUND-INTEGRITY-1: record the lots ACTUALLY consumed per line (including
         // FEFO-fallback lots the client never knew about, and any untracked
@@ -1418,10 +1429,8 @@ async function processOperation(
         for (const c of policyConflicts) {
           await db.auditEvent.create({ data: {
             tenantId, action: "sale.stock_policy_conflict", entity: "sale",
-            summary: c.stockPolicyConflict === "changed"
-              ? `${saleData.saleNumber ?? saleData.id}: "${c.productName}" was sold as ${c.stockPolicy}, but its stock setting changed before the sale synced. Applied the setting it was sold under; please check its stock.`
-              : `${saleData.saleNumber ?? saleData.id}: the stock setting "${c.productName}" was sold under is unknown (older till, setting changed since). Applied today's setting (${c.stockPolicy}); please check its stock.`,
-            metadata: { saleId: saleData.id, productId: c.productId, appliedPolicy: c.stockPolicy, conflict: c.stockPolicyConflict },
+            summary: `${saleData.saleNumber ?? saleData.id}: "${c.productName}" was sold as ${c.stockPolicy}, but its stock setting changed before the sale synced. Applied the setting it was sold under; please check its stock.`,
+            metadata: { saleId: saleData.id, productId: c.productId, appliedPolicy: c.stockPolicy, rev: c.stockPolicyRev, conflict: c.stockPolicyConflict },
             userId: "__system__", userName: "Sync", userRole: "Admin",
           } })
         }
@@ -2223,71 +2232,6 @@ export async function applyStaffWrite(db: typeof prisma, tenantId: string, actio
  * none; '' would collide on the unique (tenantId, barcode) index). Identity is syncId.
  * stockPolicy accepts only "tracked" | "untracked" (anything else is dropped).
  */
-/**
- * SPRINT-1: the stock policy a sale line was SOLD under, established by the SERVER. The till's
- * claimed policy never decides it; it is only checked against the server's record.
- *
- * Each product carries a server-owned history: one entry per policy version (the policy that
- * version stood for). A version is created only by the server, when a product update changes the
- * policy. A line names the version it was sold under (stockPolicyVersion), and:
- *  - known version (the current one, or one in the history): that version's policy applies. A
- *    claimed policy that disagrees with it is refused (STOCK_POLICY_MISMATCH, the sale is not
- *    applied). If it differs from today's policy, the line is flagged "changed" (visible conflict);
- *  - version newer than the server's: impossible, refused (STOCK_POLICY_MISMATCH);
- *  - no version (older till), or an older version missing from the history: the sale-time policy
- *    cannot be established. TODAY's server policy applies (never the claim), with today's stock
- *    effects (tracked: stock decremented and lots consumed, a refund/void restocks; untracked: no
- *    stock or lot effect). The line is flagged "unknown" (visible conflict + audit event) unless
- *    the policy is known not to have changed since the sale (an older till's line for a product
- *    whose policy never changed is not a conflict).
- * An unknown product is tracked (stock enforcement as before).
- */
-export class StockPolicyMismatchError extends Error {
-  constructor(name: string) { super(`STOCK_POLICY_MISMATCH: "${name}" was sent with a stock setting that does not match its version; the sale was not applied.`); this.name = "StockPolicyMismatchError" }
-}
-type PolicyHistoryEntry = { version: number; policy: "tracked" | "untracked"; from: string | null }
-const asPolicy = (p: unknown): "tracked" | "untracked" => (p === "untracked" ? "untracked" : "tracked")
-function readPolicyHistory(raw: unknown): PolicyHistoryEntry[] {
-  return Array.isArray(raw)
-    ? raw.filter((e: any) => e && Number.isInteger(e.version) && (e.policy === "tracked" || e.policy === "untracked"))
-    : []
-}
-/** The history after a policy change: records the outgoing version (if not yet recorded) and the new one. */
-export function nextPolicyHistory(
-  cur: { stockPolicy: string; stockPolicyVersion: number; stockPolicyChangedAt: Date | null; stockPolicyHistory: unknown },
-  newPolicy: string,
-  at: Date,
-): PolicyHistoryEntry[] {
-  const history = readPolicyHistory(cur.stockPolicyHistory)
-  if (!history.some((e) => e.version === cur.stockPolicyVersion)) {
-    history.push({ version: cur.stockPolicyVersion, policy: asPolicy(cur.stockPolicy), from: cur.stockPolicyChangedAt ? cur.stockPolicyChangedAt.toISOString() : null })
-  }
-  history.push({ version: cur.stockPolicyVersion + 1, policy: asPolicy(newPolicy), from: at.toISOString() })
-  return history
-}
-export function resolveLinePolicy(
-  product: { name: string; stockPolicy: string; stockPolicyVersion: number; stockPolicyChangedAt: Date | null; stockPolicyHistory?: unknown } | null,
-  item: { stockPolicy?: unknown; stockPolicyVersion?: unknown },
-  saleCreatedAt: unknown,
-): { policy: "tracked" | "untracked"; conflict: "changed" | "unknown" | null } {
-  if (!product) return { policy: "tracked", conflict: null }
-  const today = asPolicy(product.stockPolicy)
-  const claimed = item.stockPolicy === "untracked" || item.stockPolicy === "tracked" ? item.stockPolicy : null
-  const v = Number(item.stockPolicyVersion)
-  if (!Number.isInteger(v) || v < 1) {
-    const soldAt = typeof saleCreatedAt === "string" ? new Date(saleCreatedAt) : null
-    const changedSince = !!product.stockPolicyChangedAt && (!soldAt || isNaN(soldAt.getTime()) || soldAt < product.stockPolicyChangedAt)
-    return { policy: today, conflict: changedSince ? "unknown" : null }
-  }
-  if (v > product.stockPolicyVersion) throw new StockPolicyMismatchError(product.name)
-  const atVersion = v === product.stockPolicyVersion
-    ? today
-    : readPolicyHistory(product.stockPolicyHistory).find((e) => e.version === v)?.policy ?? null
-  if (!atVersion) return { policy: today, conflict: "unknown" }
-  if (claimed && claimed !== atVersion) throw new StockPolicyMismatchError(product.name)
-  return { policy: atVersion, conflict: atVersion !== today ? "changed" : null }
-}
-
 function normalizeProductFields(p: Record<string, unknown>) {
   if ("barcode" in p && (p.barcode == null || (typeof p.barcode === "string" && p.barcode.trim() === ""))) p.barcode = null
   if ("stockPolicy" in p && p.stockPolicy !== "tracked" && p.stockPolicy !== "untracked") delete p.stockPolicy
@@ -2295,6 +2239,9 @@ function normalizeProductFields(p: Record<string, unknown>) {
   delete p.stockPolicyVersion
   delete p.stockPolicyChangedAt
   delete p.stockPolicyHistory
+  // Revision ids are handled by product.update's revision rules; a create starts at "initial".
+  delete p.stockPolicyRev
+  delete p.stockPolicyParentRev
   if (Array.isArray(p.barcodeAliases)) p.barcodeAliases = (p.barcodeAliases as unknown[]).map((b) => String(b).trim()).filter(Boolean)
 }
 

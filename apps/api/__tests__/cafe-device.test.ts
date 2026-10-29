@@ -104,7 +104,7 @@ function order(d: Device, lines: Array<{ name: string; qty: number }>) {
     saleNumber: `S-CAFE-${id.slice(0, 6)}`, paymentMethod: "Cash", subtotal: total, tax: 0, total,
     items: items.map(({ p, l }) => {
       const untracked = p.stockPolicy === "untracked"
-      return { id: p.id, productSyncId: p.syncId, name: p.name, barcode: p.barcode ?? "", cost: p.cost, stockPolicy: untracked ? "untracked" : "tracked", stockPolicyVersion: p.stockPolicyVersion ?? 1, quantity: l.qty, unitPrice: p.price, total: l.qty * p.price, batchAllocations: untracked ? [] : dry.get(p.id) ?? [] }
+      return { id: p.id, productSyncId: p.syncId, name: p.name, barcode: p.barcode ?? "", cost: p.cost, stockPolicy: untracked ? "untracked" : "tracked", stockPolicyVersion: p.stockPolicyVersion ?? 1, stockPolicyRev: (p as any).stockPolicyRev ?? "initial", quantity: l.qty, unitPrice: p.price, total: l.qty * p.price, batchAllocations: untracked ? [] : dry.get(p.id) ?? [] }
     }),
   } as Parameters<typeof d.sales.buildSale>[0], id)
   return { sale, lots, stock: tracked.map(({ p, l }) => ({ productId: p.id, quantity: l.qty })) }
@@ -381,7 +381,7 @@ describe("stock-policy change between an offline checkout and its sync: the sale
     offline = true
     const o = order(d, [{ name: "Flat white", qty: 1 }])
     try { expect(d.sales.checkoutLocalSale(o).status).toBe("completed"); await dispose() } finally { offline = false }
-    expect(o.sale.items[0]).toMatchObject({ stockPolicy: "untracked", stockPolicyVersion: 1 })
+    expect(o.sale.items[0]).toMatchObject({ stockPolicy: "untracked", stockPolicyRev: "initial" })
     expect((await adminPush("product", "update", { syncId: local("Flat white").syncId, stockPolicy: "tracked" })).status).toBe("ok")
     expect(await server("Flat white")).toMatchObject({ stockPolicy: "tracked", stockPolicyVersion: 2 })
     await flush(d)
@@ -404,23 +404,24 @@ describe("stock-policy change between an offline checkout and its sync: the sale
     const line = await saleLine(o.sale.id, "Croissant")
     expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["tracked", "changed"])
     expect(Number((await prisma.inventoryBatch.findUnique({ where: { id: lot.id } }))!.quantityRemaining)).toBe(4)
+    expect(Number((await server("Croissant"))!.stock)).toBe(4) // stock taken by the line's policy, though the product is made-to-order today
   })
 
-  it("an older till's line with no policy version, sold before the change: 'unknown' conflict, today's policy, visible", async () => {
+  it("an older till's line with no policy revision, for a product whose policy changed: held (retryable), nothing applied", async () => {
     const p = (await server("Croissant"))!
+    const before = Number(p.stock)
     const id = randomUUID()
-    const before = new Date(Date.now() - 3600_000).toISOString()
-    const r = await adminPush("sale", "create", { id, saleNumber: "S-OLD-TILL", paymentMethod: "Cash", subtotal: 1.25, tax: 0, total: 1.25, cashier: "Old till", status: "Completed", createdAt: before, items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: "", quantity: 1, unitPrice: 1.25, total: 1.25, cost: 0.4 }] })
-    expect(r.status).toBe("ok")
-    const line = await saleLine(id, "Croissant")
-    expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["untracked", "unknown"])
-    expect(await prisma.auditEvent.count({ where: { tenantId: T, action: "sale.stock_policy_conflict", metadata: { path: ["saleId"], equals: id } } })).toBe(1)
+    const r = await adminPush("sale", "create", { id, saleNumber: "S-OLD-TILL", paymentMethod: "Cash", subtotal: 1.25, tax: 0, total: 1.25, cashier: "Old till", status: "Completed", createdAt: new Date(Date.now() - 3600_000).toISOString(), items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: "", quantity: 1, unitPrice: 1.25, total: 1.25, cost: 0.4 }] })
+    expect(r.status).toBe("error")
+    expect(r.error).toMatch(/^STOCK_POLICY_HELD:/)
+    expect(await prisma.sale.count({ where: { id } })).toBe(0)
+    expect(Number((await server("Croissant"))!.stock)).toBe(before)
   })
 
-  it("a line claiming a policy that contradicts its own version is refused visibly (not applied)", async () => {
+  it("a line claiming a policy that contradicts its own revision is refused visibly (not applied)", async () => {
     const p = (await server("Croissant"))!
     const id = randomUUID()
-    const r = await adminPush("sale", "create", { id, saleNumber: "S-BAD", paymentMethod: "Cash", subtotal: 1.25, tax: 0, total: 1.25, cashier: "x", status: "Completed", items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: "", stockPolicy: "tracked", stockPolicyVersion: p.stockPolicyVersion, quantity: 1, unitPrice: 1.25, total: 1.25, cost: 0.4 }] })
+    const r = await adminPush("sale", "create", { id, saleNumber: "S-BAD", paymentMethod: "Cash", subtotal: 1.25, tax: 0, total: 1.25, cashier: "x", status: "Completed", items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: "", stockPolicy: "tracked", stockPolicyRev: p.stockPolicyRev, quantity: 1, unitPrice: 1.25, total: 1.25, cost: 0.4 }] })
     expect(r.status).toBe("rejected")
     expect(r.error).toMatch(/^STOCK_POLICY_MISMATCH:/)
     expect(await prisma.sale.count({ where: { id } })).toBe(0)
@@ -433,17 +434,20 @@ describe("stock-policy change between an offline checkout and its sync: the sale
     const v = local("Flat white").stockPolicyVersion ?? 1
     d.product.updateProduct(local("Flat white").id, { stockPolicy: "untracked" })
     expect(local("Flat white").stockPolicyVersion).toBe(v + 1)
+    const minted = local("Flat white").stockPolicyRev
+    expect(minted).toMatch(/^[0-9a-f-]{36}$/)
     const o = order(d, [{ name: "Flat white", qty: 1 }])
     expect(d.sales.checkoutLocalSale(o).status).toBe("completed")
     await flush(d)
     expect(notSynced().map((x) => `${x.summary} ${x.error ?? ""}`)).toEqual([])
     const line = await saleLine(o.sale.id, "Flat white")
-    expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["untracked", null])
-    expect((await server("Flat white"))!.stockPolicyVersion).toBe(v + 1)
+    expect([line.stockPolicy, line.stockPolicyRev, line.stockPolicyConflict]).toEqual(["untracked", minted, null])
+    expect(await server("Flat white")).toMatchObject({ stockPolicyRev: minted, stockPolicyVersion: v + 1 })
   })
 })
 
-describe("historical stock policy across versions (tracked → untracked → tracked): the server's history decides", () => {
+describe("historical stock policy across revisions (tracked → untracked → tracked): the server's record decides", () => {
+  const A = `rev-a-${randomUUID()}`, B = `rev-b-${randomUUID()}`, C = `rev-c-${randomUUID()}`
   const sellLine = async (extra: Record<string, unknown>) => {
     const p = (await server("Latte"))!
     const id = randomUUID()
@@ -452,37 +456,37 @@ describe("historical stock policy across versions (tracked → untracked → tra
   }
   const stock = async () => Number((await server("Latte"))!.stock)
 
-  it("three versions are recorded server-side; a client cannot write the history or the version", async () => {
+  it("three revisions are recorded server-side; a client cannot write the history", async () => {
     const d = await device()
     d.product.createProduct({ name: "Latte", barcode: "", price: 3, cost: 0.7, stock: 10, category: "Coffee" })
     await flush(d)
     const syncId = local("Latte").syncId
-    expect((await adminPush("product", "update", { syncId, stockPolicy: "untracked" })).status).toBe("ok")
-    expect((await adminPush("product", "update", { syncId, stockPolicy: "tracked", stockPolicyVersion: 99, stockPolicyHistory: [{ version: 1, policy: "untracked", from: null }] })).status).toBe("ok")
+    expect((await adminPush("product", "update", { syncId, stockPolicy: "untracked", stockPolicyRev: A, stockPolicyParentRev: "initial" })).status).toBe("ok")
+    expect((await adminPush("product", "update", { syncId, stockPolicy: "tracked", stockPolicyRev: B, stockPolicyParentRev: A, stockPolicyHistory: [{ rev: "initial", policy: "untracked" }] })).status).toBe("ok")
     const p = (await server("Latte"))!
-    expect([p.stockPolicy, p.stockPolicyVersion]).toEqual(["tracked", 3])
-    expect((p.stockPolicyHistory as any[]).map((e) => [e.version, e.policy])).toEqual([[1, "tracked"], [2, "untracked"], [3, "tracked"]])
+    expect([p.stockPolicy, p.stockPolicyRev, p.stockPolicyVersion]).toEqual(["tracked", B, 3])
+    expect((p.stockPolicyHistory as any[]).map((e) => [e.rev, e.policy])).toEqual([["initial", "tracked"], [A, "untracked"], [B, "tracked"]])
   })
 
-  it("v1 line: tracked (v1's policy) → stock taken, no conflict", async () => {
+  it("'initial' line: tracked → stock taken, no conflict", async () => {
     const before = await stock()
-    const { id, r } = await sellLine({ stockPolicyVersion: 1 })
+    const { id, r } = await sellLine({ stockPolicyRev: "initial" })
     expect(r.status).toBe("ok")
     expect([(await saleLine(id, "Latte")).stockPolicy, (await saleLine(id, "Latte")).stockPolicyConflict]).toEqual(["tracked", null])
     expect(await stock()).toBe(before - 1)
   })
 
-  it("v2 line: untracked (v2's policy, though today is tracked) → no stock effect, flagged 'changed'", async () => {
+  it("revision A line: untracked (A's policy, though today is tracked) → no stock effect, flagged 'changed'", async () => {
     const before = await stock()
-    const { id, r } = await sellLine({ stockPolicyVersion: 2, stockPolicy: "untracked" })
+    const { id, r } = await sellLine({ stockPolicyRev: A, stockPolicy: "untracked" })
     expect(r.status).toBe("ok")
     const line = await saleLine(id, "Latte")
-    expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["untracked", "changed"])
+    expect([line.stockPolicy, line.stockPolicyRev, line.stockPolicyConflict]).toEqual(["untracked", A, "changed"])
     expect(await stock()).toBe(before)
   })
 
-  it("a claim that contradicts the server's record for that version is refused (v2 claimed tracked, v1 claimed untracked)", async () => {
-    for (const extra of [{ stockPolicyVersion: 2, stockPolicy: "tracked" }, { stockPolicyVersion: 1, stockPolicy: "untracked" }]) {
+  it("a claim that contradicts the server's record of that revision is refused (A claimed tracked, initial claimed untracked)", async () => {
+    for (const extra of [{ stockPolicyRev: A, stockPolicy: "tracked" }, { stockPolicyRev: "initial", stockPolicy: "untracked" }]) {
       const { id, r } = await sellLine(extra)
       expect(r.status).toBe("rejected")
       expect(r.error).toMatch(/^STOCK_POLICY_MISMATCH:/)
@@ -490,21 +494,23 @@ describe("historical stock policy across versions (tracked → untracked → tra
     }
   })
 
-  it("a version newer than the server's is refused", async () => {
-    const { r } = await sellLine({ stockPolicyVersion: 4, stockPolicy: "untracked" })
-    expect(r.status).toBe("rejected")
+  it("a revision the server does not know is held (retryable): nothing applied, the claim is not used", async () => {
+    const before = await stock()
+    const { id, r } = await sellLine({ stockPolicyRev: `unknown-${randomUUID()}`, stockPolicy: "untracked" })
+    expect(r.status).toBe("error")
+    expect(r.error).toMatch(/^STOCK_POLICY_HELD:/)
+    expect(await prisma.sale.count({ where: { id } })).toBe(0)
+    expect(await stock()).toBe(before)
   })
 
-  it("an older version missing from the history: 'unknown', TODAY's policy and stock effects; the claim is ignored", async () => {
-    const p = (await server("Latte"))!
-    await prisma.product.update({ where: { id: p.id }, data: { stockPolicyHistory: [] } }) // e.g. history lost
+  it("a tracked line ('initial') for a product that is made-to-order TODAY still takes stock (the line's policy, not today's)", async () => {
+    expect((await adminPush("product", "update", { syncId: local("Latte").syncId, stockPolicy: "untracked", stockPolicyRev: C, stockPolicyParentRev: B })).status).toBe("ok")
     const before = await stock()
-    const { id, r } = await sellLine({ stockPolicyVersion: 2, stockPolicy: "untracked" })
+    const { id, r } = await sellLine({ stockPolicyRev: "initial", stockPolicy: "tracked" })
     expect(r.status).toBe("ok")
     const line = await saleLine(id, "Latte")
-    expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["tracked", "unknown"]) // not the client's "untracked"
+    expect([line.stockPolicy, line.stockPolicyConflict]).toEqual(["tracked", "changed"])
     expect(await stock()).toBe(before - 1)
-    expect(await prisma.auditEvent.count({ where: { tenantId: T, action: "sale.stock_policy_conflict", metadata: { path: ["saleId"], equals: id } } })).toBe(1)
   })
 })
 

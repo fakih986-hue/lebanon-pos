@@ -203,6 +203,7 @@ exports.Prisma.ProductScalarFieldEnum = {
   stockPolicyVersion: 'stockPolicyVersion',
   stockPolicyChangedAt: 'stockPolicyChangedAt',
   stockPolicyHistory: 'stockPolicyHistory',
+  stockPolicyRev: 'stockPolicyRev',
   category: 'category',
   accent: 'accent',
   favorite: 'favorite',
@@ -255,7 +256,8 @@ exports.Prisma.SaleItemScalarFieldEnum = {
   lineIndex: 'lineIndex',
   batchAllocations: 'batchAllocations',
   stockPolicy: 'stockPolicy',
-  stockPolicyConflict: 'stockPolicyConflict'
+  stockPolicyConflict: 'stockPolicyConflict',
+  stockPolicyRev: 'stockPolicyRev'
 };
 
 exports.Prisma.SaleTenderScalarFieldEnum = {

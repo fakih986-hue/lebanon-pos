@@ -18,6 +18,7 @@
  * populates the local DB from Railway.
  */
 
+import { adoptPulledPolicy } from "../lib/stockPolicy.js"
 import fs   from "node:fs"
 import path from "node:path"
 import { randomUUID } from "node:crypto"
@@ -366,6 +367,17 @@ async function pushToCloud(): Promise<void> {
             error:         _lastPushError,
           },
         })
+      } else if ((r.error ?? "").startsWith("STOCK_POLICY_HELD:")) {
+        // SPRINT-1: held by the cloud (it has not received the policy revision the sale was sold
+        // under yet). Kept pending — not dropped, not counted against its attempts — and retried;
+        // the reason stays visible in this hub's sync status.
+        errCount++
+        _lastPushError = r.error ?? "Held by the cloud"
+        _lastPushErrorAt = new Date().toISOString()
+        await prisma.syncOperation.updateMany({
+          where: { id: r.id, tenantId },
+          data:  { status: "Pending", lastAttemptAt: new Date(), error: _lastPushError },
+        })
       } else {
         errCount++
         const current = await prisma.syncOperation.findFirst({
@@ -549,6 +561,15 @@ async function upsertPulledData(
   // summary log line so it's visible when the guard is doing work.
   let skippedProductStockCount = 0
   let skippedBatchCount = 0
+  // SPRINT-1: a pulled product's stock policy is merged by revision, never overwritten: the hub
+  // keeps every revision it knows (sales sold under them keep resolving) and adopts the cloud's
+  // current one once the cloud has seen the hub's own (lib/stockPolicy.ts). Older clouds send no
+  // policy fields: nothing to merge.
+  const withMergedPolicy = (local: { stockPolicy: string; stockPolicyRev: string; stockPolicyHistory: unknown }, patch: Record<string, unknown>) => {
+    if (!("stockPolicy" in patch) && !("stockPolicyRev" in patch)) return patch
+    const { stockPolicyChangedAt: _c, ...rest } = patch
+    return { ...rest, ...adoptPulledPolicy(local, { stockPolicy: String(patch.stockPolicy ?? local.stockPolicy), stockPolicyRev: (patch.stockPolicyRev as string) ?? null, stockPolicyHistory: patch.stockPolicyHistory }) }
+  }
   const productMetadataPatch = (patch: Record<string, unknown>): Record<string, unknown> => {
     if (applyInventoryToExisting) return patch
     if (Object.prototype.hasOwnProperty.call(patch, "stock")) {
@@ -711,10 +732,10 @@ async function upsertPulledData(
       if (incomingSyncId) {
         const bySync = await prisma.product.findFirst({
           where: { tenantId, syncId: incomingSyncId },
-          select: { id: true },
+          select: { id: true, stockPolicy: true, stockPolicyRev: true, stockPolicyHistory: true },
         })
         if (bySync) {
-          await prisma.product.update({ where: { id: bySync.id }, data: productMetadataPatch(patch) as any })
+          await prisma.product.update({ where: { id: bySync.id }, data: productMetadataPatch(withMergedPolicy(bySync, patch)) as any })
           return
         }
       }

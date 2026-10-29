@@ -202,6 +202,8 @@ model Product {
   stockPolicyChangedAt DateTime?
   /// SPRINT-1: server-owned [{version, policy, from}] — the policy each version stood for
   stockPolicyHistory   Json      @default("[]")
+  /// SPRINT-1: current policy revision id (minted once by whoever changed it; "initial" = as created)
+  stockPolicyRev       String    @default("initial")
   category             String
   accent               String    @default("emerald")
   favorite             Boolean   @default(false)
@@ -284,6 +286,8 @@ model SaleItem {
   /// SPRINT-1: set when the sale-time policy differed from (or could not be established against) the product's
   /// policy at sync time: "changed" | "unknown". Visible conflict for managers (audit sale.stock_policy_conflict).
   stockPolicyConflict String?
+  /// SPRINT-1: the policy revision this line was sold under
+  stockPolicyRev      String?
 
   @@unique([saleId, lineId])
   @@index([productId])

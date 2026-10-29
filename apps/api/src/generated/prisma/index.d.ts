@@ -9122,6 +9122,7 @@ export namespace Prisma {
     stockPolicy: string | null
     stockPolicyVersion: number | null
     stockPolicyChangedAt: Date | null
+    stockPolicyRev: string | null
     category: string | null
     accent: string | null
     favorite: boolean | null
@@ -9152,6 +9153,7 @@ export namespace Prisma {
     stockPolicy: string | null
     stockPolicyVersion: number | null
     stockPolicyChangedAt: Date | null
+    stockPolicyRev: string | null
     category: string | null
     accent: string | null
     favorite: boolean | null
@@ -9184,6 +9186,7 @@ export namespace Prisma {
     stockPolicyVersion: number
     stockPolicyChangedAt: number
     stockPolicyHistory: number
+    stockPolicyRev: number
     category: number
     accent: number
     favorite: number
@@ -9240,6 +9243,7 @@ export namespace Prisma {
     stockPolicy?: true
     stockPolicyVersion?: true
     stockPolicyChangedAt?: true
+    stockPolicyRev?: true
     category?: true
     accent?: true
     favorite?: true
@@ -9270,6 +9274,7 @@ export namespace Prisma {
     stockPolicy?: true
     stockPolicyVersion?: true
     stockPolicyChangedAt?: true
+    stockPolicyRev?: true
     category?: true
     accent?: true
     favorite?: true
@@ -9302,6 +9307,7 @@ export namespace Prisma {
     stockPolicyVersion?: true
     stockPolicyChangedAt?: true
     stockPolicyHistory?: true
+    stockPolicyRev?: true
     category?: true
     accent?: true
     favorite?: true
@@ -9421,6 +9427,7 @@ export namespace Prisma {
     stockPolicyVersion: number
     stockPolicyChangedAt: Date | null
     stockPolicyHistory: JsonValue
+    stockPolicyRev: string
     category: string
     accent: string
     favorite: boolean
@@ -9472,6 +9479,7 @@ export namespace Prisma {
     stockPolicyVersion?: boolean
     stockPolicyChangedAt?: boolean
     stockPolicyHistory?: boolean
+    stockPolicyRev?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -9512,6 +9520,7 @@ export namespace Prisma {
     stockPolicyVersion?: boolean
     stockPolicyChangedAt?: boolean
     stockPolicyHistory?: boolean
+    stockPolicyRev?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -9546,6 +9555,7 @@ export namespace Prisma {
     stockPolicyVersion?: boolean
     stockPolicyChangedAt?: boolean
     stockPolicyHistory?: boolean
+    stockPolicyRev?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -9580,6 +9590,7 @@ export namespace Prisma {
     stockPolicyVersion?: boolean
     stockPolicyChangedAt?: boolean
     stockPolicyHistory?: boolean
+    stockPolicyRev?: boolean
     category?: boolean
     accent?: boolean
     favorite?: boolean
@@ -9594,7 +9605,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "syncId" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "wholesalePrice" | "cost" | "stock" | "barcode" | "barcodeAliases" | "stockPolicy" | "stockPolicyVersion" | "stockPolicyChangedAt" | "stockPolicyHistory" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "archived" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
+  export type ProductOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "syncId" | "tenantId" | "parentId" | "isParent" | "variantName" | "name" | "price" | "wholesalePrice" | "cost" | "stock" | "barcode" | "barcodeAliases" | "stockPolicy" | "stockPolicyVersion" | "stockPolicyChangedAt" | "stockPolicyHistory" | "stockPolicyRev" | "category" | "accent" | "favorite" | "reorderPoint" | "reorderQuantity" | "supplierId" | "supplierName" | "expiryDate" | "image" | "archived" | "createdAt" | "updatedAt", ExtArgs["result"]["product"]>
   export type ProductInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
     parent?: boolean | Product$parentArgs<ExtArgs>
@@ -9652,6 +9663,10 @@ export namespace Prisma {
        * SPRINT-1: server-owned [{version, policy, from}] — the policy each version stood for
        */
       stockPolicyHistory: Prisma.JsonValue
+      /**
+       * SPRINT-1: current policy revision id (minted once by whoever changed it; "initial" = as created)
+       */
+      stockPolicyRev: string
       category: string
       accent: string
       favorite: boolean
@@ -10111,6 +10126,7 @@ export namespace Prisma {
     readonly stockPolicyVersion: FieldRef<"Product", 'Int'>
     readonly stockPolicyChangedAt: FieldRef<"Product", 'DateTime'>
     readonly stockPolicyHistory: FieldRef<"Product", 'Json'>
+    readonly stockPolicyRev: FieldRef<"Product", 'String'>
     readonly category: FieldRef<"Product", 'String'>
     readonly accent: FieldRef<"Product", 'String'>
     readonly favorite: FieldRef<"Product", 'Boolean'>
@@ -12133,6 +12149,7 @@ export namespace Prisma {
     lineIndex: number | null
     stockPolicy: string | null
     stockPolicyConflict: string | null
+    stockPolicyRev: string | null
   }
 
   export type SaleItemMaxAggregateOutputType = {
@@ -12149,6 +12166,7 @@ export namespace Prisma {
     lineIndex: number | null
     stockPolicy: string | null
     stockPolicyConflict: string | null
+    stockPolicyRev: string | null
   }
 
   export type SaleItemCountAggregateOutputType = {
@@ -12166,6 +12184,7 @@ export namespace Prisma {
     batchAllocations: number
     stockPolicy: number
     stockPolicyConflict: number
+    stockPolicyRev: number
     _all: number
   }
 
@@ -12202,6 +12221,7 @@ export namespace Prisma {
     lineIndex?: true
     stockPolicy?: true
     stockPolicyConflict?: true
+    stockPolicyRev?: true
   }
 
   export type SaleItemMaxAggregateInputType = {
@@ -12218,6 +12238,7 @@ export namespace Prisma {
     lineIndex?: true
     stockPolicy?: true
     stockPolicyConflict?: true
+    stockPolicyRev?: true
   }
 
   export type SaleItemCountAggregateInputType = {
@@ -12235,6 +12256,7 @@ export namespace Prisma {
     batchAllocations?: true
     stockPolicy?: true
     stockPolicyConflict?: true
+    stockPolicyRev?: true
     _all?: true
   }
 
@@ -12339,6 +12361,7 @@ export namespace Prisma {
     batchAllocations: JsonValue | null
     stockPolicy: string
     stockPolicyConflict: string | null
+    stockPolicyRev: string | null
     _count: SaleItemCountAggregateOutputType | null
     _avg: SaleItemAvgAggregateOutputType | null
     _sum: SaleItemSumAggregateOutputType | null
@@ -12375,6 +12398,7 @@ export namespace Prisma {
     batchAllocations?: boolean
     stockPolicy?: boolean
     stockPolicyConflict?: boolean
+    stockPolicyRev?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -12393,6 +12417,7 @@ export namespace Prisma {
     batchAllocations?: boolean
     stockPolicy?: boolean
     stockPolicyConflict?: boolean
+    stockPolicyRev?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -12411,6 +12436,7 @@ export namespace Prisma {
     batchAllocations?: boolean
     stockPolicy?: boolean
     stockPolicyConflict?: boolean
+    stockPolicyRev?: boolean
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["saleItem"]>
 
@@ -12429,9 +12455,10 @@ export namespace Prisma {
     batchAllocations?: boolean
     stockPolicy?: boolean
     stockPolicyConflict?: boolean
+    stockPolicyRev?: boolean
   }
 
-  export type SaleItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "saleId" | "productId" | "productName" | "barcode" | "quantity" | "unitPrice" | "total" | "cost" | "lineId" | "lineIndex" | "batchAllocations" | "stockPolicy" | "stockPolicyConflict", ExtArgs["result"]["saleItem"]>
+  export type SaleItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "saleId" | "productId" | "productName" | "barcode" | "quantity" | "unitPrice" | "total" | "cost" | "lineId" | "lineIndex" | "batchAllocations" | "stockPolicy" | "stockPolicyConflict" | "stockPolicyRev", ExtArgs["result"]["saleItem"]>
   export type SaleItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     sale?: boolean | SaleDefaultArgs<ExtArgs>
   }
@@ -12475,6 +12502,10 @@ export namespace Prisma {
        * policy at sync time: "changed" | "unknown". Visible conflict for managers (audit sale.stock_policy_conflict).
        */
       stockPolicyConflict: string | null
+      /**
+       * SPRINT-1: the policy revision this line was sold under
+       */
+      stockPolicyRev: string | null
     }, ExtArgs["result"]["saleItem"]>
     composites: {}
   }
@@ -12913,6 +12944,7 @@ export namespace Prisma {
     readonly batchAllocations: FieldRef<"SaleItem", 'Json'>
     readonly stockPolicy: FieldRef<"SaleItem", 'String'>
     readonly stockPolicyConflict: FieldRef<"SaleItem", 'String'>
+    readonly stockPolicyRev: FieldRef<"SaleItem", 'String'>
   }
     
 
@@ -44900,6 +44932,7 @@ export namespace Prisma {
     stockPolicyVersion: 'stockPolicyVersion',
     stockPolicyChangedAt: 'stockPolicyChangedAt',
     stockPolicyHistory: 'stockPolicyHistory',
+    stockPolicyRev: 'stockPolicyRev',
     category: 'category',
     accent: 'accent',
     favorite: 'favorite',
@@ -44958,7 +44991,8 @@ export namespace Prisma {
     lineIndex: 'lineIndex',
     batchAllocations: 'batchAllocations',
     stockPolicy: 'stockPolicy',
-    stockPolicyConflict: 'stockPolicyConflict'
+    stockPolicyConflict: 'stockPolicyConflict',
+    stockPolicyRev: 'stockPolicyRev'
   };
 
   export type SaleItemScalarFieldEnum = (typeof SaleItemScalarFieldEnum)[keyof typeof SaleItemScalarFieldEnum]
@@ -46208,6 +46242,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFilter<"Product"> | number
     stockPolicyChangedAt?: DateTimeNullableFilter<"Product"> | Date | string | null
     stockPolicyHistory?: JsonFilter<"Product">
+    stockPolicyRev?: StringFilter<"Product"> | string
     category?: StringFilter<"Product"> | string
     accent?: StringFilter<"Product"> | string
     favorite?: BoolFilter<"Product"> | boolean
@@ -46247,6 +46282,7 @@ export namespace Prisma {
     stockPolicyVersion?: SortOrder
     stockPolicyChangedAt?: SortOrderInput | SortOrder
     stockPolicyHistory?: SortOrder
+    stockPolicyRev?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -46291,6 +46327,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFilter<"Product"> | number
     stockPolicyChangedAt?: DateTimeNullableFilter<"Product"> | Date | string | null
     stockPolicyHistory?: JsonFilter<"Product">
+    stockPolicyRev?: StringFilter<"Product"> | string
     category?: StringFilter<"Product"> | string
     accent?: StringFilter<"Product"> | string
     favorite?: BoolFilter<"Product"> | boolean
@@ -46330,6 +46367,7 @@ export namespace Prisma {
     stockPolicyVersion?: SortOrder
     stockPolicyChangedAt?: SortOrderInput | SortOrder
     stockPolicyHistory?: SortOrder
+    stockPolicyRev?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -46370,6 +46408,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntWithAggregatesFilter<"Product"> | number
     stockPolicyChangedAt?: DateTimeNullableWithAggregatesFilter<"Product"> | Date | string | null
     stockPolicyHistory?: JsonWithAggregatesFilter<"Product">
+    stockPolicyRev?: StringWithAggregatesFilter<"Product"> | string
     category?: StringWithAggregatesFilter<"Product"> | string
     accent?: StringWithAggregatesFilter<"Product"> | string
     favorite?: BoolWithAggregatesFilter<"Product"> | boolean
@@ -46548,6 +46587,7 @@ export namespace Prisma {
     batchAllocations?: JsonNullableFilter<"SaleItem">
     stockPolicy?: StringFilter<"SaleItem"> | string
     stockPolicyConflict?: StringNullableFilter<"SaleItem"> | string | null
+    stockPolicyRev?: StringNullableFilter<"SaleItem"> | string | null
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
   }
 
@@ -46566,6 +46606,7 @@ export namespace Prisma {
     batchAllocations?: SortOrderInput | SortOrder
     stockPolicy?: SortOrder
     stockPolicyConflict?: SortOrderInput | SortOrder
+    stockPolicyRev?: SortOrderInput | SortOrder
     sale?: SaleOrderByWithRelationInput
   }
 
@@ -46588,6 +46629,7 @@ export namespace Prisma {
     batchAllocations?: JsonNullableFilter<"SaleItem">
     stockPolicy?: StringFilter<"SaleItem"> | string
     stockPolicyConflict?: StringNullableFilter<"SaleItem"> | string | null
+    stockPolicyRev?: StringNullableFilter<"SaleItem"> | string | null
     sale?: XOR<SaleScalarRelationFilter, SaleWhereInput>
   }, "id" | "saleId_lineId">
 
@@ -46606,6 +46648,7 @@ export namespace Prisma {
     batchAllocations?: SortOrderInput | SortOrder
     stockPolicy?: SortOrder
     stockPolicyConflict?: SortOrderInput | SortOrder
+    stockPolicyRev?: SortOrderInput | SortOrder
     _count?: SaleItemCountOrderByAggregateInput
     _avg?: SaleItemAvgOrderByAggregateInput
     _max?: SaleItemMaxOrderByAggregateInput
@@ -46631,6 +46674,7 @@ export namespace Prisma {
     batchAllocations?: JsonNullableWithAggregatesFilter<"SaleItem">
     stockPolicy?: StringWithAggregatesFilter<"SaleItem"> | string
     stockPolicyConflict?: StringNullableWithAggregatesFilter<"SaleItem"> | string | null
+    stockPolicyRev?: StringNullableWithAggregatesFilter<"SaleItem"> | string | null
   }
 
   export type SaleTenderWhereInput = {
@@ -49735,6 +49779,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -49774,6 +49819,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -49808,6 +49854,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -49847,6 +49894,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -49884,6 +49932,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -49913,6 +49962,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -49945,6 +49995,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -50152,6 +50203,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: string
     stockPolicyConflict?: string | null
+    stockPolicyRev?: string | null
     sale: SaleCreateNestedOneWithoutItemsInput
   }
 
@@ -50170,6 +50222,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: string
     stockPolicyConflict?: string | null
+    stockPolicyRev?: string | null
   }
 
   export type SaleItemUpdateInput = {
@@ -50186,6 +50239,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
     sale?: SaleUpdateOneRequiredWithoutItemsNestedInput
   }
 
@@ -50204,6 +50258,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleItemCreateManyInput = {
@@ -50221,6 +50276,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: string
     stockPolicyConflict?: string | null
+    stockPolicyRev?: string | null
   }
 
   export type SaleItemUpdateManyMutationInput = {
@@ -50237,6 +50293,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleItemUncheckedUpdateManyInput = {
@@ -50254,6 +50311,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleTenderCreateInput = {
@@ -53850,6 +53908,7 @@ export namespace Prisma {
     stockPolicyVersion?: SortOrder
     stockPolicyChangedAt?: SortOrder
     stockPolicyHistory?: SortOrder
+    stockPolicyRev?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -53892,6 +53951,7 @@ export namespace Prisma {
     stockPolicy?: SortOrder
     stockPolicyVersion?: SortOrder
     stockPolicyChangedAt?: SortOrder
+    stockPolicyRev?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -53922,6 +53982,7 @@ export namespace Prisma {
     stockPolicy?: SortOrder
     stockPolicyVersion?: SortOrder
     stockPolicyChangedAt?: SortOrder
+    stockPolicyRev?: SortOrder
     category?: SortOrder
     accent?: SortOrder
     favorite?: SortOrder
@@ -54231,6 +54292,7 @@ export namespace Prisma {
     batchAllocations?: SortOrder
     stockPolicy?: SortOrder
     stockPolicyConflict?: SortOrder
+    stockPolicyRev?: SortOrder
   }
 
   export type SaleItemAvgOrderByAggregateInput = {
@@ -54256,6 +54318,7 @@ export namespace Prisma {
     lineIndex?: SortOrder
     stockPolicy?: SortOrder
     stockPolicyConflict?: SortOrder
+    stockPolicyRev?: SortOrder
   }
 
   export type SaleItemMinOrderByAggregateInput = {
@@ -54272,6 +54335,7 @@ export namespace Prisma {
     lineIndex?: SortOrder
     stockPolicy?: SortOrder
     stockPolicyConflict?: SortOrder
+    stockPolicyRev?: SortOrder
   }
 
   export type SaleItemSumOrderByAggregateInput = {
@@ -59374,6 +59438,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -59411,6 +59476,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -60493,6 +60559,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFilter<"Product"> | number
     stockPolicyChangedAt?: DateTimeNullableFilter<"Product"> | Date | string | null
     stockPolicyHistory?: JsonFilter<"Product">
+    stockPolicyRev?: StringFilter<"Product"> | string
     category?: StringFilter<"Product"> | string
     accent?: StringFilter<"Product"> | string
     favorite?: BoolFilter<"Product"> | boolean
@@ -62164,6 +62231,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -62202,6 +62270,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -62240,6 +62309,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -62277,6 +62347,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -62607,6 +62678,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -62645,6 +62717,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -62876,6 +62949,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: string
     stockPolicyConflict?: string | null
+    stockPolicyRev?: string | null
   }
 
   export type SaleItemUncheckedCreateWithoutSaleInput = {
@@ -62892,6 +62966,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: string
     stockPolicyConflict?: string | null
+    stockPolicyRev?: string | null
   }
 
   export type SaleItemCreateOrConnectWithoutSaleInput = {
@@ -63128,6 +63203,7 @@ export namespace Prisma {
     batchAllocations?: JsonNullableFilter<"SaleItem">
     stockPolicy?: StringFilter<"SaleItem"> | string
     stockPolicyConflict?: StringNullableFilter<"SaleItem"> | string | null
+    stockPolicyRev?: StringNullableFilter<"SaleItem"> | string | null
   }
 
   export type SaleRefundUpsertWithWhereUniqueWithoutSaleInput = {
@@ -67282,6 +67358,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -67320,6 +67397,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -67513,6 +67591,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -67551,6 +67630,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -67728,6 +67808,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -67766,6 +67847,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -67924,6 +68006,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -67962,6 +68045,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -68284,6 +68368,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -68322,6 +68407,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -68404,6 +68490,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -68442,6 +68529,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -70230,6 +70318,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -70268,6 +70357,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -70426,6 +70516,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -70464,6 +70555,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -70516,6 +70608,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -70948,6 +71041,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -70985,6 +71079,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -71021,6 +71116,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -72460,6 +72556,7 @@ export namespace Prisma {
     stockPolicyVersion?: number
     stockPolicyChangedAt?: Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: string
     category: string
     accent?: string
     favorite?: boolean
@@ -72552,6 +72649,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -72589,6 +72687,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -72625,6 +72724,7 @@ export namespace Prisma {
     stockPolicyVersion?: IntFieldUpdateOperationsInput | number
     stockPolicyChangedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     stockPolicyHistory?: JsonNullValueInput | InputJsonValue
+    stockPolicyRev?: StringFieldUpdateOperationsInput | string
     category?: StringFieldUpdateOperationsInput | string
     accent?: StringFieldUpdateOperationsInput | string
     favorite?: BoolFieldUpdateOperationsInput | boolean
@@ -72842,6 +72942,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: string
     stockPolicyConflict?: string | null
+    stockPolicyRev?: string | null
   }
 
   export type SaleRefundCreateManySaleInput = {
@@ -72877,6 +72978,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleItemUncheckedUpdateWithoutSaleInput = {
@@ -72893,6 +72995,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleItemUncheckedUpdateManyWithoutSaleInput = {
@@ -72909,6 +73012,7 @@ export namespace Prisma {
     batchAllocations?: NullableJsonNullValueInput | InputJsonValue
     stockPolicy?: StringFieldUpdateOperationsInput | string
     stockPolicyConflict?: NullableStringFieldUpdateOperationsInput | string | null
+    stockPolicyRev?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SaleRefundUpdateWithoutSaleInput = {

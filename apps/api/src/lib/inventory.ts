@@ -7,12 +7,16 @@ type DecrementItem = {
 export async function decrementProductStock(
   tx: any,
   tenantId: string,
-  items: DecrementItem[],
+  optsOrItems: { byLinePolicy?: boolean } | DecrementItem[],
+  maybeItems?: DecrementItem[],
 ): Promise<void> {
+  // SPRINT-1: byLinePolicy = the caller passes only lines SOLD as tracked (a sale's policy is its
+  // line's, never the product's current setting). Otherwise an untracked product is skipped.
+  const byLine = !Array.isArray(optsOrItems) && !!optsOrItems.byLinePolicy
+  const items = Array.isArray(optsOrItems) ? optsOrItems : maybeItems ?? []
   for (const item of items) {
-    // SPRINT-1: an untracked (made-to-order) product has no stock to decrement or to run out of.
     const result = await tx.product.updateMany({
-      where: { tenantId, id: item.productId, stockPolicy: "tracked", stock: { gte: item.quantity } },
+      where: { tenantId, id: item.productId, ...(byLine ? {} : { stockPolicy: "tracked" }), stock: { gte: item.quantity } },
       data: { stock: { decrement: item.quantity }, updatedAt: new Date() },
     })
     if (result.count === 0) {
@@ -20,7 +24,7 @@ export async function decrementProductStock(
         where: { tenantId, id: item.productId },
         select: { name: true, stock: true, stockPolicy: true },
       })
-      if (product?.stockPolicy === "untracked") continue
+      if (!byLine && product?.stockPolicy === "untracked") continue
       const name = product?.name ?? item.productName ?? `ID ${item.productId}`
       const stock = Number(product?.stock ?? 0)
       throw new Error(`Insufficient stock for "${name}": ${stock} available, ${item.quantity} required`)

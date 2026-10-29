@@ -28,6 +28,10 @@ export type Product = {
   stockPolicy?: "tracked" | "untracked"
   /** Server-owned: +1 on every stock-policy change; a sale line carries the version it was sold under. */
   stockPolicyVersion?: number
+  /** SPRINT-1: current stock-policy revision id ("initial" = as created). Minted once by whoever changes the policy. */
+  stockPolicyRev?: string
+  /** Sent with a policy change: the revision it was made on top of (the server detects concurrent edits with it). */
+  stockPolicyParentRev?: string
   category: string
   accent: ProductAccent
   favorite?: boolean
