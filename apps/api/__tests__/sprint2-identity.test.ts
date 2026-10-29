@@ -86,13 +86,15 @@ describe("token kinds: a customer token is not a staff credential (fixed in Spri
   })
 })
 
-describe("authorization matrix gaps (Sprint 2 phase B/C)", () => {
-  it.fails("CONFIRMED DEFECT: a delivery driver (only delivery.manage) cannot adjust stock through till sync", async () => {
+describe("authorization matrix gaps (fixed in containment)", () => {
+  it("a delivery driver (only delivery.manage) cannot adjust stock through till sync", async () => {
     const driver = await prisma.staffUser.create({ data: { tenantId: T, name: "Driver", mobile: `s2-d-${T.slice(0, 6)}`, pin: "x", role: "Driver", code: `D${T.slice(0, 4)}` } as any })
     const jwt = (await import("jsonwebtoken")).default
     const token = jwt.sign({ userId: driver.id, tenantId: T, role: "Driver" }, process.env.JWT_SECRET!, { expiresIn: "1h" })
     const p = (await prisma.product.findFirst({ where: { tenantId: T, syncId: productSyncId } }))!
     const r = await post("/api/sync/push", { deviceId: "driver-phone", operations: [{ id: randomUUID(), entity: "inventory", action: "adjust", payload: { id: randomUUID(), adjustmentNumber: "ADJ-S2-1", productId: p.id, productSyncId, productName: "Latte", barcode: "", quantityBefore: 0, quantityChange: 50, quantityAfter: 50, reason: "Count Correction", valueImpact: 50, createdAt: new Date().toISOString() } }] }, token)
-    expect(r.body?.results?.[0]?.status).not.toBe("ok")
+    expect(r.status).toBe(403) // a driver token is not a till sync credential
+    expect(r.body?.results).toBeUndefined()
+    expect(await prisma.stockAdjustment.count({ where: { tenantId: T } })).toBe(0)
   })
 })

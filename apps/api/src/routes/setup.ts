@@ -22,6 +22,7 @@ import bcrypt from "bcryptjs"
 import prisma from "../lib/prisma.js"
 import { triggerFullPull, saveCloudConfig, getCloudStatus } from "../services/cloudSync.js"
 import { generateCloudApiKey } from "../lib/cloudKey.js"
+import { tokenKind } from "../middleware/auth.js"
 
 interface AuthPayload { userId: string; tenantId: string; role: string }
 type Req = IncomingMessage & { body?: unknown }
@@ -112,6 +113,12 @@ async function requireCloudKeyOrJwt(req: Req, res: Response): Promise<boolean> {
     const asked = req.headers["x-tenant-id"] as string | undefined
     if (asked && asked !== payload.tenantId) {
       res.status(403).json({ error: "Not allowed for this store", code: "TENANT_SCOPE" })
+      return false
+    }
+    // CONTAINMENT: an ordering-app customer, a driver or the owner portal is not a store hub client.
+    const kind = tokenKind(payload)
+    if (kind !== "staff" && kind !== "hub-local") {
+      res.status(403).json({ error: "This account cannot use this part of the system.", code: "TOKEN_KIND" })
       return false
     }
     ;(req as { jwtTenantId?: string }).jwtTenantId = payload.tenantId

@@ -17,6 +17,10 @@ import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shift
 import { json, requireAuth, type AuthRequest, serializeDecimals } from "../middleware/auth.js"
 import { can } from "../middleware/permission.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
+import { requireTokenKinds } from "../middleware/auth.js"
+// CONTAINMENT: till sync is for store staff, the hub's own screen and a hub's cloud link — never an
+// ordering-app customer, a delivery driver or the owner portal.
+const staffSync = [requireCloudOrJwtAuth, requireTokenKinds("staff", "hub-local", "bridge")]
 import { broadcastToTenant } from "../ws/index.js"
 import {
   buildRefundableLines, planRefund, planVoidRestoration, assertRefundAmount, resolveRefundRate,
@@ -149,7 +153,7 @@ const syncPushSchema = z.object({
 
 type SyncOperationInput = z.infer<typeof syncOperationSchema>
 
-router.get("/status", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/status", requireAuth, requireTokenKinds("staff", "hub-local"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: req.auth!.tenantId },
@@ -168,7 +172,7 @@ router.get("/status", requireAuth, async (req: AuthRequest, res: ServerResponse)
   }
 })
 
-router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const parsed = syncPushSchema.safeParse(req.body)
   const tenantId = req.auth!.tenantId
 
@@ -324,7 +328,8 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
   async function authorizeOp(op: { entity: string; action: string; payload?: unknown }): Promise<string | null> {
     if (actorPermissions) {
       const required = requiredPermissionForOp(op.entity, op.action, op.payload)
-      if (required && !actorPermissions.includes(required)) return `You don't have permission to ${op.action} ${op.entity}`
+      const anyOf = required == null ? [] : Array.isArray(required) ? required : [required]
+      if (anyOf.length > 0 && !anyOf.some((p) => actorPermissions!.includes(p))) return `You don't have permission to ${op.action} ${op.entity}`
       if (op.entity === "sale" && op.action === "create" && !actorPermissions.includes("sales.price_override")) {
         const price = await priceOverrideViolation(op.payload)
         if (price) return price
@@ -528,14 +533,14 @@ async function policyGateBlockers(tenantId: string, opts: { localOnly?: boolean 
   return blockers
 }
 
-router.get("/policy-gate", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/policy-gate", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   // a hub asking (its bridge) gets this server's own clients: it adds them to its own
   const blockers = await policyGateBlockers(req.auth!.tenantId, { localOnly: req.auth!.userId === "cloud-bridge" })
   json(res, { allowed: blockers.length === 0, blockers, windowDays: POLICY_GATE_WINDOW_DAYS })
 })
 
 /** The owner retires a client that no longer trades (audited). Pushing again re-activates it. */
-router.post("/clients/:id/retire", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/clients/:id/retire", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   if (!(await can(req, "inventory.manage"))) { json(res, { error: "Retiring a till needs the Manage inventory permission." }, 403); return }
   const note = typeof (req.body as any)?.note === "string" ? (req.body as any).note.trim() : ""
@@ -560,7 +565,7 @@ router.post("/clients/:id/retire", requireCloudOrJwtAuth, async (req: AuthReques
 })
 
 /** The owner re-admits a retired till that is still on an older version (audited): it may check out again, and closes the gate again. */
-router.post("/clients/:id/readmit", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/clients/:id/readmit", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   if (!(await can(req, "inventory.manage"))) { json(res, { error: "Re-admitting a till needs the Manage inventory permission." }, 403); return }
   const note = typeof (req.body as any)?.note === "string" ? (req.body as any).note.trim() : ""
@@ -595,7 +600,7 @@ const validateStockSchema = z.object({
   })).min(1),
 })
 
-router.post("/validate-stock", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/validate-stock", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   const parsed = validateStockSchema.safeParse(req.body)
   if (!parsed.success) {
@@ -652,14 +657,14 @@ async function attemptState(tenantId: string, opId: string) {
   if (row?.status === "Cancelled") return { state: "cancelled" as const }
   return { state: "open" as const }
 }
-router.get("/checkout-attempt/:opId", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/checkout-attempt/:opId", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const opId = ((req as any).params?.opId as string) || ""
   if (!opId.startsWith("wt-")) { json(res, { error: "not a checkout attempt" }, 400); return }
   const r = await attemptState(req.auth!.tenantId, opId)
   if (r.state === "foreign") { json(res, { error: "not found" }, 404); return }
   json(res, r)
 })
-router.post("/checkout-attempt/:opId/cancel", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/checkout-attempt/:opId/cancel", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   const opId = ((req as any).params?.opId as string) || ""
   if (!opId.startsWith("wt-")) { json(res, { error: "not a checkout attempt" }, 400); return }
@@ -686,7 +691,7 @@ router.post("/checkout-attempt/:opId/cancel", requireCloudOrJwtAuth, async (req:
   }
 })
 
-router.get("/sale-committed/:saleId", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/sale-committed/:saleId", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   const saleId = ((req as any).params?.saleId as string) || ""
   if (!saleId) { json(res, { error: "saleId required" }, 400); return }
@@ -724,7 +729,7 @@ export function redactVerifiers<T>(rows: T[], req: AuthRequest): T[] {
   })
 }
 
-router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   try {
   const tenantId = req.auth!.tenantId
   const since = req.query.since as string | undefined
@@ -932,7 +937,7 @@ const MODEL_MAP: Record<string, string> = {
   "cash-movements":  "cashMovement",
 }
 
-router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/pull/full/:entity", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const entity = ((req as any).params?.entity as string) || ""
