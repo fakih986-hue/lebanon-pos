@@ -1,0 +1,159 @@
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest"
+import http from "node:http"
+import type { AddressInfo } from "node:net"
+import { randomUUID } from "node:crypto"
+import WebSocket from "ws"
+
+// CONTAINMENT (real Postgres, real handlers): token kinds per endpoint, permission rules for
+// operations that had none, ambiguous PINs — and the legitimate ordering and driver workflows that
+// must keep working. Tokens come from the real login endpoints.
+process.env.JWT_SECRET = process.env.JWT_SECRET || "containment-secret"
+const prisma = (await import("../src/lib/prisma.js")).default
+const app = (await import("../src/app.js")).default
+const { setupWebSocket, broadcastToTenant } = await import("../src/ws/index.js")
+const bcrypt = (await import("bcryptjs")).default
+delete process.env.IS_LOCAL_SERVER
+vi.setConfig({ testTimeout: 60_000 })
+
+const T = randomUUID()
+const SUB = `ct-${T.slice(0, 8)}`
+const DRIVER_CODE = `D${T.slice(0, 5)}`
+let server: http.Server
+let base = ""
+let owner = "", cashier = "", manager = "", driver = "", customer = ""
+let customerId = ""
+let productId = 0
+const productSyncId = randomUUID()
+
+const call = async (method: string, path: string, body?: unknown, token?: string) => {
+  const r = await fetch(`${base}${path}`, { method, headers: { "Content-Type": "application/json", "x-titan-sync-schema": "3", ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) })
+  return { status: r.status, body: (await r.json().catch(() => null)) as any }
+}
+const login = async (pin: string, extra: Record<string, unknown> = {}) => call("POST", "/api/auth/login", { pin, tenantSubdomain: SUB, ...extra })
+const push = async (token: string, entity: string, action: string, payload: unknown) =>
+  (await call("POST", "/api/sync/push", { deviceId: "ct-dev", operations: [{ id: randomUUID(), entity, action, payload }] }, token))
+
+beforeAll(async () => {
+  server = http.createServer(app)
+  setupWebSocket(server)
+  await new Promise<void>((resolve) => server.listen(0, resolve))
+  base = `http://localhost:${(server.address() as AddressInfo).port}`
+  await prisma.tenant.create({ data: { id: T, name: "Containment (disposable)", subdomain: SUB } })
+  const mk = (name: string, pin: string, role: string, permissions: string[] = [], extra: Record<string, unknown> = {}) =>
+    bcrypt.hash(pin, 12).then((h) => prisma.staffUser.create({ data: { tenantId: T, name, mobile: `ct-${name}-${T.slice(0, 6)}`, pin: h, role: role as any, permissions, ...extra } as any }))
+  await mk("Owner", "5101", "Admin")
+  await mk("Cashier", "5102", "Cashier", ["sales.checkout", "sales.reprint", "inventory.view"])
+  await mk("Manager", "5103", "Manager", ["sales.checkout", "inventory.manage", "customers.manage"])
+  await mk("Driver", "5104", "Driver", [], { code: DRIVER_CODE })
+  owner = (await login("5101")).body.token
+  cashier = (await login("5102")).body.token
+  manager = (await login("5103")).body.token
+  driver = (await call("POST", "/api/auth/login", { pin: "5104", code: DRIVER_CODE, tenantSubdomain: SUB, role: "Driver" })).body.token
+  productId = (await prisma.product.create({ data: { tenantId: T, syncId: productSyncId, name: "Water", price: 1, cost: 0.2, stock: 10, category: "Drinks" } })).id
+  const mobile = `7${Date.now().toString().slice(-7)}`
+  expect((await call("POST", "/api/delivery/customer/signup", { tenantId: T, name: "Rami", mobile, pin: "4321" })).status).toBe(201)
+  const c = await call("POST", "/api/delivery/customer/login", { tenantId: T, mobile, pin: "4321" })
+  customer = c.body.token
+  customerId = c.body.customer?.id ?? (await prisma.customer.findFirst({ where: { tenantId: T, mobile } }))!.id
+  for (const t of [owner, cashier, manager, driver, customer]) expect(t).toBeTruthy()
+})
+
+afterAll(async () => {
+  const where = { tenantId: T }
+  for (const m of ["syncOperation", "syncClient", "auditEvent", "stockAdjustment", "stockMovement", "inventoryBatch", "debtPayment", "debtSale", "heldSale"] as const) await (prisma as any)[m]?.deleteMany({ where }).catch(() => undefined)
+  await prisma.product.deleteMany({ where })
+  await prisma.customer.deleteMany({ where })
+  await prisma.staffUser.deleteMany({ where })
+  await prisma.tenant.deleteMany({ where: { id: T } })
+  await new Promise<void>((resolve) => server.close(() => resolve()))
+  await prisma.$disconnect()
+})
+
+describe("token kinds per endpoint", () => {
+  it("a driver token cannot use till sync (push, pull, status)", async () => {
+    expect((await call("POST", "/api/sync/push", { deviceId: "d", operations: [] }, driver)).status).toBe(403)
+    expect((await call("GET", "/api/sync/pull", undefined, driver)).status).toBe(403)
+    expect((await call("GET", "/api/sync/status", undefined, driver)).status).toBe(403)
+  })
+  it("a customer token cannot use till sync or the hub setup endpoints", async () => {
+    expect((await call("GET", "/api/sync/pull", undefined, customer)).status).toBe(401)
+    expect((await call("GET", "/api/setup/tenant-info", undefined, customer)).status).toBe(403)
+    expect((await call("POST", "/api/setup/pull-from-cloud", {}, customer)).status).toBe(403)
+  })
+  it("a driver token cannot use the hub setup endpoints", async () => {
+    expect((await call("GET", "/api/setup/tenant-info", undefined, driver)).status).toBe(403)
+  })
+  it("store staff still sync, and still reach the setup info endpoint", async () => {
+    expect((await call("GET", "/api/sync/pull", undefined, cashier)).status).toBe(200)
+    expect((await call("GET", "/api/setup/tenant-info", undefined, owner)).status).not.toBe(403)
+  })
+  it("legitimate workflows are kept: the driver lists their orders, the customer lists theirs", async () => {
+    expect((await call("GET", "/api/delivery/driver/orders", undefined, driver)).status).toBe(200)
+    expect((await call("GET", "/api/delivery/customer/orders", undefined, customer)).status).toBe(200)
+  })
+})
+
+describe("permission rules for operations that had none", () => {
+  const adjust = () => ({ id: randomUUID(), adjustmentNumber: `ADJ-${randomUUID().slice(0, 4)}`, productId, productSyncId, productName: "Water", barcode: "", quantityBefore: 10, quantityChange: 1, quantityAfter: 11, reason: "Count Correction", valueImpact: 0.2, createdAt: new Date().toISOString() })
+  it("a cashier (no inventory.adjust) cannot adjust or count stock; a manager with inventory.manage can", async () => {
+    expect((await push(cashier, "inventory", "adjust", adjust())).body.results[0].status).not.toBe("ok")
+    expect((await push(cashier, "inventory", "count", { id: randomUUID(), items: [] })).body.results[0].status).not.toBe("ok")
+    expect((await push(manager, "inventory", "adjust", adjust())).body.results[0].status).toBe("ok")
+  })
+  it("a cashier cannot receive stock (inventory.receive)", async () => {
+    const r = await push(cashier, "inventory", "receive", [{ id: randomUUID(), batchNumber: "LOT-CT", productId, productSyncId, productName: "Water", barcode: "", initialQuantity: 5, quantityRemaining: 5, unitCost: 0.2, unitPrice: 1, receivedAt: new Date().toISOString(), status: "Open" }])
+    expect(r.body.results[0].status).not.toBe("ok")
+  })
+  it("a cashier cannot change customers or record a debt collection; a manager with customers.manage can update a customer", async () => {
+    expect((await push(cashier, "customer", "update", { id: customerId, name: "Renamed" })).body.results[0].status).not.toBe("ok")
+    expect((await push(cashier, "debt", "payment", { id: randomUUID(), customerId, amount: 5, method: "Cash", reference: "P-CT", createdAt: new Date().toISOString() })).body.results[0].status).not.toBe("ok")
+    expect((await push(manager, "customer", "update", { id: customerId, name: "Rami K." })).body.results[0].status).toBe("ok")
+  })
+  it("a cashier can still park an order (held-sale needs sales.checkout)", async () => {
+    expect((await push(cashier, "held-sale", "create", { id: randomUUID(), items: [], createdAt: new Date().toISOString() })).body.results[0].status).toBe("ok")
+  })
+})
+
+describe("ambiguous PIN", () => {
+  it("two staff members sharing a PIN: refused (409), never the higher role; naming the staff member works", async () => {
+    const h = await bcrypt.hash("5199", 12)
+    const a = await prisma.staffUser.create({ data: { tenantId: T, name: "Shared A", mobile: `ct-sa-${T.slice(0, 6)}`, pin: h, role: "Cashier", permissions: ["sales.checkout"] } as any })
+    const b = await prisma.staffUser.create({ data: { tenantId: T, name: "Shared B", mobile: `ct-sb-${T.slice(0, 6)}`, pin: h, role: "Manager", permissions: ["sales.checkout", "inventory.manage"] } as any })
+    const r = await login("5199")
+    expect(r.status).toBe(409)
+    expect(r.body.code).toBe("AMBIGUOUS_PIN")
+    expect(r.body.token).toBeUndefined()
+    expect(r.body.candidates.map((c: any) => c.name).sort()).toEqual(["Shared A", "Shared B"])
+    const asA = await login("5199", { staffId: a.id })
+    expect([asA.status, asA.body.user.id, asA.body.user.role]).toEqual([200, a.id, "Cashier"])
+    expect((await login("5199", { staffId: b.id })).body.user.id).toBe(b.id) // the Manager only when named
+    expect((await login("0000", { staffId: a.id })).status).toBe(401)
+    await prisma.staffUser.deleteMany({ where: { id: { in: [a.id, b.id] } } })
+  })
+})
+
+describe("WebSocket channels", () => {
+  async function socket(token: string) {
+    const ws = new WebSocket(base.replace("http", "ws") + "/ws")
+    const got: Array<{ type: string; data: any }> = []
+    ws.on("message", (m) => got.push(JSON.parse(String(m))))
+    await new Promise((r) => ws.on("open", r))
+    ws.send(JSON.stringify({ type: "auth", token }))
+    for (let i = 0; i < 50 && !got.some((g) => g.type === "auth:ok"); i++) await new Promise((r) => setTimeout(r, 20))
+    return { ws, got }
+  }
+  it("a customer gets only their own order updates; sync events go to store staff only", async () => {
+    const c = await socket(customer), s = await socket(cashier), d = await socket(driver)
+    try {
+    broadcastToTenant(T, "sync:activity", { activities: [{ summary: "Rana sold 2 Water" }] })
+    broadcastToTenant(T, "order:updated", { order: { id: "o1", customerId, status: "Ready" } })
+    broadcastToTenant(T, "order:updated", { order: { id: "o2", customerId: "someone-else", status: "Ready" } })
+    broadcastToTenant(T, "order:available", { order: { id: "o3" } })
+    await new Promise((r) => setTimeout(r, 300))
+    const types = (x: { got: any[] }) => x.got.filter((g) => g.type !== "auth:ok" && g.type !== "connected").map((g) => `${g.type}:${g.data?.order?.id ?? ""}`)
+    expect(types(c)).toEqual(["order:updated:o1"])
+    expect(types(s)).toEqual(["sync:activity:", "order:updated:o1", "order:updated:o2", "order:available:o3"])
+    expect(types(d)).toEqual(["order:updated:o1", "order:updated:o2", "order:available:o3"])
+    } finally { for (const x of [c, s, d]) x.ws.terminate() }
+  })
+})

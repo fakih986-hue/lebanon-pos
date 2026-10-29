@@ -20,6 +20,7 @@ import type { IncomingMessage } from "node:http"
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 import prisma from "../lib/prisma.js"
+import { tokenKind } from "../middleware/auth.js"
 import { triggerFullPull, saveCloudConfig, getCloudStatus } from "../services/cloudSync.js"
 import { generateCloudApiKey } from "../lib/cloudKey.js"
 
@@ -106,6 +107,12 @@ async function requireCloudKeyOrJwt(req: Req, res: Response): Promise<boolean> {
     const payload = jwt.verify(header.slice(7), JWT_SECRET) as AuthPayload
     if (!payload.tenantId) {
       res.status(401).json({ error: "Invalid token" })
+      return false
+    }
+    // CONTAINMENT: an ordering-app customer, a driver or the owner portal is not a store hub client.
+    const kind = tokenKind(payload)
+    if (kind !== "staff" && kind !== "hub-local") {
+      res.status(403).json({ error: "This account cannot use this part of the system.", code: "TOKEN_KIND" })
       return false
     }
     return true

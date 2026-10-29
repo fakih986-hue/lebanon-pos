@@ -69,11 +69,13 @@ export function recordedActorRule(entity: string, action: string, payload: unkno
   return null
 }
 
-/** The permission a sync op requires, or null if it isn't in the enforced subset.
- *  Deliberately limited to money/admin-sensitive operations to bound blast radius;
- *  everyday operational ops (sale-create, product/inventory/customer edits, shifts)
- *  stay client-enforced for now. */
-export function requiredPermissionForOp(entity: string, action: string, payload: unknown): Permission | null {
+/** The permission a sync op requires — one, or ANY OF a list — or null if it needs none beyond
+ *  being store staff. CONTAINMENT added stock adjustments/counts/receiving, debt, customers, held
+ *  orders and delivery orders, each mirroring the till's own check for the same action:
+ *  StockControlPanel/StockPage (inventory.adjust), receiving (inventory.receive), Customers page
+ *  (customers.manage), checkout (sales.checkout), refund to store credit (sales.refund), void
+ *  reversing a debt sale (sales.void), delivery pages (delivery.manage). */
+export function requiredPermissionForOp(entity: string, action: string, payload: unknown): Permission | Permission[] | null {
   switch (entity) {
     case "sale":
       if (action === "void") return "sales.void"
@@ -94,6 +96,17 @@ export function requiredPermissionForOp(entity: string, action: string, payload:
     case "supplier": return action === "update" || action === "delete" ? "suppliers.manage" : null
     case "supplier-payment": return "suppliers.manage"
     case "purchase-order": return "suppliers.manage"
+    case "inventory":
+      if (action === "adjust" || action === "count") return "inventory.adjust"
+      if (action === "receive") return "inventory.receive"
+      return "inventory.adjust"
+    case "debt":
+      if (action === "create") return "sales.checkout" // a credit sale at checkout
+      if (action === "payment") return ["customers.manage", "sales.refund"] // collection, or refund to credit
+      return ["customers.manage", "sales.void"] // customer deleted, or the debt sale voided
+    case "customer": return "customers.manage"
+    case "held-sale": return "sales.checkout"
+    case "delivery-order": return "delivery.manage"
     default: return null
   }
 }

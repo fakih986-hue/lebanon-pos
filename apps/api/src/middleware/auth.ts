@@ -77,6 +77,12 @@ export const requireAuth: Handler = async (req, res, next) => {
   try {
     const token = header.slice(7)
     const payload = jwt.verify(token, getJwtSecret()) as AuthPayload
+    // ordering-app customer tokens are signed with the same secret but are not staff
+    // credentials; they have their own verifier (requireCustomerAuth) and are refused here.
+    if ((payload as { customerId?: unknown }).customerId !== undefined || (payload as { role?: unknown }).role === "Customer") {
+      json(res, { error: "Invalid or expired token" }, 401)
+      return
+    }
     // Check tokenVersion for revocation support
     if (payload.tokenVersion) {
       const prisma = (await import("../lib/prisma.js")).default
@@ -97,6 +103,34 @@ export const requireAuth: Handler = async (req, res, next) => {
     next()
   } catch {
     json(res, { error: "Invalid or expired token" }, 401)
+  }
+}
+
+/**
+ * CONTAINMENT: what kind of credential a verified token (or cloud-key identity) is. Every token is
+ * signed with the same secret and none carries an audience, so the kind is read from its claims:
+ *  - customer  — ordering-app customer (customerId / role Customer)
+ *  - bridge    — a hub's cloud link (x-cloud-key; userId "cloud-bridge")
+ *  - hub-local — the hub's own screen (setup auto-login: "__admin__" bound to a store)
+ *  - platform  — owner portal ("__admin__" with no store)
+ *  - driver    — delivery driver (staff row with role Driver)
+ *  - staff     — any other staff member of a store
+ */
+export type TokenKind = "customer" | "bridge" | "hub-local" | "platform" | "driver" | "staff" | "unknown"
+export function tokenKind(auth: unknown): TokenKind {
+  const a = (auth ?? {}) as { customerId?: unknown; role?: unknown; userId?: unknown; tenantId?: unknown }
+  if (a.customerId !== undefined || a.role === "Customer") return "customer"
+  if (a.userId === "cloud-bridge") return "bridge"
+  if (a.userId === "__admin__") return a.tenantId ? "hub-local" : "platform"
+  if (a.role === "Driver") return "driver"
+  if (typeof a.userId === "string" && a.userId) return "staff"
+  return "unknown"
+}
+/** Route guard (after authentication): only these credential kinds may call the route. */
+export function requireTokenKinds(...kinds: TokenKind[]): Handler {
+  return (req, res, next) => {
+    if (kinds.includes(tokenKind((req as AuthRequest).auth))) { next(); return }
+    json(res, { error: "This account cannot use this part of the system.", code: "TOKEN_KIND" }, 403)
   }
 }
 

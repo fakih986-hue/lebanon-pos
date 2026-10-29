@@ -13,6 +13,10 @@ import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE }
 import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
 import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
+import { requireTokenKinds } from "../middleware/auth.js"
+// CONTAINMENT: till sync is for store staff, the hub's own screen and a hub's cloud link — never an
+// ordering-app customer, a delivery driver or the owner portal.
+const staffSync = [requireCloudOrJwtAuth, requireTokenKinds("staff", "hub-local", "bridge")]
 import { broadcastToTenant } from "../ws/index.js"
 import {
   buildRefundableLines, planRefund, planVoidRestoration, assertRefundAmount, resolveRefundRate,
@@ -108,7 +112,7 @@ const syncPushSchema = z.object({
 
 type SyncOperationInput = z.infer<typeof syncOperationSchema>
 
-router.get("/status", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/status", requireAuth, requireTokenKinds("staff", "hub-local"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenant = await prisma.tenant.findUnique({
       where: { id: req.auth!.tenantId },
@@ -127,7 +131,7 @@ router.get("/status", requireAuth, async (req: AuthRequest, res: ServerResponse)
   }
 })
 
-router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const parsed = syncPushSchema.safeParse(req.body)
   const tenantId = req.auth!.tenantId
 
@@ -197,14 +201,23 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
   // matching staff row (cloud-bridge / system relays), enforcement is skipped —
   // those ops were already authorized on the originating device. Role fallback
   // (via effectivePermissions) keeps pre-1.0.44 clients and empty columns working.
+  // Only the store-level relays may skip it. Any other account must be an ACTIVE staff member of
+  // THIS store; a token of another kind (an ordering-app customer, an unknown id) is refused
+  // outright instead of running with no permission checks at all.
   let actorPermissions: string[] | null = null
-  try {
-    const actor = await prisma.staffUser.findUnique({
-      where: { id: req.auth!.userId },
-      select: { role: true, permissions: true },
-    })
-    if (actor) actorPermissions = effectivePermissions(actor.permissions, actor.role)
-  } catch { actorPermissions = null }
+  if (req.auth!.userId !== "cloud-bridge" && req.auth!.userId !== "__admin__") {
+    let actor: { role: string; permissions: unknown; tenantId: string; active: boolean } | null = null
+    try {
+      actor = typeof req.auth!.userId === "string" && req.auth!.userId
+        ? await prisma.staffUser.findUnique({ where: { id: req.auth!.userId }, select: { role: true, permissions: true, tenantId: true, active: true } }) as any
+        : null
+    } catch { actor = null }
+    if (!actor || actor.tenantId !== tenantId || actor.active === false) {
+      json(res, { error: "This account cannot sync store operations.", code: "NOT_STAFF" }, 401)
+      return
+    }
+    actorPermissions = effectivePermissions(actor.permissions as any, actor.role)
+  }
 
   // Returns a refusal message, or null when the op may run. Two checks:
   //  1. the pushing account (actorPermissions, when it is a staff user);
@@ -230,7 +243,8 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
   async function authorizeOp(op: { entity: string; action: string; payload?: unknown }): Promise<string | null> {
     if (actorPermissions) {
       const required = requiredPermissionForOp(op.entity, op.action, op.payload)
-      if (required && !actorPermissions.includes(required)) return `You don't have permission to ${op.action} ${op.entity}`
+      const anyOf = required == null ? [] : Array.isArray(required) ? required : [required]
+      if (anyOf.length > 0 && !anyOf.some((p) => actorPermissions!.includes(p))) return `You don't have permission to ${op.action} ${op.entity}`
       if (op.entity === "shift" && !shiftOpAllowed(op.action, actorPermissions, req.auth!.userId, op.action === "close" ? await shiftOpener(op.payload) : null)) {
         return op.action === "close" ? "Only the person who opened this shift or a manager can close it" : "Opening a shift needs the Checkout or Shifts permission"
       }
@@ -415,7 +429,7 @@ const validateStockSchema = z.object({
   })).min(1),
 })
 
-router.post("/validate-stock", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/validate-stock", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   const parsed = validateStockSchema.safeParse(req.body)
   if (!parsed.success) {
@@ -471,14 +485,14 @@ async function attemptState(tenantId: string, opId: string) {
   if (row?.status === "Cancelled") return { state: "cancelled" as const }
   return { state: "open" as const }
 }
-router.get("/checkout-attempt/:opId", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/checkout-attempt/:opId", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const opId = ((req as any).params?.opId as string) || ""
   if (!opId.startsWith("wt-")) { json(res, { error: "not a checkout attempt" }, 400); return }
   const r = await attemptState(req.auth!.tenantId, opId)
   if (r.state === "foreign") { json(res, { error: "not found" }, 404); return }
   json(res, r)
 })
-router.post("/checkout-attempt/:opId/cancel", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/checkout-attempt/:opId/cancel", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   const opId = ((req as any).params?.opId as string) || ""
   if (!opId.startsWith("wt-")) { json(res, { error: "not a checkout attempt" }, 400); return }
@@ -505,7 +519,7 @@ router.post("/checkout-attempt/:opId/cancel", requireCloudOrJwtAuth, async (req:
   }
 })
 
-router.get("/sale-committed/:saleId", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/sale-committed/:saleId", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   const saleId = ((req as any).params?.saleId as string) || ""
   if (!saleId) { json(res, { error: "saleId required" }, 400); return }
@@ -516,7 +530,7 @@ router.get("/sale-committed/:saleId", requireCloudOrJwtAuth, async (req: AuthReq
   json(res, { committed: !!sale })
 })
 
-router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   try {
   const tenantId = req.auth!.tenantId
   const since = req.query.since as string | undefined
@@ -718,7 +732,7 @@ const MODEL_MAP: Record<string, string> = {
   "audit-events":    "auditEvent",
 }
 
-router.get("/pull/full/:entity", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/pull/full/:entity", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const entity = ((req as any).params?.entity as string) || ""

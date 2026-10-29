@@ -21,6 +21,8 @@ const loginSchema = z.object({
   code: z.string().optional(),
   tenantSubdomain: z.string().trim().toLowerCase().optional(),
   role: z.enum(["Driver"]).optional(),
+  // CONTAINMENT: when several staff members share a PIN, the caller must say who is signing in.
+  staffId: z.string().trim().min(1).optional(),
 })
 
 const router = Router()
@@ -112,7 +114,7 @@ router.post("/login", async (req: any, res: any) => {
       res.status(400).json({ error: parsed.error.errors[0].message })
       return
     }
-    const { pin, code, tenantSubdomain, role } = parsed.data
+    const { pin, code, tenantSubdomain, role, staffId } = parsed.data
 
     if (role === "Driver") {
       if (!code) {
@@ -214,30 +216,37 @@ router.post("/login", async (req: any, res: any) => {
       return
     }
 
-    const rolePriority: Record<string, number> = { Admin: 4, Manager: 3, Cashier: 2, Driver: 1 }
-    const betterRole = (a: any, b: any) =>
-      (rolePriority[b.role] ?? 0) > (rolePriority[a.role] ?? 0) ? b : a
-
+    // CONTAINMENT: a PIN identifies ONE person. If several active staff members (in this store, or
+    // across stores when no store is named) share it, the sign-in is refused instead of silently
+    // picking the highest role: the caller must name the staff member (staffId).
     const sha256Pin = hashSha256Pin(pin)
     const candidates = await prisma.staffUser.findMany({
-      where: { active: true, ...tenantFilter },
+      where: { active: true, ...tenantFilter, ...(staffId ? { id: staffId } : {}) },
       include: { tenant: true },
     })
 
-    let user: any = null
+    const matched: any[] = []
     for (const candidate of candidates) {
       const matches = candidate.pin.startsWith("$2")
         ? await bcrypt.compare(pin, candidate.pin)
         : candidate.pin === sha256Pin
-      if (matches) {
-        user = user ? betterRole(user, candidate) : candidate
-      }
+      if (matches) matched.push(candidate)
     }
 
-    if (!user) {
+    if (matched.length === 0) {
       res.status(401).json({ error: "Invalid credentials" })
       return
     }
+    if (matched.length > 1) {
+      res.status(409).json({
+        error: "This PIN belongs to more than one staff member. Choose who is signing in, and ask the owner to give each person their own PIN.",
+        code: "AMBIGUOUS_PIN",
+        // names only when they are all in one store (no cross-store disclosure)
+        candidates: new Set(matched.map((u) => u.tenantId)).size === 1 ? matched.map((u) => ({ id: u.id, name: u.name })) : undefined,
+      })
+      return
+    }
+    const user: any = matched[0]
 
     const token = signToken({
       userId: user.id,

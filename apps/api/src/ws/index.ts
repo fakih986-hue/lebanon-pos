@@ -1,7 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws"
 import type { Server, IncomingMessage } from "node:http"
 import jwt from "jsonwebtoken"
-import type { AuthPayload } from "../middleware/auth.js"
+import { tokenKind, type AuthPayload } from "../middleware/auth.js"
 import { parseOriginList, stripTrailingSlash } from "../middleware/security.js"
 
 // Read lazily at use time — process.env may not be populated at module-load.
@@ -86,8 +86,19 @@ function handleMessage(ws: WebSocket, info: ClientInfo, msg: any) {
         info.tenantId = payload.tenantId
         info.role = payload.role
         info.token = msg.token  // store for re-validation on subscribe
-        // Auto-subscribe to the device's tenant channel for sync notifications
-        info.subscribedChannels.add(`tenant:${payload.tenantId}`)
+        // CONTAINMENT: an ordering-app customer only follows their own orders. Drivers and staff
+        // follow the store's order events; only staff (and the hub's own screen) get sync events.
+        {
+          const kind = tokenKind(payload)
+          if (kind === "customer") {
+            const customerId = (payload as { customerId?: string }).customerId
+            info.userId = undefined
+            if (customerId) info.subscribedChannels.add(`customer:${customerId}`)
+          } else if (kind !== "platform" && payload.tenantId) {
+            info.subscribedChannels.add(`tenant:${payload.tenantId}`)
+            if (kind === "staff" || kind === "hub-local") info.subscribedChannels.add(`staff:${payload.tenantId}`)
+          }
+        }
         send(ws, { type: "auth:ok", data: { userId: payload.userId, role: payload.role } })
       } catch {
         send(ws, { type: "auth:error", data: { message: "Invalid or expired token" } })
@@ -159,7 +170,12 @@ export function broadcast(channel: string, event: string, data: any) {
 }
 
 export function broadcastToTenant(tenantId: string, event: string, data: any) {
+  // CONTAINMENT: sync events (data changed, sales activity) are for store staff only
+  if (event.startsWith("sync:")) { broadcast(`staff:${tenantId}`, event, data); return }
   broadcast(`tenant:${tenantId}`, event, data)
+  // a customer follows updates of their own order
+  const customerId = event === "order:updated" ? data?.order?.customerId : undefined
+  if (typeof customerId === "string" && customerId) broadcast(`customer:${customerId}`, event, data)
 }
 
 export function broadcastToUser(userId: string, event: string, data: any) {
