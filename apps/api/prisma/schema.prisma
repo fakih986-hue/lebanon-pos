@@ -838,3 +838,20 @@ model StockMovement {
   // Non-unique lookup/idempotency index (unique constraint deliberately deferred)
   @@index([tenantId, reference, type, productId])
 }
+
+/// SPRINT-1: a sync client of a store (till by device id, hub bridge by "hub-bridge@<schema>") and the
+/// sync schema it last pushed with — the store-wide upgrade gate for stock-policy changes.
+model SyncClient {
+  id          String    @id @default(uuid())
+  tenantId    String
+  clientKey   String
+  label       String    @default("")
+  syncSchema  Int       @default(1)
+  lastSeenAt  DateTime  @default(now())
+  retiredAt   DateTime?
+  retiredBy   String?
+  retiredNote String?
+
+  @@unique([tenantId, clientKey])
+  @@index([tenantId, syncSchema, lastSeenAt])
+}

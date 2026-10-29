@@ -3,6 +3,7 @@ import { createPortal } from "react-dom"
 import { AlertTriangle, Cloud, CloudOff, RotateCw, X } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
+import HeldSales from "./HeldSales"
 import { closeBlockedJournalEntry, getBlockedJournalEntries, previewBlockedJournalEntry, type JournalEntry } from "../../features/pos/services/businessJournal.service"
 import {
   clearSyncQueue,
@@ -211,6 +212,8 @@ export default function SyncStatus() {
               {status.online ? "Online" : "Offline — changes saved locally"}
             </span>
           </div>
+
+          <HeldSales />
 
           {blocked.length > 0 && (
             <div className="mb-3 flex flex-col gap-2" role="alert">

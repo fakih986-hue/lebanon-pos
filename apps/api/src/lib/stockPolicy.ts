@@ -101,9 +101,13 @@ export function adoptPulledPolicy(local: PolicyState, incoming: PolicyState): Re
  * that revision decides (a claim only has to agree). Unknown revision → held (retryable, nothing
  * applied). No revision (older tills): established only if the product never changed policy.
  */
-export function resolveLinePolicy(product: (PolicyState & { name: string }) | null, item: { stockPolicy?: unknown; stockPolicyRev?: unknown }):
-  { policy: Policy; rev: string | null; conflict: "changed" | null } {
+export function resolveLinePolicy(product: (PolicyState & { name: string }) | null, item: { stockPolicy?: unknown; stockPolicyRev?: unknown },
+  resolution: { policy: Policy } | null = null):
+  { policy: Policy; rev: string | null; conflict: "changed" | "resolved" | null } {
   if (!product) return { policy: "tracked", rev: null, conflict: null }
+  // A held line settled by an authorized manager (audited by the caller): their explicit decision
+  // is the line's policy on every server it reaches, so the hub and the cloud record the same.
+  if (resolution) return { policy: resolution.policy, rev: typeof item.stockPolicyRev === "string" && item.stockPolicyRev ? item.stockPolicyRev : null, conflict: "resolved" }
   const today = asPolicy(product.stockPolicy)
   const revs = policyRevs(product)
   const claimed = validPolicy(item.stockPolicy) ? item.stockPolicy : null

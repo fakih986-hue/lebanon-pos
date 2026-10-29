@@ -173,6 +173,12 @@ export type RateLimitEntry = $Result.DefaultSelection<Prisma.$RateLimitEntryPayl
  * 
  */
 export type StockMovement = $Result.DefaultSelection<Prisma.$StockMovementPayload>
+/**
+ * Model SyncClient
+ * SPRINT-1: a sync client of a store (till by device id, hub bridge by "hub-bridge@<schema>") and the
+ * sync schema it last pushed with — the store-wide upgrade gate for stock-policy changes.
+ */
+export type SyncClient = $Result.DefaultSelection<Prisma.$SyncClientPayload>
 
 /**
  * Enums
@@ -750,6 +756,16 @@ export class PrismaClient<
     * ```
     */
   get stockMovement(): Prisma.StockMovementDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.syncClient`: Exposes CRUD operations for the **SyncClient** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SyncClients
+    * const syncClients = await prisma.syncClient.findMany()
+    * ```
+    */
+  get syncClient(): Prisma.SyncClientDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1222,7 +1238,8 @@ export namespace Prisma {
     Device: 'Device',
     PairingCode: 'PairingCode',
     RateLimitEntry: 'RateLimitEntry',
-    StockMovement: 'StockMovement'
+    StockMovement: 'StockMovement',
+    SyncClient: 'SyncClient'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1241,7 +1258,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement"
+      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3613,6 +3630,80 @@ export namespace Prisma {
           }
         }
       }
+      SyncClient: {
+        payload: Prisma.$SyncClientPayload<ExtArgs>
+        fields: Prisma.SyncClientFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SyncClientFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SyncClientPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SyncClientFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SyncClientPayload>
+          }
+          findFirst: {
+            args: Prisma.SyncClientFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SyncClientPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SyncClientFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SyncClientPayload>
+          }
+          findMany: {
+            args: Prisma.SyncClientFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SyncClientPayload>[]
+          }
+          create: {
+            args: Prisma.SyncClientCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SyncClientPayload>
+          }
+          createMany: {
+            args: Prisma.SyncClientCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.SyncClientCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SyncClientPayload>[]
+          }
+          delete: {
+            args: Prisma.SyncClientDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SyncClientPayload>
+          }
+          update: {
+            args: Prisma.SyncClientUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SyncClientPayload>
+          }
+          deleteMany: {
+            args: Prisma.SyncClientDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SyncClientUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.SyncClientUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SyncClientPayload>[]
+          }
+          upsert: {
+            args: Prisma.SyncClientUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SyncClientPayload>
+          }
+          aggregate: {
+            args: Prisma.SyncClientAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSyncClient>
+          }
+          groupBy: {
+            args: Prisma.SyncClientGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SyncClientGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SyncClientCountArgs<ExtArgs>
+            result: $Utils.Optional<SyncClientCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -3741,6 +3832,7 @@ export namespace Prisma {
     pairingCode?: PairingCodeOmit
     rateLimitEntry?: RateLimitEntryOmit
     stockMovement?: StockMovementOmit
+    syncClient?: SyncClientOmit
   }
 
   /* Types for Logging */
@@ -44828,6 +44920,1087 @@ export namespace Prisma {
 
 
   /**
+   * Model SyncClient
+   */
+
+  export type AggregateSyncClient = {
+    _count: SyncClientCountAggregateOutputType | null
+    _avg: SyncClientAvgAggregateOutputType | null
+    _sum: SyncClientSumAggregateOutputType | null
+    _min: SyncClientMinAggregateOutputType | null
+    _max: SyncClientMaxAggregateOutputType | null
+  }
+
+  export type SyncClientAvgAggregateOutputType = {
+    syncSchema: number | null
+  }
+
+  export type SyncClientSumAggregateOutputType = {
+    syncSchema: number | null
+  }
+
+  export type SyncClientMinAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    clientKey: string | null
+    label: string | null
+    syncSchema: number | null
+    lastSeenAt: Date | null
+    retiredAt: Date | null
+    retiredBy: string | null
+    retiredNote: string | null
+  }
+
+  export type SyncClientMaxAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    clientKey: string | null
+    label: string | null
+    syncSchema: number | null
+    lastSeenAt: Date | null
+    retiredAt: Date | null
+    retiredBy: string | null
+    retiredNote: string | null
+  }
+
+  export type SyncClientCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    clientKey: number
+    label: number
+    syncSchema: number
+    lastSeenAt: number
+    retiredAt: number
+    retiredBy: number
+    retiredNote: number
+    _all: number
+  }
+
+
+  export type SyncClientAvgAggregateInputType = {
+    syncSchema?: true
+  }
+
+  export type SyncClientSumAggregateInputType = {
+    syncSchema?: true
+  }
+
+  export type SyncClientMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    clientKey?: true
+    label?: true
+    syncSchema?: true
+    lastSeenAt?: true
+    retiredAt?: true
+    retiredBy?: true
+    retiredNote?: true
+  }
+
+  export type SyncClientMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    clientKey?: true
+    label?: true
+    syncSchema?: true
+    lastSeenAt?: true
+    retiredAt?: true
+    retiredBy?: true
+    retiredNote?: true
+  }
+
+  export type SyncClientCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    clientKey?: true
+    label?: true
+    syncSchema?: true
+    lastSeenAt?: true
+    retiredAt?: true
+    retiredBy?: true
+    retiredNote?: true
+    _all?: true
+  }
+
+  export type SyncClientAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SyncClient to aggregate.
+     */
+    where?: SyncClientWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SyncClients to fetch.
+     */
+    orderBy?: SyncClientOrderByWithRelationInput | SyncClientOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SyncClientWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SyncClients from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SyncClients.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SyncClients
+    **/
+    _count?: true | SyncClientCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: SyncClientAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: SyncClientSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SyncClientMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SyncClientMaxAggregateInputType
+  }
+
+  export type GetSyncClientAggregateType<T extends SyncClientAggregateArgs> = {
+        [P in keyof T & keyof AggregateSyncClient]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSyncClient[P]>
+      : GetScalarType<T[P], AggregateSyncClient[P]>
+  }
+
+
+
+
+  export type SyncClientGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SyncClientWhereInput
+    orderBy?: SyncClientOrderByWithAggregationInput | SyncClientOrderByWithAggregationInput[]
+    by: SyncClientScalarFieldEnum[] | SyncClientScalarFieldEnum
+    having?: SyncClientScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SyncClientCountAggregateInputType | true
+    _avg?: SyncClientAvgAggregateInputType
+    _sum?: SyncClientSumAggregateInputType
+    _min?: SyncClientMinAggregateInputType
+    _max?: SyncClientMaxAggregateInputType
+  }
+
+  export type SyncClientGroupByOutputType = {
+    id: string
+    tenantId: string
+    clientKey: string
+    label: string
+    syncSchema: number
+    lastSeenAt: Date
+    retiredAt: Date | null
+    retiredBy: string | null
+    retiredNote: string | null
+    _count: SyncClientCountAggregateOutputType | null
+    _avg: SyncClientAvgAggregateOutputType | null
+    _sum: SyncClientSumAggregateOutputType | null
+    _min: SyncClientMinAggregateOutputType | null
+    _max: SyncClientMaxAggregateOutputType | null
+  }
+
+  type GetSyncClientGroupByPayload<T extends SyncClientGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SyncClientGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SyncClientGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SyncClientGroupByOutputType[P]>
+            : GetScalarType<T[P], SyncClientGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SyncClientSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    clientKey?: boolean
+    label?: boolean
+    syncSchema?: boolean
+    lastSeenAt?: boolean
+    retiredAt?: boolean
+    retiredBy?: boolean
+    retiredNote?: boolean
+  }, ExtArgs["result"]["syncClient"]>
+
+  export type SyncClientSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    clientKey?: boolean
+    label?: boolean
+    syncSchema?: boolean
+    lastSeenAt?: boolean
+    retiredAt?: boolean
+    retiredBy?: boolean
+    retiredNote?: boolean
+  }, ExtArgs["result"]["syncClient"]>
+
+  export type SyncClientSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    clientKey?: boolean
+    label?: boolean
+    syncSchema?: boolean
+    lastSeenAt?: boolean
+    retiredAt?: boolean
+    retiredBy?: boolean
+    retiredNote?: boolean
+  }, ExtArgs["result"]["syncClient"]>
+
+  export type SyncClientSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    clientKey?: boolean
+    label?: boolean
+    syncSchema?: boolean
+    lastSeenAt?: boolean
+    retiredAt?: boolean
+    retiredBy?: boolean
+    retiredNote?: boolean
+  }
+
+  export type SyncClientOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "clientKey" | "label" | "syncSchema" | "lastSeenAt" | "retiredAt" | "retiredBy" | "retiredNote", ExtArgs["result"]["syncClient"]>
+
+  export type $SyncClientPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SyncClient"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tenantId: string
+      clientKey: string
+      label: string
+      syncSchema: number
+      lastSeenAt: Date
+      retiredAt: Date | null
+      retiredBy: string | null
+      retiredNote: string | null
+    }, ExtArgs["result"]["syncClient"]>
+    composites: {}
+  }
+
+  type SyncClientGetPayload<S extends boolean | null | undefined | SyncClientDefaultArgs> = $Result.GetResult<Prisma.$SyncClientPayload, S>
+
+  type SyncClientCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SyncClientFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SyncClientCountAggregateInputType | true
+    }
+
+  export interface SyncClientDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SyncClient'], meta: { name: 'SyncClient' } }
+    /**
+     * Find zero or one SyncClient that matches the filter.
+     * @param {SyncClientFindUniqueArgs} args - Arguments to find a SyncClient
+     * @example
+     * // Get one SyncClient
+     * const syncClient = await prisma.syncClient.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SyncClientFindUniqueArgs>(args: SelectSubset<T, SyncClientFindUniqueArgs<ExtArgs>>): Prisma__SyncClientClient<$Result.GetResult<Prisma.$SyncClientPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SyncClient that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SyncClientFindUniqueOrThrowArgs} args - Arguments to find a SyncClient
+     * @example
+     * // Get one SyncClient
+     * const syncClient = await prisma.syncClient.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SyncClientFindUniqueOrThrowArgs>(args: SelectSubset<T, SyncClientFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SyncClientClient<$Result.GetResult<Prisma.$SyncClientPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SyncClient that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SyncClientFindFirstArgs} args - Arguments to find a SyncClient
+     * @example
+     * // Get one SyncClient
+     * const syncClient = await prisma.syncClient.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SyncClientFindFirstArgs>(args?: SelectSubset<T, SyncClientFindFirstArgs<ExtArgs>>): Prisma__SyncClientClient<$Result.GetResult<Prisma.$SyncClientPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SyncClient that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SyncClientFindFirstOrThrowArgs} args - Arguments to find a SyncClient
+     * @example
+     * // Get one SyncClient
+     * const syncClient = await prisma.syncClient.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SyncClientFindFirstOrThrowArgs>(args?: SelectSubset<T, SyncClientFindFirstOrThrowArgs<ExtArgs>>): Prisma__SyncClientClient<$Result.GetResult<Prisma.$SyncClientPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SyncClients that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SyncClientFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SyncClients
+     * const syncClients = await prisma.syncClient.findMany()
+     * 
+     * // Get first 10 SyncClients
+     * const syncClients = await prisma.syncClient.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const syncClientWithIdOnly = await prisma.syncClient.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SyncClientFindManyArgs>(args?: SelectSubset<T, SyncClientFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SyncClientPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SyncClient.
+     * @param {SyncClientCreateArgs} args - Arguments to create a SyncClient.
+     * @example
+     * // Create one SyncClient
+     * const SyncClient = await prisma.syncClient.create({
+     *   data: {
+     *     // ... data to create a SyncClient
+     *   }
+     * })
+     * 
+     */
+    create<T extends SyncClientCreateArgs>(args: SelectSubset<T, SyncClientCreateArgs<ExtArgs>>): Prisma__SyncClientClient<$Result.GetResult<Prisma.$SyncClientPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SyncClients.
+     * @param {SyncClientCreateManyArgs} args - Arguments to create many SyncClients.
+     * @example
+     * // Create many SyncClients
+     * const syncClient = await prisma.syncClient.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SyncClientCreateManyArgs>(args?: SelectSubset<T, SyncClientCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many SyncClients and returns the data saved in the database.
+     * @param {SyncClientCreateManyAndReturnArgs} args - Arguments to create many SyncClients.
+     * @example
+     * // Create many SyncClients
+     * const syncClient = await prisma.syncClient.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many SyncClients and only return the `id`
+     * const syncClientWithIdOnly = await prisma.syncClient.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends SyncClientCreateManyAndReturnArgs>(args?: SelectSubset<T, SyncClientCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SyncClientPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a SyncClient.
+     * @param {SyncClientDeleteArgs} args - Arguments to delete one SyncClient.
+     * @example
+     * // Delete one SyncClient
+     * const SyncClient = await prisma.syncClient.delete({
+     *   where: {
+     *     // ... filter to delete one SyncClient
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SyncClientDeleteArgs>(args: SelectSubset<T, SyncClientDeleteArgs<ExtArgs>>): Prisma__SyncClientClient<$Result.GetResult<Prisma.$SyncClientPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SyncClient.
+     * @param {SyncClientUpdateArgs} args - Arguments to update one SyncClient.
+     * @example
+     * // Update one SyncClient
+     * const syncClient = await prisma.syncClient.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SyncClientUpdateArgs>(args: SelectSubset<T, SyncClientUpdateArgs<ExtArgs>>): Prisma__SyncClientClient<$Result.GetResult<Prisma.$SyncClientPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SyncClients.
+     * @param {SyncClientDeleteManyArgs} args - Arguments to filter SyncClients to delete.
+     * @example
+     * // Delete a few SyncClients
+     * const { count } = await prisma.syncClient.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SyncClientDeleteManyArgs>(args?: SelectSubset<T, SyncClientDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SyncClients.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SyncClientUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SyncClients
+     * const syncClient = await prisma.syncClient.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SyncClientUpdateManyArgs>(args: SelectSubset<T, SyncClientUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SyncClients and returns the data updated in the database.
+     * @param {SyncClientUpdateManyAndReturnArgs} args - Arguments to update many SyncClients.
+     * @example
+     * // Update many SyncClients
+     * const syncClient = await prisma.syncClient.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more SyncClients and only return the `id`
+     * const syncClientWithIdOnly = await prisma.syncClient.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends SyncClientUpdateManyAndReturnArgs>(args: SelectSubset<T, SyncClientUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SyncClientPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one SyncClient.
+     * @param {SyncClientUpsertArgs} args - Arguments to update or create a SyncClient.
+     * @example
+     * // Update or create a SyncClient
+     * const syncClient = await prisma.syncClient.upsert({
+     *   create: {
+     *     // ... data to create a SyncClient
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SyncClient we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SyncClientUpsertArgs>(args: SelectSubset<T, SyncClientUpsertArgs<ExtArgs>>): Prisma__SyncClientClient<$Result.GetResult<Prisma.$SyncClientPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SyncClients.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SyncClientCountArgs} args - Arguments to filter SyncClients to count.
+     * @example
+     * // Count the number of SyncClients
+     * const count = await prisma.syncClient.count({
+     *   where: {
+     *     // ... the filter for the SyncClients we want to count
+     *   }
+     * })
+    **/
+    count<T extends SyncClientCountArgs>(
+      args?: Subset<T, SyncClientCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SyncClientCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SyncClient.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SyncClientAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SyncClientAggregateArgs>(args: Subset<T, SyncClientAggregateArgs>): Prisma.PrismaPromise<GetSyncClientAggregateType<T>>
+
+    /**
+     * Group by SyncClient.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SyncClientGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SyncClientGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SyncClientGroupByArgs['orderBy'] }
+        : { orderBy?: SyncClientGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SyncClientGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSyncClientGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SyncClient model
+   */
+  readonly fields: SyncClientFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SyncClient.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SyncClientClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SyncClient model
+   */
+  interface SyncClientFieldRefs {
+    readonly id: FieldRef<"SyncClient", 'String'>
+    readonly tenantId: FieldRef<"SyncClient", 'String'>
+    readonly clientKey: FieldRef<"SyncClient", 'String'>
+    readonly label: FieldRef<"SyncClient", 'String'>
+    readonly syncSchema: FieldRef<"SyncClient", 'Int'>
+    readonly lastSeenAt: FieldRef<"SyncClient", 'DateTime'>
+    readonly retiredAt: FieldRef<"SyncClient", 'DateTime'>
+    readonly retiredBy: FieldRef<"SyncClient", 'String'>
+    readonly retiredNote: FieldRef<"SyncClient", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SyncClient findUnique
+   */
+  export type SyncClientFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+    /**
+     * Filter, which SyncClient to fetch.
+     */
+    where: SyncClientWhereUniqueInput
+  }
+
+  /**
+   * SyncClient findUniqueOrThrow
+   */
+  export type SyncClientFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+    /**
+     * Filter, which SyncClient to fetch.
+     */
+    where: SyncClientWhereUniqueInput
+  }
+
+  /**
+   * SyncClient findFirst
+   */
+  export type SyncClientFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+    /**
+     * Filter, which SyncClient to fetch.
+     */
+    where?: SyncClientWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SyncClients to fetch.
+     */
+    orderBy?: SyncClientOrderByWithRelationInput | SyncClientOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SyncClients.
+     */
+    cursor?: SyncClientWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SyncClients from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SyncClients.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SyncClients.
+     */
+    distinct?: SyncClientScalarFieldEnum | SyncClientScalarFieldEnum[]
+  }
+
+  /**
+   * SyncClient findFirstOrThrow
+   */
+  export type SyncClientFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+    /**
+     * Filter, which SyncClient to fetch.
+     */
+    where?: SyncClientWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SyncClients to fetch.
+     */
+    orderBy?: SyncClientOrderByWithRelationInput | SyncClientOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SyncClients.
+     */
+    cursor?: SyncClientWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SyncClients from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SyncClients.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SyncClients.
+     */
+    distinct?: SyncClientScalarFieldEnum | SyncClientScalarFieldEnum[]
+  }
+
+  /**
+   * SyncClient findMany
+   */
+  export type SyncClientFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+    /**
+     * Filter, which SyncClients to fetch.
+     */
+    where?: SyncClientWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SyncClients to fetch.
+     */
+    orderBy?: SyncClientOrderByWithRelationInput | SyncClientOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SyncClients.
+     */
+    cursor?: SyncClientWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SyncClients from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SyncClients.
+     */
+    skip?: number
+    distinct?: SyncClientScalarFieldEnum | SyncClientScalarFieldEnum[]
+  }
+
+  /**
+   * SyncClient create
+   */
+  export type SyncClientCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+    /**
+     * The data needed to create a SyncClient.
+     */
+    data: XOR<SyncClientCreateInput, SyncClientUncheckedCreateInput>
+  }
+
+  /**
+   * SyncClient createMany
+   */
+  export type SyncClientCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SyncClients.
+     */
+    data: SyncClientCreateManyInput | SyncClientCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SyncClient createManyAndReturn
+   */
+  export type SyncClientCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+    /**
+     * The data used to create many SyncClients.
+     */
+    data: SyncClientCreateManyInput | SyncClientCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SyncClient update
+   */
+  export type SyncClientUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+    /**
+     * The data needed to update a SyncClient.
+     */
+    data: XOR<SyncClientUpdateInput, SyncClientUncheckedUpdateInput>
+    /**
+     * Choose, which SyncClient to update.
+     */
+    where: SyncClientWhereUniqueInput
+  }
+
+  /**
+   * SyncClient updateMany
+   */
+  export type SyncClientUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SyncClients.
+     */
+    data: XOR<SyncClientUpdateManyMutationInput, SyncClientUncheckedUpdateManyInput>
+    /**
+     * Filter which SyncClients to update
+     */
+    where?: SyncClientWhereInput
+    /**
+     * Limit how many SyncClients to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SyncClient updateManyAndReturn
+   */
+  export type SyncClientUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+    /**
+     * The data used to update SyncClients.
+     */
+    data: XOR<SyncClientUpdateManyMutationInput, SyncClientUncheckedUpdateManyInput>
+    /**
+     * Filter which SyncClients to update
+     */
+    where?: SyncClientWhereInput
+    /**
+     * Limit how many SyncClients to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SyncClient upsert
+   */
+  export type SyncClientUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+    /**
+     * The filter to search for the SyncClient to update in case it exists.
+     */
+    where: SyncClientWhereUniqueInput
+    /**
+     * In case the SyncClient found by the `where` argument doesn't exist, create a new SyncClient with this data.
+     */
+    create: XOR<SyncClientCreateInput, SyncClientUncheckedCreateInput>
+    /**
+     * In case the SyncClient was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SyncClientUpdateInput, SyncClientUncheckedUpdateInput>
+  }
+
+  /**
+   * SyncClient delete
+   */
+  export type SyncClientDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+    /**
+     * Filter which SyncClient to delete.
+     */
+    where: SyncClientWhereUniqueInput
+  }
+
+  /**
+   * SyncClient deleteMany
+   */
+  export type SyncClientDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SyncClients to delete
+     */
+    where?: SyncClientWhereInput
+    /**
+     * Limit how many SyncClients to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SyncClient without action
+   */
+  export type SyncClientDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SyncClient
+     */
+    select?: SyncClientSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SyncClient
+     */
+    omit?: SyncClientOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -45476,6 +46649,21 @@ export namespace Prisma {
   };
 
   export type StockMovementScalarFieldEnum = (typeof StockMovementScalarFieldEnum)[keyof typeof StockMovementScalarFieldEnum]
+
+
+  export const SyncClientScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    clientKey: 'clientKey',
+    label: 'label',
+    syncSchema: 'syncSchema',
+    lastSeenAt: 'lastSeenAt',
+    retiredAt: 'retiredAt',
+    retiredBy: 'retiredBy',
+    retiredNote: 'retiredNote'
+  };
+
+  export type SyncClientScalarFieldEnum = (typeof SyncClientScalarFieldEnum)[keyof typeof SyncClientScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -49200,6 +50388,81 @@ export namespace Prisma {
     userId?: StringNullableWithAggregatesFilter<"StockMovement"> | string | null
     userName?: StringNullableWithAggregatesFilter<"StockMovement"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"StockMovement"> | Date | string
+  }
+
+  export type SyncClientWhereInput = {
+    AND?: SyncClientWhereInput | SyncClientWhereInput[]
+    OR?: SyncClientWhereInput[]
+    NOT?: SyncClientWhereInput | SyncClientWhereInput[]
+    id?: StringFilter<"SyncClient"> | string
+    tenantId?: StringFilter<"SyncClient"> | string
+    clientKey?: StringFilter<"SyncClient"> | string
+    label?: StringFilter<"SyncClient"> | string
+    syncSchema?: IntFilter<"SyncClient"> | number
+    lastSeenAt?: DateTimeFilter<"SyncClient"> | Date | string
+    retiredAt?: DateTimeNullableFilter<"SyncClient"> | Date | string | null
+    retiredBy?: StringNullableFilter<"SyncClient"> | string | null
+    retiredNote?: StringNullableFilter<"SyncClient"> | string | null
+  }
+
+  export type SyncClientOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    clientKey?: SortOrder
+    label?: SortOrder
+    syncSchema?: SortOrder
+    lastSeenAt?: SortOrder
+    retiredAt?: SortOrderInput | SortOrder
+    retiredBy?: SortOrderInput | SortOrder
+    retiredNote?: SortOrderInput | SortOrder
+  }
+
+  export type SyncClientWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    tenantId_clientKey?: SyncClientTenantIdClientKeyCompoundUniqueInput
+    AND?: SyncClientWhereInput | SyncClientWhereInput[]
+    OR?: SyncClientWhereInput[]
+    NOT?: SyncClientWhereInput | SyncClientWhereInput[]
+    tenantId?: StringFilter<"SyncClient"> | string
+    clientKey?: StringFilter<"SyncClient"> | string
+    label?: StringFilter<"SyncClient"> | string
+    syncSchema?: IntFilter<"SyncClient"> | number
+    lastSeenAt?: DateTimeFilter<"SyncClient"> | Date | string
+    retiredAt?: DateTimeNullableFilter<"SyncClient"> | Date | string | null
+    retiredBy?: StringNullableFilter<"SyncClient"> | string | null
+    retiredNote?: StringNullableFilter<"SyncClient"> | string | null
+  }, "id" | "tenantId_clientKey">
+
+  export type SyncClientOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    clientKey?: SortOrder
+    label?: SortOrder
+    syncSchema?: SortOrder
+    lastSeenAt?: SortOrder
+    retiredAt?: SortOrderInput | SortOrder
+    retiredBy?: SortOrderInput | SortOrder
+    retiredNote?: SortOrderInput | SortOrder
+    _count?: SyncClientCountOrderByAggregateInput
+    _avg?: SyncClientAvgOrderByAggregateInput
+    _max?: SyncClientMaxOrderByAggregateInput
+    _min?: SyncClientMinOrderByAggregateInput
+    _sum?: SyncClientSumOrderByAggregateInput
+  }
+
+  export type SyncClientScalarWhereWithAggregatesInput = {
+    AND?: SyncClientScalarWhereWithAggregatesInput | SyncClientScalarWhereWithAggregatesInput[]
+    OR?: SyncClientScalarWhereWithAggregatesInput[]
+    NOT?: SyncClientScalarWhereWithAggregatesInput | SyncClientScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SyncClient"> | string
+    tenantId?: StringWithAggregatesFilter<"SyncClient"> | string
+    clientKey?: StringWithAggregatesFilter<"SyncClient"> | string
+    label?: StringWithAggregatesFilter<"SyncClient"> | string
+    syncSchema?: IntWithAggregatesFilter<"SyncClient"> | number
+    lastSeenAt?: DateTimeWithAggregatesFilter<"SyncClient"> | Date | string
+    retiredAt?: DateTimeNullableWithAggregatesFilter<"SyncClient"> | Date | string | null
+    retiredBy?: StringNullableWithAggregatesFilter<"SyncClient"> | string | null
+    retiredNote?: StringNullableWithAggregatesFilter<"SyncClient"> | string | null
   }
 
   export type TenantCreateInput = {
@@ -53127,6 +54390,90 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type SyncClientCreateInput = {
+    id?: string
+    tenantId: string
+    clientKey: string
+    label?: string
+    syncSchema?: number
+    lastSeenAt?: Date | string
+    retiredAt?: Date | string | null
+    retiredBy?: string | null
+    retiredNote?: string | null
+  }
+
+  export type SyncClientUncheckedCreateInput = {
+    id?: string
+    tenantId: string
+    clientKey: string
+    label?: string
+    syncSchema?: number
+    lastSeenAt?: Date | string
+    retiredAt?: Date | string | null
+    retiredBy?: string | null
+    retiredNote?: string | null
+  }
+
+  export type SyncClientUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    clientKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    syncSchema?: IntFieldUpdateOperationsInput | number
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    retiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    retiredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    retiredNote?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SyncClientUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    clientKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    syncSchema?: IntFieldUpdateOperationsInput | number
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    retiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    retiredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    retiredNote?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SyncClientCreateManyInput = {
+    id?: string
+    tenantId: string
+    clientKey: string
+    label?: string
+    syncSchema?: number
+    lastSeenAt?: Date | string
+    retiredAt?: Date | string | null
+    retiredBy?: string | null
+    retiredNote?: string | null
+  }
+
+  export type SyncClientUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    clientKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    syncSchema?: IntFieldUpdateOperationsInput | number
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    retiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    retiredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    retiredNote?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type SyncClientUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    clientKey?: StringFieldUpdateOperationsInput | string
+    label?: StringFieldUpdateOperationsInput | string
+    syncSchema?: IntFieldUpdateOperationsInput | number
+    lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    retiredAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    retiredBy?: NullableStringFieldUpdateOperationsInput | string | null
+    retiredNote?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -56116,6 +57463,55 @@ export namespace Prisma {
     productId?: SortOrder
     quantity?: SortOrder
     balance?: SortOrder
+  }
+
+  export type SyncClientTenantIdClientKeyCompoundUniqueInput = {
+    tenantId: string
+    clientKey: string
+  }
+
+  export type SyncClientCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    clientKey?: SortOrder
+    label?: SortOrder
+    syncSchema?: SortOrder
+    lastSeenAt?: SortOrder
+    retiredAt?: SortOrder
+    retiredBy?: SortOrder
+    retiredNote?: SortOrder
+  }
+
+  export type SyncClientAvgOrderByAggregateInput = {
+    syncSchema?: SortOrder
+  }
+
+  export type SyncClientMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    clientKey?: SortOrder
+    label?: SortOrder
+    syncSchema?: SortOrder
+    lastSeenAt?: SortOrder
+    retiredAt?: SortOrder
+    retiredBy?: SortOrder
+    retiredNote?: SortOrder
+  }
+
+  export type SyncClientMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    clientKey?: SortOrder
+    label?: SortOrder
+    syncSchema?: SortOrder
+    lastSeenAt?: SortOrder
+    retiredAt?: SortOrder
+    retiredBy?: SortOrder
+    retiredNote?: SortOrder
+  }
+
+  export type SyncClientSumOrderByAggregateInput = {
+    syncSchema?: SortOrder
   }
 
   export type StaffUserCreateNestedManyWithoutTenantInput = {

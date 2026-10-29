@@ -1313,6 +1313,109 @@ export async function serverSupportsMadeToOrder(): Promise<boolean> {
   try { return Number(localStorage.getItem(SERVER_SCHEMA_KEY)) >= 3 } catch { return false }
 }
 
+// ─── SPRINT-1: store-wide upgrade gate and held sales ─────────────────────────
+
+export type PolicyGateBlocker = { id: string; label: string; syncSchema: number; lastSeenAt: string; source: "server" | "cloud" }
+export type PolicyGate = { allowed: boolean; blockers: PolicyGateBlocker[]; reachable: boolean }
+
+/**
+ * Whether this store may change a product's stock setting now: refused while a till or hub on an
+ * older version can still trade (it could not say which setting it sold under). Offline (or no
+ * server) = not allowed: the check cannot be made.
+ */
+export async function getPolicyGate(): Promise<PolicyGate> {
+  const apiUrl = getApiUrl(), token = getAuthToken()
+  if (!apiUrl || !token) return { allowed: false, blockers: [], reachable: false }
+  try {
+    const res = await fetch(`${apiUrl}/api/sync/policy-gate`, { cache: "no-store", headers: { Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS }, signal: AbortSignal.timeout(6000) })
+    if (!res.ok) return { allowed: false, blockers: [], reachable: false }
+    const body = await res.json()
+    return { allowed: !!body.allowed, blockers: Array.isArray(body.blockers) ? body.blockers : [], reachable: true }
+  } catch { return { allowed: false, blockers: [], reachable: false } }
+}
+
+/** The owner retires a till or hub that no longer trades (audited on the server). */
+export async function retireSyncClient(blocker: PolicyGateBlocker, note: string): Promise<{ ok: boolean; error?: string }> {
+  const apiUrl = getApiUrl(), token = getAuthToken()
+  if (!apiUrl || !token) return { ok: false, error: "offline" }
+  try {
+    const q = blocker.source === "cloud" ? "?source=cloud" : ""
+    const res = await fetch(`${apiUrl}/api/sync/clients/${encodeURIComponent(blocker.id)}/retire${q}`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS }, body: JSON.stringify({ note }) })
+    const body = await res.json().catch(() => ({}))
+    return res.ok ? { ok: true } : { ok: false, error: body?.error ?? `HTTP ${res.status}` }
+  } catch (e) { return { ok: false, error: String(e) } }
+}
+
+export function isHeldError(error: string | undefined | null): boolean {
+  return typeof error === "string" && error.startsWith("STOCK_POLICY_HELD:")
+}
+
+export type HeldSale = {
+  operationId: string
+  saleId: string
+  saleNumber: string
+  createdAt: string
+  cashier: string
+  total: number
+  paymentMethod: string
+  tender: Record<string, unknown> | null
+  reason: string
+  productName: string | null
+  revision: string | null
+  lines: Array<{ name: string; quantity: number; stockPolicy: string; stockPolicyRev: string | null; held: boolean }>
+}
+
+/** Sales this till has taken payment for that the server is holding (see isHeldError). */
+export function getHeldSales(): HeldSale[] {
+  return readQueue().filter((op) => op.entity === "sale" && op.action === "create" && op.status !== "Synced" && isHeldError(op.error)).map((op) => {
+    const sale = (op.payload ?? {}) as any
+    const error = op.error ?? ""
+    const productName = error.match(/"([^"]+)"/)?.[1] ?? null
+    const revision = error.match(/\(([^)]+)\) this server/)?.[1] ?? null
+    const items: any[] = Array.isArray(sale.items) ? sale.items : []
+    return {
+      operationId: op.id, saleId: String(sale.id ?? ""), saleNumber: String(sale.saleNumber ?? sale.id ?? ""), createdAt: String(sale.createdAt ?? op.createdAt),
+      cashier: String(sale.cashier ?? ""), total: Number(sale.total ?? 0), paymentMethod: String(sale.paymentMethod ?? ""), tender: sale.tender ?? null,
+      reason: error.replace(/^STOCK_POLICY_HELD:\s*/, ""), productName, revision,
+      lines: items.map((i) => ({ name: String(i.name ?? ""), quantity: Number(i.quantity ?? 0), stockPolicy: i.stockPolicy === "untracked" ? "untracked" : "tracked", stockPolicyRev: typeof i.stockPolicyRev === "string" ? i.stockPolicyRev : null, held: !i.stockPolicyResolution && i.name === productName })),
+    }
+  })
+}
+
+/**
+ * A manager settles a held sale: the held product's lines are recorded with the stock setting the
+ * manager chooses (explicit, with a note — never re-read with today's setting). The money already
+ * collected is untouched: the same sale is re-sent, nothing is charged again. The server accepts
+ * the decision only from an account that may manage inventory, and audits it.
+ */
+export function resolveHeldSale(operationId: string, policy: "tracked" | "untracked", note: string, manager: { id: string; name: string }): boolean {
+  let resolvedSaleId: string | null = null
+  let productName: string | null = null
+  const at = new Date().toISOString()
+  updateQueueOps((op) => {
+    if (op.id !== operationId || !isHeldError(op.error)) return op
+    productName = (op.error ?? "").match(/"([^"]+)"/)?.[1] ?? null
+    const sale = { ...((op.payload ?? {}) as any) }
+    sale.items = (Array.isArray(sale.items) ? sale.items : []).map((i: any) => i.name === productName && !i.stockPolicyResolution
+      ? { ...i, stockPolicy: policy, stockPolicyResolution: { policy, note, resolvedBy: manager.id, resolvedByName: manager.name, at } }
+      : i)
+    resolvedSaleId = String(sale.id ?? "")
+    return { ...op, payload: sale, status: "Pending" as const, error: undefined }
+  })
+  if (!resolvedSaleId || !productName) return false
+  // the local copy of the sale follows (refunds on this till use the line's setting)
+  try {
+    const rows = JSON.parse(window.localStorage.getItem("lebanonpos.sales.v1") ?? "[]")
+    if (Array.isArray(rows)) {
+      const next = rows.map((s: any) => s?.id !== resolvedSaleId ? s : { ...s, items: (s.items ?? []).map((i: any) => i.name === productName ? { ...i, stockPolicy: policy } : i) })
+      writeLocalWithIndexedDB("lebanonpos.sales.v1", next)
+    }
+  } catch { /* the queued sale carries the decision either way */ }
+  dispatchSyncChanged()
+  scheduleAutoFlush()
+  return true
+}
+
 export function getSyncStatus(): SyncStatus {
   const queue = readQueue()
   const recentErrors: string[] = []
@@ -1512,7 +1615,7 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
     try {
       const response = await fetch(`${apiUrl}/api/sync/push`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS },
         body: JSON.stringify({ deviceId: getDeviceId(), operations: [{ id: operation.id, entity: operation.entity, action: operation.action, payload: operation.payload }] }),
         signal: AbortSignal.timeout(5_000),
       })
@@ -1608,6 +1711,7 @@ async function _flushSyncQueue() {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        ...SYNC_SCHEMA_HEADERS, // SPRINT-1: the server records this till's version (upgrade gate)
       },
       body: JSON.stringify({
         deviceId: getDeviceId(),
@@ -1675,6 +1779,9 @@ async function _flushSyncQueue() {
         dispatchOperationRejected({ ...op, status: "Rejected", attempts: 5, lastAttemptAt: now, error: syncResult.error ?? "Rejected by server" })
         return { ...op, status: "Rejected" as const, attempts: 5, lastAttemptAt: now, error: syncResult.error ?? "Rejected by server" }
       }
+      // SPRINT-1: a held sale (stock setting not known to the server) is kept and retried without
+      // using up its attempts: it must stay in front of a manager until it is resolved.
+      if (isHeldError(syncResult?.error)) return { ...op, status: "Failed" as const, lastAttemptAt: now, error: syncResult!.error }
       return { ...op, status: "Failed" as const, attempts: op.attempts + 1, lastAttemptAt: now, error: syncResult?.error ?? "Server error" }
     })
 
@@ -1834,7 +1941,7 @@ export async function commitSaleToHub(sale: { id: string } & Record<string, unkn
 
   const op = { id: `wt-${sale.id}`, entity: "sale", action: "create", payload: sale }
   const body = JSON.stringify({ deviceId: getDeviceId(), operations: [op] })
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS }
 
   for (let attempt = 1; attempt <= COMMIT_MAX_ATTEMPTS; attempt++) {
     try {

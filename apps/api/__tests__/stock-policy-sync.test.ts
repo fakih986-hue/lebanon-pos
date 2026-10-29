@@ -18,7 +18,10 @@ import jwt from "jsonwebtoken"
 //  - a sale naming a revision the receiver does not know is HELD (retryable, nothing applied,
 //    attempts not used up) and applies once the revision arrives;
 //  - sale, stock, lots, refund and void effects agree on both databases;
-//  - migration defaults for existing products and sale lines.
+//  - migration defaults for existing products and sale lines;
+//  - the store-wide upgrade gate (older tills/hubs that still trade block policy changes; the
+//    owner's audited retirement; a hub also respects the cloud's gate);
+//  - held sales resolved by an authorized manager's explicit, audited decision (no re-charge).
 process.env.JWT_SECRET = process.env.JWT_SECRET || "policy-sync-secret"
 delete process.env.IS_LOCAL_SERVER
 
@@ -54,16 +57,24 @@ let token = ""
 const stateFile = path.resolve(__dirname, "../data/sync-state.json")
 let savedState: string | null = null
 
+// Many requests in a minute from one address would hit the sync rate limit (it keys on the client
+// address): each test request gets its own.
+const addr = () => ({ "x-forwarded-for": `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` })
 async function pushTo(base: string, ops: Array<{ id: string; entity: string; action: string; payload: unknown }>, headers: Record<string, string>, deviceId?: string) {
-  const res = await fetch(`${base}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", ...headers }, body: JSON.stringify({ deviceId, operations: ops }) })
+  const res = await fetch(`${base}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", ...addr(), ...headers }, body: JSON.stringify({ deviceId, operations: ops }) })
   const body = (await res.json()) as { results?: Array<{ id: string; status: string; error?: string }> }
   if (!body.results) throw new Error(`push refused: HTTP ${res.status} ${JSON.stringify(body).slice(0, 200)}`)
   return body.results
 }
 /** A till pushing to the hub. */
-const till = async (entity: string, action: string, payload: unknown) => (await pushTo(hubUrl, [{ id: randomUUID(), entity, action, payload }], { Authorization: `Bearer ${token}` }, DEVICE))[0]
+const S3 = { "x-titan-sync-schema": "3" }
+const till = async (entity: string, action: string, payload: unknown, auth = token, id = randomUUID()) => (await pushTo(hubUrl, [{ id, entity, action, payload }], { Authorization: `Bearer ${auth}`, ...S3 }, DEVICE))[0]
 /** The owner's change made directly on the cloud (owner portal / a direct till). */
-const onCloud = async (entity: string, action: string, payload: unknown) => (await pushTo(cloudUrl, [{ id: randomUUID(), entity, action, payload }], { "x-cloud-key": CLOUD_KEY, "x-tenant-id": TENANT }))[0]
+const onCloud = async (entity: string, action: string, payload: unknown, schema = "3") => (await pushTo(cloudUrl, [{ id: randomUUID(), entity, action, payload }], { "x-cloud-key": CLOUD_KEY, "x-tenant-id": TENANT, "x-titan-sync-schema": schema }))[0]
+const CASHIER = randomUUID()
+let cashierToken = ""
+const gateOn = async (base: string, auth: Record<string, string>) => (await (await fetch(`${base}/api/sync/policy-gate`, { headers: { ...addr(), ...auth } })).json()) as { allowed: boolean; blockers: Array<{ id: string; label: string; source: string }> }
+const retireOn = async (base: string, id: string, auth: Record<string, string>, note: string, q = "") => fetch(`${base}/api/sync/clients/${id}/retire${q}`, { method: "POST", headers: { "Content-Type": "application/json", ...addr(), ...auth }, body: JSON.stringify({ note }) })
 const pull = async () => {
   fs.mkdirSync(path.dirname(stateFile), { recursive: true })
   fs.writeFileSync(stateFile, JSON.stringify({ lastPullAt: new Date(Date.now() - 3600_000).toISOString(), staffRefresh: 2 }))
@@ -84,6 +95,16 @@ function sale(p: { id: number; syncId: string; name: string }, rev: string | nul
   return { id, lineId: item.lineId as string, payload: { id, saleNumber: `S-PS-${id.slice(0, 6)}`, paymentMethod: "Cash", subtotal: 3 * qty, tax: 0, total: 3 * qty, cashier: "IT", status: "Completed", createdAt: new Date().toISOString(), items: [item] } }
 }
 
+// The hub's bridge calls the cloud from one address too: give those their own as well (test only).
+const realFetch = globalThis.fetch
+globalThis.fetch = ((input: any, init: any = {}) => {
+  const url = typeof input === "string" ? input : String(input?.url ?? input)
+  if (!url.startsWith(cloudUrl)) return realFetch(input, init)
+  const headers = new Headers(init.headers ?? {})
+  if (!headers.has("x-forwarded-for")) headers.set("x-forwarded-for", addr()["x-forwarded-for"])
+  return realFetch(input, { ...init, headers })
+}) as typeof fetch
+
 beforeAll(async () => {
   savedState = fs.existsSync(stateFile) ? fs.readFileSync(stateFile, "utf8") : null
   hubServer = http.createServer(hubApp)
@@ -95,6 +116,10 @@ beforeAll(async () => {
   await prisma.staffUser.create({ data: { id: ADMIN, tenantId: TENANT, name: "IT", mobile: `ps-${TENANT.slice(0, 6)}`, pin: "x", role: "Admin" } })
   await prisma.device.create({ data: { tenantId: TENANT, deviceId: DEVICE, deviceName: DEVICE, status: "APPROVED" } })
   token = jwt.sign({ userId: ADMIN, tenantId: TENANT, role: "Admin" }, process.env.JWT_SECRET!, { expiresIn: "1h" })
+  // the same staff on the cloud (staff sync), so a manager's decision can be verified there too
+  await cloudPrisma.staffUser.create({ data: { id: ADMIN, tenantId: TENANT, name: "IT", mobile: `ps-${TENANT.slice(0, 6)}`, pin: "x", role: "Admin" } })
+  for (const db of [prisma, cloudPrisma]) await db.staffUser.create({ data: { id: CASHIER, tenantId: TENANT, name: "Rana", mobile: `psc-${TENANT.slice(0, 6)}`, pin: "y", role: "Cashier", permissions: ["sales.checkout"] } as any })
+  cashierToken = jwt.sign({ userId: CASHIER, tenantId: TENANT, role: "Cashier" }, process.env.JWT_SECRET!, { expiresIn: "1h" })
 })
 
 afterAll(async () => {
@@ -106,6 +131,7 @@ afterAll(async () => {
     await db.sale.deleteMany({ where })
     await db.inventoryBatch.deleteMany({ where })
     await db.syncOperation.deleteMany({ where })
+    await db.syncClient.deleteMany({ where })
     await db.auditEvent.deleteMany({ where }).catch(() => undefined)
     await db.product.deleteMany({ where })
     await db.device.deleteMany({ where }).catch(() => undefined)
@@ -281,5 +307,108 @@ describe("migration defaults", () => {
     const s = sale({ id: p.id, syncId: SYNC, name: "Legacy row" }, null, null)
     expect((await till("sale", "create", s.payload)).status).toBe("ok")
     expect(await stock(prisma, SYNC)).toBe(1)
+  })
+})
+
+describe("store-wide upgrade gate: no stock-policy change while an older till or hub can still trade", () => {
+  const MOCHA = randomUUID()
+  const update = (policy: string) => till("product", "update", { syncId: MOCHA, stockPolicy: policy, stockPolicyRev: `g-${randomUUID()}`, stockPolicyParentRev: undefined })
+
+  it("setup: a product; this store's clients so far are all current", async () => {
+    expect((await till("product", "create", { syncId: MOCHA, name: "Mocha", price: 3, cost: 1, stock: 0, category: "Coffee", barcode: null })).status).toBe("ok")
+    expect((await gateOn(hubUrl, { Authorization: `Bearer ${token}` })).allowed).toBe(true)
+  })
+
+  it("an older till (no sync schema 3) trades on the hub: the change is refused, visibly, and nothing changes", async () => {
+    await pushTo(hubUrl, [{ id: randomUUID(), entity: "customer", action: "create", payload: { id: randomUUID(), name: "Walk-in", mobile: `g-${randomUUID().slice(0, 8)}` } }], { Authorization: `Bearer ${token}` }, "OLD-TILL-1")
+    const g = await gateOn(hubUrl, { Authorization: `Bearer ${token}` })
+    expect(g.allowed).toBe(false)
+    expect(g.blockers.map((b) => b.label)).toContain("OLD-TILL-1")
+    const r = await update("untracked")
+    expect(r.status).toBe("rejected")
+    expect(r.error).toMatch(/^STOCK_POLICY_GATE:.*OLD-TILL-1/)
+    expect((await product(prisma, MOCHA))!.stockPolicy).toBe("tracked")
+  })
+
+  it("retiring it is the owner's audited decision: a cashier cannot, a note is required; then the change goes through", async () => {
+    const old = (await gateOn(hubUrl, { Authorization: `Bearer ${token}` })).blockers.find((b) => b.label === "OLD-TILL-1")!
+    expect((await retireOn(hubUrl, old.id, { Authorization: `Bearer ${cashierToken}` }, "gone")).status).toBe(403)
+    expect((await retireOn(hubUrl, old.id, { Authorization: `Bearer ${token}` }, "")).status).toBe(400)
+    expect((await retireOn(hubUrl, old.id, { Authorization: `Bearer ${token}` }, "Replaced by the new till")).status).toBe(200)
+    expect(await prisma.auditEvent.count({ where: { tenantId: TENANT, action: "sync.client_retired" } })).toBe(1)
+    expect((await update("untracked")).status).toBe("ok")
+    expect((await product(prisma, MOCHA))!.stockPolicy).toBe("untracked")
+  })
+
+  it("a retired till that trades again is active again: the gate closes again", async () => {
+    await pushTo(hubUrl, [{ id: randomUUID(), entity: "customer", action: "create", payload: { id: randomUUID(), name: "Walk-in 2", mobile: `g-${randomUUID().slice(0, 8)}` } }], { Authorization: `Bearer ${token}` }, "OLD-TILL-1")
+    expect((await update("tracked")).status).toBe("rejected")
+    const old = (await gateOn(hubUrl, { Authorization: `Bearer ${token}` })).blockers.find((b) => b.label === "OLD-TILL-1")!
+    expect((await retireOn(hubUrl, old.id, { Authorization: `Bearer ${token}` }, "Really gone now")).status).toBe(200)
+  })
+
+  it("a hub also respects the cloud's gate (an older hub on the store); retiring it from the hub is recorded on the cloud", async () => {
+    // an older hub of this store trades with the cloud (before this process plays the hub)
+    await pushTo(cloudUrl, [{ id: randomUUID(), entity: "customer", action: "create", payload: { id: randomUUID(), name: "Old hub customer", mobile: `g-${randomUUID().slice(0, 8)}` } }], { "x-cloud-key": CLOUD_KEY, "x-tenant-id": TENANT, "x-titan-sync-schema": "2" })
+    process.env.IS_LOCAL_SERVER = "true" // this server acts as a hub for the check
+    try {
+      const g = await gateOn(hubUrl, { Authorization: `Bearer ${token}` })
+      const cloudBlocker = g.blockers.find((b) => b.source === "cloud")!
+      expect(cloudBlocker.label).toMatch(/hub \(sync 2\)/)
+      const r = await update("tracked")
+      expect([r.status, r.error?.slice(0, 18)]).toEqual(["rejected", "STOCK_POLICY_GATE:"])
+      expect((await retireOn(hubUrl, cloudBlocker.id, { Authorization: `Bearer ${token}` }, "Old hub decommissioned", "?source=cloud")).status).toBe(200)
+      expect(await cloudPrisma.auditEvent.count({ where: { tenantId: TENANT, action: "sync.client_retired" } })).toBe(1)
+      expect((await update("tracked")).status).toBe("ok")
+    } finally { delete process.env.IS_LOCAL_SERVER }
+  })
+})
+
+describe("held sales: an authorized manager's explicit, audited decision; the paid sale is re-sent, never re-charged", () => {
+  const TEA = randomUUID()
+  let tea: { id: number; syncId: string; name: string }
+  const unknownRev = `lost-${randomUUID()}`
+  let held: ReturnType<typeof sale>
+  const opId = randomUUID()
+
+  it("setup: a sale under a revision this hub does not know is held — nothing recorded, stock untouched", async () => {
+    expect((await till("product", "create", { syncId: TEA, name: "Tea", price: 3, cost: 1, stock: 0, category: "Drinks", barcode: null })).status).toBe("ok")
+    const p = (await product(prisma, TEA))!
+    tea = { id: p.id, syncId: TEA, name: "Tea" }
+    expect((await till("inventory", "receive", [{ id: randomUUID(), batchNumber: "LOT-TEA", productId: p.id, productSyncId: TEA, productName: "Tea", barcode: "", initialQuantity: 5, quantityRemaining: 5, unitCost: 1, unitPrice: 3, receivedAt: new Date().toISOString(), status: "Open" }])).status).toBe("ok")
+    held = sale(tea, unknownRev, "untracked")
+    const r = await till("sale", "create", held.payload, token, opId)
+    expect(r.status).toBe("error")
+    expect(r.error).toMatch(/^STOCK_POLICY_HELD: "Tea".*\(lost-/)
+    expect(await prisma.sale.count({ where: { id: held.id } })).toBe(0)
+  })
+
+  const resolved = (policy: string, by: string, note: string) => ({ ...held.payload, items: held.payload.items.map((i: any) => ({ ...i, stockPolicy: policy, stockPolicyResolution: { policy, note, resolvedBy: by, resolvedByName: by === ADMIN ? "IT" : "Rana", at: new Date().toISOString() } })) })
+
+  it("a decision naming a cashier (no Manage inventory) does not count: still held", async () => {
+    const r = await till("sale", "create", resolved("untracked", CASHIER, "made it, no stock"), token, opId)
+    expect(r.status).toBe("error")
+    expect(await prisma.sale.count({ where: { id: held.id } })).toBe(0)
+  })
+
+  it("a manager's decision (made to order, with a note) records the same sale once, as decided, and audits it", async () => {
+    const r = await till("sale", "create", resolved("untracked", ADMIN, "Tea is brewed per cup"), token, opId)
+    expect([r.status, r.error]).toEqual(["ok", undefined])
+    const l = (await line(prisma, held.id))!
+    expect([l.stockPolicy, l.stockPolicyConflict]).toEqual(["untracked", "resolved"])
+    expect(await stock(prisma, TEA)).toBe(5)
+    const a = (await prisma.auditEvent.findFirst({ where: { tenantId: TENANT, action: "sale.stock_policy_resolved" } }))!
+    expect(a.summary).toMatch(/Tea is brewed per cup/)
+    expect(a.summary).toMatch(/already paid 3\.00/)
+    expect((await prisma.sale.findUnique({ where: { id: held.id } }))!.total.toString()).toBe("3")
+  })
+
+  it("forwarded: the cloud records the same decision (it does not know the revision either) and audits it", async () => {
+    await bridge.pushToCloudOnce()
+    const c = (await line(cloudPrisma, held.id))!
+    expect([c.stockPolicy, c.stockPolicyConflict]).toEqual(["untracked", "resolved"])
+    expect(await stock(cloudPrisma, TEA)).toBe(5)
+    expect(await cloudPrisma.auditEvent.count({ where: { tenantId: TENANT, action: "sale.stock_policy_resolved" } })).toBe(1)
+    expect(await cloudPrisma.sale.count({ where: { id: held.id } })).toBe(1)
   })
 })

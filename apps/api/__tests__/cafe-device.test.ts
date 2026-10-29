@@ -247,7 +247,7 @@ describe("one café order: Espresso ×2 (untracked, no stock) + Pepsi ×1 (track
     await prisma.product.updateMany({ where: { tenantId: T, name: "Pepsi 330ml" }, data: { stock: 0 } })
     const id = randomUUID()
     const p = (await server("Pepsi 330ml"))!
-    const res = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` }, body: JSON.stringify({ operations: [{ id, entity: "sale", action: "create", payload: { id, saleNumber: "S-OUT", paymentMethod: "Cash", subtotal: 1, tax: 0, total: 1, cashier: "Rana", status: "Completed", items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: PEP, quantity: 1, unitPrice: 1, total: 1, cost: 0.5 }] } }] }) })
+    const res = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}`, "x-titan-sync-schema": "3" }, body: JSON.stringify({ operations: [{ id, entity: "sale", action: "create", payload: { id, saleNumber: "S-OUT", paymentMethod: "Cash", subtotal: 1, tax: 0, total: 1, cashier: "Rana", status: "Completed", items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: PEP, quantity: 1, unitPrice: 1, total: 1, cost: 0.5 }] } }] }) })
     const r = ((await res.json()) as { results: Array<{ status: string; error?: string }> }).results[0]
     expect(r.status).toBe("rejected")
     expect(r.error).toMatch(/Insufficient stock/)
@@ -319,7 +319,7 @@ describe("refunds and voids follow the line's stock policy when it was sold", ()
 describe("compatibility with existing stores and older tills", () => {
   it("a product created without a stock policy (existing stores, older clients) is tracked", async () => {
     const id = randomUUID()
-    const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` }, body: JSON.stringify({ operations: [{ id, entity: "product", action: "create", payload: { syncId: randomUUID(), name: "Chips", barcode: `CH-${T.slice(0, 6)}`, price: 0.75, cost: 0.3, category: "Snacks" } }] }) })
+    const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}`, "x-titan-sync-schema": "3" }, body: JSON.stringify({ operations: [{ id, entity: "product", action: "create", payload: { syncId: randomUUID(), name: "Chips", barcode: `CH-${T.slice(0, 6)}`, price: 0.75, cost: 0.3, category: "Snacks" } }] }) })
     expect(((await r.json()) as { results: Array<{ status: string }> }).results[0].status).toBe("ok")
     expect((await server("Chips"))!.stockPolicy).toBe("tracked")
   })
@@ -327,7 +327,7 @@ describe("compatibility with existing stores and older tills", () => {
   it("an older till sending empty-string barcodes: stored as NULL, several coexist", async () => {
     const push = async (name: string) => {
       const id = randomUUID()
-      const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` }, body: JSON.stringify({ operations: [{ id, entity: "product", action: "create", payload: { syncId: randomUUID(), name, barcode: "", price: 1, cost: 0.2, category: "Old" } }] }) })
+      const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}`, "x-titan-sync-schema": "3" }, body: JSON.stringify({ operations: [{ id, entity: "product", action: "create", payload: { syncId: randomUUID(), name, barcode: "", price: 1, cost: 0.2, category: "Old" } }] }) })
       return ((await r.json()) as { results: Array<{ status: string }> }).results[0].status
     }
     expect([await push("Old till item A"), await push("Old till item B")]).toEqual(["ok", "ok"])
@@ -337,7 +337,7 @@ describe("compatibility with existing stores and older tills", () => {
   it("an older till's sale of an untracked drink (no stockPolicy on its lines) is accepted: the server's policy decides", async () => {
     const p = (await server("Espresso"))!
     const id = randomUUID()
-    const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` }, body: JSON.stringify({ operations: [{ id, entity: "sale", action: "create", payload: { id, saleNumber: "S-OLD", paymentMethod: "Cash", subtotal: 1.5, tax: 0, total: 1.5, cashier: "Old till", status: "Completed", items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: "", quantity: 1, unitPrice: 1.5, total: 1.5, cost: 0.4, batchAllocations: [{ batchId: "legacy-stock", quantity: 1, unitCost: 0.4 }] }] } }] }) })
+    const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}`, "x-titan-sync-schema": "3" }, body: JSON.stringify({ operations: [{ id, entity: "sale", action: "create", payload: { id, saleNumber: "S-OLD", paymentMethod: "Cash", subtotal: 1.5, tax: 0, total: 1.5, cashier: "Old till", status: "Completed", items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: "", quantity: 1, unitPrice: 1.5, total: 1.5, cost: 0.4, batchAllocations: [{ batchId: "legacy-stock", quantity: 1, unitCost: 0.4 }] }] } }] }) })
     expect(((await r.json()) as { results: Array<{ status: string }> }).results[0].status).toBe("ok")
     expect((await prisma.saleItem.findFirst({ where: { saleId: id } }))!.stockPolicy).toBe("untracked")
     expect(Number((await server("Espresso"))!.stock)).toBe(0)
@@ -359,7 +359,7 @@ describe("compatibility with existing stores and older tills", () => {
     await prisma.product.updateMany({ where: { tenantId: T, name: "Chips" }, data: { stock: 0 } })
     const p = (await server("Chips"))!
     const id = randomUUID()
-    const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` }, body: JSON.stringify({ operations: [{ id, entity: "sale", action: "create", payload: { id, saleNumber: "S-CHEAT", paymentMethod: "Cash", subtotal: 0.75, tax: 0, total: 0.75, cashier: "x", status: "Completed", items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: p.barcode, stockPolicy: "untracked", quantity: 1, unitPrice: 0.75, total: 0.75, cost: 0.3 }] } }] }) })
+    const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}`, "x-titan-sync-schema": "3" }, body: JSON.stringify({ operations: [{ id, entity: "sale", action: "create", payload: { id, saleNumber: "S-CHEAT", paymentMethod: "Cash", subtotal: 0.75, tax: 0, total: 0.75, cashier: "x", status: "Completed", items: [{ id: p.id, productSyncId: p.syncId, lineId: randomUUID(), name: p.name, barcode: p.barcode, stockPolicy: "untracked", quantity: 1, unitPrice: 0.75, total: 0.75, cost: 0.3 }] } }] }) })
     expect(((await r.json()) as { results: Array<{ status: string }> }).results[0].status).toBe("rejected")
   })
 })
@@ -367,7 +367,7 @@ describe("compatibility with existing stores and older tills", () => {
 // ── SPRINT-1 acceptance: stock-policy changes between an offline checkout and its sync ──────────
 async function adminPush(entity: string, action: string, payload: unknown) {
   const id = randomUUID()
-  const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` }, body: JSON.stringify({ operations: [{ id, entity, action, payload }] }) })
+  const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}`, "x-titan-sync-schema": "3" }, body: JSON.stringify({ operations: [{ id, entity, action, payload }] }) })
   return ((await r.json()) as { results: Array<{ status: string; error?: string }> }).results[0]
 }
 const saleLine = async (saleId: string, name: string) => (await prisma.saleItem.findFirst({ where: { saleId, productName: name } }))!

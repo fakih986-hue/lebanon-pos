@@ -6,6 +6,7 @@ import { formatCurrency, formatNumber } from "../../lib/currency"
 import { fileToCompressedDataUrl } from "../../lib/image"
 import { createProduct, deleteProduct, generateProductBarcode, updateProduct } from "../../services/product.service"
 import type { SupplierLedger } from "../../services/supplier.service"
+import { getPolicyGate, retireSyncClient, type PolicyGateBlocker } from "../../services/sync.service"
 import { showToast } from "../../services/toast.service"
 import type { Product } from "../../types/product"
 import { Drawer, Field } from "./BackOffice"
@@ -42,6 +43,12 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
   const [variantName, setVariantName] = useState(p?.variantName ?? "")
   const [errors, setErrors] = useState<Errors>({})
   const [saving, setSaving] = useState(false)
+  // SPRINT-1 upgrade gate: changing an existing product's stock setting needs every till and hub
+  // of the store to be up to date (checked with the server before anything is saved).
+  const [gate, setGate] = useState<null | { state: "checking" | "offline" } | { state: "blocked"; blockers: PolicyGateBlocker[] }>(null)
+  const [retireNote, setRetireNote] = useState("")
+  const [retireMsg, setRetireMsg] = useState("")
+  const policyChanged = mode !== "create" && !!p && (p.stockPolicy ?? "tracked") !== (trackStock ? "tracked" : "untracked")
   const imageRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLDivElement>(null)
   // New variant row (edit mode)
@@ -74,8 +81,29 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
     return e
   }
 
-  function save() {
+  async function save() {
     if (saving) return
+    if (policyChanged) {
+      setGate({ state: "checking" }); setRetireMsg("")
+      const g = await getPolicyGate()
+      if (!g.reachable) { setGate({ state: "offline" }); return }
+      if (!g.allowed) { setGate({ state: "blocked", blockers: g.blockers }); return }
+      setGate(null)
+    }
+    saveChecked()
+  }
+
+  async function retire(b: PolicyGateBlocker) {
+    const note = retireNote.trim()
+    if (note.length < 3) { setRetireMsg(t("sync.held.note_required")); return }
+    const r = await retireSyncClient(b, note)
+    if (!r.ok) { setRetireMsg(t("inv.gate.retire_failed", { error: r.error ?? "" })); return }
+    setRetireMsg(t("inv.gate.retired", { label: b.label })); setRetireNote("")
+    const g = await getPolicyGate()
+    setGate(!g.reachable ? { state: "offline" } : g.allowed ? null : { state: "blocked", blockers: g.blockers })
+  }
+
+  function saveChecked() {
     const e = validate()
     setErrors(e)
     if (Object.keys(e).length > 0) {
@@ -182,6 +210,21 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
           <input type="checkbox" className="mg2-check" checked={trackStock} onChange={(e) => setTrackStock(e.target.checked)} />
           <span>{t("inv.track_stock")}<span className="mg2-cap" style={{ display: "block", fontWeight: 400 }}>{trackStock ? t("inv.track_stock_on_help") : t("inv.track_stock_off_help")}</span></span>
         </label>
+        {policyChanged && gate && (
+          <div role={gate.state === "checking" ? "status" : "alert"} className="mg2-cap" style={{ display: "flex", flexDirection: "column", gap: 6, color: gate.state === "checking" ? "var(--text-2)" : "var(--v2-err)" }}>
+            <span>{gate.state === "checking" ? t("inv.gate.checking") : gate.state === "offline" ? t("inv.gate.offline") : t("inv.gate.blocked")}</span>
+            {gate.state === "blocked" && gate.blockers.map((b) => (
+              <span key={`${b.source}:${b.id}`} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, color: "var(--text-2)" }}>
+                <span>{t("inv.gate.client", { label: b.label, schema: b.syncSchema, date: new Date(b.lastSeenAt).toLocaleString() })}</span>
+                {b.id !== "cloud" && <button type="button" className="mg2-btn mg2-btn-ghost" style={{ minHeight: 32 }} onClick={() => void retire(b)}>{t("inv.gate.retire")}</button>}
+              </span>
+            ))}
+            {gate.state === "blocked" && gate.blockers.some((b) => b.id !== "cloud") && (
+              <input className="mg2-input" aria-label={t("inv.gate.retire_note")} placeholder={t("inv.gate.retire_note")} value={retireNote} onChange={(e) => setRetireNote(e.target.value)} />
+            )}
+            {retireMsg && <span role="status" style={{ color: "var(--text)" }}>{retireMsg}</span>}
+          </div>
+        )}
         {!trackStock ? null : mode === "create" ? (
           <Field label={t("inv.field.opening_stock")} error={errors.stock} help={t("inv.opening_stock_help")}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={stock} onChange={(e) => setStock(e.target.value)} />}</Field>
         ) : p && !p.isParent ? (

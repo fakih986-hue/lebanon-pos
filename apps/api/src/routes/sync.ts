@@ -10,6 +10,7 @@ const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
 import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "../lib/stockPolicy.js"
+import { localGateBlockers, recordSyncClient, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
 import { json, requireAuth, type AuthRequest, serializeDecimals } from "../middleware/auth.js"
@@ -174,6 +175,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
 
   const { operations } = parsed.data
 
+
   // ── License check: block business writes on server side ──────────────
   // Never trust desktop-only enforcement. Server also blocks writes when
   // tenant is read_only or suspended after grace expiry.
@@ -227,6 +229,20 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
     json(res, { error: "deviceId is required for hub sync", code: "DEVICE_ID_REQUIRED" }, 400)
     return
   }
+
+  // SPRINT-1 upgrade gate: remember which clients trade, and with which sync schema. Recorded once
+  // the device is approved (an unapproved device cannot close the gate); never blocks the push.
+  try {
+    const schema = clientSyncSchema(req as any)
+    const isBridge = req.auth!.userId === "cloud-bridge"
+    const key = isBridge ? `hub-bridge@${schema}` : parsed.data.deviceId ? `device:${parsed.data.deviceId}` : `user:${req.auth!.userId}`
+    let label = isBridge ? `Store hub (sync ${schema})` : parsed.data.deviceId ?? `Account ${req.auth!.userId}`
+    if (!isBridge && parsed.data.deviceId) {
+      const d = await prisma.device.findUnique({ where: { tenantId_deviceId: { tenantId, deviceId: parsed.data.deviceId } }, select: { deviceName: true } }).catch(() => null)
+      if (d?.deviceName) label = d.deviceName
+    }
+    await recordSyncClient(prisma, tenantId, key, label, schema)
+  } catch (e) { console.error("[sync] could not record the sync client:", e) }
 
   // ── Permission enforcement (POS-PERMISSIONS-1 phase 3) ──────────────
   // Load the acting staff user's effective permissions once. When there is no
@@ -422,6 +438,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         errorMessage.startsWith("ONE_ADMIN:") ||
         errorMessage.startsWith("LAST_ADMIN:") ||
         err instanceof StockPolicyMismatchError ||
+        err instanceof StockPolicyGateError ||
         err instanceof StaleStaffError
       const opStatus = isRejected ? "Rejected" : "Failed"
 
@@ -464,6 +481,50 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
   }
 
   json(res, { results })
+})
+
+// ─── SPRINT-1: store-wide upgrade gate for stock-policy changes ───────────────
+/** This server's blockers, plus — on a hub with a cloud — the cloud's (unreachable cloud = blocked). */
+async function policyGateBlockers(tenantId: string, opts: { localOnly?: boolean } = {}): Promise<GateBlocker[]> {
+  const blockers = await localGateBlockers(prisma, tenantId)
+  if (!opts.localOnly && ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")) {
+    const { cloudPolicyGateBlockers } = await import("../services/cloudSync.js")
+    const cloud = await cloudPolicyGateBlockers()
+    if (cloud === null) blockers.push({ id: "cloud", label: "Cloud (not reachable: cannot confirm its tills are upgraded)", syncSchema: 0, lastSeenAt: new Date().toISOString(), source: "cloud" })
+    else blockers.push(...(cloud as unknown as GateBlocker[]))
+  }
+  return blockers
+}
+
+router.get("/policy-gate", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+  // a hub asking (its bridge) gets this server's own clients: it adds them to its own
+  const blockers = await policyGateBlockers(req.auth!.tenantId, { localOnly: req.auth!.userId === "cloud-bridge" })
+  json(res, { allowed: blockers.length === 0, blockers, windowDays: POLICY_GATE_WINDOW_DAYS })
+})
+
+/** The owner retires a client that no longer trades (audited). Pushing again re-activates it. */
+router.post("/clients/:id/retire", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+  const tenantId = req.auth!.tenantId
+  if (!(await can(req, "inventory.manage"))) { json(res, { error: "Retiring a till needs the Manage inventory permission." }, 403); return }
+  const note = typeof (req.body as any)?.note === "string" ? (req.body as any).note.trim() : ""
+  if (note.length < 3) { json(res, { error: "A note is required (why this till or hub no longer trades)." }, 400); return }
+  const id = String((req.params as any).id)
+  if ((req.query as any)?.source === "cloud" && ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")) {
+    const { retireCloudClient } = await import("../services/cloudSync.js")
+    const r = await retireCloudClient(id, { note: `${note} (from a hub, by ${req.auth!.userId})` })
+    json(res, r.body ?? {}, r.status)
+    return
+  }
+  const row = await prisma.syncClient.findFirst({ where: { id, tenantId } })
+  if (!row) { json(res, { error: "Unknown till or hub." }, 404); return }
+  await prisma.syncClient.update({ where: { id }, data: { retiredAt: new Date(), retiredBy: req.auth!.userId, retiredNote: note } })
+  await prisma.auditEvent.create({ data: {
+    tenantId, action: "sync.client_retired", entity: "device",
+    summary: `"${row.label}" (sync ${row.syncSchema}, last seen ${row.lastSeenAt.toISOString()}) was retired from the upgrade check. Note: ${note}`,
+    metadata: { clientId: id, clientKey: row.clientKey, syncSchema: row.syncSchema, lastSeenAt: row.lastSeenAt.toISOString(), note },
+    userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
+  } })
+  json(res, { ok: true })
 })
 
 // ─── POST /api/sync/validate-stock ───────────────────────────────────────────
@@ -943,7 +1004,16 @@ function canonicalJson(value: unknown): string {
 /** The stored operation and the incoming one are the same change (entity, action, payload). */
 function sameOperation(stored: { entity: string; action: string; payload: unknown }, incoming: { entity: string; action: string; payload?: unknown }) {
   return stored.entity === incoming.entity && stored.action === incoming.action
-    && canonicalJson(stored.payload ?? {}) === canonicalJson(JSON.parse(JSON.stringify(incoming.payload ?? {})))
+    && canonicalJson(withoutPolicyDecision(stored.payload ?? {})) === canonicalJson(withoutPolicyDecision(JSON.parse(JSON.stringify(incoming.payload ?? {}))))
+}
+/**
+ * SPRINT-1: a held sale is re-sent under the same operation id with a manager's decision on its
+ * lines (stockPolicyResolution, and the decided stockPolicy). That is the same operation: the
+ * server decides the line policy anyway (from its record or an authorized decision).
+ */
+function withoutPolicyDecision(payload: any): any {
+  if (!payload || !Array.isArray(payload.items)) return payload
+  return { ...payload, items: payload.items.map((i: any) => { if (!i || typeof i !== "object") return i; const { stockPolicy: _p, stockPolicyResolution: _r, ...rest } = i; return rest }) }
 }
 
 export class TenantScopeError extends Error {
@@ -1101,6 +1171,10 @@ async function processOperation(
               : id !== undefined ? await db.product.findFirst({ where: { tenantId, id: id as number }, select: policySelect }) : null
             if (cur) {
               const { data: policyData, branch } = applyPolicyChange(cur, policyIn)
+              if (Object.keys(policyData).length > 0 && source.userId !== "cloud-bridge") {
+                const blockers = await policyGateBlockers(tenantId)
+                if (blockers.length > 0) throw new StockPolicyGateError(blockers)
+              }
               Object.assign(patch, policyData)
               if (branch) {
                 await db.auditEvent.create({ data: {
@@ -1292,7 +1366,7 @@ async function processOperation(
           // SPRINT-1: the line's stock policy is the SERVER's product policy at sale time (a client
           // cannot declare a packaged item untracked to skip stock control).
           const product = productId ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { name: true, stockPolicy: true, stockPolicyRev: true, stockPolicyHistory: true, cost: true } }) : null
-          const resolved = resolveLinePolicy(product, item)
+          const resolved = resolveLinePolicy(product, item, await authorizedResolution(db, tenantId, item))
           return {
             productId,
             productName: item.name,
@@ -1427,6 +1501,16 @@ async function processOperation(
           return { ...it, lineId, lineIndex: i, batchAllocations: appliedByLine[i] }
         })
         for (const c of policyConflicts) {
+          const res = c.stockPolicyConflict === "resolved" ? rawItems[prismaItems.indexOf(c)]?.stockPolicyResolution : null
+          if (res) {
+            await db.auditEvent.create({ data: {
+              tenantId, action: "sale.stock_policy_resolved", entity: "sale",
+              summary: `${saleData.saleNumber ?? saleData.id}: "${c.productName}" was held (the stock setting it was sold under was not known here). ${res.resolvedByName ?? "A manager"} recorded it as ${c.stockPolicy === "untracked" ? "made to order (no stock)" : "tracked (stock taken)"}. The customer had already paid ${Number(saleData.total ?? 0).toFixed(2)}. Note: ${String(res.note ?? "")}`,
+              metadata: { saleId: saleData.id, productId: c.productId, rev: c.stockPolicyRev, appliedPolicy: c.stockPolicy, resolvedBy: res.resolvedBy, note: res.note, resolvedAt: res.at, total: saleData.total },
+              userId: String(res.resolvedBy), userName: String(res.resolvedByName ?? ""), userRole: "Manager",
+            } })
+            continue
+          }
           await db.auditEvent.create({ data: {
             tenantId, action: "sale.stock_policy_conflict", entity: "sale",
             summary: `${saleData.saleNumber ?? saleData.id}: "${c.productName}" was sold as ${c.stockPolicy}, but its stock setting changed before the sale synced. Applied the setting it was sold under; please check its stock.`,
@@ -2232,6 +2316,18 @@ export async function applyStaffWrite(db: typeof prisma, tenantId: string, actio
  * none; '' would collide on the unique (tenantId, barcode) index). Identity is syncId.
  * stockPolicy accepts only "tracked" | "untracked" (anything else is dropped).
  */
+/**
+ * SPRINT-1: a held line's resolution counts only when the manager named in it may manage
+ * inventory in this store (the till checks too; the server does not take its word for it).
+ */
+async function authorizedResolution(db: typeof prisma, tenantId: string, item: any): Promise<{ policy: "tracked" | "untracked" } | null> {
+  const r = item?.stockPolicyResolution
+  if (!r || (r.policy !== "tracked" && r.policy !== "untracked") || typeof r.resolvedBy !== "string" || typeof r.note !== "string" || r.note.trim().length < 3) return null
+  const staff = await db.staffUser.findFirst({ where: { id: r.resolvedBy, tenantId, active: true }, select: { role: true, permissions: true } })
+  if (!staff || !effectivePermissions(staff.permissions as any, staff.role).includes("inventory.manage" as any)) return null
+  return { policy: r.policy }
+}
+
 function normalizeProductFields(p: Record<string, unknown>) {
   if ("barcode" in p && (p.barcode == null || (typeof p.barcode === "string" && p.barcode.trim() === ""))) p.barcode = null
   if ("stockPolicy" in p && p.stockPolicy !== "tracked" && p.stockPolicy !== "untracked") delete p.stockPolicy

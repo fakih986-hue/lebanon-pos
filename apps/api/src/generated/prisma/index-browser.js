@@ -662,6 +662,18 @@ exports.Prisma.StockMovementScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.SyncClientScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  clientKey: 'clientKey',
+  label: 'label',
+  syncSchema: 'syncSchema',
+  lastSeenAt: 'lastSeenAt',
+  retiredAt: 'retiredAt',
+  retiredBy: 'retiredBy',
+  retiredNote: 'retiredNote'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -787,7 +799,8 @@ exports.Prisma.ModelName = {
   Device: 'Device',
   PairingCode: 'PairingCode',
   RateLimitEntry: 'RateLimitEntry',
-  StockMovement: 'StockMovement'
+  StockMovement: 'StockMovement',
+  SyncClient: 'SyncClient'
 };
 
 /**

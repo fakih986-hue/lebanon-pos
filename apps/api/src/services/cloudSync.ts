@@ -298,6 +298,25 @@ async function syncLoop(): Promise<void> {
 
 // ─── Push: local pending ops → Railway ───────────────────────────────────────
 
+/**
+ * SPRINT-1 upgrade gate, seen from a hub: the cloud's own blockers (older direct tills or hubs).
+ * [] when this hub has no cloud; null when the cloud cannot be asked (the change is then refused).
+ */
+export async function cloudPolicyGateBlockers(): Promise<Array<Record<string, unknown>> | null> {
+  if (!(CLOUD_API_URL && CLOUD_TENANT && CLOUD_API_KEY)) return []
+  try {
+    const r = await fetchCloud("/api/sync/policy-gate")
+    if (!r.ok) return null
+    const body = (await r.json()) as { blockers?: Array<Record<string, unknown>> }
+    return (body.blockers ?? []).map((b) => ({ ...b, source: "cloud" }))
+  } catch { return null }
+}
+/** Retires a client on the cloud (the owner's explicit, audited decision made from a hub's till). */
+export async function retireCloudClient(id: string, body: Record<string, unknown>): Promise<{ status: number; body: unknown }> {
+  const r = await fetchCloud(`/api/sync/clients/${encodeURIComponent(id)}/retire`, { method: "POST", body: JSON.stringify(body) })
+  return { status: r.status, body: await r.json().catch(() => null) }
+}
+
 /** One push of this hub's applied operations to the cloud (tests drive the bridge with it). */
 export function pushToCloudOnce(): Promise<void> { return pushToCloud() }
 
