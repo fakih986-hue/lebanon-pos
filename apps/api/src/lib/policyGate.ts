@@ -25,15 +25,25 @@ export class StockPolicyGateError extends Error {
 
 type Db = Pick<PrismaClient, "syncClient">
 
-export async function recordSyncClient(db: Db, tenantId: string, clientKey: string, label: string, syncSchema: number) {
+/**
+ * Records a push. Returns whether this client is RETIRED: a retired client on an older version
+ * stays retired when it comes back (its checkouts are refused, see the push handler); only an
+ * upgrade (schema 3+) or the owner's explicit re-admission ends a retirement.
+ */
+export async function recordSyncClient(db: Db, tenantId: string, clientKey: string, label: string, syncSchema: number): Promise<{ retired: boolean }> {
   const now = new Date()
-  await db.syncClient.upsert({
+  const row = await db.syncClient.upsert({
     where: { tenantId_clientKey: { tenantId, clientKey } },
     create: { tenantId, clientKey, label, syncSchema, lastSeenAt: now },
-    // pushing again (still trading) undoes a retirement
-    update: { label, syncSchema, lastSeenAt: now, retiredAt: null, retiredBy: null, retiredNote: null },
+    update: syncSchema >= GATE_SCHEMA
+      ? { label, syncSchema, lastSeenAt: now, retiredAt: null, retiredBy: null, retiredNote: null }
+      : { label, syncSchema, lastSeenAt: now },
   })
+  return { retired: !!row.retiredAt && syncSchema < GATE_SCHEMA }
 }
+
+/** The message a retired, not-upgraded till gets instead of a checkout (before payment). */
+export const RETIRED_CLIENT_MESSAGE = "DEVICE_RETIRED: this till was retired by the store owner and runs an older version that cannot record this store's stock settings. The sale was not recorded and no payment should be taken. Update this till to the current version, or ask the owner to re-admit it, then try again."
 
 export async function localGateBlockers(db: Db, tenantId: string): Promise<GateBlocker[]> {
   const since = new Date(Date.now() - POLICY_GATE_WINDOW_DAYS * 86_400_000)

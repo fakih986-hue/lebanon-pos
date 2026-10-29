@@ -340,11 +340,10 @@ describe("store-wide upgrade gate: no stock-policy change while an older till or
     expect((await product(prisma, MOCHA))!.stockPolicy).toBe("untracked")
   })
 
-  it("a retired till that trades again is active again: the gate closes again", async () => {
+  it("a retired till that comes back on its old version stays retired (it is not silently re-admitted)", async () => {
     await pushTo(hubUrl, [{ id: randomUUID(), entity: "customer", action: "create", payload: { id: randomUUID(), name: "Walk-in 2", mobile: `g-${randomUUID().slice(0, 8)}` } }], { Authorization: `Bearer ${token}` }, "OLD-TILL-1")
-    expect((await update("tracked")).status).toBe("rejected")
-    const old = (await gateOn(hubUrl, { Authorization: `Bearer ${token}` })).blockers.find((b) => b.label === "OLD-TILL-1")!
-    expect((await retireOn(hubUrl, old.id, { Authorization: `Bearer ${token}` }, "Really gone now")).status).toBe(200)
+    expect((await gateOn(hubUrl, { Authorization: `Bearer ${token}` })).allowed).toBe(true)
+    expect((await prisma.syncClient.findFirst({ where: { tenantId: TENANT, clientKey: "device:OLD-TILL-1" } }))!.retiredAt).not.toBeNull()
   })
 
   it("a hub also respects the cloud's gate (an older hub on the store); retiring it from the hub is recorded on the cloud", async () => {
@@ -410,5 +409,87 @@ describe("held sales: an authorized manager's explicit, audited decision; the pa
     expect(await stock(cloudPrisma, TEA)).toBe(5)
     expect(await cloudPrisma.auditEvent.count({ where: { tenantId: TENANT, action: "sale.stock_policy_resolved" } })).toBe(1)
     expect(await cloudPrisma.sale.count({ where: { id: held.id } })).toBe(1)
+  })
+})
+
+describe("a returning old till (retired, or aged out of the window) after a stock-setting change", () => {
+  const SODA = randomUUID()
+  let soda: { id: number; syncId: string; name: string }
+  const oldPush = (deviceId: string, op: { id: string; entity: string; action: string; payload: unknown }) => pushTo(hubUrl, [op], { Authorization: `Bearer ${token}` }, deviceId).then((r) => r[0])
+  const oldSale = (opId: string, qty = 1) => { const s0 = sale(soda, null, null, qty); return { s0, op: { id: opId, entity: "sale", action: "create", payload: s0.payload } } }
+  const clientRow = (key: string) => prisma.syncClient.findFirst({ where: { tenantId: TENANT, clientKey: key } })
+  const admin = () => ({ Authorization: `Bearer ${token}` })
+
+  it("setup: an old till trades, the owner retires it, then changes Soda to made to order", async () => {
+    expect((await till("product", "create", { syncId: SODA, name: "Soda", price: 1, cost: 0.3, stock: 0, category: "Drinks", barcode: null })).status).toBe("ok")
+    const p = (await product(prisma, SODA))!
+    soda = { id: p.id, syncId: SODA, name: "Soda" }
+    expect((await till("inventory", "receive", [{ id: randomUUID(), batchNumber: "LOT-SODA", productId: p.id, productSyncId: SODA, productName: "Soda", barcode: "", initialQuantity: 10, quantityRemaining: 10, unitCost: 0.3, unitPrice: 1, receivedAt: new Date().toISOString(), status: "Open" }])).status).toBe("ok")
+    await oldPush("OLD-R", { id: randomUUID(), entity: "customer", action: "create", payload: { id: randomUUID(), name: `R ${randomUUID().slice(0, 6)}`, mobile: `r-${randomUUID().slice(0, 8)}` } })
+    const b = (await gateOn(hubUrl, admin())).blockers.find((x) => x.label === "OLD-R")!
+    expect((await retireOn(hubUrl, b.id, admin(), "Till R stored away")).status).toBe(200)
+    expect((await till("product", "update", { syncId: SODA, stockPolicy: "untracked", stockPolicyRev: `s-${randomUUID()}`, stockPolicyParentRev: "initial" })).status).toBe("ok")
+  })
+
+  it("an old till's catalogue shows the made-to-order product out of stock (it cannot sell it from stock it does not have)", async () => {
+    const res = await fetch(`${hubUrl}/api/sync/pull?since=1970-01-01T00:00:00Z`, { headers: { ...admin(), ...addr(), "x-titan-sync-schema": "2" } })
+    const row = ((await res.json()) as any).products.find((x: any) => x.syncId === SODA)
+    expect([row.stock, "stockPolicy" in row]).toEqual([0, false])
+  })
+
+  it("the retired till comes back and tries to check out: refused BEFORE completion (no payment), visibly; nothing recorded", async () => {
+    const { s0, op } = oldSale(`wt-${randomUUID()}`)
+    const r = await oldPush("OLD-R", op)
+    expect(r.status).toBe("rejected")
+    expect(r.error).toMatch(/^DEVICE_RETIRED:.*Update this till.*re-admit/)
+    expect(await prisma.sale.count({ where: { id: s0.id } })).toBe(0)
+    expect(await stock(prisma, SODA)).toBe(10)
+    expect(await prisma.auditEvent.count({ where: { tenantId: TENANT, action: "sync.retired_client_refused" } })).toBe(1)
+    expect((await clientRow("device:OLD-R"))!.retiredAt).not.toBeNull()
+  })
+
+  it("a sale it already completed while away (queued, paid) is recorded as what it was — sold from stock — never held", async () => {
+    const { s0, op } = oldSale(randomUUID())
+    const r = await oldPush("OLD-R", op)
+    expect([r.status, r.error]).toEqual(["ok", undefined])
+    const l = (await line(prisma, s0.id))!
+    expect([l.stockPolicy, l.stockPolicyRev, l.stockPolicyConflict]).toEqual(["tracked", "legacy", "changed"])
+    expect(await stock(prisma, SODA)).toBe(9)
+    await bridge.pushToCloudOnce()
+    const c = (await line(cloudPrisma, s0.id))!
+    expect([c.stockPolicy, c.stockPolicyRev, c.stockPolicyConflict]).toEqual(["tracked", "legacy", "changed"])
+  })
+
+  it("explicit way back 1 — the owner re-admits it (audited): it may check out again (recorded as sold from stock) and the gate closes again", async () => {
+    const id = (await clientRow("device:OLD-R"))!.id
+    expect((await fetch(`${hubUrl}/api/sync/clients/${id}/readmit`, { method: "POST", headers: { "Content-Type": "application/json", ...addr(), Authorization: `Bearer ${cashierToken}` }, body: JSON.stringify({ note: "back" }) })).status).toBe(403)
+    expect((await fetch(`${hubUrl}/api/sync/clients/${id}/readmit`, { method: "POST", headers: { "Content-Type": "application/json", ...addr(), ...admin() }, body: JSON.stringify({ note: "Till R back in service until upgraded" }) })).status).toBe(200)
+    expect(await prisma.auditEvent.count({ where: { tenantId: TENANT, action: "sync.client_readmitted" } })).toBe(1)
+    expect((await gateOn(hubUrl, admin())).allowed).toBe(false)
+    const { s0, op } = oldSale(`wt-${randomUUID()}`)
+    expect((await oldPush("OLD-R", op)).status).toBe("ok")
+    expect((await line(prisma, s0.id))!.stockPolicyRev).toBe("legacy")
+  })
+
+  it("explicit way back 2 — after an upgrade (sync schema 3) the retirement ends by itself", async () => {
+    const id = (await clientRow("device:OLD-R"))!.id
+    expect((await retireOn(hubUrl, id, admin(), "Retired again before the upgrade")).status).toBe(200)
+    const r = await pushTo(hubUrl, [{ id: randomUUID(), entity: "customer", action: "create", payload: { id: randomUUID(), name: `U ${randomUUID().slice(0, 6)}`, mobile: `u-${randomUUID().slice(0, 8)}` } }], { ...admin(), ...S3 }, "OLD-R")
+    expect(r[0].status).toBe("ok")
+    expect((await clientRow("device:OLD-R"))!).toMatchObject({ retiredAt: null, syncSchema: 3 })
+  })
+
+  it("aged out (not seen for 14+ days): the gate opens; when it returns, its sales are recorded as sold from stock (never held) and the gate closes again", async () => {
+    await oldPush("OLD-A", { id: randomUUID(), entity: "customer", action: "create", payload: { id: randomUUID(), name: `A ${randomUUID().slice(0, 6)}`, mobile: `a-${randomUUID().slice(0, 8)}` } })
+    await prisma.syncClient.updateMany({ where: { tenantId: TENANT, clientKey: "device:OLD-A" }, data: { lastSeenAt: new Date(Date.now() - 20 * 86_400_000) } })
+    expect((await gateOn(hubUrl, admin())).blockers.some((b) => b.label === "OLD-A")).toBe(false)
+    expect((await till("product", "update", { syncId: SODA, stockPolicy: "tracked", stockPolicyRev: `s2-${randomUUID()}`, stockPolicyParentRev: undefined })).status).toBe("ok")
+    const before = await stock(prisma, SODA)
+    const { s0, op } = oldSale(`wt-${randomUUID()}`)
+    const r = await oldPush("OLD-A", op)
+    expect([r.status, r.error]).toEqual(["ok", undefined])
+    expect([(await line(prisma, s0.id))!.stockPolicy, (await line(prisma, s0.id))!.stockPolicyRev]).toEqual(["tracked", "legacy"])
+    expect(await stock(prisma, SODA)).toBe(before - 1)
+    expect((await gateOn(hubUrl, admin())).blockers.some((b) => b.label === "OLD-A")).toBe(true)
   })
 })

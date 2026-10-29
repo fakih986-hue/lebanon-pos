@@ -10,7 +10,8 @@ const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
 import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "../lib/stockPolicy.js"
-import { localGateBlockers, recordSyncClient, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
+import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
+import { LEGACY_REV } from "../lib/stockPolicy.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
 import { json, requireAuth, type AuthRequest, serializeDecimals } from "../middleware/auth.js"
@@ -73,7 +74,10 @@ export async function attachProductSyncIds(tenantId: string, data: { sales?: any
 
 export function shapeProductsForSchema(rows: any[], schema: number): any[] {
   if (schema >= 3) return rows
-  return rows.map(({ stockPolicy: _p, stockPolicyVersion: _v, stockPolicyChangedAt: _c, stockPolicyHistory: _h, stockPolicyRev: _r, ...product }: any) => product)
+  // SPRINT-1: an older client knows only stock-counted products. A made-to-order product reaches it
+  // with stock 0, so it cannot sell one (it would sell it from stock it does not have).
+  return rows.map(({ stockPolicy: p, stockPolicyVersion: _v, stockPolicyChangedAt: _c, stockPolicyHistory: _h, stockPolicyRev: _r, ...product }: any) =>
+    p === "untracked" ? { ...product, stock: 0 } : product)
 }
 const withoutLinePolicy = (sale: any) => Array.isArray(sale?.items) ? { ...sale, items: sale.items.map(({ stockPolicy: _p, stockPolicyConflict: _c, stockPolicyRev: _r, ...item }: any) => item) } : sale
 export function shapeSalesForSchema(rows: any[], schema: number): any[] {
@@ -232,8 +236,10 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
 
   // SPRINT-1 upgrade gate: remember which clients trade, and with which sync schema. Recorded once
   // the device is approved (an unapproved device cannot close the gate); never blocks the push.
+  const pushSchema = clientSyncSchema(req as any)
+  let retiredClient = false
   try {
-    const schema = clientSyncSchema(req as any)
+    const schema = pushSchema
     const isBridge = req.auth!.userId === "cloud-bridge"
     const key = isBridge ? `hub-bridge@${schema}` : parsed.data.deviceId ? `device:${parsed.data.deviceId}` : `user:${req.auth!.userId}`
     let label = isBridge ? `Store hub (sync ${schema})` : parsed.data.deviceId ?? `Account ${req.auth!.userId}`
@@ -241,7 +247,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
       const d = await prisma.device.findUnique({ where: { tenantId_deviceId: { tenantId, deviceId: parsed.data.deviceId } }, select: { deviceName: true } }).catch(() => null)
       if (d?.deviceName) label = d.deviceName
     }
-    await recordSyncClient(prisma, tenantId, key, label, schema)
+    retiredClient = (await recordSyncClient(prisma, tenantId, key, label, schema)).retired
   } catch (e) { console.error("[sync] could not record the sync client:", e) }
 
   // ── Permission enforcement (POS-PERMISSIONS-1 phase 3) ──────────────
@@ -352,6 +358,21 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         continue
       }
 
+      // SPRINT-1: a retired till on an older version may not CHECK OUT: its live (write-through,
+      // "wt-") sale is refused before it completes, so no payment is taken for a sale this store
+      // cannot record. Sales it already completed offline (queued) are recorded below as what
+      // they were (sold from stock), so no paid sale is ever stranded.
+      if (retiredClient && op.entity === "sale" && op.action === "create" && String(op.id).startsWith("wt-")) {
+        await prisma.auditEvent.create({ data: {
+          tenantId, action: "sync.retired_client_refused", entity: "device",
+          summary: `A retired till (${deviceId ?? "unknown device"}) on an older version tried to check out; the sale was refused before payment.`,
+          metadata: { deviceId: deviceId ?? null, operationId: op.id, syncSchema: pushSchema },
+          userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
+        } }).catch(() => undefined)
+        results.push({ id: op.id, status: "rejected", error: RETIRED_CLIENT_MESSAGE })
+        continue
+      }
+
       // POS-PERMISSIONS-1: server-enforce the money/admin-sensitive subset so a
       // tampered client can't bypass in-app limits. Only fires for a real staff
       // actor (actorPermissions != null) and only for mapped ops; everything
@@ -394,7 +415,7 @@ router.post("/push", requireCloudOrJwtAuth, async (req: AuthRequest, res: Server
         await syncTestHooks.afterClaim?.(op.id)
         if (claim.appliedAt) return "duplicate" as const
 
-        await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, { deviceId: deviceId ?? null, userId: req.auth!.userId })
+        await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema })
 
         // Applied (same transaction) and queued for onward delivery: the cloud sync bridge
         // forwards status Pending and marks it Synced once the cloud acknowledges it.
@@ -522,6 +543,25 @@ router.post("/clients/:id/retire", requireCloudOrJwtAuth, async (req: AuthReques
     tenantId, action: "sync.client_retired", entity: "device",
     summary: `"${row.label}" (sync ${row.syncSchema}, last seen ${row.lastSeenAt.toISOString()}) was retired from the upgrade check. Note: ${note}`,
     metadata: { clientId: id, clientKey: row.clientKey, syncSchema: row.syncSchema, lastSeenAt: row.lastSeenAt.toISOString(), note },
+    userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
+  } })
+  json(res, { ok: true })
+})
+
+/** The owner re-admits a retired till that is still on an older version (audited): it may check out again, and closes the gate again. */
+router.post("/clients/:id/readmit", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerResponse) => {
+  const tenantId = req.auth!.tenantId
+  if (!(await can(req, "inventory.manage"))) { json(res, { error: "Re-admitting a till needs the Manage inventory permission." }, 403); return }
+  const note = typeof (req.body as any)?.note === "string" ? (req.body as any).note.trim() : ""
+  if (note.length < 3) { json(res, { error: "A note is required." }, 400); return }
+  const id = String((req.params as any).id)
+  const row = await prisma.syncClient.findFirst({ where: { id, tenantId } })
+  if (!row) { json(res, { error: "Unknown till or hub." }, 404); return }
+  await prisma.syncClient.update({ where: { id }, data: { retiredAt: null, retiredBy: null, retiredNote: null } })
+  await prisma.auditEvent.create({ data: {
+    tenantId, action: "sync.client_readmitted", entity: "device",
+    summary: `"${row.label}" (sync ${row.syncSchema}) was re-admitted: it may check out again and counts in the upgrade check. Note: ${note}`,
+    metadata: { clientId: id, clientKey: row.clientKey, syncSchema: row.syncSchema, note },
     userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
   } })
   json(res, { ok: true })
@@ -1013,7 +1053,8 @@ function sameOperation(stored: { entity: string; action: string; payload: unknow
  */
 function withoutPolicyDecision(payload: any): any {
   if (!payload || !Array.isArray(payload.items)) return payload
-  return { ...payload, items: payload.items.map((i: any) => { if (!i || typeof i !== "object") return i; const { stockPolicy: _p, stockPolicyResolution: _r, ...rest } = i; return rest }) }
+  // (also the "legacy" stamp this server adds to an older till's lines: its retry carries none)
+  return { ...payload, items: payload.items.map((i: any) => { if (!i || typeof i !== "object") return i; const { stockPolicy: _p, stockPolicyResolution: _r, ...rest } = i; if (rest.stockPolicyRev === LEGACY_REV) delete rest.stockPolicyRev; return rest }) }
 }
 
 export class TenantScopeError extends Error {
@@ -1027,7 +1068,7 @@ async function processOperation(
   payload?: Record<string, unknown>,
   db: typeof prisma = prisma,
   // POS-SYNC-AUTHORITY-2A — source attribution for the stock ledger (record-only).
-  source: { deviceId?: string | null; userId?: string | null } = {}
+  source: { deviceId?: string | null; userId?: string | null; syncSchema?: number } = {}
 ) {
   // Helper: resolve a product ID from cross-device sync. The phone may use a
   // different local ID than the hub. Falls back to barcode lookup.
@@ -1361,6 +1402,9 @@ async function processOperation(
         }
       } else if (action === "create") {
         const data = payload as any
+        if (source.syncSchema !== undefined && source.syncSchema < 3 && source.userId !== "cloud-bridge") {
+          for (const item of data.items ?? []) if (item && !item.stockPolicyRev) { item.stockPolicyRev = LEGACY_REV; item.stockPolicy = "tracked" }
+        }
         const prismaItems = await Promise.all((data.items ?? []).map(async (item: any) => {
           const productId = await resolveProductId(item)
           // SPRINT-1: the line's stock policy is the SERVER's product policy at sale time (a client

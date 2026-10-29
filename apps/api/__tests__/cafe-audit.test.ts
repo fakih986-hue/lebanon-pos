@@ -33,7 +33,7 @@ async function login(pin: string, sub: string) {
   return ((await r.json()) as { token: string }).token
 }
 async function call(token: string, method: string, path: string, body?: unknown) {
-  const r = await fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${token}`, ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined })
+  const r = await fetch(`${base}${path}`, { method, headers: { Authorization: `Bearer ${token}`, "x-titan-sync-schema": "3", ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined })
   let json: any = null
   try { json = await r.json() } catch { /* not json */ }
   if (path !== "/api/sync/push") note(`${method} ${path.replace(/[0-9a-f-]{36}/g, "<id>")}`, r.status, Array.isArray(json) ? `${json.length} rows` : undefined)

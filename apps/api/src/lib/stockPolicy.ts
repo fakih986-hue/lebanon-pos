@@ -20,6 +20,13 @@ import { randomUUID } from "node:crypto"
 export type Policy = "tracked" | "untracked"
 export type PolicyRev = { rev: string; policy: Policy; parentRev: string | null; at: string | null }
 export const INITIAL_REV = "initial"
+/**
+ * Lines from clients older than sync schema 3: those tills have no stock settings and always sell
+ * from stock (stock checked and decremented). That is the policy they sold under, known from the
+ * client's version, not claimed by it. The receiving server stamps such lines with this revision so
+ * every server it is forwarded to records the same.
+ */
+export const LEGACY_REV = "legacy"
 export const asPolicy = (p: unknown): Policy => (p === "untracked" ? "untracked" : "tracked")
 const validPolicy = (p: unknown): p is Policy => p === "tracked" || p === "untracked"
 
@@ -112,6 +119,10 @@ export function resolveLinePolicy(product: (PolicyState & { name: string }) | nu
   const revs = policyRevs(product)
   const claimed = validPolicy(item.stockPolicy) ? item.stockPolicy : null
   const rev = typeof item.stockPolicyRev === "string" && item.stockPolicyRev ? item.stockPolicyRev : null
+  if (rev === LEGACY_REV) {
+    if (claimed && claimed !== "tracked") throw new StockPolicyMismatchError(product.name)
+    return { policy: "tracked", rev, conflict: today !== "tracked" ? "changed" : null }
+  }
   if (rev) {
     const e = revs.find((x) => x.rev === rev)
     if (!e) throw new StockPolicyHeldError(product.name, rev)
