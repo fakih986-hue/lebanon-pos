@@ -37,3 +37,15 @@
 
 ## Rollout
 Cloud first (migration + server), then hubs, then tills. Old tills against the new cloud keep working (their products are tracked; their `''` barcodes are stored as NULL; their drink sales are judged by the server's policy). A 1.0.50 hub against the new cloud receives no `stockPolicy` (schema 2), so it treats every product as tracked until upgraded: café stores must upgrade their hub before selling untracked drinks through it.
+
+## Install acceptance (2026-10-29) — candidate 1.0.51, commit `30c92bf`
+
+Installer `Titan-POS-Setup-1.0.51.exe`, SHA-256 `225D9349505B7D5043A76302DA1C4A0B87A24CF54CBC08CEEB473FA845403A57`, installed on disposable user data against a guarded local cloud (scratch DB only).
+
+- Scenario main phase 25/25: security permissions, NULL-barcode drinks, mixed checkout, refund, void, offline → reconnect. After hub restart 3/3.
+- Till app paired to the hub in a browser: the cashier signs in online, a full pull (including `cash-movements`) keeps her verifier, the hub is stopped, and she unlocks offline. A wrong PIN is refused. Once the hub restarts, the till syncs cleanly.
+- Old hub 1.0.50: `/api/health` has no `syncSchema`. Drinks arrive with no stock policy and stock 0, and a pushed Espresso sale is rejected ("Insufficient stock"). New tills check `syncSchema` and refuse made-to-order lines before payment (`pos.err.server_too_old`).
+
+Found during acceptance (not blocking):
+- After the hub stops, the till header keeps showing "Hub connected" until its next health check. Offline unlock still works.
+- Hard-killing a hub can orphan its embedded Postgres, which blocks the next start ("pre-existing shared memory block"). This was already the case before 1.0.51.
