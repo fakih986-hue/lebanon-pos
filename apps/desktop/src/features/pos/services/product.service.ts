@@ -4,7 +4,7 @@ import { receiveInventoryBatches, openingInventoryBatches, type ReceiveBatchInpu
 import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
 import { PermissionError, recordAuditEvent, userCan } from "./security.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
-import { canUseStorage, createId } from "../lib/storage"
+import { canUseStorage, createId, randomUuid } from "../lib/storage"
 
 const STORAGE_KEY = "lebanonpos.products.v1"
 const PRODUCT_EVENT = "lebanonpos-products-changed"
@@ -514,7 +514,7 @@ export function updateProduct(productId: number, patch: Partial<Product>) {
     const prior = getProductsSync().find((p) => p.id === productId)
     if (prior && cleanPatch.stockPolicy && cleanPatch.stockPolicy !== (prior.stockPolicy ?? "tracked")) {
       cleanPatch.stockPolicyParentRev = prior.stockPolicyRev ?? "initial"
-      cleanPatch.stockPolicyRev = crypto.randomUUID()
+      cleanPatch.stockPolicyRev = randomUuid()
       cleanPatch.stockPolicyVersion = (prior.stockPolicyVersion ?? 1) + 1
     }
   }
