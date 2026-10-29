@@ -46,6 +46,29 @@ function clientSyncSchema(req: { headers?: Record<string, unknown> }): number {
  * SPRINT-1 (schema 3): Product.stockPolicy and SaleItem.stockPolicy reach only clients that send
  * x-titan-sync-schema >= 3. Older hubs insert pulled rows verbatim and have no such column.
  */
+/**
+ * SPRINT-1 (schema 3): a pulling hub keeps its OWN product ids (it never adopts this server's), so
+ * every pulled record that names a product also carries the product's syncId: the hub translates
+ * it to its own id. (Hubs used to store this server's numeric productId verbatim, so a refund on the
+ * hub restocked a product id that does not exist there.)
+ */
+export async function attachProductSyncIds(tenantId: string, data: { sales?: any[]; refunds?: any[]; batches?: any[]; adjustments?: any[] }) {
+  const ids = new Set<number>()
+  const note = (v: unknown) => { const n = Number(v); if (Number.isInteger(n) && n > 0) ids.add(n) }
+  for (const s of data.sales ?? []) for (const i of s.items ?? []) note(i.productId)
+  for (const r of data.refunds ?? []) for (const i of r.items ?? []) note(i.productId)
+  for (const b of data.batches ?? []) note(b.productId)
+  for (const a of data.adjustments ?? []) note(a.productId)
+  if (ids.size === 0) return
+  const rows = await prisma.product.findMany({ where: { tenantId, id: { in: [...ids] } }, select: { id: true, syncId: true } })
+  const sync = new Map(rows.map((p) => [p.id, p.syncId]))
+  const tag = (o: any) => { const sid = sync.get(Number(o?.productId)); if (sid) o.productSyncId = sid }
+  for (const s of data.sales ?? []) for (const i of s.items ?? []) tag(i)
+  for (const r of data.refunds ?? []) for (const i of r.items ?? []) tag(i)
+  for (const b of data.batches ?? []) tag(b)
+  for (const a of data.adjustments ?? []) tag(a)
+}
+
 export function shapeProductsForSchema(rows: any[], schema: number): any[] {
   if (schema >= 3) return rows
   return rows.map(({ stockPolicy: _p, stockPolicyVersion: _v, stockPolicyChangedAt: _c, ...product }: any) => product)
@@ -722,6 +745,7 @@ router.get("/pull", requireCloudOrJwtAuth, async (req: AuthRequest, res: ServerR
     }),
   ])
 
+  if (clientSyncSchema(req as any) >= 3) await attachProductSyncIds(tenantId, { sales, refunds, batches, adjustments })
   const showCost = await can(req, "reports.cost")
   const body = {
     serverTime: new Date().toISOString(),

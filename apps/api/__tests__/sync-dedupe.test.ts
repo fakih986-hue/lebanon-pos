@@ -407,3 +407,46 @@ describe("hub -> cloud forwarding (two real servers, two databases)", () => {
     expect(await balance(prisma, customerId)).toBe(await balance(cloudPrisma, customerId))
   })
 })
+
+describe("hub keeps its own product ids for records pulled back from the cloud (real Postgres)", () => {
+  it("a sale made on the hub for a hub-created product keeps the hub's id after the pull; a hub refund restocks it", async () => {
+    const fs = await import("node:fs")
+    const path = await import("node:path")
+    const stateFile = path.resolve(__dirname, "../data/sync-state.json")
+    const saved = fs.existsSync(stateFile) ? fs.readFileSync(stateFile, "utf8") : null
+    const SYNC = randomUUID()
+    const fillers: number[] = []
+    try {
+      // The cloud's id counter is ahead of the hub's: the same product gets different numeric ids.
+      for (let i = 0; i < 4; i++) fillers.push((await cloudPrisma.product.create({ data: { tenantId: TENANT, name: `Cloud filler ${i}`, price: 1, cost: 0, stock: 0, category: "F", syncId: randomUUID() } as any })).id)
+      expect((await push({ id: randomUUID(), entity: "product", action: "create", payload: { syncId: SYNC, name: "Hub cookie", price: 0.75, cost: 0.2, stock: 5, category: "Bakery", barcode: null } })).status).toBe("ok")
+      const hubId = (await prisma.product.findFirst({ where: { tenantId: TENANT, syncId: SYNC } }))!.id
+      await bridge.pushToCloudOnce()
+      const cloudId = (await cloudPrisma.product.findFirst({ where: { tenantId: TENANT, syncId: SYNC } }))!.id
+      expect(cloudId).not.toBe(hubId)
+      const saleId = randomUUID(), lineId = randomUUID()
+      expect((await push({ id: randomUUID(), entity: "sale", action: "create", payload: { id: saleId, saleNumber: "S-HUBID", paymentMethod: "Cash", subtotal: 0.75, tax: 0, total: 0.75, cashier: "IT", status: "Completed", items: [{ id: hubId, productSyncId: SYNC, lineId, name: "Hub cookie", barcode: "", quantity: 1, unitPrice: 0.75, total: 0.75, cost: 0.2 }] } })).status).toBe("ok")
+      await bridge.pushToCloudOnce()
+      expect((await cloudPrisma.saleItem.findFirst({ where: { saleId } }))!.productId).toBe(cloudId)
+      // The hub pulls the sale back from the cloud.
+      fs.mkdirSync(path.dirname(stateFile), { recursive: true })
+      fs.writeFileSync(stateFile, JSON.stringify({ lastPullAt: new Date(Date.now() - 3600_000).toISOString(), staffRefresh: 2 }))
+      await bridge.pullFromCloud()
+      expect((await prisma.saleItem.findFirst({ where: { saleId } }))!.productId).toBe(hubId)
+      expect(Number((await prisma.product.findUnique({ where: { id: hubId } }))!.stock)).toBe(4)
+      const r = await push({ id: randomUUID(), entity: "refund", action: "create", payload: { id: randomUUID(), refundNumber: "R-HUBID", saleId, saleNumber: "S-HUBID", method: "Cash", reason: "IT", total: 0.75, cashier: "IT", items: [{ id: hubId, saleLineId: lineId, name: "Hub cookie", quantity: 1, unitPrice: 0.75, total: 0.75 }] } })
+      expect([r.status, r.error]).toEqual(["ok", undefined])
+      expect(Number((await prisma.product.findUnique({ where: { id: hubId } }))!.stock)).toBe(5)
+    } finally {
+      if (saved === null) fs.rmSync(stateFile, { force: true }); else fs.writeFileSync(stateFile, saved)
+      for (const db of [prisma, cloudPrisma]) {
+        await db.stockMovement.deleteMany({ where: { tenantId: TENANT, product: { syncId: SYNC } } }).catch(() => undefined)
+        await db.saleRefund.deleteMany({ where: { tenantId: TENANT, saleNumber: "S-HUBID" } })
+        await db.sale.deleteMany({ where: { tenantId: TENANT, saleNumber: "S-HUBID" } })
+        await db.inventoryBatch.deleteMany({ where: { tenantId: TENANT, productName: "Hub cookie" } })
+        await db.product.deleteMany({ where: { tenantId: TENANT, syncId: SYNC } })
+      }
+      await cloudPrisma.product.deleteMany({ where: { id: { in: fillers } } })
+    }
+  })
+})

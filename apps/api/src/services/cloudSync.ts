@@ -822,6 +822,20 @@ async function upsertPulledData(
     )
   }
 
+  // SPRINT-1: this hub keeps its own product ids; pulled records name the product by syncId too
+  // (schema 3). Translate to the local id; without a syncId (older cloud) keep the id as before.
+  const localIdBySync = new Map<string, number | null>()
+  const localProductId = async (row: any): Promise<number> => {
+    const sid = typeof row?.productSyncId === "string" ? row.productSyncId : null
+    if (!sid) return Number(row?.productId)
+    if (!localIdBySync.has(sid)) {
+      const p = await prisma.product.findFirst({ where: { tenantId, syncId: sid }, select: { id: true } })
+      localIdBySync.set(sid, p?.id ?? null)
+    }
+    return localIdBySync.get(sid) ?? Number(row?.productId)
+  }
+  const localizeLine = async (row: any) => { const { productSyncId: _s, ...rest } = row ?? {}; return { ...rest, productId: await localProductId(row) } }
+
   // Sales — upsert header, recreate items + tender
   // NOTE: stock is NOT decremented here — stock levels come from the products upsert above
   for (const sale of data.sales ?? []) {
@@ -844,8 +858,9 @@ async function upsertPulledData(
           if (local.lineId && local.batchAllocations != null) localLots.set(local.lineId, local.batchAllocations)
         }
         await prisma.saleItem.deleteMany({ where: { saleId: saleData.id } })
+        const localItems = await Promise.all(items.map(localizeLine))
         await prisma.saleItem.createMany({
-          data: items.map((it: any) => ({
+          data: localItems.map((it: any) => ({
             ...it,
             saleId: saleData.id,
             ...(it.lineId && localLots.has(it.lineId) ? { batchAllocations: localLots.get(it.lineId) } : {}),
@@ -872,8 +887,9 @@ async function upsertPulledData(
       })
       if (Array.isArray(items) && items.length > 0) {
         await prisma.refundItem.deleteMany({ where: { refundId: refundData.id } })
+        const localItems = await Promise.all(items.map(localizeLine))
         await prisma.refundItem.createMany({
-          data: items.map((it: any) => ({ ...it, refundId: refundData.id })),
+          data: localItems.map((it: any) => ({ ...it, refundId: refundData.id })),
         })
       }
     })
@@ -982,9 +998,10 @@ async function upsertPulledData(
 
   for (const b of data.batches ?? []) {
     await run("inventoryBatch", async () => {
-      const raw = b as Record<string, any>
+      const { productSyncId: _ps, ...rawRest } = b as Record<string, any>
+      const raw = rawRest as Record<string, any>
       const id = String(raw.id)
-      const productId = Number(raw.productId)
+      const productId = await localProductId(b)
       // A batch is meaningless without a resolvable product — skip orphans
       // rather than throwing an FK error that fails every batch.
       if (!Number.isFinite(productId) || productId <= 0) { skippedBatchCount++; return }
@@ -1018,14 +1035,15 @@ async function upsertPulledData(
   }
 
   // Stock adjustments
-  for (const a of data.adjustments ?? []) {
-    await run("stockAdjustment", () =>
-      prisma.stockAdjustment.upsert({
+  for (const a0 of data.adjustments ?? []) {
+    await run("stockAdjustment", async () => {
+      const a = await localizeLine(a0)
+      await prisma.stockAdjustment.upsert({
         where:  { id: (a as any).id },
         create: { ...a, tenantId } as any,
         update: a as any,
       })
-    )
+    })
   }
 
   // Stock count sessions — upsert session, recreate lines
