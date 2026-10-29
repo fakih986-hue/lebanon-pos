@@ -12,6 +12,8 @@ import { decrementProductStock } from "../lib/inventory.js"
 import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "../lib/stockPolicy.js"
 import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { LEGACY_REV } from "../lib/stockPolicy.js"
+import { observeEvidence, transportOf } from "../lib/evidence.js"
+import { tokenKind } from "../middleware/auth.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
 import { json, requireAuth, type AuthRequest, serializeDecimals } from "../middleware/auth.js"
@@ -144,6 +146,9 @@ const syncOperationSchema = z.object({
     "pin",
   ]),
   payload: z.unknown().optional(),
+  // SPRINT-2 envelope (v1): evidence sent by the client, outside the immutable command. Recorded
+  // as claimed in observe mode; never part of the operation identity.
+  ev: z.object({ v: z.number().int().optional(), offline: z.boolean().optional() }).passthrough().optional(),
 })
 
 const syncPushSchema = z.object({
@@ -449,6 +454,17 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             error: null,
           },
         })
+        // SPRINT-2 Phase B (observe): what this server knows about the operation, in the same
+        // transaction (never an applied operation without its evidence row, or the reverse).
+        if ((tx as any).operationEvidence) {
+          await (tx as any).operationEvidence.createMany({ skipDuplicates: true, data: [observeEvidence({
+            opId: op.id, tenantId, entity: op.entity, action: op.action, payload: op.payload,
+            kind: tokenKind(req.auth), accountId: typeof req.auth!.userId === "string" ? req.auth!.userId : null,
+            deviceId: deviceId ?? null, transport: transportOf(req as any),
+            acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud",
+            envelope: (op as any).ev ?? null,
+          })] })
+        }
         return "applied" as const
       })
 
@@ -581,6 +597,14 @@ router.post("/clients/:id/readmit", staffSync, async (req: AuthRequest, res: Ser
     userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
   } })
   json(res, { ok: true })
+})
+
+/** SPRINT-2 Phase B: what the server recorded about one operation (observe mode). Staff with reports.view. */
+router.get("/evidence/:opId", staffSync, async (req: AuthRequest, res: ServerResponse) => {
+  if (!(await can(req, "reports.view"))) { json(res, { error: "Needs the Reports permission." }, 403); return }
+  const row = await prisma.operationEvidence.findFirst({ where: { opId: String((req.params as any).opId), tenantId: req.auth!.tenantId } })
+  if (!row) { json(res, { error: "No evidence recorded for this operation." }, 404); return }
+  json(res, row)
 })
 
 // ─── POST /api/sync/validate-stock ───────────────────────────────────────────

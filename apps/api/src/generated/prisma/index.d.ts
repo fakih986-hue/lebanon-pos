@@ -179,6 +179,13 @@ export type StockMovement = $Result.DefaultSelection<Prisma.$StockMovementPayloa
  * sync schema it last pushed with — the store-wide upgrade gate for stock-policy changes.
  */
 export type SyncClient = $Result.DefaultSelection<Prisma.$SyncClientPayload>
+/**
+ * Model OperationEvidence
+ * SPRINT-2 Phase B (observe mode): what the receiving server knows about each applied operation.
+ * "claimed" columns come from the client and are not authenticated; evidence is never "verified"
+ * until staff sessions exist (Phase C).
+ */
+export type OperationEvidence = $Result.DefaultSelection<Prisma.$OperationEvidencePayload>
 
 /**
  * Enums
@@ -766,6 +773,16 @@ export class PrismaClient<
     * ```
     */
   get syncClient(): Prisma.SyncClientDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.operationEvidence`: Exposes CRUD operations for the **OperationEvidence** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more OperationEvidences
+    * const operationEvidences = await prisma.operationEvidence.findMany()
+    * ```
+    */
+  get operationEvidence(): Prisma.OperationEvidenceDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1239,7 +1256,8 @@ export namespace Prisma {
     PairingCode: 'PairingCode',
     RateLimitEntry: 'RateLimitEntry',
     StockMovement: 'StockMovement',
-    SyncClient: 'SyncClient'
+    SyncClient: 'SyncClient',
+    OperationEvidence: 'OperationEvidence'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1258,7 +1276,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient"
+      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient" | "operationEvidence"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3704,6 +3722,80 @@ export namespace Prisma {
           }
         }
       }
+      OperationEvidence: {
+        payload: Prisma.$OperationEvidencePayload<ExtArgs>
+        fields: Prisma.OperationEvidenceFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.OperationEvidenceFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OperationEvidencePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.OperationEvidenceFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OperationEvidencePayload>
+          }
+          findFirst: {
+            args: Prisma.OperationEvidenceFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OperationEvidencePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.OperationEvidenceFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OperationEvidencePayload>
+          }
+          findMany: {
+            args: Prisma.OperationEvidenceFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OperationEvidencePayload>[]
+          }
+          create: {
+            args: Prisma.OperationEvidenceCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OperationEvidencePayload>
+          }
+          createMany: {
+            args: Prisma.OperationEvidenceCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.OperationEvidenceCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OperationEvidencePayload>[]
+          }
+          delete: {
+            args: Prisma.OperationEvidenceDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OperationEvidencePayload>
+          }
+          update: {
+            args: Prisma.OperationEvidenceUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OperationEvidencePayload>
+          }
+          deleteMany: {
+            args: Prisma.OperationEvidenceDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.OperationEvidenceUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.OperationEvidenceUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OperationEvidencePayload>[]
+          }
+          upsert: {
+            args: Prisma.OperationEvidenceUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$OperationEvidencePayload>
+          }
+          aggregate: {
+            args: Prisma.OperationEvidenceAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateOperationEvidence>
+          }
+          groupBy: {
+            args: Prisma.OperationEvidenceGroupByArgs<ExtArgs>
+            result: $Utils.Optional<OperationEvidenceGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.OperationEvidenceCountArgs<ExtArgs>
+            result: $Utils.Optional<OperationEvidenceCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -3833,6 +3925,7 @@ export namespace Prisma {
     rateLimitEntry?: RateLimitEntryOmit
     stockMovement?: StockMovementOmit
     syncClient?: SyncClientOmit
+    operationEvidence?: OperationEvidenceOmit
   }
 
   /* Types for Logging */
@@ -46001,6 +46094,1187 @@ export namespace Prisma {
 
 
   /**
+   * Model OperationEvidence
+   */
+
+  export type AggregateOperationEvidence = {
+    _count: OperationEvidenceCountAggregateOutputType | null
+    _avg: OperationEvidenceAvgAggregateOutputType | null
+    _sum: OperationEvidenceSumAggregateOutputType | null
+    _min: OperationEvidenceMinAggregateOutputType | null
+    _max: OperationEvidenceMaxAggregateOutputType | null
+  }
+
+  export type OperationEvidenceAvgAggregateOutputType = {
+    envelopeVersion: number | null
+  }
+
+  export type OperationEvidenceSumAggregateOutputType = {
+    envelopeVersion: number | null
+  }
+
+  export type OperationEvidenceMinAggregateOutputType = {
+    opId: string | null
+    tenantId: string | null
+    entity: string | null
+    action: string | null
+    receivedAt: Date | null
+    acceptedBy: string | null
+    transport: string | null
+    credentialKind: string | null
+    connectionAccountId: string | null
+    deviceIdClaimed: string | null
+    actorIdClaimed: string | null
+    actorNameClaimed: string | null
+    actorMatchesAccount: boolean | null
+    evidence: string | null
+    claimedAt: string | null
+    envelopeVersion: number | null
+  }
+
+  export type OperationEvidenceMaxAggregateOutputType = {
+    opId: string | null
+    tenantId: string | null
+    entity: string | null
+    action: string | null
+    receivedAt: Date | null
+    acceptedBy: string | null
+    transport: string | null
+    credentialKind: string | null
+    connectionAccountId: string | null
+    deviceIdClaimed: string | null
+    actorIdClaimed: string | null
+    actorNameClaimed: string | null
+    actorMatchesAccount: boolean | null
+    evidence: string | null
+    claimedAt: string | null
+    envelopeVersion: number | null
+  }
+
+  export type OperationEvidenceCountAggregateOutputType = {
+    opId: number
+    tenantId: number
+    entity: number
+    action: number
+    receivedAt: number
+    acceptedBy: number
+    transport: number
+    credentialKind: number
+    connectionAccountId: number
+    deviceIdClaimed: number
+    actorIdClaimed: number
+    actorNameClaimed: number
+    actorMatchesAccount: number
+    evidence: number
+    limitations: number
+    claimedAt: number
+    envelopeVersion: number
+    _all: number
+  }
+
+
+  export type OperationEvidenceAvgAggregateInputType = {
+    envelopeVersion?: true
+  }
+
+  export type OperationEvidenceSumAggregateInputType = {
+    envelopeVersion?: true
+  }
+
+  export type OperationEvidenceMinAggregateInputType = {
+    opId?: true
+    tenantId?: true
+    entity?: true
+    action?: true
+    receivedAt?: true
+    acceptedBy?: true
+    transport?: true
+    credentialKind?: true
+    connectionAccountId?: true
+    deviceIdClaimed?: true
+    actorIdClaimed?: true
+    actorNameClaimed?: true
+    actorMatchesAccount?: true
+    evidence?: true
+    claimedAt?: true
+    envelopeVersion?: true
+  }
+
+  export type OperationEvidenceMaxAggregateInputType = {
+    opId?: true
+    tenantId?: true
+    entity?: true
+    action?: true
+    receivedAt?: true
+    acceptedBy?: true
+    transport?: true
+    credentialKind?: true
+    connectionAccountId?: true
+    deviceIdClaimed?: true
+    actorIdClaimed?: true
+    actorNameClaimed?: true
+    actorMatchesAccount?: true
+    evidence?: true
+    claimedAt?: true
+    envelopeVersion?: true
+  }
+
+  export type OperationEvidenceCountAggregateInputType = {
+    opId?: true
+    tenantId?: true
+    entity?: true
+    action?: true
+    receivedAt?: true
+    acceptedBy?: true
+    transport?: true
+    credentialKind?: true
+    connectionAccountId?: true
+    deviceIdClaimed?: true
+    actorIdClaimed?: true
+    actorNameClaimed?: true
+    actorMatchesAccount?: true
+    evidence?: true
+    limitations?: true
+    claimedAt?: true
+    envelopeVersion?: true
+    _all?: true
+  }
+
+  export type OperationEvidenceAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which OperationEvidence to aggregate.
+     */
+    where?: OperationEvidenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OperationEvidences to fetch.
+     */
+    orderBy?: OperationEvidenceOrderByWithRelationInput | OperationEvidenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: OperationEvidenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OperationEvidences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OperationEvidences.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned OperationEvidences
+    **/
+    _count?: true | OperationEvidenceCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: OperationEvidenceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: OperationEvidenceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: OperationEvidenceMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: OperationEvidenceMaxAggregateInputType
+  }
+
+  export type GetOperationEvidenceAggregateType<T extends OperationEvidenceAggregateArgs> = {
+        [P in keyof T & keyof AggregateOperationEvidence]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateOperationEvidence[P]>
+      : GetScalarType<T[P], AggregateOperationEvidence[P]>
+  }
+
+
+
+
+  export type OperationEvidenceGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: OperationEvidenceWhereInput
+    orderBy?: OperationEvidenceOrderByWithAggregationInput | OperationEvidenceOrderByWithAggregationInput[]
+    by: OperationEvidenceScalarFieldEnum[] | OperationEvidenceScalarFieldEnum
+    having?: OperationEvidenceScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: OperationEvidenceCountAggregateInputType | true
+    _avg?: OperationEvidenceAvgAggregateInputType
+    _sum?: OperationEvidenceSumAggregateInputType
+    _min?: OperationEvidenceMinAggregateInputType
+    _max?: OperationEvidenceMaxAggregateInputType
+  }
+
+  export type OperationEvidenceGroupByOutputType = {
+    opId: string
+    tenantId: string
+    entity: string
+    action: string
+    receivedAt: Date
+    acceptedBy: string
+    transport: string
+    credentialKind: string
+    connectionAccountId: string | null
+    deviceIdClaimed: string | null
+    actorIdClaimed: string | null
+    actorNameClaimed: string | null
+    actorMatchesAccount: boolean | null
+    evidence: string
+    limitations: string[]
+    claimedAt: string | null
+    envelopeVersion: number
+    _count: OperationEvidenceCountAggregateOutputType | null
+    _avg: OperationEvidenceAvgAggregateOutputType | null
+    _sum: OperationEvidenceSumAggregateOutputType | null
+    _min: OperationEvidenceMinAggregateOutputType | null
+    _max: OperationEvidenceMaxAggregateOutputType | null
+  }
+
+  type GetOperationEvidenceGroupByPayload<T extends OperationEvidenceGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<OperationEvidenceGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof OperationEvidenceGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], OperationEvidenceGroupByOutputType[P]>
+            : GetScalarType<T[P], OperationEvidenceGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type OperationEvidenceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    opId?: boolean
+    tenantId?: boolean
+    entity?: boolean
+    action?: boolean
+    receivedAt?: boolean
+    acceptedBy?: boolean
+    transport?: boolean
+    credentialKind?: boolean
+    connectionAccountId?: boolean
+    deviceIdClaimed?: boolean
+    actorIdClaimed?: boolean
+    actorNameClaimed?: boolean
+    actorMatchesAccount?: boolean
+    evidence?: boolean
+    limitations?: boolean
+    claimedAt?: boolean
+    envelopeVersion?: boolean
+  }, ExtArgs["result"]["operationEvidence"]>
+
+  export type OperationEvidenceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    opId?: boolean
+    tenantId?: boolean
+    entity?: boolean
+    action?: boolean
+    receivedAt?: boolean
+    acceptedBy?: boolean
+    transport?: boolean
+    credentialKind?: boolean
+    connectionAccountId?: boolean
+    deviceIdClaimed?: boolean
+    actorIdClaimed?: boolean
+    actorNameClaimed?: boolean
+    actorMatchesAccount?: boolean
+    evidence?: boolean
+    limitations?: boolean
+    claimedAt?: boolean
+    envelopeVersion?: boolean
+  }, ExtArgs["result"]["operationEvidence"]>
+
+  export type OperationEvidenceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    opId?: boolean
+    tenantId?: boolean
+    entity?: boolean
+    action?: boolean
+    receivedAt?: boolean
+    acceptedBy?: boolean
+    transport?: boolean
+    credentialKind?: boolean
+    connectionAccountId?: boolean
+    deviceIdClaimed?: boolean
+    actorIdClaimed?: boolean
+    actorNameClaimed?: boolean
+    actorMatchesAccount?: boolean
+    evidence?: boolean
+    limitations?: boolean
+    claimedAt?: boolean
+    envelopeVersion?: boolean
+  }, ExtArgs["result"]["operationEvidence"]>
+
+  export type OperationEvidenceSelectScalar = {
+    opId?: boolean
+    tenantId?: boolean
+    entity?: boolean
+    action?: boolean
+    receivedAt?: boolean
+    acceptedBy?: boolean
+    transport?: boolean
+    credentialKind?: boolean
+    connectionAccountId?: boolean
+    deviceIdClaimed?: boolean
+    actorIdClaimed?: boolean
+    actorNameClaimed?: boolean
+    actorMatchesAccount?: boolean
+    evidence?: boolean
+    limitations?: boolean
+    claimedAt?: boolean
+    envelopeVersion?: boolean
+  }
+
+  export type OperationEvidenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"opId" | "tenantId" | "entity" | "action" | "receivedAt" | "acceptedBy" | "transport" | "credentialKind" | "connectionAccountId" | "deviceIdClaimed" | "actorIdClaimed" | "actorNameClaimed" | "actorMatchesAccount" | "evidence" | "limitations" | "claimedAt" | "envelopeVersion", ExtArgs["result"]["operationEvidence"]>
+
+  export type $OperationEvidencePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "OperationEvidence"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      opId: string
+      tenantId: string
+      entity: string
+      action: string
+      receivedAt: Date
+      acceptedBy: string
+      transport: string
+      credentialKind: string
+      connectionAccountId: string | null
+      deviceIdClaimed: string | null
+      actorIdClaimed: string | null
+      actorNameClaimed: string | null
+      actorMatchesAccount: boolean | null
+      evidence: string
+      limitations: string[]
+      claimedAt: string | null
+      envelopeVersion: number
+    }, ExtArgs["result"]["operationEvidence"]>
+    composites: {}
+  }
+
+  type OperationEvidenceGetPayload<S extends boolean | null | undefined | OperationEvidenceDefaultArgs> = $Result.GetResult<Prisma.$OperationEvidencePayload, S>
+
+  type OperationEvidenceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<OperationEvidenceFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: OperationEvidenceCountAggregateInputType | true
+    }
+
+  export interface OperationEvidenceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['OperationEvidence'], meta: { name: 'OperationEvidence' } }
+    /**
+     * Find zero or one OperationEvidence that matches the filter.
+     * @param {OperationEvidenceFindUniqueArgs} args - Arguments to find a OperationEvidence
+     * @example
+     * // Get one OperationEvidence
+     * const operationEvidence = await prisma.operationEvidence.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends OperationEvidenceFindUniqueArgs>(args: SelectSubset<T, OperationEvidenceFindUniqueArgs<ExtArgs>>): Prisma__OperationEvidenceClient<$Result.GetResult<Prisma.$OperationEvidencePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one OperationEvidence that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {OperationEvidenceFindUniqueOrThrowArgs} args - Arguments to find a OperationEvidence
+     * @example
+     * // Get one OperationEvidence
+     * const operationEvidence = await prisma.operationEvidence.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends OperationEvidenceFindUniqueOrThrowArgs>(args: SelectSubset<T, OperationEvidenceFindUniqueOrThrowArgs<ExtArgs>>): Prisma__OperationEvidenceClient<$Result.GetResult<Prisma.$OperationEvidencePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first OperationEvidence that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OperationEvidenceFindFirstArgs} args - Arguments to find a OperationEvidence
+     * @example
+     * // Get one OperationEvidence
+     * const operationEvidence = await prisma.operationEvidence.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends OperationEvidenceFindFirstArgs>(args?: SelectSubset<T, OperationEvidenceFindFirstArgs<ExtArgs>>): Prisma__OperationEvidenceClient<$Result.GetResult<Prisma.$OperationEvidencePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first OperationEvidence that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OperationEvidenceFindFirstOrThrowArgs} args - Arguments to find a OperationEvidence
+     * @example
+     * // Get one OperationEvidence
+     * const operationEvidence = await prisma.operationEvidence.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends OperationEvidenceFindFirstOrThrowArgs>(args?: SelectSubset<T, OperationEvidenceFindFirstOrThrowArgs<ExtArgs>>): Prisma__OperationEvidenceClient<$Result.GetResult<Prisma.$OperationEvidencePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more OperationEvidences that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OperationEvidenceFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all OperationEvidences
+     * const operationEvidences = await prisma.operationEvidence.findMany()
+     * 
+     * // Get first 10 OperationEvidences
+     * const operationEvidences = await prisma.operationEvidence.findMany({ take: 10 })
+     * 
+     * // Only select the `opId`
+     * const operationEvidenceWithOpIdOnly = await prisma.operationEvidence.findMany({ select: { opId: true } })
+     * 
+     */
+    findMany<T extends OperationEvidenceFindManyArgs>(args?: SelectSubset<T, OperationEvidenceFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OperationEvidencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a OperationEvidence.
+     * @param {OperationEvidenceCreateArgs} args - Arguments to create a OperationEvidence.
+     * @example
+     * // Create one OperationEvidence
+     * const OperationEvidence = await prisma.operationEvidence.create({
+     *   data: {
+     *     // ... data to create a OperationEvidence
+     *   }
+     * })
+     * 
+     */
+    create<T extends OperationEvidenceCreateArgs>(args: SelectSubset<T, OperationEvidenceCreateArgs<ExtArgs>>): Prisma__OperationEvidenceClient<$Result.GetResult<Prisma.$OperationEvidencePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many OperationEvidences.
+     * @param {OperationEvidenceCreateManyArgs} args - Arguments to create many OperationEvidences.
+     * @example
+     * // Create many OperationEvidences
+     * const operationEvidence = await prisma.operationEvidence.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends OperationEvidenceCreateManyArgs>(args?: SelectSubset<T, OperationEvidenceCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many OperationEvidences and returns the data saved in the database.
+     * @param {OperationEvidenceCreateManyAndReturnArgs} args - Arguments to create many OperationEvidences.
+     * @example
+     * // Create many OperationEvidences
+     * const operationEvidence = await prisma.operationEvidence.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many OperationEvidences and only return the `opId`
+     * const operationEvidenceWithOpIdOnly = await prisma.operationEvidence.createManyAndReturn({
+     *   select: { opId: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends OperationEvidenceCreateManyAndReturnArgs>(args?: SelectSubset<T, OperationEvidenceCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OperationEvidencePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a OperationEvidence.
+     * @param {OperationEvidenceDeleteArgs} args - Arguments to delete one OperationEvidence.
+     * @example
+     * // Delete one OperationEvidence
+     * const OperationEvidence = await prisma.operationEvidence.delete({
+     *   where: {
+     *     // ... filter to delete one OperationEvidence
+     *   }
+     * })
+     * 
+     */
+    delete<T extends OperationEvidenceDeleteArgs>(args: SelectSubset<T, OperationEvidenceDeleteArgs<ExtArgs>>): Prisma__OperationEvidenceClient<$Result.GetResult<Prisma.$OperationEvidencePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one OperationEvidence.
+     * @param {OperationEvidenceUpdateArgs} args - Arguments to update one OperationEvidence.
+     * @example
+     * // Update one OperationEvidence
+     * const operationEvidence = await prisma.operationEvidence.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends OperationEvidenceUpdateArgs>(args: SelectSubset<T, OperationEvidenceUpdateArgs<ExtArgs>>): Prisma__OperationEvidenceClient<$Result.GetResult<Prisma.$OperationEvidencePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more OperationEvidences.
+     * @param {OperationEvidenceDeleteManyArgs} args - Arguments to filter OperationEvidences to delete.
+     * @example
+     * // Delete a few OperationEvidences
+     * const { count } = await prisma.operationEvidence.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends OperationEvidenceDeleteManyArgs>(args?: SelectSubset<T, OperationEvidenceDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more OperationEvidences.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OperationEvidenceUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many OperationEvidences
+     * const operationEvidence = await prisma.operationEvidence.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends OperationEvidenceUpdateManyArgs>(args: SelectSubset<T, OperationEvidenceUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more OperationEvidences and returns the data updated in the database.
+     * @param {OperationEvidenceUpdateManyAndReturnArgs} args - Arguments to update many OperationEvidences.
+     * @example
+     * // Update many OperationEvidences
+     * const operationEvidence = await prisma.operationEvidence.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more OperationEvidences and only return the `opId`
+     * const operationEvidenceWithOpIdOnly = await prisma.operationEvidence.updateManyAndReturn({
+     *   select: { opId: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends OperationEvidenceUpdateManyAndReturnArgs>(args: SelectSubset<T, OperationEvidenceUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$OperationEvidencePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one OperationEvidence.
+     * @param {OperationEvidenceUpsertArgs} args - Arguments to update or create a OperationEvidence.
+     * @example
+     * // Update or create a OperationEvidence
+     * const operationEvidence = await prisma.operationEvidence.upsert({
+     *   create: {
+     *     // ... data to create a OperationEvidence
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the OperationEvidence we want to update
+     *   }
+     * })
+     */
+    upsert<T extends OperationEvidenceUpsertArgs>(args: SelectSubset<T, OperationEvidenceUpsertArgs<ExtArgs>>): Prisma__OperationEvidenceClient<$Result.GetResult<Prisma.$OperationEvidencePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of OperationEvidences.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OperationEvidenceCountArgs} args - Arguments to filter OperationEvidences to count.
+     * @example
+     * // Count the number of OperationEvidences
+     * const count = await prisma.operationEvidence.count({
+     *   where: {
+     *     // ... the filter for the OperationEvidences we want to count
+     *   }
+     * })
+    **/
+    count<T extends OperationEvidenceCountArgs>(
+      args?: Subset<T, OperationEvidenceCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], OperationEvidenceCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a OperationEvidence.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OperationEvidenceAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends OperationEvidenceAggregateArgs>(args: Subset<T, OperationEvidenceAggregateArgs>): Prisma.PrismaPromise<GetOperationEvidenceAggregateType<T>>
+
+    /**
+     * Group by OperationEvidence.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {OperationEvidenceGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends OperationEvidenceGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: OperationEvidenceGroupByArgs['orderBy'] }
+        : { orderBy?: OperationEvidenceGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, OperationEvidenceGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetOperationEvidenceGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the OperationEvidence model
+   */
+  readonly fields: OperationEvidenceFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for OperationEvidence.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__OperationEvidenceClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the OperationEvidence model
+   */
+  interface OperationEvidenceFieldRefs {
+    readonly opId: FieldRef<"OperationEvidence", 'String'>
+    readonly tenantId: FieldRef<"OperationEvidence", 'String'>
+    readonly entity: FieldRef<"OperationEvidence", 'String'>
+    readonly action: FieldRef<"OperationEvidence", 'String'>
+    readonly receivedAt: FieldRef<"OperationEvidence", 'DateTime'>
+    readonly acceptedBy: FieldRef<"OperationEvidence", 'String'>
+    readonly transport: FieldRef<"OperationEvidence", 'String'>
+    readonly credentialKind: FieldRef<"OperationEvidence", 'String'>
+    readonly connectionAccountId: FieldRef<"OperationEvidence", 'String'>
+    readonly deviceIdClaimed: FieldRef<"OperationEvidence", 'String'>
+    readonly actorIdClaimed: FieldRef<"OperationEvidence", 'String'>
+    readonly actorNameClaimed: FieldRef<"OperationEvidence", 'String'>
+    readonly actorMatchesAccount: FieldRef<"OperationEvidence", 'Boolean'>
+    readonly evidence: FieldRef<"OperationEvidence", 'String'>
+    readonly limitations: FieldRef<"OperationEvidence", 'String[]'>
+    readonly claimedAt: FieldRef<"OperationEvidence", 'String'>
+    readonly envelopeVersion: FieldRef<"OperationEvidence", 'Int'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * OperationEvidence findUnique
+   */
+  export type OperationEvidenceFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+    /**
+     * Filter, which OperationEvidence to fetch.
+     */
+    where: OperationEvidenceWhereUniqueInput
+  }
+
+  /**
+   * OperationEvidence findUniqueOrThrow
+   */
+  export type OperationEvidenceFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+    /**
+     * Filter, which OperationEvidence to fetch.
+     */
+    where: OperationEvidenceWhereUniqueInput
+  }
+
+  /**
+   * OperationEvidence findFirst
+   */
+  export type OperationEvidenceFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+    /**
+     * Filter, which OperationEvidence to fetch.
+     */
+    where?: OperationEvidenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OperationEvidences to fetch.
+     */
+    orderBy?: OperationEvidenceOrderByWithRelationInput | OperationEvidenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for OperationEvidences.
+     */
+    cursor?: OperationEvidenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OperationEvidences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OperationEvidences.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of OperationEvidences.
+     */
+    distinct?: OperationEvidenceScalarFieldEnum | OperationEvidenceScalarFieldEnum[]
+  }
+
+  /**
+   * OperationEvidence findFirstOrThrow
+   */
+  export type OperationEvidenceFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+    /**
+     * Filter, which OperationEvidence to fetch.
+     */
+    where?: OperationEvidenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OperationEvidences to fetch.
+     */
+    orderBy?: OperationEvidenceOrderByWithRelationInput | OperationEvidenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for OperationEvidences.
+     */
+    cursor?: OperationEvidenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OperationEvidences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OperationEvidences.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of OperationEvidences.
+     */
+    distinct?: OperationEvidenceScalarFieldEnum | OperationEvidenceScalarFieldEnum[]
+  }
+
+  /**
+   * OperationEvidence findMany
+   */
+  export type OperationEvidenceFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+    /**
+     * Filter, which OperationEvidences to fetch.
+     */
+    where?: OperationEvidenceWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of OperationEvidences to fetch.
+     */
+    orderBy?: OperationEvidenceOrderByWithRelationInput | OperationEvidenceOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing OperationEvidences.
+     */
+    cursor?: OperationEvidenceWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` OperationEvidences from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` OperationEvidences.
+     */
+    skip?: number
+    distinct?: OperationEvidenceScalarFieldEnum | OperationEvidenceScalarFieldEnum[]
+  }
+
+  /**
+   * OperationEvidence create
+   */
+  export type OperationEvidenceCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+    /**
+     * The data needed to create a OperationEvidence.
+     */
+    data: XOR<OperationEvidenceCreateInput, OperationEvidenceUncheckedCreateInput>
+  }
+
+  /**
+   * OperationEvidence createMany
+   */
+  export type OperationEvidenceCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many OperationEvidences.
+     */
+    data: OperationEvidenceCreateManyInput | OperationEvidenceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * OperationEvidence createManyAndReturn
+   */
+  export type OperationEvidenceCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+    /**
+     * The data used to create many OperationEvidences.
+     */
+    data: OperationEvidenceCreateManyInput | OperationEvidenceCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * OperationEvidence update
+   */
+  export type OperationEvidenceUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+    /**
+     * The data needed to update a OperationEvidence.
+     */
+    data: XOR<OperationEvidenceUpdateInput, OperationEvidenceUncheckedUpdateInput>
+    /**
+     * Choose, which OperationEvidence to update.
+     */
+    where: OperationEvidenceWhereUniqueInput
+  }
+
+  /**
+   * OperationEvidence updateMany
+   */
+  export type OperationEvidenceUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update OperationEvidences.
+     */
+    data: XOR<OperationEvidenceUpdateManyMutationInput, OperationEvidenceUncheckedUpdateManyInput>
+    /**
+     * Filter which OperationEvidences to update
+     */
+    where?: OperationEvidenceWhereInput
+    /**
+     * Limit how many OperationEvidences to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * OperationEvidence updateManyAndReturn
+   */
+  export type OperationEvidenceUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+    /**
+     * The data used to update OperationEvidences.
+     */
+    data: XOR<OperationEvidenceUpdateManyMutationInput, OperationEvidenceUncheckedUpdateManyInput>
+    /**
+     * Filter which OperationEvidences to update
+     */
+    where?: OperationEvidenceWhereInput
+    /**
+     * Limit how many OperationEvidences to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * OperationEvidence upsert
+   */
+  export type OperationEvidenceUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+    /**
+     * The filter to search for the OperationEvidence to update in case it exists.
+     */
+    where: OperationEvidenceWhereUniqueInput
+    /**
+     * In case the OperationEvidence found by the `where` argument doesn't exist, create a new OperationEvidence with this data.
+     */
+    create: XOR<OperationEvidenceCreateInput, OperationEvidenceUncheckedCreateInput>
+    /**
+     * In case the OperationEvidence was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<OperationEvidenceUpdateInput, OperationEvidenceUncheckedUpdateInput>
+  }
+
+  /**
+   * OperationEvidence delete
+   */
+  export type OperationEvidenceDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+    /**
+     * Filter which OperationEvidence to delete.
+     */
+    where: OperationEvidenceWhereUniqueInput
+  }
+
+  /**
+   * OperationEvidence deleteMany
+   */
+  export type OperationEvidenceDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which OperationEvidences to delete
+     */
+    where?: OperationEvidenceWhereInput
+    /**
+     * Limit how many OperationEvidences to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * OperationEvidence without action
+   */
+  export type OperationEvidenceDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the OperationEvidence
+     */
+    select?: OperationEvidenceSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the OperationEvidence
+     */
+    omit?: OperationEvidenceOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -46664,6 +47938,29 @@ export namespace Prisma {
   };
 
   export type SyncClientScalarFieldEnum = (typeof SyncClientScalarFieldEnum)[keyof typeof SyncClientScalarFieldEnum]
+
+
+  export const OperationEvidenceScalarFieldEnum: {
+    opId: 'opId',
+    tenantId: 'tenantId',
+    entity: 'entity',
+    action: 'action',
+    receivedAt: 'receivedAt',
+    acceptedBy: 'acceptedBy',
+    transport: 'transport',
+    credentialKind: 'credentialKind',
+    connectionAccountId: 'connectionAccountId',
+    deviceIdClaimed: 'deviceIdClaimed',
+    actorIdClaimed: 'actorIdClaimed',
+    actorNameClaimed: 'actorNameClaimed',
+    actorMatchesAccount: 'actorMatchesAccount',
+    evidence: 'evidence',
+    limitations: 'limitations',
+    claimedAt: 'claimedAt',
+    envelopeVersion: 'envelopeVersion'
+  };
+
+  export type OperationEvidenceScalarFieldEnum = (typeof OperationEvidenceScalarFieldEnum)[keyof typeof OperationEvidenceScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -50463,6 +51760,120 @@ export namespace Prisma {
     retiredAt?: DateTimeNullableWithAggregatesFilter<"SyncClient"> | Date | string | null
     retiredBy?: StringNullableWithAggregatesFilter<"SyncClient"> | string | null
     retiredNote?: StringNullableWithAggregatesFilter<"SyncClient"> | string | null
+  }
+
+  export type OperationEvidenceWhereInput = {
+    AND?: OperationEvidenceWhereInput | OperationEvidenceWhereInput[]
+    OR?: OperationEvidenceWhereInput[]
+    NOT?: OperationEvidenceWhereInput | OperationEvidenceWhereInput[]
+    opId?: StringFilter<"OperationEvidence"> | string
+    tenantId?: StringFilter<"OperationEvidence"> | string
+    entity?: StringFilter<"OperationEvidence"> | string
+    action?: StringFilter<"OperationEvidence"> | string
+    receivedAt?: DateTimeFilter<"OperationEvidence"> | Date | string
+    acceptedBy?: StringFilter<"OperationEvidence"> | string
+    transport?: StringFilter<"OperationEvidence"> | string
+    credentialKind?: StringFilter<"OperationEvidence"> | string
+    connectionAccountId?: StringNullableFilter<"OperationEvidence"> | string | null
+    deviceIdClaimed?: StringNullableFilter<"OperationEvidence"> | string | null
+    actorIdClaimed?: StringNullableFilter<"OperationEvidence"> | string | null
+    actorNameClaimed?: StringNullableFilter<"OperationEvidence"> | string | null
+    actorMatchesAccount?: BoolNullableFilter<"OperationEvidence"> | boolean | null
+    evidence?: StringFilter<"OperationEvidence"> | string
+    limitations?: StringNullableListFilter<"OperationEvidence">
+    claimedAt?: StringNullableFilter<"OperationEvidence"> | string | null
+    envelopeVersion?: IntFilter<"OperationEvidence"> | number
+  }
+
+  export type OperationEvidenceOrderByWithRelationInput = {
+    opId?: SortOrder
+    tenantId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    receivedAt?: SortOrder
+    acceptedBy?: SortOrder
+    transport?: SortOrder
+    credentialKind?: SortOrder
+    connectionAccountId?: SortOrderInput | SortOrder
+    deviceIdClaimed?: SortOrderInput | SortOrder
+    actorIdClaimed?: SortOrderInput | SortOrder
+    actorNameClaimed?: SortOrderInput | SortOrder
+    actorMatchesAccount?: SortOrderInput | SortOrder
+    evidence?: SortOrder
+    limitations?: SortOrder
+    claimedAt?: SortOrderInput | SortOrder
+    envelopeVersion?: SortOrder
+  }
+
+  export type OperationEvidenceWhereUniqueInput = Prisma.AtLeast<{
+    opId?: string
+    AND?: OperationEvidenceWhereInput | OperationEvidenceWhereInput[]
+    OR?: OperationEvidenceWhereInput[]
+    NOT?: OperationEvidenceWhereInput | OperationEvidenceWhereInput[]
+    tenantId?: StringFilter<"OperationEvidence"> | string
+    entity?: StringFilter<"OperationEvidence"> | string
+    action?: StringFilter<"OperationEvidence"> | string
+    receivedAt?: DateTimeFilter<"OperationEvidence"> | Date | string
+    acceptedBy?: StringFilter<"OperationEvidence"> | string
+    transport?: StringFilter<"OperationEvidence"> | string
+    credentialKind?: StringFilter<"OperationEvidence"> | string
+    connectionAccountId?: StringNullableFilter<"OperationEvidence"> | string | null
+    deviceIdClaimed?: StringNullableFilter<"OperationEvidence"> | string | null
+    actorIdClaimed?: StringNullableFilter<"OperationEvidence"> | string | null
+    actorNameClaimed?: StringNullableFilter<"OperationEvidence"> | string | null
+    actorMatchesAccount?: BoolNullableFilter<"OperationEvidence"> | boolean | null
+    evidence?: StringFilter<"OperationEvidence"> | string
+    limitations?: StringNullableListFilter<"OperationEvidence">
+    claimedAt?: StringNullableFilter<"OperationEvidence"> | string | null
+    envelopeVersion?: IntFilter<"OperationEvidence"> | number
+  }, "opId">
+
+  export type OperationEvidenceOrderByWithAggregationInput = {
+    opId?: SortOrder
+    tenantId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    receivedAt?: SortOrder
+    acceptedBy?: SortOrder
+    transport?: SortOrder
+    credentialKind?: SortOrder
+    connectionAccountId?: SortOrderInput | SortOrder
+    deviceIdClaimed?: SortOrderInput | SortOrder
+    actorIdClaimed?: SortOrderInput | SortOrder
+    actorNameClaimed?: SortOrderInput | SortOrder
+    actorMatchesAccount?: SortOrderInput | SortOrder
+    evidence?: SortOrder
+    limitations?: SortOrder
+    claimedAt?: SortOrderInput | SortOrder
+    envelopeVersion?: SortOrder
+    _count?: OperationEvidenceCountOrderByAggregateInput
+    _avg?: OperationEvidenceAvgOrderByAggregateInput
+    _max?: OperationEvidenceMaxOrderByAggregateInput
+    _min?: OperationEvidenceMinOrderByAggregateInput
+    _sum?: OperationEvidenceSumOrderByAggregateInput
+  }
+
+  export type OperationEvidenceScalarWhereWithAggregatesInput = {
+    AND?: OperationEvidenceScalarWhereWithAggregatesInput | OperationEvidenceScalarWhereWithAggregatesInput[]
+    OR?: OperationEvidenceScalarWhereWithAggregatesInput[]
+    NOT?: OperationEvidenceScalarWhereWithAggregatesInput | OperationEvidenceScalarWhereWithAggregatesInput[]
+    opId?: StringWithAggregatesFilter<"OperationEvidence"> | string
+    tenantId?: StringWithAggregatesFilter<"OperationEvidence"> | string
+    entity?: StringWithAggregatesFilter<"OperationEvidence"> | string
+    action?: StringWithAggregatesFilter<"OperationEvidence"> | string
+    receivedAt?: DateTimeWithAggregatesFilter<"OperationEvidence"> | Date | string
+    acceptedBy?: StringWithAggregatesFilter<"OperationEvidence"> | string
+    transport?: StringWithAggregatesFilter<"OperationEvidence"> | string
+    credentialKind?: StringWithAggregatesFilter<"OperationEvidence"> | string
+    connectionAccountId?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    deviceIdClaimed?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    actorIdClaimed?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    actorNameClaimed?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    actorMatchesAccount?: BoolNullableWithAggregatesFilter<"OperationEvidence"> | boolean | null
+    evidence?: StringWithAggregatesFilter<"OperationEvidence"> | string
+    limitations?: StringNullableListFilter<"OperationEvidence">
+    claimedAt?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    envelopeVersion?: IntWithAggregatesFilter<"OperationEvidence"> | number
   }
 
   export type TenantCreateInput = {
@@ -54474,6 +55885,146 @@ export namespace Prisma {
     retiredNote?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
+  export type OperationEvidenceCreateInput = {
+    opId: string
+    tenantId: string
+    entity: string
+    action: string
+    receivedAt?: Date | string
+    acceptedBy: string
+    transport: string
+    credentialKind: string
+    connectionAccountId?: string | null
+    deviceIdClaimed?: string | null
+    actorIdClaimed?: string | null
+    actorNameClaimed?: string | null
+    actorMatchesAccount?: boolean | null
+    evidence: string
+    limitations?: OperationEvidenceCreatelimitationsInput | string[]
+    claimedAt?: string | null
+    envelopeVersion?: number
+  }
+
+  export type OperationEvidenceUncheckedCreateInput = {
+    opId: string
+    tenantId: string
+    entity: string
+    action: string
+    receivedAt?: Date | string
+    acceptedBy: string
+    transport: string
+    credentialKind: string
+    connectionAccountId?: string | null
+    deviceIdClaimed?: string | null
+    actorIdClaimed?: string | null
+    actorNameClaimed?: string | null
+    actorMatchesAccount?: boolean | null
+    evidence: string
+    limitations?: OperationEvidenceCreatelimitationsInput | string[]
+    claimedAt?: string | null
+    envelopeVersion?: number
+  }
+
+  export type OperationEvidenceUpdateInput = {
+    opId?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    acceptedBy?: StringFieldUpdateOperationsInput | string
+    transport?: StringFieldUpdateOperationsInput | string
+    credentialKind?: StringFieldUpdateOperationsInput | string
+    connectionAccountId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceIdClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorIdClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorNameClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorMatchesAccount?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    evidence?: StringFieldUpdateOperationsInput | string
+    limitations?: OperationEvidenceUpdatelimitationsInput | string[]
+    claimedAt?: NullableStringFieldUpdateOperationsInput | string | null
+    envelopeVersion?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type OperationEvidenceUncheckedUpdateInput = {
+    opId?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    acceptedBy?: StringFieldUpdateOperationsInput | string
+    transport?: StringFieldUpdateOperationsInput | string
+    credentialKind?: StringFieldUpdateOperationsInput | string
+    connectionAccountId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceIdClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorIdClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorNameClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorMatchesAccount?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    evidence?: StringFieldUpdateOperationsInput | string
+    limitations?: OperationEvidenceUpdatelimitationsInput | string[]
+    claimedAt?: NullableStringFieldUpdateOperationsInput | string | null
+    envelopeVersion?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type OperationEvidenceCreateManyInput = {
+    opId: string
+    tenantId: string
+    entity: string
+    action: string
+    receivedAt?: Date | string
+    acceptedBy: string
+    transport: string
+    credentialKind: string
+    connectionAccountId?: string | null
+    deviceIdClaimed?: string | null
+    actorIdClaimed?: string | null
+    actorNameClaimed?: string | null
+    actorMatchesAccount?: boolean | null
+    evidence: string
+    limitations?: OperationEvidenceCreatelimitationsInput | string[]
+    claimedAt?: string | null
+    envelopeVersion?: number
+  }
+
+  export type OperationEvidenceUpdateManyMutationInput = {
+    opId?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    acceptedBy?: StringFieldUpdateOperationsInput | string
+    transport?: StringFieldUpdateOperationsInput | string
+    credentialKind?: StringFieldUpdateOperationsInput | string
+    connectionAccountId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceIdClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorIdClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorNameClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorMatchesAccount?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    evidence?: StringFieldUpdateOperationsInput | string
+    limitations?: OperationEvidenceUpdatelimitationsInput | string[]
+    claimedAt?: NullableStringFieldUpdateOperationsInput | string | null
+    envelopeVersion?: IntFieldUpdateOperationsInput | number
+  }
+
+  export type OperationEvidenceUncheckedUpdateManyInput = {
+    opId?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    receivedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    acceptedBy?: StringFieldUpdateOperationsInput | string
+    transport?: StringFieldUpdateOperationsInput | string
+    credentialKind?: StringFieldUpdateOperationsInput | string
+    connectionAccountId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceIdClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorIdClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorNameClaimed?: NullableStringFieldUpdateOperationsInput | string | null
+    actorMatchesAccount?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    evidence?: StringFieldUpdateOperationsInput | string
+    limitations?: OperationEvidenceUpdatelimitationsInput | string[]
+    claimedAt?: NullableStringFieldUpdateOperationsInput | string | null
+    envelopeVersion?: IntFieldUpdateOperationsInput | number
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -57514,6 +59065,85 @@ export namespace Prisma {
     syncSchema?: SortOrder
   }
 
+  export type BoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
+  export type OperationEvidenceCountOrderByAggregateInput = {
+    opId?: SortOrder
+    tenantId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    receivedAt?: SortOrder
+    acceptedBy?: SortOrder
+    transport?: SortOrder
+    credentialKind?: SortOrder
+    connectionAccountId?: SortOrder
+    deviceIdClaimed?: SortOrder
+    actorIdClaimed?: SortOrder
+    actorNameClaimed?: SortOrder
+    actorMatchesAccount?: SortOrder
+    evidence?: SortOrder
+    limitations?: SortOrder
+    claimedAt?: SortOrder
+    envelopeVersion?: SortOrder
+  }
+
+  export type OperationEvidenceAvgOrderByAggregateInput = {
+    envelopeVersion?: SortOrder
+  }
+
+  export type OperationEvidenceMaxOrderByAggregateInput = {
+    opId?: SortOrder
+    tenantId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    receivedAt?: SortOrder
+    acceptedBy?: SortOrder
+    transport?: SortOrder
+    credentialKind?: SortOrder
+    connectionAccountId?: SortOrder
+    deviceIdClaimed?: SortOrder
+    actorIdClaimed?: SortOrder
+    actorNameClaimed?: SortOrder
+    actorMatchesAccount?: SortOrder
+    evidence?: SortOrder
+    claimedAt?: SortOrder
+    envelopeVersion?: SortOrder
+  }
+
+  export type OperationEvidenceMinOrderByAggregateInput = {
+    opId?: SortOrder
+    tenantId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    receivedAt?: SortOrder
+    acceptedBy?: SortOrder
+    transport?: SortOrder
+    credentialKind?: SortOrder
+    connectionAccountId?: SortOrder
+    deviceIdClaimed?: SortOrder
+    actorIdClaimed?: SortOrder
+    actorNameClaimed?: SortOrder
+    actorMatchesAccount?: SortOrder
+    evidence?: SortOrder
+    claimedAt?: SortOrder
+    envelopeVersion?: SortOrder
+  }
+
+  export type OperationEvidenceSumOrderByAggregateInput = {
+    envelopeVersion?: SortOrder
+  }
+
+  export type BoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
   export type StaffUserCreateNestedManyWithoutTenantInput = {
     create?: XOR<StaffUserCreateWithoutTenantInput, StaffUserUncheckedCreateWithoutTenantInput> | StaffUserCreateWithoutTenantInput[] | StaffUserUncheckedCreateWithoutTenantInput[]
     connectOrCreate?: StaffUserCreateOrConnectWithoutTenantInput | StaffUserCreateOrConnectWithoutTenantInput[]
@@ -60264,6 +61894,19 @@ export namespace Prisma {
     update?: XOR<XOR<ProductUpdateToOneWithWhereWithoutStockMovementsInput, ProductUpdateWithoutStockMovementsInput>, ProductUncheckedUpdateWithoutStockMovementsInput>
   }
 
+  export type OperationEvidenceCreatelimitationsInput = {
+    set: string[]
+  }
+
+  export type NullableBoolFieldUpdateOperationsInput = {
+    set?: boolean | null
+  }
+
+  export type OperationEvidenceUpdatelimitationsInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -60765,6 +62408,19 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumDeliveryOrderStatusFilter<$PrismaModel>
     _max?: NestedEnumDeliveryOrderStatusFilter<$PrismaModel>
+  }
+
+  export type NestedBoolNullableFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableFilter<$PrismaModel> | boolean | null
+  }
+
+  export type NestedBoolNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel> | null
+    not?: NestedBoolNullableWithAggregatesFilter<$PrismaModel> | boolean | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedBoolNullableFilter<$PrismaModel>
+    _max?: NestedBoolNullableFilter<$PrismaModel>
   }
 
   export type StaffUserCreateWithoutTenantInput = {

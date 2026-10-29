@@ -855,3 +855,29 @@ model SyncClient {
   @@unique([tenantId, clientKey])
   @@index([tenantId, syncSchema, lastSeenAt])
 }
+
+/// SPRINT-2 Phase B (observe mode): what the receiving server knows about each applied operation.
+/// "claimed" columns come from the client and are not authenticated; evidence is never "verified"
+/// until staff sessions exist (Phase C).
+model OperationEvidence {
+  opId                String   @id
+  tenantId            String
+  entity              String
+  action              String
+  receivedAt          DateTime @default(now())
+  acceptedBy          String
+  transport           String
+  credentialKind      String
+  connectionAccountId String?
+  deviceIdClaimed     String?
+  actorIdClaimed      String?
+  actorNameClaimed    String?
+  actorMatchesAccount Boolean?
+  evidence            String
+  limitations         String[] @default([])
+  claimedAt           String?
+  envelopeVersion     Int      @default(0)
+
+  @@index([tenantId, receivedAt])
+  @@index([tenantId, evidence])
+}

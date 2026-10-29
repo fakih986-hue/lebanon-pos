@@ -898,7 +898,7 @@ router.post("/customer/login", async (req: any, res: ServerResponse) => {
       return
     }
     const token = jwt.sign(
-      { customerId: customer.id, tenantId, role: "Customer" },
+      { customerId: customer.id, tenantId, role: "Customer", typ: "customer" },
       process.env.JWT_SECRET!,
       { expiresIn: "30d" },
     )

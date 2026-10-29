@@ -674,6 +674,26 @@ exports.Prisma.SyncClientScalarFieldEnum = {
   retiredNote: 'retiredNote'
 };
 
+exports.Prisma.OperationEvidenceScalarFieldEnum = {
+  opId: 'opId',
+  tenantId: 'tenantId',
+  entity: 'entity',
+  action: 'action',
+  receivedAt: 'receivedAt',
+  acceptedBy: 'acceptedBy',
+  transport: 'transport',
+  credentialKind: 'credentialKind',
+  connectionAccountId: 'connectionAccountId',
+  deviceIdClaimed: 'deviceIdClaimed',
+  actorIdClaimed: 'actorIdClaimed',
+  actorNameClaimed: 'actorNameClaimed',
+  actorMatchesAccount: 'actorMatchesAccount',
+  evidence: 'evidence',
+  limitations: 'limitations',
+  claimedAt: 'claimedAt',
+  envelopeVersion: 'envelopeVersion'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -800,7 +820,8 @@ exports.Prisma.ModelName = {
   PairingCode: 'PairingCode',
   RateLimitEntry: 'RateLimitEntry',
   StockMovement: 'StockMovement',
-  SyncClient: 'SyncClient'
+  SyncClient: 'SyncClient',
+  OperationEvidence: 'OperationEvidence'
 };
 
 /**

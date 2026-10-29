@@ -521,7 +521,7 @@ router.post("/auto-login", (req: Req, res: Response) => {
     return
   }
   const token = jwt.sign(
-    { userId: "__admin__", tenantId, role: "Admin" },
+    { userId: "__admin__", tenantId, role: "Admin", typ: "hub-local" },
     JWT_SECRET,
     { expiresIn: "30d" }
   )

@@ -39,6 +39,8 @@ export interface AuthPayload {
   tenantId: string
   role: string
   tokenVersion?: number
+  /** SPRINT-2: credential kind, set on every newly issued token (older tokens have none). */
+  typ?: string
 }
 
 export interface AuthRequest extends IncomingMessage {
@@ -123,6 +125,13 @@ export const requireAuth: Handler = async (req, res, next) => {
  */
 export type TokenKind = "customer" | "bridge" | "hub-local" | "platform" | "driver" | "staff" | "unknown"
 export function tokenKind(auth: unknown): TokenKind {
+  const fromClaims = claimsKind(auth)
+  // SPRINT-2: newer tokens state their kind; it must agree with their claims, else nothing is allowed.
+  const typ = (auth as { typ?: unknown } | null)?.typ
+  if (typeof typ === "string") return typ === fromClaims ? fromClaims : "unknown"
+  return fromClaims
+}
+function claimsKind(auth: unknown): TokenKind {
   const a = (auth ?? {}) as { customerId?: unknown; role?: unknown; userId?: unknown; tenantId?: unknown }
   if (a.customerId !== undefined || a.role === "Customer") return "customer"
   if (a.userId === "cloud-bridge") return "bridge"
@@ -140,5 +149,6 @@ export function requireTokenKinds(...kinds: TokenKind[]): Handler {
 }
 
 export function signToken(payload: AuthPayload): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN })
+  // SPRINT-2: every token says what kind of credential it is (derived from its claims)
+  return jwt.sign({ ...payload, typ: payload.typ ?? claimsKind(payload) }, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN })
 }
