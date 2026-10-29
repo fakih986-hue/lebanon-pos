@@ -15,20 +15,20 @@ Canonical record of what is tested and what passed. Real services, real API hand
 
 | Area | Evidence | Status |
 |---|---|---|
-| Token kinds per endpoint: /api/sync/* for staff, hub screen, hub cloud link only; setup JWT endpoints for staff and hub screen only |  — driver refused on push/pull/status; customer refused on sync and setup; staff still sync; driver lists orders, customer lists orders | pass () |
+| Token kinds per endpoint: /api/sync/* for staff, hub screen, hub cloud link only; setup JWT endpoints for staff and hub screen only | `apps/api/__tests__/containment.test.ts` — driver refused on push/pull/status; customer refused on sync and setup; staff still sync; driver lists orders, customer lists orders | pass (`29d0a7b`) |
 | Permission rules for uncovered ops (stock adjust/count/receive, debt, customers, held orders, delivery orders) | cashier refused adjust/count/receive/customer edit/debt collection; manager allowed; cashier can still park an order | pass |
 | Ambiguous PIN: 409, no highest-role pick; staffId selects | shared-PIN pair refused; each signs in when named; wrong PIN with staffId refused | pass |
 | WebSocket: customers only their own order updates; sync events staff only; drivers keep order events | real WebSocket clients | pass |
 | Driver stock-adjustment probe (was expected failure) | now a normal regression test | pass |
-| Till: fresh PIN to switch staff; no fallback actor; ambiguous PIN refused offline and online |  (5) | pass (); Staff-page switch verified by code and type check, **not exercised in a rendered UI** |
+| Till: fresh PIN to switch staff; no fallback actor; ambiguous PIN refused offline and online | `apps/desktop/src/__tests__/staffIdentity.test.ts` (5) | pass (`3c48be1`); Staff-page switch verified by code and type check, **not exercised in a rendered UI** |
 | Negative controls | one per guard (8 server on the hotfix tree, 6 server on master, 3 till): each fails its intended test | pass |
-| Hotfix branch  ( + docs ) from deployed  | 382 tests on a schema migrated with the deployed migrations; contents and compatibility in  on that branch | ready, **not deployed** |
+| Hotfix branch `hotfix/containment-1.0.50` (`79a8c2b` + docs `63137b9`) from deployed `7df7c58` | 382 tests on a schema migrated with the deployed migrations; contents and compatibility in `docs/HOTFIX-CONTAINMENT.md` on that branch | ready, **not deployed** |
 
 ## Phase B — observe mode
 
 | Area | Evidence | Status |
 |---|---|---|
-| OperationEvidence per applied operation, same transaction; claimed vs authenticated fields separate; transport; acceptedBy |  (11) | pass () |
+| OperationEvidence per applied operation, same transaction; claimed vs authenticated fields separate; transport; acceptedBy | `apps/api/__tests__/evidence-observe.test.ts` (11) | pass (`bbbdad5`) |
 | Labels distinct; nothing verified/hub-attested in observe mode; offline-claimed only when the client says so | same | pass |
 | Envelope outside operation identity (resend with different ev = same op, one evidence row) | same | pass |
 | New tokens carry typ; contradicting typ refused; old tokens accepted | same + full suite | pass |
