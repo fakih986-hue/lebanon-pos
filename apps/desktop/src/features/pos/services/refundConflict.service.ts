@@ -40,7 +40,7 @@ import { createExpense, getExpenses, type ExpensePaymentMethod } from "./expense
 import {
   getAllRefunds, getRefunds, getSales, markRefundConflictResolved, refundCreditId, type SaleRefund,
 } from "./sales.service"
-import { getActiveShift, getCurrentUser, recordAuditEvent, userCan } from "./security.service"
+import { getActiveShift, getCurrentUser, recordAuditEvent, userCan, requireCurrentUser } from "./security.service"
 import {
   getSyncQueue, isMoneyConflictOperation, isSettlementEntryOperation, removeSettledConflictOperation,
   retrySingleSyncOperation, type SyncOperation,
@@ -345,7 +345,7 @@ export function settleMoneyConflict(input: SettleMoneyConflictInput): MoneyConfl
     ...(input.resolution === "recovered" && input.recovery
       ? { recovery: { method: input.recovery.method, reference: input.recovery.reference.trim() } }
       : {}),
-    status: "settling", startedAt: new Date().toISOString(), settledBy: getCurrentUser().name,
+    status: "settling", startedAt: new Date().toISOString(), settledBy: requireCurrentUser().name,
     entries, steps: { money: false, refund: false, audit: false, op: false },
   }
   saveSettlement(settlement) // journal first: a crash from here on resumes, never re-decides

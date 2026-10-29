@@ -3,8 +3,7 @@ import {
   getCurrentUser,
   PermissionError,
   recordAuditEvent,
-  userCan,
-} from "./security.service"
+  userCan, requireCurrentUser } from "./security.service"
 import { assertCanWrite, commitStagedSyncOperation, getDeviceId, nextDocumentReference, settleStagedSyncOperation, stageSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
@@ -102,7 +101,7 @@ export function createExpense(input: CreateExpenseInput) {
   assertCanWrite("create expense")
   // Same rule as the server push (requiredPermissionForOp: expense → accounting.manage).
   if (!userCan("accounting.manage")) throw new PermissionError("Recording expenses needs the Accounting permission.")
-  const user = getCurrentUser()
+  const user = requireCurrentUser()
   const shift = getActiveShift()
 
   // Shift gate — cash-impacting expenses require an open shift

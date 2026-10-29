@@ -1,4 +1,4 @@
-import { getCurrentUser, recordAuditEvent } from "./security.service"
+import { getCurrentUser, recordAuditEvent, requireCurrentUser } from "./security.service"
 import { enqueueSyncOperation, assertCanWrite, getDeviceId } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
@@ -79,7 +79,7 @@ export function getDailyCloses() {
 
 export function closeBusinessDay(input: CloseBusinessDayInput) {
   assertCanWrite("close business day")
-  const user = getCurrentUser()
+  const user = requireCurrentUser()
   const close: DailyClose = {
     ...input,
     id: createId(),

@@ -10,6 +10,7 @@ import {
   isSessionUnlocked,
   unlockWithPin,
   type StaffUser,
+  getLastUnlockProblem,
 } from "../../features/pos/services/security.service"
 import {
   clearStoreData,
@@ -159,7 +160,7 @@ export default function LoginScreen() {
         setPin("")
         setShake(true)
         setTimeout(() => setShake(false), 450)
-        showToast(t("desktop.lock_pin_not_recognized"), "error")
+        showToast(getLastUnlockProblem() === "ambiguous" ? t("desktop.lock_pin_ambiguous") : t("desktop.lock_pin_not_recognized"), "error")
         return
       }
       setStatus(`${user.name} unlocked.`)

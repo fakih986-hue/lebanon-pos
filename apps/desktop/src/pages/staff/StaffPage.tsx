@@ -32,32 +32,7 @@ import {
   type Sale,
   type SaleRefund,
 } from "../../features/pos/services/sales.service"
-import {
-  closeShift,
-  createUser,
-  getActiveShift,
-  getAuditEvents,
-  getCurrentUser,
-  getShifts,
-  getUsers,
-  openShift,
-  rolePermissions,
-  setCurrentUser,
-  subscribeSecurity,
-  updateUser,
-  effectivePermissions,
-  grantablePermissions,
-  wouldOrphanAdmin,
-  PERMISSION_CATALOG,
-  PERMISSION_GROUP_ORDER,
-  PERMISSION_GROUP_LABEL_KEYS,
-  type AuditEvent,
-  type Permission,
-  otherActiveAdmin,
-  type Shift,
-  type StaffUser,
-  type UserRole,
-} from "../../features/pos/services/security.service"
+import { closeShift, createUser, getActiveShift, getAuditEvents, getCurrentUser, getShifts, getUsers, openShift, rolePermissions, subscribeSecurity, updateUser, effectivePermissions, grantablePermissions, wouldOrphanAdmin, PERMISSION_CATALOG, PERMISSION_GROUP_ORDER, PERMISSION_GROUP_LABEL_KEYS, type AuditEvent, type Permission, otherActiveAdmin, type Shift, type StaffUser, type UserRole, lockSession } from "../../features/pos/services/security.service"
 import {
   getSupplierPayments,
   subscribeSuppliers,
@@ -280,11 +255,16 @@ function staffErrorMessage(e: unknown, t: (key: string) => string): string {
   return msg || t("pos.staff.save_failed")
 }
 
+/** CONTAINMENT: switching the register user needs that person's PIN — lock and let them unlock. */
+function switchWithPin() {
+  lockSession()
+}
+
 export default function StaffPage() {
   const { t } = useI18n()
   const [isLoading, setIsLoading] = useState(true)
   const [users, setUsers] = useState<StaffUser[]>(getUsers())
-  const [activeUserId, setActiveUserId] = useState(getCurrentUser().id)
+  const [activeUserId, setActiveUserId] = useState(getCurrentUser()?.id ?? "")
   const [shifts, setShifts] = useState<Shift[]>(getShifts())
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>(getAuditEvents())
   const [sales, setSales] = useState<Sale[]>(getSales())
@@ -332,7 +312,7 @@ export default function StaffPage() {
 
     function refreshSecurity() {
       setUsers(getUsers())
-      setActiveUserId(getCurrentUser().id)
+      setActiveUserId(getCurrentUser()?.id ?? "")
       setShifts(getShifts())
       setAuditEvents(getAuditEvents())
     }
@@ -580,9 +560,9 @@ export default function StaffPage() {
             <UserCog size={20} className="text-emerald-700" />
           </div>
           <p className="mt-3 text-2xl font-bold text-zinc-950">
-            {activeUser.name}
+            {activeUser?.name ?? ""}
           </p>
-          <p className="mt-1 text-sm text-zinc-500">{roleNameLabels[activeUser.role]}</p>
+          <p className="mt-1 text-sm text-zinc-500">{activeUser ? roleNameLabels[activeUser.role] : ""}</p>
         </div>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
@@ -684,7 +664,7 @@ export default function StaffPage() {
 
               <select
                 value={activeUserId}
-                onChange={(event) => setCurrentUser(event.target.value)}
+                onChange={() => switchWithPin()}
                 aria-label="Active register user"
                 className="h-11 min-w-0 flex-1 rounded-lg border border-zinc-200 bg-zinc-50 px-3 font-semibold text-zinc-700 outline-none focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
               >
@@ -712,7 +692,7 @@ export default function StaffPage() {
                 <article
                   key={user.id}
                   className="rounded-lg border p-4 transition"
-                  style={user.id === activeUser.id
+                  style={user.id === activeUser?.id
                     ? { borderColor: "var(--brand-border)", background: "var(--brand-soft)", boxShadow: "inset 3px 0 0 var(--brand)" }
                     : { borderColor: "var(--border)", background: "var(--surface)" }}
                 >
@@ -762,7 +742,7 @@ export default function StaffPage() {
                   <div className="mt-2 grid grid-cols-3 gap-1.5">
                     <button
                       type="button"
-                      onClick={() => setCurrentUser(user.id)}
+                      onClick={() => switchWithPin()}
                       disabled={!user.active}
                       className="flex h-8 items-center justify-center gap-1.5 rounded-lg border text-[11px] font-bold transition hover:opacity-80 disabled:opacity-40"
                       style={{ background: "var(--surface-2)", borderColor: "var(--border-strong)", color: "var(--text)" }}

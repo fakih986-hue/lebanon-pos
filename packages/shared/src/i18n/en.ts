@@ -351,6 +351,7 @@ export const en = {
   "desktop.lock_unlock": "Unlock",
   "desktop.lock_unlock_register": "Unlock Register",
   "desktop.lock_pin_not_recognized": "PIN not recognized.",
+  "desktop.lock_pin_ambiguous": "This PIN belongs to more than one person. Ask the owner to give each staff member their own PIN.",
   "desktop.lock_register": "Lock register",
   "desktop.retail_suite": "Retail checkout suite",
   "desktop.collapse_menu": "Collapse menu",

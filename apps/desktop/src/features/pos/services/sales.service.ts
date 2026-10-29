@@ -19,8 +19,7 @@ import {
   getCurrentUser,
   PermissionError,
   recordAuditEvent,
-  userCan,
-} from "./security.service"
+  userCan, requireCurrentUser } from "./security.service"
 import {
   assertCanWrite, commitStagedSyncOperation, discardStagedSyncOperation, getCurrentTenantId, getDeviceId, getDeviceTag, getSyncQueue,
   isRecordAcknowledged, settleStagedSyncOperation, stageSyncOperation, SyncStorageError,
@@ -401,7 +400,7 @@ export function getRefundsForSale(saleId: string) {
 export function buildSale(input: RecordSaleInput, id: string): Sale {
   assertCanWrite("record sale")
   const cost = input.items.reduce((sum, item) => sum + (Number.isFinite(item.cost) ? item.cost : 0) * item.quantity, 0)
-  const currentUser = getCurrentUser()
+  const currentUser = requireCurrentUser()
   const activeShift = getActiveShift()
   // Shift gate — every sale requires an open register shift
   if (!activeShift) {
@@ -744,7 +743,7 @@ export function processRefund(input: ProcessRefundInput): SaleRefund {
   assertCanWrite("record refund")
   // The service is the boundary, not the button: the Sales page hides it, this refuses it.
   if (!userCan("sales.refund")) throw new PermissionError("Refunds need the Refunds permission.")
-  const currentUser = getCurrentUser()
+  const currentUser = requireCurrentUser()
   const activeShift = getActiveShift()
   // Pilot policy: all refunds require an open shift.
   if (!activeShift) {

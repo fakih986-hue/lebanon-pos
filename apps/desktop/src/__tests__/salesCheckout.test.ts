@@ -42,7 +42,7 @@ const SALES_KEY = "lebanonpos.sales.v1"
 function seedAdmin() {
   window.localStorage.setItem(
     USERS_KEY,
-    JSON.stringify([{ id: "u1", name: "Owner", role: "Admin", pin: "HASH", code: "OWN", permissions: [] }])
+    JSON.stringify([{ id: "u1", name: "Owner", role: "Admin", pin: "HASH", code: "OWN", permissions: [], active: true }])
   )
   window.localStorage.setItem(CURRENT_USER_KEY, "u1")
 }

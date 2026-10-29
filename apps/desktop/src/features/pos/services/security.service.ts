@@ -421,10 +421,10 @@ export function getCurrentUser() {
     ? window.localStorage.getItem(CURRENT_USER_KEY)
     : undefined
 
-  let user =
-    users.find((u) => u.id === currentUserId && u.active) ??
-    users.find((u) => u.active) ??
-    users[0] ?? null
+  // CONTAINMENT: the current user is the person who unlocked — never "the first active user" or
+  // "the first user". A missing or deactivated current user means nobody is signed in (the register
+  // locks), so nothing is ever recorded under someone else's name.
+  let user = users.find((u) => u.id === currentUserId && u.active) ?? null
 
   if (user && !user.role) {
     console.warn("[security] current user has no role, defaulting to Cashier", user.id)
@@ -451,7 +451,12 @@ export function isSessionUnlocked() {
 }
 
 
+/** Why the last unlockWithPin returned null, when it is not simply a wrong PIN. */
+let lastUnlockProblem: "ambiguous" | null = null
+export function getLastUnlockProblem() { return lastUnlockProblem }
+
 export async function unlockWithPin(pin: string) {
+  lastUnlockProblem = null
   if (!canUseStorage()) {
     return null
   }
@@ -490,7 +495,6 @@ export async function unlockWithPin(pin: string) {
   const cleanPin = pin.trim()
   const pinHash = await hashPin(cleanPin)
   const users = getUsers()
-  const rolePriority: Record<string, number> = { Admin: 4, Manager: 3, Cashier: 2, Driver: 1 }
 
   // ── Always prefer API verification when online ──────────────────────
   // This ensures server-side PIN resets (owner portal) are honoured on
@@ -551,6 +555,13 @@ export async function unlockWithPin(pin: string) {
         }
         // If we got 200 but no user.id, still consider the server
         // reachable — don't deny local fallback for server data issues
+      } else if (res.status === 409) {
+        // CONTAINMENT: several staff share this PIN; the server will not guess who it is
+        console.log("[unlockWithPin] ambiguous PIN")
+        lastUnlockProblem = "ambiguous"
+        recordAuditEvent({ action: "security.login.failed", entity: "security", summary: "PIN unlock refused — the PIN belongs to more than one staff member." })
+        recordFailedAttempt()
+        return null
       } else if (res.status === 401) {
         // Server explicitly rejected this PIN
         console.log("[unlockWithPin] API rejected PIN")
@@ -615,9 +626,15 @@ export async function unlockWithPin(pin: string) {
     return ok
   })
 
-  const user = pinVersionSafe.sort(
-    (a, b) => (rolePriority[b.role] ?? 0) - (rolePriority[a.role] ?? 0)
-  )[0]
+  // CONTAINMENT: a PIN must identify one person. Several matches are refused, never resolved to
+  // the highest role.
+  if (pinVersionSafe.length > 1) {
+    lastUnlockProblem = "ambiguous"
+    recordAuditEvent({ action: "security.login.failed", entity: "security", summary: "PIN unlock refused — the PIN belongs to more than one staff member." })
+    recordFailedAttempt()
+    return null
+  }
+  const user = pinVersionSafe[0]
 
   if (!user) {
     if (matches.length > 0) {
@@ -683,7 +700,7 @@ export function lockSession() {
   recordAuditEvent({
     action: "security.lock",
     entity: "security",
-    summary: `${user.name} locked the register.`,
+    summary: `${user?.name ?? "The register"} locked the register.`,
   })
   dispatchSecurityChanged()
 }
@@ -910,6 +927,13 @@ export class PermissionError extends Error {
   constructor(message: string) { super(message); this.name = "PermissionError" }
 }
 
+/** CONTAINMENT: the signed-in staff member, or a refusal — work is never recorded under someone else. */
+export function requireCurrentUser(): StaffUser {
+  const user = getCurrentUser()
+  if (!user) throw new PermissionError("No staff member is signed in. Unlock the register with your PIN.")
+  return user
+}
+
 /** Shift rules, shared by the services and the UI (the server mirrors them in apps/api/src/lib/permissions.ts). */
 export function canOpenShift(user = getCurrentUser()) {
   return userCan("sales.checkout", user) || userCan("shifts.manage", user)
@@ -1009,7 +1033,7 @@ export function getActiveShift() {
 export function openShift(openingFloatUsd: number) {
   assertCanWrite("open shift")
   if (typeof openingFloatUsd !== "number" || openingFloatUsd < 0) return null
-  const user = getCurrentUser()
+  const user = requireCurrentUser()
   if (!canOpenShift(user)) throw new PermissionError("Opening a shift needs the Checkout or Shifts permission.")
   const shifts = getShifts()
   const openShiftNow = shifts.find((shift) => shift.status === "Open")
@@ -1061,7 +1085,7 @@ export function closeShift(input: {
   notes?: string
 }) {
   assertCanWrite("close shift")
-  const user = getCurrentUser()
+  const user = requireCurrentUser()
   const shifts = getShifts()
   const existing = shifts.find(s => s.id === input.shiftId)
   if (!existing) return null

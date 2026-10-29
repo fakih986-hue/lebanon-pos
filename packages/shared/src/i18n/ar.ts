@@ -350,6 +350,7 @@ export const ar = {
   "desktop.lock_unlock": "فتح",
   "desktop.lock_unlock_register": "فتح الكاشير",
   "desktop.lock_pin_not_recognized": "رمز PIN غير معروف.",
+  "desktop.lock_pin_ambiguous": "هذا الرمز مشترك بين أكثر من شخص. اطلب من المالك أن يعطي كل موظف رمزاً خاصاً به.",
   "desktop.no_shift": "لا توجد وردية",
   "desktop.lock_register": "قفل الكاشير",
   "desktop.retail_suite": "مجموعة بيع التجزئة",

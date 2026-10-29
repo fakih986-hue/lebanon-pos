@@ -4,6 +4,7 @@ import {
   PermissionError,
   recordAuditEvent,
   userCan,
+  requireCurrentUser,
 } from "./security.service"
 import {
   assertCanWrite, commitStagedSyncOperation, enqueueSyncOperation, getDeviceId, isSyncOperationRecorded, nextDocumentReference,
@@ -443,7 +444,7 @@ export function recordSupplierPayment(input: RecordSupplierPaymentInput) {
       )
     : undefined
   const shift = getActiveShift()
-  const user = getCurrentUser()
+  const user = requireCurrentUser()
   const payment: SupplierPayment = {
     id: input.id ?? createId("supplier-payment"),
     supplierId: supplier.id,
@@ -513,7 +514,7 @@ export function recordPurchaseOrder(input: RecordPurchaseOrderInput) {
     }
   }
   const shift = getActiveShift()
-  const user = getCurrentUser()
+  const user = requireCurrentUser()
   const total = input.items.reduce((sum, item) => sum + item.total, 0)
   // What is to be paid now. The order itself is written Unpaid: only a recorded payment marks it
   // paid (updatePurchaseOrderPaidTotal), so a failed payment can never leave a "Paid" order.
