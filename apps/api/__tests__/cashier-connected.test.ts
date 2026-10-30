@@ -174,3 +174,36 @@ describe("a cashier-connected till with a manager unlocked locally (1.0.50 till,
     expect(Number(tillCost)).toBe(1)
   })
 })
+
+describe("shared PIN on a 1.0.50 till against the hotfix server (409 AMBIGUOUS_PIN)", () => {
+  const HADI = randomUUID(), LINA = randomUUID()
+  beforeAll(async () => {
+    await prisma.staffUser.create({ data: { id: HADI, tenantId: T, name: "Hadi (manager)", mobile: `cc-h-${T.slice(0, 6)}`, pin: await bcrypt.hash("5199", 12), role: "Manager" } })
+    await prisma.staffUser.create({ data: { id: LINA, tenantId: T, name: "Lina", mobile: `cc-l-${T.slice(0, 6)}`, pin: await bcrypt.hash("5199", 12), role: "Cashier" } })
+    const y = await sync(); await y.pullFromServer(true); await dispose()
+  })
+
+  it("the server refuses the shared PIN online", async () => {
+    const r = await realFetch(`${baseUrl}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: "5199", tenantSubdomain: SUB }) })
+    expect(r.status).toBe(409)
+  })
+
+  it("a till where neither has unlocked before: the 1.0.50 till has no local match and refuses", async () => {
+    const s = await sec()
+    const who = await s.unlockWithPin("5199"); await dispose()
+    console.log("EVIDENCE shared PIN, no prior unlock on this till:", JSON.stringify({ unlocked: who?.name ?? null }))
+    expect(who).toBeNull()
+    storage.removeItem("lebanonpos.pin-attempts.v1")
+  })
+
+  it("a till where the manager unlocked before the hotfix: the 1.0.50 till falls back to its local verifier and signs in the MANAGER", async () => {
+    const s = await sec()
+    // What the pre-hotfix server produced: it resolved the shared PIN to the higher role, and the till cached that verifier.
+    const h = await s.hashPin("5199")
+    storage.setItem("lebanonpos.users.v1", JSON.stringify(cached().map((u) => u.id === HADI ? { ...u, pin: h, lastVerifiedPinVersion: u.pinVersion ?? 1 } : u)))
+    const who = await s.unlockWithPin("5199"); await dispose()
+    console.log("EVIDENCE shared PIN, manager unlocked here before:", JSON.stringify({ unlocked: who?.name ?? null, role: who?.role ?? null, syncTokenStillCashier: tokenUser() === RANA }))
+    expect(who?.id).toBe(HADI)
+    expect(tokenUser()).toBe(RANA)
+  })
+})
