@@ -2,6 +2,7 @@ import { Router } from "express"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
+import { requirePermission, hideCostUnlessAllowed, can } from "../middleware/permission.js"
 import { effectivePermissions, shiftOpAllowed } from "../lib/permissions.js"
 
 const router = Router()
@@ -42,7 +43,7 @@ async function shiftCash(db: Db, tenantId: string, shift: ShiftRef) {
 }
 
 // ── Low-stock alerts ─────────────────────────────────────────────────
-router.get("/low-stock", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/low-stock", requireAuth, requirePermission("inventory.view", "reports.view"), hideCostUnlessAllowed, async (req: AuthRequest, res: ServerResponse) => {
   try {
     // Always the caller's own tenant: a query parameter must never select another tenant.
     const tenantId = req.auth!.tenantId
@@ -81,7 +82,7 @@ router.get("/low-stock", requireAuth, async (req: AuthRequest, res: ServerRespon
 })
 
 // ── X Report (mid-shift summary) ─────────────────────────────────────
-router.get("/x-report", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/x-report", requireAuth, requirePermission("reports.view", "shifts.manage"), hideCostUnlessAllowed, async (req: AuthRequest, res: ServerResponse) => {
   try {
     // Always the caller's own tenant: a query parameter must never select another tenant.
     const tenantId = req.auth!.tenantId
@@ -167,7 +168,7 @@ router.get("/x-report", requireAuth, async (req: AuthRequest, res: ServerRespons
 })
 
 // ── Z Report (end-of-shift summary + close) ──────────────────────────
-router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/z-report", requireAuth, hideCostUnlessAllowed, async (req: AuthRequest, res: ServerResponse) => {
   try {
     // Always the caller's own tenant: a query parameter must never select another tenant.
     const tenantId = req.auth!.tenantId
@@ -283,7 +284,7 @@ router.post("/z-report", requireAuth, async (req: AuthRequest, res: ServerRespon
 })
 
 // ── Margin per product/category ──────────────────────────────────────
-router.get("/margin", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/margin", requireAuth, requirePermission("reports.cost"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     // Always the caller's own tenant: a query parameter must never select another tenant.
     const tenantId = req.auth!.tenantId
@@ -375,7 +376,7 @@ router.get("/margin", requireAuth, async (req: AuthRequest, res: ServerResponse)
 })
 
 // ── Customer debt aging ──────────────────────────────────────────────
-router.get("/debt-aging", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/debt-aging", requireAuth, requirePermission("reports.view", "customers.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     // Always the caller's own tenant: a query parameter must never select another tenant.
     const tenantId = req.auth!.tenantId
@@ -463,8 +464,9 @@ router.get("/debt-aging", requireAuth, async (req: AuthRequest, res: ServerRespo
 })
 
 // ── Excel export ─────────────────────────────────────────────────────
-router.get("/export/:type", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/export/:type", requireAuth, requirePermission("reports.view", "inventory.view"), async (req: AuthRequest, res: ServerResponse) => {
   try {
+    const showCost = await can(req, "reports.cost")
     // Always the caller's own tenant: a query parameter must never select another tenant.
     const tenantId = req.auth!.tenantId
     const type = (req as any).params?.type as string
@@ -474,6 +476,7 @@ router.get("/export/:type", requireAuth, async (req: AuthRequest, res: ServerRes
 
     switch (type) {
       case "low-stock": {
+        if (!(await can(req, "inventory.view")) && !(await can(req, "reports.view"))) { json(res, { error: "You don't have permission to do this", code: "FORBIDDEN" }, 403); return }
         const products = await prisma.product.findMany({
           where: { tenantId, isParent: false },
           select: {
@@ -487,13 +490,14 @@ router.get("/export/:type", requireAuth, async (req: AuthRequest, res: ServerRes
         csv = "Name,Barcode,Category,Stock,Reorder Point,Suggested Order,Cost,Price,Supplier\n"
         csv += lowStock.map(p =>
           [p.name, p.barcode ?? "", p.category, Number(p.stock), p.reorderPoint ?? 0,
-            p.reorderQuantity ?? 0, Number(p.cost), Number(p.price), p.supplierName ?? ""]
+            p.reorderQuantity ?? 0, showCost ? Number(p.cost) : "", Number(p.price), p.supplierName ?? ""]
             .map(v => typeof v === "string" ? `"${v.replace(/"/g, '""')}"` : v).join(",")
         ).join("\n")
         filename = `low-stock-${new Date().toISOString().slice(0, 10)}.csv`
         break
       }
       case "debt-aging": {
+        if (!(await can(req, "reports.view")) && !(await can(req, "customers.manage"))) { json(res, { error: "You don't have permission to do this", code: "FORBIDDEN" }, 403); return }
         const [debtSales, debtPayments, customers] = await Promise.all([
           prisma.debtSale.findMany({ where: { tenantId }, select: { customerId: true, total: true, createdAt: true } }),
           prisma.debtPayment.findMany({ where: { tenantId }, select: { customerId: true, amount: true } }),
@@ -523,6 +527,7 @@ router.get("/export/:type", requireAuth, async (req: AuthRequest, res: ServerRes
         break
       }
       case "margin": {
+        if (!showCost) { json(res, { error: "You don't have permission to do this", code: "FORBIDDEN", required: ["reports.cost"] }, 403); return }
         const days = 30
         const since = new Date(Date.now() - days * 86400000)
         const sales = await prisma.sale.findMany({
@@ -555,6 +560,7 @@ router.get("/export/:type", requireAuth, async (req: AuthRequest, res: ServerRes
         break
       }
       case "x-report": {
+        if (!(await can(req, "reports.view")) && !(await can(req, "shifts.manage"))) { json(res, { error: "You don't have permission to do this", code: "FORBIDDEN" }, 403); return }
         const shift = await prisma.shift.findFirst({
           where: { tenantId, status: "Open" },
           orderBy: { openedAt: "desc" },
@@ -572,7 +578,7 @@ router.get("/export/:type", requireAuth, async (req: AuthRequest, res: ServerRes
         csv += `Sales Count,"${sales._count}"\nSales Total,"$${Number(sales._sum.total ?? 0).toFixed(2)}"\n`
         csv += `Refunds,"$${Number(refunds._sum.total ?? 0).toFixed(2)}"\n`
         csv += `Expenses,"$${Number(expenses._sum.amount ?? 0).toFixed(2)}"\n`
-        csv += `Net Profit,"$${Number(sales._sum.profit ?? 0).toFixed(2)}"\n`
+        if (showCost) csv += `Net Profit,"$${Number(sales._sum.profit ?? 0).toFixed(2)}"\n`
         csv += `Cash Sales,"$${cash.cashSales.toFixed(2)}"\nCash Refunds,"$${cash.cashRefunds.toFixed(2)}"\nCash Expenses,"$${cash.cashExpenses.toFixed(2)}"\nCash Supplier Payments,"$${cash.cashSupplierPayments.toFixed(2)}"\nCash In,"$${cash.cashIn.toFixed(2)}"\nCash Out,"$${cash.cashOut.toFixed(2)}"\nNet Cash,"$${cash.netCash.toFixed(2)}"\nExpected Cash,"$${cash.expectedCash.toFixed(2)}"\n`
         filename = `x-report-${shift.shiftNumber}.csv`
         break

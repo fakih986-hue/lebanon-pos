@@ -10,6 +10,7 @@ import { Prisma } from "../generated/prisma/index.js"
 import { decrementProductStock, increaseProductStock } from "../lib/inventory.js"
 import { recordStockMovement } from "../lib/ledger.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
+import { requirePermission } from "../middleware/permission.js"
 import { broadcastToTenant, broadcastToUser, getConnectedDrivers } from "../ws/index.js"
 
 const router = Router()
@@ -99,7 +100,7 @@ const loginSchema = z.object({
 // ── Driver Management (admin auth) ──
 
 // List drivers for this tenant
-router.get("/drivers", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/drivers", requireAuth, requirePermission("delivery.manage", "staff.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const drivers = await prisma.staffUser.findMany({
       where: { tenantId: req.auth!.tenantId, role: "Driver" },
@@ -114,7 +115,7 @@ router.get("/drivers", requireAuth, async (req: AuthRequest, res: ServerResponse
 })
 
 // Create driver
-router.post("/drivers", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/drivers", requireAuth, requirePermission("staff.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const { name, mobile, code, pin } = validate(createDriverSchema, req.body)
     const existing = await prisma.staffUser.findFirst({
@@ -145,7 +146,7 @@ router.post("/drivers", requireAuth, async (req: AuthRequest, res: ServerRespons
 })
 
 // Update driver
-router.patch("/drivers/:id", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.patch("/drivers/:id", requireAuth, requirePermission("staff.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const driverId = req.params?.id as string
     const existing = await prisma.staffUser.findFirst({
@@ -443,7 +444,7 @@ router.get("/products", async (req: any, res: ServerResponse) => {
 })
 
 // POS: list delivery orders
-router.get("/orders", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/orders", requireAuth, requirePermission("delivery.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const q = (req.query as Record<string, string>) ?? {}
@@ -472,7 +473,7 @@ router.get("/orders", requireAuth, async (req: AuthRequest, res: ServerResponse)
 })
 
 // POS: update delivery order status
-router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.patch("/orders/:id", requireAuth, requirePermission("delivery.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const body = validate(updateOrderSchema, req.body)
@@ -493,7 +494,7 @@ router.patch("/orders/:id", requireAuth, async (req: AuthRequest, res: ServerRes
       updateData.driverAssignedAt = new Date()
       if (body.driverId) {
         const driver = await prisma.staffUser.findFirst({
-          where: { id: body.driverId, role: "Driver", active: true },
+          where: { id: body.driverId, role: "Driver", active: true, tenantId: req.auth!.tenantId },
           select: { name: true },
         })
         if (!driver) {
@@ -594,7 +595,7 @@ function requireCustomerAuth(req: AuthRequest, res: ServerResponse, next: () => 
 }
 
 // Admin: get online driver IDs
-router.get("/drivers/online", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/drivers/online", requireAuth, requirePermission("delivery.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const online = getConnectedDrivers(req.auth!.tenantId)
     json(res, online)
@@ -735,7 +736,7 @@ router.get("/settings", async (req: any, res: ServerResponse) => {
 })
 
 // Update delivery settings (admin auth)
-router.patch("/settings", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.patch("/settings", requireAuth, requirePermission("settings.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const body = validate(updateSettingsSchema, req.body)
@@ -937,8 +938,13 @@ router.get("/public/image/:productId", async (req: any, res: ServerResponse) => 
       json(res, { error: "Invalid product ID" }, 400)
       return
     }
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
+    const tenantId = typeof req.query?.tenantId === "string" ? req.query.tenantId : ""
+    if (!tenantId) {
+      json(res, { error: "tenantId query param required" }, 400)
+      return
+    }
+    const product = await prisma.product.findFirst({
+      where: { id: productId, tenantId },
       select: { image: true },
     })
     if (!product?.image) {

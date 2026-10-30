@@ -4,6 +4,7 @@ import { z } from "zod"
 import type { ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
 import { json, type AuthRequest, requireAuth } from "../middleware/auth.js"
+import { requirePermission } from "../middleware/permission.js"
 
 const pairSchema = z.object({
   code: z.string().min(1, "Pairing code is required"),
@@ -26,7 +27,7 @@ function generateCode(): string {
   return randomBytes(3).toString("hex").toUpperCase()
 }
 
-router.post("/device/generate-code", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/device/generate-code", requireAuth, requirePermission("settings.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const code = generateCode()
@@ -101,7 +102,7 @@ router.post("/device/pair", async (req: AuthRequest, res: ServerResponse) => {
   }
 })
 
-router.get("/device/list", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/device/list", requireAuth, requirePermission("settings.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const devices = await prisma.device.findMany({
@@ -114,7 +115,7 @@ router.get("/device/list", requireAuth, async (req: AuthRequest, res: ServerResp
   }
 })
 
-router.post("/device/rename", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/device/rename", requireAuth, requirePermission("settings.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const body = renameSchema.parse(req.body)
     const tenantId = req.auth!.tenantId
@@ -141,7 +142,7 @@ router.post("/device/rename", requireAuth, async (req: AuthRequest, res: ServerR
   }
 })
 
-router.post("/device/register-hub", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/device/register-hub", requireAuth, requirePermission("settings.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenantId = req.auth!.tenantId
     const body = z.object({
@@ -180,7 +181,7 @@ router.post("/device/register-hub", requireAuth, async (req: AuthRequest, res: S
   }
 })
 
-router.post("/device/revoke", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.post("/device/revoke", requireAuth, requirePermission("settings.manage"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const body = revokeSchema.parse(req.body)
     const tenantId = req.auth!.tenantId

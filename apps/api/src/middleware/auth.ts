@@ -54,11 +54,16 @@ type Handler = (
   next: (err?: unknown) => void
 ) => void
 
+/** Fields removed from responses for callers without reports.cost (SPRINT-0, see middleware/permission.ts). */
+export const COST_FIELDS = new Set(["cost", "profit", "margin", "marginPct", "totalCost", "soldAtCost", "unitCost", "wholesalePrice", "fallbackUnitCost"])
+
 export function json(res: ServerResponse, data: unknown, statusCode = 200) {
   res.statusCode = statusCode
   res.setHeader("Content-Type", "application/json")
+  const hideCost = (res as { hideCost?: boolean }).hideCost === true
   // serializeDecimals handles most cases; JSON.stringify replacer catches any missed
   res.end(JSON.stringify(serializeDecimals(data), (key: string, value: unknown) => {
+    if (hideCost && COST_FIELDS.has(key)) return undefined
     if (value !== null && typeof value === "object" && !Array.isArray(value)) {
       if (value instanceof Decimal) return value.toNumber()
       if ("toNumber" in value && typeof (value as any).toNumber === "function") return (value as any).toNumber()

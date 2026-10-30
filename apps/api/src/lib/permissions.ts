@@ -11,6 +11,8 @@ const ALL_PERMISSIONS: Permission[] = [
   "customers.manage", "suppliers.manage",
   "reports.view", "accounting.manage", "cash.manage", "shifts.manage",
   "staff.manage", "settings.manage", "delivery.manage",
+  // SPRINT-0: see cost, profit and margin (reports, product cost, dashboard profit).
+  "reports.cost",
 ]
 
 const ROLE_PRESETS: Record<string, Permission[]> = {
@@ -28,6 +30,8 @@ function expandLegacyPermissions(perms: Permission[]): Permission[] {
   if (set.has("inventory.manage")) { set.add("inventory.view"); set.add("inventory.receive"); set.add("inventory.adjust") }
   if (set.has("inventory.receive") || set.has("inventory.adjust")) set.add("inventory.view")
   if (set.has("accounting.manage")) { set.add("suppliers.manage"); set.add("cash.manage") }
+  // SPRINT-0: mirror of the client rule (cost visibility implied by reports/catalogue/books).
+  if (set.has("reports.view") || set.has("inventory.manage") || set.has("accounting.manage")) set.add("reports.cost")
   return [...set]
 }
 
@@ -87,6 +91,10 @@ export function requiredPermissionForOp(entity: string, action: string, payload:
       }
       return null
     case "refund": return "sales.refund"
+    // SPRINT-0: the catalogue. Creating a product happens during receiving too.
+    case "product":
+      if (action === "create") return "inventory.receive"
+      return "inventory.manage"
     case "cash-movement": return "cash.manage"
     case "expense": return "accounting.manage"
     case "daily-close": return "accounting.manage"

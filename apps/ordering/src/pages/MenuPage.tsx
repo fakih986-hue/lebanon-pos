@@ -52,10 +52,14 @@ type MenuProduct = Product & { parent?: { name: string; image?: boolean | null }
 type GroupEntry = { kind: "group"; parentId: number; name: string; hasParentImage: boolean; variants: MenuProduct[] }
 type CatalogEntry = { kind: "single"; product: MenuProduct } | GroupEntry
 
+// Product images are served per store (the server refuses a bare product id).
+let imageStoreId = ""
+const productImageUrl = (productId: number) => `/api/delivery/public/image/${productId}?tenantId=${encodeURIComponent(imageStoreId)}`
+
 // A standalone product card (handles both in-stock and out-of-stock).
 function CatalogCard({ product, onAdd, t }: { product: MenuProduct; onAdd: (p: MenuProduct) => void; t: (k: string) => string }) {
   const oos = product.stock <= 0
-  const imgSrc = `/api/delivery/public/image/${product.id}`
+  const imgSrc = productImageUrl(product.id)
   return (
     <div className={`bg-glass border border-glass rounded-xl overflow-hidden ${oos ? "opacity-50" : "shadow-lg hover:bg-glass-hover transition-all duration-200"}`}>
       {product.image ? (
@@ -93,8 +97,8 @@ function VariantGroupCard({ entry, onAdd, t }: { entry: GroupEntry; onAdd: (p: M
   const groupOOS = entry.variants.every((v) => v.stock <= 0)
   const imgVariant = entry.hasParentImage ? null : entry.variants.find((v) => v.image)
   const imgSrc = entry.hasParentImage
-    ? `/api/delivery/public/image/${entry.parentId}`
-    : imgVariant ? `/api/delivery/public/image/${imgVariant.id}` : null
+    ? productImageUrl(entry.parentId)
+    : imgVariant ? productImageUrl(imgVariant.id) : null
   return (
     <div className={`bg-glass border border-glass rounded-xl overflow-hidden ${groupOOS ? "opacity-50" : "shadow-lg"}`}>
       {imgSrc ? (
@@ -167,6 +171,7 @@ export function MenuPage() {
     setLoading(true)
     api<{ id: string; name: string }>(`/api/delivery/tenant?subdomain=${tenantSubdomain}`)
       .then((tenant) => {
+        imageStoreId = tenant.id
         setTenantId(tenant.id)
         setStoreName(tenant.name)
         api<{ deliveryFee?: number }>(`/api/delivery/settings?tenantId=${tenant.id}`)

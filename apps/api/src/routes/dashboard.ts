@@ -2,10 +2,11 @@ import { Router } from "express"
 import type { ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
+import { requirePermission, hideCostUnlessAllowed } from "../middleware/permission.js"
 
 const router = Router()
 
-router.get("/kpi", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
+router.get("/kpi", requireAuth, requirePermission("reports.view"), hideCostUnlessAllowed, async (req: AuthRequest, res: ServerResponse) => {
   try {
   const tenantId = req.auth!.tenantId
 
