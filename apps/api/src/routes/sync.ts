@@ -14,6 +14,7 @@ import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shift
 import { json, requireAuth, type AuthRequest } from "../middleware/auth.js"
 import { requireCloudOrJwtAuth } from "../middleware/cloudAuth.js"
 import { requireTokenKinds } from "../middleware/auth.js"
+import { requirePermission } from "../middleware/permission.js"
 // CONTAINMENT: till sync is for store staff, the hub's own screen and a hub's cloud link — never an
 // ordering-app customer, a delivery driver or the owner portal.
 const staffSync = [requireCloudOrJwtAuth, requireTokenKinds("staff", "hub-local", "bridge")]
@@ -129,6 +130,17 @@ router.get("/status", requireAuth, requireTokenKinds("staff", "hub-local"), asyn
     console.error("Tenant status error:", err)
     json(res, { error: "Failed to get tenant status" }, 500)
   }
+})
+
+// Operations this server refused for permissions, with their payload and reason, so refused
+// work is visible and recoverable (never silently dropped).
+router.get("/refused", staffSync, requirePermission("reports.view"), async (req: AuthRequest, res: ServerResponse) => {
+  const rows = await prisma.syncOperation.findMany({
+    where: { tenantId: req.auth!.tenantId, status: "Refused", appliedAt: null },
+    orderBy: { createdAt: "desc" }, take: 200,
+    select: { id: true, entity: true, action: true, payload: true, error: true, attempts: true, createdAt: true, lastAttemptAt: true },
+  })
+  json(res, { operations: rows })
 })
 
 router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) => {
@@ -330,6 +342,20 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             },
           })
         } catch { /* best-effort audit */ }
+        // Keep the refused work: its payload and reason stay on the server as an unapplied
+        // "Refused" row (never forwarded, never pruned) that a manager can list. The till keeps
+        // its own copy too. A later push of the same op, once permitted, applies it normally.
+        try {
+          const row = await prisma.syncOperation.findUnique({ where: { id: op.id }, select: { tenantId: true, appliedAt: true } })
+          const error = `${denial} (pushed by account ${req.auth!.userId}${deviceId ? `, device ${deviceId}` : ""})`
+          if (!row) {
+            await prisma.syncOperation.create({
+              data: { id: op.id, tenantId, entity: op.entity, action: op.action, summary: `${op.action} ${op.entity}`, payload: (op.payload ?? {}) as any, status: "Refused", attempts: 1, lastAttemptAt: new Date(), error },
+            })
+          } else if (row.tenantId === tenantId && !row.appliedAt) {
+            await prisma.syncOperation.updateMany({ where: { id: op.id, tenantId, appliedAt: null }, data: { status: "Refused", attempts: { increment: 1 }, lastAttemptAt: new Date(), error } })
+          }
+        } catch (keepErr) { console.error("Failed to keep refused operation:", keepErr) }
         // A refused price is a money decision a manager settles (never retried); other refusals
         // stay retryable (the permission may be granted later).
         results.push({ id: op.id, status: denial.startsWith("PRICE_OVERRIDE:") ? "rejected" : "error", error: denial })
