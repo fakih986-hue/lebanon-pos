@@ -895,6 +895,14 @@ async function tryRefreshHubToken(): Promise<boolean> {
     if (!res.ok) return false
     const { token } = await res.json()
     if (!token) return false
+    // Only a token for the store this register already holds: a server configured for another
+    // store must never silently switch the register (its queued work would go to that store).
+    const current = getCurrentTenantId()
+    const offered = tenantIdFromToken(token)
+    if (current && offered !== current) {
+      console.warn("[sync] auto-login offered a token for another store — not adopted")
+      return false
+    }
     setAuthToken(token)
     return true
   } catch {
