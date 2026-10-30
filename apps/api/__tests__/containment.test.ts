@@ -109,6 +109,21 @@ describe("permission rules for operations that had none", () => {
     expect((await push(cashier, "debt", "payment", { id: randomUUID(), customerId, amount: 5, method: "Cash", reference: "P-CT", createdAt: new Date().toISOString() })).body.results[0].status).not.toBe("ok")
     expect((await push(manager, "customer", "update", { id: customerId, name: "Rami K." })).body.results[0].status).toBe("ok")
   })
+  it("refused work is kept on the server (unapplied, payload and reason), listed for managers, and applies once when resent by an allowed account", async () => {
+    const op = { id: randomUUID(), entity: "inventory", action: "adjust", payload: adjust() }
+    expect((await call("POST", "/api/sync/push", { deviceId: "ct-dev", operations: [op] }, cashier)).body.results[0].status).toBe("error")
+    const row = await prisma.syncOperation.findUnique({ where: { id: op.id } })
+    expect(row).toMatchObject({ status: "Refused", appliedAt: null })
+    expect((row!.payload as any).quantityChange).toBe(1)
+    expect(String(row!.error)).toMatch(/permission.*device ct-dev/)
+    const list = await call("GET", "/api/sync/refused", undefined, owner)
+    expect(list.body.operations.map((o: { id: string }) => o.id)).toContain(op.id)
+    expect((await call("GET", "/api/sync/refused", undefined, cashier)).status).toBe(403)
+    expect((await call("POST", "/api/sync/push", { deviceId: "ct-dev", operations: [op] }, manager)).body.results[0].status).toBe("ok")
+    expect((await call("POST", "/api/sync/push", { deviceId: "ct-dev", operations: [op] }, manager)).body.results[0].status).toBe("ok")
+    expect(await prisma.stockAdjustment.count({ where: { tenantId: T, id: op.payload.id } })).toBe(1)
+    expect((await prisma.syncOperation.findUnique({ where: { id: op.id } }))!.appliedAt).toBeTruthy()
+  })
   it("a cashier can still park an order (held-sale needs sales.checkout)", async () => {
     expect((await push(cashier, "held-sale", "create", { id: randomUUID(), items: [], createdAt: new Date().toISOString() })).body.results[0].status).toBe("ok")
   })
