@@ -22,7 +22,8 @@ Canonical record of what is tested and what passed. Real services, real API hand
 | Driver stock-adjustment probe (was expected failure) | now a normal regression test | pass |
 | Till: fresh PIN to switch staff; no fallback actor; ambiguous PIN refused offline and online | `apps/desktop/src/__tests__/staffIdentity.test.ts` (5) | pass (`3c48be1`); Staff-page switch verified by code and type check, **not exercised in a rendered UI** |
 | Negative controls | one per guard (8 server on the hotfix tree, 6 server on master, 3 till): each fails its intended test | pass |
-| Hotfix branch `hotfix/containment-1.0.50` (`79a8c2b` + docs `63137b9`) from deployed `7df7c58` | 382 tests on a schema migrated with the deployed migrations; contents and compatibility in `docs/HOTFIX-CONTAINMENT.md` on that branch | ready, **not deployed** |
+| Refused work kept on the server (unapplied `Refused` row with payload, reason, account, device; listed for `reports.view`; a resend by an allowed account applies once) | `containment.test.ts`; hotfix: `cashier-connected.test.ts` drives the real 1.0.50 till services | pass (`3a8941f`; hotfix `5b86e09`) |
+| Containment release `hotfix/containment-1.0.50` from deployed `7df7c58`: containment + Sprint 0 server port + refused-work preservation | 420 + 5 expected fail on a schema migrated with the deployed migrations; 14 negative controls; release matrix, cashier-connected decision and shared-PIN transition in `docs/HOTFIX-CONTAINMENT.md` on that branch | ready for approval, **not deployed** |
 
 ## Phase B — observe mode
 
@@ -34,6 +35,25 @@ Canonical record of what is tested and what passed. Real services, real API hand
 | New tokens carry typ; contradicting typ refused; old tokens accepted | same + full suite | pass |
 | Negative controls (mislabel verified, no evidence, typ contradiction accepted, connecting account as actor) | each fails its intended tests | pass |
 | Full API suite | 496 + 1 expected fail (S4 attribution, Sprint 2 C) | pass |
+
+## Phase C — device enrollment and per-staff sessions (observe mode)
+
+| Area | Evidence | Status |
+|---|---|---|
+| Enrollment: manager-created one-time code, server-assigned device record, credential issued; single use (incl. concurrent and stale-read); expiry; cross-store refused with the code left unused; re-enrollment supersedes the earlier credential | `apps/api/__tests__/sessions-observe.test.ts` | pass (`ed53869`) |
+| A device credential or staff session is never a connection token (codes, sync, lists all 401) | same | pass |
+| Staff session needs the person's PIN every time (wrong PIN refused and audited); switching ends the previous session; connection token unchanged | same; till: `apps/desktop/src/__tests__/staffSession.test.ts` | pass |
+| Evidence keeps connection account and session person apart; label `staff-session` with limitations, never `verified` | same | pass |
+| Session from another device, without the device credential, forged, expired, ended before receipt; actor substitution — all recorded, audited where relevant, **applied** (observe) | same | pass |
+| Revocation: PIN reset (`staff-revoked`), deactivated staff (`staff-inactive`), revoked device (sessions ended, queued work applied and labelled, not dated by client time); another store cannot revoke | same | pass |
+| Hub forwarding keeps the hub's original evidence (`relayed`, unattested); a re-forward does not change it; a direct till cannot fake `relayed` | `apps/api/__tests__/sessions-relay.test.ts` (hub + cloud servers, bridge over HTTP) | pass |
+| Till: lock / local-PIN unlock / switch without PIN drop the session; queued work keeps the evidence it was created under; device credential only sent to its issuing server; offline work kept with local-PIN evidence | `staffSession.test.ts` (9) | pass |
+| Negative controls (14): device binding, credential key + audience, atomic code, cross-store enrollment, session counted without device, relayed from a direct till, hub forwards without evidence, switch leaves session open, PIN reset not revoking, observe labelled verified, lock keeps session, push-time evidence, credential sent anywhere, switch without PIN keeps session | each fails its intended test; source restored | pass |
+| **Browser** (desktop SPA against the guarded local cloud on the scratch DB, disposable store): owner connects; manager creates a code in Settings → Devices & Sync and the register enrolls; Rana and Sami each unlock with their own PIN and sell; server evidence: both sales `staff-session`, connection Owner, session Rana / Sami; Rana's session ended at lock; Arabic RTL layout and Arabic dates; device revoked → register shows "enroll again" at next sign-in → re-enrolled → sessions resume; server stopped → Rana unlocks with the local PIN and sells → server restarted → sale applied as `offline-claimed`, device credential valid, no session | browser pane; evidence read from the scratch DB | pass |
+| Found in the browser test: on a local server's restart the register adopted an auto-login token for **another store**, switched stores and pushed its queued sale there (also in 1.0.50) | fixed `2adcedc`; `hubTokenRefresh.test.ts` (negative control fails); browser re-run: token for the other store offered once and refused, the sale reached its own store | pass |
+| Full suites | API 521 + 1 expected fail; desktop 433; `tsc -b` clean | pass |
+
+Known limitations (Phase C): the session indicator is only visible to roles that can open Settings; a session ended while offline stays open on the server until the device's next session; the hub's own screen enrolls with a code like any register (no automatic enrollment); device credentials are bearer tokens in browser storage (no proof-of-possession yet); paired-device list with enrollment state is on the hub screen only.
 
 ## Plan by phase (to be filled with evidence as implemented)
 - **B — observe mode:** token kinds (`typ/iss/aud`) on new tokens with old tokens still accepted; `requireCloudKeyOrJwt` refuses non-staff tokens; envelope parsing; derived `actorId`; claimed-vs-derived mismatch audited; evidence labels; no behaviour change for legacy clients (mixed-version tests).
