@@ -13,6 +13,7 @@ import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "
 import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { LEGACY_REV } from "../lib/stockPolicy.js"
 import { observeEvidence, transportOf } from "../lib/evidence.js"
+import { checkDevice, checkSession, type SessionResult } from "../lib/credentials.js"
 import { tokenKind } from "../middleware/auth.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
@@ -148,7 +149,9 @@ const syncOperationSchema = z.object({
   payload: z.unknown().optional(),
   // SPRINT-2 envelope (v1): evidence sent by the client, outside the immutable command. Recorded
   // as claimed in observe mode; never part of the operation identity.
-  ev: z.object({ v: z.number().int().optional(), offline: z.boolean().optional() }).passthrough().optional(),
+  // SPRINT-2 C: `session` is the staff session the operation was completed under (a till); `relayed`
+  // is what a hub recorded when it accepted the operation (a hub's cloud link). Both observed only.
+  ev: z.object({ v: z.number().int().optional(), offline: z.boolean().optional(), session: z.string().max(4096).optional(), relayed: z.record(z.unknown()).optional() }).passthrough().optional(),
 })
 
 const syncPushSchema = z.object({
@@ -176,6 +179,28 @@ router.get("/status", requireAuth, requireTokenKinds("staff", "hub-local"), asyn
     json(res, { error: "Failed to get tenant status" }, 500)
   }
 })
+
+/**
+ * SPRINT-2 C (observe): a session presented for another device, or an operation naming a different
+ * staff member than the session that sent it, is recorded for review. Nothing is refused.
+ */
+async function auditObservedSession(tenantId: string, op: { id: string; entity: string; action: string; payload?: unknown }, s: SessionResult) {
+  const { claimedActor } = await import("../lib/evidence.js")
+  const actor = claimedActor(op.entity, op.action, op.payload)
+  const problems: string[] = []
+  if (s.check === "other-device") problems.push("staff session belongs to another device")
+  if (s.check === "other-store") problems.push("staff session belongs to another store")
+  if (s.staffId && actor.id && s.staffId !== actor.id && s.check !== "invalid") problems.push("operation names a different staff member than its session")
+  if (problems.length === 0) return
+  try {
+    await prisma.auditEvent.create({ data: {
+      tenantId, action: "security.session.observed", entity: op.entity,
+      summary: `${op.action} ${op.entity}: ${problems.join("; ")} (observe mode — applied)`,
+      metadata: { opId: op.id, sessionStaffId: s.staffId, sessionCheck: s.check, actorIdClaimed: actor.id } as any,
+      userId: s.staffId ?? "system", userName: "", userRole: "Cashier" as any,
+    } })
+  } catch { /* best-effort audit */ }
+}
 
 router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const parsed = syncPushSchema.safeParse(req.body)
@@ -366,6 +391,11 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
   // effects are applied once; the transaction that applies them also records appliedAt, so the
   // effects and "applied" commit together or not at all. A duplicate of an applied operation is
   // acknowledged without re-running it, and never touches its forwarding state.
+  // SPRINT-2 C (observe): the device credential sent with this request (transport identity stays the
+  // Authorization token). A hub's cloud link relays instead: its tills' sessions are the hub's to check.
+  const pushKind = tokenKind(req.auth)
+  const deviceHeader = typeof req.headers["x-device-credential"] === "string" ? String(req.headers["x-device-credential"]) : undefined
+  const deviceSeen = pushKind === "bridge" ? null : await checkDevice(deviceHeader, tenantId)
   for (const op of operations) {
     try {
       validateSyncOperation(op)
@@ -430,6 +460,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         continue
       }
 
+      const sessionSeen: SessionResult | null = deviceSeen ? await checkSession((op as any).ev?.session, tenantId, deviceSeen.deviceId) : null
       await syncTestHooks.beforeClaim?.(op.id)
       const outcome = await prisma.$transaction(async (tx) => {
         const summary = `${op.action} ${op.entity}`
@@ -477,12 +508,14 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             deviceId: deviceId ?? null, transport: transportOf(req as any),
             acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud",
             envelope: (op as any).ev ?? null,
+            device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null,
           })] })
         }
         return "applied" as const
       })
 
       results.push({ id: op.id, status: "ok" })
+      if (outcome === "applied" && sessionSeen) await auditObservedSession(tenantId, op, sessionSeen)
       if (outcome === "applied") {
         const summary = buildActivitySummary(op.entity, op.action, op.payload)
         if (summary) activities.push({ entity: op.entity, action: op.action, summary })

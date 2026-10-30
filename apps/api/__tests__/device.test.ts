@@ -52,7 +52,8 @@ vi.mock("../src/lib/prisma", () => {
     deliveryOrder: model(),
     syncOperation: model(),
     device: model(),
-    pairingCode: model(),
+    pairingCode: { ...model(), updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    staffSession: { ...model(), updateMany: vi.fn().mockResolvedValue({ count: 0 }) },
     $connect: vi.fn(),
     $disconnect: vi.fn(),
   }
@@ -121,7 +122,9 @@ describe("POST /api/device/pair", () => {
   it("approves device with valid code", async () => {
     vi.mocked(prisma.pairingCode.findUnique).mockResolvedValue(validCode)
     vi.mocked(prisma.pairingCode.update).mockResolvedValue({} as any)
-    vi.mocked(prisma.device.upsert).mockResolvedValue({ id: "d1" } as any)
+    vi.mocked(prisma.pairingCode.updateMany).mockResolvedValue({ count: 1 } as any)
+    vi.mocked(prisma.staffSession.updateMany).mockResolvedValue({ count: 0 } as any)
+    vi.mocked(prisma.device.upsert).mockResolvedValue({ id: "d1", credentialVersion: 1 } as any)
     vi.mocked(prisma.auditEvent.create).mockResolvedValue({} as any)
     const res = await request("POST", "/api/device/pair", {
       body: { code: "ABC123", deviceId: "DEV-001", deviceName: "Test Device" },
@@ -129,6 +132,8 @@ describe("POST /api/device/pair", () => {
     expect(res.status).toBe(200)
     expect(res.body.ok).toBe(true)
     expect(res.body.deviceId).toBe("DEV-001")
+    // SPRINT-2 C: pairing is enrollment — a device credential for the server-assigned record
+    expect([res.body.enrolledDeviceId, typeof res.body.credential]).toEqual(["d1", "string"])
   })
 })
 
@@ -265,6 +270,7 @@ describe("POST /api/device/revoke", () => {
   it("revokes a device", async () => {
     vi.mocked(prisma.device.findUnique).mockResolvedValue({ id: "d1", tenantId: "t1", deviceId: "DEV-001" } as any)
     vi.mocked(prisma.device.update).mockResolvedValue({} as any)
+    vi.mocked(prisma.staffSession.updateMany).mockResolvedValue({ count: 0 } as any)
     vi.mocked(prisma.auditEvent.create).mockResolvedValue({} as any)
     const res = await request("POST", "/api/device/revoke", {
       token,

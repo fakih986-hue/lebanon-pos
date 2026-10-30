@@ -17,6 +17,7 @@ function decimalReplacer(_key: string, value: unknown): unknown {
   return value instanceof Decimal ? value.toNumber() : value
 }
 import authRoutes from "./routes/auth.js"
+import staffSessionRoutes from "./routes/staffSession.js"
 import syncRoutes from "./routes/sync.js"
 import setupRoutes from "./routes/setup.js"
 import dashboardRoutes from "./routes/dashboard.js"
@@ -49,6 +50,7 @@ app.use(express.json({ limit: "10mb" }))
 
 // Auth + sync (high-frequency, calibrated limits)
 app.use("/api/auth", rateLimit({ windowMs: 60_000, max: 30, bucket: "auth" }))
+app.use("/api/device/pair", rateLimit({ windowMs: 60_000, max: 10, bucket: "device-pair" }))
 app.use("/api/sync", rateLimit({ windowMs: 60_000, max: 240, bucket: "sync" }))
 // Customer-facing delivery endpoints
 app.use("/api/delivery/order", rateLimit({ windowMs: 60_000, max: 10, bucket: "delivery-order" }))
@@ -65,6 +67,7 @@ app.use("/api/inventory", rateLimit({ windowMs: 60_000, max: 60, bucket: "invent
 app.use("/api/delivery", rateLimit({ windowMs: 60_000, max: 120, bucket: "delivery" }))
 app.use("/api/health", rateLimit({ windowMs: 60_000, max: 30, bucket: "health" }))
 
+app.use("/api/auth", staffSessionRoutes)
 app.use("/api/auth", authRoutes)
 app.use("/api/sync", syncRoutes)
 app.use("/api/setup", setupRoutes)

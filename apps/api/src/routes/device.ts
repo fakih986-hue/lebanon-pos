@@ -5,11 +5,14 @@ import type { ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
 import { json, type AuthRequest, requireAuth } from "../middleware/auth.js"
 import { requirePermission } from "../middleware/permission.js"
+import { signDeviceCredential } from "../lib/credentials.js"
 
 const pairSchema = z.object({
   code: z.string().min(1, "Pairing code is required"),
   deviceId: z.string().min(1, "deviceId is required"),
   deviceName: z.string().default(""),
+  /** SPRINT-2 C: the store this device already belongs to, when it knows it (cross-store guard). */
+  expectTenantId: z.string().optional(),
 })
 
 const renameSchema = z.object({
@@ -33,7 +36,7 @@ router.post("/device/generate-code", requireAuth, requirePermission("settings.ma
     const code = generateCode()
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
     await prisma.pairingCode.create({
-      data: { tenantId, code, expiresAt },
+      data: { tenantId, code, expiresAt, createdById: req.auth!.userId },
     })
     await prisma.auditEvent.create({
       data: {
@@ -63,11 +66,20 @@ router.post("/device/pair", async (req: AuthRequest, res: ServerResponse) => {
     if (pairingCode.usedAt) { json(res, { error: "Pairing code already used" }, 403); return }
     if (now > pairingCode.expiresAt) { json(res, { error: "Pairing code has expired" }, 403); return }
     const tenantId = pairingCode.tenantId
-    await prisma.pairingCode.update({
-      where: { id: pairingCode.id },
+    // SPRINT-2 C: a device that already belongs to a store cannot be enrolled into another one.
+    if (body.expectTenantId && body.expectTenantId !== tenantId) {
+      json(res, { error: "This code belongs to another store.", code: "PAIRING_OTHER_STORE" }, 403)
+      return
+    }
+    // Consumed once, even under concurrent attempts.
+    const consumed = await prisma.pairingCode.updateMany({
+      where: { id: pairingCode.id, usedAt: null, expiresAt: { gt: now } },
       data: { usedAt: now, deviceId: body.deviceId, deviceName: body.deviceName },
     })
-    await prisma.device.upsert({
+    if (consumed.count !== 1) { json(res, { error: "Pairing code already used" }, 403); return }
+    // SPRINT-2 C (enrollment): the server-assigned device record gets a new credential version; any
+    // credential issued to it before (an earlier enrollment) stops being valid.
+    const device = await prisma.device.upsert({
       where: { tenantId_deviceId: { tenantId, deviceId: body.deviceId } },
       create: {
         tenantId,
@@ -76,13 +88,21 @@ router.post("/device/pair", async (req: AuthRequest, res: ServerResponse) => {
         status: "APPROVED",
         firstSeenAt: now,
         lastSeenAt: now,
+        credentialVersion: 1,
+        enrolledAt: now,
+        enrolledById: pairingCode.createdById,
       },
       update: {
         deviceName: body.deviceName,
         status: "APPROVED",
         lastSeenAt: now,
+        credentialVersion: { increment: 1 },
+        enrolledAt: now,
+        enrolledById: pairingCode.createdById,
       },
     })
+    await prisma.staffSession.updateMany({ where: { tenantId, deviceId: device.id, endedAt: null }, data: { endedAt: now, endReason: "re-enrolled" } })
+    const credential = signDeviceCredential({ sub: device.id, tid: tenantId, ver: device.credentialVersion })
     await prisma.auditEvent.create({
       data: {
         tenantId,
@@ -95,7 +115,8 @@ router.post("/device/pair", async (req: AuthRequest, res: ServerResponse) => {
         userRole: "Admin",
       },
     })
-    json(res, { ok: true, deviceId: body.deviceId })
+    // Older tills ignore the credential (they keep working unenrolled, as before).
+    json(res, { ok: true, deviceId: body.deviceId, enrolledDeviceId: device.id, tenantId, credential })
   } catch (err) {
     if (err instanceof z.ZodError) { json(res, { error: err.errors[0]?.message ?? "Invalid input" }, 400); return }
     json(res, { error: err instanceof Error ? err.message : "Pairing failed" }, 500)
@@ -193,6 +214,7 @@ router.post("/device/revoke", requireAuth, requirePermission("settings.manage"),
       where: { id: device.id },
       data: { status: "REVOKED" },
     })
+    await prisma.staffSession.updateMany({ where: { tenantId, deviceId: device.id, endedAt: null }, data: { endedAt: new Date(), endReason: "device-revoked" } })
     await prisma.auditEvent.create({
       data: {
         tenantId,

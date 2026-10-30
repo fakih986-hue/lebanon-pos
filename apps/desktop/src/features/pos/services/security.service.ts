@@ -2,6 +2,8 @@ import { adoptRefreshedToken, enqueueSyncOperation, getApiUrl, getStoreSubdomain
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getSettings } from "./settings.service"
+import { endStaffSession, startStaffSession } from "./deviceSession.service"
+import { clearPersonEvidence, setUnlockEvidence } from "../lib/deviceCredentials"
 
 const USERS_KEY = "lebanonpos.users.v1"
 const CURRENT_USER_KEY = "lebanonpos.current-user.v1"
@@ -591,7 +593,11 @@ export async function unlockWithPin(pin: string) {
 
   if (apiVerified && apiUser) {
     resetAttempts()
-    return finalizeUnlock(apiUser)
+    // SPRINT-2 C: the server checked THIS person's PIN — open their staff session on this device
+    // (enrolled devices only; best effort). The previous person's session is dropped first.
+    endStaffSession()
+    await startStaffSession(cleanPin, apiUser.id)
+    return finalizeUnlock(apiUser, "server")
   }
 
   // ── API explicitly rejected the PIN ──────────────────────────────────
@@ -663,10 +669,13 @@ export async function unlockWithPin(pin: string) {
   }
 
   resetAttempts()
-  return finalizeUnlock(user)
+  // Let in by this till's own verifier: no server session for this person.
+  endStaffSession()
+  return finalizeUnlock(user, "local")
 }
 
-function finalizeUnlock(user: StaffUser) {
+function finalizeUnlock(user: StaffUser, by: "server" | "local") {
+  setUnlockEvidence({ userId: user.id, by, at: new Date().toISOString() })
 
 
   const session: SecuritySession = {
@@ -697,6 +706,8 @@ export function lockSession() {
   const user = getCurrentUser()
 
   window.localStorage.removeItem(SESSION_KEY)
+  // SPRINT-2 C: the next person needs their own PIN (and gets their own staff session).
+  endStaffSession()
   recordAuditEvent({
     action: "security.lock",
     entity: "security",
@@ -716,6 +727,8 @@ export function setCurrentUser(userId: string) {
     return
   }
 
+  // No PIN was checked for this person: nothing of the previous person's session may follow them.
+  clearPersonEvidence()
   window.localStorage.setItem(CURRENT_USER_KEY, userId)
   window.localStorage.setItem(
     SESSION_KEY,

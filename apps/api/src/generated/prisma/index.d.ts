@@ -186,6 +186,13 @@ export type SyncClient = $Result.DefaultSelection<Prisma.$SyncClientPayload>
  * until staff sessions exist (Phase C).
  */
 export type OperationEvidence = $Result.DefaultSelection<Prisma.$OperationEvidencePayload>
+/**
+ * Model StaffSession
+ * SPRINT-2 C: a staff session — the server verified this staff member's PIN for this enrolled device
+ * at authTime. It proves nothing about later presence. Ended when the device switches person,
+ * signs out, or the device is revoked.
+ */
+export type StaffSession = $Result.DefaultSelection<Prisma.$StaffSessionPayload>
 
 /**
  * Enums
@@ -783,6 +790,16 @@ export class PrismaClient<
     * ```
     */
   get operationEvidence(): Prisma.OperationEvidenceDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.staffSession`: Exposes CRUD operations for the **StaffSession** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more StaffSessions
+    * const staffSessions = await prisma.staffSession.findMany()
+    * ```
+    */
+  get staffSession(): Prisma.StaffSessionDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -1257,7 +1274,8 @@ export namespace Prisma {
     RateLimitEntry: 'RateLimitEntry',
     StockMovement: 'StockMovement',
     SyncClient: 'SyncClient',
-    OperationEvidence: 'OperationEvidence'
+    OperationEvidence: 'OperationEvidence',
+    StaffSession: 'StaffSession'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -1276,7 +1294,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient" | "operationEvidence"
+      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient" | "operationEvidence" | "staffSession"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3796,6 +3814,80 @@ export namespace Prisma {
           }
         }
       }
+      StaffSession: {
+        payload: Prisma.$StaffSessionPayload<ExtArgs>
+        fields: Prisma.StaffSessionFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.StaffSessionFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffSessionPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.StaffSessionFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffSessionPayload>
+          }
+          findFirst: {
+            args: Prisma.StaffSessionFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffSessionPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.StaffSessionFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffSessionPayload>
+          }
+          findMany: {
+            args: Prisma.StaffSessionFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffSessionPayload>[]
+          }
+          create: {
+            args: Prisma.StaffSessionCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffSessionPayload>
+          }
+          createMany: {
+            args: Prisma.StaffSessionCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.StaffSessionCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffSessionPayload>[]
+          }
+          delete: {
+            args: Prisma.StaffSessionDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffSessionPayload>
+          }
+          update: {
+            args: Prisma.StaffSessionUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffSessionPayload>
+          }
+          deleteMany: {
+            args: Prisma.StaffSessionDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.StaffSessionUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.StaffSessionUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffSessionPayload>[]
+          }
+          upsert: {
+            args: Prisma.StaffSessionUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$StaffSessionPayload>
+          }
+          aggregate: {
+            args: Prisma.StaffSessionAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateStaffSession>
+          }
+          groupBy: {
+            args: Prisma.StaffSessionGroupByArgs<ExtArgs>
+            result: $Utils.Optional<StaffSessionGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.StaffSessionCountArgs<ExtArgs>
+            result: $Utils.Optional<StaffSessionCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -3926,6 +4018,7 @@ export namespace Prisma {
     stockMovement?: StockMovementOmit
     syncClient?: SyncClientOmit
     operationEvidence?: OperationEvidenceOmit
+    staffSession?: StaffSessionOmit
   }
 
   /* Types for Logging */
@@ -40570,8 +40663,18 @@ export namespace Prisma {
 
   export type AggregateDevice = {
     _count: DeviceCountAggregateOutputType | null
+    _avg: DeviceAvgAggregateOutputType | null
+    _sum: DeviceSumAggregateOutputType | null
     _min: DeviceMinAggregateOutputType | null
     _max: DeviceMaxAggregateOutputType | null
+  }
+
+  export type DeviceAvgAggregateOutputType = {
+    credentialVersion: number | null
+  }
+
+  export type DeviceSumAggregateOutputType = {
+    credentialVersion: number | null
   }
 
   export type DeviceMinAggregateOutputType = {
@@ -40584,6 +40687,9 @@ export namespace Prisma {
     firstSeenAt: Date | null
     lastSeenAt: Date | null
     lastIp: string | null
+    credentialVersion: number | null
+    enrolledAt: Date | null
+    enrolledById: string | null
   }
 
   export type DeviceMaxAggregateOutputType = {
@@ -40596,6 +40702,9 @@ export namespace Prisma {
     firstSeenAt: Date | null
     lastSeenAt: Date | null
     lastIp: string | null
+    credentialVersion: number | null
+    enrolledAt: Date | null
+    enrolledById: string | null
   }
 
   export type DeviceCountAggregateOutputType = {
@@ -40608,9 +40717,20 @@ export namespace Prisma {
     firstSeenAt: number
     lastSeenAt: number
     lastIp: number
+    credentialVersion: number
+    enrolledAt: number
+    enrolledById: number
     _all: number
   }
 
+
+  export type DeviceAvgAggregateInputType = {
+    credentialVersion?: true
+  }
+
+  export type DeviceSumAggregateInputType = {
+    credentialVersion?: true
+  }
 
   export type DeviceMinAggregateInputType = {
     id?: true
@@ -40622,6 +40742,9 @@ export namespace Prisma {
     firstSeenAt?: true
     lastSeenAt?: true
     lastIp?: true
+    credentialVersion?: true
+    enrolledAt?: true
+    enrolledById?: true
   }
 
   export type DeviceMaxAggregateInputType = {
@@ -40634,6 +40757,9 @@ export namespace Prisma {
     firstSeenAt?: true
     lastSeenAt?: true
     lastIp?: true
+    credentialVersion?: true
+    enrolledAt?: true
+    enrolledById?: true
   }
 
   export type DeviceCountAggregateInputType = {
@@ -40646,6 +40772,9 @@ export namespace Prisma {
     firstSeenAt?: true
     lastSeenAt?: true
     lastIp?: true
+    credentialVersion?: true
+    enrolledAt?: true
+    enrolledById?: true
     _all?: true
   }
 
@@ -40687,6 +40816,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: DeviceAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: DeviceSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: DeviceMinAggregateInputType
@@ -40717,6 +40858,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: DeviceCountAggregateInputType | true
+    _avg?: DeviceAvgAggregateInputType
+    _sum?: DeviceSumAggregateInputType
     _min?: DeviceMinAggregateInputType
     _max?: DeviceMaxAggregateInputType
   }
@@ -40731,7 +40874,12 @@ export namespace Prisma {
     firstSeenAt: Date
     lastSeenAt: Date
     lastIp: string
+    credentialVersion: number
+    enrolledAt: Date | null
+    enrolledById: string | null
     _count: DeviceCountAggregateOutputType | null
+    _avg: DeviceAvgAggregateOutputType | null
+    _sum: DeviceSumAggregateOutputType | null
     _min: DeviceMinAggregateOutputType | null
     _max: DeviceMaxAggregateOutputType | null
   }
@@ -40760,6 +40908,9 @@ export namespace Prisma {
     firstSeenAt?: boolean
     lastSeenAt?: boolean
     lastIp?: boolean
+    credentialVersion?: boolean
+    enrolledAt?: boolean
+    enrolledById?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["device"]>
 
@@ -40773,6 +40924,9 @@ export namespace Prisma {
     firstSeenAt?: boolean
     lastSeenAt?: boolean
     lastIp?: boolean
+    credentialVersion?: boolean
+    enrolledAt?: boolean
+    enrolledById?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["device"]>
 
@@ -40786,6 +40940,9 @@ export namespace Prisma {
     firstSeenAt?: boolean
     lastSeenAt?: boolean
     lastIp?: boolean
+    credentialVersion?: boolean
+    enrolledAt?: boolean
+    enrolledById?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["device"]>
 
@@ -40799,9 +40956,12 @@ export namespace Prisma {
     firstSeenAt?: boolean
     lastSeenAt?: boolean
     lastIp?: boolean
+    credentialVersion?: boolean
+    enrolledAt?: boolean
+    enrolledById?: boolean
   }
 
-  export type DeviceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "deviceId" | "deviceName" | "registerId" | "status" | "firstSeenAt" | "lastSeenAt" | "lastIp", ExtArgs["result"]["device"]>
+  export type DeviceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "deviceId" | "deviceName" | "registerId" | "status" | "firstSeenAt" | "lastSeenAt" | "lastIp" | "credentialVersion" | "enrolledAt" | "enrolledById", ExtArgs["result"]["device"]>
   export type DeviceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -40827,6 +40987,13 @@ export namespace Prisma {
       firstSeenAt: Date
       lastSeenAt: Date
       lastIp: string
+      /**
+       * SPRINT-2 C: enrollment. A device credential is valid only while its version matches and the
+       * device is APPROVED; re-enrolling or revoking bumps the version.
+       */
+      credentialVersion: number
+      enrolledAt: Date | null
+      enrolledById: string | null
     }, ExtArgs["result"]["device"]>
     composites: {}
   }
@@ -41260,6 +41427,9 @@ export namespace Prisma {
     readonly firstSeenAt: FieldRef<"Device", 'DateTime'>
     readonly lastSeenAt: FieldRef<"Device", 'DateTime'>
     readonly lastIp: FieldRef<"Device", 'String'>
+    readonly credentialVersion: FieldRef<"Device", 'Int'>
+    readonly enrolledAt: FieldRef<"Device", 'DateTime'>
+    readonly enrolledById: FieldRef<"Device", 'String'>
   }
     
 
@@ -41693,6 +41863,7 @@ export namespace Prisma {
     expiresAt: Date | null
     usedAt: Date | null
     createdAt: Date | null
+    createdById: string | null
   }
 
   export type PairingCodeMaxAggregateOutputType = {
@@ -41704,6 +41875,7 @@ export namespace Prisma {
     expiresAt: Date | null
     usedAt: Date | null
     createdAt: Date | null
+    createdById: string | null
   }
 
   export type PairingCodeCountAggregateOutputType = {
@@ -41715,6 +41887,7 @@ export namespace Prisma {
     expiresAt: number
     usedAt: number
     createdAt: number
+    createdById: number
     _all: number
   }
 
@@ -41728,6 +41901,7 @@ export namespace Prisma {
     expiresAt?: true
     usedAt?: true
     createdAt?: true
+    createdById?: true
   }
 
   export type PairingCodeMaxAggregateInputType = {
@@ -41739,6 +41913,7 @@ export namespace Prisma {
     expiresAt?: true
     usedAt?: true
     createdAt?: true
+    createdById?: true
   }
 
   export type PairingCodeCountAggregateInputType = {
@@ -41750,6 +41925,7 @@ export namespace Prisma {
     expiresAt?: true
     usedAt?: true
     createdAt?: true
+    createdById?: true
     _all?: true
   }
 
@@ -41834,6 +42010,7 @@ export namespace Prisma {
     expiresAt: Date
     usedAt: Date | null
     createdAt: Date
+    createdById: string | null
     _count: PairingCodeCountAggregateOutputType | null
     _min: PairingCodeMinAggregateOutputType | null
     _max: PairingCodeMaxAggregateOutputType | null
@@ -41862,6 +42039,7 @@ export namespace Prisma {
     expiresAt?: boolean
     usedAt?: boolean
     createdAt?: boolean
+    createdById?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["pairingCode"]>
 
@@ -41874,6 +42052,7 @@ export namespace Prisma {
     expiresAt?: boolean
     usedAt?: boolean
     createdAt?: boolean
+    createdById?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["pairingCode"]>
 
@@ -41886,6 +42065,7 @@ export namespace Prisma {
     expiresAt?: boolean
     usedAt?: boolean
     createdAt?: boolean
+    createdById?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["pairingCode"]>
 
@@ -41898,9 +42078,10 @@ export namespace Prisma {
     expiresAt?: boolean
     usedAt?: boolean
     createdAt?: boolean
+    createdById?: boolean
   }
 
-  export type PairingCodeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "code" | "deviceId" | "deviceName" | "expiresAt" | "usedAt" | "createdAt", ExtArgs["result"]["pairingCode"]>
+  export type PairingCodeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "code" | "deviceId" | "deviceName" | "expiresAt" | "usedAt" | "createdAt" | "createdById", ExtArgs["result"]["pairingCode"]>
   export type PairingCodeInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -41925,6 +42106,7 @@ export namespace Prisma {
       expiresAt: Date
       usedAt: Date | null
       createdAt: Date
+      createdById: string | null
     }, ExtArgs["result"]["pairingCode"]>
     composites: {}
   }
@@ -42357,6 +42539,7 @@ export namespace Prisma {
     readonly expiresAt: FieldRef<"PairingCode", 'DateTime'>
     readonly usedAt: FieldRef<"PairingCode", 'DateTime'>
     readonly createdAt: FieldRef<"PairingCode", 'DateTime'>
+    readonly createdById: FieldRef<"PairingCode", 'String'>
   }
     
 
@@ -46130,6 +46313,12 @@ export namespace Prisma {
     evidence: string | null
     claimedAt: string | null
     envelopeVersion: number | null
+    enrolledDeviceId: string | null
+    deviceCheck: string | null
+    sessionId: string | null
+    sessionStaffId: string | null
+    sessionAuthTime: Date | null
+    sessionCheck: string | null
   }
 
   export type OperationEvidenceMaxAggregateOutputType = {
@@ -46149,6 +46338,12 @@ export namespace Prisma {
     evidence: string | null
     claimedAt: string | null
     envelopeVersion: number | null
+    enrolledDeviceId: string | null
+    deviceCheck: string | null
+    sessionId: string | null
+    sessionStaffId: string | null
+    sessionAuthTime: Date | null
+    sessionCheck: string | null
   }
 
   export type OperationEvidenceCountAggregateOutputType = {
@@ -46169,6 +46364,13 @@ export namespace Prisma {
     limitations: number
     claimedAt: number
     envelopeVersion: number
+    enrolledDeviceId: number
+    deviceCheck: number
+    sessionId: number
+    sessionStaffId: number
+    sessionAuthTime: number
+    sessionCheck: number
+    relayed: number
     _all: number
   }
 
@@ -46198,6 +46400,12 @@ export namespace Prisma {
     evidence?: true
     claimedAt?: true
     envelopeVersion?: true
+    enrolledDeviceId?: true
+    deviceCheck?: true
+    sessionId?: true
+    sessionStaffId?: true
+    sessionAuthTime?: true
+    sessionCheck?: true
   }
 
   export type OperationEvidenceMaxAggregateInputType = {
@@ -46217,6 +46425,12 @@ export namespace Prisma {
     evidence?: true
     claimedAt?: true
     envelopeVersion?: true
+    enrolledDeviceId?: true
+    deviceCheck?: true
+    sessionId?: true
+    sessionStaffId?: true
+    sessionAuthTime?: true
+    sessionCheck?: true
   }
 
   export type OperationEvidenceCountAggregateInputType = {
@@ -46237,6 +46451,13 @@ export namespace Prisma {
     limitations?: true
     claimedAt?: true
     envelopeVersion?: true
+    enrolledDeviceId?: true
+    deviceCheck?: true
+    sessionId?: true
+    sessionStaffId?: true
+    sessionAuthTime?: true
+    sessionCheck?: true
+    relayed?: true
     _all?: true
   }
 
@@ -46344,6 +46565,13 @@ export namespace Prisma {
     limitations: string[]
     claimedAt: string | null
     envelopeVersion: number
+    enrolledDeviceId: string | null
+    deviceCheck: string | null
+    sessionId: string | null
+    sessionStaffId: string | null
+    sessionAuthTime: Date | null
+    sessionCheck: string | null
+    relayed: JsonValue | null
     _count: OperationEvidenceCountAggregateOutputType | null
     _avg: OperationEvidenceAvgAggregateOutputType | null
     _sum: OperationEvidenceSumAggregateOutputType | null
@@ -46383,6 +46611,13 @@ export namespace Prisma {
     limitations?: boolean
     claimedAt?: boolean
     envelopeVersion?: boolean
+    enrolledDeviceId?: boolean
+    deviceCheck?: boolean
+    sessionId?: boolean
+    sessionStaffId?: boolean
+    sessionAuthTime?: boolean
+    sessionCheck?: boolean
+    relayed?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -46403,6 +46638,13 @@ export namespace Prisma {
     limitations?: boolean
     claimedAt?: boolean
     envelopeVersion?: boolean
+    enrolledDeviceId?: boolean
+    deviceCheck?: boolean
+    sessionId?: boolean
+    sessionStaffId?: boolean
+    sessionAuthTime?: boolean
+    sessionCheck?: boolean
+    relayed?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -46423,6 +46665,13 @@ export namespace Prisma {
     limitations?: boolean
     claimedAt?: boolean
     envelopeVersion?: boolean
+    enrolledDeviceId?: boolean
+    deviceCheck?: boolean
+    sessionId?: boolean
+    sessionStaffId?: boolean
+    sessionAuthTime?: boolean
+    sessionCheck?: boolean
+    relayed?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectScalar = {
@@ -46443,9 +46692,16 @@ export namespace Prisma {
     limitations?: boolean
     claimedAt?: boolean
     envelopeVersion?: boolean
+    enrolledDeviceId?: boolean
+    deviceCheck?: boolean
+    sessionId?: boolean
+    sessionStaffId?: boolean
+    sessionAuthTime?: boolean
+    sessionCheck?: boolean
+    relayed?: boolean
   }
 
-  export type OperationEvidenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"opId" | "tenantId" | "entity" | "action" | "receivedAt" | "acceptedBy" | "transport" | "credentialKind" | "connectionAccountId" | "deviceIdClaimed" | "actorIdClaimed" | "actorNameClaimed" | "actorMatchesAccount" | "evidence" | "limitations" | "claimedAt" | "envelopeVersion", ExtArgs["result"]["operationEvidence"]>
+  export type OperationEvidenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"opId" | "tenantId" | "entity" | "action" | "receivedAt" | "acceptedBy" | "transport" | "credentialKind" | "connectionAccountId" | "deviceIdClaimed" | "actorIdClaimed" | "actorNameClaimed" | "actorMatchesAccount" | "evidence" | "limitations" | "claimedAt" | "envelopeVersion" | "enrolledDeviceId" | "deviceCheck" | "sessionId" | "sessionStaffId" | "sessionAuthTime" | "sessionCheck" | "relayed", ExtArgs["result"]["operationEvidence"]>
 
   export type $OperationEvidencePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "OperationEvidence"
@@ -46468,6 +46724,16 @@ export namespace Prisma {
       limitations: string[]
       claimedAt: string | null
       envelopeVersion: number
+      enrolledDeviceId: string | null
+      deviceCheck: string | null
+      sessionId: string | null
+      sessionStaffId: string | null
+      sessionAuthTime: Date | null
+      sessionCheck: string | null
+      /**
+       * What the hub that relayed this operation recorded (claimed: not attested until Phase D).
+       */
+      relayed: Prisma.JsonValue | null
     }, ExtArgs["result"]["operationEvidence"]>
     composites: {}
   }
@@ -46908,6 +47174,13 @@ export namespace Prisma {
     readonly limitations: FieldRef<"OperationEvidence", 'String[]'>
     readonly claimedAt: FieldRef<"OperationEvidence", 'String'>
     readonly envelopeVersion: FieldRef<"OperationEvidence", 'Int'>
+    readonly enrolledDeviceId: FieldRef<"OperationEvidence", 'String'>
+    readonly deviceCheck: FieldRef<"OperationEvidence", 'String'>
+    readonly sessionId: FieldRef<"OperationEvidence", 'String'>
+    readonly sessionStaffId: FieldRef<"OperationEvidence", 'String'>
+    readonly sessionAuthTime: FieldRef<"OperationEvidence", 'DateTime'>
+    readonly sessionCheck: FieldRef<"OperationEvidence", 'String'>
+    readonly relayed: FieldRef<"OperationEvidence", 'Json'>
   }
     
 
@@ -47271,6 +47544,1040 @@ export namespace Prisma {
      * Omit specific fields from the OperationEvidence
      */
     omit?: OperationEvidenceOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model StaffSession
+   */
+
+  export type AggregateStaffSession = {
+    _count: StaffSessionCountAggregateOutputType | null
+    _min: StaffSessionMinAggregateOutputType | null
+    _max: StaffSessionMaxAggregateOutputType | null
+  }
+
+  export type StaffSessionMinAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    deviceId: string | null
+    staffId: string | null
+    authTime: Date | null
+    expiresAt: Date | null
+    endedAt: Date | null
+    endReason: string | null
+  }
+
+  export type StaffSessionMaxAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    deviceId: string | null
+    staffId: string | null
+    authTime: Date | null
+    expiresAt: Date | null
+    endedAt: Date | null
+    endReason: string | null
+  }
+
+  export type StaffSessionCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    deviceId: number
+    staffId: number
+    authTime: number
+    expiresAt: number
+    endedAt: number
+    endReason: number
+    _all: number
+  }
+
+
+  export type StaffSessionMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    deviceId?: true
+    staffId?: true
+    authTime?: true
+    expiresAt?: true
+    endedAt?: true
+    endReason?: true
+  }
+
+  export type StaffSessionMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    deviceId?: true
+    staffId?: true
+    authTime?: true
+    expiresAt?: true
+    endedAt?: true
+    endReason?: true
+  }
+
+  export type StaffSessionCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    deviceId?: true
+    staffId?: true
+    authTime?: true
+    expiresAt?: true
+    endedAt?: true
+    endReason?: true
+    _all?: true
+  }
+
+  export type StaffSessionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which StaffSession to aggregate.
+     */
+    where?: StaffSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StaffSessions to fetch.
+     */
+    orderBy?: StaffSessionOrderByWithRelationInput | StaffSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: StaffSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StaffSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StaffSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned StaffSessions
+    **/
+    _count?: true | StaffSessionCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: StaffSessionMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: StaffSessionMaxAggregateInputType
+  }
+
+  export type GetStaffSessionAggregateType<T extends StaffSessionAggregateArgs> = {
+        [P in keyof T & keyof AggregateStaffSession]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateStaffSession[P]>
+      : GetScalarType<T[P], AggregateStaffSession[P]>
+  }
+
+
+
+
+  export type StaffSessionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: StaffSessionWhereInput
+    orderBy?: StaffSessionOrderByWithAggregationInput | StaffSessionOrderByWithAggregationInput[]
+    by: StaffSessionScalarFieldEnum[] | StaffSessionScalarFieldEnum
+    having?: StaffSessionScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: StaffSessionCountAggregateInputType | true
+    _min?: StaffSessionMinAggregateInputType
+    _max?: StaffSessionMaxAggregateInputType
+  }
+
+  export type StaffSessionGroupByOutputType = {
+    id: string
+    tenantId: string
+    deviceId: string
+    staffId: string
+    authTime: Date
+    expiresAt: Date
+    endedAt: Date | null
+    endReason: string | null
+    _count: StaffSessionCountAggregateOutputType | null
+    _min: StaffSessionMinAggregateOutputType | null
+    _max: StaffSessionMaxAggregateOutputType | null
+  }
+
+  type GetStaffSessionGroupByPayload<T extends StaffSessionGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<StaffSessionGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof StaffSessionGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], StaffSessionGroupByOutputType[P]>
+            : GetScalarType<T[P], StaffSessionGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type StaffSessionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    staffId?: boolean
+    authTime?: boolean
+    expiresAt?: boolean
+    endedAt?: boolean
+    endReason?: boolean
+  }, ExtArgs["result"]["staffSession"]>
+
+  export type StaffSessionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    staffId?: boolean
+    authTime?: boolean
+    expiresAt?: boolean
+    endedAt?: boolean
+    endReason?: boolean
+  }, ExtArgs["result"]["staffSession"]>
+
+  export type StaffSessionSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    staffId?: boolean
+    authTime?: boolean
+    expiresAt?: boolean
+    endedAt?: boolean
+    endReason?: boolean
+  }, ExtArgs["result"]["staffSession"]>
+
+  export type StaffSessionSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    staffId?: boolean
+    authTime?: boolean
+    expiresAt?: boolean
+    endedAt?: boolean
+    endReason?: boolean
+  }
+
+  export type StaffSessionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "deviceId" | "staffId" | "authTime" | "expiresAt" | "endedAt" | "endReason", ExtArgs["result"]["staffSession"]>
+
+  export type $StaffSessionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "StaffSession"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tenantId: string
+      deviceId: string
+      staffId: string
+      authTime: Date
+      expiresAt: Date
+      endedAt: Date | null
+      endReason: string | null
+    }, ExtArgs["result"]["staffSession"]>
+    composites: {}
+  }
+
+  type StaffSessionGetPayload<S extends boolean | null | undefined | StaffSessionDefaultArgs> = $Result.GetResult<Prisma.$StaffSessionPayload, S>
+
+  type StaffSessionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<StaffSessionFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: StaffSessionCountAggregateInputType | true
+    }
+
+  export interface StaffSessionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['StaffSession'], meta: { name: 'StaffSession' } }
+    /**
+     * Find zero or one StaffSession that matches the filter.
+     * @param {StaffSessionFindUniqueArgs} args - Arguments to find a StaffSession
+     * @example
+     * // Get one StaffSession
+     * const staffSession = await prisma.staffSession.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends StaffSessionFindUniqueArgs>(args: SelectSubset<T, StaffSessionFindUniqueArgs<ExtArgs>>): Prisma__StaffSessionClient<$Result.GetResult<Prisma.$StaffSessionPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one StaffSession that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {StaffSessionFindUniqueOrThrowArgs} args - Arguments to find a StaffSession
+     * @example
+     * // Get one StaffSession
+     * const staffSession = await prisma.staffSession.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends StaffSessionFindUniqueOrThrowArgs>(args: SelectSubset<T, StaffSessionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__StaffSessionClient<$Result.GetResult<Prisma.$StaffSessionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first StaffSession that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffSessionFindFirstArgs} args - Arguments to find a StaffSession
+     * @example
+     * // Get one StaffSession
+     * const staffSession = await prisma.staffSession.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends StaffSessionFindFirstArgs>(args?: SelectSubset<T, StaffSessionFindFirstArgs<ExtArgs>>): Prisma__StaffSessionClient<$Result.GetResult<Prisma.$StaffSessionPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first StaffSession that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffSessionFindFirstOrThrowArgs} args - Arguments to find a StaffSession
+     * @example
+     * // Get one StaffSession
+     * const staffSession = await prisma.staffSession.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends StaffSessionFindFirstOrThrowArgs>(args?: SelectSubset<T, StaffSessionFindFirstOrThrowArgs<ExtArgs>>): Prisma__StaffSessionClient<$Result.GetResult<Prisma.$StaffSessionPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more StaffSessions that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffSessionFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all StaffSessions
+     * const staffSessions = await prisma.staffSession.findMany()
+     * 
+     * // Get first 10 StaffSessions
+     * const staffSessions = await prisma.staffSession.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const staffSessionWithIdOnly = await prisma.staffSession.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends StaffSessionFindManyArgs>(args?: SelectSubset<T, StaffSessionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StaffSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a StaffSession.
+     * @param {StaffSessionCreateArgs} args - Arguments to create a StaffSession.
+     * @example
+     * // Create one StaffSession
+     * const StaffSession = await prisma.staffSession.create({
+     *   data: {
+     *     // ... data to create a StaffSession
+     *   }
+     * })
+     * 
+     */
+    create<T extends StaffSessionCreateArgs>(args: SelectSubset<T, StaffSessionCreateArgs<ExtArgs>>): Prisma__StaffSessionClient<$Result.GetResult<Prisma.$StaffSessionPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many StaffSessions.
+     * @param {StaffSessionCreateManyArgs} args - Arguments to create many StaffSessions.
+     * @example
+     * // Create many StaffSessions
+     * const staffSession = await prisma.staffSession.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends StaffSessionCreateManyArgs>(args?: SelectSubset<T, StaffSessionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many StaffSessions and returns the data saved in the database.
+     * @param {StaffSessionCreateManyAndReturnArgs} args - Arguments to create many StaffSessions.
+     * @example
+     * // Create many StaffSessions
+     * const staffSession = await prisma.staffSession.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many StaffSessions and only return the `id`
+     * const staffSessionWithIdOnly = await prisma.staffSession.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends StaffSessionCreateManyAndReturnArgs>(args?: SelectSubset<T, StaffSessionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StaffSessionPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a StaffSession.
+     * @param {StaffSessionDeleteArgs} args - Arguments to delete one StaffSession.
+     * @example
+     * // Delete one StaffSession
+     * const StaffSession = await prisma.staffSession.delete({
+     *   where: {
+     *     // ... filter to delete one StaffSession
+     *   }
+     * })
+     * 
+     */
+    delete<T extends StaffSessionDeleteArgs>(args: SelectSubset<T, StaffSessionDeleteArgs<ExtArgs>>): Prisma__StaffSessionClient<$Result.GetResult<Prisma.$StaffSessionPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one StaffSession.
+     * @param {StaffSessionUpdateArgs} args - Arguments to update one StaffSession.
+     * @example
+     * // Update one StaffSession
+     * const staffSession = await prisma.staffSession.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends StaffSessionUpdateArgs>(args: SelectSubset<T, StaffSessionUpdateArgs<ExtArgs>>): Prisma__StaffSessionClient<$Result.GetResult<Prisma.$StaffSessionPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more StaffSessions.
+     * @param {StaffSessionDeleteManyArgs} args - Arguments to filter StaffSessions to delete.
+     * @example
+     * // Delete a few StaffSessions
+     * const { count } = await prisma.staffSession.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends StaffSessionDeleteManyArgs>(args?: SelectSubset<T, StaffSessionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more StaffSessions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffSessionUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many StaffSessions
+     * const staffSession = await prisma.staffSession.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends StaffSessionUpdateManyArgs>(args: SelectSubset<T, StaffSessionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more StaffSessions and returns the data updated in the database.
+     * @param {StaffSessionUpdateManyAndReturnArgs} args - Arguments to update many StaffSessions.
+     * @example
+     * // Update many StaffSessions
+     * const staffSession = await prisma.staffSession.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more StaffSessions and only return the `id`
+     * const staffSessionWithIdOnly = await prisma.staffSession.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends StaffSessionUpdateManyAndReturnArgs>(args: SelectSubset<T, StaffSessionUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StaffSessionPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one StaffSession.
+     * @param {StaffSessionUpsertArgs} args - Arguments to update or create a StaffSession.
+     * @example
+     * // Update or create a StaffSession
+     * const staffSession = await prisma.staffSession.upsert({
+     *   create: {
+     *     // ... data to create a StaffSession
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the StaffSession we want to update
+     *   }
+     * })
+     */
+    upsert<T extends StaffSessionUpsertArgs>(args: SelectSubset<T, StaffSessionUpsertArgs<ExtArgs>>): Prisma__StaffSessionClient<$Result.GetResult<Prisma.$StaffSessionPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of StaffSessions.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffSessionCountArgs} args - Arguments to filter StaffSessions to count.
+     * @example
+     * // Count the number of StaffSessions
+     * const count = await prisma.staffSession.count({
+     *   where: {
+     *     // ... the filter for the StaffSessions we want to count
+     *   }
+     * })
+    **/
+    count<T extends StaffSessionCountArgs>(
+      args?: Subset<T, StaffSessionCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], StaffSessionCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a StaffSession.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffSessionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends StaffSessionAggregateArgs>(args: Subset<T, StaffSessionAggregateArgs>): Prisma.PrismaPromise<GetStaffSessionAggregateType<T>>
+
+    /**
+     * Group by StaffSession.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {StaffSessionGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends StaffSessionGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: StaffSessionGroupByArgs['orderBy'] }
+        : { orderBy?: StaffSessionGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, StaffSessionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetStaffSessionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the StaffSession model
+   */
+  readonly fields: StaffSessionFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for StaffSession.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__StaffSessionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the StaffSession model
+   */
+  interface StaffSessionFieldRefs {
+    readonly id: FieldRef<"StaffSession", 'String'>
+    readonly tenantId: FieldRef<"StaffSession", 'String'>
+    readonly deviceId: FieldRef<"StaffSession", 'String'>
+    readonly staffId: FieldRef<"StaffSession", 'String'>
+    readonly authTime: FieldRef<"StaffSession", 'DateTime'>
+    readonly expiresAt: FieldRef<"StaffSession", 'DateTime'>
+    readonly endedAt: FieldRef<"StaffSession", 'DateTime'>
+    readonly endReason: FieldRef<"StaffSession", 'String'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * StaffSession findUnique
+   */
+  export type StaffSessionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
+    /**
+     * Filter, which StaffSession to fetch.
+     */
+    where: StaffSessionWhereUniqueInput
+  }
+
+  /**
+   * StaffSession findUniqueOrThrow
+   */
+  export type StaffSessionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
+    /**
+     * Filter, which StaffSession to fetch.
+     */
+    where: StaffSessionWhereUniqueInput
+  }
+
+  /**
+   * StaffSession findFirst
+   */
+  export type StaffSessionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
+    /**
+     * Filter, which StaffSession to fetch.
+     */
+    where?: StaffSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StaffSessions to fetch.
+     */
+    orderBy?: StaffSessionOrderByWithRelationInput | StaffSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for StaffSessions.
+     */
+    cursor?: StaffSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StaffSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StaffSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of StaffSessions.
+     */
+    distinct?: StaffSessionScalarFieldEnum | StaffSessionScalarFieldEnum[]
+  }
+
+  /**
+   * StaffSession findFirstOrThrow
+   */
+  export type StaffSessionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
+    /**
+     * Filter, which StaffSession to fetch.
+     */
+    where?: StaffSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StaffSessions to fetch.
+     */
+    orderBy?: StaffSessionOrderByWithRelationInput | StaffSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for StaffSessions.
+     */
+    cursor?: StaffSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StaffSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StaffSessions.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of StaffSessions.
+     */
+    distinct?: StaffSessionScalarFieldEnum | StaffSessionScalarFieldEnum[]
+  }
+
+  /**
+   * StaffSession findMany
+   */
+  export type StaffSessionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
+    /**
+     * Filter, which StaffSessions to fetch.
+     */
+    where?: StaffSessionWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of StaffSessions to fetch.
+     */
+    orderBy?: StaffSessionOrderByWithRelationInput | StaffSessionOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing StaffSessions.
+     */
+    cursor?: StaffSessionWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` StaffSessions from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` StaffSessions.
+     */
+    skip?: number
+    distinct?: StaffSessionScalarFieldEnum | StaffSessionScalarFieldEnum[]
+  }
+
+  /**
+   * StaffSession create
+   */
+  export type StaffSessionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
+    /**
+     * The data needed to create a StaffSession.
+     */
+    data: XOR<StaffSessionCreateInput, StaffSessionUncheckedCreateInput>
+  }
+
+  /**
+   * StaffSession createMany
+   */
+  export type StaffSessionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many StaffSessions.
+     */
+    data: StaffSessionCreateManyInput | StaffSessionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * StaffSession createManyAndReturn
+   */
+  export type StaffSessionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
+    /**
+     * The data used to create many StaffSessions.
+     */
+    data: StaffSessionCreateManyInput | StaffSessionCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * StaffSession update
+   */
+  export type StaffSessionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
+    /**
+     * The data needed to update a StaffSession.
+     */
+    data: XOR<StaffSessionUpdateInput, StaffSessionUncheckedUpdateInput>
+    /**
+     * Choose, which StaffSession to update.
+     */
+    where: StaffSessionWhereUniqueInput
+  }
+
+  /**
+   * StaffSession updateMany
+   */
+  export type StaffSessionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update StaffSessions.
+     */
+    data: XOR<StaffSessionUpdateManyMutationInput, StaffSessionUncheckedUpdateManyInput>
+    /**
+     * Filter which StaffSessions to update
+     */
+    where?: StaffSessionWhereInput
+    /**
+     * Limit how many StaffSessions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * StaffSession updateManyAndReturn
+   */
+  export type StaffSessionUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
+    /**
+     * The data used to update StaffSessions.
+     */
+    data: XOR<StaffSessionUpdateManyMutationInput, StaffSessionUncheckedUpdateManyInput>
+    /**
+     * Filter which StaffSessions to update
+     */
+    where?: StaffSessionWhereInput
+    /**
+     * Limit how many StaffSessions to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * StaffSession upsert
+   */
+  export type StaffSessionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
+    /**
+     * The filter to search for the StaffSession to update in case it exists.
+     */
+    where: StaffSessionWhereUniqueInput
+    /**
+     * In case the StaffSession found by the `where` argument doesn't exist, create a new StaffSession with this data.
+     */
+    create: XOR<StaffSessionCreateInput, StaffSessionUncheckedCreateInput>
+    /**
+     * In case the StaffSession was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<StaffSessionUpdateInput, StaffSessionUncheckedUpdateInput>
+  }
+
+  /**
+   * StaffSession delete
+   */
+  export type StaffSessionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
+    /**
+     * Filter which StaffSession to delete.
+     */
+    where: StaffSessionWhereUniqueInput
+  }
+
+  /**
+   * StaffSession deleteMany
+   */
+  export type StaffSessionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which StaffSessions to delete
+     */
+    where?: StaffSessionWhereInput
+    /**
+     * Limit how many StaffSessions to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * StaffSession without action
+   */
+  export type StaffSessionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the StaffSession
+     */
+    select?: StaffSessionSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the StaffSession
+     */
+    omit?: StaffSessionOmit<ExtArgs> | null
   }
 
 
@@ -47875,7 +49182,10 @@ export namespace Prisma {
     status: 'status',
     firstSeenAt: 'firstSeenAt',
     lastSeenAt: 'lastSeenAt',
-    lastIp: 'lastIp'
+    lastIp: 'lastIp',
+    credentialVersion: 'credentialVersion',
+    enrolledAt: 'enrolledAt',
+    enrolledById: 'enrolledById'
   };
 
   export type DeviceScalarFieldEnum = (typeof DeviceScalarFieldEnum)[keyof typeof DeviceScalarFieldEnum]
@@ -47889,7 +49199,8 @@ export namespace Prisma {
     deviceName: 'deviceName',
     expiresAt: 'expiresAt',
     usedAt: 'usedAt',
-    createdAt: 'createdAt'
+    createdAt: 'createdAt',
+    createdById: 'createdById'
   };
 
   export type PairingCodeScalarFieldEnum = (typeof PairingCodeScalarFieldEnum)[keyof typeof PairingCodeScalarFieldEnum]
@@ -47957,10 +49268,31 @@ export namespace Prisma {
     evidence: 'evidence',
     limitations: 'limitations',
     claimedAt: 'claimedAt',
-    envelopeVersion: 'envelopeVersion'
+    envelopeVersion: 'envelopeVersion',
+    enrolledDeviceId: 'enrolledDeviceId',
+    deviceCheck: 'deviceCheck',
+    sessionId: 'sessionId',
+    sessionStaffId: 'sessionStaffId',
+    sessionAuthTime: 'sessionAuthTime',
+    sessionCheck: 'sessionCheck',
+    relayed: 'relayed'
   };
 
   export type OperationEvidenceScalarFieldEnum = (typeof OperationEvidenceScalarFieldEnum)[keyof typeof OperationEvidenceScalarFieldEnum]
+
+
+  export const StaffSessionScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    deviceId: 'deviceId',
+    staffId: 'staffId',
+    authTime: 'authTime',
+    expiresAt: 'expiresAt',
+    endedAt: 'endedAt',
+    endReason: 'endReason'
+  };
+
+  export type StaffSessionScalarFieldEnum = (typeof StaffSessionScalarFieldEnum)[keyof typeof StaffSessionScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -51399,6 +52731,9 @@ export namespace Prisma {
     firstSeenAt?: DateTimeFilter<"Device"> | Date | string
     lastSeenAt?: DateTimeFilter<"Device"> | Date | string
     lastIp?: StringFilter<"Device"> | string
+    credentialVersion?: IntFilter<"Device"> | number
+    enrolledAt?: DateTimeNullableFilter<"Device"> | Date | string | null
+    enrolledById?: StringNullableFilter<"Device"> | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }
 
@@ -51412,6 +52747,9 @@ export namespace Prisma {
     firstSeenAt?: SortOrder
     lastSeenAt?: SortOrder
     lastIp?: SortOrder
+    credentialVersion?: SortOrder
+    enrolledAt?: SortOrderInput | SortOrder
+    enrolledById?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
   }
 
@@ -51429,6 +52767,9 @@ export namespace Prisma {
     firstSeenAt?: DateTimeFilter<"Device"> | Date | string
     lastSeenAt?: DateTimeFilter<"Device"> | Date | string
     lastIp?: StringFilter<"Device"> | string
+    credentialVersion?: IntFilter<"Device"> | number
+    enrolledAt?: DateTimeNullableFilter<"Device"> | Date | string | null
+    enrolledById?: StringNullableFilter<"Device"> | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }, "id" | "tenantId_deviceId">
 
@@ -51442,9 +52783,14 @@ export namespace Prisma {
     firstSeenAt?: SortOrder
     lastSeenAt?: SortOrder
     lastIp?: SortOrder
+    credentialVersion?: SortOrder
+    enrolledAt?: SortOrderInput | SortOrder
+    enrolledById?: SortOrderInput | SortOrder
     _count?: DeviceCountOrderByAggregateInput
+    _avg?: DeviceAvgOrderByAggregateInput
     _max?: DeviceMaxOrderByAggregateInput
     _min?: DeviceMinOrderByAggregateInput
+    _sum?: DeviceSumOrderByAggregateInput
   }
 
   export type DeviceScalarWhereWithAggregatesInput = {
@@ -51460,6 +52806,9 @@ export namespace Prisma {
     firstSeenAt?: DateTimeWithAggregatesFilter<"Device"> | Date | string
     lastSeenAt?: DateTimeWithAggregatesFilter<"Device"> | Date | string
     lastIp?: StringWithAggregatesFilter<"Device"> | string
+    credentialVersion?: IntWithAggregatesFilter<"Device"> | number
+    enrolledAt?: DateTimeNullableWithAggregatesFilter<"Device"> | Date | string | null
+    enrolledById?: StringNullableWithAggregatesFilter<"Device"> | string | null
   }
 
   export type PairingCodeWhereInput = {
@@ -51474,6 +52823,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFilter<"PairingCode"> | Date | string
     usedAt?: DateTimeNullableFilter<"PairingCode"> | Date | string | null
     createdAt?: DateTimeFilter<"PairingCode"> | Date | string
+    createdById?: StringNullableFilter<"PairingCode"> | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }
 
@@ -51486,6 +52836,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     usedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
+    createdById?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
   }
 
@@ -51501,6 +52852,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFilter<"PairingCode"> | Date | string
     usedAt?: DateTimeNullableFilter<"PairingCode"> | Date | string | null
     createdAt?: DateTimeFilter<"PairingCode"> | Date | string
+    createdById?: StringNullableFilter<"PairingCode"> | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }, "id" | "code">
 
@@ -51513,6 +52865,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     usedAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
+    createdById?: SortOrderInput | SortOrder
     _count?: PairingCodeCountOrderByAggregateInput
     _max?: PairingCodeMaxOrderByAggregateInput
     _min?: PairingCodeMinOrderByAggregateInput
@@ -51530,6 +52883,7 @@ export namespace Prisma {
     expiresAt?: DateTimeWithAggregatesFilter<"PairingCode"> | Date | string
     usedAt?: DateTimeNullableWithAggregatesFilter<"PairingCode"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"PairingCode"> | Date | string
+    createdById?: StringNullableWithAggregatesFilter<"PairingCode"> | string | null
   }
 
   export type RateLimitEntryWhereInput = {
@@ -51783,6 +53137,13 @@ export namespace Prisma {
     limitations?: StringNullableListFilter<"OperationEvidence">
     claimedAt?: StringNullableFilter<"OperationEvidence"> | string | null
     envelopeVersion?: IntFilter<"OperationEvidence"> | number
+    enrolledDeviceId?: StringNullableFilter<"OperationEvidence"> | string | null
+    deviceCheck?: StringNullableFilter<"OperationEvidence"> | string | null
+    sessionId?: StringNullableFilter<"OperationEvidence"> | string | null
+    sessionStaffId?: StringNullableFilter<"OperationEvidence"> | string | null
+    sessionAuthTime?: DateTimeNullableFilter<"OperationEvidence"> | Date | string | null
+    sessionCheck?: StringNullableFilter<"OperationEvidence"> | string | null
+    relayed?: JsonNullableFilter<"OperationEvidence">
   }
 
   export type OperationEvidenceOrderByWithRelationInput = {
@@ -51803,6 +53164,13 @@ export namespace Prisma {
     limitations?: SortOrder
     claimedAt?: SortOrderInput | SortOrder
     envelopeVersion?: SortOrder
+    enrolledDeviceId?: SortOrderInput | SortOrder
+    deviceCheck?: SortOrderInput | SortOrder
+    sessionId?: SortOrderInput | SortOrder
+    sessionStaffId?: SortOrderInput | SortOrder
+    sessionAuthTime?: SortOrderInput | SortOrder
+    sessionCheck?: SortOrderInput | SortOrder
+    relayed?: SortOrderInput | SortOrder
   }
 
   export type OperationEvidenceWhereUniqueInput = Prisma.AtLeast<{
@@ -51826,6 +53194,13 @@ export namespace Prisma {
     limitations?: StringNullableListFilter<"OperationEvidence">
     claimedAt?: StringNullableFilter<"OperationEvidence"> | string | null
     envelopeVersion?: IntFilter<"OperationEvidence"> | number
+    enrolledDeviceId?: StringNullableFilter<"OperationEvidence"> | string | null
+    deviceCheck?: StringNullableFilter<"OperationEvidence"> | string | null
+    sessionId?: StringNullableFilter<"OperationEvidence"> | string | null
+    sessionStaffId?: StringNullableFilter<"OperationEvidence"> | string | null
+    sessionAuthTime?: DateTimeNullableFilter<"OperationEvidence"> | Date | string | null
+    sessionCheck?: StringNullableFilter<"OperationEvidence"> | string | null
+    relayed?: JsonNullableFilter<"OperationEvidence">
   }, "opId">
 
   export type OperationEvidenceOrderByWithAggregationInput = {
@@ -51846,6 +53221,13 @@ export namespace Prisma {
     limitations?: SortOrder
     claimedAt?: SortOrderInput | SortOrder
     envelopeVersion?: SortOrder
+    enrolledDeviceId?: SortOrderInput | SortOrder
+    deviceCheck?: SortOrderInput | SortOrder
+    sessionId?: SortOrderInput | SortOrder
+    sessionStaffId?: SortOrderInput | SortOrder
+    sessionAuthTime?: SortOrderInput | SortOrder
+    sessionCheck?: SortOrderInput | SortOrder
+    relayed?: SortOrderInput | SortOrder
     _count?: OperationEvidenceCountOrderByAggregateInput
     _avg?: OperationEvidenceAvgOrderByAggregateInput
     _max?: OperationEvidenceMaxOrderByAggregateInput
@@ -51874,6 +53256,80 @@ export namespace Prisma {
     limitations?: StringNullableListFilter<"OperationEvidence">
     claimedAt?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
     envelopeVersion?: IntWithAggregatesFilter<"OperationEvidence"> | number
+    enrolledDeviceId?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    deviceCheck?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    sessionId?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    sessionStaffId?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    sessionAuthTime?: DateTimeNullableWithAggregatesFilter<"OperationEvidence"> | Date | string | null
+    sessionCheck?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    relayed?: JsonNullableWithAggregatesFilter<"OperationEvidence">
+  }
+
+  export type StaffSessionWhereInput = {
+    AND?: StaffSessionWhereInput | StaffSessionWhereInput[]
+    OR?: StaffSessionWhereInput[]
+    NOT?: StaffSessionWhereInput | StaffSessionWhereInput[]
+    id?: StringFilter<"StaffSession"> | string
+    tenantId?: StringFilter<"StaffSession"> | string
+    deviceId?: StringFilter<"StaffSession"> | string
+    staffId?: StringFilter<"StaffSession"> | string
+    authTime?: DateTimeFilter<"StaffSession"> | Date | string
+    expiresAt?: DateTimeFilter<"StaffSession"> | Date | string
+    endedAt?: DateTimeNullableFilter<"StaffSession"> | Date | string | null
+    endReason?: StringNullableFilter<"StaffSession"> | string | null
+  }
+
+  export type StaffSessionOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    staffId?: SortOrder
+    authTime?: SortOrder
+    expiresAt?: SortOrder
+    endedAt?: SortOrderInput | SortOrder
+    endReason?: SortOrderInput | SortOrder
+  }
+
+  export type StaffSessionWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: StaffSessionWhereInput | StaffSessionWhereInput[]
+    OR?: StaffSessionWhereInput[]
+    NOT?: StaffSessionWhereInput | StaffSessionWhereInput[]
+    tenantId?: StringFilter<"StaffSession"> | string
+    deviceId?: StringFilter<"StaffSession"> | string
+    staffId?: StringFilter<"StaffSession"> | string
+    authTime?: DateTimeFilter<"StaffSession"> | Date | string
+    expiresAt?: DateTimeFilter<"StaffSession"> | Date | string
+    endedAt?: DateTimeNullableFilter<"StaffSession"> | Date | string | null
+    endReason?: StringNullableFilter<"StaffSession"> | string | null
+  }, "id">
+
+  export type StaffSessionOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    staffId?: SortOrder
+    authTime?: SortOrder
+    expiresAt?: SortOrder
+    endedAt?: SortOrderInput | SortOrder
+    endReason?: SortOrderInput | SortOrder
+    _count?: StaffSessionCountOrderByAggregateInput
+    _max?: StaffSessionMaxOrderByAggregateInput
+    _min?: StaffSessionMinOrderByAggregateInput
+  }
+
+  export type StaffSessionScalarWhereWithAggregatesInput = {
+    AND?: StaffSessionScalarWhereWithAggregatesInput | StaffSessionScalarWhereWithAggregatesInput[]
+    OR?: StaffSessionScalarWhereWithAggregatesInput[]
+    NOT?: StaffSessionScalarWhereWithAggregatesInput | StaffSessionScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"StaffSession"> | string
+    tenantId?: StringWithAggregatesFilter<"StaffSession"> | string
+    deviceId?: StringWithAggregatesFilter<"StaffSession"> | string
+    staffId?: StringWithAggregatesFilter<"StaffSession"> | string
+    authTime?: DateTimeWithAggregatesFilter<"StaffSession"> | Date | string
+    expiresAt?: DateTimeWithAggregatesFilter<"StaffSession"> | Date | string
+    endedAt?: DateTimeNullableWithAggregatesFilter<"StaffSession"> | Date | string | null
+    endReason?: StringNullableWithAggregatesFilter<"StaffSession"> | string | null
   }
 
   export type TenantCreateInput = {
@@ -55485,6 +56941,9 @@ export namespace Prisma {
     firstSeenAt?: Date | string
     lastSeenAt?: Date | string
     lastIp?: string
+    credentialVersion?: number
+    enrolledAt?: Date | string | null
+    enrolledById?: string | null
     tenant: TenantCreateNestedOneWithoutDevicesInput
   }
 
@@ -55498,6 +56957,9 @@ export namespace Prisma {
     firstSeenAt?: Date | string
     lastSeenAt?: Date | string
     lastIp?: string
+    credentialVersion?: number
+    enrolledAt?: Date | string | null
+    enrolledById?: string | null
   }
 
   export type DeviceUpdateInput = {
@@ -55509,6 +56971,9 @@ export namespace Prisma {
     firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastIp?: StringFieldUpdateOperationsInput | string
+    credentialVersion?: IntFieldUpdateOperationsInput | number
+    enrolledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enrolledById?: NullableStringFieldUpdateOperationsInput | string | null
     tenant?: TenantUpdateOneRequiredWithoutDevicesNestedInput
   }
 
@@ -55522,6 +56987,9 @@ export namespace Prisma {
     firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastIp?: StringFieldUpdateOperationsInput | string
+    credentialVersion?: IntFieldUpdateOperationsInput | number
+    enrolledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enrolledById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type DeviceCreateManyInput = {
@@ -55534,6 +57002,9 @@ export namespace Prisma {
     firstSeenAt?: Date | string
     lastSeenAt?: Date | string
     lastIp?: string
+    credentialVersion?: number
+    enrolledAt?: Date | string | null
+    enrolledById?: string | null
   }
 
   export type DeviceUpdateManyMutationInput = {
@@ -55545,6 +57016,9 @@ export namespace Prisma {
     firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastIp?: StringFieldUpdateOperationsInput | string
+    credentialVersion?: IntFieldUpdateOperationsInput | number
+    enrolledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enrolledById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type DeviceUncheckedUpdateManyInput = {
@@ -55557,6 +57031,9 @@ export namespace Prisma {
     firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastIp?: StringFieldUpdateOperationsInput | string
+    credentialVersion?: IntFieldUpdateOperationsInput | number
+    enrolledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enrolledById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PairingCodeCreateInput = {
@@ -55567,6 +57044,7 @@ export namespace Prisma {
     expiresAt: Date | string
     usedAt?: Date | string | null
     createdAt?: Date | string
+    createdById?: string | null
     tenant: TenantCreateNestedOneWithoutPairingCodesInput
   }
 
@@ -55579,6 +57057,7 @@ export namespace Prisma {
     expiresAt: Date | string
     usedAt?: Date | string | null
     createdAt?: Date | string
+    createdById?: string | null
   }
 
   export type PairingCodeUpdateInput = {
@@ -55589,6 +57068,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
     tenant?: TenantUpdateOneRequiredWithoutPairingCodesNestedInput
   }
 
@@ -55601,6 +57081,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PairingCodeCreateManyInput = {
@@ -55612,6 +57093,7 @@ export namespace Prisma {
     expiresAt: Date | string
     usedAt?: Date | string | null
     createdAt?: Date | string
+    createdById?: string | null
   }
 
   export type PairingCodeUpdateManyMutationInput = {
@@ -55622,6 +57104,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PairingCodeUncheckedUpdateManyInput = {
@@ -55633,6 +57116,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type RateLimitEntryCreateInput = {
@@ -55903,6 +57387,13 @@ export namespace Prisma {
     limitations?: OperationEvidenceCreatelimitationsInput | string[]
     claimedAt?: string | null
     envelopeVersion?: number
+    enrolledDeviceId?: string | null
+    deviceCheck?: string | null
+    sessionId?: string | null
+    sessionStaffId?: string | null
+    sessionAuthTime?: Date | string | null
+    sessionCheck?: string | null
+    relayed?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUncheckedCreateInput = {
@@ -55923,6 +57414,13 @@ export namespace Prisma {
     limitations?: OperationEvidenceCreatelimitationsInput | string[]
     claimedAt?: string | null
     envelopeVersion?: number
+    enrolledDeviceId?: string | null
+    deviceCheck?: string | null
+    sessionId?: string | null
+    sessionStaffId?: string | null
+    sessionAuthTime?: Date | string | null
+    sessionCheck?: string | null
+    relayed?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUpdateInput = {
@@ -55943,6 +57441,13 @@ export namespace Prisma {
     limitations?: OperationEvidenceUpdatelimitationsInput | string[]
     claimedAt?: NullableStringFieldUpdateOperationsInput | string | null
     envelopeVersion?: IntFieldUpdateOperationsInput | number
+    enrolledDeviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceCheck?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionId?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionStaffId?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionAuthTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionCheck?: NullableStringFieldUpdateOperationsInput | string | null
+    relayed?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUncheckedUpdateInput = {
@@ -55963,6 +57468,13 @@ export namespace Prisma {
     limitations?: OperationEvidenceUpdatelimitationsInput | string[]
     claimedAt?: NullableStringFieldUpdateOperationsInput | string | null
     envelopeVersion?: IntFieldUpdateOperationsInput | number
+    enrolledDeviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceCheck?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionId?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionStaffId?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionAuthTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionCheck?: NullableStringFieldUpdateOperationsInput | string | null
+    relayed?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceCreateManyInput = {
@@ -55983,6 +57495,13 @@ export namespace Prisma {
     limitations?: OperationEvidenceCreatelimitationsInput | string[]
     claimedAt?: string | null
     envelopeVersion?: number
+    enrolledDeviceId?: string | null
+    deviceCheck?: string | null
+    sessionId?: string | null
+    sessionStaffId?: string | null
+    sessionAuthTime?: Date | string | null
+    sessionCheck?: string | null
+    relayed?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUpdateManyMutationInput = {
@@ -56003,6 +57522,13 @@ export namespace Prisma {
     limitations?: OperationEvidenceUpdatelimitationsInput | string[]
     claimedAt?: NullableStringFieldUpdateOperationsInput | string | null
     envelopeVersion?: IntFieldUpdateOperationsInput | number
+    enrolledDeviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceCheck?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionId?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionStaffId?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionAuthTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionCheck?: NullableStringFieldUpdateOperationsInput | string | null
+    relayed?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUncheckedUpdateManyInput = {
@@ -56023,6 +57549,90 @@ export namespace Prisma {
     limitations?: OperationEvidenceUpdatelimitationsInput | string[]
     claimedAt?: NullableStringFieldUpdateOperationsInput | string | null
     envelopeVersion?: IntFieldUpdateOperationsInput | number
+    enrolledDeviceId?: NullableStringFieldUpdateOperationsInput | string | null
+    deviceCheck?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionId?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionStaffId?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionAuthTime?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    sessionCheck?: NullableStringFieldUpdateOperationsInput | string | null
+    relayed?: NullableJsonNullValueInput | InputJsonValue
+  }
+
+  export type StaffSessionCreateInput = {
+    id: string
+    tenantId: string
+    deviceId: string
+    staffId: string
+    authTime?: Date | string
+    expiresAt: Date | string
+    endedAt?: Date | string | null
+    endReason?: string | null
+  }
+
+  export type StaffSessionUncheckedCreateInput = {
+    id: string
+    tenantId: string
+    deviceId: string
+    staffId: string
+    authTime?: Date | string
+    expiresAt: Date | string
+    endedAt?: Date | string | null
+    endReason?: string | null
+  }
+
+  export type StaffSessionUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    staffId?: StringFieldUpdateOperationsInput | string
+    authTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    endReason?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type StaffSessionUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    staffId?: StringFieldUpdateOperationsInput | string
+    authTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    endReason?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type StaffSessionCreateManyInput = {
+    id: string
+    tenantId: string
+    deviceId: string
+    staffId: string
+    authTime?: Date | string
+    expiresAt: Date | string
+    endedAt?: Date | string | null
+    endReason?: string | null
+  }
+
+  export type StaffSessionUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    staffId?: StringFieldUpdateOperationsInput | string
+    authTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    endReason?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type StaffSessionUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    staffId?: StringFieldUpdateOperationsInput | string
+    authTime?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    endReason?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type StringFilter<$PrismaModel = never> = {
@@ -58860,6 +60470,13 @@ export namespace Prisma {
     firstSeenAt?: SortOrder
     lastSeenAt?: SortOrder
     lastIp?: SortOrder
+    credentialVersion?: SortOrder
+    enrolledAt?: SortOrder
+    enrolledById?: SortOrder
+  }
+
+  export type DeviceAvgOrderByAggregateInput = {
+    credentialVersion?: SortOrder
   }
 
   export type DeviceMaxOrderByAggregateInput = {
@@ -58872,6 +60489,9 @@ export namespace Prisma {
     firstSeenAt?: SortOrder
     lastSeenAt?: SortOrder
     lastIp?: SortOrder
+    credentialVersion?: SortOrder
+    enrolledAt?: SortOrder
+    enrolledById?: SortOrder
   }
 
   export type DeviceMinOrderByAggregateInput = {
@@ -58884,6 +60504,13 @@ export namespace Prisma {
     firstSeenAt?: SortOrder
     lastSeenAt?: SortOrder
     lastIp?: SortOrder
+    credentialVersion?: SortOrder
+    enrolledAt?: SortOrder
+    enrolledById?: SortOrder
+  }
+
+  export type DeviceSumOrderByAggregateInput = {
+    credentialVersion?: SortOrder
   }
 
   export type PairingCodeCountOrderByAggregateInput = {
@@ -58895,6 +60522,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     usedAt?: SortOrder
     createdAt?: SortOrder
+    createdById?: SortOrder
   }
 
   export type PairingCodeMaxOrderByAggregateInput = {
@@ -58906,6 +60534,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     usedAt?: SortOrder
     createdAt?: SortOrder
+    createdById?: SortOrder
   }
 
   export type PairingCodeMinOrderByAggregateInput = {
@@ -58917,6 +60546,7 @@ export namespace Prisma {
     expiresAt?: SortOrder
     usedAt?: SortOrder
     createdAt?: SortOrder
+    createdById?: SortOrder
   }
 
   export type RateLimitEntryBucketKeyCompoundUniqueInput = {
@@ -59088,6 +60718,13 @@ export namespace Prisma {
     limitations?: SortOrder
     claimedAt?: SortOrder
     envelopeVersion?: SortOrder
+    enrolledDeviceId?: SortOrder
+    deviceCheck?: SortOrder
+    sessionId?: SortOrder
+    sessionStaffId?: SortOrder
+    sessionAuthTime?: SortOrder
+    sessionCheck?: SortOrder
+    relayed?: SortOrder
   }
 
   export type OperationEvidenceAvgOrderByAggregateInput = {
@@ -59111,6 +60748,12 @@ export namespace Prisma {
     evidence?: SortOrder
     claimedAt?: SortOrder
     envelopeVersion?: SortOrder
+    enrolledDeviceId?: SortOrder
+    deviceCheck?: SortOrder
+    sessionId?: SortOrder
+    sessionStaffId?: SortOrder
+    sessionAuthTime?: SortOrder
+    sessionCheck?: SortOrder
   }
 
   export type OperationEvidenceMinOrderByAggregateInput = {
@@ -59130,6 +60773,12 @@ export namespace Prisma {
     evidence?: SortOrder
     claimedAt?: SortOrder
     envelopeVersion?: SortOrder
+    enrolledDeviceId?: SortOrder
+    deviceCheck?: SortOrder
+    sessionId?: SortOrder
+    sessionStaffId?: SortOrder
+    sessionAuthTime?: SortOrder
+    sessionCheck?: SortOrder
   }
 
   export type OperationEvidenceSumOrderByAggregateInput = {
@@ -59142,6 +60791,39 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedBoolNullableFilter<$PrismaModel>
     _max?: NestedBoolNullableFilter<$PrismaModel>
+  }
+
+  export type StaffSessionCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    staffId?: SortOrder
+    authTime?: SortOrder
+    expiresAt?: SortOrder
+    endedAt?: SortOrder
+    endReason?: SortOrder
+  }
+
+  export type StaffSessionMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    staffId?: SortOrder
+    authTime?: SortOrder
+    expiresAt?: SortOrder
+    endedAt?: SortOrder
+    endReason?: SortOrder
+  }
+
+  export type StaffSessionMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    staffId?: SortOrder
+    authTime?: SortOrder
+    expiresAt?: SortOrder
+    endedAt?: SortOrder
+    endReason?: SortOrder
   }
 
   export type StaffUserCreateNestedManyWithoutTenantInput = {
@@ -63484,6 +65166,9 @@ export namespace Prisma {
     firstSeenAt?: Date | string
     lastSeenAt?: Date | string
     lastIp?: string
+    credentialVersion?: number
+    enrolledAt?: Date | string | null
+    enrolledById?: string | null
   }
 
   export type DeviceUncheckedCreateWithoutTenantInput = {
@@ -63495,6 +65180,9 @@ export namespace Prisma {
     firstSeenAt?: Date | string
     lastSeenAt?: Date | string
     lastIp?: string
+    credentialVersion?: number
+    enrolledAt?: Date | string | null
+    enrolledById?: string | null
   }
 
   export type DeviceCreateOrConnectWithoutTenantInput = {
@@ -63515,6 +65203,7 @@ export namespace Prisma {
     expiresAt: Date | string
     usedAt?: Date | string | null
     createdAt?: Date | string
+    createdById?: string | null
   }
 
   export type PairingCodeUncheckedCreateWithoutTenantInput = {
@@ -63525,6 +65214,7 @@ export namespace Prisma {
     expiresAt: Date | string
     usedAt?: Date | string | null
     createdAt?: Date | string
+    createdById?: string | null
   }
 
   export type PairingCodeCreateOrConnectWithoutTenantInput = {
@@ -64429,6 +66119,9 @@ export namespace Prisma {
     firstSeenAt?: DateTimeFilter<"Device"> | Date | string
     lastSeenAt?: DateTimeFilter<"Device"> | Date | string
     lastIp?: StringFilter<"Device"> | string
+    credentialVersion?: IntFilter<"Device"> | number
+    enrolledAt?: DateTimeNullableFilter<"Device"> | Date | string | null
+    enrolledById?: StringNullableFilter<"Device"> | string | null
   }
 
   export type PairingCodeUpsertWithWhereUniqueWithoutTenantInput = {
@@ -64459,6 +66152,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFilter<"PairingCode"> | Date | string
     usedAt?: DateTimeNullableFilter<"PairingCode"> | Date | string | null
     createdAt?: DateTimeFilter<"PairingCode"> | Date | string
+    createdById?: StringNullableFilter<"PairingCode"> | string | null
   }
 
   export type TenantCreateWithoutUsersInput = {
@@ -74007,6 +75701,9 @@ export namespace Prisma {
     firstSeenAt?: Date | string
     lastSeenAt?: Date | string
     lastIp?: string
+    credentialVersion?: number
+    enrolledAt?: Date | string | null
+    enrolledById?: string | null
   }
 
   export type PairingCodeCreateManyTenantInput = {
@@ -74017,6 +75714,7 @@ export namespace Prisma {
     expiresAt: Date | string
     usedAt?: Date | string | null
     createdAt?: Date | string
+    createdById?: string | null
   }
 
   export type StaffUserUpdateWithoutTenantInput = {
@@ -75187,6 +76885,9 @@ export namespace Prisma {
     firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastIp?: StringFieldUpdateOperationsInput | string
+    credentialVersion?: IntFieldUpdateOperationsInput | number
+    enrolledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enrolledById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type DeviceUncheckedUpdateWithoutTenantInput = {
@@ -75198,6 +76899,9 @@ export namespace Prisma {
     firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastIp?: StringFieldUpdateOperationsInput | string
+    credentialVersion?: IntFieldUpdateOperationsInput | number
+    enrolledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enrolledById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type DeviceUncheckedUpdateManyWithoutTenantInput = {
@@ -75209,6 +76913,9 @@ export namespace Prisma {
     firstSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastSeenAt?: DateTimeFieldUpdateOperationsInput | Date | string
     lastIp?: StringFieldUpdateOperationsInput | string
+    credentialVersion?: IntFieldUpdateOperationsInput | number
+    enrolledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    enrolledById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PairingCodeUpdateWithoutTenantInput = {
@@ -75219,6 +76926,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PairingCodeUncheckedUpdateWithoutTenantInput = {
@@ -75229,6 +76937,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type PairingCodeUncheckedUpdateManyWithoutTenantInput = {
@@ -75239,6 +76948,7 @@ export namespace Prisma {
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
     usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdById?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ShiftCreateManyOpenedByInput = {

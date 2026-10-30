@@ -1,4 +1,5 @@
 import { putMany } from "./db"
+import { captureEnvelope, deviceHeadersFor, type SyncEnvelope } from "../lib/deviceCredentials"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import type { ConnectionMode } from "./settings.service"
@@ -813,6 +814,8 @@ export type SyncOperation = {
   error?: string
   /** Written ahead of its business data (stageSyncOperation): never pushed until committed. */
   staged?: boolean
+  /** SPRINT-2 C: the staff session / local-PIN evidence it was created under (sent, never part of the op). */
+  ev?: SyncEnvelope
 }
 
 /**
@@ -1071,6 +1074,7 @@ export function stageSyncOperation(input: EnqueueSyncInput): SyncOperation {
   const operation: SyncOperation = {
     id: input.id ?? createId(), entity: input.entity, action: input.action, summary: input.summary,
     payload: input.payload, status: "Pending", attempts: 0, createdAt: new Date().toISOString(), staged: true,
+    ev: captureEnvelope(getApiUrl()),
   }
   if (!persistQueue([operation, ...queue])) throw new SyncStorageError(operation.id)
   return operation
@@ -1592,6 +1596,7 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
     status: "Pending",
     attempts: 0,
     createdAt: new Date().toISOString(),
+    ev: captureEnvelope(getApiUrl()),
   }
   // Never report "queued", and never send, unless it is on disk.
   if (!persistQueue([operation, ...getSyncQueue()])) return undefined
@@ -1615,8 +1620,8 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
     try {
       const response = await fetch(`${apiUrl}/api/sync/push`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS },
-        body: JSON.stringify({ deviceId: getDeviceId(), operations: [{ id: operation.id, entity: operation.entity, action: operation.action, payload: operation.payload }] }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS, ...deviceHeadersFor(apiUrl) },
+        body: JSON.stringify({ deviceId: getDeviceId(), operations: [{ id: operation.id, entity: operation.entity, action: operation.action, payload: operation.payload, ...(operation.ev ? { ev: operation.ev } : {}) }] }),
         signal: AbortSignal.timeout(5_000),
       })
       if (response.ok || response.status === 403) {
@@ -1712,6 +1717,7 @@ async function _flushSyncQueue() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
         ...SYNC_SCHEMA_HEADERS, // SPRINT-1: the server records this till's version (upgrade gate)
+        ...deviceHeadersFor(apiUrl), // SPRINT-2 C: device credential, separate from the connection token
       },
       body: JSON.stringify({
         deviceId: getDeviceId(),
@@ -1720,6 +1726,7 @@ async function _flushSyncQueue() {
           entity: op.entity,
           action: op.action,
           payload: op.payload,
+          ...(op.ev ? { ev: op.ev } : {}),
         })),
       }),
     })
@@ -1939,9 +1946,10 @@ export async function commitSaleToHub(sale: { id: string } & Record<string, unkn
   const token = getAuthToken()
   if (!apiUrl || !token) return { status: "unreachable" }
 
-  const op = { id: `wt-${sale.id}`, entity: "sale", action: "create", payload: sale }
+  const ev = captureEnvelope(apiUrl)
+  const op = { id: `wt-${sale.id}`, entity: "sale", action: "create", payload: sale, ...(ev ? { ev } : {}) }
   const body = JSON.stringify({ deviceId: getDeviceId(), operations: [op] })
-  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS }
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...SYNC_SCHEMA_HEADERS, ...deviceHeadersFor(apiUrl) }
 
   for (let attempt = 1; attempt <= COMMIT_MAX_ATTEMPTS; attempt++) {
     try {

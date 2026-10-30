@@ -86,7 +86,9 @@ export const requireAuth: Handler = async (req, res, next) => {
     const payload = jwt.verify(token, getJwtSecret()) as AuthPayload
     // SPRINT-2: ordering-app customer tokens are signed with the same secret but are not staff
     // credentials; they have their own verifier (requireCustomerAuth) and are refused here.
-    if ((payload as { customerId?: unknown }).customerId !== undefined || (payload as { role?: unknown }).role === "Customer") {
+    // SPRINT-2 C: device credentials and staff sessions carry an audience (and a derived key); they
+    // are never connection tokens.
+    if ((payload as { customerId?: unknown }).customerId !== undefined || (payload as { role?: unknown }).role === "Customer" || (payload as { aud?: unknown }).aud !== undefined) {
       json(res, { error: "Invalid or expired token" }, 401)
       return
     }

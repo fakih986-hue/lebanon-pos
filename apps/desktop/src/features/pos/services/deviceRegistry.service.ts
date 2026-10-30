@@ -1,5 +1,6 @@
 import { getApiUrl, getAuthToken } from "./sync.service"
 import { getDeviceId } from "./sync.service"
+import { rememberEnrollment } from "./deviceSession.service"
 
 export type DeviceStatus = "APPROVED" | "REVOKED"
 
@@ -13,6 +14,8 @@ export type PairedDevice = {
   firstSeenAt: string
   lastSeenAt: string
   lastIp: string
+  /** SPRINT-2 C: set once the device holds a credential from this server (null: paired before enrollment existed). */
+  enrolledAt?: string | null
 }
 
 export type PairingCodeResult = {
@@ -60,6 +63,8 @@ export async function pairDevice(code: string, deviceId: string, deviceName?: st
   }
   if (!res.ok) throw new Error(data?.error ?? "Pairing failed")
   localStorage.setItem(AUTO_APPROVED_KEY, deviceId)
+  // SPRINT-2 C: pairing is enrollment — keep the device credential the hub issued (older hubs send none).
+  if (apiUrl) rememberEnrollment(apiUrl, data ?? {})
   return data
 }
 

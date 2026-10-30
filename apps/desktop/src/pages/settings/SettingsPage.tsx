@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import DeviceSessionCard from "../../features/pos/components/DeviceSessionCard"
 import { useI18n } from "@lebanonpos/shared"
 import { RatePanel } from "../../features/pos/components/RateManager"
 import {
@@ -1345,6 +1346,8 @@ export default function SettingsPage() {
           </section>
           ) : null}
 
+          {activeWorkspace === "Cloud sync" ? <DeviceSessionCard /> : null}
+
           {activeWorkspace === "Cloud sync" && connectionMode === "STORE_HUB" ? (
           <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
@@ -1379,6 +1382,9 @@ export default function SettingsPage() {
                         device.status === "APPROVED" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
                       }`}>
                         {device.status === "APPROVED" ? "Active" : "Revoked"}
+                      </span>
+                      <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={device.enrolledAt ? { background: "var(--v2-ok-soft)", color: "var(--v2-ok)" } : { background: "var(--surface-2)", color: "var(--text-2)" }}>
+                        {device.enrolledAt ? t("devices.list.enrolled") : t("devices.list.paired_only")}
                       </span>
                     </div>
                   </div>

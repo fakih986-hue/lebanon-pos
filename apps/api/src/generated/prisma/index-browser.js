@@ -624,7 +624,10 @@ exports.Prisma.DeviceScalarFieldEnum = {
   status: 'status',
   firstSeenAt: 'firstSeenAt',
   lastSeenAt: 'lastSeenAt',
-  lastIp: 'lastIp'
+  lastIp: 'lastIp',
+  credentialVersion: 'credentialVersion',
+  enrolledAt: 'enrolledAt',
+  enrolledById: 'enrolledById'
 };
 
 exports.Prisma.PairingCodeScalarFieldEnum = {
@@ -635,7 +638,8 @@ exports.Prisma.PairingCodeScalarFieldEnum = {
   deviceName: 'deviceName',
   expiresAt: 'expiresAt',
   usedAt: 'usedAt',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  createdById: 'createdById'
 };
 
 exports.Prisma.RateLimitEntryScalarFieldEnum = {
@@ -691,7 +695,25 @@ exports.Prisma.OperationEvidenceScalarFieldEnum = {
   evidence: 'evidence',
   limitations: 'limitations',
   claimedAt: 'claimedAt',
-  envelopeVersion: 'envelopeVersion'
+  envelopeVersion: 'envelopeVersion',
+  enrolledDeviceId: 'enrolledDeviceId',
+  deviceCheck: 'deviceCheck',
+  sessionId: 'sessionId',
+  sessionStaffId: 'sessionStaffId',
+  sessionAuthTime: 'sessionAuthTime',
+  sessionCheck: 'sessionCheck',
+  relayed: 'relayed'
+};
+
+exports.Prisma.StaffSessionScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  deviceId: 'deviceId',
+  staffId: 'staffId',
+  authTime: 'authTime',
+  expiresAt: 'expiresAt',
+  endedAt: 'endedAt',
+  endReason: 'endReason'
 };
 
 exports.Prisma.SortOrder = {
@@ -821,7 +843,8 @@ exports.Prisma.ModelName = {
   RateLimitEntry: 'RateLimitEntry',
   StockMovement: 'StockMovement',
   SyncClient: 'SyncClient',
-  OperationEvidence: 'OperationEvidence'
+  OperationEvidence: 'OperationEvidence',
+  StaffSession: 'StaffSession'
 };
 
 /**

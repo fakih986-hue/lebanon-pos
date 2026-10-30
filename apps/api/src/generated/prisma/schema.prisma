@@ -774,31 +774,37 @@ model SyncOperation {
 }
 
 model Device {
-  id          String   @id @default(uuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
-  deviceId    String
-  deviceName  String   @default("")
-  registerId  String   @default("")
-  status      String   @default("APPROVED") // APPROVED | REVOKED
-  firstSeenAt DateTime @default(now())
-  lastSeenAt  DateTime @default(now())
-  lastIp      String   @default("")
+  id                String    @id @default(uuid())
+  tenantId          String
+  tenant            Tenant    @relation(fields: [tenantId], references: [id])
+  deviceId          String
+  deviceName        String    @default("")
+  registerId        String    @default("")
+  status            String    @default("APPROVED") // APPROVED | REVOKED
+  firstSeenAt       DateTime  @default(now())
+  lastSeenAt        DateTime  @default(now())
+  lastIp            String    @default("")
+  /// SPRINT-2 C: enrollment. A device credential is valid only while its version matches and the
+  /// device is APPROVED; re-enrolling or revoking bumps the version.
+  credentialVersion Int       @default(0)
+  enrolledAt        DateTime?
+  enrolledById      String? // staff member who created the enrollment code
 
   @@unique([tenantId, deviceId])
   @@index([tenantId])
 }
 
 model PairingCode {
-  id         String    @id @default(uuid())
-  tenantId   String
-  tenant     Tenant    @relation(fields: [tenantId], references: [id])
-  code       String    @unique
-  deviceId   String?
-  deviceName String    @default("")
-  expiresAt  DateTime
-  usedAt     DateTime?
-  createdAt  DateTime  @default(now())
+  id          String    @id @default(uuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
+  code        String    @unique
+  deviceId    String?
+  deviceName  String    @default("")
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  createdById String? // SPRINT-2 C: the staff member who created it
 
   @@index([tenantId])
   @@index([code])
@@ -860,11 +866,11 @@ model SyncClient {
 /// "claimed" columns come from the client and are not authenticated; evidence is never "verified"
 /// until staff sessions exist (Phase C).
 model OperationEvidence {
-  opId                String   @id
+  opId                String    @id
   tenantId            String
   entity              String
   action              String
-  receivedAt          DateTime @default(now())
+  receivedAt          DateTime  @default(now())
   acceptedBy          String
   transport           String
   credentialKind      String
@@ -874,10 +880,37 @@ model OperationEvidence {
   actorNameClaimed    String?
   actorMatchesAccount Boolean?
   evidence            String
-  limitations         String[] @default([])
+  limitations         String[]  @default([])
   claimedAt           String?
-  envelopeVersion     Int      @default(0)
+  envelopeVersion     Int       @default(0)
+  // SPRINT-2 C (observe): device credential and staff session presented with the operation, as
+  // checked by this server when it received it. Not enforced.
+  enrolledDeviceId    String?
+  deviceCheck         String? // valid | absent | invalid | revoked | superseded | other-store
+  sessionId           String?
+  sessionStaffId      String?
+  sessionAuthTime     DateTime?
+  sessionCheck        String? // valid | absent | invalid | other-device | other-store | staff-inactive | staff-revoked | no-device
+  /// What the hub that relayed this operation recorded (claimed: not attested until Phase D).
+  relayed             Json?
 
   @@index([tenantId, receivedAt])
   @@index([tenantId, evidence])
+}
+
+/// SPRINT-2 C: a staff session — the server verified this staff member's PIN for this enrolled device
+/// at authTime. It proves nothing about later presence. Ended when the device switches person,
+/// signs out, or the device is revoked.
+model StaffSession {
+  id        String    @id
+  tenantId  String
+  deviceId  String // Device.id (server-assigned)
+  staffId   String
+  authTime  DateTime  @default(now())
+  expiresAt DateTime
+  endedAt   DateTime?
+  endReason String? // switched | signed-out | device-revoked
+
+  @@index([tenantId, deviceId])
+  @@index([tenantId, staffId])
 }

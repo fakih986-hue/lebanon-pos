@@ -26,6 +26,7 @@ import { fileURLToPath } from "node:url"
 import prisma from "../lib/prisma.js"
 import { recordStockMovementOnce } from "../lib/ledger.js"
 import { broadcastToTenant } from "../ws/index.js"
+import { pickRelayed } from "../lib/evidence.js"
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -337,15 +338,26 @@ async function pushToCloud(): Promise<void> {
 
   console.log(`[cloud-sync] Pushing ${pending.length} operation(s)…`)
 
+  // SPRINT-2 C: carry what this hub recorded when it accepted each operation (device, staff session,
+  // transport) so the cloud keeps the original evidence. Claimed until hubs attest (Phase D).
+  const evidenceRows = (prisma as any).operationEvidence
+    ? await (prisma as any).operationEvidence.findMany({ where: { tenantId, opId: { in: pending.map((op) => op.id) } } }).catch(() => [])
+    : []
+  const relayedOf = new Map<string, Record<string, unknown> | null>((evidenceRows as Array<{ opId: string }>).map((r) => [r.opId, pickRelayed(r)]))
+
   const res = await fetchCloud("/api/sync/push", {
     method: "POST",
     body:   JSON.stringify({
-      operations: pending.map((op) => ({
-        id:      op.id,
-        entity:  op.entity,
-        action:  op.action,
-        payload: op.payload,
-      })),
+      operations: pending.map((op) => {
+        const relayed = relayedOf.get(op.id)
+        return {
+          id:      op.id,
+          entity:  op.entity,
+          action:  op.action,
+          payload: op.payload,
+          ...(relayed ? { ev: { v: 1, relayed } } : {}),
+        }
+      }),
     }),
   })
 

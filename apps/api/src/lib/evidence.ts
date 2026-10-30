@@ -5,16 +5,21 @@
  * from what the client claims. Nothing changes the outcome of an operation here.
  *
  * Evidence labels (kept distinct — docs/SPRINT-2-PLAN.md §2.3):
- *  - "verified"        a server-issued staff session for this device proves the actor (Phase C; never
- *                      produced in observe mode)
+ *  - "verified"        a server-issued staff session for this device proves the actor, ENFORCED
+ *                      (enforce mode, Phase G; never produced in observe mode)
+ *  - "staff-session"   observe mode (Phase C): the request carried this store's valid device
+ *                      credential and a staff session this server opened for that device after
+ *                      checking the person's PIN. Not enforced; the PIN was checked when the session
+ *                      started, not for this operation; the device credential is a bearer token
  *  - "hub-attested"    an enrolled hub signed that it verified the actor (Phase D; never produced here)
  *  - "offline-claimed" the client says it was done offline under a local PIN check; unverifiable
  *  - "legacy-claimed"  everything else: the pushing token proves only the CONNECTING account (or a
  *                      store-level relay); the acting staff member is whatever the payload names
  */
 import type { TokenKind } from "../middleware/auth.js"
+import type { DeviceCheck, SessionResult } from "./credentials.js"
 
-export type EvidenceLabel = "verified" | "hub-attested" | "offline-claimed" | "legacy-claimed"
+export type EvidenceLabel = "verified" | "hub-attested" | "staff-session" | "offline-claimed" | "legacy-claimed"
 
 /** The staff member an operation's payload names as acting (client-written: a CLAIM). */
 export function claimedActor(entity: string, action: string, payload: unknown): { id: string | null; name: string | null } {
@@ -48,6 +53,24 @@ export type ObserveInput = {
   kind: TokenKind; accountId: string | null; deviceId: string | null
   transport: ReturnType<typeof transportOf>; acceptedBy: "cloud" | "hub"
   envelope?: { v?: unknown; offline?: unknown } | null
+  /** SPRINT-2 C: the device credential and staff session checks (absent for a hub's cloud link). */
+  device?: { check: DeviceCheck; deviceId: string | null } | null
+  session?: SessionResult | null
+  /** SPRINT-2 C: the evidence the relaying hub recorded (claimed until hubs attest, Phase D). */
+  relayed?: Record<string, unknown> | null
+}
+
+/** Fields of a hub's own evidence row that are carried to the cloud with a forwarded operation. */
+export const RELAYED_FIELDS = ["acceptedBy", "receivedAt", "transport", "credentialKind", "connectionAccountId", "deviceIdClaimed", "enrolledDeviceId", "deviceCheck", "sessionId", "sessionStaffId", "sessionAuthTime", "sessionCheck", "actorIdClaimed", "actorNameClaimed", "evidence", "limitations", "claimedAt"] as const
+export function pickRelayed(row: unknown): Record<string, unknown> | null {
+  if (!row || typeof row !== "object" || Array.isArray(row)) return null
+  const out: Record<string, unknown> = {}
+  for (const k of RELAYED_FIELDS) {
+    const v = (row as Record<string, unknown>)[k]
+    if (v === undefined) continue
+    out[k] = v instanceof Date ? v.toISOString() : v
+  }
+  return JSON.stringify(out).length <= 8192 ? out : null
 }
 
 /** The evidence row for one applied operation (observe mode). */
@@ -68,7 +91,19 @@ export function observeEvidence(i: ObserveInput) {
   if (i.transport === "http-lan") limitations.push("transport-http-lan-unencrypted")
   if (i.deviceId) limitations.push("device-id-claimed")
   if (claimedAt) limitations.push("client-time-claimed")
-  const evidence: EvidenceLabel = offline ? "offline-claimed" : "legacy-claimed"
+  const dev = i.device ?? null, ses = i.session ?? null
+  if (dev && dev.check !== "absent" && dev.check !== "valid") limitations.push(`device-credential-${dev.check}`)
+  if (ses && ses.check !== "absent" && ses.check !== "valid") limitations.push(`staff-session-${ses.check}`)
+  const sessionHeld = dev?.check === "valid" && ses?.check === "valid"
+  if (sessionHeld) {
+    limitations.push("observe-mode-not-enforced", "pin-checked-at-session-start-not-per-operation", "device-credential-bearer")
+    if (ses!.expired) limitations.push("session-expired-at-receipt")
+    if (ses!.ended) limitations.push("session-ended-before-receipt")
+  }
+  if (ses?.staffId && actor.id && ses.staffId !== actor.id && ses.check !== "invalid") limitations.push("claimed-actor-differs-from-session")
+  const relayed = i.kind === "bridge" ? pickRelayed(i.relayed) : null
+  if (relayed) limitations.push("hub-evidence-unattested")
+  const evidence: EvidenceLabel = sessionHeld && !offline ? "staff-session" : offline ? "offline-claimed" : "legacy-claimed"
   return {
     opId: i.opId, tenantId: i.tenantId, entity: i.entity, action: i.action,
     acceptedBy: i.acceptedBy, transport: i.transport, credentialKind: i.kind,
@@ -77,5 +112,8 @@ export function observeEvidence(i: ObserveInput) {
     actorMatchesAccount: i.kind === "staff" && actor.id && i.accountId ? actor.id === i.accountId : null,
     evidence, limitations, claimedAt,
     envelopeVersion: Number.isInteger(Number(i.envelope?.v)) ? Number(i.envelope?.v) : 0,
+    enrolledDeviceId: dev?.deviceId ?? null, deviceCheck: dev?.check ?? null,
+    sessionId: ses?.sessionId ?? null, sessionStaffId: ses?.staffId ?? null, sessionAuthTime: ses?.authTime ?? null, sessionCheck: ses?.check ?? null,
+    relayed,
   }
 }
