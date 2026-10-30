@@ -1,6 +1,6 @@
 # Containment release for the deployed API — for approval
 
-Branch `hotfix/containment-1.0.50`, 6 commits on top of the deployed revision `7df7c58`. **Not deployed.** It changes the cloud API and, through the same deploy, the ordering web app (one image-URL fix). It does not contain Sprint 1 or Sprint 2 work. The till (desktop) code and the hub EXE are unchanged.
+Branch `hotfix/containment-1.0.50`: the commits below plus documentation commits, on top of the deployed revision `7df7c58`. **Not deployed.** It changes the cloud API and, through the same deploy, the ordering web app (one image-URL fix). It does not contain Sprint 1 or Sprint 2 work. The till (desktop) code and the hub EXE are unchanged.
 
 | Commit | Content |
 |---|---|
