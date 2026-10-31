@@ -141,26 +141,74 @@ describe("a cashier-connected till with a manager unlocked locally (1.0.50 till,
     expect(queue().find((o) => o.id === opId)).toBeTruthy()
   })
 
-  it("a manager can list the refused work on the server; the cashier account cannot", async () => {
-    const owner = (await (await realFetch(`${baseUrl}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin: "5101", tenantSubdomain: SUB }) })).json() as any).token
-    const list = await realFetch(`${baseUrl}/api/sync/refused`, { headers: { Authorization: `Bearer ${owner}` } })
-    const ops = ((await list.json()) as any).operations as Array<Record<string, any>>
-    console.log("EVIDENCE refused list (manager):", JSON.stringify(ops.map((o) => ({ entity: o.entity, action: o.action, attempts: o.attempts, error: o.error }))))
-    expect(ops.map((o) => o.id)).toContain(opId)
-    expect((await realFetch(`${baseUrl}/api/sync/refused`, { headers: { Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` } })).status).toBe(403)
+  const loginAs = async (pin: string) => (await (await realFetch(`${baseUrl}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pin, tenantSubdomain: SUB }) })).json() as any).token as string
+  const review = (token: string) => realFetch(`${baseUrl}/api/sync/refused`, { headers: { Authorization: `Bearer ${token}` } })
+  const resolve = (token: string, id: string, decision: string, note = "counted the delivery myself") =>
+    realFetch(`${baseUrl}/api/sync/refused/${id}/resolve`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ decision, note }) })
+  const serverStock = async () => Number((await prisma.product.findFirst({ where: { tenantId: T, syncId: PRODUCT_SYNC } }))!.stock)
+  /** The till's own "Retry failed": put the queued entry back to pending and flush. */
+  const retryOnTill = async (id: string) => {
+    const y = await sync()
+    storage.setItem("lebanonpos.sync-queue.v1", JSON.stringify(queue().map((o) => o.id === id ? { ...o, status: "Pending", attempts: 0, lastAttemptAt: "2000-01-01T00:00:00.000Z" } : o)))
+    await y.flushSyncQueue(); await dispose()
+    return queue().find((o) => o.id === id)
+  }
+
+  it("review: a manager sees the original command, the till's local effect, the server effect, the reason and the actor limitations; a cashier cannot", async () => {
+    const sami = await loginAs("5103")
+    const r = await review(sami)
+    const ops = ((await r.json()) as any).operations as Array<Record<string, any>>
+    const op = ops.find((o) => o.id === opId)!
+    console.log("EVIDENCE review item:", JSON.stringify({ reason: op.reason, pushedBy: op.pushedBy?.name, deviceId: op.deviceId, effects: op.effects, limitations: op.limitations, requiredPermissions: op.requiredPermissions, canResolve: op.canResolve }))
+    expect(op).toMatchObject({ entity: "inventory", action: "adjust", status: "Refused", reason: "You don't have permission to adjust inventory", canResolve: true })
+    expect(op.pushedBy).toMatchObject({ id: RANA, name: "Rana" })
+    expect(op.effects[0]).toMatchObject({ kind: "stock-change", product: "Milk 1L", change: 5, serverNow: 10, serverAfter: 15 })
+    expect(op.limitations).toEqual(expect.arrayContaining(["connection-account-not-proven-actor", "no-actor-recorded", "device-id-claimed"]))
+    expect(op.payload.quantityChange).toBe(5)
+    expect((await review(storage.getItem("lebanonpos.auth-token")!)).status).toBe(403) // Rana: no reports.view
   })
 
-  it("once the connecting account is allowed, the same queued operation applies exactly once (recoverable, no re-entry)", async () => {
-    await prisma.staffUser.update({ where: { id: RANA }, data: { permissions: ["inventory.adjust"] } as any })
-    const y = await sync()
-    const q = queue().map((o) => o.id === opId ? { ...o, status: "Pending", attempts: 0, lastAttemptAt: "2000-01-01T00:00:00.000Z" } : o)
-    storage.setItem("lebanonpos.sync-queue.v1", JSON.stringify(q))
-    await y.flushSyncQueue(); await dispose(); await y.flushSyncQueue(); await dispose()
-    const row = await prisma.syncOperation.findUnique({ where: { id: opId } })
-    const stock = Number((await prisma.product.findFirst({ where: { tenantId: T, syncId: PRODUCT_SYNC } }))!.stock)
-    console.log("EVIDENCE after permission granted:", JSON.stringify({ serverStatus: row?.status, applied: !!row?.appliedAt, serverStock: stock, tillEntry: queue().find((o) => o.id === opId)?.status ?? "removed" }))
-    expect(row?.appliedAt).toBeTruthy()
-    expect(stock).toBe(15)
+  it("resolve: the cashier cannot decide; the manager applies it once under their own authority; a second decision and the till's resend change nothing", async () => {
+    expect((await resolve(storage.getItem("lebanonpos.auth-token")!, opId, "apply")).status).toBe(403)
+    expect((await resolve(await loginAs("5103"), opId, "apply", "")).status).toBe(400) // a note is required
+    const sami = await loginAs("5103")
+    const [first, second] = await Promise.all([resolve(sami, opId, "apply"), resolve(sami, opId, "apply")])
+    const statuses = [first.status, second.status].sort()
+    console.log("EVIDENCE concurrent decisions:", JSON.stringify(statuses))
+    expect(statuses).toEqual([200, 409])
+    expect(await serverStock()).toBe(15)
+    expect((await resolve(sami, opId, "dismiss")).status).toBe(409) // already decided
+    const tillEntry = await retryOnTill(opId)
+    console.log("EVIDENCE till resend after apply:", JSON.stringify({ tillStatus: tillEntry?.status ?? "acknowledged", serverStock: await serverStock() }))
+    expect(await serverStock()).toBe(15)
+    expect(await prisma.stockAdjustment.count({ where: { tenantId: T, productId: (await prisma.product.findFirst({ where: { tenantId: T, syncId: PRODUCT_SYNC } }))!.id } })).toBe(1)
+    const audit = await prisma.auditEvent.findFirst({ where: { tenantId: T, action: "sync.refused.applied" } })
+    expect((audit!.metadata as any)).toMatchObject({ opId, reviewerId: SAMI, pushedBy: RANA, note: "counted the delivery myself" })
+  })
+
+  it("review never shows PINs or credentials from the refused operation", async () => {
+    const op = { id: randomUUID(), entity: "customer", action: "create", payload: { id: randomUUID(), name: "Walk-in", mobile: `cc-${randomUUID().slice(0, 6)}`, pin: "4321", nested: { sessionToken: "eyJsecret" } } }
+    const r = await realFetch(`${baseUrl}/api/sync/push`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${storage.getItem("lebanonpos.auth-token")}` }, body: JSON.stringify({ deviceId: "t", operations: [op] }) })
+    expect(((await r.json()) as any).results[0].status).toBe("error")
+    const body = JSON.stringify(await (await review(await loginAs("5101"))).json())
+    expect(body).toContain(op.id)
+    expect(body).not.toContain("4321")
+    expect(body).not.toContain("eyJsecret")
+  })
+
+  it("dismiss: a declined adjustment never applies, and the till's resend is rejected visibly", async () => {
+    const product = (JSON.parse(storage.getItem("lebanonpos.products.v1")!) as any[]).find((p) => p.syncId === PRODUCT_SYNC)
+    ;(await inv()).recordStockAdjustment({ productId: product.id, quantityChange: -2, reason: "Damaged" as any, note: "broken" })
+    const y = await sync(); await y.flushSyncQueue(); await dispose()
+    const second = queue().find((o) => o.entity === "inventory" && o.action === "adjust" && o.id !== opId)!
+    expect((await prisma.syncOperation.findUnique({ where: { id: second.id } }))!.status).toBe("Refused")
+    expect((await resolve(await loginAs("5103"), second.id, "dismiss", "not damaged, found on the shelf")).status).toBe(200)
+    const tillEntry = await retryOnTill(second.id)
+    console.log("EVIDENCE till resend after dismiss:", JSON.stringify({ tillStatus: tillEntry?.status, error: tillEntry?.error, serverStock: await serverStock() }))
+    expect(tillEntry?.status).toBe("Rejected")
+    expect(String(tillEntry?.error)).toMatch(/DISMISSED/)
+    expect(await serverStock()).toBe(15)
+    expect((await prisma.syncOperation.findUnique({ where: { id: second.id } }))!.status).toBe("Dismissed")
   })
 
   it("cost: hidden from the cashier on the report/catalogue endpoints, still delivered to the till by sync (needed for offline sale cost)", async () => {
