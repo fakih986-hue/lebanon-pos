@@ -126,3 +126,9 @@ Candidate preserved: local tag `candidate/1.0.51-rc-097ed68`; installers and has
 3. **Retiring a device never erases or silently discards completed offline work.** Retirement refuses an older till's *new* checkouts (before payment, hub-connected); sales it already completed are still accepted and recorded, and nothing in the server deletes or drops them. Re-admission and upgrade are the ways back, both audited/automatic.
 4. **A `legacy` stamp identifies old-client behaviour; it is not proof of the product's historical stock policy.** It records that the line came from a client older than sync schema 3, which can only sell from stock — so the sale was handled as stock-counted. It does not establish what the product's stock setting was at that time; such lines are flagged `changed` when the product is made to order today, for review.
 5. **The database-heavy test suite runs with bounded concurrency**: `apps/api/vitest.config.ts` (at most 3 test files at once) and `__tests__/setup/db-pool.ts` (each Prisma client limited to 4 connections unless the URL says otherwise). Plain `vitest run` passed the full suite (468 + 1 expected fail) three times in a row with no connection errors (~63 s).
+
+## Version decision (2026-10-31)
+
+- **1.0.51 = the minimal client security hotfix** (store guard only), built from the deployed 1.0.50 source on branch `hotfix/till-store-guard-1.0.50`.
+- **The café candidate `candidate/1.0.51-rc-097ed68` is superseded and must never be published.** Its files in `D:\TitanPOS-candidates\1.0.51-097ed68\` are kept unchanged for the record (a `SUPERSEDED.txt` marks the folder).
+- **The café release is renumbered above every published version:** master is now `1.0.52`. If 1.0.52 is published by something else first, the café release takes the next number.
