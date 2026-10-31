@@ -65,10 +65,31 @@ The Sprint 1 café candidate `candidate/1.0.51-rc-097ed68` (`D:\TitanPOS-candida
 | Ordering / driver / store admin apps on cloud A | Tested: customers and drivers keep their own endpoints; admin lists with `?tenantId=` own store work |
 | Hubs or tills older than 1.0.50 | **Not tested** |
 
-## E. Before releasing (each needs your approval)
+## E. Install test of the exact 1.0.51 build (2026-10-31)
+
+Setup SHA-256 verified (`73E29650…EA940`), installed silently into the default per-user location over the real 1.0.49 install (fingerprinted and backed up first), run **only** through the guarded launcher on disposable user-data dirs against the **cloud of this branch** (local, scratch schema `hotfix_it`, two disposable stores A and B). The register under test is the SPA served by the installed hub (the exact build), driven in the browser pane.
+
+| Test | Result |
+|---|---|
+| Connect, login, checkout | Register connected to the hub as store A; cashier signed in; shift opened; sale S-IUUR-000001 committed by the hub (stock 30 → 29) and forwarded to the cloud by the hub link | pass |
+| Restart | Hub stopped and started on the same data: cashier signs in again, sale 000002 committed and synced | pass |
+| Offline sale, reconnect | Cloud stopped: sale 000003 recorded by the hub; cloud back: forwarded once; cloud and hub stock agree (27) | pass |
+| Refresh offering another store's token | Hub re-set up for store B on new data (token from the old hub refused, 401); its auto-login offered only store B. Register: "auto-login offered a token for another store — not adopted" on every retry; token and stored store unchanged (A); pending held order kept (Failed, waiting); every push carried the old store-A token (all 401); the held order exists nowhere on the cloud; store B has no operations | pass |
+| Legitimate same-tenant refresh | Hub back on store A with a different signing secret: the register adopted the store-A token offered (issued 11:48:45); the pending held order then synced and reached store A on the cloud exactly once. (Also seen unintentionally when a new hub briefly came up still activated for A: the store-A token was adopted.) | pass |
+| Containment cloud compatibility | Hub link forwards shift, sales and held order (exempt store relay); hub pulls staff and products; store B untouched throughout | pass |
+| Network | 5 hub runs, outbound watchdog: 0 non-loopback connections | pass |
+| Restoration | 1.0.49 reinstalled: 0 differences in 1,870 program files, 0 in the real user data, uninstall registry entry identical, shortcuts identical, nothing left running | pass |
+
+**Finding (not fixed in this build): a second, launch-time path.** The hub's own window (Electron, `LoginScreen.tsx:118`) calls auto-login **on every launch** and adopts the token without the store check, then runs a full pull. If a hub is re-set up for a different store while its own screen still has unsynced work from the old store, that work would be sent under the new store. Seen in code and implied by the activation behaviour above (a hub's activation is shared through its install directory, so a hub started on new data first runs as the previous store); **not reproduced in the hub window itself** (that needs driving the Electron window). LAN and browser registers do not take this path. Fixing it means applying the same store check there and rebuilding 1.0.51 (still unpublished, so the version can stay; the SHA-256 would change).
+
+Also observed (existing behaviour, not a regression): after its token was refreshed by a hub, the register's sync token became the hub's store-level `__admin__` token; and a register talking to a hub that holds only a partial copy of its store replaces its product list with that copy on the next full pull.
+
+## F. Before releasing (each needs your approval)
+
+0. Decide on the launch-path finding: fix and rebuild 1.0.51 before publishing (recommended), or publish as tested with the limitation documented.
 
 1. Production database backup (recorded procedure).
 2. Shared-PIN audit in the owner portal: give everyone sharing a PIN their own PIN (`HOTFIX-CONTAINMENT.md` §3).
 3. Tell store managers about the **Refused work** page and that a decline does not undo anything on the register.
-4. Install test of 1.0.51 before publishing: install on disposable user data against the guarded local cloud, hub screen sells and syncs, and the cross-store auto-login case is refused (the last was verified in the browser on the same code, not on the installed EXE).
+4. ~~Install test of 1.0.51~~ done (§E); repeat it on the rebuilt installer if the launch path is fixed.
 5. Order: cloud A first, then publish release B (GitHub release `v1.0.51` with `latest.yml`; hubs see "Update available").
