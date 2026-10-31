@@ -549,6 +549,10 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
   for (const op of operations) {
     try {
       validateSyncOperation(op)
+      // Cost an account without cost visibility sent is dropped before the operation is applied,
+      // kept (Refused work) or forwarded: a hub would otherwise relay the till's figures to the cloud,
+      // which takes its hub link's cost as sent.
+      if (!pushCostTrusted) op.payload = withoutClientCost(op.entity, op.action, op.payload)
 
       // Already applied here (a lost response, a client retry, a hub re-forward): acknowledge.
       const applied = await prisma.syncOperation.findFirst({ where: { id: op.id, tenantId, appliedAt: { not: null } }, select: { entity: true, action: true, payload: true } })
@@ -1431,8 +1435,28 @@ function canonicalJson(value: unknown): string {
 }
 /** The stored operation and the incoming one are the same change (entity, action, payload). */
 function sameOperation(stored: { entity: string; action: string; payload: unknown }, incoming: { entity: string; action: string; payload?: unknown }) {
+  // Cost the client sent is not part of the operation's identity (it may have been dropped, above).
+  const norm = (payload: unknown) => canonicalJson(withoutPolicyDecision(withoutClientCost(incoming.entity, incoming.action, payload ?? {})))
   return stored.entity === incoming.entity && stored.action === incoming.action
-    && canonicalJson(withoutPolicyDecision(stored.payload ?? {})) === canonicalJson(withoutPolicyDecision(JSON.parse(JSON.stringify(incoming.payload ?? {}))))
+    && norm(stored.payload) === norm(JSON.parse(JSON.stringify(incoming.payload ?? {})))
+}
+/**
+ * The cost figures a client puts in an operation (docs/LEGACY-TILL-COMPAT.md): sale and line cost and
+ * profit, lot-slice cost, received-lot cost, adjustment and count value. Without them the server
+ * (hub or cloud) values the operation from its own product cost.
+ */
+export function withoutClientCost(entity: string, action: string, payload: unknown): any {
+  if (!payload || typeof payload !== "object") return payload
+  const omit = (o: any, keys: string[]) => { if (!o || typeof o !== "object") return o; const out = { ...o }; for (const k of keys) delete out[k]; return out }
+  const slices = (list: unknown) => Array.isArray(list) ? list.map((a) => omit(a, ["unitCost"])) : list
+  const p = payload as any
+  if (entity === "sale" && (action === "create" || action === "update")) {
+    return { ...omit(p, ["cost", "profit"]), ...(Array.isArray(p.items) ? { items: p.items.map((i: any) => ({ ...omit(i, ["cost"]), ...(i && "batchAllocations" in i ? { batchAllocations: slices(i.batchAllocations) } : {}) })) } : {}) }
+  }
+  if (entity === "inventory" && action === "receive") return Array.isArray(p) ? p.map((i) => omit(i, ["unitCost"])) : omit(p, ["unitCost"])
+  if (entity === "inventory" && action === "adjust") return { ...omit(p, ["valueImpact"]), ...("batchAllocations" in p ? { batchAllocations: slices(p.batchAllocations) } : {}) }
+  if (entity === "inventory" && action === "count") return { ...omit(p, ["totalValueImpact"]), ...(Array.isArray(p.lines) ? { lines: p.lines.map((l: any) => omit(l, ["valueImpact"])) } : {}) }
+  return payload
 }
 /**
  * SPRINT-1: a held sale is re-sent under the same operation id with a manager's decision on its
@@ -2269,8 +2293,9 @@ async function processOperation(
           const { id: batchId, productSyncId: _ps, opening: _opening, ...batchData } = { ...item, productId } as Record<string, unknown>
           const isOpening = (item as any).opening === true
           const qty = Number((item as any).quantityRemaining ?? (item as any).initialQuantity ?? 0)
-          // A receiver without cost visibility was never sent cost: the lot is valued at the server's product cost.
-          if (!costTrusted && productId > 0) batchData.unitCost = Number((await db.product.findFirst({ where: { tenantId, id: productId }, select: { cost: true } }))?.cost) || 0
+          // A receiver without cost visibility was never sent cost (its figure is dropped on push), and a
+          // receive that carries none: the lot is valued at the server's product cost.
+          if ((!costTrusted || !Number.isFinite(Number(batchData.unitCost)) || batchData.unitCost === null) && productId > 0) batchData.unitCost = Number((await db.product.findFirst({ where: { tenantId, id: productId }, select: { cost: true } }))?.cost) || 0
           // POS-SYNC-RECEIVE-1: the receive handler is authoritative for the
           // aggregate. The batch id (client-generated, stable) is the idempotency
           // anchor: increment Product.stock + record the Receive movement ONLY on
@@ -2405,7 +2430,7 @@ async function processOperation(
             valueImpact: (Number(line.variance) || 0) * cost,
           }
         }))
-        if ("totalValueImpact" in sessionData) sessionData.totalValueImpact = prismaLines.reduce((sum: number, l: any) => sum + l.valueImpact, 0)
+        sessionData.totalValueImpact = prismaLines.reduce((sum: number, l: any) => sum + l.valueImpact, 0)
         await db.stockCountSession.upsert({
           where: { id: sessionData.id as string },
           update: sessionData,

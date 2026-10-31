@@ -101,8 +101,26 @@ log(".env cloud URL verified (loopback)")
 const loopback = (a) => a === "127.0.0.1" || a === "::1" || a === "0.0.0.0" || a === "::" || a.startsWith("127.")
 let violations = 0
 while (alive(state.pid)) {
-  const { pids } = tree(state.pid)
-  const conns = JSON.parse(ps(`@(Get-NetTCPConnection -ErrorAction SilentlyContinue | Where-Object { @(${[...pids].join(",")}) -contains $_.OwningProcess } | Select-Object OwningProcess,RemoteAddress,RemotePort,State) | ConvertTo-Json -Compress`) || "[]")
+  // Fail closed: if the hub's processes or connections cannot be read, the hub is stopped (a watchdog
+  // that dies silently would leave the hub running unwatched).
+  let pids, conns
+  try {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        pids = tree(state.pid).pids
+        conns = JSON.parse(ps(`@(Get-NetTCPConnection -ErrorAction SilentlyContinue | Where-Object { @(${[...pids].join(",")}) -contains $_.OwningProcess } | Select-Object OwningProcess,RemoteAddress,RemotePort,State) | ConvertTo-Json -Compress`) || "[]")
+        break
+      } catch (e) {
+        if (attempt >= 3) throw e
+        log(`watchdog read failed (attempt ${attempt} of 3), retrying`)
+        await new Promise((r) => setTimeout(r, 300))
+      }
+    }
+  } catch (e) {
+    log(`WATCHDOG ERROR: ${String(e?.message ?? e).split("\n")[0]}`)
+    stopHub(state, "watchdog could not read the hub's processes or connections")
+    process.exit(5)
+  }
   const out = (Array.isArray(conns) ? conns : [conns]).filter((c) => c && !loopback(String(c.RemoteAddress)))
   if (out.length) {
     violations++
