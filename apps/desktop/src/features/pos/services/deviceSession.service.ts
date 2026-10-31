@@ -8,7 +8,7 @@
  */
 import { getApiUrl, getCurrentTenantId, getDeviceId } from "./sync.service"
 import {
-  clearPersonEvidence, getDeviceEnrollment, getStaffSession, setDeviceEnrollment, setStaffSession,
+  clearPersonEvidence, getDeviceEnrollment, getStaffSession, getStoreIdentityMode, personEvidence, setDeviceEnrollment, setStaffSession,
   type DeviceEnrollment,
 } from "../lib/deviceCredentials"
 
@@ -81,4 +81,29 @@ export function endStaffSession(): void {
     headers: { "Content-Type": "application/json", "x-device-credential": e.credential },
     body: JSON.stringify({ session: s.session }),
   }).catch(() => undefined)
+}
+
+export type CheckoutIdentityProblem = "not-enrolled" | "sign-in-again"
+/**
+ * SPRINT-2 enforce-checkout, checked BEFORE payment (the server refuses such a sale anyway; this keeps
+ * a customer from paying for a sale the store will not record). Observe-mode stores: never blocks.
+ * A person let in by the register's own PIN check may sell while the server is unreachable (routine
+ * offline sales stay as today); once it is reachable again they must sign in again.
+ */
+export async function checkoutIdentityGate(): Promise<CheckoutIdentityProblem | null> {
+  if (getStoreIdentityMode() !== "enforce-checkout") return null
+  const apiUrl = getApiUrl()
+  let currentUserId: string | null = null
+  try { currentUserId = localStorage.getItem("lebanonpos.current-user.v1") } catch { /* storage unavailable */ }
+  const now = personEvidence(apiUrl, currentUserId)
+  if (now.kind === "server") return null
+  if (now.kind === "local") {
+    if (!apiUrl) return null
+    try {
+      const res = await fetch(`${apiUrl}/api/health`, { method: "HEAD", signal: AbortSignal.timeout(1500) })
+      return res.ok ? "sign-in-again" : null
+    } catch { return null } // unreachable: an offline sale, recorded as offline-claimed
+  }
+  const e = getDeviceEnrollment()
+  return !e || e.revoked || !apiUrl || e.apiUrl.replace(/\/+$/, "").toLowerCase() !== apiUrl.replace(/\/+$/, "").toLowerCase() ? "not-enrolled" : "sign-in-again"
 }

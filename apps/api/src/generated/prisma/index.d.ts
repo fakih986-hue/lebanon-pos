@@ -4758,6 +4758,7 @@ export namespace Prisma {
     offlineGraceDays: number | null
     leaseExpiresAt: Date | null
     policyVersion: number | null
+    staffSessionMode: string | null
     planName: string | null
     trialStartDate: Date | null
     trialEndDate: Date | null
@@ -4783,6 +4784,7 @@ export namespace Prisma {
     offlineGraceDays: number | null
     leaseExpiresAt: Date | null
     policyVersion: number | null
+    staffSessionMode: string | null
     planName: string | null
     trialStartDate: Date | null
     trialEndDate: Date | null
@@ -4808,6 +4810,7 @@ export namespace Prisma {
     offlineGraceDays: number
     leaseExpiresAt: number
     policyVersion: number
+    staffSessionMode: number
     planName: number
     trialStartDate: number
     trialEndDate: number
@@ -4845,6 +4848,7 @@ export namespace Prisma {
     offlineGraceDays?: true
     leaseExpiresAt?: true
     policyVersion?: true
+    staffSessionMode?: true
     planName?: true
     trialStartDate?: true
     trialEndDate?: true
@@ -4870,6 +4874,7 @@ export namespace Prisma {
     offlineGraceDays?: true
     leaseExpiresAt?: true
     policyVersion?: true
+    staffSessionMode?: true
     planName?: true
     trialStartDate?: true
     trialEndDate?: true
@@ -4895,6 +4900,7 @@ export namespace Prisma {
     offlineGraceDays?: true
     leaseExpiresAt?: true
     policyVersion?: true
+    staffSessionMode?: true
     planName?: true
     trialStartDate?: true
     trialEndDate?: true
@@ -5007,6 +5013,7 @@ export namespace Prisma {
     offlineGraceDays: number
     leaseExpiresAt: Date | null
     policyVersion: number
+    staffSessionMode: string
     planName: string
     trialStartDate: Date | null
     trialEndDate: Date | null
@@ -5051,6 +5058,7 @@ export namespace Prisma {
     offlineGraceDays?: boolean
     leaseExpiresAt?: boolean
     policyVersion?: boolean
+    staffSessionMode?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5102,6 +5110,7 @@ export namespace Prisma {
     offlineGraceDays?: boolean
     leaseExpiresAt?: boolean
     policyVersion?: boolean
+    staffSessionMode?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5127,6 +5136,7 @@ export namespace Prisma {
     offlineGraceDays?: boolean
     leaseExpiresAt?: boolean
     policyVersion?: boolean
+    staffSessionMode?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5152,6 +5162,7 @@ export namespace Prisma {
     offlineGraceDays?: boolean
     leaseExpiresAt?: boolean
     policyVersion?: boolean
+    staffSessionMode?: boolean
     planName?: boolean
     trialStartDate?: boolean
     trialEndDate?: boolean
@@ -5164,7 +5175,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "cloudApiKey" | "licenseStatus" | "licenseReason" | "licenseMessage" | "suspendedAt" | "offlineGraceDays" | "leaseExpiresAt" | "policyVersion" | "planName" | "trialStartDate" | "trialEndDate" | "subscriptionStart" | "subscriptionEnd" | "renewalDate" | "billingContact" | "internalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
+  export type TenantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "subdomain" | "suspended" | "cloudApiKey" | "licenseStatus" | "licenseReason" | "licenseMessage" | "suspendedAt" | "offlineGraceDays" | "leaseExpiresAt" | "policyVersion" | "staffSessionMode" | "planName" | "trialStartDate" | "trialEndDate" | "subscriptionStart" | "subscriptionEnd" | "renewalDate" | "billingContact" | "internalNotes" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
   export type TenantInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     users?: boolean | Tenant$usersArgs<ExtArgs>
     products?: boolean | Tenant$productsArgs<ExtArgs>
@@ -5238,6 +5249,12 @@ export namespace Prisma {
       offlineGraceDays: number
       leaseExpiresAt: Date | null
       policyVersion: number
+      /**
+       * SPRINT-2: staff identity enforcement for this store. "observe" (default: record evidence only) |
+       * "enforce-checkout" (ordinary sales need an enrolled device + a server-checked staff session).
+       * Changed only by an explicit, audited decision; never switched on automatically.
+       */
+      staffSessionMode: string
       planName: string
       trialStartDate: Date | null
       trialEndDate: Date | null
@@ -5708,6 +5725,7 @@ export namespace Prisma {
     readonly offlineGraceDays: FieldRef<"Tenant", 'Int'>
     readonly leaseExpiresAt: FieldRef<"Tenant", 'DateTime'>
     readonly policyVersion: FieldRef<"Tenant", 'Int'>
+    readonly staffSessionMode: FieldRef<"Tenant", 'String'>
     readonly planName: FieldRef<"Tenant", 'String'>
     readonly trialStartDate: FieldRef<"Tenant", 'DateTime'>
     readonly trialEndDate: FieldRef<"Tenant", 'DateTime'>
@@ -48608,6 +48626,7 @@ export namespace Prisma {
     offlineGraceDays: 'offlineGraceDays',
     leaseExpiresAt: 'leaseExpiresAt',
     policyVersion: 'policyVersion',
+    staffSessionMode: 'staffSessionMode',
     planName: 'planName',
     trialStartDate: 'trialStartDate',
     trialEndDate: 'trialEndDate',
@@ -49598,6 +49617,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFilter<"Tenant"> | number
     leaseExpiresAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     policyVersion?: IntFilter<"Tenant"> | number
+    staffSessionMode?: StringFilter<"Tenant"> | string
     planName?: StringFilter<"Tenant"> | string
     trialStartDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     trialEndDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
@@ -49648,6 +49668,7 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     leaseExpiresAt?: SortOrderInput | SortOrder
     policyVersion?: SortOrder
+    staffSessionMode?: SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrderInput | SortOrder
     trialEndDate?: SortOrderInput | SortOrder
@@ -49701,6 +49722,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFilter<"Tenant"> | number
     leaseExpiresAt?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     policyVersion?: IntFilter<"Tenant"> | number
+    staffSessionMode?: StringFilter<"Tenant"> | string
     planName?: StringFilter<"Tenant"> | string
     trialStartDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
     trialEndDate?: DateTimeNullableFilter<"Tenant"> | Date | string | null
@@ -49751,6 +49773,7 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     leaseExpiresAt?: SortOrderInput | SortOrder
     policyVersion?: SortOrder
+    staffSessionMode?: SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrderInput | SortOrder
     trialEndDate?: SortOrderInput | SortOrder
@@ -49784,6 +49807,7 @@ export namespace Prisma {
     offlineGraceDays?: IntWithAggregatesFilter<"Tenant"> | number
     leaseExpiresAt?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
     policyVersion?: IntWithAggregatesFilter<"Tenant"> | number
+    staffSessionMode?: StringWithAggregatesFilter<"Tenant"> | string
     planName?: StringWithAggregatesFilter<"Tenant"> | string
     trialStartDate?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
     trialEndDate?: DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
@@ -53345,6 +53369,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -53395,6 +53420,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -53445,6 +53471,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -53495,6 +53522,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -53545,6 +53573,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -53570,6 +53599,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -53595,6 +53625,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -57951,6 +57982,7 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     leaseExpiresAt?: SortOrder
     policyVersion?: SortOrder
+    staffSessionMode?: SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrder
     trialEndDate?: SortOrder
@@ -57981,6 +58013,7 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     leaseExpiresAt?: SortOrder
     policyVersion?: SortOrder
+    staffSessionMode?: SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrder
     trialEndDate?: SortOrder
@@ -58006,6 +58039,7 @@ export namespace Prisma {
     offlineGraceDays?: SortOrder
     leaseExpiresAt?: SortOrder
     policyVersion?: SortOrder
+    staffSessionMode?: SortOrder
     planName?: SortOrder
     trialStartDate?: SortOrder
     trialEndDate?: SortOrder
@@ -66168,6 +66202,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -66217,6 +66252,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -66498,6 +66534,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -66547,6 +66584,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -66660,6 +66698,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -66709,6 +66748,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -66774,6 +66814,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -66823,6 +66864,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -66872,6 +66914,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -66921,6 +66964,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -67313,6 +67357,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -67362,6 +67407,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -67591,6 +67637,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -67640,6 +67687,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -67830,6 +67878,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -67879,6 +67928,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -68258,6 +68308,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -68307,6 +68358,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -68465,6 +68517,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -68514,6 +68567,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -68755,6 +68809,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -68804,6 +68859,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -69001,6 +69057,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -69050,6 +69107,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -69147,6 +69205,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -69196,6 +69255,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -69300,6 +69360,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -69349,6 +69410,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -69443,6 +69505,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -69492,6 +69555,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -69596,6 +69660,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -69645,6 +69710,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -69739,6 +69805,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -69788,6 +69855,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -69989,6 +70057,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70038,6 +70107,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70135,6 +70205,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -70184,6 +70255,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -70316,6 +70388,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70365,6 +70438,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70471,6 +70545,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -70520,6 +70595,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -70628,6 +70704,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70677,6 +70754,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70775,6 +70853,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -70824,6 +70903,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -70924,6 +71004,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70973,6 +71054,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71063,6 +71145,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71112,6 +71195,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71271,6 +71355,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71320,6 +71405,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71475,6 +71561,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71524,6 +71611,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71589,6 +71677,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71638,6 +71727,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71687,6 +71777,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71736,6 +71827,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -71848,6 +71940,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71897,6 +71990,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -71999,6 +72093,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72048,6 +72143,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72226,6 +72322,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72275,6 +72372,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72449,6 +72547,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72498,6 +72597,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72641,6 +72741,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72690,6 +72791,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -72823,6 +72925,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72872,6 +72975,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -72971,6 +73075,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73020,6 +73125,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73307,6 +73413,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -73356,6 +73463,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -73537,6 +73645,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73586,6 +73695,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -73899,6 +74009,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -73948,6 +74059,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74013,6 +74125,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74062,6 +74175,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74111,6 +74225,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74160,6 +74275,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74225,6 +74341,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74274,6 +74391,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74323,6 +74441,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74372,6 +74491,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74437,6 +74557,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74486,6 +74607,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74535,6 +74657,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74584,6 +74707,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74649,6 +74773,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74698,6 +74823,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74747,6 +74873,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74796,6 +74923,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -74861,6 +74989,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74910,6 +75039,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -74959,6 +75089,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75008,6 +75139,7 @@ export namespace Prisma {
     offlineGraceDays?: number
     leaseExpiresAt?: Date | string | null
     policyVersion?: number
+    staffSessionMode?: string
     planName?: string
     trialStartDate?: Date | string | null
     trialEndDate?: Date | string | null
@@ -75151,6 +75283,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -75200,6 +75333,7 @@ export namespace Prisma {
     offlineGraceDays?: IntFieldUpdateOperationsInput | number
     leaseExpiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     policyVersion?: IntFieldUpdateOperationsInput | number
+    staffSessionMode?: StringFieldUpdateOperationsInput | string
     planName?: StringFieldUpdateOperationsInput | string
     trialStartDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     trialEndDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

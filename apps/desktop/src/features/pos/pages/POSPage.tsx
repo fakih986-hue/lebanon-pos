@@ -46,6 +46,7 @@ import {
 } from "../services/product.service"
 import { buildSale, checkoutLocalSale, getSales, type SaleTender } from "../services/sales.service"
 import { cartFingerprint, checkoutViaHub } from "../services/hubCheckout.service"
+import { checkoutIdentityGate } from "../services/deviceSession.service"
 import PendingHubSaleBanner from "../components/PendingHubSaleBanner"
 import {
   holdSale,
@@ -706,6 +707,17 @@ export default function POSPage() {
       setShowReview(false)
       setScannerStatus(t("pos.status.no_shift"))
       playErrorBuzz()
+      return
+    }
+
+    // SPRINT-2: a store enforcing staff sessions refuses a sale without one — stop here, before payment.
+    const identity = await checkoutIdentityGate()
+    if (identity) {
+      setShowReview(false)
+      playErrorBuzz()
+      const message = t(identity === "not-enrolled" ? "pos.err.identity_not_enrolled" : "pos.err.identity_sign_in")
+      setScannerStatus(message)
+      showToast(message, "error")
       return
     }
 

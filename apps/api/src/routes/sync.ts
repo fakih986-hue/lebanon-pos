@@ -162,6 +162,20 @@ const syncPushSchema = z.object({
 
 type SyncOperationInput = z.infer<typeof syncOperationSchema>
 
+// SPRINT-2: switch this store between observe and enforce-checkout. Only an explicit decision by a
+// signed-in staff member with settings.manage, with a note; audited. Never switched automatically.
+router.post("/identity-mode", requireAuth, requireTokenKinds("staff"), async (req: AuthRequest, res: ServerResponse) => {
+  const body = z.object({ mode: z.enum(["observe", "enforce-checkout"]), note: z.string().trim().min(3).max(500) }).safeParse(req.body)
+  if (!body.success) { json(res, { error: "Choose observe or enforce-checkout and write a note.", code: "INVALID" }, 400); return }
+  const tenantId = req.auth!.tenantId
+  const who = await prisma.staffUser.findFirst({ where: { id: req.auth!.userId, tenantId, active: true }, select: { name: true, role: true, permissions: true } })
+  if (!who || !effectivePermissions(who.permissions as any, who.role).includes("settings.manage")) { json(res, { error: "Needs the Settings permission.", code: "FORBIDDEN" }, 403); return }
+  const before = (await prisma.tenant.findUnique({ where: { id: tenantId }, select: { staffSessionMode: true } }))?.staffSessionMode ?? "observe"
+  await prisma.tenant.update({ where: { id: tenantId }, data: { staffSessionMode: body.data.mode } })
+  await prisma.auditEvent.create({ data: { tenantId, action: "security.identity_mode.changed", entity: "settings", summary: `${who.name} changed staff identity mode from ${before} to ${body.data.mode}: ${body.data.note}`, metadata: { before, after: body.data.mode, note: body.data.note } as any, userId: req.auth!.userId, userName: who.name, userRole: who.role as any } }).catch(() => undefined)
+  json(res, { ok: true, mode: body.data.mode, before })
+})
+
 router.get("/status", requireAuth, requireTokenKinds("staff", "hub-local"), async (req: AuthRequest, res: ServerResponse) => {
   try {
     const tenant = await prisma.tenant.findUnique({
@@ -170,7 +184,7 @@ router.get("/status", requireAuth, requireTokenKinds("staff", "hub-local"), asyn
         name: true, subdomain: true, suspended: true,
         licenseStatus: true, licenseReason: true, licenseMessage: true,
         suspendedAt: true, offlineGraceDays: true, leaseExpiresAt: true,
-        policyVersion: true,
+        policyVersion: true, staffSessionMode: true,
       },
     })
     if (!tenant) { json(res, { error: "Tenant not found" }, 404); return }
@@ -201,6 +215,24 @@ async function auditObservedSession(tenantId: string, op: { id: string; entity: 
       userId: s.staffId ?? "system", userName: "", userRole: "Cashier" as any,
     } })
   } catch { /* best-effort audit */ }
+}
+
+/**
+ * SPRINT-2 enforce-checkout gate for one sale pushed by a register. Returns the person to authorize
+ * as (from a session this server opened for this enrolled device), a refusal, or "offline" (a sale
+ * the register completed with only its local PIN check — routine offline sales stay as today).
+ */
+async function checkoutIdentity(tenantId: string, device: { check: string; deviceId: string | null } | null, session: SessionResult | null, ev: { offline?: unknown; session?: unknown } | undefined):
+  Promise<{ offline: true } | { refuse: string } | { actor: { id: string; name: string; permissions: string[] } }> {
+  if (ev?.offline === true && !ev?.session) return { offline: true }
+  if (!device || device.check !== "valid") return { refuse: `IDENTITY_REQUIRED: this store requires an enrolled register for sales (device credential ${device?.check ?? "absent"})` }
+  if (!session || session.check === "absent") return { refuse: "IDENTITY_REQUIRED: this store requires the person selling to sign in with a server PIN check (no staff session)" }
+  if (session.check !== "valid" || !session.staffId) return { refuse: `IDENTITY_REQUIRED: the staff session is not valid (${session.check})` }
+  const staff = await prisma.staffUser.findFirst({ where: { id: session.staffId, tenantId, active: true }, select: { id: true, name: true, role: true, permissions: true } })
+  if (!staff) return { refuse: "IDENTITY_REQUIRED: the session's staff member is not active" }
+  const permissions = effectivePermissions(staff.permissions as any, staff.role)
+  if (!permissions.includes("sales.checkout")) return { refuse: `IDENTITY_REQUIRED: ${staff.name} is not allowed to sell (sales.checkout)` }
+  return { actor: { id: staff.id, name: staff.name, permissions } }
 }
 
 /**
@@ -458,6 +490,8 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
   const pushKind = tokenKind(req.auth)
   const deviceHeader = typeof req.headers["x-device-credential"] === "string" ? String(req.headers["x-device-credential"]) : undefined
   const deviceSeen = pushKind === "bridge" ? null : await checkDevice(deviceHeader, tenantId)
+  // SPRINT-2: this store's identity mode (observe unless an authorized person explicitly enabled it).
+  const storeMode = (await prisma.tenant.findUnique({ where: { id: tenantId }, select: { staffSessionMode: true } }))?.staffSessionMode ?? "observe"
   for (const op of operations) {
     try {
       validateSyncOperation(op)
@@ -488,18 +522,31 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         continue
       }
 
+      const sessionSeen: SessionResult | null = deviceSeen ? await checkSession((op as any).ev?.session, tenantId, deviceSeen.deviceId) : null
+      // SPRINT-2 enforcement (ordinary checkout, stores that enabled it): a register's sale needs this
+      // store's enrolled device and a staff session; the actor is the session's person and the rules
+      // run against THEIR permissions, not the connecting account's. Missing or invalid evidence is
+      // refused and kept for review — never downgraded to legacy. Completed offline sales (local PIN)
+      // and sales completed under a session that has since expired or ended still apply (labelled).
+      const gate = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && (pushKind === "staff" || pushKind === "hub-local")
+        ? await checkoutIdentity(tenantId, deviceSeen, sessionSeen, (op as any).ev)
+        : null
+      const enforcedActor = gate && "actor" in gate ? gate.actor : null
+
       // POS-PERMISSIONS-1: server-enforce the money/admin-sensitive subset so a
       // tampered client can't bypass in-app limits. Only fires for a real staff
       // actor (actorPermissions != null) and only for mapped ops; everything
       // else passes through unchanged.
-      const denial = await authorizeOp(op)
+      const denial = gate && "refuse" in gate ? gate.refuse
+        : enforcedActor ? await makeOpAuthorizer(tenantId, enforcedActor.permissions, enforcedActor.id)(op)
+        : await authorizeOp(op)
       if (denial) {
         try {
           await prisma.auditEvent.create({
             data: {
               tenantId, action: "security.permission.denied", entity: op.entity,
               summary: `Blocked ${op.action} ${op.entity}: ${denial}`,
-              metadata: { reason: denial, userId: req.auth!.userId, opId: op.id, deviceId: deviceId ?? null, syncSchema: pushSchema },
+              metadata: { reason: denial, userId: req.auth!.userId, opId: op.id, deviceId: deviceId ?? null, syncSchema: pushSchema, sessionStaffId: sessionSeen?.staffId ?? null, sessionCheck: sessionSeen?.check ?? null, deviceCheck: deviceSeen?.check ?? null },
               userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
             },
           })
@@ -521,11 +568,10 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         } catch (keepErr) { console.error("Failed to keep refused operation:", keepErr) }
         // A refused price is a money decision a manager settles (never retried); other refusals
         // stay retryable (the permission may be granted later).
-        results.push({ id: op.id, status: denial.startsWith("PRICE_OVERRIDE:") ? "rejected" : "error", error: denial })
+        results.push({ id: op.id, status: denial.startsWith("PRICE_OVERRIDE:") || denial.startsWith("IDENTITY_REQUIRED:") ? "rejected" : "error", error: denial })
         continue
       }
 
-      const sessionSeen: SessionResult | null = deviceSeen ? await checkSession((op as any).ev?.session, tenantId, deviceSeen.deviceId) : null
       const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema }, async (tx) => {
         // SPRINT-2 Phase B (observe): what this server knows about the operation, in the same
         // transaction (never an applied operation without its evidence row, or the reverse).
@@ -537,7 +583,14 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud",
             envelope: (op as any).ev ?? null,
             device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null,
+            enforced: !!enforcedActor,
           })] })
+        }
+        // Enforced: the sale is recorded as made by the session's person (the payload's cashier
+        // fields were written by the register). The stored operation itself is not changed.
+        if (enforcedActor) {
+          const saleId = (op.payload as { id?: unknown } | undefined)?.id
+          if (typeof saleId === "string") await (tx as any).sale.updateMany({ where: { tenantId, id: saleId }, data: { cashierId: enforcedActor.id, cashier: enforcedActor.name } })
         }
       })
 
@@ -689,6 +742,8 @@ const REVIEW_PERMISSIONS = ["settings.manage", "sales.price_override", "inventor
 /** Permissions a reviewer must hold to decide about this operation (any one of them). */
 function reviewPermissionsFor(entity: string, action: string, payload: unknown, reason: string | null): string[] {
   if (reason?.startsWith("PRICE_OVERRIDE:")) return ["sales.price_override"]
+  // A sale refused for missing identity: a manager decides (it may be applied under their authority).
+  if (reason?.startsWith("IDENTITY_REQUIRED:")) return ["sales.void", "settings.manage"]
   const required = requiredPermissionForOp(entity, action, payload)
   const anyOf = required == null ? [] : Array.isArray(required) ? required : [required]
   return anyOf.length > 0 ? anyOf.map(String) : ["settings.manage"]

@@ -1,5 +1,5 @@
 import { putMany } from "./db"
-import { captureEnvelope, deviceHeadersFor, type SyncEnvelope } from "../lib/deviceCredentials"
+import { captureEnvelope, deviceHeadersFor, setStoreIdentityMode, type SyncEnvelope } from "../lib/deviceCredentials"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import type { ConnectionMode } from "./settings.service"
@@ -625,6 +625,8 @@ export async function checkTenantStatus(): Promise<boolean> {
     const data = await res.json()
     // v2: store full license lease alongside legacy suspended flag
     storeLicenseLease(data)
+    // SPRINT-2: the store's identity mode (the POS shows it; checkout checks it before payment)
+    if (setStoreIdentityMode(data.staffSessionMode) && typeof window !== "undefined") window.dispatchEvent(new Event("lebanonpos-security-changed"))
     setSuspended(data.suspended === true)
     return data.suspended === true
   } catch {

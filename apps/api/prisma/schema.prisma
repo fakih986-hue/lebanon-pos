@@ -78,6 +78,10 @@ model Tenant {
   offlineGraceDays  Int      @default(7)         // days POS can work offline before locking
   leaseExpiresAt    DateTime?                    // when the offline lease expires
   policyVersion     Int      @default(1)         // increments on every license change — triggers desktop re-check
+  /// SPRINT-2: staff identity enforcement for this store. "observe" (default: record evidence only) |
+  /// "enforce-checkout" (ordinary sales need an enrolled device + a server-checked staff session).
+  /// Changed only by an explicit, audited decision; never switched on automatically.
+  staffSessionMode  String   @default("observe")
 
   // ── Subscription metadata (v2) ─────────────────────────────────────
   planName          String   @default("")        // free | basic | pro | enterprise

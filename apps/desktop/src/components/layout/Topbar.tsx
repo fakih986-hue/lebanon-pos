@@ -13,6 +13,7 @@ import {
 } from "../../features/pos/services/security.service"
 import NotificationCenter from "./NotificationCenter"
 import SyncStatus from "./SyncStatus"
+import StaffSessionBadge from "./StaffSessionBadge"
 
 const pageCopy: Record<string, { titleKey: string; subtitleKey: string }> = {
   "/": { titleKey: "desktop.page.pos.title", subtitleKey: "desktop.page.pos.subtitle" },
@@ -96,6 +97,7 @@ export default function Topbar() {
 
         <SyncStatus />
         <NotificationCenter />
+        <StaffSessionBadge />
 
         <div
           className="hidden h-8 items-center gap-2 rounded-lg border px-3 text-[12px] font-bold sm:flex"

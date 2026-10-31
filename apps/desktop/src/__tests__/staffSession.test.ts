@@ -167,3 +167,39 @@ describe("operations keep the evidence they were created under", () => {
     expect(kept?.status).not.toBe("Synced")
   })
 })
+
+describe("enforce-checkout on the register: stop before payment, never block offline work", () => {
+  const gate = async () => (await import("../features/pos/services/deviceSession.service")).checkoutIdentityGate()
+  it("the store's mode comes from the server's status; observe never blocks", async () => {
+    server()
+    const { sec, sync, cred } = await fresh()
+    await sec.unlockWithPin("2222") // not enrolled: no session
+    expect(await gate()).toBeNull()
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ suspended: false, staffSessionMode: "enforce-checkout" }), { status: 200 })))
+    await sync.checkTenantStatus()
+    expect(cred.getStoreIdentityMode()).toBe("enforce-checkout")
+    expect(await gate()).toBe("not-enrolled")
+  })
+
+  it("enforcing: a server-checked session sells; an enrolled register without one must sign in again", async () => {
+    server()
+    const { sec, cred } = await fresh()
+    enroll(cred)
+    cred.setStoreIdentityMode("enforce-checkout")
+    await sec.unlockWithPin("2222")
+    expect(await gate()).toBeNull()
+    cred.setStaffSession(null) // e.g. the session request failed
+    expect(await gate()).toBe("sign-in-again")
+  })
+
+  it("enforcing: signed in with the register's own PIN — sells while the server is unreachable, must sign in again once it is back", async () => {
+    server({ down: true })
+    const { sec, cred } = await fresh()
+    enroll(cred)
+    cred.setStoreIdentityMode("enforce-checkout")
+    await sec.unlockWithPin("2222")
+    expect(await gate()).toBeNull() // offline sale: allowed, recorded as offline-claimed
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 200 })))
+    expect(await gate()).toBe("sign-in-again")
+  })
+})

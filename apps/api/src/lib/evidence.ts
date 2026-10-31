@@ -5,8 +5,10 @@
  * from what the client claims. Nothing changes the outcome of an operation here.
  *
  * Evidence labels (kept distinct — docs/SPRINT-2-PLAN.md §2.3):
- *  - "verified"        a server-issued staff session for this device proves the actor, ENFORCED
- *                      (enforce mode, Phase G; never produced in observe mode)
+ *  - "verified"        ENFORCED (a store in enforce-checkout mode): this server required and checked a
+ *                      current staff session for this enrolled device, and authorized the operation
+ *                      as that person. Still: the PIN was checked when the session started, and the
+ *                      device credential is a bearer token. Never produced in observe mode.
  *  - "staff-session"   observe mode (Phase C): the request carried this store's valid device
  *                      credential and a staff session this server opened for that device after
  *                      checking the person's PIN. Not enforced; the PIN was checked when the session
@@ -58,6 +60,8 @@ export type ObserveInput = {
   session?: SessionResult | null
   /** SPRINT-2 C: the evidence the relaying hub recorded (claimed until hubs attest, Phase D). */
   relayed?: Record<string, unknown> | null
+  /** The store enforced the session for this operation (the actor was derived from it). */
+  enforced?: boolean
 }
 
 /** Fields of a hub's own evidence row that are carried to the cloud with a forwarded operation. */
@@ -96,14 +100,15 @@ export function observeEvidence(i: ObserveInput) {
   if (ses && ses.check !== "absent" && ses.check !== "valid") limitations.push(`staff-session-${ses.check}`)
   const sessionHeld = dev?.check === "valid" && ses?.check === "valid"
   if (sessionHeld) {
-    limitations.push("observe-mode-not-enforced", "pin-checked-at-session-start-not-per-operation", "device-credential-bearer")
+    limitations.push(i.enforced ? "actor-derived-from-session" : "observe-mode-not-enforced", "pin-checked-at-session-start-not-per-operation", "device-credential-bearer")
     if (ses!.expired) limitations.push("session-expired-at-receipt")
     if (ses!.ended) limitations.push("session-ended-before-receipt")
   }
   if (ses?.staffId && actor.id && ses.staffId !== actor.id && ses.check !== "invalid") limitations.push("claimed-actor-differs-from-session")
   const relayed = i.kind === "bridge" ? pickRelayed(i.relayed) : null
   if (relayed) limitations.push("hub-evidence-unattested")
-  const evidence: EvidenceLabel = sessionHeld && !offline ? "staff-session" : offline ? "offline-claimed" : "legacy-claimed"
+  const current = sessionHeld && !ses!.expired && !ses!.ended
+  const evidence: EvidenceLabel = sessionHeld && !offline ? (i.enforced && current ? "verified" : "staff-session") : offline ? "offline-claimed" : "legacy-claimed"
   return {
     opId: i.opId, tenantId: i.tenantId, entity: i.entity, action: i.action,
     acceptedBy: i.acceptedBy, transport: i.transport, credentialKind: i.kind,

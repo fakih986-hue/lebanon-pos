@@ -134,6 +134,7 @@ exports.Prisma.TenantScalarFieldEnum = {
   offlineGraceDays: 'offlineGraceDays',
   leaseExpiresAt: 'leaseExpiresAt',
   policyVersion: 'policyVersion',
+  staffSessionMode: 'staffSessionMode',
   planName: 'planName',
   trialStartDate: 'trialStartDate',
   trialEndDate: 'trialEndDate',

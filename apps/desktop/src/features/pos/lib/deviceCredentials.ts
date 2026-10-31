@@ -68,3 +68,25 @@ export function captureEnvelope(apiUrl: string | null | undefined, currentUserId
   if (s && s.staffId === currentUserId && apiUrl && norm(s.apiUrl) === norm(apiUrl)) return { v: 1, session: s.session }
   return { v: 1 }
 }
+
+const MODE_KEY = "lebanonpos.staff-session-mode.v1"
+/** SPRINT-2: the store's identity mode, as last reported by its server (observe unless enabled). */
+export type StoreIdentityMode = "observe" | "enforce-checkout"
+export const getStoreIdentityMode = (): StoreIdentityMode => (read<{ mode?: string }>(MODE_KEY)?.mode === "enforce-checkout" ? "enforce-checkout" : "observe")
+/** Returns true when the mode changed. */
+export function setStoreIdentityMode(mode: unknown): boolean {
+  if (mode !== "observe" && mode !== "enforce-checkout") return false
+  const changed = getStoreIdentityMode() !== mode
+  write(MODE_KEY, { mode, at: new Date().toISOString() })
+  return changed
+}
+
+/** How the person signed in now was let in (for the POS badge and the checkout gate). */
+export function personEvidence(apiUrl: string | null | undefined, currentUserId: string | null): { kind: "server" | "local" | "none"; authTime?: string } {
+  const unlock = getUnlockEvidence()
+  if (!currentUserId || !unlock || unlock.userId !== currentUserId) return { kind: "none" }
+  if (unlock.by === "local") return { kind: "local" }
+  const s = getStaffSession()
+  if (s && s.staffId === currentUserId && apiUrl && norm(s.apiUrl) === norm(apiUrl)) return { kind: "server", authTime: s.authTime }
+  return { kind: "none" }
+}
