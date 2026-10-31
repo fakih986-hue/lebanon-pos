@@ -84,6 +84,18 @@ Branch `hotfix/till-store-guard-1.0.50` (`74f94fb` + doc `cb31776`) from `7df7c5
 
 Limits of this slice: only ordinary sales are enforced; hub-relayed operations are not re-checked at the cloud (Phase D attestation), and a hub enforces only if the mode is set on the hub's own database; manager approvals are not built (Phase E); an older register in an enforcing store cannot sell online (its sales are refused and kept for review), so enforcement should be switched on only after every register is upgraded and enrolled.
 
+## Offline trust boundary, activation gate, decline reconciliation (2026-10-31; enforcement stays off)
+
+| Area | Evidence | Status |
+|---|---|---|
+| Probe before the fix: in an enforcing store a request claiming offline applied below-price sales, a person not allowed to sell, unknown/foreign/name-only actors and a sale dated before the cashier's deactivation — all on the connecting account's authority; a signed-out session authorized a below-price sale | `enforce-checkout.test.ts` boundary cases run against `4586a71` | **defect, fixed** |
+| Offline claim / stale session: applies only a routine sale (catalogue price, no discount, not at cost) by an active staff member of this store who may sell now; labelled `offline-claimed` / `staff-session`, never `verified`; everything else refused `OFFLINE_REVIEW` / `SESSION_REVIEW`, kept unapplied for review; the register's clock is not proof | same (10 cases); 4 negative controls | pass (`17d2375`) |
+| Activation gate: refused (409, audited, mode stays observe) while a hub link, a register below schema 4, an unenrolled register or a pusher without a device id still trades (14-day window, retirement as in Sprint 1); never on a hub server; hub-forwarded sales in an enforcing store refused `HUB_UNSUPPORTED` and kept; registers send schema 4 | same; 6 negative controls | pass (`991fe2d`) |
+| Decline reconciliation: the register is told who declined and why, and that nothing it did was undone; the register keeps its local effect (1.0.50 till: 10 → 8 kept, server 15); master register lists declined items with their local effect until someone records what was done (note, audited); review screen shows money effects; Decline dialog says it undoes nothing | `declinedWork.test.ts`; hotfix `cashier-connected.test.ts`; 3 negative controls | pass (`54ca334`; hotfix `d344ee8`) |
+| Full suites | API 547 + 1 expected fail; desktop 438; hotfix API 426 + 5 expected fail | pass |
+
+Known limit: a modified register can still name another active seller on a routine offline sale; nothing checked offline can prove who it was.
+
 ## Plan by phase (to be filled with evidence as implemented)
 - **B — observe mode:** token kinds (`typ/iss/aud`) on new tokens with old tokens still accepted; `requireCloudKeyOrJwt` refuses non-staff tokens; envelope parsing; derived `actorId`; claimed-vs-derived mismatch audited; evidence labels; no behaviour change for legacy clients (mixed-version tests).
 - **C — devices and sessions:** enrollment with single-use manager-created code; cross-tenant enrollment refused; device credential can't enroll/approve another device; staff session bound to device (use on another device refused); actor substitution refused; staff switch issues a new session and clears approvals; revocation of staff and device; storage deletion and credential recovery on the till.
