@@ -63,6 +63,7 @@ export function RefusedWorkPage() {
       case "stock-count": return [t("refused.fx.count", { lines: e.lines })]
       case "customer": return [t("refused.fx.customer", { name: e.name })]
       case "debt-payment": return [t("refused.fx.debt_payment", { customer: e.customer, amount: e.amount })]
+      case "money": return [t(`refused.fx.money.${e.what}`, { amount: n(e.amount), party: e.party ?? "" }), t("refused.fx.money_not_undone")]
       case "sale": return [t("refused.fx.sale", { number: n(e.saleNumber), total: n(e.total) }), ...(e.lines ?? []).map((l: any) => t("refused.fx.sale_line", { name: l.name, quantity: l.quantity, price: l.unitPrice, catalogue: n(l.catalogue) }))]
       default: return [t("refused.fx.other")]
     }

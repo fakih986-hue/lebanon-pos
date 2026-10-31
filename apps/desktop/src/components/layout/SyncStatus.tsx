@@ -4,6 +4,7 @@ import { AlertTriangle, Cloud, CloudOff, RotateCw, X } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
 import StockDecisionSales from "./StockDecisionSales"
+import DeclinedWork from "./DeclinedWork"
 import { closeBlockedJournalEntry, getBlockedJournalEntries, previewBlockedJournalEntry, type JournalEntry } from "../../features/pos/services/businessJournal.service"
 import {
   clearSyncQueue,
@@ -214,6 +215,7 @@ export default function SyncStatus() {
           </div>
 
           <StockDecisionSales />
+          <DeclinedWork />
 
           {blocked.length > 0 && (
             <div className="mb-3 flex flex-col gap-2" role="alert">

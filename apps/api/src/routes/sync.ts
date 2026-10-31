@@ -558,7 +558,8 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         continue
       }
       // Declined by a manager on review (refused-work recovery): never applies, never reopens.
-      if (await prisma.syncOperation.findFirst({ where: { id: op.id, tenantId, status: "Dismissed" }, select: { id: true } })) throw new DismissedOperationError(op.id)
+      const dismissed = await prisma.syncOperation.findFirst({ where: { id: op.id, tenantId, status: "Dismissed" }, select: { error: true } })
+      if (dismissed) throw new DismissedOperationError(op.id, dismissalOf(dismissed.error))
 
       // SPRINT-1: a retired till on an older version may not CHECK OUT: its live (write-through,
       // "wt-") sale is refused before it completes, so no payment is taken for a sale this store
@@ -1392,7 +1393,15 @@ export class CheckoutCancelledError extends Error {
 }
 /** A manager declined this operation when reviewing refused work (non-retryable). */
 export class DismissedOperationError extends Error {
-  constructor(id: string) { super(`DISMISSED: a manager declined operation ${id} on review; it will not be applied.`); this.name = "DismissedOperationError" }
+  constructor(id: string, decision?: string | null) {
+    super(`DISMISSED: ${decision ?? "a manager declined it on review"}. The server did not apply operation ${id}; nothing this register already did (stock changed, cash paid out or taken) was undone - correct it on this register if needed.`)
+    this.name = "DismissedOperationError"
+  }
+}
+/** "declined by <name>: <note>" from a dismissed row's error. */
+export function dismissalOf(error: string | null | undefined): string | null {
+  const m = /\| dismissed by ([^|:]+): ([^|]*)$/.exec(error ?? "")
+  return m ? `declined by ${m[1].trim()} on review ("${m[2].trim()}")` : null
 }
 
 /** An operation id the server already holds for a different entity, action or payload. */
