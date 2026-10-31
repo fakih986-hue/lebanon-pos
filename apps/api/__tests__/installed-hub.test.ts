@@ -4,6 +4,7 @@ import { existsSync, readFileSync, appendFileSync } from "node:fs"
 import { pathToFileURL } from "node:url"
 import jwt from "jsonwebtoken"
 
+// (Cloud reads name their columns: the cloud may be the deployed release, whose schema is older.)
 // INSTALLED HUB ACCEPTANCE (docs/LEGACY-TILL-COMPAT.md). Runs against an ALREADY RUNNING installed hub
 // candidate (started with apps/electron/scripts/it-hub.mjs against a local test cloud from
 // scripts/it-cloud.mjs, activated for a disposable store) — never against a real hub or production.
@@ -183,12 +184,12 @@ if (!ready) {
       expect((await call("GET", "/api/sync/refused", undefined, await login("1504"))).status).toBe(403)
       // Not forwarded while refused.
       await new Promise((r) => setTimeout(r, 5000))
-      expect(await prisma.stockAdjustment.findFirst({ where: { tenantId: A.tenantId, id: op.payload.id } })).toBeNull()
-      const cloudStockBefore = Number((await prisma.product.findFirst({ where: { tenantId: A.tenantId, syncId: A.milkSyncId } })).stock)
+      expect(await prisma.stockAdjustment.findFirst({ where: { tenantId: A.tenantId, id: op.payload.id }, select: { id: true, valueImpact: true } })).toBeNull()
+      const cloudStockBefore = Number((await prisma.product.findFirst({ where: { tenantId: A.tenantId, syncId: A.milkSyncId }, select: { stock: true } })).stock)
       const applied = await call("POST", `/api/sync/refused/${op.id}/resolve`, { decision: "apply", note: "crate counted on the hub" }, maya)
       expect(applied.status).toBe(200)
-      const cloudAdj = await inCloud(() => prisma.stockAdjustment.findFirst({ where: { tenantId: A.tenantId, id: op.payload.id } }))
-      const cloudStockAfter = Number((await prisma.product.findFirst({ where: { tenantId: A.tenantId, syncId: A.milkSyncId } })).stock)
+      const cloudAdj = await inCloud(() => prisma.stockAdjustment.findFirst({ where: { tenantId: A.tenantId, id: op.payload.id }, select: { id: true, valueImpact: true } }))
+      const cloudStockAfter = Number((await prisma.product.findFirst({ where: { tenantId: A.tenantId, syncId: A.milkSyncId }, select: { stock: true } })).stock)
       evidence("refused work", { reason: item.reason, hubApply: applied.status, cloud: cloudAdj ? { valueImpact: Number((cloudAdj as any).valueImpact) } : null, cloudStockBefore, cloudStockAfter })
       expect(cloudAdj).toBeTruthy()
       expect(Number((cloudAdj as any).valueImpact)).toBe(3)
@@ -200,9 +201,9 @@ if (!ready) {
     it("customer and driver containment on the hub", async () => {
       const driver = (await call("POST", "/api/auth/login", { pin: "1505", code: A.driverCode, tenantSubdomain: A.subdomain, role: "Driver" })).body.token
       const mobile = `7${Date.now().toString().slice(-7)}`
-      expect((await call("POST", "/api/delivery/customer/signup", { tenantId: A.tenantId, name: "Rami", mobile, pin: "4321" })).status).toBe(201)
+      expect((await call("POST", "/api/delivery/customer/signup", { tenantId: A.tenantId, name: `Rami ${mobile}`, mobile, pin: "4321" })).status).toBe(201)
       const customer = (await call("POST", "/api/delivery/customer/login", { tenantId: A.tenantId, mobile, pin: "4321" })).body.token
-      const otherStore = await call("POST", "/api/delivery/customer/signup", { tenantId: store.B.tenantId, name: "Mallory", mobile: `7${Date.now().toString().slice(-6)}9`, pin: "4321" })
+      const otherStore = await call("POST", "/api/delivery/customer/signup", { tenantId: store.B.tenantId, name: `Mallory ${mobile}`, mobile: `7${Date.now().toString().slice(-6)}9`, pin: "4321" })
       const probes = {
         driverPush: (await call("POST", "/api/sync/push", { deviceId: "d", operations: [] }, driver)).status,
         driverPull: (await call("GET", "/api/sync/pull", undefined, driver)).status,

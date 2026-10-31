@@ -106,3 +106,21 @@ What all three tills pass, connected with an account that may sell, refund, rece
   - *Placeholder:* removable once no store has a 1.0.50/1.0.51 till trading (no `SyncClient` with schema
     < 4 inside the window). Until then, deleting it brings back limit 2 for every full pull.
   - *Server valuation:* permanent. Valuation is the server's job.
+
+## Installed hub acceptance (1.0.52 candidate, `2d1939c`)
+
+`apps/api/__tests__/installed-hub.test.ts` runs against a running installed hub started with
+`apps/electron/scripts/it-hub.mjs` and activated for a disposable store. It is skipped otherwise. A till's
+own services (the released 1.0.51 source, then this repository's) do the following:
+
+- pair with a code the owner generated on the hub (a cashier cannot list devices or generate codes);
+- sync through the hub: no verifier and no cost are sent, and offline login survives a full pull;
+- check out a sale with a forged cost: the hub records cost 2, and so does the cloud after forwarding;
+- push an adjustment from a cashier connection: the hub refuses it and keeps it unforwarded; the
+  manager reviews and applies it on the hub, and it is forwarded once (cloud value 3, stock +3);
+- run containment probes with a driver and a customer token (sync, setup and review are refused; their
+  own orders still work). The hub holds only its own store's catalogue.
+
+The run passed against both the master cloud and the deployed cloud code (`e2fd79a`), from the
+installer's extracted payload, with no outbound connections. The installer itself was not run: on the
+build PC it would replace a real install. Run it on a disposable machine before publishing.
