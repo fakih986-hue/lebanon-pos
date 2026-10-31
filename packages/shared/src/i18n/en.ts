@@ -488,6 +488,7 @@ export const en = {
   "pos.search": "Search",
   "pos.loading": "Loading...",
   "pos.no_results": "No results",
+  "pos.not_available": "Not available",
 
   /* POS - Payment Methods */
   "pos.payment.cash": "Cash",
@@ -1787,6 +1788,7 @@ export const en = {
   "inv.rcv.p.missing_target": "Choose the product",
   "inv.rcv.p.missing_variant_name": "Needs the variant name",
   "inv.rcv.p.negative_money": "Cost and price cannot be negative",
+  "inv.rcv.p.cost_missing": "Enter the unit cost: a supplier invoice needs a cost on every line",
   "inv.rcv.n.cost_up": "Cost +{pct}% vs product",
   "inv.rcv.n.cost_down": "Cost −{pct}% vs product",
   "inv.rcv.n.cost_over_price": "Cost above sell price",
@@ -2158,6 +2160,7 @@ export const en = {
   "rcpt.day_summary": "{n} receipts · {total}",
   "rcpt.footer": "{n} receipts · {revenue}",
   "rcpt.footer_profit": "{profit} profit",
+  "rcpt.footer_profit_na": "profit not available",
   "rcpt.receipt_title": "Receipt {number}",
   "rcpt.shift": "Shift",
   "rcpt.lines": "Receipt lines",

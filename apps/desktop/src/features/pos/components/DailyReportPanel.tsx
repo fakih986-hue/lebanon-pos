@@ -1,12 +1,15 @@
 import { useMemo } from "react"
 import { ChevronDown, MessageCircle, WalletCards } from "lucide-react"
+import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../lib/currency"
+import { formatCost } from "../lib/cost"
 import { getSettings } from "../services/settings.service"
 import { getSalesMetrics, getPaymentMix } from "../services/sales.service"
 import { getExpenseTotals } from "../services/expense.service"
 import { openWhatsAppShare } from "../lib/whatsapp"
 
 export default function DailyReportPanel({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
+  const { t } = useI18n()
   const previewRevenue = getSalesMetrics().todayNetRevenue
   const data = useMemo(() => {
     if (!expanded) return null
@@ -21,7 +24,7 @@ export default function DailyReportPanel({ expanded, onToggle }: { expanded: boo
 
   function handleShare() {
     if (!data) return
-    const msg = `Daily Report — ${settings.storeName}\n\nSales: $${data.m.todayNetRevenue.toFixed(2)}\nCash: $${data.mix.Cash.toFixed(2)}\nCard: $${data.mix.Card.toFixed(2)}\nWallet: $${data.mix.Wallet.toFixed(2)}\nDebt: $${data.mix.Debt.toFixed(2)}\nExpenses: $${data.e.today.toFixed(2)}\nProfit: $${data.m.todayProfit.toFixed(2)}`
+    const msg = `Daily Report — ${settings.storeName}\n\nSales: $${data.m.todayNetRevenue.toFixed(2)}\nCash: $${data.mix.Cash.toFixed(2)}\nCard: $${data.mix.Card.toFixed(2)}\nWallet: $${data.mix.Wallet.toFixed(2)}\nDebt: $${data.mix.Debt.toFixed(2)}\nExpenses: $${data.e.today.toFixed(2)}\nProfit: ${formatCost(data.m.todayProfit, t("pos.not_available"))}`
     openWhatsAppShare(msg)
   }
 
@@ -48,13 +51,13 @@ export default function DailyReportPanel({ expanded, onToggle }: { expanded: boo
           <div className="flex justify-between" style={{ color: "var(--rose)" }}><span>Expenses</span><span className="font-bold tabular-nums">{formatCurrency(data.e.today)}</span></div>
           <div className="border-t pt-1 flex justify-between text-[12px]" style={{ borderColor: "var(--border)" }}>
             <span style={{ color: "var(--text)" }}>Profit</span>
-            <span className={`font-bold tabular-nums ${data.m.todayProfit >= 0 ? "" : "text-[var(--rose)]"}`} style={{ color: data.m.todayProfit >= 0 ? "var(--success)" : "var(--rose)" }}>
-              {formatCurrency(data.m.todayProfit)}
+            <span className={`font-bold tabular-nums ${(data.m.todayProfit ?? 0) >= 0 ? "" : "text-[var(--rose)]"}`} style={{ color: data.m.todayProfit === undefined ? "var(--text-3)" : data.m.todayProfit >= 0 ? "var(--success)" : "var(--rose)" }}>
+              {formatCost(data.m.todayProfit, t("pos.not_available"))}
             </span>
           </div>
-          <div className="text-end text-[10px]" style={{ color: "var(--text-3)" }}>
+          {data.m.todayProfit !== undefined && <div className="text-end text-[10px]" style={{ color: "var(--text-3)" }}>
             {formatLbpCurrency(usdToLbp(data.m.todayProfit, rate))}
-          </div>
+          </div>}
           <button onClick={handleShare} className="flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[11px] font-bold transition hover:opacity-80"
             style={{ border: "1px solid var(--border)", color: "#25D366" }}>
             <MessageCircle size={12} /> Share

@@ -4,6 +4,7 @@ import { useI18n } from "@lebanonpos/shared"
 
 import { formatCurrency, formatNumber } from "../../lib/currency"
 import { fileToCompressedDataUrl } from "../../lib/image"
+import { isCostAvailable, typedCost } from "../../lib/cost"
 import { createProduct, deleteProduct, generateProductBarcode, updateProduct } from "../../services/product.service"
 import type { SupplierLedger } from "../../services/supplier.service"
 import { getPolicyGate, retireSyncClient, type PolicyGateBlocker } from "../../services/sync.service"
@@ -32,7 +33,8 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
   const [barcode, setBarcode] = useState(p?.barcode ?? "")
   const [aliases, setAliases] = useState((p?.barcodeAliases ?? []).join(", "))
   const [price, setPrice] = useState(p ? String(p.price) : "")
-  const [cost, setCost] = useState(p ? String(p.cost) : "")
+  // An unavailable cost (withheld by the server) starts blank; left blank, no cost is sent.
+  const [cost, setCost] = useState(p && isCostAvailable(p.cost) ? String(p.cost) : "")
   const [reorderPoint, setReorderPoint] = useState(String(p?.reorderPoint ?? 10))
   const [reorderQuantity, setReorderQuantity] = useState(String(p?.reorderQuantity ?? 20))
   const [supplierId, setSupplierId] = useState(p?.supplierId ?? "")
@@ -57,7 +59,7 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
 
   const usedBy = (c: string) => c ? products.find((x) => x.id !== p?.id && ((x.barcode ?? "") === c || (x.barcodeAliases ?? []).includes(c))) : undefined
   const priceN = Number(price), costN = Number(cost)
-  const marginPct = priceN > 0 && Number.isFinite(costN) ? Math.round(((priceN - costN) / priceN) * 100) : null
+  const marginPct = priceN > 0 && cost.trim() !== "" && Number.isFinite(costN) ? Math.round(((priceN - costN) / priceN) * 100) : null
 
   function validate(): Errors {
     const e: Errors = {}
@@ -112,8 +114,9 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
       return
     }
     const supplier = suppliers.find((s) => s.id === supplierId)
+    const costTyped = typedCost(cost)
     const common = {
-      name: name.trim(), category: category.trim(), price: priceN, cost: Number.isFinite(costN) ? costN : 0,
+      name: name.trim(), category: category.trim(), price: priceN, ...(costTyped !== undefined ? { cost: costTyped } : {}),
       reorderPoint: Number(reorderPoint) || 0, reorderQuantity: Number(reorderQuantity) || 0,
       supplierId: supplier?.id ?? "", supplierName: supplier?.name ?? "",
       barcodeAliases: splitAliases(aliases).filter((a) => a !== code(barcode)),

@@ -7,6 +7,7 @@ import { recordAuditEvent } from "./security.service"
 import { enqueueSyncOperation, getDeviceTag } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
+import { isCostAvailable, sumAvailable } from "../lib/cost"
 
 const STOCK_COUNTS_KEY = "lebanonpos.stock-counts.v1"
 const STOCK_COUNTS_EVENT = "lebanonpos-stock-counts-changed"
@@ -21,7 +22,8 @@ export type StockCountLine = {
   expectedQuantity: number
   countedQuantity?: number
   variance: number
-  valueImpact: number
+  /** Undefined when the product's cost is unavailable (the server values the count itself). */
+  valueImpact: number | undefined
 }
 
 export type StockCountSession = {
@@ -32,7 +34,8 @@ export type StockCountSession = {
   completedAt?: string
   lines: StockCountLine[]
   totalVariance: number
-  totalValueImpact: number
+  /** Undefined when any line's value impact is unavailable. */
+  totalValueImpact: number | undefined
 }
 
 function readCounts() {
@@ -68,8 +71,15 @@ function writeCounts(counts: StockCountSession[]) {
 function summarizeLines(lines: StockCountLine[]) {
   return {
     totalVariance: lines.reduce((sum, line) => sum + line.variance, 0),
-    totalValueImpact: lines.reduce((sum, line) => sum + line.valueImpact, 0),
+    totalValueImpact: sumAvailable(lines.map((line) => line.valueImpact)),
   }
+}
+
+/** A line's value impact: no variance is worth nothing whatever the cost; otherwise it needs an
+ *  available cost (never a guessed 0). */
+export function stockCountValueImpact(variance: number, cost: number | undefined): number | undefined {
+  if (variance === 0) return 0
+  return isCostAvailable(cost) ? variance * cost : undefined
 }
 
 function createCountNumber(count: number) {
@@ -151,7 +161,7 @@ export function updateStockCountLine(
         expectedQuantity,
         countedQuantity: safeCountedQuantity,
         variance,
-        valueImpact: variance * (product?.cost ?? 0),
+        valueImpact: stockCountValueImpact(variance, product?.cost),
       }
     })
     const summary = summarizeLines(lines)

@@ -12,7 +12,7 @@
 
 import fs   from "node:fs"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
+import { dataDir } from "../lib/dataDir.js"
 import { timingSafeEqual, createHash } from "node:crypto"
 import { Router } from "express"
 import type { Response } from "express"
@@ -31,9 +31,7 @@ const router = Router()
 
 const JWT_SECRET = process.env.JWT_SECRET!
 
-const __dirname  = path.dirname(fileURLToPath(import.meta.url))
-const DATA_DIR   = path.resolve(__dirname, "../../data")
-const STATE_FILE = path.join(DATA_DIR, "sync-state.json")
+const STATE_FILE = path.join(dataDir(), "sync-state.json")
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

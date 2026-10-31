@@ -1,11 +1,13 @@
 import { AlertTriangle, Boxes, Layers3, PackageCheck } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
-import { formatCurrency, formatNumber } from "../lib/currency"
+import { formatNumber } from "../lib/currency"
+import { formatCost } from "../lib/cost"
 
 type Props = {
   totalProducts: number
   totalStock: number
-  totalValue: number
+  /** Undefined when a cost it depends on is unavailable. */
+  totalValue: number | undefined
   urgentReorderCount: number
 }
 
@@ -22,7 +24,7 @@ export default function KpiCards({ totalProducts, totalStock, totalValue, urgent
   const values = [
     { label: t("pos.kpi.active_products"), value: formatNumber(totalProducts) },
     { label: t("pos.kpi.units_in_stock"),  value: formatNumber(totalStock)    },
-    { label: t("pos.kpi.stock_value"),     value: formatCurrency(totalValue)  },
+    { label: t("pos.kpi.stock_value"),     value: formatCost(totalValue, t("pos.not_available")) },
     {
       label: t("pos.kpi.reorder_needed"),
       value: formatNumber(urgentReorderCount),

@@ -362,18 +362,21 @@ export function legacyTillSuite(till: TillUnderTest) {
       expect(Number((await serverMilk())!.stock)).toBe(stockBefore + 1)
     })
 
-    it("receiving: the received lot is valued at the server's cost, not the till's", async () => {
+    it("receiving: the purchase price the receiver enters is the lot cost; with none entered, the server's cost", async () => {
       const stockBefore = Number((await serverMilk())!.stock)
-      forgeLocalCost(FORGED)
       const milk = localMilk()
-      const id = `lot-recv-${randomUUID()}`
-      d.batches.receiveInventoryBatches([{ id, productId: milk.id, productSyncId: milk.syncId, productName: milk.name, barcode: milk.barcode ?? "", quantity: 6, unitCost: milk.cost, unitPrice: 1.5 }])
+      const priced = `lot-recv-${randomUUID()}`
+      const unpriced = `lot-recv-${randomUUID()}`
+      // the delivery's invoice price, typed by a receiver who cannot see cost
+      d.batches.receiveInventoryBatches([{ id: priced, productId: milk.id, productSyncId: milk.syncId, productName: milk.name, barcode: milk.barcode ?? "", quantity: 6, unitCost: 1.25, unitPrice: 1.5 }])
+      d.batches.receiveInventoryBatches([{ id: unpriced, productId: milk.id, productSyncId: milk.syncId, productName: milk.name, barcode: milk.barcode ?? "", quantity: 2, unitCost: undefined as unknown as number, unitPrice: 1.5 }])
       await flush()
-      const lot = await prisma.inventoryBatch.findFirst({ where: { tenantId: T, id } })
-      evidence(`${till.label} cost-hidden receive`, { queue: queue().filter((o) => o.entity === "inventory" && o.action === "receive").map((o) => [o.status, o.error ?? null]), lotUnitCost: lot?.unitCost ?? null })
-      expect(lot).toBeTruthy()
-      expect(Number(lot!.unitCost)).toBe(MILK_COST)
-      expect(Number((await serverMilk())!.stock)).toBe(stockBefore + 6)
+      const lot = await prisma.inventoryBatch.findFirst({ where: { tenantId: T, id: priced } })
+      const lot2 = await prisma.inventoryBatch.findFirst({ where: { tenantId: T, id: unpriced } })
+      evidence(`${till.label} cost-hidden receive`, { queue: queue().filter((o) => o.entity === "inventory" && o.action === "receive").map((o) => [o.status, o.error ?? null]), lotUnitCost: lot?.unitCost ?? null, unpricedLotUnitCost: lot2?.unitCost ?? null })
+      expect(Number(lot!.unitCost)).toBe(1.25)
+      expect(Number(lot2!.unitCost)).toBe(MILK_COST)
+      expect(Number((await serverMilk())!.stock)).toBe(stockBefore + 8)
     })
 
     it("adjustment: valueImpact comes from the server's cost, whatever the till computed", async () => {

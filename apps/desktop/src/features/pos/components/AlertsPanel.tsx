@@ -2,7 +2,8 @@ import { CalendarClock, Copy, MessageCircle, PackageX, Star, Tag, Truck } from "
 import { Link } from "react-router"
 
 import { useI18n } from "@lebanonpos/shared"
-import { formatCurrency, formatNumber } from "../lib/currency"
+import { formatNumber } from "../lib/currency"
+import { formatCost } from "../lib/cost"
 import type { DeadStockItem, ExpiryAlert, PromoSuggestion, ReorderSuggestion } from "../services/stock.service"
 
 type SupplierReorderGroup = {
@@ -188,7 +189,7 @@ export default function AlertsPanel({
                       {group.supplierName}
                     </p>
                     <p className="text-sm font-bold" style={{ color: "var(--text-2)" }}>
-                      {formatCurrency(group.totalCost)}
+                      {formatCost(group.totalCost, t("pos.not_available"))}
                     </p>
                   </div>
                   <p className="mt-1 text-xs font-semibold" style={{ color: "var(--text-3)" }}>
@@ -316,7 +317,7 @@ export default function AlertsPanel({
                   </p>
                 </div>
             <p className="mt-1 text-sm" style={{ color: "var(--text-3)" }}>
-              {t("pos.alerts.value", { value: formatCurrency(item.product.stock * item.product.cost) })}
+              {t("pos.alerts.value", { value: formatCost(item.product.stock * item.product.cost, t("pos.not_available")) })}
             </p>
             {onViewProduct && (
               <button type="button" onClick={() => onViewProduct(item.product.id)}

@@ -59,21 +59,24 @@ export function dailySummaryMessage(opts: {
   storeName: string
   date: string
   netSales: number
-  grossMargin: number
+  /** Undefined when a cost it depends on is unavailable: printed as `notAvailable`. */
+  grossMargin: number | undefined
   expenses: number
-  netProfit: number
+  netProfit: number | undefined
   cashIn: number
   outstanding?: number
+  notAvailable?: string
 }): string {
   const { storeName, date, netSales, grossMargin, expenses, netProfit, cashIn, outstanding } = opts
+  const costLine = (v: number | undefined) => (v === undefined || !Number.isFinite(v) ? (opts.notAvailable ?? "Not available") : `$${v.toFixed(2)}`)
   const lines = [
     `📊 ${storeName} — Daily Summary`,
     date,
     ``,
     `Net sales:     $${netSales.toFixed(2)}`,
-    `Gross margin:  $${grossMargin.toFixed(2)}`,
+    `Gross margin:  ${costLine(grossMargin)}`,
     `Expenses:      $${expenses.toFixed(2)}`,
-    `Net profit:    $${netProfit.toFixed(2)}`,
+    `Net profit:    ${costLine(netProfit)}`,
     `Cash in:       $${cashIn.toFixed(2)}`,
   ]
   if (typeof outstanding === "number") lines.push(`Debt outstanding: $${outstanding.toFixed(2)}`)

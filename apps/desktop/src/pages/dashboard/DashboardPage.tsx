@@ -7,6 +7,7 @@ import {
 import { Link } from "react-router"
 
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
+import { formatCost, isCostAvailable, sumAvailable } from "../../features/pos/lib/cost"
 import Spinner from "../../components/ui/Spinner"
 import { getLedgerTotals, subscribeLedger } from "../../features/pos/services/customer.service"
 import { getExpenses, subscribeExpenses, type Expense } from "../../features/pos/services/expense.service"
@@ -158,9 +159,10 @@ export default function DashboardPage() {
   const debtSales        = rangeSales.filter((s) => s.paymentMethod === "Debt")
   const rangeRevenue     = paidSales.reduce((s, x) => s + x.total, 0)
   const rangeDebtIssued  = debtSales.reduce((s, x) => s + x.total, 0)
-  const rangeProfit      = rangeSales.reduce((s, x) => s + (x.profit ?? 0), 0)
+  // Profit and stock value are unavailable (undefined) when any cost they depend on is.
+  const rangeProfit      = sumAvailable(rangeSales.map((x) => x.profit))
   const rangeExpenseTotal = rangeExpenses.reduce((s, e) => s + e.amount, 0)
-  const rangeOpProfit    = rangeProfit - rangeExpenseTotal
+  const rangeOpProfit    = rangeProfit === undefined ? undefined : rangeProfit - rangeExpenseTotal
   const rangeTransactions = rangeSales.length
   const avgTicket        = rangeTransactions > 0 ? rangeRevenue / rangeTransactions : 0
 
@@ -174,7 +176,7 @@ export default function DashboardPage() {
   const topProducts   = useMemo(() => getTopProducts(5), [sales])
   const topMax        = topProducts[0]?.total ?? 1
   const ledgerTotals  = useMemo(() => getLedgerTotals(), [ledgerVersion])
-  const stockValue    = products.reduce((sum, p) => sum + p.cost * p.stock, 0)
+  const stockValue    = sumAvailable(products.map((p) => (isCostAvailable(p.cost) ? p.cost * p.stock : undefined)))
   const recentSales   = rangeSales.slice(0, 8)
   const lowStockProducts = products.filter((p) => p.stock <= settings.lowStockThreshold).sort((a, b) => a.stock - b.stock).slice(0, 5)
   const reorderSuggestions = useMemo(() => getReorderSuggestions(products), [products])
@@ -282,12 +284,12 @@ export default function DashboardPage() {
             },
             {
               label: t("desktop.dashboard.operating_profit"),
-              value: formatCurrency(rangeOpProfit),
+              value: formatCost(rangeOpProfit, t("pos.not_available")),
               sub: `${formatCurrency(rangeExpenseTotal)} expenses deducted`,
               icon: TrendingUp,
               bg: "var(--info-soft)",
               fg: "var(--info)",
-              badge: rangeRevenue > 0 ? `${((rangeOpProfit / rangeRevenue) * 100).toFixed(1)}% margin` : null,
+              badge: rangeRevenue > 0 && rangeOpProfit !== undefined ? `${((rangeOpProfit / rangeRevenue) * 100).toFixed(1)}% margin` : null,
             },
             {
               label: t("desktop.dashboard.outstanding"),
@@ -300,7 +302,7 @@ export default function DashboardPage() {
             },
             {
               label: t("desktop.dashboard.stock_value"),
-              value: formatCurrency(stockValue),
+              value: formatCost(stockValue, t("pos.not_available")),
               sub: `${formatNumber(lowStockProducts.length)} low-stock alerts`,
               icon: Boxes,
               bg: "var(--brand-soft)",

@@ -6,6 +6,7 @@ import type { StoreStatus } from "../lib/storeSetup"
 import { getProductsSync } from "../services/product.service"
 import { fileToCompressedDataUrl } from "../lib/image"
 import { showToast } from "../services/toast.service"
+import { isCostAvailable, typedCost } from "../lib/cost"
 import {
   resolveScannedBarcode,
   commitScanSetup,
@@ -55,7 +56,7 @@ export default function FirstSetupScan({
       lastExistingId.current = existing.id
       setName(existing.name)
       setCategory(existing.category)
-      setCost(String(existing.cost))
+      setCost(isCostAvailable(existing.cost) ? String(existing.cost) : "")
       setPrice(String(existing.price))
     } else if (!existing) {
       lastExistingId.current = null
@@ -86,7 +87,7 @@ export default function FirstSetupScan({
     const res = commitScanSetup({
       mode, targetId,
       barcode, name, category,
-      cost: num(cost), price: num(price), openingQty: parsedQty,
+      cost: typedCost(cost), price: num(price), openingQty: parsedQty,
       extraBarcodes: extra.split(/[|,;\s]+/).filter(Boolean),
       image,
     })

@@ -15,6 +15,7 @@ import { getProducts, subscribeProducts } from "../../features/pos/services/prod
 import { subscribeSales } from "../../features/pos/services/sales.service"
 import { userCan } from "../../features/pos/services/security.service"
 import { useStockControl } from "../../features/pos/hooks/useStockControl"
+import { isCostAvailable } from "../../features/pos/lib/cost"
 
 // Midnight Gold v2 — Lots & counts (/stock). Lots is the default view (lot list + movement trace);
 // Adjust & count, Opening inventory and Reconciliation are the existing panels and services, unchanged.
@@ -63,7 +64,7 @@ export default function StockPage() {
   function exportLots() {
     downloadCsv(`lots-${new Date().toISOString().slice(0, 10)}.csv`,
       ["Lot", "Product", "Barcode", "Received", "Supplier", "PO", "Received qty", "Remaining", "Expiry", "Unit cost", "Value"],
-      getInventoryBatches().map((b) => [b.batchNumber, b.productName, b.barcode, b.receivedAt.slice(0, 10), b.supplierName ?? "", b.purchaseOrderNumber ?? "", b.initialQuantity, b.quantityRemaining, b.expiryDate ?? "", b.unitCost, Math.round(b.quantityRemaining * b.unitCost * 100) / 100]))
+      getInventoryBatches().map((b) => [b.batchNumber, b.productName, b.barcode, b.receivedAt.slice(0, 10), b.supplierName ?? "", b.purchaseOrderNumber ?? "", b.initialQuantity, b.quantityRemaining, b.expiryDate ?? "", isCostAvailable(b.unitCost) ? b.unitCost : "", isCostAvailable(b.unitCost) ? Math.round(b.quantityRemaining * b.unitCost * 100) / 100 : ""]))
   }
   const tab = (v: StockView, label: string) => (
     <Link to={v === "Lots" ? "/stock" : `/stock?view=${v}`} aria-current={view === v ? "page" : undefined}>{label}</Link>

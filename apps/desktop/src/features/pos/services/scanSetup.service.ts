@@ -38,7 +38,8 @@ export type ScanSetupInput = {
   barcode: string
   name: string
   category: string
-  cost: number
+  /** Absent when no cost was entered (nothing is sent). */
+  cost?: number
   price: number
   openingQty: number
   extraBarcodes?: string[]

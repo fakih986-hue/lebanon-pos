@@ -1,5 +1,6 @@
 export * from "./barcode"
 export * from "./cameraScanner"
+export * from "./cost"
 export * from "./currency"
 export * from "./helpers"
 export * from "./printReceipt"

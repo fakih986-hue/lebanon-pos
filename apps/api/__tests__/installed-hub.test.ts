@@ -212,15 +212,15 @@ if (!ready) {
       expect(Number((cloud as any).cost)).toBe(2)
     })
 
-    it("receiving with a forged cost through the hub: the cloud's lot is valued at the cloud's cost", async () => {
+    it("receiving through the hub: the purchase price the receiver entered is the cloud's lot cost", async () => {
       const milk = localMilk()
       const id = `lot-hub-${randomUUID()}`
-      d.batches.receiveInventoryBatches([{ id, productId: milk.id, productSyncId: milk.syncId, productName: milk.name, barcode: milk.barcode ?? "", quantity: 4, unitCost: 999, unitPrice: 1.5 }])
+      d.batches.receiveInventoryBatches([{ id, productId: milk.id, productSyncId: milk.syncId, productName: milk.name, barcode: milk.barcode ?? "", quantity: 4, unitCost: 1.25, unitPrice: 1.5 }])
       await flush()
       const cloud = await inCloud(() => prisma.inventoryBatch.findFirst({ where: { tenantId: A.tenantId, id }, select: { unitCost: true } }))
       evidence("receive", { tillQueue: queue().filter((o) => o.action === "receive").map((o) => [o.status, o.error ?? null]), cloudUnitCost: cloud ? Number((cloud as any).unitCost) : null })
       expect(cloud).toBeTruthy()
-      expect(Number((cloud as any).unitCost)).toBe(MILK_COST)
+      expect(Number((cloud as any).unitCost)).toBe(1.25)
     })
 
     itNew("permissions and Refused work: a cashier-connected till's adjustment is refused on the hub, kept, reviewed and applied by the manager on the hub, then forwarded once", async () => {

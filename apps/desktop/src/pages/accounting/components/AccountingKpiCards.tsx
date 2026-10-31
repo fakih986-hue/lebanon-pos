@@ -1,5 +1,7 @@
 import { Calculator, ReceiptText, TrendingDown, TrendingUp } from "lucide-react"
+import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../../../features/pos/lib/currency"
+import { formatCost, isCostAvailable } from "../../../features/pos/lib/cost"
 import { getSettings } from "../../../features/pos/services/settings.service"
 import type { AccountingSummary } from "../accounting.helpers"
 
@@ -14,7 +16,10 @@ export default function AccountingKpiCards({
   todayExpensesCount,
   todayClose,
 }: Props) {
+  const { t } = useI18n()
   const rate = getSettings().usdToLbpRate
+  // Margin and profit are unavailable when a cost they depend on is (see accounting.helpers).
+  const lbpOf = (value: number | undefined) => (isCostAvailable(value) ? formatLbpCurrency(usdToLbp(value, rate)) : "—")
   return (
     <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
       <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
@@ -39,10 +44,10 @@ export default function AccountingKpiCards({
           <TrendingUp size={20} className="text-indigo-700" />
         </div>
         <p className="mt-3 text-3xl font-bold text-zinc-950">
-          {formatCurrency(summary.grossMargin)}
+          {formatCost(summary.grossMargin, t("pos.not_available"))}
         </p>
         <p className="mt-0.5 text-xs text-zinc-400">
-          {formatLbpCurrency(usdToLbp(summary.grossMargin, rate))}
+          {lbpOf(summary.grossMargin)}
         </p>
         <p className="mt-1 text-sm text-zinc-500">
           After returned item cost
@@ -72,12 +77,12 @@ export default function AccountingKpiCards({
         </div>
         <p
           className="mt-3 text-3xl font-bold"
-          style={{ color: summary.netProfit >= 0 ? "var(--success)" : "var(--rose)" }}
+          style={{ color: summary.netProfit === undefined ? "var(--text-3)" : summary.netProfit >= 0 ? "var(--success)" : "var(--rose)" }}
         >
-          {formatCurrency(summary.netProfit)}
+          {formatCost(summary.netProfit, t("pos.not_available"))}
         </p>
         <p className="mt-0.5 text-xs text-zinc-400">
-          {formatLbpCurrency(usdToLbp(summary.netProfit, rate))}
+          {lbpOf(summary.netProfit)}
         </p>
         <p className="mt-1 text-sm text-zinc-500">
           {todayClose ? "Day already closed" : "Ready to close today"}

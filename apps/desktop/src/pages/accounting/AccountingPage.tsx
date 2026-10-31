@@ -23,7 +23,7 @@ import {
   expenseCategories,
   type AccountingWorkspace,
 } from "./accounting.helpers"
-import { formatCurrency } from "../../features/pos/lib/currency"
+import { formatCost } from "../../features/pos/lib/cost"
 import type {
   Expense,
   ExpenseCategory,
@@ -283,7 +283,7 @@ export default function AccountingPage() {
           onCancel={() => setShowCloseConfirm(false)}
         >
           <p>
-            Close {summary.dateKey} with net profit of {formatCurrency(summary.netProfit)}?
+            Close {summary.dateKey} with net profit of {formatCost(summary.netProfit, t("pos.not_available"))}?
             {todayClose ? " This day was already closed." : ""}
           </p>
           {closeWarnings.length > 0 ? (

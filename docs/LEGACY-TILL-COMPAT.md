@@ -48,13 +48,29 @@ equals typed digits. The server refuses to store it, or any other `$2…` that i
   out only lowers trust. "Upgrade hubs together with the cloud" is therefore not needed for correct
   cloud figures. The deployed cloud ignores the mark.
 
-- An adjustment's `valueImpact` and a count line's `valueImpact`/`totalValueImpact` are always quantity ×
-  the server's product cost. Any submitted value is ignored, from any client.
-- From an account without `reports.cost`, sale-line cost, lot-slice cost, the cost of a lot created by a
-  positive adjustment, and the unit cost of a received lot all come from the server.
-- Refused work a manager applies on review is valued at the server's cost, never the till's.
-- Still taken from the client: a cost-visible account's sale-line and receiving cost (its own input), and
-  purchase-order line cost.
+**Purchase price is not valuation.** Three things are kept apart:
+
+- *Actual purchase price* — the unit cost on a receive, and a purchase order's line cost (the supplier's
+  invoice). Business input from an account allowed to receive (`inventory.receive`) or buy
+  (`suppliers.manage`), whether or not it may see cost. It is kept as stated, by the hub and by the
+  cloud (also when an older hub relays it), and it is part of the operation's identity: the same
+  operation id with another unit cost is refused (`OPERATION_ID_REUSED`). It must be a number from 0 up;
+  anything else is refused (`INVALID_PURCHASE_PRICE`). A receive that states no price (an old till
+  whose cost field was left empty) is valued at the server's product cost.
+- *Valuation* — what stock and sales are worth, computed by the server:
+  - a sale line the till did not cost (any account without `reports.cost`, or a line sent without
+    cost) costs what the lots it consumed were bought at (their purchase price), and the product cost
+    for quantity no lot covers; the sale's cost and profit follow. The server writes its figures into
+    the operation, so a hub forwards what it recorded. A refund's cost is the recorded sale line's;
+  - an adjustment's `valueImpact` and a count line's `valueImpact`/`totalValueImpact` are always
+    quantity × the server's product cost (any submitted value is ignored, from any client), and so is
+    the cost of a lot a positive adjustment creates;
+  - refused work a manager applies on review is valued by the server, never the till.
+- *Hidden cost data* — output: cost, profit, margin and lot cost are sent only to accounts with
+  `reports.cost` (above). Entering a purchase price does not make cost visible.
+
+A forged sale cost is therefore replaced (the server computes it from lots), while a receiver's
+invoice price is kept. A cost-visible account's own sale-line cost is still taken as sent.
 
 ## Evidence (`apps/api/__tests__/legacy-till-*.test.ts`)
 
@@ -75,13 +91,18 @@ What all three tills pass, connected with an account that may sell, refund, rece
   restart. A PIN reset stops the old PIN offline (full pull or incremental pull). A deactivated person
   cannot unlock. Someone who never signed in on the till cannot unlock offline.
 - **Cost-hidden checkout, refund, receiving, adjustment, count and manager review:** all are recorded and
-  valued from the server's cost, also when the till's cache holds a forged cost (999). The connection
+  valued by the server, also when the till's cache holds a forged cost (999). Receiving keeps the unit
+  cost the receiver typed (the purchase price); a lot received with none is valued at the product cost. The connection
   account receives no cost from `/api/products` or sync, including with an old schema header.
 - **No verifier ever reaches a staff token.** The placeholder can never be written back as a PIN.
 
 `apps/api/__tests__/hub-valuation.test.ts` (a hub and a cloud on two databases) covers the per-operation
 mark: this hub's figures are kept (a manager's purchase price too); an older hub's forged or stale
-figures, and work queued before an upgrade, are valued by the cloud. It also covers operation identity
+figures, and work queued before an upgrade, are valued by the cloud. It covers the purchase price: a
+cost-hidden receiver's typed price is the lot cost and matches the purchase order (supplier liability)
+on hub and cloud; a cost-hidden sale is costed from the lots it consumed and its refund follows; an
+older hub's relayed price is kept while its forged sale cost is not; invalid prices are refused; a
+changed price under the same operation id is refused. It also covers operation identity
 while valuation is replaced: exact resends and resends with other cost figures are the same operation
 (applied once, valuation unchanged, also after the server's cost moved); a changed quantity or price
 under the same id is refused (`OPERATION_ID_REUSED`) by the hub and by the cloud; a lost
@@ -105,10 +126,9 @@ hub link trusted) its two older-hub tests fail.
 4. **Till-side cost displays.** A cashier-connected old till shows no cost or profit locally. Only the
    server's figures, which are correct, were tested; the till's screens were not.
 5. **An older hub (1.0.50/1.0.51) in front of this cloud.** The cloud values what it forwards (above),
-   so a till's forged or stale cost never becomes the cloud's. Two consequences remain until the hub is
-   upgraded: the older hub's own records and screens keep its tills' figures, and a manager's real
-   purchase price relayed by it is recorded in the cloud at the cloud's product cost (the hub keeps
-   the manager's figure). The same applies to work a hub queued before its upgrade.
+   so a till's forged or stale sale cost never becomes the cloud's; purchase prices it relays are kept
+   as stated. Until the hub is upgraded, the older hub's own records and screens keep its tills'
+   figures. The same applies to work a hub queued before its upgrade.
 6. **Attribution.** Old tills send no device credential and no staff session. Their work is attributed to
    the connecting account, and the actor is whatever they claim. The enforcement gate already refuses to
    switch on while any of them trades (`identityGate.ts`, reason `upgrade-needed`).
@@ -118,8 +138,15 @@ hub link trusted) its two older-hub tests fail.
    is typed (the delivery still saves; the server values it). A manager who unlocks such a till keeps
    the cashier's connection: products show Cost `$NaN` and Margin `NaN%`, the dashboard Stock value
    `$NaN` and 0.0% margin, the daily close Cost of goods, Gross margin and Net profit `$0.00`, a count's
-   Value impact `$0.00`, and the product editor will not save until a cost is typed. Figures recorded on
-   the server are right. Remedy: connect such tills with an account that may see cost, or upgrade them.
+   Value impact `$0.00`, and the product editor will not save until a cost is typed. A receiving with a
+   supplier records the purchase order at the typed prices; a row left without a price is valued at the
+   product cost. Figures recorded on the server are right; these screens are not.
+   **Requirement:** stock valuation, margins, the daily close's profit figures, counts' value and
+   product cost editing must be done on an upgraded till (or the owner portal), not on a
+   1.0.50/1.0.51 till. Do not work around it by connecting old tills with a shared manager or owner
+   account: that hands cost visibility, and everything else that account may do, to every person
+   using the till. The server never sends made-up costs to hide the defect. Current tills show "Not
+   available" where cost is not available to them.
 8. **A 1.0.50/1.0.51 till behind a 1.0.50/1.0.51 hub (any cloud).** Those tills full-pull
    `cash-movements` last; those hubs answer 400, so the full pull fails before it restores the offline
    verifiers: offline login is lost after every full pull until the next online sign-in. The deployed
@@ -158,9 +185,25 @@ the released 1.0.51 till and this repository's till. Evidence: `D:\TitanPOS-it\r
   reaches the cloud), restart, cloud outage (the hub takes the sale and holds it) and reconnect, hub down
   (people who signed in on the till unlock offline, someone who never did cannot, a sale queues). Every
   sale of the run is on the hub and in the cloud exactly once, at the server's cost.
-- Found, not changed: the hub rewrites `BIND_HOST=127.0.0.1` into `.env` on every start
-  (`writeApiEnv`, since `fdc10c8`), so a hub switched to LAN mode is back to localhost-only after a restart,
-  reboot or update.
+- Found: the hub rewrote `BIND_HOST=127.0.0.1` into `.env` on every start (`writeApiEnv`, since
+  `fdc10c8`), so a hub switched to LAN mode was back to localhost-only after a restart, reboot or update.
+  Fixed after this run, with the cloud link: see "Hub configuration across updates".
+
+## Hub configuration across updates
+
+- The API keeps its cloud link (`cloud-config.json`) and sync state in `TITAN_DATA_DIR`; the hub sets it
+  to `%APPDATA%lebanon-poshub-data` (`src/lib/dataDir.ts`). Servers without it (the cloud, development)
+  keep `apps/api/data`.
+- Before an update runs the old uninstaller, the installer copies `<install dir>data*.json` to
+  `%APPDATA%lebanon-posinstall-data-migration` (`apps/electron/build/installer.nsh`). At start, after
+  migrations, the hub adopts it (`apps/electron/src/hubConfig.ts`): never over a link already in
+  `hub-data`, and only for a store its database holds (an empty database accepts). The staged copy is
+  removed once adopted; a refused one stays, and the hub opens activation. Adoption never blocks
+  startup. An install directory that survived (copy-over, portable) is adopted the same way.
+- `BIND_HOST=0.0.0.0` saved by LAN mode is kept at every start; anything else is written as `127.0.0.1`.
+- Tested with `__tests__/hub-config.test.ts` (upgrade, refusal, restart, LAN setting; no port opened).
+  The real installer is not tested: `docs/HUB-INSTALL-CHECKLIST.md` (blocked: no disposable Windows
+  machine). LAN access on a real network is not tested on the build PC (it would open it to the LAN).
 
 ### Earlier run (`2d1939c`)
 

@@ -5,6 +5,7 @@ import { useI18n } from "@lebanonpos/shared"
 
 import ConfirmDialog from "../../../../components/ConfirmDialog"
 import { formatCurrency, formatNumber } from "../../lib/currency"
+import { formatCost, isCostAvailable, sumAvailable } from "../../lib/cost"
 import { daysToExpiry, expiryTone } from "../../lib/lotTrace"
 import type { InventoryBatch } from "../../services/inventoryBatch.service"
 import {
@@ -28,8 +29,9 @@ export default function ProductDetailsDrawer({ product, products, lots, canManag
   // First-expiry-first; lots without expiry last, oldest received first.
   const sorted = [...lots].sort((a, b) => (a.expiryDate ?? "9999").localeCompare(b.expiryDate ?? "9999") || a.receivedAt.localeCompare(b.receivedAt))
   const inLots = lots.reduce((s, b) => s + b.quantityRemaining, 0)
-  const lotValue = lots.reduce((s, b) => s + b.quantityRemaining * b.unitCost, 0)
-  const avgCost = inLots > 0 ? lotValue / inLots : product.cost
+  // Unavailable (undefined) when any lot's cost, or the product's, is unavailable.
+  const lotValue = sumAvailable(lots.map((b) => (isCostAvailable(b.unitCost) ? b.quantityRemaining * b.unitCost : undefined)))
+  const avgCost = inLots > 0 ? (lotValue === undefined ? undefined : lotValue / inLots) : product.cost
   const untracked = product.stock - inLots
   const date = (iso: string) => new Intl.DateTimeFormat(locale === "ar" ? "ar-LB" : "en-GB", { day: "2-digit", month: "short" }).format(new Date(iso))
   const parent = product.parentId ? products.find((p) => p.id === product.parentId) : undefined
@@ -69,7 +71,7 @@ export default function ProductDetailsDrawer({ product, products, lots, canManag
         <div className="mg2-stats">
           <StatTile label={t("inv.on_hand")} value={<span className="num">{product.isParent ? "—" : formatNumber(product.stock)}</span>} />
           <StatTile label={t("inv.reorder_at")} value={<span className="num">{formatNumber(product.reorderPoint ?? 10)}</span>} />
-          {userCan("reports.cost") && <StatTile label={t("inv.avg_cost")} value={<span className="num">{formatCurrency(avgCost)}</span>} />}
+          {userCan("reports.cost") && <StatTile label={t("inv.avg_cost")} value={<span className="num">{formatCost(avgCost, t("pos.not_available"))}</span>} />}
           <StatTile label={t("inv.field.price")} value={<span className="num">{formatCurrency(product.price)}</span>} />
         </div>
 
@@ -87,7 +89,7 @@ export default function ProductDetailsDrawer({ product, products, lots, canManag
                     <ExpiryChip date={b.expiryDate} />
                   </div>
                   <div className={`mg2-bar${tone === "err" ? " t-err" : tone === "warn" ? " t-warn" : ""}`} aria-hidden="true"><span style={{ width: `${pct}%` }} /></div>
-                  <span className="mg2-cap" style={{ textAlign: "end" }}>{t("inv.lot.left_of", { left: formatNumber(b.quantityRemaining), of: formatNumber(b.initialQuantity) })}{userCan("reports.cost") ? <> · {formatCurrency(b.unitCost)}</> : null}</span>
+                  <span className="mg2-cap" style={{ textAlign: "end" }}>{t("inv.lot.left_of", { left: formatNumber(b.quantityRemaining), of: formatNumber(b.initialQuantity) })}{userCan("reports.cost") ? <> · {formatCost(b.unitCost, t("pos.not_available"))}</> : null}</span>
                 </button>
               )
             })}

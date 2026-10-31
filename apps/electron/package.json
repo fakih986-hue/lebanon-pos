@@ -83,7 +83,8 @@
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
       "installerHeaderIcon": "assets/icon.ico",
-      "artifactName": "Titan-POS-Setup-${version}.${ext}"
+      "artifactName": "Titan-POS-Setup-${version}.${ext}",
+      "include": "build/installer.nsh"
     },
     "portable": {
       "artifactName": "Titan-POS-Portable-${version}.${ext}"

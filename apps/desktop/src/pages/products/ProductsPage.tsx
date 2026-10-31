@@ -13,6 +13,7 @@ import ProductDetailsDrawer from "../../features/pos/components/backoffice/Produ
 import ProductEditorDrawer from "../../features/pos/components/backoffice/ProductEditorDrawer"
 import { downloadCsv } from "../../features/pos/lib/csv"
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
+import { formatCost, isCostAvailable, sumAvailable } from "../../features/pos/lib/cost"
 import { daysToExpiry } from "../../features/pos/lib/lotTrace"
 import { getApiUrl, getAuthToken } from "../../features/pos/services/sync.service"
 import { getInventoryBatches, subscribeInventoryBatches, type InventoryBatch } from "../../features/pos/services/inventoryBatch.service"
@@ -35,8 +36,10 @@ type View = "all" | "low" | "out" | "expiring" | "nobarcode" | "duplicates" | "a
 const VIEWS: View[] = ["all", "low", "out", "expiring", "nobarcode", "duplicates", "archived"]
 type ReorderGroup = ReturnType<typeof groupReorderSuggestionsBySupplier>[number]
 
+/** null: no price to compare with; undefined: the cost is unavailable. */
 function margin(p: Product) {
-  return p.price > 0 ? ((p.price - p.cost) / p.price) * 100 : null
+  if (!(p.price > 0)) return null
+  return isCostAvailable(p.cost) ? ((p.price - p.cost) / p.price) * 100 : undefined
 }
 function supplierOrderMessage(g: ReorderGroup) {
   return [
@@ -164,6 +167,8 @@ export default function ProductsPage() {
       for (const p of selectedList) {
         if (p.isParent) continue
         const cur = bulkField === "price" ? p.price : p.cost
+        // An unavailable cost is never adjusted from a guess: that product is left as it is.
+        if (!isCostAvailable(cur)) continue
         const next = Math.max(0, bulkMode === "percent" ? cur * (1 + v / 100) : cur + v)
         if (updateProduct(p.id, { [bulkField]: Math.round(next * 100) / 100 })) done++
       }
@@ -174,7 +179,7 @@ export default function ProductsPage() {
   function exportCsv(rows: Product[]) {
     downloadCsv(`products-${new Date().toISOString().slice(0, 10)}.csv`,
       ["Name", "Category", "Barcode", "Aliases", "Price", "Cost", "Stock", "Reorder point", "Reorder qty", "Supplier", "Archived"],
-      rows.map((p) => [p.name, p.category, p.barcode ?? "", (p.barcodeAliases ?? []).join(" "), p.price, showCost ? p.cost : "", p.stock, p.reorderPoint ?? "", p.reorderQuantity ?? "", p.supplierName ?? "", p.archived ? "yes" : ""]))
+      rows.map((p) => [p.name, p.category, p.barcode ?? "", (p.barcodeAliases ?? []).join(" "), p.price, showCost && isCostAvailable(p.cost) ? p.cost : "", p.stock, p.reorderPoint ?? "", p.reorderQuantity ?? "", p.supplierName ?? "", p.archived ? "yes" : ""]))
   }
   async function generateImages() {
     const apiUrl = getApiUrl(); const token = getAuthToken()
@@ -332,8 +337,8 @@ export default function ProductsPage() {
                       </td>
                       <td className="p3">{p.category}</td>
                       <td className="num">{formatCurrency(p.price)}</td>
-                      {showCost && <td className="num p4" style={{ color: "var(--text-2)" }}>{formatCurrency(p.cost)}</td>}
-                      {showCost && <td className="num p4" style={{ color: m === null ? "var(--text-3)" : m < 10 ? "var(--v2-err)" : m < 25 ? "var(--v2-warn)" : "var(--text-2)" }}>{m === null ? "—" : `${Math.round(m)}%`}</td>}
+                      {showCost && <td className="num p4" style={{ color: "var(--text-2)" }}>{formatCost(p.cost, t("pos.not_available"))}</td>}
+                      {showCost && <td className="num p4" style={{ color: m == null ? "var(--text-3)" : m < 10 ? "var(--v2-err)" : m < 25 ? "var(--v2-warn)" : "var(--text-2)" }}>{m === null ? "—" : m === undefined ? t("pos.not_available") : `${Math.round(m)}%`}</td>}
                       <td className="num">
                         {p.isParent ? <span style={{ color: "var(--text-3)" }}>—</span>
                           : p.stockPolicy === "untracked" ? <Badge tone="muted">{t("inv.not_tracked")}</Badge>
@@ -352,7 +357,7 @@ export default function ProductsPage() {
             </table>
           </div>
         )}
-        {!loading && list.length > 0 && showCost && <p className="mg2-cap" style={{ marginTop: 8 }}>{t("inv.products.footer", { shown: list.length, value: formatCurrency(activeProducts.reduce((s, p) => s + p.stock * p.cost, 0)) })}</p>}
+        {!loading && list.length > 0 && showCost && <p className="mg2-cap" style={{ marginTop: 8 }}>{t("inv.products.footer", { shown: list.length, value: formatCost(sumAvailable(activeProducts.map((p) => (isCostAvailable(p.cost) ? p.stock * p.cost : undefined))), t("pos.not_available")) })}</p>}
       </div>
 
       <datalist id="inv-categories">{categories.map((c) => <option key={c} value={c} />)}</datalist>

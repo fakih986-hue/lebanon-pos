@@ -9,11 +9,12 @@
  * Configuration:
  *   CLOUD_API_URL   — Railway base URL (env var, pre-baked into the installer)
  *   Tenant ID + API key — entered once in Settings → Cloud, persisted to
- *                         apps/api/data/cloud-config.json. Falls back to the
+ *                         cloud-config.json in the data folder (lib/dataDir.ts:
+ *                         the hub's user data). Falls back to the
  *                         CLOUD_TENANT_ID / CLOUD_API_KEY env vars if the file
  *                         is absent (backward compatibility / server deploys).
  *
- * Sync state (lastPullAt) is persisted to apps/api/data/sync-state.json so it
+ * Sync state (lastPullAt) is persisted to sync-state.json in the same folder so it
  * survives restarts. A missing file triggers a full pull on first boot, which
  * populates the local DB from Railway.
  */
@@ -22,7 +23,7 @@ import { adoptPulledPolicy } from "../lib/stockPolicy.js"
 import fs   from "node:fs"
 import path from "node:path"
 import { randomUUID } from "node:crypto"
-import { fileURLToPath } from "node:url"
+import { dataDir } from "../lib/dataDir.js"
 import prisma from "../lib/prisma.js"
 import { recordStockMovementOnce } from "../lib/ledger.js"
 import { broadcastToTenant } from "../ws/index.js"
@@ -70,9 +71,8 @@ const FETCH_TIMEOUT_MS  = 20_000
  */
 const STOCK_RELATED_ENTITIES = new Set(["sale", "refund", "inventory", "product"])
 
-// Persist lastPullAt next to the compiled output so it survives redeploys
-const __dirname    = path.dirname(fileURLToPath(import.meta.url))
-const DATA_DIR     = path.resolve(__dirname, "../../data")
+// Cloud link and lastPullAt: in the hub's persistent data folder (lib/dataDir.ts)
+const DATA_DIR     = dataDir()
 const STATE_FILE   = path.join(DATA_DIR, "sync-state.json")
 const CONFIG_FILE  = path.join(DATA_DIR, "cloud-config.json")
 

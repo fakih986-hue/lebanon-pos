@@ -1,6 +1,7 @@
 import { assertCanWrite, commitStagedSyncOperation, enqueueSyncOperation, registerStagedCompleter, settleStagedSyncOperation, stageSyncOperation } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
+import { isCostAvailable } from "../lib/cost"
 
 const BATCHES_KEY  = "lebanonpos.inventory-batches.v1"
 const BATCHES_EVENT = "lebanonpos-inventory-batches-changed"
@@ -123,7 +124,8 @@ export type ReceiveBatchInput = {
   productName: string
   barcode: string
   quantity: number
-  unitCost: number
+  /** Absent when no cost was typed: the lot is sent without one and the server values it. */
+  unitCost?: number
   unitPrice: number
   expiryDate?: string
   supplierId?: string
@@ -251,7 +253,8 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { o
       barcode: entry.barcode,
       initialQuantity: entry.quantity,
       quantityRemaining: entry.quantity,
-      unitCost: entry.unitCost,
+      // Undefined when no cost was typed: dropped from the stored lot and the sync payload.
+      unitCost: entry.unitCost as number,
       unitPrice: entry.unitPrice,
       expiryDate: entry.expiryDate || undefined,
       supplierId: entry.supplierId,
@@ -425,7 +428,8 @@ export function adjustInventoryBatches(input: InventoryBatchAdjustmentInput) {
     if (selectedBatch) {
       selectedBatch.initialQuantity += quantityDelta
       selectedBatch.quantityRemaining += quantityDelta
-      selectedBatch.unitCost = input.unitCost
+      // An unavailable cost never replaces the lot's own.
+      if (isCostAvailable(input.unitCost)) selectedBatch.unitCost = input.unitCost
       selectedBatch.unitPrice = input.unitPrice
       updateBatchStatus(selectedBatch)
       allocations.push({

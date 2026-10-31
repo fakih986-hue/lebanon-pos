@@ -488,6 +488,7 @@ export const ar = {
   "pos.search": "بحث",
   "pos.loading": "جاري التحميل...",
   "pos.no_results": "لا توجد نتائج",
+  "pos.not_available": "غير متوفر",
 
   /* POS - Payment Methods */
   "pos.payment.cash": "نقداً",
@@ -1787,6 +1788,7 @@ export const ar = {
   "inv.rcv.p.missing_target": "اختر المنتج",
   "inv.rcv.p.missing_variant_name": "يحتاج إلى اسم النوع",
   "inv.rcv.p.negative_money": "لا يمكن أن تكون الكلفة أو السعر سالبة",
+  "inv.rcv.p.cost_missing": "أدخل كلفة الوحدة: فاتورة المورد تحتاج إلى كلفة لكل سطر",
   "inv.rcv.n.cost_up": "الكلفة +{pct}% عن المنتج",
   "inv.rcv.n.cost_down": "الكلفة −{pct}% عن المنتج",
   "inv.rcv.n.cost_over_price": "الكلفة أعلى من سعر البيع",
@@ -2158,6 +2160,7 @@ export const ar = {
   "rcpt.day_summary": "{n} من الإيصالات · {total}",
   "rcpt.footer": "{n} من الإيصالات · {revenue}",
   "rcpt.footer_profit": "الربح {profit}",
+  "rcpt.footer_profit_na": "الربح غير متوفر",
   "rcpt.receipt_title": "الإيصال {number}",
   "rcpt.shift": "الوردية",
   "rcpt.lines": "أسطر الإيصال",

@@ -1,7 +1,8 @@
 import { ClipboardCheck, LockKeyhole, PackageMinus, Plus, Save } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
-import { formatCurrency, formatNumber } from "../lib/currency"
+import { formatNumber } from "../lib/currency"
+import { formatCost } from "../lib/cost"
 import { userCan } from "../services/security.service"
 import type { InventoryBatch } from "../services/inventoryBatch.service"
 import type {
@@ -303,7 +304,7 @@ export default function StockControlPanel({
                 </span>
               </div>
               <p className="mt-1 font-medium" style={{ color: "var(--info-text)" }}>
-                {t("pos.stock.value_impact", { impact: formatCurrency(activeStockCount.totalValueImpact) })}
+                {t("pos.stock.value_impact", { impact: formatCost(activeStockCount.totalValueImpact, t("pos.not_available")) })}
               </p>
             </div>
 

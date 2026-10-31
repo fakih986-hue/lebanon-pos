@@ -14,6 +14,7 @@ import {
 } from "../lib/refundAllocation"
 import { getSettings } from "./settings.service"
 import { canUseStorage, createId } from "../lib/storage"
+import { isCostAvailable, sumAvailable } from "../lib/cost"
 import {
   getActiveShift,
   getCurrentUser,
@@ -181,6 +182,12 @@ function toNumber(value: unknown, fallback = 0): number {
 function optionalNumber(value: unknown): number | undefined {
   return value === null || value === undefined || value === "" ? undefined : toNumber(value)
 }
+/** A cost (or profit) the server may withhold: absent or not a number stays undefined, never 0. */
+function optionalCost(value: unknown): number | undefined {
+  if (value === null || value === undefined || value === "") return undefined
+  const n = typeof value === "number" ? value : Number(value)
+  return Number.isFinite(n) ? n : undefined
+}
 function productIdOf(raw: Record<string, unknown>): number {
   if (raw.productId !== undefined && raw.productId !== null && Number.isFinite(Number(raw.productId))) {
     return Number(raw.productId)
@@ -192,7 +199,7 @@ function normalizeSaleItem(raw: any): SaleItem {
     id: productIdOf(raw ?? {}),
     name: String(raw?.name ?? raw?.productName ?? ""),
     barcode: String(raw?.barcode ?? ""),
-    cost: toNumber(raw?.cost),
+    cost: optionalCost(raw?.cost) as number,
     quantity: toNumber(raw?.quantity),
     unitPrice: toNumber(raw?.unitPrice),
     total: toNumber(raw?.total),
@@ -209,7 +216,7 @@ function normalizeSaleItem(raw: any): SaleItem {
       batchId: a?.batchId ?? "legacy-stock",
       batchNumber: String(a?.batchNumber ?? a?.batchId ?? "Legacy stock"),
       quantity: toNumber(a?.quantity),
-      unitCost: toNumber(a?.unitCost),
+      unitCost: optionalCost(a?.unitCost) as number,
       ...(a?.expiryDate ? { expiryDate: a.expiryDate } : {}),
     }))
   }
@@ -221,8 +228,9 @@ function normalizeSale(raw: any): Sale {
   sale.discountTotal = optionalNumber(raw?.discountTotal)
   sale.tax = toNumber(raw?.tax)
   sale.total = toNumber(raw?.total)
-  sale.cost = toNumber(raw?.cost)
-  sale.profit = toNumber(raw?.profit)
+  // Withheld from a till without reports.cost: kept unavailable (undefined), not 0.
+  sale.cost = optionalCost(raw?.cost) as number
+  sale.profit = optionalCost(raw?.profit) as number
   sale.payableLbp = optionalNumber(raw?.payableLbp)
   sale.items = Array.isArray(raw?.items) ? raw.items.map(normalizeSaleItem) : []
   if (raw?.tender) {
@@ -335,15 +343,15 @@ function getSaleGrossSubtotal(sale: Sale) {
   return (sale.items ?? []).reduce((sum, item) => sum + item.total, 0)
 }
 
+/** Undefined (unavailable) when any refunded line's cost is unavailable. */
 function getRefundCost(refund: SaleRefund, sales: Sale[]) {
   const sale = sales.find((currentSale) => currentSale.id === refund.saleId)
 
-  return (refund.items ?? []).reduce((sum, item) => {
+  return sumAvailable((refund.items ?? []).map((item) => {
     const saleItem = sale?.items.find((currentItem) => currentItem.id === item.id)
-    const unitCost = item.cost ?? saleItem?.cost ?? 0
-
-    return sum + unitCost * item.quantity
-  }, 0)
+    const unitCost = isCostAvailable(item.cost) ? item.cost : saleItem?.cost
+    return isCostAvailable(unitCost) ? unitCost * item.quantity : undefined
+  }))
 }
 
 function getRefundPreTax(refund: SaleRefund, sales: Sale[]) {
@@ -399,7 +407,9 @@ export function getRefundsForSale(saleId: string) {
  */
 export function buildSale(input: RecordSaleInput, id: string): Sale {
   assertCanWrite("record sale")
-  const cost = input.items.reduce((sum, item) => sum + (Number.isFinite(item.cost) ? item.cost : 0) * item.quantity, 0)
+  // A line without an available cost makes the sale's cost and profit unavailable: they are left
+  // out (never 0) and the server values the sale from its own costs.
+  const cost = sumAvailable(input.items.map((item) => (isCostAvailable(item.cost) ? item.cost * item.quantity : undefined)))
   const currentUser = requireCurrentUser()
   const activeShift = getActiveShift()
   // Shift gate — every sale requires an open register shift
@@ -416,8 +426,8 @@ export function buildSale(input: RecordSaleInput, id: string): Sale {
     discountTotal: input.discountTotal,
     tax: input.tax,
     total: input.total,
-    cost,
-    profit: input.subtotal - cost,
+    cost: cost as number,
+    profit: (cost === undefined ? undefined : input.subtotal - cost) as number,
     soldAtCost: input.soldAtCost,
     tender: input.tender,
     payableLbp: input.payableLbp,
@@ -1195,11 +1205,11 @@ export function getSalesMetrics() {
     (sum, refund) => sum + refund.total,
     0
   )
-  const todayRefundMarginImpact = todayRefunds.reduce(
-    (sum, refund) =>
-      sum + getRefundPreTax(refund, sales) - getRefundCost(refund, sales),
-    0
-  )
+  const todayRefundMarginImpact = sumAvailable(todayRefunds.map((refund) => {
+    const cost = getRefundCost(refund, sales)
+    return cost === undefined ? undefined : getRefundPreTax(refund, sales) - cost
+  }))
+  const todaySalesProfit = sumAvailable(todaySales.map((sale) => sale.profit))
 
   return {
     todayRevenue: paidTodaySales.reduce((sum, sale) => sum + sale.total, 0),
@@ -1211,9 +1221,11 @@ export function getSalesMetrics() {
         .filter((refund) => refund.method !== "Debt_Credit")
         .reduce((sum, refund) => sum + refund.total, 0),
     todayTax: todaySales.reduce((sum, sale) => sum + sale.tax, 0),
+    // Unavailable (undefined) when any sale's profit or refund's cost is unavailable.
     todayProfit:
-      todaySales.reduce((sum, sale) => sum + sale.profit, 0) -
-      todayRefundMarginImpact,
+      todaySalesProfit === undefined || todayRefundMarginImpact === undefined
+        ? undefined
+        : todaySalesProfit - todayRefundMarginImpact,
     todayTransactions: todaySales.length,
     averageTicket:
       todaySales.length > 0

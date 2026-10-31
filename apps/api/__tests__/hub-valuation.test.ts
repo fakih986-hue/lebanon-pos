@@ -114,7 +114,12 @@ afterAll(async () => {
     await db.saleTender?.deleteMany({ where }).catch(() => undefined)
     await db.sale.deleteMany({ where })
     await db.stockAdjustment.deleteMany({ where })
+    await db.refundItem.deleteMany({ where: { refund: { tenantId: TENANT } } }).catch(() => undefined)
+    await db.saleRefund.deleteMany({ where }).catch(() => undefined)
     await db.inventoryBatch.deleteMany({ where })
+    await db.purchaseOrderItem.deleteMany({ where }).catch(() => undefined)
+    await db.purchaseOrder.deleteMany({ where }).catch(() => undefined)
+    await db.supplier.deleteMany({ where }).catch(() => undefined)
     await (db as any).operationEvidence?.deleteMany({ where }).catch(() => undefined)
     await db.syncOperation.deleteMany({ where })
     await db.syncClient?.deleteMany({ where }).catch(() => undefined)
@@ -154,18 +159,14 @@ describe("mixed-version valuation: which figures the cloud keeps", () => {
       const stale = saleOp(1, 2)
       expect((await asOlderHub(stale)).status).toBe("ok")
       expect(await cloudSale(stale.payload.id)).toMatchObject({ cost: 3, profit: 2 })
-      const lot = receiveOp(999)
-      expect((await asOlderHub(lot)).status).toBe("ok")
-      expect(Number((await cloudLot(lot.payload[0].id))?.unitCost)).toBe(3)
       const adj = adjustOp(2, 99999)
       expect((await asOlderHub(adj)).status).toBe("ok")
       const row = await cloudPrisma.stockAdjustment.findFirst({ where: { tenantId: TENANT, id: adj.payload.id }, select: { valueImpact: true } })
       expect(Number(row?.valueImpact)).toBe(6)
-      // Known limit (docs): a manager's real purchase price relayed by an older hub is valued at the
-      // cloud's product cost too; the hub keeps its own figure.
-      const managerLot = receiveOp(7)
-      expect((await asOlderHub(managerLot)).status).toBe("ok")
-      expect(Number((await cloudLot(managerLot.payload[0].id))?.unitCost)).toBe(3)
+      // A purchase price is not a valuation: one relayed by an older hub is kept, as stated.
+      const bought = receiveOp(7)
+      expect((await asOlderHub(bought)).status).toBe("ok")
+      expect(Number((await cloudLot(bought.payload[0].id))?.unitCost)).toBe(7)
     } finally {
       await cloudPrisma.product.update({ where: { id: cloudProductId }, data: { cost: 2 } })
     }
@@ -180,6 +181,91 @@ describe("mixed-version valuation: which figures the cloud keeps", () => {
     await bridge.pushToCloudOnce()
     expect((await opRow(queued.id))?.status).toBe("Synced")
     expect(await cloudSale(queued.payload.id)).toMatchObject({ cost: 2, profit: 3, items: [{ cost: 2 }] })
+  })
+})
+
+describe("purchase price is business input; valuation is the server's", () => {
+  const lotOf = (db: typeof prisma, id: string) => db.inventoryBatch.findFirst({ where: { tenantId: TENANT, id }, select: { unitCost: true, quantityRemaining: true } })
+  const SUPPLIER = randomUUID()
+
+  it("a cost-hidden receiver's purchase price is the lot cost and the invoice price, on the hub and in the cloud", async () => {
+    for (const db of [prisma, cloudPrisma]) await db.supplier.create({ data: { id: SUPPLIER, tenantId: TENANT, name: `HV supplier ${SUPPLIER.slice(0, 6)}` } })
+    const lot = receiveOp(7) // typed from the supplier's invoice by the clerk, who cannot see cost
+    lot.payload[0].supplierId = SUPPLIER
+    expect((await asClerk(lot)).status).toBe("ok")
+    expect(Number((await lotOf(prisma, lot.payload[0].id))?.unitCost)).toBe(7)
+    const po = { id: randomUUID(), entity: "purchase-order", action: "create", payload: { id: randomUUID(), poNumber: `PO-HV-${SUPPLIER.slice(0, 6)}`, supplierId: SUPPLIER, supplierName: "HV supplier", status: "Received", total: 28, createdBy: "IT", items: [{ name: "Valued widget", barcode: SYNC_ID, quantity: 4, unitCost: 7, total: 28 }] } }
+    expect((await asManager(po)).status).toBe("ok")
+    await bridge.pushToCloudOnce()
+    expect((await opRow(lot.id))?.status).toBe("Synced")
+    for (const db of [prisma, cloudPrisma]) {
+      expect(Number((await lotOf(db, lot.payload[0].id))?.unitCost)).toBe(7)
+      const order = await db.purchaseOrder.findFirst({ where: { tenantId: TENANT, id: po.payload.id }, select: { total: true, paidTotal: true, items: { select: { unitCost: true, quantity: true } } } })
+      // supplier liability: the invoice total, at the price the lot was received at
+      expect(Number(order?.total) - Number(order?.paidTotal)).toBe(28)
+      expect(order?.items.map((i) => [Number(i.unitCost), Number(i.quantity)])).toEqual([[7, 4]])
+    }
+  })
+
+  it("a cost-hidden sale is valued from the lots it consumed (purchase price), not the till's figure; refunds follow", async () => {
+    const lot = receiveOp(7)
+    expect((await asClerk(lot)).status).toBe("ok")
+    const lotId = lot.payload[0].id
+    const op = saleOp(2, 999, 10) // forged line cost
+    op.payload.items[0].batchAllocations = [{ batchId: lotId, batchNumber: lot.payload[0].batchNumber, quantity: 2, unitCost: 999 }]
+    expect((await asClerk(op)).status).toBe("ok")
+    expect(await hubSale(op.payload.id)).toMatchObject({ cost: 14, profit: 6, items: [{ cost: 7, quantity: 2 }] })
+    // a line with no lot left to consume is valued at the product cost (2)
+    const unlotted = saleOp(1, 999, 10)
+    expect((await asClerk(unlotted)).status).toBe("ok")
+    expect(await hubSale(unlotted.payload.id)).toMatchObject({ cost: 2, profit: 8 })
+    await bridge.pushToCloudOnce()
+    expect(await cloudSale(op.payload.id)).toMatchObject({ cost: 14, profit: 6, items: [{ cost: 7, quantity: 2 }] })
+    expect(Number((await lotOf(cloudPrisma, lotId))?.quantityRemaining)).toBe(2)
+
+    const refund = { id: randomUUID(), entity: "refund", action: "create", payload: { id: randomUUID(), refundNumber: `R-HV-${lotId.slice(0, 6)}`, saleId: op.payload.id, saleNumber: op.payload.saleNumber, method: "Cash", reason: "IT", total: 10, cashier: "IT", items: [{ id: productId, saleLineId: op.payload.items[0].lineId, name: "Valued widget", quantity: 1, unitPrice: 10, total: 10, cost: 999 }] } }
+    expect((await asManager(refund)).status).toBe("ok")
+    await bridge.pushToCloudOnce()
+    for (const db of [prisma, cloudPrisma]) {
+      const r = await db.saleRefund.findFirst({ where: { tenantId: TENANT, id: refund.payload.id }, select: { items: { select: { cost: true, quantity: true } } } })
+      expect(r?.items.map((i) => [Number(i.cost), Number(i.quantity)])).toEqual([[7, 1]])
+      expect(Number((await lotOf(db, lotId))?.quantityRemaining)).toBe(3)
+    }
+  })
+
+  it("an older hub's forged sale cost is still valued by the cloud from its lots", async () => {
+    const lot = receiveOp(7)
+    expect((await asOlderHub(lot)).status).toBe("ok")
+    const op = saleOp(1, 999, 10)
+    op.payload.items[0].batchAllocations = [{ batchId: lot.payload[0].id, batchNumber: lot.payload[0].batchNumber, quantity: 1, unitCost: 999 }]
+    expect((await asOlderHub(op)).status).toBe("ok")
+    expect(await cloudSale(op.payload.id)).toMatchObject({ cost: 7, profit: 3, items: [{ cost: 7 }] })
+  })
+
+  it("a purchase price must be a number from 0 up; a receive that states none is valued at the product cost", async () => {
+    for (const bad of [-1, "abc", { v: 1 }]) {
+      const r = await asClerk(receiveOp(bad as any))
+      expect(r.status).toBe("rejected")
+      expect(r.error).toMatch(/INVALID_PURCHASE_PRICE/)
+    }
+    const free = receiveOp(0)
+    expect((await asClerk(free)).status).toBe("ok")
+    expect(Number((await lotOf(prisma, free.payload[0].id))?.unitCost)).toBe(0)
+    const unstated = receiveOp(null as any)
+    expect((await asClerk(unstated)).status).toBe("ok")
+    expect(Number((await lotOf(prisma, unstated.payload[0].id))?.unitCost)).toBe(2)
+  })
+
+  it("the purchase price is part of the operation's identity", async () => {
+    const op = receiveOp(7)
+    expect((await asClerk(op)).status).toBe("ok")
+    const stock = await hubStock()
+    expect((await asClerk(op)).status).toBe("ok") // exact resend
+    const r = await asClerk({ ...op, payload: [{ ...op.payload[0], unitCost: 8 }] })
+    expect(r.status).toBe("rejected")
+    expect(r.error).toMatch(/OPERATION_ID_REUSED/)
+    expect(await hubStock()).toBe(stock)
+    expect(Number((await lotOf(prisma, op.payload[0].id))?.unitCost)).toBe(7)
   })
 })
 

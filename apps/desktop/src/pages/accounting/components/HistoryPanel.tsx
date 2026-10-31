@@ -1,5 +1,6 @@
 import { CheckCircle2 } from "lucide-react"
-import { formatCurrency } from "../../../features/pos/lib/currency"
+import { useI18n } from "@lebanonpos/shared"
+import { formatCost } from "../../../features/pos/lib/cost"
 import { formatDateKey } from "../accounting.helpers"
 import type { DailyClose } from "../../../features/pos/services/dailyClose.service"
 
@@ -9,7 +10,10 @@ type Props = {
 }
 
 export default function HistoryPanel({ dailyCloses, maxItems = 20 }: Props) {
+  const { t } = useI18n()
   const items = dailyCloses.slice(0, maxItems)
+  // Absent when a cost was unavailable at close; pulled rows carry decimals as strings.
+  const netProfitOf = (c: DailyClose) => (c.netProfit == null ? undefined : Number(c.netProfit))
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -54,9 +58,9 @@ export default function HistoryPanel({ dailyCloses, maxItems = 20 }: Props) {
                 </p>
               </div>
               <strong
-                style={{ color: dailyClose.netProfit >= 0 ? "var(--success)" : "var(--rose)" }}
+                style={{ color: netProfitOf(dailyClose) === undefined ? "var(--text-3)" : netProfitOf(dailyClose)! >= 0 ? "var(--success)" : "var(--rose)" }}
               >
-                {formatCurrency(dailyClose.netProfit)}
+                {formatCost(netProfitOf(dailyClose), t("pos.not_available"))}
               </strong>
             </div>
           </article>

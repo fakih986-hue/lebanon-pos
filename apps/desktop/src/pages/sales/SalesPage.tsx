@@ -9,6 +9,7 @@ import InsightsPanel from "../../features/pos/components/InsightsPanel"
 import MoneyConflictsPanel from "../../features/pos/components/MoneyConflictsPanel"
 import { Badge, ConfirmLayer, Drawer, EmptyState, FilterChip, PageHeader, PageTabs, StatTile } from "../../features/pos/components/backoffice/BackOffice"
 import { formatCurrency, formatLbpCurrency, formatNumber, usdToLbp } from "../../features/pos/lib/currency"
+import { isCostAvailable, sumAvailable } from "../../features/pos/lib/cost"
 import { printSaleReceipt } from "../../features/pos/lib/printReceipt"
 import {
   getRefundMethod, getRefundTotal, getRefundableQuantity, getRefundedQuantity, getSaleExchangeRate, getSaleGrossSubtotal, getSaleQuantity,
@@ -50,7 +51,8 @@ function exportSalesCsv(sales: Sale[]) {
     Array.isArray(s.items) ? s.items.reduce((sum, i) => sum + (i.quantity ?? 0), 0) : 0,
     (s.subtotal ?? 0).toFixed(2), (s.discountTotal ?? 0).toFixed(2), (s.tax ?? 0).toFixed(2), (s.total ?? 0).toFixed(2),
     Math.round((s.total ?? 0) * (rate ?? 0)).toString(), s.payableLbp ? Math.round(s.payableLbp).toString() : "",
-    (s.profit ?? 0).toFixed(2), Math.round((s.profit ?? 0) * (rate ?? 0)).toString(), s.status ?? "",
+    // An unavailable profit (cost withheld) is left blank, never 0.
+    isCostAvailable(s.profit) ? s.profit.toFixed(2) : "", isCostAvailable(s.profit) ? Math.round(s.profit * (rate ?? 0)).toString() : "", s.status ?? "",
   ])
   const csv = [header, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n")
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
@@ -126,7 +128,8 @@ export default function SalesPage() {
     return result.sort(by[sort])
   }, [sales, refunds, q, payment, status, cashier, range, sort])
   const revenue = filtered.filter((s) => s.status !== "Voided").reduce((sum, s) => sum + s.total, 0)
-  const profit = filtered.filter((s) => s.status !== "Voided").reduce((sum, s) => sum + (s.profit ?? 0), 0)
+  // Undefined (unavailable) when any sale's profit is unavailable.
+  const profit = sumAvailable(filtered.filter((s) => s.status !== "Voided").map((s) => s.profit))
   const filtersOn = payment !== "All" || status !== "All" || cashier !== "All" || range !== "all" || !!search
   const statusCount = (s: Status) => sales.filter((x) => (s === "All" ? true : s === "Refunded" ? getSaleRefundTotal(refunds, x.id) > 0 : x.status === s)).length
   const receipt = receiptId ? sales.find((s) => s.id === receiptId) : undefined
@@ -320,7 +323,7 @@ export default function SalesPage() {
               ))}
             </div>
             <p className="mg2-cap" style={{ marginTop: 8 }}>
-              {t("rcpt.footer", { n: filtered.length, revenue: formatCurrency(revenue) })}{profit > 0 && <> · {t("rcpt.footer_profit", { profit: formatCurrency(profit) })}</>}
+              {t("rcpt.footer", { n: filtered.length, revenue: formatCurrency(revenue) })}{profit !== undefined ? profit > 0 && <> · {t("rcpt.footer_profit", { profit: formatCurrency(profit) })}</> : userCan("reports.cost") && <> · {t("rcpt.footer_profit_na")}</>}
               {filtersOn && <> · <button type="button" className="mg2-sort" style={{ color: "var(--text)", textDecoration: "underline" }} onClick={clearFilters}>{t("acct.clear_filters")}</button></>}
             </p>
           </>

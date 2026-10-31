@@ -1,6 +1,8 @@
 import { useState } from "react"
 import { CheckCircle2, ClipboardList, CloudOff, MessageCircle, Printer } from "lucide-react"
+import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../../../features/pos/lib/currency"
+import { formatCost, isCostAvailable } from "../../../features/pos/lib/cost"
 import { getSettings } from "../../../features/pos/services/settings.service"
 import { getLedgerTotals } from "../../../features/pos/services/customer.service"
 import { openWhatsApp, openWhatsAppShare, dailySummaryMessage } from "../../../features/pos/lib/whatsapp"
@@ -26,7 +28,10 @@ export default function CloseDayPanel({
   const [countedCash, setCountedCash] = useState("")
   const rate = getSettings().usdToLbpRate
   const unsyncedCount = getUnsyncedCount()
-  const lbp = (v: number) => formatLbpCurrency(usdToLbp(v, rate))
+  const { t } = useI18n()
+  const lbp = (v: number | undefined) => (isCostAvailable(v) ? formatLbpCurrency(usdToLbp(v, rate)) : "—")
+  // Cost of goods, margin and profit are unavailable when a cost they depend on is.
+  const costMoney = (v: number | undefined) => formatCost(v, t("pos.not_available"))
 
   return (
     <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
@@ -72,12 +77,12 @@ export default function CloseDayPanel({
           <div className="flex justify-between gap-3 text-zinc-500">
             <span>Cost of goods</span>
             <strong className="text-zinc-900">
-              -{formatCurrency(summary.costOfGoods)}
+              {summary.costOfGoods === undefined ? costMoney(undefined) : `-${formatCurrency(summary.costOfGoods)}`}
             </strong>
           </div>
           <div className="flex justify-between gap-3 border-t border-zinc-200 pt-2 font-bold text-zinc-950">
             <span>Gross margin</span>
-            <div className="text-end"><span>{formatCurrency(summary.grossMargin)}</span><div className="text-[10px] text-zinc-400">{lbp(summary.grossMargin)}</div></div>
+            <div className="text-end"><span>{costMoney(summary.grossMargin)}</span><div className="text-[10px] text-zinc-400">{lbp(summary.grossMargin)}</div></div>
           </div>
         </div>
 
@@ -93,10 +98,10 @@ export default function CloseDayPanel({
             <span>Net profit</span>
             <div className="text-end"><span
               className={
-                summary.netProfit >= 0 ? "text-[var(--success)]" : "text-rose-700"
+                summary.netProfit === undefined ? "text-zinc-400" : summary.netProfit >= 0 ? "text-[var(--success)]" : "text-rose-700"
               }
             >
-              {formatCurrency(summary.netProfit)}
+              {costMoney(summary.netProfit)}
             </span>
             <div className="text-[10px] text-zinc-400">{lbp(summary.netProfit)}</div></div>
           </div>
@@ -237,6 +242,7 @@ export default function CloseDayPanel({
                   netProfit: summary.netProfit,
                   cashIn: summary.cashIn,
                   outstanding: getLedgerTotals().outstanding,
+                  notAvailable: t("pos.not_available"),
                 })
                 if (s.whatsAppAdmin) openWhatsApp(s.whatsAppAdmin, msg)
                 else openWhatsAppShare(msg)
@@ -259,9 +265,9 @@ export default function CloseDayPanel({
                   `<table><tr><td>Gross sales</td><td>${formatCurrency(summary.grossSales)}</td></tr>`,
                   `<tr><td>Refunds</td><td>-${formatCurrency(summary.refunds)}</td></tr>`,
                   `<tr><td>Net sales</td><td>${formatCurrency(summary.netSales)}</td></tr>`,
-                  `<tr><td>Gross margin</td><td>${formatCurrency(summary.grossMargin)}</td></tr>`,
+                  `<tr><td>Gross margin</td><td>${costMoney(summary.grossMargin)}</td></tr>`,
                   `<tr><td>Expenses</td><td>-${formatCurrency(summary.expenses)}</td></tr>`,
-                  `<tr><td>Net profit</td><td>${formatCurrency(summary.netProfit)}</td></tr>`,
+                  `<tr><td>Net profit</td><td>${costMoney(summary.netProfit)}</td></tr>`,
                   `<tr><td>Cash movement</td><td>${formatCurrency(summary.cashNet)}</td></tr>`,
                   `</table><hr><p>Thank you — شكراً</p>`,
                 ].join("")

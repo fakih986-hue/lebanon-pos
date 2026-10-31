@@ -5,6 +5,7 @@ import { enqueueSyncOperation, assertCanWrite } from "./sync.service"
 import { PermissionError, recordAuditEvent, userCan } from "./security.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId, randomUuid } from "../lib/storage"
+import { isCostAvailable } from "../lib/cost"
 
 const STORAGE_KEY = "lebanonpos.products.v1"
 const PRODUCT_EVENT = "lebanonpos-products-changed"
@@ -12,7 +13,8 @@ const PRODUCT_EVENT = "lebanonpos-products-changed"
 export type ProductReceiveInput = {
   name: string
   price: number
-  cost: number
+  /** The unit cost typed for this delivery. Absent: none was typed; nothing is sent, the server values the lot. */
+  cost?: number
   stock: number
   barcode: string
   category: string
@@ -135,6 +137,8 @@ function cleanProductPatch(patch: Partial<Product>) {
   if (typeof cleanPatch.category === "string") {
     cleanPatch.category = normalizeName(cleanPatch.category)
   }
+  // A cost that is not a number (unavailable, NaN) is never written or sent: the product keeps its own.
+  if ("cost" in cleanPatch && !isCostAvailable(cleanPatch.cost)) delete cleanPatch.cost
 
   // SPRINT-1: a blank barcode means "no barcode" (null). Only the two stock policies are accepted.
   if ("barcode" in cleanPatch && (cleanPatch.barcode == null || normalizeBarcode(String(cleanPatch.barcode)) === "")) {
@@ -308,7 +312,7 @@ export function receiveProducts(
         productName: updatedTarget.name,
         barcode: updatedTarget.barcode ?? "",
         quantity: entry.stock,
-        unitCost: entry.cost,
+        ...(isCostAvailable(entry.cost) ? { unitCost: entry.cost } : {}),
         unitPrice: entry.price,
         expiryDate: entry.expiryDate,
         supplierId: entry.supplierId,
@@ -351,7 +355,8 @@ export function receiveProducts(
       nextProducts[existingIndex] = {
         ...existingProduct,
         price: entry.price,
-        cost: entry.cost,
+        // No typed cost leaves the product's cost as it is (never replaced by a guess).
+        ...(isCostAvailable(entry.cost) ? { cost: entry.cost } : {}),
         stock: existingProduct.stock + entry.stock,
         barcodeAliases: normalizeBarcodeList(existingProduct.barcodeAliases),
         reorderPoint: entry.reorderPoint ?? existingProduct.reorderPoint,
@@ -370,7 +375,7 @@ export function receiveProducts(
         productName: updatedProduct.name,
         barcode: updatedProduct.barcode ?? "",
         quantity: entry.stock,
-        unitCost: entry.cost,
+        ...(isCostAvailable(entry.cost) ? { unitCost: entry.cost } : {}),
         unitPrice: entry.price,
         expiryDate: entry.expiryDate,
         supplierId: entry.supplierId,
@@ -380,12 +385,14 @@ export function receiveProducts(
       return
     }
 
-    const product: Product = {
+    // A Product whose cost may be absent (see above), like products synced without reports.cost.
+    const product = {
       id: nextId,
       syncId: sub ? `${sub}-p${index}` : createId(),
       name,
       price: entry.price,
-      cost: entry.cost,
+      // Absent when no cost was typed: the product is created without one (the server values it).
+      ...(isCostAvailable(entry.cost) ? { cost: entry.cost } : {}),
       stock: entry.stock,
       barcode,
       category,
@@ -401,7 +408,7 @@ export function receiveProducts(
       // barcode/price/stock; no stock sharing with the parent).
       parentId: entry.parentId ?? null,
       variantName: entry.variantName || undefined,
-    }
+    } as Product
 
     nextProducts.push(product)
     // POS-RECEIVE-VARIANT-1B: flag the parent as a grouping parent so POS shows
@@ -420,7 +427,7 @@ export function receiveProducts(
       productName: product.name,
       barcode: product.barcode ?? "",
       quantity: entry.stock,
-      unitCost: product.cost,
+      ...(isCostAvailable(product.cost) ? { unitCost: product.cost } : {}),
       unitPrice: product.price,
       expiryDate: product.expiryDate,
       supplierId: product.supplierId,
@@ -585,7 +592,8 @@ export function updateProduct(productId: number, patch: Partial<Product>) {
 export function createProduct(input: {
   name: string
   price: number
-  cost: number
+  /** Absent when no cost was entered: the product (and its opening lot) carry none. */
+  cost?: number
   stock: number
   /** Optional: blank or absent = no barcode (stored as null). */
   barcode?: string | null
@@ -631,7 +639,7 @@ export function createProduct(input: {
   }
 
   const nextId = currentProducts.reduce((max, p) => Math.max(max, p.id), 0) + 1
-  const product: Product = {
+  const product = {
     id: nextId,
     // Stable cross-system sync identity, generated once here at creation. The
     // numeric `id` above is local-only; `syncId` is what matches this product
@@ -639,7 +647,7 @@ export function createProduct(input: {
     syncId: createId(),
     name: normalizeName(input.name),
     price: input.price,
-    cost: input.cost,
+    ...(isCostAvailable(input.cost) ? { cost: input.cost } : {}),
     // An untracked (made-to-order) product has no stock: no opening quantity, no lots.
     stock: untracked ? 0 : input.stock,
     // No barcode = null (several products may have none; "" would collide on the server).
@@ -655,7 +663,7 @@ export function createProduct(input: {
     reorderQuantity: input.reorderQuantity,
     supplierId: input.supplierId,
     supplierName: input.supplierName,
-  }
+  } as Product
   const nextProducts = [...currentProducts, product]
   writeProducts(nextProducts)
 
@@ -684,7 +692,7 @@ export function createProduct(input: {
       productName: product.name,
       barcode: product.barcode ?? "",
       quantity: input.stock,
-      unitCost: input.cost,
+      ...(isCostAvailable(input.cost) ? { unitCost: input.cost } : {}),
       unitPrice: input.price,
     }])
   }

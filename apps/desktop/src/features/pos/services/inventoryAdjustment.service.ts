@@ -18,6 +18,7 @@ import {
 } from "./product.service"
 import { recordAuditEvent } from "./security.service"
 import { canUseStorage, createId } from "../lib/storage"
+import { isCostAvailable } from "../lib/cost"
 import { assertCanWrite, commitStagedSyncOperation, discardStagedSyncOperation, getDeviceTag, stageSyncOperation, SyncStorageError } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 
@@ -46,7 +47,8 @@ export type StockAdjustment = {
   note?: string
   batchId?: string
   batchAllocations: BatchAllocation[]
-  valueImpact: number
+  /** Undefined when the product's cost is unavailable (never sent as 0; the server values it). */
+  valueImpact: number | undefined
   createdAt: string
 }
 
@@ -294,7 +296,7 @@ function applyStockAdjustment(
     note: input.note?.trim() || undefined,
     batchId: input.batchId,
     batchAllocations,
-    valueImpact: quantityChange * product.cost,
+    valueImpact: isCostAvailable(product.cost) ? quantityChange * product.cost : undefined,
     createdAt: new Date().toISOString(),
   }
 

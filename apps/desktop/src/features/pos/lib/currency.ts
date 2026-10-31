@@ -11,11 +11,14 @@ export function formatCurrency(value: number) {
   return formatUsdCurrency(value)
 }
 
+/** A non-finite amount (an unavailable cost, or anything computed from one) prints "—", never "$NaN". */
 export function formatUsdCurrency(value: number) {
+  if (!Number.isFinite(value)) return "—"
   return usdCurrencyFormatter.format(value)
 }
 
 export function formatLbpCurrency(value: number) {
+  if (!Number.isFinite(value)) return "—"
   return `${numberFormatter.format(Math.round(value))} LBP`
 }
 

@@ -9,6 +9,7 @@ import type {
 } from "../../features/pos/services/sales.service"
 import type { SupplierPayment } from "../../features/pos/services/supplier.service"
 import { getLocalDateKey } from "../../features/pos/services/dailyClose.service"
+import { isCostAvailable, sumAvailable } from "../../features/pos/lib/cost"
 
 export type ExpenseForm = {
   vendor: string
@@ -24,12 +25,13 @@ export type AccountingSummary = {
   grossSales: number
   refunds: number
   netSales: number
-  costOfGoods: number
-  returnedCost: number
-  grossMargin: number
+  /** Cost figures are undefined (unavailable) when any cost they depend on is unavailable. */
+  costOfGoods: number | undefined
+  returnedCost: number | undefined
+  grossMargin: number | undefined
   expenses: number
   supplierPayments: number
-  netProfit: number
+  netProfit: number | undefined
   cashIn: number
   cashOut: number
   cashNet: number
@@ -82,13 +84,14 @@ export function getRefundPreTax(refund: SaleRefund, sales: Sale[]) {
   return refundGrossSubtotal * (sale.subtotal / grossSubtotal)
 }
 
+/** Undefined (unavailable) when any refunded line's cost is unavailable. */
 export function getRefundCost(refund: SaleRefund, sales: Sale[]) {
   const sale = sales.find((currentSale) => currentSale.id === refund.saleId)
-  return refund.items.reduce((sum, item) => {
+  return sumAvailable(refund.items.map((item) => {
     const saleItem = sale?.items.find((currentItem) => currentItem.id === item.id)
-    const unitCost = item.cost ?? saleItem?.cost ?? 0
-    return sum + unitCost * item.quantity
-  }, 0)
+    const unitCost = isCostAvailable(item.cost) ? item.cost : saleItem?.cost
+    return isCostAvailable(unitCost) ? unitCost * item.quantity : undefined
+  }))
 }
 
 export function getAccountingSummary(
@@ -110,20 +113,16 @@ export function getAccountingSummary(
   )
   const grossSales = todaySales.reduce((sum, sale) => sum + sale.total, 0)
   const refundsTotal = todayRefunds.reduce((sum, refund) => sum + refund.total, 0)
-  const soldCost = todaySales.reduce(
-    (sum, sale) =>
-      sum + sale.items.reduce((itemSum, item) => itemSum + item.cost * item.quantity, 0),
-    0
-  )
-  const returnedCost = todayRefunds.reduce(
-    (sum, refund) => sum + getRefundCost(refund, sales), 0
-  )
-  const salesMargin = todaySales.reduce((sum, sale) => sum + sale.profit, 0)
-  const refundMarginImpact = todayRefunds.reduce(
-    (sum, refund) =>
-      sum + getRefundPreTax(refund, sales) - getRefundCost(refund, sales),
-    0
-  )
+  const soldCost = sumAvailable(todaySales.flatMap((sale) =>
+    sale.items.map((item) => (isCostAvailable(item.cost) ? item.cost * item.quantity : undefined))
+  ))
+  const returnedCost = sumAvailable(todayRefunds.map((refund) => getRefundCost(refund, sales)))
+  const salesMargin = sumAvailable(todaySales.map((sale) => sale.profit))
+  const refundMarginImpact = sumAvailable(todayRefunds.map((refund) => {
+    const cost = getRefundCost(refund, sales)
+    return cost === undefined ? undefined : getRefundPreTax(refund, sales) - cost
+  }))
+  const grossMargin = salesMargin === undefined || refundMarginImpact === undefined ? undefined : salesMargin - refundMarginImpact
   const expensesTotal = todayExpenses.reduce((sum, expense) => sum + expense.amount, 0)
   const cashIn = todaySales
     .filter((sale) => sale.paymentMethod === "Cash")
@@ -146,12 +145,12 @@ export function getAccountingSummary(
     grossSales,
     refunds: refundsTotal,
     netSales: grossSales - refundsTotal,
-    costOfGoods: Math.max(0, soldCost - returnedCost),
+    costOfGoods: soldCost === undefined || returnedCost === undefined ? undefined : Math.max(0, soldCost - returnedCost),
     returnedCost,
-    grossMargin: salesMargin - refundMarginImpact,
+    grossMargin,
     expenses: expensesTotal,
     supplierPayments: supplierPaymentsTotal,
-    netProfit: salesMargin - refundMarginImpact - expensesTotal,
+    netProfit: grossMargin === undefined ? undefined : grossMargin - expensesTotal,
     cashIn,
     cashOut: cashRefunds + cashExpenses + cashSupplierPayments,
     cashNet: cashIn - cashRefunds - cashExpenses - cashSupplierPayments,

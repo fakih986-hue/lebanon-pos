@@ -12,6 +12,7 @@ import {
 } from "./sync.service"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
+import { isCostAvailable, sumAvailable } from "../lib/cost"
 import { getRegisterId } from "./settings.service"
 import {
   beginReceiveSubmission, commitReceiveSubmission, getReceiveSubmission, markReceiveStep, noteReceiveFailure,
@@ -707,7 +708,8 @@ export type ReceivingSummary = {
   productsUpdated: number
   batchesCreated: number
   units: number
-  totalValue: number
+  /** Undefined when a received line has no unit cost. */
+  totalValue: number | undefined
   /** Per-entry outcome by row id (entry.rowId, or the entry's position when none was given). */
   results: ReceiveRowResult[]
   /** The purchase order and the payment are separate outcomes: stock can be received while
@@ -726,7 +728,8 @@ export type ReceiveEntry = {
   /** Stable identity of the row this entry came from; results are reported by it. */
   rowId?: string
   name: string; barcode: string; category: string; quantity: number
-  cost: number; price: number; reorderPoint?: number; reorderQuantity?: number
+  /** The unit cost typed; absent when none was (nothing is sent, the server values the lot). */
+  cost?: number; price: number; reorderPoint?: number; reorderQuantity?: number
   expiryDate?: string
   // POS-RECEIVE-UX-1A: staged "add barcode to existing product" decision.
   attachAliasToProductId?: number
@@ -756,9 +759,17 @@ export function recordReceiveFinance(
   context: ReceivingContext | undefined,
   received: Array<Pick<ReceiveEntry, "name" | "barcode" | "quantity" | "cost" | "price">>,
 ): ReceiveFinance {
-  const totalCost = received.reduce((sum, e) => sum + e.quantity * e.cost, 0)
   const method = context?.paymentMethod ?? "On Account"
-  if (!context?.supplierId || totalCost <= 0) {
+  // A supplier invoice is never recorded with a missing (NaN) or invented total: the Receive page
+  // requires a unit cost on every line when a supplier is chosen; this refuses anything else.
+  const totalCost = sumAvailable(received.map((e) => (isCostAvailable(e.cost) ? e.quantity * e.cost : undefined)))
+  if (context?.supplierId && totalCost === undefined) {
+    return {
+      purchaseOrder: { status: "failed", error: "a received line has no unit cost: no purchase order recorded" },
+      payment: { status: "not_needed", amount: 0, method },
+    }
+  }
+  if (!context?.supplierId || totalCost === undefined || totalCost <= 0) {
     return { purchaseOrder: { status: "not_needed" }, payment: { status: "not_needed", amount: 0 } }
   }
   const k = submissionId ? receiveFinanceIds(submissionId) : undefined
@@ -775,7 +786,7 @@ export function recordReceiveFinance(
       paidAmount: 0,
       items: received.map(e => ({
         name: e.name, barcode: e.barcode, quantity: e.quantity,
-        unitCost: e.cost, unitPrice: e.price, total: e.quantity * e.cost,
+        unitCost: e.cost as number, unitPrice: e.price, total: e.quantity * (e.cost as number),
       })),
     })
     const orders = getPurchaseOrders()
@@ -846,7 +857,7 @@ function summaryFromRecord(rec: ReceiveSubmission, replayed: boolean): Receiving
     rejectedCount: results.filter((r) => r.status === "rejected").length,
     errors: results.filter((r) => r.status === "rejected").map((r) => r.reason ?? "rejected"),
     productsCreated: sum?.productsCreated ?? 0, productsUpdated: sum?.productsUpdated ?? 0, batchesCreated: sum?.batchesCreated ?? 0,
-    units: sum?.units ?? 0, totalValue: sum?.totalValue ?? 0,
+    units: sum?.units ?? 0, totalValue: sum?.totalValue,
     results, purchaseOrder: finance.purchaseOrder, payment: finance.payment,
     poNumber: finance.purchaseOrder.number, paymentRecorded: finance.payment.status === "recorded",
     submissionId: rec.id, replayed,
@@ -988,7 +999,7 @@ export function runReceiveSteps(
     batchesCreated: plan.lots.length,
     poNumber: finance.purchaseOrder.number,
     paymentRecorded: finance.payment.status === "recorded",
-    totalValue: received.reduce((s, e) => s + e.quantity * e.cost, 0),
+    totalValue: sumAvailable(received.map((e) => (isCostAvailable(e.cost) ? e.quantity * e.cost : undefined))),
     units: received.reduce((s, e) => s + e.quantity, 0),
   }
   if (sub) commitReceiveSubmission(sub, results, summaryRecord, finance, opts?.recovered ? { recovered: true } : undefined)

@@ -697,7 +697,8 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         errorMessage.startsWith("LAST_ADMIN:") ||
         err instanceof StockPolicyMismatchError ||
         err instanceof StockPolicyGateError ||
-        err instanceof StaleStaffError
+        err instanceof StaleStaffError ||
+        err instanceof InvalidPurchasePriceError
       const opStatus = isRejected ? "Rejected" : "Failed"
 
       // Record the failure — but never on a row that was applied (it would stop its onward
@@ -1436,6 +1437,18 @@ export class OperationIdReuseError extends Error {
   constructor(id: string) { super(`OPERATION_ID_REUSED: sync operation ${id} was already used for a different change`); this.name = "OperationIdReuseError" }
 }
 
+/** A receive whose unit cost is not a usable purchase price (negative, not a number, out of range). */
+export class InvalidPurchasePriceError extends Error {
+  constructor(value: unknown) { super(`INVALID_PURCHASE_PRICE: a received unit cost must be a number from 0 up (got ${JSON.stringify(value)})`); this.name = "InvalidPurchasePriceError" }
+}
+/** The purchase price a receive states, or undefined when it states none (missing, null, empty). */
+export function purchasePrice(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined
+  const n = typeof value === "number" || typeof value === "string" ? Number(value) : NaN
+  if (!Number.isFinite(n) || n < 0 || n >= 1e14) throw new InvalidPurchasePriceError(value)
+  return n
+}
+
 /** Key-order-independent JSON (Postgres jsonb does not keep key order). */
 function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`
@@ -1446,16 +1459,17 @@ function canonicalJson(value: unknown): string {
 }
 /** The stored operation and the incoming one are the same change (entity, action, payload). */
 function sameOperation(stored: { entity: string; action: string; payload: unknown }, incoming: { entity: string; action: string; payload?: unknown }) {
-  // Cost the client sent is not part of the operation's identity (it may have been dropped, above).
+  // Valuation the client sent is not part of the operation's identity (it may have been replaced, above).
   const norm = (payload: unknown) => canonicalJson(withoutPolicyDecision(withoutClientCost(incoming.entity, incoming.action, payload ?? {})))
   return stored.entity === incoming.entity && stored.action === incoming.action
     && norm(stored.payload) === norm(JSON.parse(JSON.stringify(incoming.payload ?? {})))
 }
 /**
  * The operation as this server values it (docs/LEGACY-TILL-COMPAT.md): the client's cost figures are
- * dropped and replaced with this server's product cost — line cost and the sale's cost and profit,
- * received-lot cost, adjustment value and the cost of a lot it creates, count line and total value.
- * Lot slices of a sale lose their cost (the server takes it from the lot itself).
+ * dropped and replaced with this server's valuation — line cost and the sale's cost and profit (the
+ * product cost here; on apply, the lots the line consumed), adjustment value and the cost of a lot it
+ * creates, count line and total value. Lot slices of a sale lose their cost (the server takes it from
+ * the lot itself). A receive's unit cost is not a valuation but the purchase price: it is kept.
  */
 export async function withServerCost(tenantId: string, entity: string, action: string, payload: unknown): Promise<any> {
   const p = withoutClientCost(entity, action, payload)
@@ -1480,10 +1494,6 @@ export async function withServerCost(tenantId: string, entity: string, action: s
     const cost = p.items.reduce((sum: number, i: any) => sum + (Number(i?.cost) || 0) * (Number(i?.quantity) || 0), 0)
     return { ...p, cost, profit: (Number(p.total) || 0) - cost }
   }
-  if (entity === "inventory" && action === "receive") {
-    const value = async (i: any) => i && typeof i === "object" ? { ...i, unitCost: await costOf(i) } : i
-    return Array.isArray(p) ? Promise.all(p.map(value)) : value(p)
-  }
   if (entity === "inventory" && action === "adjust") {
     const cost = await costOf(p)
     return { ...p, valueImpact: (Number(p.quantityChange) || 0) * cost, ...(Array.isArray(p.batchAllocations) ? { batchAllocations: p.batchAllocations.map((a: any) => a && typeof a === "object" ? { ...a, unitCost: cost } : a) } : {}) }
@@ -1496,9 +1506,10 @@ export async function withServerCost(tenantId: string, entity: string, action: s
 }
 
 /**
- * The cost figures a client puts in an operation (docs/LEGACY-TILL-COMPAT.md): sale and line cost and
- * profit, lot-slice cost, received-lot cost, adjustment and count value. Without them the server
- * (hub or cloud) values the operation from its own product cost.
+ * The valuation figures a client puts in an operation (docs/LEGACY-TILL-COMPAT.md): sale and line cost
+ * and profit, lot-slice cost, adjustment and count value. Without them the server (hub or cloud) values
+ * the operation itself. A receive's unit cost (the purchase price) is business input, not valuation:
+ * it stays, and is part of the operation's identity.
  */
 export function withoutClientCost(entity: string, action: string, payload: unknown): any {
   if (!payload || typeof payload !== "object") return payload
@@ -1508,7 +1519,6 @@ export function withoutClientCost(entity: string, action: string, payload: unkno
   if (entity === "sale" && (action === "create" || action === "update")) {
     return { ...omit(p, ["cost", "profit"]), ...(Array.isArray(p.items) ? { items: p.items.map((i: any) => ({ ...omit(i, ["cost"]), ...(i && "batchAllocations" in i ? { batchAllocations: slices(i.batchAllocations) } : {}) })) } : {}) }
   }
-  if (entity === "inventory" && action === "receive") return Array.isArray(p) ? p.map((i) => omit(i, ["unitCost"])) : omit(p, ["unitCost"])
   if (entity === "inventory" && action === "adjust") return { ...omit(p, ["valueImpact"]), ...("batchAllocations" in p ? { batchAllocations: slices(p.batchAllocations) } : {}) }
   if (entity === "inventory" && action === "count") return { ...omit(p, ["totalValueImpact"]), ...(Array.isArray(p.lines) ? { lines: p.lines.map((l: any) => omit(l, ["valueImpact"])) } : {}) }
   return payload
@@ -1603,6 +1613,8 @@ async function processOperation(
     }
     return value
   }
+  // the operation as submitted (stored and forwarded): a server valuation is written back into it
+  const submitted = payload as any
   payload = stripClientMeta(payload) as Record<string, unknown> | undefined
 
   // RELEASE-BLOCKER (document references): record ids are unique across the
@@ -1897,12 +1909,9 @@ async function processOperation(
             stockPolicyRev: resolved.rev,
           }
         }))
-        // Lines whose cost the till did not send: the sale's cost and profit come from the server.
-        if (prismaItems.some((i: any) => i.costFromServer)) {
-          const cost = prismaItems.reduce((sum: number, i: any) => sum + Number(i.cost) * Number(i.quantity), 0)
-          data.cost = cost
-          data.profit = Number(data.total ?? 0) - cost
-        }
+        // Lines whose cost the till did not send are valued by the server once their lots are known (below).
+        const serverCosted = (prismaItems as any[]).map((i) => i.costFromServer === true)
+        const productCosts = (prismaItems as any[]).map((i) => Number(i.cost) || 0)
         for (const i of prismaItems as any[]) delete i.costFromServer
         const policyConflicts = (prismaItems as any[]).filter((i) => i.stockPolicyConflict)
         const { saleId: _s, ...prismaTender } = data.tender ?? {}
@@ -2001,8 +2010,31 @@ async function processOperation(
               throw new Error(`Insufficient stock in batch ${allocation.batchId}`)
             }
             touchedBatchIds.add(allocation.batchId)
-            applied.push({ batchId: allocation.batchId, quantity: roundQty(quantity), ...(sliceCost !== undefined ? { unitCost: sliceCost } : {}) })
+            // A server-valued slice costs what its lot was bought at.
+            const lotCost = sliceCost ?? (serverCosted[i] ? Number((await db.inventoryBatch.findFirst({ where: { id: allocation.batchId, tenantId }, select: { unitCost: true } }))?.unitCost ?? productCosts[i]) : undefined)
+            if (sliceCost === undefined && lotCost !== undefined) allocation.unitCost = lotCost
+            applied.push({ batchId: allocation.batchId, quantity: roundQty(quantity), ...(lotCost !== undefined ? { unitCost: lotCost } : {}) })
           }
+        }
+
+        // Server valuation of a line the till did not cost: the lots it consumed at their purchase
+        // price, and the product cost for quantity no lot covers. Written back into the operation so a
+        // hub forwards the figures it recorded.
+        if (serverCosted.some(Boolean)) {
+          for (let i = 0; i < prismaItems.length; i++) {
+            if (!serverCosted[i]) continue
+            const quantity = Number((prismaItems[i] as any).quantity) || 0
+            const slices = appliedByLine[i]
+            const covered = slices.reduce((sum, s) => sum + Number(s.quantity), 0)
+            const value = slices.reduce((sum, s) => sum + Number(s.quantity) * (s.unitCost ?? productCosts[i]), 0) + Math.max(0, quantity - covered) * productCosts[i]
+            const cost = quantity > 0 ? Math.round((value / quantity) * 10000) / 10000 : productCosts[i]
+            ;(prismaItems[i] as any).cost = cost
+            if (rawItems[i] && typeof rawItems[i] === "object") rawItems[i].cost = cost
+          }
+          const cost = Math.round((prismaItems as any[]).reduce((sum, it) => sum + Number(it.cost) * Number(it.quantity), 0) * 10000) / 10000
+          data.cost = saleData.cost = cost
+          data.profit = saleData.profit = Number(data.total ?? 0) - cost
+          if (submitted && typeof submitted === "object") { submitted.cost = data.cost; submitted.profit = data.profit }
         }
 
         // Persist the sale with line identity + applied allocations. A lineId is
@@ -2348,9 +2380,12 @@ async function processOperation(
           const { id: batchId, productSyncId: _ps, opening: _opening, ...batchData } = { ...item, productId } as Record<string, unknown>
           const isOpening = (item as any).opening === true
           const qty = Number((item as any).quantityRemaining ?? (item as any).initialQuantity ?? 0)
-          // A receiver without cost visibility was never sent cost (its figure is dropped on push), and a
-          // receive that carries none: the lot is valued at the server's product cost.
-          if ((!costTrusted || !Number.isFinite(Number(batchData.unitCost)) || batchData.unitCost === null) && productId > 0) batchData.unitCost = Number((await db.product.findFirst({ where: { tenantId, id: productId }, select: { cost: true } }))?.cost) || 0
+          // The unit cost on a receive is the delivery's actual purchase price: business input from an
+          // account allowed to receive (inventory.receive), kept from any client whether or not it may
+          // see cost. Only a receive that states no price is valued at the server's product cost.
+          const price = purchasePrice((item as any).unitCost)
+          if (price !== undefined) batchData.unitCost = price
+          else if (productId > 0) batchData.unitCost = Number((await db.product.findFirst({ where: { tenantId, id: productId }, select: { cost: true } }))?.cost) || 0
           // POS-SYNC-RECEIVE-1: the receive handler is authoritative for the
           // aggregate. The batch id (client-generated, stable) is the idempotency
           // anchor: increment Product.stock + record the Receive movement ONLY on

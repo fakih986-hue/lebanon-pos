@@ -27,6 +27,7 @@ import os     from "node:os"
 import path   from "node:path"
 import fs     from "node:fs"
 import crypto from "node:crypto"
+import { bindHostToKeep, migrateHubData, parseEnv } from "./hubConfig"
 
 // ─── Paths ───────────────────────────────────────────────────────────────────
 
@@ -69,6 +70,10 @@ const CLOUD_API_URL = process.env.LBPOS_CLOUD_URL || "https://pos.titan-suite.ne
 const HEALTH_URL = `${API_URL}/api/health`
 const ENV_PATH   = path.join(USER_DATA, ".env")
 const PG_DATA    = path.join(USER_DATA, "pgdata")
+// The API's cloud link and sync state (TITAN_DATA_DIR): in user data, so an update keeps them.
+const HUB_DATA   = path.join(USER_DATA, "hub-data")
+// Where the installer stages an older install's data folder before its uninstaller deletes it.
+const HUB_DATA_STAGING = path.join(USER_DATA, "install-data-migration")
 const PG_PORT    = 5434   // 5433 conflicts with global PG installations; moved to 5434
 const PG_USER    = "lbpos"
 const PG_DB      = "lebanonpos"
@@ -110,6 +115,8 @@ app.whenReady().then(async () => {
 
     setStatus("Applying database migrations…")
     await runMigrations(pgPassword)
+    // Never blocks startup: without an adopted link the hub opens activation, as before.
+    await adoptHubData(pgPassword).catch((err) => console.error("[hub-data] adoption skipped:", err instanceof Error ? err.message : err))
 
     setStatus("Starting POS server…")
     spawnApi()
@@ -339,15 +346,7 @@ async function stopPostgres(): Promise<void> {
 // ─── API configuration & spawn ───────────────────────────────────────────────
 
 function writeApiEnv(pgPassword: string): void {
-  const existing: Record<string, string> = {}
-  if (fs.existsSync(ENV_PATH)) {
-    const envText = fs.readFileSync(ENV_PATH, "utf-8")
-    for (const line of envText.split(/\r?\n/)) {
-      const match = line.match(/^([A-Z0-9_]+)=(.*)$/)
-      if (!match) continue
-      existing[match[1]] = match[2].replace(/^"|"$/g, "")
-    }
-  }
+  const existing = fs.existsSync(ENV_PATH) ? parseEnv(fs.readFileSync(ENV_PATH, "utf-8")) : {}
 
   const jwt       = existing.JWT_SECRET || crypto.randomBytes(32).toString("hex")
   const adminPass = existing.ADMIN_PASSWORD || crypto.randomBytes(12).toString("base64url")
@@ -359,13 +358,13 @@ function writeApiEnv(pgPassword: string): void {
     `JWT_SECRET="${jwt}"`,
     `PORT=3015`,
     `ADMIN_PASSWORD="${adminPass}"`,
-    // Default: bind localhost only. Set BIND_HOST=0.0.0.0 in hub mode for LAN access.
-    `BIND_HOST=127.0.0.1`,
+    // Localhost only unless LAN mode was switched on (set-bind-host): that choice is kept.
+    `BIND_HOST=${bindHostToKeep(existing.BIND_HOST)}`,
     // LAN clients connect to the hub by IP, so allow any origin on the local network
     `CORS_ORIGINS=`,
     ``,
     // Cloud bridge: URL is pre-baked; tenant ID + key are entered in Settings → Cloud
-    // (persisted to data/cloud-config.json). IS_LOCAL_SERVER keeps the bridge enabled.
+    // (persisted to <userData>/hub-data/cloud-config.json). IS_LOCAL_SERVER keeps the bridge enabled.
     `IS_LOCAL_SERVER=true`,
     `CLOUD_API_URL=${CLOUD_API_URL}`,
     ``,
@@ -381,6 +380,26 @@ function writeApiEnv(pgPassword: string): void {
     buttons: ["Got it"],
   })
   }
+}
+
+/**
+ * Bring an older install's cloud link into user data (hubConfig.ts): only for a store this database
+ * holds, never over a link already there. Without one the hub opens activation, as before.
+ */
+async function adoptHubData(pgPassword: string): Promise<void> {
+  let storeTenantIds: string[]
+  const client = new Client({ host: "localhost", port: PG_PORT, user: PG_USER, password: pgPassword, database: PG_DB })
+  await client.connect()
+  try {
+    storeTenantIds = (await client.query<{ id: string }>(`SELECT id FROM "Tenant"`)).rows.map((r) => r.id)
+  } finally {
+    await client.end()
+  }
+  // The API resolves its old data folder as ../../data from its own entry file.
+  const legacy = path.resolve(path.dirname(API_ENTRY), "../../data")
+  const result = migrateHubData({ target: HUB_DATA, sources: [HUB_DATA_STAGING, legacy], storeTenantIds, staging: HUB_DATA_STAGING })
+  if (result.action === "adopted") console.log(`[hub-data] cloud link for store ${result.tenantId} kept from ${result.source}`)
+  if (result.action === "refused") console.warn(`[hub-data] not adopted, the database does not hold store(s): ${result.refused.map((r) => r.tenantId).join(", ")}`)
 }
 
 /**
@@ -482,6 +501,7 @@ function spawnApi(): void {
   const apiEnv: Record<string, string> = {
     ELECTRON_RUN_AS_NODE: "1",
     DOTENV_CONFIG_PATH: ENV_PATH,
+    TITAN_DATA_DIR: HUB_DATA,
     PRISMA_QUERY_ENGINE_LIBRARY: path.join(API_DIR, "generated/prisma/query_engine-windows.dll.node"),
   }
   for (const key of essential) {

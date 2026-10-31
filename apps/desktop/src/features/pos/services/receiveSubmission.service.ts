@@ -29,7 +29,8 @@ export type ReceiveOutcomeSummary = {
   batchesCreated: number
   poNumber?: string
   paymentRecorded: boolean
-  totalValue: number
+  /** Undefined when a received line had no unit cost. */
+  totalValue: number | undefined
   units: number
 }
 
@@ -48,7 +49,7 @@ export type ReceivePlan = {
 }
 export type ReceiveAuditEntry = { at: string; by: string; action: string; detail?: string }
 export type ReceiveEntryRecord = {
-  rowId?: string; name: string; barcode: string; category: string; quantity: number; cost: number; price: number
+  rowId?: string; name: string; barcode: string; category: string; quantity: number; cost?: number; price: number
   reorderPoint?: number; reorderQuantity?: number; expiryDate?: string
   attachAliasToProductId?: number; parentId?: number; variantName?: string
 }

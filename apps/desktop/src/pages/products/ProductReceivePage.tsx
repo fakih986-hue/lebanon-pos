@@ -14,10 +14,11 @@ import {
   getLiveCameraIssue, getPreferredCameraConstraints, type BrowserBarcodeDetector, type Html5QrcodeInstance,
 } from "../../features/pos/lib/cameraScanner"
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
+import { formatCost, isCostAvailable } from "../../features/pos/lib/cost"
 import { fileToCompressedDataUrl } from "../../features/pos/lib/image"
 import {
   addScan, applyReceiveResults, createRow, fillRowFromBarcode, isBlankRow, isRowReady, normalizeCode, parseDraft,
-  rowProblems, serializeDraft, toReceiveEntry, type BatchRow, type ReceiveDraft, type RowProblem,
+  receiveRowsCost, rowProblems, serializeDraft, toReceiveEntry, type BatchRow, type ReceiveDraft, type RowProblem,
 } from "../../features/pos/lib/receiveRows"
 import {
   clearReceiveDraft, getReceiveFinanceIssues, getReceiveSubmission, getUnresolvedReceiveSubmissions, readReceiveDraftRaw,
@@ -52,10 +53,14 @@ const CAMERA_READER_ID = "lebanonpos-receive-camera-reader"
 const PROBLEM_KEY: Record<RowProblem, string> = {
   needs_decision: "inv.rcv.p.needs_decision", missing_name: "inv.rcv.p.missing_name", missing_barcode: "inv.rcv.p.missing_barcode",
   missing_quantity: "inv.rcv.p.missing_quantity", missing_target: "inv.rcv.p.missing_target", missing_variant_name: "inv.rcv.p.missing_variant_name",
-  negative_money: "inv.rcv.p.negative_money",
+  negative_money: "inv.rcv.p.negative_money", cost_missing: "inv.rcv.p.cost_missing",
 }
 function escapeHtml(v: string) { return v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;") }
 const num = (v: string) => { const n = Number(v); return Number.isFinite(n) ? n : 0 }
+/** The unit cost input: empty stays empty (undefined: no cost sent), a typed 0 stays 0. */
+const costInput = (v: string) => (v.trim() === "" ? undefined : num(v))
+/** A product cost to start a row with, or empty when it is unavailable. */
+const costOrEmpty = (v: unknown) => (isCostAvailable(v) ? v : undefined)
 type SavedInfo = ReceivingSummary & { units: number; labels: Array<{ name: string; price: number; barcode: string; n: number }> }
 
 export default function ProductReceivePage() {
@@ -147,12 +152,15 @@ export default function ProductReceivePage() {
   const byId = (id?: number) => (id == null ? undefined : products.find((p) => p.id === id))
   const productFor = (r: BatchRow) => (r.mode === "matched" ? findProductByBarcode(r.barcode) ?? undefined : r.mode === "alias" ? byId(r.targetProductId) : undefined)
   const started = rows.filter((r) => !isBlankRow(r))
-  const ready = started.filter(isRowReady)
-  const problemRows = started.filter((r) => !isRowReady(r))
-  const units = ready.reduce((s, r) => s + r.quantity, 0)
-  const cost = ready.reduce((s, r) => s + r.quantity * r.cost, 0)
-  const labelsCount = rows.reduce((s, r) => s + (r.barcode.trim() && r.name.trim() ? Math.max(0, r.labels) : 0), 0)
   const supplier = suppliers.find((s) => s.id === supplierId)
+  // With a supplier a purchase order is recorded: every line needs its unit cost.
+  const rowOpts = { costRequired: !!supplier }
+  const ready = started.filter((r) => isRowReady(r, rowOpts))
+  const problemRows = started.filter((r) => !isRowReady(r, rowOpts))
+  const units = ready.reduce((s, r) => s + r.quantity, 0)
+  // Undefined (shown "Not available") when a ready row has no unit cost.
+  const cost = receiveRowsCost(ready)
+  const labelsCount = rows.reduce((s, r) => s + (r.barcode.trim() && r.name.trim() ? Math.max(0, r.labels) : 0), 0)
   const categories = useMemo(() => Array.from(new Set(products.map((p) => p.category))).filter(Boolean), [products])
   const pasteResult = useMemo(() => parseSpreadsheetPaste(pasteText), [pasteText])
 
@@ -226,7 +234,7 @@ export default function ProductReceivePage() {
     setRows((rs) => rs.map((r) => {
       if (r.id !== id) return r
       const alias = normalizeCode(r.scannedBarcode || r.barcode)
-      return { ...r, mode: "alias", targetProductId: target.id, decisionConfirmed: true, scannedBarcode: alias, barcode: alias, name: target.name, category: target.category, price: target.price, cost: r.cost || target.cost, accent: target.accent, saveError: undefined }
+      return { ...r, mode: "alias", targetProductId: target.id, decisionConfirmed: true, scannedBarcode: alias, barcode: alias, name: target.name, category: target.category, price: target.price, cost: r.cost ?? costOrEmpty(target.cost), accent: target.accent, saveError: undefined }
     }))
     setPickerRowId(null); setPickerQuery("")
   }
@@ -246,7 +254,7 @@ export default function ProductReceivePage() {
     }))
   }
   function undoDecision(id: string) {
-    setRows((rs) => rs.map((r) => (r.id !== id ? r : { ...r, mode: "new", targetProductId: undefined, parentProductId: undefined, variantName: undefined, decisionConfirmed: false, barcode: r.scannedBarcode || r.barcode, name: "", category: "Pantry", price: 0, cost: 0 })))
+    setRows((rs) => rs.map((r) => (r.id !== id ? r : { ...r, mode: "new", targetProductId: undefined, parentProductId: undefined, variantName: undefined, decisionConfirmed: false, barcode: r.scannedBarcode || r.barcode, name: "", category: "Pantry", price: 0, cost: undefined })))
   }
   function removeRow(id: string) {
     setRows((rs) => { const next = rs.filter((r) => r.id !== id); return next.length ? next : [createRow()] })
@@ -260,8 +268,8 @@ export default function ProductReceivePage() {
     const added = pasteResult.rows.map((p) => {
       const product = findProductByBarcode(p.barcode)
       return product
-        ? { ...fillRowFromBarcode(createRow(), p.barcode, product), quantity: p.quantity, cost: p.cost || product.cost, price: p.price || product.price }
-        : createRow({ name: p.name, barcode: p.barcode, scannedBarcode: p.barcode, category: p.category, quantity: p.quantity, cost: p.cost, price: p.price, decisionConfirmed: true })
+        ? { ...fillRowFromBarcode(createRow(), p.barcode, product), quantity: p.quantity, cost: p.cost || costOrEmpty(product.cost), price: p.price || product.price }
+        : createRow({ name: p.name, barcode: p.barcode, scannedBarcode: p.barcode, category: p.category, quantity: p.quantity, cost: p.cost || undefined, price: p.price, decisionConfirmed: true })
     })
     setRows((rs) => [...rs.filter((r) => !isBlankRow(r)), ...added])
     showToast(pasteResult.rejected.length ? t("inv.rcv.paste_partial", { n: added.length, r: pasteResult.rejected.length }) : t("inv.rcv.paste_done", { n: added.length }), pasteResult.rejected.length ? "error" : "success")
@@ -425,7 +433,7 @@ export default function ProductReceivePage() {
   function rowState(r: BatchRow): { tone: Tone; text: string } {
     if (lockedRows.has(r.id)) return { tone: "err", text: t("inv.rcv.rec.row_unknown") }
     if (r.saveError) return { tone: "err", text: t("inv.rcv.not_saved", { reason: r.saveError }) }
-    const { problems } = rowProblems(r, productFor(r))
+    const { problems } = rowProblems(r, productFor(r), rowOpts)
     if (problems.length) return { tone: "warn", text: problems.map((p) => t(PROBLEM_KEY[p])).join(" · ") }
     if (r.mode === "matched") return { tone: "ok", text: t("inv.rcv.s.matched", { code: r.scannedBarcode || r.barcode }) }
     if (r.mode === "alias") return { tone: "info", text: t("inv.rcv.s.alias", { name: byId(r.targetProductId)?.name ?? "" }) }
@@ -567,7 +575,7 @@ export default function ProductReceivePage() {
                           </span>
                         </td>
                         <td><input className="mg2-input num" type="number" min="0" step="1" inputMode="numeric" dir="ltr" value={r.quantity || ""} onChange={(e) => update(r.id, { quantity: num(e.target.value) })} aria-label={t("inv.rcv.qty_for", { name: label })} aria-invalid={!isBlankRow(r) && !(r.quantity > 0) ? true : undefined} /></td>
-                        <td><input className="mg2-input num" type="number" min="0" step="0.01" inputMode="decimal" dir="ltr" value={r.cost || ""} onChange={(e) => update(r.id, { cost: num(e.target.value) })} aria-label={t("inv.rcv.cost_for", { name: label })} /></td>
+                        <td><input className="mg2-input num" type="number" min="0" step="0.01" inputMode="decimal" dir="ltr" value={r.cost ?? ""} onChange={(e) => update(r.id, { cost: costInput(e.target.value) })} aria-label={t("inv.rcv.cost_for", { name: label })} aria-invalid={supplier && !isBlankRow(r) && !isCostAvailable(r.cost) ? true : undefined} /></td>
                         <td><input className="mg2-input num" type="number" min="0" step="0.01" inputMode="decimal" dir="ltr" value={r.price || ""} disabled={r.mode === "alias"} title={r.mode === "alias" ? t("inv.rcv.alias_price") : undefined} onChange={(e) => update(r.id, { price: num(e.target.value) })} aria-label={t("inv.rcv.price_for", { name: label })} /></td>
                         <td><input className="mg2-input" type="date" dir="ltr" value={r.expiryDate} onChange={(e) => update(r.id, { expiryDate: e.target.value })} aria-label={t("inv.rcv.expiry_for", { name: label })} /></td>
                         <td><input className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={r.labels || ""} onChange={(e) => update(r.id, { labels: num(e.target.value) })} aria-label={t("inv.rcv.labels_for", { name: label })} /></td>
@@ -637,10 +645,10 @@ export default function ProductReceivePage() {
                               {!fixed && <label className="mg2-field"><span className="lbl">{t("inv.field.category")}</span><input className="mg2-input" list="rcv-categories" value={r.category} onChange={(e) => update(r.id, { category: e.target.value })} /></label>}
                               <label className="mg2-field"><span className="lbl">{t("inv.field.reorder_point")}</span><input className="mg2-input num" type="number" min="0" dir="ltr" value={r.reorderPoint} onChange={(e) => update(r.id, { reorderPoint: num(e.target.value) })} /></label>
                               <label className="mg2-field"><span className="lbl">{t("inv.field.reorder_qty")}</span><input className="mg2-input num" type="number" min="0" dir="ltr" value={r.reorderQuantity} onChange={(e) => update(r.id, { reorderQuantity: num(e.target.value) })} /></label>
-                              {r.cost > 0 && r.mode !== "alias" && (
+                              {isCostAvailable(r.cost) && r.cost > 0 && r.mode !== "alias" && (
                                 <div style={{ display: "flex", gap: 6 }}>
                                   {[settings.profitPercent1, settings.profitPercent2].map((pct) => (
-                                    <button key={pct} type="button" className="mg2-btn" onClick={() => update(r.id, { price: Math.round(r.cost * (1 + pct / 100) * 100) / 100 })}>{t("inv.rcv.price_plus", { pct })}</button>
+                                    <button key={pct} type="button" className="mg2-btn" onClick={() => update(r.id, { price: Math.round((r.cost ?? 0) * (1 + pct / 100) * 100) / 100 })}>{t("inv.rcv.price_plus", { pct })}</button>
                                   ))}
                                 </div>
                               )}
@@ -695,7 +703,7 @@ export default function ProductReceivePage() {
                 </div>
               </div>
               <p className="mg2-cap" style={{ margin: 0 }}>
-                {!supplier ? t("inv.rcv.no_supplier_help") : payment === "On Account" ? t("inv.rcv.on_account_help", { amount: formatCurrency(cost), name: supplier.name }) : t("inv.rcv.paid_now_help", { amount: formatCurrency(cost), method: t(`inv.rcv.pay.${PAY_KEY[payment]}`) })}
+                {!supplier ? t("inv.rcv.no_supplier_help") : payment === "On Account" ? t("inv.rcv.on_account_help", { amount: formatCost(cost, t("pos.not_available")), name: supplier.name }) : t("inv.rcv.paid_now_help", { amount: formatCost(cost, t("pos.not_available")), method: t(`inv.rcv.pay.${PAY_KEY[payment]}`) })}
               </p>
               <label className="mg2-field"><span className="lbl">{t("inv.rcv.note")}</span><textarea className="mg2-input" rows={2} style={{ paddingBlock: 8 }} value={note} onChange={(e) => setNote(e.target.value)} /></label>
             </section>
@@ -704,7 +712,7 @@ export default function ProductReceivePage() {
               <h2 className="mg2-section-title" style={{ marginBottom: 8 }}>{t("inv.rcv.summary")}</h2>
               <div className="mg2-sum"><span>{t("inv.rcv.ready_rows")}</span><strong>{t("inv.rcv.x_of_y", { x: ready.length, y: started.length })}</strong></div>
               <div className="mg2-sum"><span>{t("inv.rcv.units")}</span><strong>{formatNumber(units)}</strong></div>
-              <div className="mg2-sum"><span>{t("inv.field.cost")}</span><strong>{formatCurrency(cost)}</strong></div>
+              <div className="mg2-sum"><span>{t("inv.field.cost")}</span><strong>{formatCost(cost, t("pos.not_available"))}</strong></div>
               <div className="mg2-sum"><span>{t("inv.rcv.labels_to_print")}</span><strong>{formatNumber(labelsCount)}</strong></div>
               <button type="button" className="mg2-btn mg2-btn-primary" style={{ width: "100%", minHeight: 52, marginTop: 10 }} onClick={() => save(false)} aria-busy={saving || undefined} disabled={saving || unresolved.length > 0}>
                 {saving ? <LoaderCircle size={18} className="animate-spin" aria-hidden="true" /> : <CheckCircle2 size={18} aria-hidden="true" />}{saving ? t("inv.rcv.saving") : t("inv.rcv.save")}

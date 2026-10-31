@@ -13,12 +13,13 @@ export type DailyClose = {
   grossSales: number
   refunds: number
   netSales: number
-  costOfGoods: number
-  returnedCost: number
-  grossMargin: number
+  /** Cost figures are absent when a cost they depend on was unavailable (never sent as 0). */
+  costOfGoods?: number
+  returnedCost?: number
+  grossMargin?: number
   expenses: number
   supplierPayments?: number
-  netProfit: number
+  netProfit?: number
   cashIn: number
   cashOut: number
   note: string
@@ -97,9 +98,9 @@ export function closeBusinessDay(input: CloseBusinessDayInput) {
   recordAuditEvent({
     action: "day.close",
     entity: "accounting",
-    summary: `${close.dateKey} closed with ${close.netProfit.toFixed(
-      2
-    )} net profit.`,
+    summary: close.netProfit === undefined
+      ? `${close.dateKey} closed (net profit not available).`
+      : `${close.dateKey} closed with ${close.netProfit.toFixed(2)} net profit.`,
     metadata: {
       dateKey: close.dateKey,
       netSales: close.netSales,

@@ -8,12 +8,15 @@
 // received twice.
 import type { Product, ProductAccent } from "../types/product"
 import { createId } from "./storage"
+import { isCostAvailable, sumAvailable } from "./cost"
 import type { ReceiveRowResult } from "../services/receiveSubmission.service"
 
 export type ReceiveRowMode = "matched" | "new" | "alias" | "variant" | "conflict"
 export type BatchRow = {
   id: string; name: string; category: string; quantity: number
-  cost: number; price: number; reorderPoint: number; reorderQuantity: number
+  /** Unit cost of this delivery. Undefined = none typed (empty input): no cost is sent and the
+   *  server values the lot. Never filled with 0 or a guess. */
+  cost: number | undefined; price: number; reorderPoint: number; reorderQuantity: number
   expiryDate: string; barcode: string; labels: number; accent: ProductAccent
   mode: ReceiveRowMode; scannedBarcode: string; targetProductId?: number
   decisionConfirmed?: boolean
@@ -33,7 +36,7 @@ export function normalizeCode(value: string) {
 
 export function createRow(defaults?: Partial<BatchRow>): BatchRow {
   return {
-    id: createId(), name: "", category: "", quantity: 0, cost: 0, price: 0, reorderPoint: 10, reorderQuantity: 20,
+    id: createId(), name: "", category: "", quantity: 0, cost: undefined, price: 0, reorderPoint: 10, reorderQuantity: 20,
     expiryDate: "", barcode: "", labels: 1, accent: accents[Math.floor(Math.random() * accents.length)],
     mode: "new", scannedBarcode: "", targetProductId: undefined, decisionConfirmed: false, ...defaults,
   }
@@ -44,7 +47,11 @@ export function isBlankRow(row: BatchRow) {
   return !row.name.trim() && !row.barcode.trim() && !row.scannedBarcode.trim() && !row.quantity
 }
 
-export function isRowReady(row: BatchRow) {
+/** costRequired: a supplier is chosen, so a purchase order is recorded and needs every unit cost. */
+export type ReceiveRowOptions = { costRequired?: boolean }
+
+export function isRowReady(row: BatchRow, opts?: ReceiveRowOptions) {
+  if (opts?.costRequired && !isCostAvailable(row.cost)) return false
   // alias rows are ready once a target is picked + a scanned barcode + qty; the
   // name is mirrored from the target so it is always present.
   if (row.mode === "alias") return !!row.targetProductId && row.scannedBarcode.trim().length > 0 && row.quantity > 0
@@ -55,11 +62,11 @@ export function isRowReady(row: BatchRow) {
 
 export type RowProblem =
   | "needs_decision" | "missing_name" | "missing_barcode" | "missing_quantity"
-  | "missing_target" | "missing_variant_name" | "negative_money"
+  | "missing_target" | "missing_variant_name" | "negative_money" | "cost_missing"
 export type RowNotice = "cost_over_price" | "cost_up" | "cost_down"
 
 /** What blocks this row (errors) and what deserves a look (notices). Shown on the row at all times. */
-export function rowProblems(row: BatchRow, product?: Product): { problems: RowProblem[]; notices: Array<{ key: RowNotice; pct?: number }> } {
+export function rowProblems(row: BatchRow, product?: Product, opts?: ReceiveRowOptions): { problems: RowProblem[]; notices: Array<{ key: RowNotice; pct?: number }> } {
   const problems: RowProblem[] = []
   const notices: Array<{ key: RowNotice; pct?: number }> = []
   if (isBlankRow(row)) return { problems, notices }
@@ -74,10 +81,12 @@ export function rowProblems(row: BatchRow, product?: Product): { problems: RowPr
     if (!row.barcode.trim()) problems.push("missing_barcode")
   } else if (!row.scannedBarcode.trim()) problems.push("missing_barcode")
   if (!(row.quantity > 0)) problems.push("missing_quantity")
-  if (row.cost < 0 || row.price < 0) problems.push("negative_money")
-  if (row.cost > 0 && row.price > 0 && row.cost > row.price) notices.push({ key: "cost_over_price" })
-  if (product && product.cost > 0 && row.cost > 0 && Math.abs(row.cost - product.cost) / product.cost >= 0.05) {
-    const pct = Math.round(((row.cost - product.cost) / product.cost) * 100)
+  if (opts?.costRequired && !isCostAvailable(row.cost)) problems.push("cost_missing")
+  const cost = isCostAvailable(row.cost) ? row.cost : undefined
+  if ((cost !== undefined && cost < 0) || row.price < 0) problems.push("negative_money")
+  if (cost !== undefined && cost > 0 && row.price > 0 && cost > row.price) notices.push({ key: "cost_over_price" })
+  if (product && isCostAvailable(product.cost) && product.cost > 0 && cost !== undefined && cost > 0 && Math.abs(cost - product.cost) / product.cost >= 0.05) {
+    const pct = Math.round(((cost - product.cost) / product.cost) * 100)
     notices.push({ key: pct > 0 ? "cost_up" : "cost_down", pct })
   }
   return { problems, notices }
@@ -86,11 +95,12 @@ export function rowProblems(row: BatchRow, product?: Product): { problems: RowPr
 /** Fill a row from a scanned code: a known code (primary or alias) restocks that product; an unknown one is a new product until decided. */
 export function fillRowFromBarcode(row: BatchRow, barcode: string, product: Product | undefined): BatchRow {
   if (!product) {
-    return { ...row, barcode, scannedBarcode: barcode, mode: "new", targetProductId: undefined, decisionConfirmed: false, name: "", category: row.category || "Pantry", price: 0, cost: 0, reorderPoint: 10, reorderQuantity: 20, expiryDate: "" }
+    return { ...row, barcode, scannedBarcode: barcode, mode: "new", targetProductId: undefined, decisionConfirmed: false, name: "", category: row.category || "Pantry", price: 0, cost: undefined, reorderPoint: 10, reorderQuantity: 20, expiryDate: "" }
   }
   return {
     ...row, mode: "matched", targetProductId: undefined, scannedBarcode: barcode, name: product.name, category: product.category,
-    price: product.price, cost: product.cost, reorderPoint: product.reorderPoint ?? 10, reorderQuantity: product.reorderQuantity ?? 20,
+    // An unavailable product cost starts the row with an empty cost (never 0 or NaN).
+    price: product.price, cost: isCostAvailable(product.cost) ? product.cost : undefined, reorderPoint: product.reorderPoint ?? 10, reorderQuantity: product.reorderQuantity ?? 20,
     expiryDate: row.expiryDate || "", barcode: product.barcode ?? "", accent: product.accent,
   }
 }
@@ -115,9 +125,17 @@ export function addScan(rows: BatchRow[], code: string, product: Product | undef
   return { rows: blank ? rows.map((r) => (r.id === blank.id ? filled : r)) : [...rows, filled], rowId: filled.id, merged: false }
 }
 
+/** Total cost of the rows, or undefined when any of them has no unit cost. */
+export function receiveRowsCost(rows: BatchRow[]): number | undefined {
+  return sumAvailable(rows.map((r) => (isCostAvailable(r.cost) ? r.quantity * r.cost : undefined)))
+}
+
 /** The receiveAndRecord entry for a ready row (identical to the page's previous mapping). */
 export function toReceiveEntry(r: BatchRow) {
-  return { ...toReceiveFields(r), rowId: r.id }
+  const fields = toReceiveFields(r)
+  // No typed cost: the entry carries no cost at all (not 0, not NaN, not null).
+  if (!isCostAvailable(fields.cost)) delete (fields as { cost?: number }).cost
+  return { ...fields, rowId: r.id }
 }
 function toReceiveFields(r: BatchRow) {
   if (r.mode === "alias") {
@@ -170,7 +188,7 @@ export function parseDraft(raw: string | null): ReceiveDraft | null {
     const rows = (d.rows as BatchRow[]).filter((r) => r && typeof r.id === "string" && typeof r.mode === "string")
     const pending = d.pending && typeof d.pending.submissionId === "string" && Array.isArray(d.pending.rowIds) ? d.pending : undefined
     if (!pending && !rows.some((r) => !isBlankRow({ ...createRow(), ...r }))) return null
-    return { ...d, pending, rows: rows.map((r) => ({ ...createRow(), ...r })) }
+    return { ...d, pending, rows: rows.map((r) => ({ ...createRow(), ...r, cost: isCostAvailable(r.cost) ? r.cost : undefined })) }
   } catch {
     return null
   }

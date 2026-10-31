@@ -36,7 +36,8 @@ export default function ProductQuickCreate({ categories, onClose, onCreated }: P
       category: category.trim(),
       barcode: barcode.trim(),
       price: Number(price) || 0,
-      cost: Number(cost) || 0,
+      // A blank cost is not sent (never a made-up 0).
+      ...(cost.trim() !== "" && Number.isFinite(Number(cost)) ? { cost: Number(cost) } : {}),
       stock: Number(stock) || 0,
       image: image || undefined,
     })
