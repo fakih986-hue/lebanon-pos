@@ -23,7 +23,7 @@ Canonical record of what is tested and what passed. Real services, real API hand
 | Till: fresh PIN to switch staff; no fallback actor; ambiguous PIN refused offline and online | `apps/desktop/src/__tests__/staffIdentity.test.ts` (5) | pass (`3c48be1`); Staff-page switch verified by code and type check, **not exercised in a rendered UI** |
 | Negative controls | one per guard (8 server on the hotfix tree, 6 server on master, 3 till): each fails its intended test | pass |
 | Refused work kept on the server (unapplied `Refused` row with payload, reason, account, device; listed for `reports.view`; a resend by an allowed account applies once) | `containment.test.ts`; hotfix: `cashier-connected.test.ts` drives the real 1.0.50 till services | pass (`3a8941f`; hotfix `5b86e09`) |
-| Containment release `hotfix/containment-1.0.50` from deployed `7df7c58`: containment + Sprint 0 server port + refused-work preservation | 420 + 5 expected fail on a schema migrated with the deployed migrations; 14 negative controls; release matrix, cashier-connected decision and shared-PIN transition in `docs/HOTFIX-CONTAINMENT.md` on that branch | ready for approval, **not deployed** |
+| Containment release `hotfix/containment-1.0.50` from deployed `7df7c58`: containment + Sprint 0 server port + refused-work preservation | 420 + 5 expected fail on a schema migrated with the deployed migrations; 14 negative controls; release matrix, cashier-connected decision and shared-PIN transition in `docs/HOTFIX-CONTAINMENT.md` on that branch | **deployed 2026-10-31** as `e2fd79a` (Railway 498a850f; production backup and limited PIN audit first; 26/26 production smoke checks); merged into master as `6e0d80d` |
 
 ## Phase B — observe mode
 
@@ -66,7 +66,7 @@ Known limitations (Phase C): the session indicator is only visible to roles that
 
 ## Client hotfix: wrong-store token adoption (separate release)
 
-Branch `hotfix/till-store-guard-1.0.50` (`74f94fb` + doc `cb31776`) from `7df7c58`, worktree `D:\tpcl`: regression test + negative control on the 1.0.50 code, 401 desktop tests, `tsc -b`, production build. Not built as an EXE; the version number is a pending decision (`docs/CLIENT-HOTFIX-STORE-GUARD.md` on that branch).
+Branch `hotfix/till-store-guard-1.0.50` (`74f94fb` + doc `cb31776`) from `7df7c58`, worktree `D:\tpcl`: regression test + negative control on the 1.0.50 code, 401 desktop tests, `tsc -b`, production build. Startup-path guard added (`31e1ce6`, master `a8630eb`) after the defect was reproduced in the real Electron hub window. **Published 2026-10-31 as 1.0.51** (GitHub release `v1.0.51`, tag → `31e1ce6`, Setup SHA-256 `AAEDFD2B…42A80E`, update feed verified). It carries no server containment: hub-local APIs keep 1.0.50 permissions.
 
 ## Enforcement slice: enforce-checkout (opt-in per store)
 
