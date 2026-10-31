@@ -222,7 +222,10 @@ describe("a cashier-connected till with a manager unlocked locally (1.0.50 till,
     expect((await prisma.syncOperation.findUnique({ where: { id: second.id } }))!.status).toBe("Dismissed")
   })
 
-  it("cost: hidden from the cashier on the report/catalogue endpoints, still delivered to the till by sync (needed for offline sale cost)", async () => {
+  // MASTER DIFFERS from the deployed containment server: master withholds cost from staff tills without
+  // reports.cost, so a 1.0.50 till connected as a cashier has no cost offline. Open decision before
+  // master is released to stores that still run 1.0.50/1.0.51 tills.
+  it.fails("OPEN DECISION (master withholds cost): cost still delivered to a cashier-connected 1.0.50 till by sync", async () => {
     const cashier = storage.getItem("lebanonpos.auth-token")!
     const api = await realFetch(`${baseUrl}/api/products`, { headers: { Authorization: `Bearer ${cashier}` } })
     const items = (await api.json()) as any
@@ -255,7 +258,10 @@ describe("shared PIN on a 1.0.50 till against the hotfix server (409 AMBIGUOUS_P
     storage.removeItem("lebanonpos.pin-attempts.v1")
   })
 
-  it("a till where the manager unlocked before the hotfix: the 1.0.50 till falls back to its local verifier and signs in the MANAGER", async () => {
+  // MASTER DIFFERS from the deployed containment server: master withholds staff PIN verifiers from staff
+  // tills, so this 1.0.50 offline fallback (and 1.0.50 offline unlock generally) no longer works. Open
+  // decision before master is released to stores that still run 1.0.50/1.0.51 tills.
+  it.fails("OPEN DECISION (master withholds verifiers): the 1.0.50 till falls back to its local verifier and signs in the MANAGER", async () => {
     const s = await sec()
     // What the pre-hotfix server produced: it resolved the shared PIN to the higher role, and the till cached that verifier.
     const h = await s.hashPin("5199")

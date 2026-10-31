@@ -2305,7 +2305,13 @@ async function processOperation(
         // and strip productSyncId — it is a cross-system hint, not a column.
         const resolvedPid = await resolveProductId(adj)
         const { productSyncId: _ps, ...adjData } = adj as Record<string, unknown>
-        const persisted = { ...adjData, ...(resolvedPid > 0 ? { productId: resolvedPid } : {}) }
+        const persisted: Record<string, unknown> = { ...adjData, ...(resolvedPid > 0 ? { productId: resolvedPid } : {}) }
+        // valueImpact is quantity × cost. A till that is not sent cost (no reports.cost) cannot work it
+        // out and sends null; the column is required, so the server values it from its own cost.
+        if (typeof adj.valueImpact !== "number" || !Number.isFinite(adj.valueImpact)) {
+          const product = resolvedPid > 0 ? await db.product.findFirst({ where: { tenantId, id: resolvedPid }, select: { cost: true } }) : null
+          persisted.valueImpact = (Number(adj.quantityChange) || 0) * (Number(product?.cost) || 0)
+        }
         // REFUND-REVIEW: adjustments (counts, write-offs, corrections) used to be
         // recorded here without ever changing server stock or lots — the next
         // hub-authoritative pull then silently reverted them on every device.
