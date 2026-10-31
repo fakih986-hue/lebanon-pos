@@ -40,9 +40,12 @@ const stateFile = path.join(userData, "it-hub.json")
 const netLog = path.join(userData, "it-hub-network.log")
 const log = (m) => { const line = `${new Date().toISOString()} ${m}`; console.log(line); fs.appendFileSync(netLog, line + "\n") }
 
-const ps = (script) => execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { encoding: "utf8" })
+const ps = (script) => execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
+// Windows PowerShell 5.1's ConvertTo-Json leaves control characters in strings unescaped (some
+// processes' command lines carry them), which JSON.parse rejects: they are replaced before parsing.
+const psJson = (script) => JSON.parse((ps(script) || "[]").replace(/[\u0000-\u001f]/g, " "))
 function tree(rootPid) {
-  const rows = JSON.parse(ps("Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine | ConvertTo-Json -Compress") || "[]")
+  const rows = psJson("Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine | ConvertTo-Json -Compress")
   const pids = new Set([rootPid])
   for (let grew = true; grew;) { grew = false; for (const r of rows) if (pids.has(r.ParentProcessId) && !pids.has(r.ProcessId)) { pids.add(r.ProcessId); grew = true } }
   return { pids, rows }
@@ -56,10 +59,12 @@ function stopHub(state, why) {
   // (ExecutablePath can be empty for these processes; the command line always names the binary)
   const pgDir = path.join(path.dirname(state.exe), "resources", "pg").toLowerCase()
   const norm = (s) => String(s ?? "").replace(/\//g, "\\").toLowerCase()
-  const { rows } = tree(-1)
+  let rows = []
+  try { rows = tree(-1).rows } catch (e) { log(`could not list processes to find an orphaned embedded postgres: ${String(e?.message ?? e).split("\n")[0]}`) }
   for (const r of rows) if (norm(r.ExecutablePath).startsWith(pgDir) || norm(r.CommandLine).replace(/^"/, "").startsWith(pgDir)) {
     try { execFileSync("taskkill", ["/PID", String(r.ProcessId), "/F"], { stdio: "ignore" }); log(`killed orphaned embedded postgres ${r.ProcessId}`) } catch { /* gone */ }
   }
+  log(alive(state.pid) ? "HUB STILL RUNNING after stop" : "hub stopped")
 }
 function alive(pid) { try { process.kill(pid, 0); return true } catch { return false } }
 
@@ -114,7 +119,7 @@ while (alive(state.pid)) {
     for (let attempt = 1; ; attempt++) {
       try {
         pids = tree(state.pid).pids
-        conns = JSON.parse(ps(`@(Get-NetTCPConnection -ErrorAction SilentlyContinue | Where-Object { @(${[...pids].join(",")}) -contains $_.OwningProcess } | Select-Object OwningProcess,RemoteAddress,RemotePort,State) | ConvertTo-Json -Compress`) || "[]")
+        conns = psJson(`@(Get-NetTCPConnection -ErrorAction SilentlyContinue | Where-Object { @(${[...pids].join(",")}) -contains $_.OwningProcess } | Select-Object OwningProcess,RemoteAddress,RemotePort,State) | ConvertTo-Json -Compress`)
         break
       } catch (e) {
         if (attempt >= 3) throw e

@@ -112,6 +112,18 @@ hub link trusted) its two older-hub tests fail.
 6. **Attribution.** Old tills send no device credential and no staff session. Their work is attributed to
    the connecting account, and the actor is whatever they claim. The enforcement gate already refuses to
    switch on while any of them trades (`identityGate.ts`, reason `upgrade-needed`).
+7. **Old tills' own cost screens (seen on the released 1.0.50 and 1.0.51 interfaces).** Connected with an
+   account without `reports.cost`, a till has no cost data, and the old screens do not expect that:
+   lots show Cost and Value `$NaN` and "`$NaN` at cost"; receiving shows "Cost `$NaN`" until a unit cost
+   is typed (the delivery still saves; the server values it). A manager who unlocks such a till keeps
+   the cashier's connection: products show Cost `$NaN` and Margin `NaN%`, the dashboard Stock value
+   `$NaN` and 0.0% margin, the daily close Cost of goods, Gross margin and Net profit `$0.00`, a count's
+   Value impact `$0.00`, and the product editor will not save until a cost is typed. Figures recorded on
+   the server are right. Remedy: connect such tills with an account that may see cost, or upgrade them.
+8. **A 1.0.50/1.0.51 till behind a 1.0.50/1.0.51 hub (any cloud).** Those tills full-pull
+   `cash-movements` last; those hubs answer 400, so the full pull fails before it restores the offline
+   verifiers: offline login is lost after every full pull until the next online sign-in. The deployed
+   cloud and this hub serve it. Fixed by upgrading the hub.
 
 ## Enrolment, control, retirement
 
@@ -124,7 +136,33 @@ hub link trusted) its two older-hub tests fail.
     < 4 inside the window). Until then, deleting it brings back limit 2 for every full pull.
   - *Server valuation:* permanent. Valuation is the server's job.
 
-## Installed hub acceptance (1.0.52 candidate, `2d1939c`)
+## Installed hub acceptance (1.0.52 candidate, `4c15a3c`)
+
+Run on the extracted installer payload (identical to the build output) under the guarded launcher, with
+the released 1.0.51 till and this repository's till. Evidence: `D:\TitanPOS-it\rel52\evidence.txt`.
+
+- Fresh install: 7/7 for each till against the master cloud and against the deployed cloud code
+  (`e2fd79a`). Added since `2d1939c`: receiving with a forged cost (cloud lot at the cloud's cost) and
+  WebSocket containment (a foreign origin is refused; driver, customer and anonymous sockets cannot
+  join the staff or another store's channel and hear no sync events; staff do).
+- Released 1.0.51 hub (`INSTALLED_HUB_GENERATION=legacy`) in front of the master cloud: the hub records
+  its till's forged cost (1998); the cloud records 2, and a forged lot at 1. That hub has no containment
+  (drivers and customers can pull, and hear sync events) and loses offline login after a full pull (limit 8).
+- Upgrade, simulated on the payload: the 1.0.51 hub's user data opened by this build. Kept: the database
+  (sales, staff, pairing), `.env` secrets (the tills' tokens stay valid), queued work; migrations
+  35 → 44. Lost: the cloud link, which lives in `<install dir>\data` (the electron-builder uninstaller
+  removes the install directory on an update): the hub opens its activation screen and has to be
+  activated again. After activating on that screen, the queued work was forwarded unmarked and valued by
+  the cloud, and the activation's full pull replaced the old hub's forged sale cost with the cloud's.
+- Runtime, one paired till throughout: the hub's own screen (activation, PIN unlock, a cash sale that
+  reaches the cloud), restart, cloud outage (the hub takes the sale and holds it) and reconnect, hub down
+  (people who signed in on the till unlock offline, someone who never did cannot, a sale queues). Every
+  sale of the run is on the hub and in the cloud exactly once, at the server's cost.
+- Found, not changed: the hub rewrites `BIND_HOST=127.0.0.1` into `.env` on every start
+  (`writeApiEnv`, since `fdc10c8`), so a hub switched to LAN mode is back to localhost-only after a restart,
+  reboot or update.
+
+### Earlier run (`2d1939c`)
 
 `apps/api/__tests__/installed-hub.test.ts` runs against a running installed hub started with
 `apps/electron/scripts/it-hub.mjs` and activated for a disposable store. It is skipped otherwise. A till's
