@@ -124,6 +124,45 @@ describe("permission rules for operations that had none", () => {
     expect(await prisma.stockAdjustment.count({ where: { tenantId: T, id: op.payload.id } })).toBe(1)
     expect((await prisma.syncOperation.findUnique({ where: { id: op.id } }))!.appliedAt).toBeTruthy()
   })
+  it("refused work is reviewed and resolved: apply once under the manager's authority (evidence says so), decline is final", async () => {
+    const resolve = (token: string, id: string, decision: string, note = "checked on the shelf") => call("POST", `/api/sync/refused/${id}/resolve`, { decision, note }, token)
+    const applyOp = { id: randomUUID(), entity: "inventory", action: "adjust", payload: { ...adjust(), quantityChange: 3 } }
+    const declineOp = { id: randomUUID(), entity: "inventory", action: "adjust", payload: { ...adjust(), quantityChange: -4 } }
+    for (const op of [applyOp, declineOp]) expect((await call("POST", "/api/sync/push", { deviceId: "ct-dev", operations: [op] }, cashier)).body.results[0].status).toBe("error")
+    const list = (await call("GET", "/api/sync/refused", undefined, manager)).body.operations as Array<Record<string, any>>
+    const item = list.find((o) => o.id === applyOp.id)!
+    expect(item).toMatchObject({ reason: "You don't have permission to adjust inventory", deviceId: "ct-dev", canResolve: true })
+    expect(item.effects[0]).toMatchObject({ kind: "stock-change", change: 3 })
+    const stockBefore = Number((await prisma.product.findFirst({ where: { tenantId: T, id: productId } }))!.stock)
+    expect((await resolve(cashier, applyOp.id, "apply")).status).toBe(403)
+    const [a, b] = await Promise.all([resolve(manager, applyOp.id, "apply"), resolve(manager, applyOp.id, "apply")])
+    expect([a.status, b.status].sort()).toEqual([200, 409])
+    expect(Number((await prisma.product.findFirst({ where: { tenantId: T, id: productId } }))!.stock)).toBe(stockBefore + 3)
+    // The losing side of a race read the row as still Refused: the decision must still be refused.
+    const staleRow = { ...(await prisma.syncOperation.findFirst({ where: { id: applyOp.id } }))!, status: "Refused", appliedAt: null }
+    const stale = vi.spyOn(prisma.syncOperation, "findFirst").mockResolvedValueOnce(staleRow as any)
+    expect((await resolve(manager, applyOp.id, "apply")).status).toBe(409)
+    stale.mockRestore()
+    expect(Number((await prisma.product.findFirst({ where: { tenantId: T, id: productId } }))!.stock)).toBe(stockBefore + 3)
+    // the till's resend is acknowledged, never applied again
+    expect((await call("POST", "/api/sync/push", { deviceId: "ct-dev", operations: [applyOp] }, cashier)).body.results[0].status).toBe("ok")
+    expect(Number((await prisma.product.findFirst({ where: { tenantId: T, id: productId } }))!.stock)).toBe(stockBefore + 3)
+    const ev = await prisma.operationEvidence.findUnique({ where: { opId: applyOp.id } })
+    expect(ev!.limitations).toContain("applied-on-manager-review")
+    expect(ev!.evidence).not.toBe("verified")
+    expect((await resolve(manager, declineOp.id, "dismiss", "miscounted")).status).toBe(200)
+    expect((await call("POST", "/api/sync/push", { deviceId: "ct-dev", operations: [declineOp] }, manager)).body.results[0]).toMatchObject({ status: "rejected" })
+    // the cashier-connected till that sent it: told it was declined (not left retrying as refused)
+    expect((await call("POST", "/api/sync/push", { deviceId: "ct-dev", operations: [declineOp] }, cashier)).body.results[0]).toMatchObject({ status: "rejected" })
+    expect((await prisma.syncOperation.findUnique({ where: { id: declineOp.id } }))!.status).toBe("Dismissed")
+    // review never shows PINs or credentials
+    const secret = { id: randomUUID(), entity: "customer", action: "create", payload: { id: randomUUID(), name: "Walk-in", mobile: `ct-${randomUUID().slice(0, 6)}`, pin: "8642", nested: { sessionToken: "eyJsecret" } } }
+    await call("POST", "/api/sync/push", { deviceId: "ct-dev", operations: [secret] }, cashier)
+    const shown = JSON.stringify((await call("GET", "/api/sync/refused", undefined, owner)).body)
+    expect(shown).toContain(secret.id)
+    expect(shown).not.toMatch(/8642|eyJsecret/)
+    expect(Number((await prisma.product.findFirst({ where: { tenantId: T, id: productId } }))!.stock)).toBe(stockBefore + 3)
+  })
   it("a cashier can still park an order (held-sale needs sales.checkout)", async () => {
     expect((await push(cashier, "held-sale", "create", { id: randomUUID(), items: [], createdAt: new Date().toISOString() })).body.results[0].status).toBe("ok")
   })

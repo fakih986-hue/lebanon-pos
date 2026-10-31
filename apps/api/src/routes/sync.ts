@@ -13,6 +13,7 @@ import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "
 import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { LEGACY_REV } from "../lib/stockPolicy.js"
 import { observeEvidence, transportOf } from "../lib/evidence.js"
+import { claimedActorOf, describeEffects, actorLimitations, redactSecrets } from "../lib/refusedReview.js"
 import { checkDevice, checkSession, type SessionResult } from "../lib/credentials.js"
 import { tokenKind } from "../middleware/auth.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
@@ -202,6 +203,128 @@ async function auditObservedSession(tenantId: string, op: { id: string; entity: 
   } catch { /* best-effort audit */ }
 }
 
+/**
+ * The permission rules for one sync operation, checked for `actorPermissions` (the pushing account;
+ * or, for a manager's review of refused work, the reviewing manager). null = a store-level relay,
+ * whose operations were authorized where they were made.
+ */
+function makeOpAuthorizer(tenantId: string, actorPermissions: string[] | null, actorId: string) {
+  const permsOf = new Map<string, string[] | null>()
+  async function staffPermissions(userId: string) {
+    if (!permsOf.has(userId)) {
+      const u = await prisma.staffUser.findFirst({ where: { id: userId, tenantId }, select: { role: true, permissions: true } })
+      permsOf.set(userId, u ? effectivePermissions(u.permissions, u.role) : null)
+    }
+    return permsOf.get(userId)!
+  }
+  async function shiftOpener(payload: any) {
+    const existing = payload?.id ? await prisma.shift.findFirst({ where: { id: String(payload.id), tenantId }, select: { openedById: true } }) : null
+    return existing?.openedById ?? (typeof payload?.openedById === "string" ? payload.openedById : null)
+  }
+  // SPRINT-0 price policy: a sale line below the product's current catalogue price (or a
+  // sell-at-cost sale) needs sales.price_override on the pushing account. A wholesale price is
+  // honoured for a sale to a named customer. Unknown products are left to the sale handler.
+  async function priceOverrideViolation(payload: unknown): Promise<string | null> {
+    const p = (payload ?? {}) as Record<string, unknown>
+    if (p.soldAtCost === true) return "PRICE_OVERRIDE: a sale at cost needs a manager's price-override permission."
+    const items = Array.isArray(p.items) ? (p.items as Array<Record<string, unknown>>) : []
+    for (const item of items) {
+      const syncId = typeof item.productSyncId === "string" && item.productSyncId ? item.productSyncId : null
+      const id = Number(item.id)
+      const product = syncId
+        ? await prisma.product.findFirst({ where: { tenantId, syncId }, select: { name: true, price: true, wholesalePrice: true } })
+        : Number.isInteger(id) && id > 0 ? await prisma.product.findFirst({ where: { tenantId, id }, select: { name: true, price: true, wholesalePrice: true } }) : null
+      if (!product) continue
+      const list = Number(product.price)
+      const wholesale = Number(product.wholesalePrice ?? 0)
+      const floor = wholesale > 0 && p.customerId ? Math.min(list, wholesale) : list
+      const unit = Number(item.unitPrice)
+      if (Number.isFinite(unit) && unit < floor - 0.005) {
+        return `PRICE_OVERRIDE: "${product.name}" was sold at ${unit}, below its price ${floor}. A manager must approve price changes.`
+      }
+    }
+    return null
+  }
+
+  async function authorizeOp(op: { entity: string; action: string; payload?: unknown }): Promise<string | null> {
+    if (actorPermissions) {
+      const required = requiredPermissionForOp(op.entity, op.action, op.payload)
+      const anyOf = required == null ? [] : Array.isArray(required) ? required : [required]
+      if (anyOf.length > 0 && !anyOf.some((p) => actorPermissions!.includes(p))) return `You don't have permission to ${op.action} ${op.entity}`
+      if (op.entity === "sale" && op.action === "create" && !actorPermissions.includes("sales.price_override")) {
+        const price = await priceOverrideViolation(op.payload)
+        if (price) return price
+      }
+      if (op.entity === "shift" && !shiftOpAllowed(op.action, actorPermissions, actorId, op.action === "close" ? await shiftOpener(op.payload) : null)) {
+        return op.action === "close" ? "Only the person who opened this shift or a manager can close it" : "Opening a shift needs the Checkout or Shifts permission"
+      }
+    }
+    const rule = recordedActorRule(op.entity, op.action, op.payload)
+    if (rule) {
+      const perms = await staffPermissions(rule.userId)
+      if (!perms) return "The staff member recorded on this operation is not known to the server yet"
+      if (rule.kind === "shift-open" && !shiftOpAllowed("open", perms, rule.userId, null)) return "The recorded staff member cannot open a shift"
+      if (rule.kind === "shift-close" && !shiftOpAllowed("close", perms, rule.userId, await shiftOpener(op.payload))) {
+        return "Only the person who opened this shift or a manager can close it"
+      }
+      if (rule.kind === "permission" && rule.permission && !perms.includes(rule.permission)) return `The recorded staff member lacks ${rule.permission}`
+    }
+    return null
+  }
+  return authorizeOp
+}
+
+/**
+ * Applies one operation exactly once: the claim row is inserted and locked, the effects run and
+ * appliedAt is set in ONE transaction, so a concurrent or repeated delivery (a till retry, a hub
+ * re-forward, a manager applying refused work) can never apply it twice.
+ */
+async function applyOnce(tenantId: string, op: { id: string; entity: string; action: string; payload?: unknown }, ctx: Parameters<typeof processOperation>[5], onApplied?: (tx: typeof prisma) => Promise<void>): Promise<"applied" | "duplicate"> {
+  await syncTestHooks.beforeClaim?.(op.id)
+  return prisma.$transaction(async (tx) => {
+      const summary = `${op.action} ${op.entity}`
+      const payloadJson = JSON.stringify(op.payload ?? {})
+      // Claim: a concurrent duplicate blocks here until this transaction commits or rolls back.
+      await (tx as typeof prisma).$executeRaw`
+        INSERT INTO "SyncOperation" ("id", "tenantId", "entity", "action", "summary", "payload", "status", "attempts", "createdAt")
+        VALUES (${op.id}, ${tenantId}, ${op.entity}, ${op.action}, ${summary}, ${payloadJson}::jsonb, 'Processing', 0, now())
+        ON CONFLICT ("id") DO NOTHING`
+      const [claim] = await (tx as typeof prisma).$queryRaw<Array<{ tenantId: string; appliedAt: Date | null; entity: string; action: string; payload: unknown; status: string }>>`
+        SELECT "tenantId", "appliedAt", "entity", "action", "payload", "status" FROM "SyncOperation" WHERE "id" = ${op.id} FOR UPDATE`
+      if (!claim || claim.tenantId !== tenantId) throw new TenantScopeError(`sync operation ${op.id} belongs to another store`)
+      // An existing row (applied, or an earlier failed attempt) must be this same operation; our
+      // own claim row ('Processing', inserted above) always is.
+      // A checkout attempt the till cancelled can never commit afterwards.
+      if (claim.status === "Cancelled") throw new CheckoutCancelledError(op.id)
+      // A manager declined this operation on review: it never applies, whoever sends it again.
+      if (claim.status === "Dismissed") throw new DismissedOperationError(op.id)
+      if (claim.status !== "Processing" && !sameOperation(claim, op)) throw new OperationIdReuseError(op.id)
+      await syncTestHooks.afterClaim?.(op.id)
+      if (claim.appliedAt) return "duplicate" as const
+
+      await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, ctx)
+
+      // Applied (same transaction) and queued for onward delivery: the cloud sync bridge
+      // forwards status Pending and marks it Synced once the cloud acknowledges it.
+      await (tx as any).syncOperation.update({
+        where: { id: op.id },
+        data: {
+          entity: op.entity,
+          action: op.action,
+          summary,
+          payload: (op.payload ?? {}) as any,
+          appliedAt: new Date(),
+          status: "Pending",
+          syncedAt: null,
+          lastAttemptAt: new Date(),
+          error: null,
+        },
+      })
+      await onApplied?.(tx as typeof prisma)
+      return "applied" as const
+  })
+}
+
 router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   const parsed = syncPushSchema.safeParse(req.body)
   const tenantId = req.auth!.tenantId
@@ -318,68 +441,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
   //     (docs/PERMISSIONS-ENFORCEMENT.md). An acting user the server cannot
   //     find fails closed ("error", retried later, e.g. once that staff record
   //     has synced).
-  const permsOf = new Map<string, string[] | null>()
-  async function staffPermissions(userId: string) {
-    if (!permsOf.has(userId)) {
-      const u = await prisma.staffUser.findFirst({ where: { id: userId, tenantId }, select: { role: true, permissions: true } })
-      permsOf.set(userId, u ? effectivePermissions(u.permissions, u.role) : null)
-    }
-    return permsOf.get(userId)!
-  }
-  async function shiftOpener(payload: any) {
-    const existing = payload?.id ? await prisma.shift.findFirst({ where: { id: String(payload.id), tenantId }, select: { openedById: true } }) : null
-    return existing?.openedById ?? (typeof payload?.openedById === "string" ? payload.openedById : null)
-  }
-  // SPRINT-0 price policy: a sale line below the product's current catalogue price (or a
-  // sell-at-cost sale) needs sales.price_override on the pushing account. A wholesale price is
-  // honoured for a sale to a named customer. Unknown products are left to the sale handler.
-  async function priceOverrideViolation(payload: unknown): Promise<string | null> {
-    const p = (payload ?? {}) as Record<string, unknown>
-    if (p.soldAtCost === true) return "PRICE_OVERRIDE: a sale at cost needs a manager's price-override permission."
-    const items = Array.isArray(p.items) ? (p.items as Array<Record<string, unknown>>) : []
-    for (const item of items) {
-      const syncId = typeof item.productSyncId === "string" && item.productSyncId ? item.productSyncId : null
-      const id = Number(item.id)
-      const product = syncId
-        ? await prisma.product.findFirst({ where: { tenantId, syncId }, select: { name: true, price: true, wholesalePrice: true } })
-        : Number.isInteger(id) && id > 0 ? await prisma.product.findFirst({ where: { tenantId, id }, select: { name: true, price: true, wholesalePrice: true } }) : null
-      if (!product) continue
-      const list = Number(product.price)
-      const wholesale = Number(product.wholesalePrice ?? 0)
-      const floor = wholesale > 0 && p.customerId ? Math.min(list, wholesale) : list
-      const unit = Number(item.unitPrice)
-      if (Number.isFinite(unit) && unit < floor - 0.005) {
-        return `PRICE_OVERRIDE: "${product.name}" was sold at ${unit}, below its price ${floor}. A manager must approve price changes.`
-      }
-    }
-    return null
-  }
-
-  async function authorizeOp(op: { entity: string; action: string; payload?: unknown }): Promise<string | null> {
-    if (actorPermissions) {
-      const required = requiredPermissionForOp(op.entity, op.action, op.payload)
-      const anyOf = required == null ? [] : Array.isArray(required) ? required : [required]
-      if (anyOf.length > 0 && !anyOf.some((p) => actorPermissions!.includes(p))) return `You don't have permission to ${op.action} ${op.entity}`
-      if (op.entity === "sale" && op.action === "create" && !actorPermissions.includes("sales.price_override")) {
-        const price = await priceOverrideViolation(op.payload)
-        if (price) return price
-      }
-      if (op.entity === "shift" && !shiftOpAllowed(op.action, actorPermissions, req.auth!.userId, op.action === "close" ? await shiftOpener(op.payload) : null)) {
-        return op.action === "close" ? "Only the person who opened this shift or a manager can close it" : "Opening a shift needs the Checkout or Shifts permission"
-      }
-    }
-    const rule = recordedActorRule(op.entity, op.action, op.payload)
-    if (rule) {
-      const perms = await staffPermissions(rule.userId)
-      if (!perms) return "The staff member recorded on this operation is not known to the server yet"
-      if (rule.kind === "shift-open" && !shiftOpAllowed("open", perms, rule.userId, null)) return "The recorded staff member cannot open a shift"
-      if (rule.kind === "shift-close" && !shiftOpAllowed("close", perms, rule.userId, await shiftOpener(op.payload))) {
-        return "Only the person who opened this shift or a manager can close it"
-      }
-      if (rule.kind === "permission" && rule.permission && !perms.includes(rule.permission)) return `The recorded staff member lacks ${rule.permission}`
-    }
-    return null
-  }
+  const authorizeOp = makeOpAuthorizer(tenantId, actorPermissions, req.auth!.userId)
 
   const results: Array<{ id: string; status: "ok" | "error" | "rejected"; error?: string }> = []
   const activities: Array<{ entity: string; action: string; summary: string }> = []
@@ -408,6 +470,8 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         results.push({ id: op.id, status: "ok" })
         continue
       }
+      // Declined by a manager on review (refused-work recovery): never applies, never reopens.
+      if (await prisma.syncOperation.findFirst({ where: { id: op.id, tenantId, status: "Dismissed" }, select: { id: true } })) throw new DismissedOperationError(op.id)
 
       // SPRINT-1: a retired till on an older version may not CHECK OUT: its live (write-through,
       // "wt-") sale is refused before it completes, so no payment is taken for a sale this store
@@ -435,7 +499,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             data: {
               tenantId, action: "security.permission.denied", entity: op.entity,
               summary: `Blocked ${op.action} ${op.entity}: ${denial}`,
-              metadata: { reason: denial, userId: req.auth!.userId },
+              metadata: { reason: denial, userId: req.auth!.userId, opId: op.id, deviceId: deviceId ?? null, syncSchema: pushSchema },
               userId: req.auth!.userId, userName: "", userRole: req.auth!.role as any,
             },
           })
@@ -451,7 +515,8 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
               data: { id: op.id, tenantId, entity: op.entity, action: op.action, summary: `${op.action} ${op.entity}`, payload: (op.payload ?? {}) as any, status: "Refused", attempts: 1, lastAttemptAt: new Date(), error },
             })
           } else if (row.tenantId === tenantId && !row.appliedAt) {
-            await prisma.syncOperation.updateMany({ where: { id: op.id, tenantId, appliedAt: null }, data: { status: "Refused", attempts: { increment: 1 }, lastAttemptAt: new Date(), error } })
+            // never reopens work a manager is resolving or has declined
+            await prisma.syncOperation.updateMany({ where: { id: op.id, tenantId, appliedAt: null, status: { notIn: ["Resolving", "Dismissed"] } }, data: { status: "Refused", attempts: { increment: 1 }, lastAttemptAt: new Date(), error } })
           }
         } catch (keepErr) { console.error("Failed to keep refused operation:", keepErr) }
         // A refused price is a money decision a manager settles (never retried); other refusals
@@ -461,44 +526,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       }
 
       const sessionSeen: SessionResult | null = deviceSeen ? await checkSession((op as any).ev?.session, tenantId, deviceSeen.deviceId) : null
-      await syncTestHooks.beforeClaim?.(op.id)
-      const outcome = await prisma.$transaction(async (tx) => {
-        const summary = `${op.action} ${op.entity}`
-        const payloadJson = JSON.stringify(op.payload ?? {})
-        // Claim: a concurrent duplicate blocks here until this transaction commits or rolls back.
-        await (tx as typeof prisma).$executeRaw`
-          INSERT INTO "SyncOperation" ("id", "tenantId", "entity", "action", "summary", "payload", "status", "attempts", "createdAt")
-          VALUES (${op.id}, ${tenantId}, ${op.entity}, ${op.action}, ${summary}, ${payloadJson}::jsonb, 'Processing', 0, now())
-          ON CONFLICT ("id") DO NOTHING`
-        const [claim] = await (tx as typeof prisma).$queryRaw<Array<{ tenantId: string; appliedAt: Date | null; entity: string; action: string; payload: unknown; status: string }>>`
-          SELECT "tenantId", "appliedAt", "entity", "action", "payload", "status" FROM "SyncOperation" WHERE "id" = ${op.id} FOR UPDATE`
-        if (!claim || claim.tenantId !== tenantId) throw new TenantScopeError(`sync operation ${op.id} belongs to another store`)
-        // An existing row (applied, or an earlier failed attempt) must be this same operation; our
-        // own claim row ('Processing', inserted above) always is.
-        // A checkout attempt the till cancelled can never commit afterwards.
-        if (claim.status === "Cancelled") throw new CheckoutCancelledError(op.id)
-        if (claim.status !== "Processing" && !sameOperation(claim, op)) throw new OperationIdReuseError(op.id)
-        await syncTestHooks.afterClaim?.(op.id)
-        if (claim.appliedAt) return "duplicate" as const
-
-        await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema })
-
-        // Applied (same transaction) and queued for onward delivery: the cloud sync bridge
-        // forwards status Pending and marks it Synced once the cloud acknowledges it.
-        await (tx as any).syncOperation.update({
-          where: { id: op.id },
-          data: {
-            entity: op.entity,
-            action: op.action,
-            summary,
-            payload: (op.payload ?? {}) as any,
-            appliedAt: new Date(),
-            status: "Pending",
-            syncedAt: null,
-            lastAttemptAt: new Date(),
-            error: null,
-          },
-        })
+      const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema }, async (tx) => {
         // SPRINT-2 Phase B (observe): what this server knows about the operation, in the same
         // transaction (never an applied operation without its evidence row, or the reverse).
         if ((tx as any).operationEvidence) {
@@ -511,7 +539,6 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null,
           })] })
         }
-        return "applied" as const
       })
 
       results.push({ id: op.id, status: "ok" })
@@ -531,6 +558,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         err instanceof TenantScopeError ||
         err instanceof OperationIdReuseError ||
         err instanceof CheckoutCancelledError ||
+        err instanceof DismissedOperationError ||
         errorMessage.includes("Insufficient stock") ||
         errorMessage.includes("was voided") ||
         errorMessage.includes("Insufficient stock in batch") ||
@@ -553,9 +581,9 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
               payload: (op.payload ?? {}) as any, status: opStatus, attempts: isRejected ? 5 : 1, lastAttemptAt: new Date(), error: errorMessage,
             },
           })
-        } else if (row.tenantId === tenantId && !row.appliedAt && !(err instanceof OperationIdReuseError) && !(err instanceof CheckoutCancelledError)) {
+        } else if (row.tenantId === tenantId && !row.appliedAt && !(err instanceof OperationIdReuseError) && !(err instanceof CheckoutCancelledError) && !(err instanceof DismissedOperationError)) {
           await prisma.syncOperation.updateMany({
-            where: { id: op.id, tenantId, appliedAt: null },
+            where: { id: op.id, tenantId, appliedAt: null, status: { notIn: ["Resolving", "Dismissed"] } },
             data: { status: opStatus, attempts: isRejected ? 5 : { increment: 1 }, lastAttemptAt: new Date(), error: errorMessage },
           })
         }
@@ -647,17 +675,138 @@ router.post("/clients/:id/readmit", staffSync, async (req: AuthRequest, res: Ser
 })
 
 /** SPRINT-2 Phase B: what the server recorded about one operation (observe mode). Staff with reports.view. */
-// Operations this server refused for permissions, with their payload and reason, so refused
-// work is visible and recoverable (never silently dropped).
+// ─── Refused-work review (containment) ───────────────────────────────────────
+// Operations this server refused for permissions are kept (status "Refused"). A manager reviews
+// each one — original command (secrets hidden), the till's claimed local effect, what applying it
+// here would do now, the reason, and what is known about who did it — and either APPLIES it under
+// their own authority (the same apply-once claim as a push: never twice) or DISMISSES it (it then
+// never applies, whoever resends it). Both need a signed-in staff member holding the permission the
+// operation itself requires, and a note; both are audited.
+
+/** Permissions that can decide about some refused work (see reviewPermissionsFor). */
+const REVIEW_PERMISSIONS = ["settings.manage", "sales.price_override", "inventory.adjust", "inventory.manage", "inventory.receive", "customers.manage", "sales.refund", "sales.void", "delivery.manage", "staff.manage", "accounting.manage", "shifts.manage"]
+
+/** Permissions a reviewer must hold to decide about this operation (any one of them). */
+function reviewPermissionsFor(entity: string, action: string, payload: unknown, reason: string | null): string[] {
+  if (reason?.startsWith("PRICE_OVERRIDE:")) return ["sales.price_override"]
+  const required = requiredPermissionForOp(entity, action, payload)
+  const anyOf = required == null ? [] : Array.isArray(required) ? required : [required]
+  return anyOf.length > 0 ? anyOf.map(String) : ["settings.manage"]
+}
+
+async function staffReviewer(req: AuthRequest): Promise<{ id: string; name: string; permissions: string[] } | null> {
+  if (tokenKind(req.auth) !== "staff") return null
+  const u = await prisma.staffUser.findFirst({ where: { id: req.auth!.userId, tenantId: req.auth!.tenantId, active: true }, select: { id: true, name: true, role: true, permissions: true } })
+  return u ? { id: u.id, name: u.name, permissions: effectivePermissions(u.permissions as any, u.role) } : null
+}
+
+/** The reason as refused (without the account/device suffix the row's error carries). */
+const refusalReason = (error: string | null) => (error ?? "").split(" | ")[0].replace(/ \(pushed by account [^)]*\)$/, "") || null
+
+/** Who pushed it and from which device: recorded by the server when it refused it. */
+async function refusalOrigins(tenantId: string) {
+  const denials = await prisma.auditEvent.findMany({ where: { tenantId, action: "security.permission.denied" }, orderBy: { createdAt: "desc" }, take: 2000, select: { metadata: true } })
+  const out = new Map<string, { userId: string | null; deviceId: string | null; syncSchema?: number }>()
+  for (const d of denials) {
+    const m = (d.metadata ?? {}) as Record<string, unknown>
+    if (typeof m.opId === "string" && !out.has(m.opId)) out.set(m.opId, { userId: typeof m.userId === "string" ? m.userId : null, deviceId: typeof m.deviceId === "string" ? m.deviceId : null, syncSchema: typeof m.syncSchema === "number" ? m.syncSchema : undefined })
+  }
+  return out
+}
+
 router.get("/refused", staffSync, async (req: AuthRequest, res: ServerResponse) => {
-  if (!(await can(req, "reports.view"))) { json(res, { error: "Needs the Reports permission." }, 403); return }
+  const tenantId = req.auth!.tenantId
+  const reviewer = await staffReviewer(req)
+  const viewerPerms = reviewer?.permissions ?? []
+  // Reports sees everything; anyone else sees only the work they are allowed to decide about.
+  const seesAll = viewerPerms.includes("reports.view")
+  if (!seesAll && !REVIEW_PERMISSIONS.some((p) => viewerPerms.includes(p))) { json(res, { error: "Needs the Reports permission or a manager permission.", code: "FORBIDDEN" }, 403); return }
   const rows = await prisma.syncOperation.findMany({
-    where: { tenantId: req.auth!.tenantId, status: "Refused", appliedAt: null },
+    where: { tenantId, status: { in: ["Refused", "Resolving"] }, appliedAt: null },
     orderBy: { createdAt: "desc" }, take: 200,
-    select: { id: true, entity: true, action: true, payload: true, error: true, attempts: true, createdAt: true, lastAttemptAt: true },
+    select: { id: true, entity: true, action: true, status: true, payload: true, error: true, attempts: true, createdAt: true, lastAttemptAt: true },
   })
-  json(res, { operations: rows })
+  const origins = await refusalOrigins(tenantId)
+  const staff = new Map((await prisma.staffUser.findMany({ where: { tenantId }, select: { id: true, name: true } })).map((s) => [s.id, s.name]))
+  const operations = []
+  for (const r of rows) {
+    const pushed = origins.get(r.id) ?? { userId: null, deviceId: null }
+    const claimed = claimedActorOf(r.entity, r.action, r.payload)
+    const reason = refusalReason(r.error)
+    const needs = reviewPermissionsFor(r.entity, r.action, r.payload, reason)
+    if (!seesAll && !needs.some((p) => viewerPerms.includes(p))) continue
+    operations.push({
+      id: r.id, entity: r.entity, action: r.action, status: r.status, reason, attempts: r.attempts,
+      refusedAt: r.createdAt, lastAttemptAt: r.lastAttemptAt,
+      pushedBy: pushed.userId ? { id: pushed.userId, name: staff.get(pushed.userId) ?? null } : null,
+      deviceId: pushed.deviceId,
+      claimedActor: { ...claimed, knownName: claimed.id ? staff.get(claimed.id) ?? null : null },
+      limitations: actorLimitations(pushed.userId, claimed, pushed.deviceId, r.payload),
+      effects: await describeEffects(tenantId, r.entity, r.action, r.payload),
+      payload: redactSecrets(r.payload),
+      requiredPermissions: needs,
+      canResolve: needs.some((p) => viewerPerms.includes(p)),
+    })
+  }
+  json(res, { operations })
 })
+
+router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: ServerResponse) => {
+  const tenantId = req.auth!.tenantId
+  const body = z.object({ decision: z.enum(["apply", "dismiss"]), note: z.string().trim().min(3).max(500) }).safeParse(req.body)
+  if (!body.success) { json(res, { error: "Choose apply or dismiss and write a note (at least 3 characters).", code: "INVALID" }, 400); return }
+  const reviewer = await staffReviewer(req)
+  if (!reviewer) { json(res, { error: "Sign in as a staff member to review refused work.", code: "NOT_STAFF" }, 403); return }
+  const id = String((req.params as Record<string, string>).id)
+  const row = await prisma.syncOperation.findFirst({ where: { id, tenantId }, select: { id: true, entity: true, action: true, payload: true, status: true, error: true, appliedAt: true } })
+  if (!row) { json(res, { error: "Not found", code: "NOT_FOUND" }, 404); return }
+  if (row.status !== "Refused" || row.appliedAt) { json(res, { error: "This operation is no longer waiting for review.", code: "NOT_REFUSED", status: row.appliedAt ? "applied" : row.status }, 409); return }
+  const reason = refusalReason(row.error)
+  const needs = reviewPermissionsFor(row.entity, row.action, row.payload, reason)
+  if (!needs.some((p) => reviewer.permissions.includes(p))) { json(res, { error: `Deciding about this needs: ${needs.join(" or ")}.`, code: "FORBIDDEN" }, 403); return }
+  // Exactly one decision: Refused -> Resolving is taken by one request only.
+  const taken = await prisma.syncOperation.updateMany({ where: { id, tenantId, status: "Refused", appliedAt: null }, data: { status: "Resolving" } })
+  if (taken.count !== 1) { json(res, { error: "Someone else is deciding about this operation.", code: "NOT_REFUSED" }, 409); return }
+  const origin: { userId: string | null; deviceId: string | null; syncSchema?: number } = (await refusalOrigins(tenantId)).get(id) ?? { userId: null, deviceId: null }
+  const audit = (action: string, summary: string, extra: Record<string, unknown> = {}) => prisma.auditEvent.create({ data: {
+    tenantId, action, entity: row.entity, summary,
+    metadata: { opId: id, reviewerId: reviewer.id, note: body.data.note, originalReason: reason, pushedBy: origin.userId, deviceId: origin.deviceId, ...extra } as any,
+    userId: reviewer.id, userName: reviewer.name, userRole: (req.auth!.role ?? "Manager") as any,
+  } }).catch(() => undefined)
+  const back = (error: string) => prisma.syncOperation.updateMany({ where: { id, tenantId, status: "Resolving" }, data: { status: "Refused", error } })
+
+  if (body.data.decision === "dismiss") {
+    await prisma.syncOperation.updateMany({ where: { id, tenantId, status: "Resolving" }, data: { status: "Dismissed", error: `${row.error ?? ""} | dismissed by ${reviewer.name}: ${body.data.note}` } })
+    await audit("sync.refused.dismissed", `${reviewer.name} declined refused ${row.action} ${row.entity}: ${body.data.note}`)
+    json(res, { ok: true, decision: "dismiss", status: "Dismissed" })
+    return
+  }
+  const op = { id, entity: row.entity, action: row.action, payload: row.payload ?? {} }
+  // The reviewer's own authority must allow the operation (the same rules as a push by them).
+  const refusal = await makeOpAuthorizer(tenantId, reviewer.permissions, reviewer.id)(op)
+  if (refusal) { await back(row.error ?? ""); json(res, { error: refusal, code: "FORBIDDEN" }, 403); return }
+  try {
+    const outcome = await applyOnce(tenantId, op, reviewApplyCtx(origin.deviceId, reviewer.id, origin.syncSchema), reviewApplyHook(req, tenantId, op, reviewer.id, origin.deviceId))
+    await audit("sync.refused.applied", `${reviewer.name} applied refused ${row.action} ${row.entity}: ${body.data.note}`, { outcome })
+    try { broadcastToTenant(tenantId, "sync:data-changed", {}) } catch { /* no-op */ }
+    json(res, { ok: true, decision: "apply", outcome })
+  } catch (err) {
+    const message = (err as Error).message
+    await back(`${row.error ?? ""} | apply on review failed: ${message}`)
+    json(res, { error: message, code: "APPLY_FAILED" }, 409)
+  }
+})
+
+/** A manager applying refused work runs as themselves, with the sync schema the till pushed it with. */
+const reviewApplyCtx = (deviceId: string | null, userId: string, syncSchema?: number) => ({ deviceId, userId, syncSchema })
+/** Evidence for work applied on a manager's review: the reviewer's account applied it; the actor is still only claimed. */
+const reviewApplyHook = (req: AuthRequest, tenantId: string, op: { id: string; entity: string; action: string; payload?: unknown }, reviewerId: string, deviceId: string | null) => async (tx: typeof prisma) => {
+  if (!(tx as any).operationEvidence) return
+  const row = observeEvidence({ opId: op.id, tenantId, entity: op.entity, action: op.action, payload: op.payload, kind: "staff", accountId: reviewerId, deviceId, transport: transportOf(req as any), acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud", envelope: null })
+  row.limitations.push("applied-on-manager-review")
+  await (tx as any).operationEvidence.createMany({ skipDuplicates: true, data: [row] })
+}
+
 
 router.get("/evidence/:opId", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   if (!(await can(req, "reports.view"))) { json(res, { error: "Needs the Reports permission." }, 403); return }
@@ -1125,6 +1274,10 @@ export const syncTestHooks: { beforeClaim?: (opId: string) => Promise<void>; aft
 /** A write-through checkout attempt the till cancelled: it can never commit afterwards. */
 export class CheckoutCancelledError extends Error {
   constructor(id: string) { super(`CHECKOUT_CANCELLED: checkout attempt ${id} was cancelled by the till`); this.name = "CheckoutCancelledError" }
+}
+/** A manager declined this operation when reviewing refused work (non-retryable). */
+export class DismissedOperationError extends Error {
+  constructor(id: string) { super(`DISMISSED: a manager declined operation ${id} on review; it will not be applied.`); this.name = "DismissedOperationError" }
 }
 
 /** An operation id the server already holds for a different entity, action or payload. */
