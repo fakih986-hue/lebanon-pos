@@ -75,7 +75,9 @@ async function isServerReachable(): Promise<boolean> {
 
 // REFUND-INTEGRITY-1: this client understands sale line ids, sale lot
 // allocations and refund rates; servers omit them for older clients.
-const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "3" } // 3: stockPolicy on products and sale lines (SPRINT-1)
+// 3: stockPolicy on products and sale lines (SPRINT-1). 4: sends its device credential and the staff
+// session each operation was made under (SPRINT-2) — the enforcement activation gate requires it.
+const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "4" }
 
 /**
  * A rejected refund (or void) is a money conflict: the customer may already

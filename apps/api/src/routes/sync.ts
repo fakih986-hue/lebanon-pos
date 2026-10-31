@@ -15,6 +15,7 @@ import { LEGACY_REV } from "../lib/stockPolicy.js"
 import { observeEvidence, transportOf } from "../lib/evidence.js"
 import { claimedActorOf, describeEffects, actorLimitations, redactSecrets } from "../lib/refusedReview.js"
 import { checkDevice, checkSession, type SessionResult } from "../lib/credentials.js"
+import { identityGateBlockers, isHubServer } from "../lib/identityGate.js"
 import { tokenKind } from "../middleware/auth.js"
 import { recordStockMovement, recordStockMovementOnce, UNALLOCATED_RETURN_NOTE } from "../lib/ledger.js"
 import { effectivePermissions, recordedActorRule, requiredPermissionForOp, shiftOpAllowed } from "../lib/permissions.js"
@@ -162,6 +163,13 @@ const syncPushSchema = z.object({
 
 type SyncOperationInput = z.infer<typeof syncOperationSchema>
 
+// SPRINT-2: what stands between this store and enforce-checkout (settings.manage).
+router.get("/identity-gate", requireAuth, requireTokenKinds("staff"), async (req: AuthRequest, res: ServerResponse) => {
+  if (!(await can(req, "settings.manage"))) { json(res, { error: "Needs the Settings permission." }, 403); return }
+  const blockers = isHubServer() ? [] : await identityGateBlockers(req.auth!.tenantId)
+  json(res, { allowed: !isHubServer() && blockers.length === 0, hubServer: isHubServer(), blockers })
+})
+
 // SPRINT-2: switch this store between observe and enforce-checkout. Only an explicit decision by a
 // signed-in staff member with settings.manage, with a note; audited. Never switched automatically.
 router.post("/identity-mode", requireAuth, requireTokenKinds("staff"), async (req: AuthRequest, res: ServerResponse) => {
@@ -171,6 +179,16 @@ router.post("/identity-mode", requireAuth, requireTokenKinds("staff"), async (re
   const who = await prisma.staffUser.findFirst({ where: { id: req.auth!.userId, tenantId, active: true }, select: { name: true, role: true, permissions: true } })
   if (!who || !effectivePermissions(who.permissions as any, who.role).includes("settings.manage")) { json(res, { error: "Needs the Settings permission.", code: "FORBIDDEN" }, 403); return }
   const before = (await prisma.tenant.findUnique({ where: { id: tenantId }, select: { staffSessionMode: true } }))?.staffSessionMode ?? "observe"
+  if (body.data.mode === "enforce-checkout") {
+    // The activation gate: refused (not warned) until every trading client is inside the boundary.
+    if (isHubServer()) { json(res, { error: "Staff identity enforcement can only be switched on at the cloud, for stores whose registers connect directly to it. Hub forwarding is not covered yet.", code: "HUB_SERVER" }, 409); return }
+    const blockers = await identityGateBlockers(tenantId)
+    if (blockers.length > 0) {
+      await prisma.auditEvent.create({ data: { tenantId, action: "security.identity_mode.refused", entity: "settings", summary: `Enforcement not switched on: ${blockers.length} till(s) or hub(s) are outside the enforcement boundary`, metadata: { blockers } as any, userId: req.auth!.userId, userName: who.name, userRole: who.role as any } }).catch(() => undefined)
+      json(res, { error: "Enforcement cannot be switched on yet: every till that still trades must be upgraded and enrolled, and the store must not use a hub. Upgrade and enroll them, or retire the ones no longer in use.", code: "IDENTITY_GATE", blockers }, 409)
+      return
+    }
+  }
   await prisma.tenant.update({ where: { id: tenantId }, data: { staffSessionMode: body.data.mode } })
   await prisma.auditEvent.create({ data: { tenantId, action: "security.identity_mode.changed", entity: "settings", summary: `${who.name} changed staff identity mode from ${before} to ${body.data.mode}: ${body.data.note}`, metadata: { before, after: body.data.mode, note: body.data.note } as any, userId: req.auth!.userId, userName: who.name, userRole: who.role as any } }).catch(() => undefined)
   json(res, { ok: true, mode: body.data.mode, before })
@@ -567,13 +585,19 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       const gate = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && (pushKind === "staff" || pushKind === "hub-local")
         ? await checkoutIdentity(tenantId, deviceSeen, sessionSeen, (op as any).ev, op.payload)
         : null
+      // A hub's forwarded sale cannot be attributed to a verified person yet (Phase D): in an enforcing
+      // store it is kept for review rather than applied on the hub link's store-level authority.
+      const hubOutside = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && pushKind === "bridge"
+        ? "HUB_UNSUPPORTED: this store enforces staff sessions, which do not cover sales forwarded by a hub yet. Kept for a manager's review."
+        : null
       const enforcedActor = gate && "actor" in gate ? gate.actor : null
 
       // POS-PERMISSIONS-1: server-enforce the money/admin-sensitive subset so a
       // tampered client can't bypass in-app limits. Only fires for a real staff
       // actor (actorPermissions != null) and only for mapped ops; everything
       // else passes through unchanged.
-      const denial = gate && "refuse" in gate ? gate.refuse
+      const denial = hubOutside ? hubOutside
+        : gate && "refuse" in gate ? gate.refuse
         : enforcedActor ? await makeOpAuthorizer(tenantId, enforcedActor.permissions, enforcedActor.id)(op)
         : await authorizeOp(op)
       if (denial) {
@@ -604,7 +628,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         } catch (keepErr) { console.error("Failed to keep refused operation:", keepErr) }
         // A refused price is a money decision a manager settles (never retried); other refusals
         // stay retryable (the permission may be granted later).
-        results.push({ id: op.id, status: /^(PRICE_OVERRIDE|IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW):/.test(denial) ? "rejected" : "error", error: denial })
+        results.push({ id: op.id, status: /^(PRICE_OVERRIDE|IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW|HUB_UNSUPPORTED):/.test(denial) ? "rejected" : "error", error: denial })
         continue
       }
 
@@ -779,7 +803,7 @@ const REVIEW_PERMISSIONS = ["settings.manage", "sales.price_override", "inventor
 function reviewPermissionsFor(entity: string, action: string, payload: unknown, reason: string | null): string[] {
   if (reason?.startsWith("PRICE_OVERRIDE:")) return ["sales.price_override"]
   // A sale refused for missing identity: a manager decides (it may be applied under their authority).
-  if (/^(IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW):/.test(reason ?? "")) return ["sales.void", "settings.manage"]
+  if (/^(IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW|HUB_UNSUPPORTED):/.test(reason ?? "")) return ["sales.void", "settings.manage"]
   const required = requiredPermissionForOp(entity, action, payload)
   const anyOf = required == null ? [] : Array.isArray(required) ? required : [required]
   return anyOf.length > 0 ? anyOf.map(String) : ["settings.manage"]

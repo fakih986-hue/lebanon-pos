@@ -17,6 +17,7 @@ delete process.env.IS_LOCAL_SERVER
 vi.setConfig({ testTimeout: 60_000 })
 
 const T = randomUUID(), SUB = `ec-${T.slice(0, 8)}`
+const HUB_KEY = `ck-${randomUUID()}`
 let server: http.Server
 let base = ""
 let owner = "", ownerId = "", ranaId = "", samiId = "", kimId = ""
@@ -26,7 +27,7 @@ const syncId = randomUUID()
 
 const addr = () => `10.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`
 const call = async (method: string, path: string, body?: unknown, headers: Record<string, string> = {}) => {
-  const r = await fetch(`${base}${path}`, { method, headers: { "Content-Type": "application/json", "x-titan-sync-schema": "3", "x-forwarded-for": addr(), ...headers }, body: body === undefined ? undefined : JSON.stringify(body) })
+  const r = await fetch(`${base}${path}`, { method, headers: { "Content-Type": "application/json", "x-titan-sync-schema": "4", "x-forwarded-for": addr(), ...headers }, body: body === undefined ? undefined : JSON.stringify(body) })
   return { status: r.status, body: (await r.json().catch(() => null)) as any, raw: "" }
 }
 const bearer = (t: string) => ({ Authorization: `Bearer ${t}` })
@@ -46,7 +47,7 @@ beforeAll(async () => {
   server = http.createServer(app)
   await new Promise<void>((resolve) => server.listen(0, resolve))
   base = `http://localhost:${(server.address() as AddressInfo).port}`
-  await prisma.tenant.create({ data: { id: T, name: "Enforce checkout (disposable)", subdomain: SUB } })
+  await prisma.tenant.create({ data: { id: T, name: "Enforce checkout (disposable)", subdomain: SUB, cloudApiKey: HUB_KEY } })
   const mk = async (name: string, pin: string, role: string, permissions?: string[]) =>
     (await prisma.staffUser.create({ data: { tenantId: T, name, mobile: `ec-${name}-${T.slice(0, 6)}`, pin: await bcrypt.hash(pin, 12), role: role as any, ...(permissions ? { permissions } : {}) } as any })).id
   ownerId = await mk("Owner", "9101", "Admin")
@@ -75,6 +76,38 @@ describe("observe mode stays the default", () => {
     const op = sale(7)
     expect((await push(op, { v: 1, session: (await session("9102")).session })).status).toBe("ok")
     expect((await evidence(op))!.evidence).toBe("staff-session") // recorded, not enforced
+  })
+})
+
+describe("the activation gate: the server refuses enforcement until every trading client is inside the boundary", () => {
+  const legacySale = (deviceId: string, schema: string, extra: Record<string, string> = {}) =>
+    call("POST", "/api/sync/push", { deviceId, operations: [{ id: randomUUID(), entity: "expense", action: "create", payload: { id: randomUUID(), expenseNumber: `EXP-${randomUUID().slice(0, 6)}`, vendor: "Market", category: "Supplies", amount: 1, paymentMethod: "Cash", recordedById: ownerId, recordedBy: "Owner", createdAt: new Date().toISOString() } }] }, { ...bearer(owner), "x-titan-sync-schema": schema, ...extra })
+  const enable = () => call("POST", "/api/sync/identity-mode", { mode: "enforce-checkout", note: "trying to switch on" }, bearer(owner))
+  const blockers = async () => (await call("GET", "/api/sync/identity-gate", undefined, bearer(owner))).body.blockers as Array<{ id: string; label: string; reason: string }>
+  const retireAll = async () => { for (const b of await blockers()) expect((await call("POST", `/api/sync/clients/${b.id}/retire`, { note: "no longer used in this store" }, bearer(owner))).status).toBe(200) }
+
+  it("an older register (schema 3), an unenrolled register, a register without a device id and a hub link each block it", async () => {
+    await legacySale("old-till", "3")
+    await legacySale("new-but-unenrolled", "4")
+    await call("POST", "/api/sync/push", { operations: [] }, { ...bearer(owner), "x-titan-sync-schema": "4" }) // no device id
+    await legacySale("", "3", { Authorization: "", "x-cloud-key": HUB_KEY, "x-tenant-id": T }) // a hub's cloud link
+    const r = await enable()
+    console.log("EVIDENCE activation refused:", JSON.stringify({ status: r.status, code: r.body.code, blockers: r.body.blockers?.map((b: any) => `${b.label}: ${b.reason}`) }))
+    expect([r.status, r.body.code]).toEqual([409, "IDENTITY_GATE"])
+    expect(new Set(r.body.blockers.map((b: any) => b.reason))).toEqual(new Set(["upgrade-needed", "not-enrolled", "no-device-id", "hub-link"]))
+    expect((await call("GET", "/api/sync/status", undefined, bearer(owner))).body.staffSessionMode).toBe("observe")
+    expect(await prisma.auditEvent.count({ where: { tenantId: T, action: "security.identity_mode.refused" } })).toBe(1)
+  })
+
+  it("never on a hub server", async () => {
+    await retireAll()
+    process.env.IS_LOCAL_SERVER = "true"
+    try { expect((await enable()).body.code).toBe("HUB_SERVER") } finally { delete process.env.IS_LOCAL_SERVER }
+  })
+
+  it("an upgraded, enrolled register that trades does not block it (the register used below)", async () => {
+    expect(await blockers()).toEqual([])
+    expect((await call("GET", "/api/sync/identity-gate", undefined, bearer(owner))).body.allowed).toBe(true)
   })
 })
 
@@ -136,6 +169,14 @@ describe("enforce-checkout: authorization follows the person in the session (con
     await prisma.staffUser.update({ where: { id: ranaId }, data: { tokenVersion: { increment: 1 } } }) // PIN reset
     const revoked = sale(10)
     expect((await push(revoked, { v: 1, session: s })).error).toMatch(/IDENTITY_REQUIRED: the staff session is not valid \(staff-revoked\)/)
+  })
+
+  it("a sale forwarded by a hub is outside the boundary: kept for review, not applied on the hub link's authority", async () => {
+    const op = sale(10)
+    const r = (await call("POST", "/api/sync/push", { operations: [op] }, { "x-cloud-key": HUB_KEY, "x-tenant-id": T })).body.results[0]
+    expect([r.status, String(r.error)]).toEqual(["rejected", expect.stringMatching(/^HUB_UNSUPPORTED/)])
+    expect(await saleRow(op)).toBeNull()
+    expect((await prisma.syncOperation.findUnique({ where: { id: op.id } }))!.status).toBe("Refused")
   })
 
   it("other operations are not part of this slice (an expense still applies as before)", async () => {
