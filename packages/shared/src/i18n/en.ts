@@ -8,6 +8,7 @@ export const en = {
   "nav.reports": "Reports",
   "nav.sales": "Sales",
   "nav.staff": "Staff",
+  "desktop.store_mismatch": "This hub is now set up for a different store than the data on this register. Sending and downloading are paused so the two stores are never mixed; nothing has been lost. To use this hub's store, choose \"New device / add another store\"; or set the hub back to this register's store.",
   "nav.settings": "Settings",
   "nav.collapse": "Collapse",
   "nav.logout": "Logout",

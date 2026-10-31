@@ -25,6 +25,7 @@ import {
   setStoreSubdomain,
   setApiUrl,
   setAuthToken,
+  adoptOfferedHubToken,
   setConnectionMode,
   validateUrlForMode,
   type KnownStore,
@@ -121,7 +122,12 @@ export default function LoginScreen() {
         if (!auto?.token) return
 
         setApiUrl(apiUrl)
-        setAuthToken(auto.token)
+        // Same store check as every other token the hub offers on its own: a register that holds
+        // another store's data never switches silently (nothing is sent or downloaded).
+        if (!adoptOfferedHubToken(auto.token)) {
+          if (mounted) setStatus(t("desktop.store_mismatch"))
+          return
+        }
         // Register the hub device in the API database so sync access control works
         await registerHubDevice("Hub").catch(() => {})
         setStatus("Syncing your store data…")

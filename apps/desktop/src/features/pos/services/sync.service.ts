@@ -294,6 +294,39 @@ export function setAuthToken(token: string) {
 // vs cloud); the tenant id inside the server-issued token cannot. Persisted
 // separately so it survives a logout that clears the token.
 const TENANT_ID_KEY = "lebanonpos.tenant-id.v1"
+
+// A local hub offered a token for a DIFFERENT store than the one whose data is on this device (the
+// hub was set up again for another store). Until a person explicitly switches store (Connect →
+// clearStoreData) or the hub offers this device's own store again, nothing is sent or downloaded:
+// this store's pending work, journals and local data stay exactly as they are.
+const STORE_MISMATCH_KEY = "lebanonpos.store-mismatch.v1"
+export const STORE_MISMATCH_EVENT = "lebanonpos-store-mismatch"
+export type StoreMismatch = { heldTenantId: string; offeredTenantId: string | null; at: string }
+export function getStoreMismatch(): StoreMismatch | null {
+  try { const raw = localStorage.getItem(STORE_MISMATCH_KEY); return raw ? (JSON.parse(raw) as StoreMismatch) : null } catch { return null }
+}
+function setStoreMismatch(m: StoreMismatch | null) {
+  try { if (m) localStorage.setItem(STORE_MISMATCH_KEY, JSON.stringify(m)); else localStorage.removeItem(STORE_MISMATCH_KEY) } catch { /* storage unavailable */ }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(STORE_MISMATCH_EVENT))
+}
+export const STORE_MISMATCH_MESSAGE = "STORE_MISMATCH: this hub is now set up for a different store than the data on this register. Sending and downloading are paused so the two stores are never mixed; nothing was lost. Switch store explicitly (New device / add another store), or set the hub back to this register's store."
+/**
+ * The ONLY way a token a local hub offers on its own (auto-login, at startup or on refresh) is
+ * adopted. A device with no store yet adopts it (first setup). A device that already holds a store
+ * adopts it only for that same store; otherwise it records the mismatch and keeps everything.
+ */
+export function adoptOfferedHubToken(token: string): boolean {
+  const current = getCurrentTenantId()
+  const offered = tenantIdFromToken(token)
+  if (current && offered !== current) {
+    console.warn("[sync] auto-login offered a token for another store — not adopted")
+    if (getStoreMismatch()?.offeredTenantId !== offered) setStoreMismatch({ heldTenantId: current, offeredTenantId: offered, at: new Date().toISOString() })
+    return false
+  }
+  if (getStoreMismatch()) setStoreMismatch(null)
+  setAuthToken(token)
+  return true
+}
 function tenantIdFromToken(token: string | null): string | null {
   if (!token) return null
   try {
@@ -538,6 +571,8 @@ export async function clearStoreData() {
   for (const hook of storeSwitchHooks) {
     try { hook() } catch (e) { console.error("[sync] store-switch hook failed:", e) }
   }
+  // The person chose to switch store: the pause no longer applies.
+  setStoreMismatch(null)
   // Never lose an open money conflict to a store switch.
   stashMoneyConflictsForStore()
   for (const { key } of Object.values(PULL_TARGETS)) {
@@ -892,16 +927,8 @@ async function tryRefreshHubToken(): Promise<boolean> {
     if (!res.ok) return false
     const { token } = await res.json()
     if (!token) return false
-    // Only a token for the store this register already holds: a server configured for another
-    // store must never silently switch the register (its queued work would go to that store).
-    const current = getCurrentTenantId()
-    const offered = tenantIdFromToken(token)
-    if (current && offered !== current) {
-      console.warn("[sync] auto-login offered a token for another store — not adopted")
-      return false
-    }
-    setAuthToken(token)
-    return true
+    // Only a token for the store this register already holds (see adoptOfferedHubToken).
+    return adoptOfferedHubToken(token)
   } catch {
     return false
   }
@@ -1494,7 +1521,7 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
     updateQueueOps((op) => { if (op.id !== operation.id || !stillOpen(op)) return op; settled = true; return next(op) })
     return settled
   }
-  if (apiUrl && token && !isSuspended()) {
+  if (apiUrl && token && !isSuspended() && !getStoreMismatch()) {
     try {
       const response = await fetch(`${apiUrl}/api/sync/push`, {
         method: "POST",
@@ -1547,6 +1574,8 @@ export async function flushSyncQueue() {
 
 async function _flushSyncQueue() {
   if (isSuspended()) return { synced: 0, skipped: 0 }
+  // Paused: the hub serves another store now; the queue stays as it is for this store.
+  if (getStoreMismatch()) { dispatchSyncChanged(); return { synced: 0, skipped: readQueue().filter((op) => op.status === "Pending").length } }
 
   const queue = readQueue()
   const apiUrl = getApiUrl()
@@ -1691,6 +1720,7 @@ async function _flushSyncQueue() {
  */
 export async function pullFromServer(full = false) {
   if (_pulling) return
+  if (getStoreMismatch()) { console.warn("[sync] pull skipped: the hub is set up for another store"); dispatchSyncChanged(); return }
   // A pull replaces local collections. While a staged operation is unresolved its business record
   // may exist only on this device: settle it first, and never overwrite local data until it is.
   try { recoverStagedSyncOperations() } catch (e) { console.error("[sync] staged recovery before pull failed:", e) }
@@ -1817,6 +1847,7 @@ export async function commitSaleToHub(sale: { id: string } & Record<string, unkn
   const apiUrl = getApiUrl()
   const token = getAuthToken()
   if (!apiUrl || !token) return { status: "unreachable" }
+  if (getStoreMismatch()) return { status: "rejected", error: STORE_MISMATCH_MESSAGE }
 
   const op = { id: `wt-${sale.id}`, entity: "sale", action: "create", payload: sale }
   const body = JSON.stringify({ deviceId: getDeviceId(), operations: [op] })
