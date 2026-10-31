@@ -35,15 +35,18 @@ Evidence: API 426 passed + 5 expected failures on a schema migrated with exactly
 | `74f94fb` | A register adopts a refreshed token from a local server only if it is for the store it already holds (+ regression test) |
 | `cb31776` | `docs/CLIENT-HOTFIX-STORE-GUARD.md` |
 | `3724893` | Version 1.0.51 |
+| `31e1ce6` | The hub window's **startup** auto-login uses the same guard (`adoptOfferedHubToken`); on a store mismatch sending, downloading and checkout pause, pending work and journals stay, the lock screen explains the explicit store switch (en/ar) |
 
-Built 2026-10-31 from the clean worktree `D:\tpcl` (`pnpm install --frozen-lockfile`; `apps/electron` → `pnpm run package`), unsigned, **not published**. The built SPA contains the guard (checked in `resources/api/public/assets`).
+**Release candidate:** rebuilt 2026-10-31 from a clean checkout of `31e1ce6` (worktree `D:\tpcl2`; `pnpm install --frozen-lockfile`; `apps/electron` → `pnpm run package`), unsigned, **not published**. The served SPA contains the guard (checked in `resources/api/public/assets`).
 
-| File (`D:\TitanPOS-candidates\1.0.51-hotfix-3724893\`) | SHA-256 |
+| File (`D:\TitanPOS-candidates\1.0.51-hotfix-31e1ce6\`) | SHA-256 |
 |---|---|
-| `Titan-POS-Setup-1.0.51.exe` | `73E296500BBC202740587801B28EB5E0953199AE718F19E3464805CCABFEA940` |
-| `Titan-POS-Portable-1.0.51.exe` | `722ADF98642D86578AA9BCEED03FAED41F90BAFE0D50A4625BB4F2E1DAE2B57B` |
+| `Titan-POS-Setup-1.0.51.exe` | `AAEDFD2B2DF30DFA23E5982E0B7B56457DEBE40A1ABC91E2B3A0CB45EE42A80E` |
+| `Titan-POS-Portable-1.0.51.exe` | `C62B290EF8E126C5A0855FABA61C081C734CFEE6567DA5938BAA548FBE80F362` |
 
-Evidence: desktop suite on the 1.0.50 source + fix 401 passed; regression test + negative control; `tsc -b`; production build. **Not yet install-tested** (see §E).
+The first build from `3724893` (`D:\TitanPOS-candidates\1.0.51-hotfix-3724893\`, Setup `73E29650…EA940`) is **superseded** (no startup-path fix; `SUPERSEDED.txt` in the folder) and must never be published.
+
+Evidence: desktop suite on the 1.0.50 source + fix 410 passed; `storeMismatch.test.ts` (9) + `hubTokenRefresh.test.ts`; negative controls; `tsc -b`; production build; installed-app tests §E. Master carries the same fix as `a8630eb` (447 passed).
 
 The Sprint 1 café candidate `candidate/1.0.51-rc-097ed68` (`D:\TitanPOS-candidates\1.0.51-097ed68\`, Setup SHA-256 `09155B8D…3424DA`, unchanged) is **superseded and must never be published**; a `SUPERSEDED.txt` marks the folder. The café release will be renumbered above every published version (master is at 1.0.52).
 
@@ -80,16 +83,42 @@ Setup SHA-256 verified (`73E29650…EA940`), installed silently into the default
 | Network | 5 hub runs, outbound watchdog: 0 non-loopback connections | pass |
 | Restoration | 1.0.49 reinstalled: 0 differences in 1,870 program files, 0 in the real user data, uninstall registry entry identical, shortcuts identical, nothing left running | pass |
 
-**Finding (not fixed in this build): a second, launch-time path.** The hub's own window (Electron, `LoginScreen.tsx:118`) calls auto-login **on every launch** and adopts the token without the store check, then runs a full pull. If a hub is re-set up for a different store while its own screen still has unsynced work from the old store, that work would be sent under the new store. Seen in code and implied by the activation behaviour above (a hub's activation is shared through its install directory, so a hub started on new data first runs as the previous store); **not reproduced in the hub window itself** (that needs driving the Electron window). LAN and browser registers do not take this path. Fixing it means applying the same store check there and rebuilding 1.0.51 (still unpublished, so the version can stay; the SHA-256 would change).
+**Finding: a second, launch-time path** (fixed in `31e1ce6`, below). The hub's own window (`LoginScreen`) called auto-login whenever the lock screen mounted and adopted the token without the store check, then ran a full pull.
+
+### E2. Startup path — real Electron hub window (2026-10-31)
+
+Driven in the installed hub's own window (loopback-only DevTools port added to the guarded launcher; disposable user data under `%TEMP%`; same local containment cloud, stores A and B). Scenario: store A has pending work; the hub is set up again for store B (B's activation in the install dir, new signing secret, so the register's token is no longer accepted); the register is locked so the lock screen's startup auto-login runs.
+
+| Build | Result |
+|---|---|
+| `3724893` (unfixed) — **defect reproduced** | Window switched token and stored store to **B**; products and staff became empty; A's pending held order `a872cd27` was applied in the hub **under store B** (earlier A orders stayed under A) |
+| `31e1ce6` (fixed) | Auto-login offered B (200) on every retry — **not adopted**; token and stored store stay A; products (Olive oil 27) and staff (Owner A, Rana) kept; pending held order `af85ac30` kept; **no** `/api/sync/push` or `/api/sync/pull` request at all while paused; the lock screen shows the store-mismatch explanation; hub DB has no store-B operation. Sign-in on the lock screen is refused by the B hub for A's staff (the PIN check names A's store), so nobody from B is added to A's staff list |
+
+Acceptance tests repeated on the `31e1ce6` installer (SHA-256 verified):
+
+| Test | Result |
+|---|---|
+| Fresh activation | Activation window form (URL pre-filled `http://127.0.0.1:3999`), owner PIN → store A; the unbound window adopted A (no mismatch), downloaded products and staff | pass |
+| Login, checkout | Rana unlocked; held order synced to A; sale `S-OO6T-000001` paid (stock 27 → 26), in the hub and forwarded to the cloud under A | pass |
+| Startup offers another store | as above (E2) | pass |
+| Legitimate same-store startup | Hub back on A with another new secret, register locked: auto-login token for A adopted, pause cleared, the kept order `af85ac30` pushed once and synced to A, full pull ran | pass |
+| Restart | Hub stopped and started on the same data: same store, session continues, no mismatch | pass |
+| Offline sale, reconnect | Cloud API process suspended: sale `S-OO6T-000002` recorded by the hub (stock 25); cloud resumed: forwarded at once (synced 12:31:08) | pass |
+| Cross-store refresh refused | Session unlocked when the hub came up on B: refresh path refused B, mismatch recorded, nothing sent | pass |
+| Same-tenant refresh | Session unlocked, hub on A with a new secret: 401 → auto-login → new A token adopted, pull resumed | pass |
+| Containment cloud compatibility | All four hub operations Synced to the cloud under A; nothing under B | pass |
+| Network | 5 hub runs, outbound watchdog: 0 non-loopback connections | pass |
+| Restoration | 1.0.49 reinstalled: 0 differences in 1,870 program files and 2,186 real user-data files; uninstall registry entry and shortcuts identical; nothing running; test data deleted | pass |
+
+Not changed (existing behaviour): the hub's own API answers `GET /api/sync/pull/full/cash-movements` with 400 to the 1.0.50 register code (logged, pull otherwise completes).
 
 Also observed (existing behaviour, not a regression): after its token was refreshed by a hub, the register's sync token became the hub's store-level `__admin__` token; and a register talking to a hub that holds only a partial copy of its store replaces its product list with that copy on the next full pull.
 
 ## F. Before releasing (each needs your approval)
 
-0. Decide on the launch-path finding: fix and rebuild 1.0.51 before publishing (recommended), or publish as tested with the limitation documented.
-
+0. ~~Launch-path finding~~ fixed (`31e1ce6`), rebuilt and install-tested (§B, §E2).
 1. Production database backup (recorded procedure).
 2. Shared-PIN audit in the owner portal: give everyone sharing a PIN their own PIN (`HOTFIX-CONTAINMENT.md` §3).
-3. Tell store managers about the **Refused work** page and that a decline does not undo anything on the register.
-4. ~~Install test of 1.0.51~~ done (§E); repeat it on the rebuilt installer if the launch path is fixed.
-5. Order: cloud A first, then publish release B (GitHub release `v1.0.51` with `latest.yml`; hubs see "Update available").
+3. Tell store managers about the **Refused work** page and that a decline does not undo anything on the register; tell hub owners that after setting a hub up for another store, its window pauses and asks for an explicit store switch.
+4. Publish **only** the `1.0.51-hotfix-31e1ce6` files; verify Setup SHA-256 `AAEDFD2B…42A80E` before upload. Never the `3724893` or `097ed68` folders.
+5. Order: cloud A first, then publish release B (GitHub release `v1.0.51` with `latest.yml` from the same folder; hubs see "Update available").
