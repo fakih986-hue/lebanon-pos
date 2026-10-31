@@ -32,7 +32,14 @@ The `$2-withheld` placeholder keeps the old full-pull step working. Its only pur
 bcrypt to that step. It is not a valid bcrypt hash (`bcrypt.compare` fails), not a SHA-256 hash, and never
 equals typed digits. The server refuses to store it, or any other `$2…` that is not a bcrypt hash, as a PIN.
 
-**Server valuation** (`apps/api/src/routes/sync.ts`, `processOperation`):
+**Server valuation** (`apps/api/src/routes/sync.ts`, `withServerCost` and `processOperation`):
+
+- When an account without `reports.cost` pushes, the first server to receive the operation (hub or
+  cloud) rewrites its cost figures with its own valuation. It does this before applying it, keeping it as
+  Refused work, or queueing it for forwarding. A hub therefore forwards server figures, never the
+  till's. The deployed cloud (`e2fd79a`) takes its hub link's figures as sent: it would record a missing
+  line cost as 0, and it requires lot and adjustment values. Found by the installed hub acceptance: the
+  first candidate forwarded a till's forged cost to the cloud.
 
 - An adjustment's `valueImpact` and a count line's `valueImpact`/`totalValueImpact` are always quantity ×
   the server's product cost. Any submitted value is ignored, from any client.
@@ -81,7 +88,11 @@ What all three tills pass, connected with an account that may sell, refund, rece
    uniqueness has been enforced since `f5d3a6b`), or upgrade.
 4. **Till-side cost displays.** A cashier-connected old till shows no cost or profit locally. Only the
    server's figures, which are correct, were tested; the till's screens were not.
-5. **Attribution.** Old tills send no device credential and no staff session. Their work is attributed to
+5. **An older hub (1.0.50/1.0.51) in front of a master cloud.** The cloud takes its hub link's cost as
+   sent, and an older hub forwards its tills' own figures. Under the deployed server those tills are sent
+   real cost, so the figures are normally right; they are not re-checked. Upgrade hubs together with the
+   cloud release.
+6. **Attribution.** Old tills send no device credential and no staff session. Their work is attributed to
    the connecting account, and the actor is whatever they claim. The enforcement gate already refuses to
    switch on while any of them trades (`identityGate.ts`, reason `upgrade-needed`).
 

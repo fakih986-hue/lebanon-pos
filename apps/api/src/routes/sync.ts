@@ -549,10 +549,11 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
   for (const op of operations) {
     try {
       validateSyncOperation(op)
-      // Cost an account without cost visibility sent is dropped before the operation is applied,
-      // kept (Refused work) or forwarded: a hub would otherwise relay the till's figures to the cloud,
-      // which takes its hub link's cost as sent.
-      if (!pushCostTrusted) op.payload = withoutClientCost(op.entity, op.action, op.payload)
+      // An account without cost visibility: its cost figures are replaced by this server's valuation
+      // BEFORE the operation is applied, kept (Refused work) or forwarded. A hub would otherwise relay
+      // the till's figures to the cloud, which takes its hub link's cost as sent (the deployed cloud
+      // also needs them present: it values a missing line cost at 0 and requires lot and adjustment value).
+      if (!pushCostTrusted) op.payload = await withServerCost(tenantId, op.entity, op.action, op.payload)
 
       // Already applied here (a lost response, a client retry, a hub re-forward): acknowledge.
       const applied = await prisma.syncOperation.findFirst({ where: { id: op.id, tenantId, appliedAt: { not: null } }, select: { entity: true, action: true, payload: true } })
@@ -1440,6 +1441,50 @@ function sameOperation(stored: { entity: string; action: string; payload: unknow
   return stored.entity === incoming.entity && stored.action === incoming.action
     && norm(stored.payload) === norm(JSON.parse(JSON.stringify(incoming.payload ?? {})))
 }
+/**
+ * The operation as this server values it (docs/LEGACY-TILL-COMPAT.md): the client's cost figures are
+ * dropped and replaced with this server's product cost — line cost and the sale's cost and profit,
+ * received-lot cost, adjustment value and the cost of a lot it creates, count line and total value.
+ * Lot slices of a sale lose their cost (the server takes it from the lot itself).
+ */
+export async function withServerCost(tenantId: string, entity: string, action: string, payload: unknown): Promise<any> {
+  const p = withoutClientCost(entity, action, payload)
+  if (!p || typeof p !== "object") return p
+  const known = new Map<string, number>()
+  const costOf = async (ref: any): Promise<number> => {
+    const syncId = ref?.productSyncId ?? ref?.syncId
+    const id = Number(ref?.productId ?? ref?.id)
+    const barcode = ref?.barcode ? String(ref.barcode) : ""
+    const key = `${syncId ?? ""}|${id}|${barcode}`
+    if (known.has(key)) return known.get(key)!
+    const select = { cost: true } as const
+    const product = (syncId ? await prisma.product.findFirst({ where: { tenantId, syncId: String(syncId) }, select }) : null)
+      ?? (Number.isInteger(id) && id > 0 ? await prisma.product.findFirst({ where: { tenantId, id }, select }) : null)
+      ?? (barcode ? await prisma.product.findFirst({ where: { tenantId, OR: [{ barcode }, { barcodeAliases: { has: barcode } }] }, select }) : null)
+    const cost = Number(product?.cost) || 0
+    known.set(key, cost)
+    return cost
+  }
+  if (entity === "sale" && (action === "create" || action === "update") && Array.isArray(p.items)) {
+    p.items = await Promise.all(p.items.map(async (i: any) => i && typeof i === "object" ? { ...i, cost: await costOf(i) } : i))
+    const cost = p.items.reduce((sum: number, i: any) => sum + (Number(i?.cost) || 0) * (Number(i?.quantity) || 0), 0)
+    return { ...p, cost, profit: (Number(p.total) || 0) - cost }
+  }
+  if (entity === "inventory" && action === "receive") {
+    const value = async (i: any) => i && typeof i === "object" ? { ...i, unitCost: await costOf(i) } : i
+    return Array.isArray(p) ? Promise.all(p.map(value)) : value(p)
+  }
+  if (entity === "inventory" && action === "adjust") {
+    const cost = await costOf(p)
+    return { ...p, valueImpact: (Number(p.quantityChange) || 0) * cost, ...(Array.isArray(p.batchAllocations) ? { batchAllocations: p.batchAllocations.map((a: any) => a && typeof a === "object" ? { ...a, unitCost: cost } : a) } : {}) }
+  }
+  if (entity === "inventory" && action === "count" && Array.isArray(p.lines)) {
+    const lines = await Promise.all(p.lines.map(async (l: any) => l && typeof l === "object" ? { ...l, valueImpact: (Number(l.variance) || 0) * await costOf(l) } : l))
+    return { ...p, lines, totalValueImpact: lines.reduce((sum: number, l: any) => sum + (Number(l?.valueImpact) || 0), 0) }
+  }
+  return p
+}
+
 /**
  * The cost figures a client puts in an operation (docs/LEGACY-TILL-COMPAT.md): sale and line cost and
  * profit, lot-slice cost, received-lot cost, adjustment and count value. Without them the server

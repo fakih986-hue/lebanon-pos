@@ -341,10 +341,12 @@ export function legacyTillSuite(till: TillUnderTest) {
       expect(Number(row.items[0].cost)).toBe(MILK_COST)
       expect(Number(row.cost)).toBe(MILK_COST)
       expect(Number(row.profit)).toBe(0.5)
-      // What this server keeps and would forward (a hub to its cloud) carries none of the till's cost.
+      // What this server keeps and would forward (a hub to its cloud) carries the server's valuation, never the till's.
       const kept = (await prisma.syncOperation.findUnique({ where: { id: queue().find((o) => o.entity === "sale" && o.payload?.id === id)!.id } }))!.payload as any
-      expect(kept.items[0]).not.toHaveProperty("cost")
-      expect(kept).not.toHaveProperty("cost")
+      evidence(`${till.label} kept (forwardable) sale`, { lineCost: kept.items[0].cost, cost: kept.cost, profit: kept.profit })
+      expect(kept.items[0].cost).toBe(MILK_COST)
+      expect(kept.cost).toBe(MILK_COST)
+      expect(kept.profit).toBe(0.5)
     })
 
     it("refund: applied on the server; the refund is valued from the sale the server recorded", async () => {
