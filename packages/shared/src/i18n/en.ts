@@ -88,6 +88,7 @@ export const en = {
   "refused.lim.device-id-claimed": "The device id was reported by the register, not verified.",
   "refused.lim.local-effects-claimed-by-till": "The register's before/after figures are its own report.",
   "refused.lim.client-time-claimed": "The time comes from the register's clock.",
+  "desktop.store_mismatch": "This hub is now set up for a different store than the data on this register. Sending and downloading are paused so the two stores are never mixed; nothing has been lost. To use this hub's store, choose \"New device / add another store\"; or set the hub back to this register's store.",
   "nav.settings": "Settings",
   "nav.collapse": "Collapse",
   "nav.logout": "Logout",

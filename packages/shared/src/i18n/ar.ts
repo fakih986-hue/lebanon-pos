@@ -88,6 +88,7 @@ export const ar = {
   "refused.lim.device-id-claimed": "معرّف الجهاز أفاد به الصندوق ولم يُتحقق منه.",
   "refused.lim.local-effects-claimed-by-till": "أرقام قبل/بعد هي تقرير الصندوق نفسه.",
   "refused.lim.client-time-claimed": "الوقت مأخوذ من ساعة الصندوق.",
+  "desktop.store_mismatch": "الخادم المحلي مُعدّ الآن لمتجر غير متجر البيانات الموجودة على هذا الصندوق. أُوقف الإرسال والتنزيل كي لا يختلط المتجران؛ لم يُفقد شيء. لاستخدام متجر هذا الخادم اختر \"New device / add another store\"، أو أعد إعداد الخادم المحلي لمتجر هذا الصندوق.",
   "nav.settings": "الإعدادات",
   "nav.collapse": "طي",
   "nav.logout": "تسجيل الخروج",
