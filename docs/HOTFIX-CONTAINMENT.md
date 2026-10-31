@@ -8,6 +8,7 @@ Branch `hotfix/containment-1.0.50`: the commits below plus documentation commits
 | `63137b9` | First version of this document |
 | `0a292a4` | Sprint 0 server fixes ported from `908f876`: tenant isolation, route permissions, cost hiding, customer PIN hashes withheld. Staff PIN verifiers are deliberately still sent (see §2, finding 4) |
 | `5b86e09` | Refused operations are kept on the server and listed for managers |
+| `ecea31d`, `39f7565` | Refused-work review and resolution (apply once or decline), admin web app page |
 | `a049d0f` | Test: the store admin web app keeps working |
 | `fe310c8` | Test: shared PIN on a 1.0.50 till |
 
@@ -26,10 +27,10 @@ Branch `hotfix/containment-1.0.50`: the commits below plus documentation commits
 | 6a | **Cost disclosure on report/catalogue endpoints** (products, sales, KPI, low stock, X/Z report, margin) | `0a292a4` / `908f876` | **Yes** | Hidden without `reports.cost` | Unchanged | Not used by 1.0.50 tills | None | `cafe-audit.test.ts`; `cashier-connected.test.ts`: the cashier's `/api/products` has no cost. Control fails |
 | 6b | **Cost in the sync pull** to every staff till | Not fixed | **No: still exposed** | Sent | Unchanged | 1.0.50 tills need cost to record sale cost offline | Needs a client that does not depend on pulled cost (Sprint 1 `costFromServer` line) | `cashier-connected.test.ts`: cost present in the cashier till's cache |
 | 7 | **Missing operation permissions** (stock adjust/count/receive, debt, customers, held/delivery orders, below-price sales, catalogue edits) | `79a8c2b` + `0a292a4` / `29d0a7b` + `908f876` | **Yes, with the limitation in §2** | Enforced **against the connecting account** | Unchanged (hub forwards as the store bridge, which is exempt) | 1.0.50 tills unchanged; refusals shown as failed sync | None required | `containment.test.ts`; controls fail. `cashier-connected.test.ts` (real 1.0.50 till) |
-| 7b | **Refused work silently dropped on the server** (no record of the refused operation) | `5b86e09` / `3a8941f` | **Yes** | Kept as unapplied `Refused` rows (payload, reason, account, device). Never forwarded or pruned. `GET /api/sync/refused` for `reports.view`. A resend by an allowed account applies once | Unchanged | Till keeps its own queued copy (measured) | None (status is a text column) | `cashier-connected.test.ts`, `containment.test.ts` (master); controls fail |
+| 7b | **Refused work silently dropped on the server** (no record of the refused operation) | `5b86e09` + `ecea31d` / `3a8941f` + `42da8cc` | **Yes** | Kept as unapplied `Refused` rows. Never forwarded or pruned. Reviewed and resolved by a manager (§2a): apply once under their authority, or decline (final) | Unchanged | Till keeps its own queued copy (measured) | None (status is a text column) | `cashier-connected.test.ts`, `containment.test.ts` (master); controls fail |
 | 8 | **Shared PIN → highest role online** | `79a8c2b` / `29d0a7b` | **Yes** (server) | 409 `AMBIGUOUS_PIN`, never a role pick | Unchanged | 1.0.50 fallback: see §3 | Each person needs their own PIN | `containment.test.ts`; `cashier-connected.test.ts` shared-PIN block |
 
-**Suite on the release tree:** API 420 passed + 5 expected failures, against a schema migrated with exactly the deployed migrations. The expected failures are:
+**Suite on the release tree:** API 426 passed + 5 expected failures, against a schema migrated with exactly the deployed migrations. The expected failures are:
 - 2 Sprint 0 audit probes fixed later on master: empty-string barcodes, and prepared drinks without stock.
 - 1 probe still open on master: a sale attributed to another staff member (Sprint 2).
 - 5b.
@@ -39,7 +40,11 @@ Branch `hotfix/containment-1.0.50`: the commits below plus documentation commits
 - `79a8c2b` (8): drivers on sync, setup any token, no inventory rule, no customer rule, silent shared-PIN pick, customer on the store channel, customer token accepted, original skip.
 - `0a292a4` / `5b86e09` (6): refused work not kept, customer hashes in the incremental pull, customer hashes in the full pull, cost shown to everyone, tenant scope removed. The first was also run on master.
 
-## 2. Decision needed: tills connected with a cashier's account
+## 2. Decided (2026-10-31): Option A — enforce against the connecting account; refused work is recovered by review
+
+The owner chose Option A. The analysis that led to it follows; the recovery workflow is §2a.
+
+### Tills connected with a cashier's account
 
 On 1.0.50 the sync token is the account of whoever pressed **Connect**. A manager unlocking that till locally does not change it. The server therefore cannot know who acted, and every operation rule in finding 7 is checked against the **connecting** account.
 
@@ -60,7 +65,27 @@ What a real 1.0.50 till did against this release (cashier Rana connected, manage
 
 Not recommended in either case: reconnecting tills with an owner or shared manager credential. That makes every person's work look like the owner's and defeats the attribution Sprint 2 is building. The permanent answer is Phase C: per-staff sessions, so the server checks the person who acted.
 
-Option B is not implemented. It is a small, contained change (finding-7 rules only, staff tokens only), and I will make it on request.
+Option B was not chosen and is not implemented.
+
+## 2a. Refused-work recovery
+
+A manager opens **Refused work** in the store admin web app (served by this deploy at `/admin/refused`, sign in with their own PIN). For each refused operation it shows:
+- what it is, why it was refused, when, and how many times the register sent it;
+- the account that sent it and the device id (as reported by the register);
+- the person named in the record, if any;
+- the effect: what the register reports it did locally (e.g. stock 20 → 26) and what applying it on the server would do now (server stock now 20, after applying 26);
+- what is not proven (the connection is not the actor, device id and times are the register's claims);
+- the original operation, with PINs, tokens, credentials and session values hidden.
+
+**Apply** (with a note) applies it once, under the manager's own account, after the same permission rules as if they had sent it. It uses the same apply-once claim as a push, so a second decision, a concurrent click, or the register resending it changes nothing (tested: concurrent decisions 200/409, a stale read 409, resend acknowledged without a second stock change). If the apply fails (e.g. not enough stock), it returns to the list with the error.
+
+**Decline** (with a note) is final: the register's next resend is answered "declined" and is shown on the register as rejected, never applied.
+
+Who can decide: a signed-in staff member holding the permission the operation itself needs (price override for a below-price sale). A person with Reports sees everything; others see only what they can decide. Both decisions are audited with the note, the reviewer and the original sender.
+
+Browser-tested on the hotfix tree (admin app against the hotfix API, scratch database): review page, decline, apply (server stock 20 → 26, one adjustment), the failed-apply path, resend after decline rejected, Arabic layout.
+
+Limits: on a 1.0.50 register the refused entry stays in its queue until it is retried ("Retry failed"), when it is acknowledged (applied) or rejected (declined); the register's stock screen shows the server's figure after its next full sync.
 
 ## 3. Shared-PIN fallback on old clients, and the transition
 
