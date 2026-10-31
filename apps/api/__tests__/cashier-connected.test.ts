@@ -177,6 +177,12 @@ describe("a cashier-connected till with a manager unlocked locally (1.0.50 till,
     console.log("EVIDENCE concurrent decisions:", JSON.stringify(statuses))
     expect(statuses).toEqual([200, 409])
     expect(await serverStock()).toBe(15)
+    // The losing side of a race read the row as still Refused: the decision must still be refused.
+    const staleRow = { ...(await prisma.syncOperation.findFirst({ where: { id: opId } }))!, status: "Refused", appliedAt: null }
+    const stale = vi.spyOn(prisma.syncOperation, "findFirst").mockResolvedValueOnce(staleRow as any)
+    expect((await resolve(sami, opId, "apply")).status).toBe(409)
+    stale.mockRestore()
+    expect(await serverStock()).toBe(15)
     expect((await resolve(sami, opId, "dismiss")).status).toBe(409) // already decided
     const tillEntry = await retryOnTill(opId)
     console.log("EVIDENCE till resend after apply:", JSON.stringify({ tillStatus: tillEntry?.status ?? "acknowledged", serverStock: await serverStock() }))
