@@ -55,6 +55,35 @@ Canonical record of what is tested and what passed. Real services, real API hand
 
 Known limitations (Phase C): the session indicator is only visible to roles that can open Settings; a session ended while offline stays open on the server until the device's next session; the hub's own screen enrolls with a code like any register (no automatic enrollment); device credentials are bearer tokens in browser storage (no proof-of-possession yet); paired-device list with enrollment state is on the hub screen only.
 
+## Refused-work recovery (containment, Option A decided 2026-10-31)
+
+| Area | Evidence | Status |
+|---|---|---|
+| Review: original operation (secrets hidden), the till's claimed local effect and the server effect now, reason, sender account and device, named person, what is not proven; reviewers see what they may decide, Reports sees all | `apps/api/__tests__/containment.test.ts` (master); hotfix: `cashier-connected.test.ts` with the real 1.0.50 till services | pass (`42da8cc`; hotfix `ecea31d`, `39f7565`) |
+| Resolve: staff member holding the operation's permission, note required; one decision only (concurrent 200/409, deterministic stale read 409); apply = same apply-once claim as a push, evidence `applied-on-manager-review`; decline final (resend rejected, never applied) | same | pass |
+| Negative controls (4, both branches): decision not atomic, declined op not refused on resend, reviewer permission not checked, secrets shown | each fails its test | pass |
+| Browser (admin app, hotfix tree): review page, decline, apply (20 → 26 once), failed apply returns to the list, Arabic | browser pane | pass |
+
+## Client hotfix: wrong-store token adoption (separate release)
+
+Branch `hotfix/till-store-guard-1.0.50` (`74f94fb` + doc `cb31776`) from `7df7c58`, worktree `D:\tpcl`: regression test + negative control on the 1.0.50 code, 401 desktop tests, `tsc -b`, production build. Not built as an EXE; the version number is a pending decision (`docs/CLIENT-HOTFIX-STORE-GUARD.md` on that branch).
+
+## Enforcement slice: enforce-checkout (opt-in per store)
+
+| Area | Evidence | Status |
+|---|---|---|
+| Observe stays the default; switching needs settings.manage + a note, audited; mode in /api/sync/status | `apps/api/__tests__/enforce-checkout.test.ts` | pass (`4586a71`) |
+| Owner connection throughout: Rana's below-price sale refused, the same sale by Sami applied and recorded as Sami's (`verified`); Kim without sales.checkout refused | same | pass |
+| No device / no session / no envelope / forged / another register's session / revoked staff: refused IDENTITY_REQUIRED, kept for review, never legacy | same | pass |
+| Completed offline sale applies (offline-claimed); session expired or signed out before arrival applies as that person (`staff-session`, not verified) | same | pass |
+| Identity-refused sale reviewed and applied once by a manager; evidence reads contain no tokens, credentials or PINs | same | pass |
+| Register: mode from status; checkout stopped before payment without a server-checked session; local-PIN sign-in sells offline, must sign in again once the server is reachable | `apps/desktop/src/__tests__/staffSession.test.ts` (12) | pass |
+| Negative controls: 9 server, 2 register | each fails its intended test | pass |
+| Browser (desktop SPA, guarded local cloud, scratch DB): badge on POS (red / green / amber); unenrolled register blocked before payment; enrolled + Rana's session sale `verified` as Rana; offline sale allowed and recorded offline-claimed; back online with the register PIN only → blocked before payment | browser pane; evidence from the scratch DB | pass |
+| Full suites | API 533 + 1 expected fail; desktop 436 | pass |
+
+Limits of this slice: only ordinary sales are enforced; hub-relayed operations are not re-checked at the cloud (Phase D attestation), and a hub enforces only if the mode is set on the hub's own database; manager approvals are not built (Phase E); an older register in an enforcing store cannot sell online (its sales are refused and kept for review), so enforcement should be switched on only after every register is upgraded and enrolled.
+
 ## Plan by phase (to be filled with evidence as implemented)
 - **B — observe mode:** token kinds (`typ/iss/aud`) on new tokens with old tokens still accepted; `requireCloudKeyOrJwt` refuses non-staff tokens; envelope parsing; derived `actorId`; claimed-vs-derived mismatch audited; evidence labels; no behaviour change for legacy clients (mixed-version tests).
 - **C — devices and sessions:** enrollment with single-use manager-created code; cross-tenant enrollment refused; device credential can't enroll/approve another device; staff session bound to device (use on another device refused); actor substitution refused; staff switch issues a new session and clears approvals; revocation of staff and device; storage deletion and credential recovery on the till.
