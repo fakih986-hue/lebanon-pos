@@ -217,22 +217,80 @@ async function auditObservedSession(tenantId: string, op: { id: string; entity: 
   } catch { /* best-effort audit */ }
 }
 
+// SPRINT-0 price policy: a sale line below the product's current catalogue price (or a
+// sell-at-cost sale) needs sales.price_override on the pushing account. A wholesale price is
+// honoured for a sale to a named customer. Unknown products are left to the sale handler.
+async function priceOverrideViolationFor(tenantId: string, payload: unknown): Promise<string | null> {
+  const p = (payload ?? {}) as Record<string, unknown>
+  if (p.soldAtCost === true) return "PRICE_OVERRIDE: a sale at cost needs a manager's price-override permission."
+  const items = Array.isArray(p.items) ? (p.items as Array<Record<string, unknown>>) : []
+  for (const item of items) {
+    const syncId = typeof item.productSyncId === "string" && item.productSyncId ? item.productSyncId : null
+    const id = Number(item.id)
+    const product = syncId
+      ? await prisma.product.findFirst({ where: { tenantId, syncId }, select: { name: true, price: true, wholesalePrice: true } })
+      : Number.isInteger(id) && id > 0 ? await prisma.product.findFirst({ where: { tenantId, id }, select: { name: true, price: true, wholesalePrice: true } }) : null
+    if (!product) continue
+    const list = Number(product.price)
+    const wholesale = Number(product.wholesalePrice ?? 0)
+    const floor = wholesale > 0 && p.customerId ? Math.min(list, wholesale) : list
+    const unit = Number(item.unitPrice)
+    if (Number.isFinite(unit) && unit < floor - 0.005) {
+      return `PRICE_OVERRIDE: "${product.name}" was sold at ${unit}, below its price ${floor}. A manager must approve price changes.`
+    }
+  }
+  return null
+}
+
+type SaleActor = { id: string; name: string; permissions: string[] }
+/** Why this sale is not routine (a discount, a price below the catalogue, a sale at cost), or null. */
+async function saleElevation(tenantId: string, payload: unknown): Promise<string | null> {
+  if (requiredPermissionForOp("sale", "create", payload)) return "a discount"
+  return (await priceOverrideViolationFor(tenantId, payload)) ? "a price below the catalogue or a sale at cost" : null
+}
+
 /**
- * SPRINT-2 enforce-checkout gate for one sale pushed by a register. Returns the person to authorize
- * as (from a session this server opened for this enrolled device), a refusal, or "offline" (a sale
- * the register completed with only its local PIN check — routine offline sales stay as today).
+ * SPRINT-2 enforce-checkout gate for one sale pushed by a register. The person authorized as is:
+ *  - "session":         from a current staff session this server opened for this enrolled device;
+ *  - "stale-session":   from such a session that has since expired or ended (completed work), for a
+ *                       ROUTINE sale only;
+ *  - "offline-claimed": the person the register NAMES on a sale it says it completed offline (the
+ *                       offline flag is a claim, not a credential), for a ROUTINE sale only, checked
+ *                       against that person's CURRENT standing in this store (the register's clock is
+ *                       not proof of when it happened).
+ * Everything else is refused and kept for a manager's review — never authorized as the connecting
+ * account, never downgraded to legacy, never labelled verified.
  */
-async function checkoutIdentity(tenantId: string, device: { check: string; deviceId: string | null } | null, session: SessionResult | null, ev: { offline?: unknown; session?: unknown } | undefined):
-  Promise<{ offline: true } | { refuse: string } | { actor: { id: string; name: string; permissions: string[] } }> {
-  if (ev?.offline === true && !ev?.session) return { offline: true }
+async function checkoutIdentity(tenantId: string, device: { check: string; deviceId: string | null } | null, session: SessionResult | null, ev: { offline?: unknown; session?: unknown } | undefined, payload: unknown):
+  Promise<{ refuse: string } | { actor: SaleActor; basis: "session" | "stale-session" | "offline-claimed" }> {
+  const seller = async (id: string | null): Promise<SaleActor | string> => {
+    if (!id) return "the sale does not record who made it (no staff id)"
+    const staff = await prisma.staffUser.findFirst({ where: { id, tenantId }, select: { id: true, name: true, role: true, permissions: true, active: true } })
+    if (!staff) return "the person it names is not a staff member of this store"
+    if (!staff.active) return `${staff.name} is not an active staff member now`
+    const permissions = effectivePermissions(staff.permissions as any, staff.role)
+    if (!permissions.includes("sales.checkout")) return `${staff.name} is not allowed to sell (sales.checkout)`
+    return { id: staff.id, name: staff.name, permissions }
+  }
+  if (ev?.offline === true && !ev?.session) {
+    const p = (payload ?? {}) as Record<string, unknown>
+    const named = await seller(typeof p.cashierId === "string" && p.cashierId ? p.cashierId : null)
+    if (typeof named === "string") return { refuse: `OFFLINE_REVIEW: a sale the register says it completed offline; ${named}. Kept for a manager's review.` }
+    const elevated = await saleElevation(tenantId, payload)
+    if (elevated) return { refuse: `OFFLINE_REVIEW: a sale the register says ${named.name} completed offline with ${elevated}; an offline claim cannot authorize that. Kept for a manager's review.` }
+    return { actor: named, basis: "offline-claimed" }
+  }
   if (!device || device.check !== "valid") return { refuse: `IDENTITY_REQUIRED: this store requires an enrolled register for sales (device credential ${device?.check ?? "absent"})` }
   if (!session || session.check === "absent") return { refuse: "IDENTITY_REQUIRED: this store requires the person selling to sign in with a server PIN check (no staff session)" }
   if (session.check !== "valid" || !session.staffId) return { refuse: `IDENTITY_REQUIRED: the staff session is not valid (${session.check})` }
-  const staff = await prisma.staffUser.findFirst({ where: { id: session.staffId, tenantId, active: true }, select: { id: true, name: true, role: true, permissions: true } })
-  if (!staff) return { refuse: "IDENTITY_REQUIRED: the session's staff member is not active" }
-  const permissions = effectivePermissions(staff.permissions as any, staff.role)
-  if (!permissions.includes("sales.checkout")) return { refuse: `IDENTITY_REQUIRED: ${staff.name} is not allowed to sell (sales.checkout)` }
-  return { actor: { id: staff.id, name: staff.name, permissions } }
+  const actor = await seller(session.staffId)
+  if (typeof actor === "string") return { refuse: `IDENTITY_REQUIRED: ${actor}` }
+  if (session.expired || session.ended) {
+    const elevated = await saleElevation(tenantId, payload)
+    if (elevated) return { refuse: `SESSION_REVIEW: a sale with ${elevated} arrived on ${actor.name}'s session after it ${session.ended ? "was signed out" : "expired"}; a past session cannot authorize that. Kept for a manager's review.` }
+    return { actor, basis: "stale-session" }
+  }
+  return { actor, basis: "session" }
 }
 
 /**
@@ -253,30 +311,7 @@ function makeOpAuthorizer(tenantId: string, actorPermissions: string[] | null, a
     const existing = payload?.id ? await prisma.shift.findFirst({ where: { id: String(payload.id), tenantId }, select: { openedById: true } }) : null
     return existing?.openedById ?? (typeof payload?.openedById === "string" ? payload.openedById : null)
   }
-  // SPRINT-0 price policy: a sale line below the product's current catalogue price (or a
-  // sell-at-cost sale) needs sales.price_override on the pushing account. A wholesale price is
-  // honoured for a sale to a named customer. Unknown products are left to the sale handler.
-  async function priceOverrideViolation(payload: unknown): Promise<string | null> {
-    const p = (payload ?? {}) as Record<string, unknown>
-    if (p.soldAtCost === true) return "PRICE_OVERRIDE: a sale at cost needs a manager's price-override permission."
-    const items = Array.isArray(p.items) ? (p.items as Array<Record<string, unknown>>) : []
-    for (const item of items) {
-      const syncId = typeof item.productSyncId === "string" && item.productSyncId ? item.productSyncId : null
-      const id = Number(item.id)
-      const product = syncId
-        ? await prisma.product.findFirst({ where: { tenantId, syncId }, select: { name: true, price: true, wholesalePrice: true } })
-        : Number.isInteger(id) && id > 0 ? await prisma.product.findFirst({ where: { tenantId, id }, select: { name: true, price: true, wholesalePrice: true } }) : null
-      if (!product) continue
-      const list = Number(product.price)
-      const wholesale = Number(product.wholesalePrice ?? 0)
-      const floor = wholesale > 0 && p.customerId ? Math.min(list, wholesale) : list
-      const unit = Number(item.unitPrice)
-      if (Number.isFinite(unit) && unit < floor - 0.005) {
-        return `PRICE_OVERRIDE: "${product.name}" was sold at ${unit}, below its price ${floor}. A manager must approve price changes.`
-      }
-    }
-    return null
-  }
+  const priceOverrideViolation = (payload: unknown) => priceOverrideViolationFor(tenantId, payload)
 
   async function authorizeOp(op: { entity: string; action: string; payload?: unknown }): Promise<string | null> {
     if (actorPermissions) {
@@ -526,10 +561,11 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       // SPRINT-2 enforcement (ordinary checkout, stores that enabled it): a register's sale needs this
       // store's enrolled device and a staff session; the actor is the session's person and the rules
       // run against THEIR permissions, not the connecting account's. Missing or invalid evidence is
-      // refused and kept for review — never downgraded to legacy. Completed offline sales (local PIN)
-      // and sales completed under a session that has since expired or ended still apply (labelled).
+      // refused and kept for review — never downgraded to legacy. A sale claimed as completed offline,
+      // or arriving on a session that has since expired or ended, applies only if it is routine and
+      // the person it names may sell NOW; otherwise it is kept for review (see checkoutIdentity).
       const gate = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && (pushKind === "staff" || pushKind === "hub-local")
-        ? await checkoutIdentity(tenantId, deviceSeen, sessionSeen, (op as any).ev)
+        ? await checkoutIdentity(tenantId, deviceSeen, sessionSeen, (op as any).ev, op.payload)
         : null
       const enforcedActor = gate && "actor" in gate ? gate.actor : null
 
@@ -568,7 +604,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         } catch (keepErr) { console.error("Failed to keep refused operation:", keepErr) }
         // A refused price is a money decision a manager settles (never retried); other refusals
         // stay retryable (the permission may be granted later).
-        results.push({ id: op.id, status: denial.startsWith("PRICE_OVERRIDE:") || denial.startsWith("IDENTITY_REQUIRED:") ? "rejected" : "error", error: denial })
+        results.push({ id: op.id, status: /^(PRICE_OVERRIDE|IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW):/.test(denial) ? "rejected" : "error", error: denial })
         continue
       }
 
@@ -583,7 +619,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud",
             envelope: (op as any).ev ?? null,
             device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null,
-            enforced: !!enforcedActor,
+            enforced: !!gate && "basis" in gate && gate.basis === "session",
           })] })
         }
         // Enforced: the sale is recorded as made by the session's person (the payload's cashier
@@ -743,7 +779,7 @@ const REVIEW_PERMISSIONS = ["settings.manage", "sales.price_override", "inventor
 function reviewPermissionsFor(entity: string, action: string, payload: unknown, reason: string | null): string[] {
   if (reason?.startsWith("PRICE_OVERRIDE:")) return ["sales.price_override"]
   // A sale refused for missing identity: a manager decides (it may be applied under their authority).
-  if (reason?.startsWith("IDENTITY_REQUIRED:")) return ["sales.void", "settings.manage"]
+  if (/^(IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW):/.test(reason ?? "")) return ["sales.void", "settings.manage"]
   const required = requiredPermissionForOp(entity, action, payload)
   const anyOf = required == null ? [] : Array.isArray(required) ? required : [required]
   return anyOf.length > 0 ? anyOf.map(String) : ["settings.manage"]

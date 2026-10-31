@@ -172,6 +172,100 @@ describe("enforce-checkout: completed offline work stays recoverable", () => {
   })
 })
 
+describe("enforce-checkout: the offline trust boundary (modified requests claiming offline)", () => {
+  // Every case below is a request a modified register could send. The offline flag is a CLAIM: it
+  // may only let a completed, routine sale through under the named person's OWN current permissions;
+  // anything else is kept for a manager's review — applied by nobody, labelled verified by nobody.
+  const offline = { v: 1, offline: true }
+  const result = async (op: Record<string, any>) => {
+    const row = await prisma.syncOperation.findUnique({ where: { id: op.id } })
+    const e = await evidence(op)
+    return { applied: !!(await saleRow(op)), status: row?.status ?? null, evidence: e?.evidence ?? null, error: row?.error ?? null }
+  }
+  const log = (label: string, r: unknown) => console.log(`EVIDENCE offline-boundary ${label}:`, JSON.stringify(r))
+
+  it("routine sale, catalogue price, named cashier allowed to sell: applies, offline-claimed (not verified)", async () => {
+    const op = sale(10)
+    const r = await push(op, offline)
+    const out = await result(op); log("routine Rana", { push: r.status, ...out })
+    expect(out).toMatchObject({ applied: true, evidence: "offline-claimed" })
+  })
+
+  it("below-price sale named for a cashier without price override: kept for review, not applied", async () => {
+    const op = sale(7)
+    const r = await push(op, offline)
+    const out = await result(op); log("below-price Rana", { push: r.status, ...out })
+    expect(r.status).toBe("rejected")
+    expect(out).toMatchObject({ applied: false, status: "Refused", evidence: null })
+  })
+
+  it("below-price sale naming a manager who HAS price override: still kept for review (a claimed actor cannot authorize an elevated sale)", async () => {
+    const op = sale(7, { id: samiId, name: "Sami" })
+    const r = await push(op, offline)
+    const out = await result(op); log("below-price claims Sami", { push: r.status, ...out })
+    expect(out).toMatchObject({ applied: false, status: "Refused" })
+  })
+
+  it("discounted sale claimed offline: kept for review", async () => {
+    const op = sale(10, { id: samiId, name: "Sami" })
+    op.payload.discountTotal = 1
+    const r = await push(op, offline)
+    expect([r.status, (await result(op)).applied]).toEqual(["rejected", false])
+  })
+
+  it("named person not allowed to sell (Kim): kept for review", async () => {
+    const op = sale(10, { id: kimId, name: "Kim" })
+    const r = await push(op, offline)
+    const out = await result(op); log("claims Kim", { push: r.status, ...out })
+    expect(out).toMatchObject({ applied: false, status: "Refused" })
+  })
+
+  it("forged actor — an unknown id, another store's staff, or a name without an id: kept for review", async () => {
+    const otherStoreStaff = (await prisma.staffUser.findFirst({ where: { tenantId: { not: T }, active: true }, select: { id: true } }))?.id ?? randomUUID()
+    for (const [label, named] of [["unknown id", { id: randomUUID(), name: "Ghost" }], ["another store's staff", { id: otherStoreStaff, name: "Other" }], ["name only", { id: undefined as any, name: "Rana" }]] as const) {
+      const op = sale(10, named as any)
+      if (!named.id) delete op.payload.cashierId
+      const r = await push(op, offline)
+      const out = await result(op); log(`forged ${label}`, { push: r.status, ...out })
+      expect([label, out.applied, out.status]).toEqual([label, false, "Refused"])
+    }
+  })
+
+  it("the client's timestamp is not proof: a sale dated before the cashier was deactivated is kept for review", async () => {
+    const tmp = await prisma.staffUser.create({ data: { tenantId: T, name: "Leaver", mobile: `ec-leaver-${T.slice(0, 6)}`, pin: "x", role: "Cashier", permissions: ["sales.checkout"] } as any })
+    await prisma.staffUser.update({ where: { id: tmp.id }, data: { active: false } })
+    const op = sale(10, { id: tmp.id, name: "Leaver" })
+    op.payload.createdAt = new Date(Date.now() - 30 * 24 * 3600_000).toISOString() // claims last month
+    const r = await push(op, offline)
+    const out = await result(op); log("dated before deactivation", { push: r.status, ...out })
+    expect(out).toMatchObject({ applied: false, status: "Refused" })
+  })
+
+  it("an expired or signed-out session: routine sales apply as that person (not verified); elevated ones are kept for review", async () => {
+    const sami = await session("9103")
+    await session("9101") // switched away: Sami's session ended
+    const routine = sale(10)
+    expect((await push(routine, { v: 1, session: sami.session })).status).toBe("ok")
+    expect((await result(routine)).evidence).toBe("staff-session")
+    const elevated = sale(7)
+    const r = await push(elevated, { v: 1, session: sami.session })
+    const out = await result(elevated); log("ended session, below price, Sami", { push: r.status, ...out })
+    expect(out).toMatchObject({ applied: false, status: "Refused" })
+  })
+
+  it("nothing claimed offline or on a stale session is ever labelled verified", async () => {
+    expect(await prisma.operationEvidence.count({ where: { tenantId: T, evidence: "verified", limitations: { hasSome: ["offline-local-pin-claimed", "session-ended-before-receipt", "session-expired-at-receipt"] } } })).toBe(0)
+  })
+
+  it("kept work is reviewable with its reason", async () => {
+    const list = (await call("GET", "/api/sync/refused", undefined, bearer(owner))).body.operations as Array<Record<string, any>>
+    const offlineItems = list.filter((o) => String(o.reason).startsWith("OFFLINE_REVIEW"))
+    console.log("EVIDENCE offline-boundary review reasons:", JSON.stringify([...new Set(offlineItems.map((o) => o.reason))]))
+    expect(offlineItems.length).toBeGreaterThanOrEqual(6)
+    expect(offlineItems.every((o) => JSON.stringify(o.requiredPermissions) === JSON.stringify(["sales.void", "settings.manage"]))).toBe(true)
+  })
+})
+
 describe("enforce-checkout: refused sales are reviewed like other refused work", () => {
   it("an identity-refused sale is listed for a manager and can be applied once under their authority", async () => {
     const op = sale(10)
