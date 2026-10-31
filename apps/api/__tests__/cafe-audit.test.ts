@@ -296,6 +296,12 @@ describe("J. tenant isolation", () => {
     expect(rows.every((x) => x.tenantId === A)).toBe(true)
     expect((await call(cashierA, "GET", "/api/sales")).status).toBe(403) // sales history needs reports.view
   })
+  it("the store admin web app's form (?tenantId= its OWN store) keeps working on every list it uses", async () => {
+    for (const path of ["products", "customers", "sales", "dashboard/kpi", "delivery/drivers", "delivery/orders", "reports/debt-aging"]) {
+      const r = await call(adminA, "GET", `/api/${path}?tenantId=${A}`)
+      expect([path, r.status]).toEqual([path, 200])
+    }
+  })
   it("a staff token cannot read another store's setup info through X-Tenant-Id", async () => {
     const r = await fetch(`${base}/api/setup/tenant-info`, { headers: { Authorization: `Bearer ${cashierA}`, "X-Tenant-Id": B } })
     expect(r.status).toBe(403)
