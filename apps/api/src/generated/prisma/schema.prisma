@@ -771,6 +771,9 @@ model SyncOperation {
   /// When this server applied the operation's effects (SYNC-DEDUPE-2). Separate from `status`,
   /// which tracks onward delivery to the cloud (Pending = to forward, Synced = forwarded).
   appliedAt     DateTime?
+  /// Applied under server valuation (1.0.52+): the figures it carries are this server's. A hub
+  /// forwards it with ev.valued = "server"; the cloud values any operation without it itself.
+  serverValued  Boolean   @default(false)
 
   @@index([tenantId, status])
   @@index([tenantId, createdAt])

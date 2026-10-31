@@ -613,7 +613,8 @@ exports.Prisma.SyncOperationScalarFieldEnum = {
   lastAttemptAt: 'lastAttemptAt',
   syncedAt: 'syncedAt',
   error: 'error',
-  appliedAt: 'appliedAt'
+  appliedAt: 'appliedAt',
+  serverValued: 'serverValued'
 };
 
 exports.Prisma.DeviceScalarFieldEnum = {

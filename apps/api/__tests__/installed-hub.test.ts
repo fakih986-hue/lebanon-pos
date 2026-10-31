@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest"
 import { randomUUID } from "node:crypto"
-import { existsSync, readFileSync, appendFileSync } from "node:fs"
+import { existsSync, readFileSync, appendFileSync, writeFileSync } from "node:fs"
 import { pathToFileURL } from "node:url"
 import jwt from "jsonwebtoken"
 
@@ -14,7 +14,20 @@ import jwt from "jsonwebtoken"
 //
 //   INSTALLED_HUB_URL=http://127.0.0.1:3015  INSTALLED_HUB_STORE=<stores.json from the seed>
 //   HUB_TILL_SRC=<checkout>/apps/desktop/src  HUB_TILL_LABEL=1.0.51  (DATABASE_URL = the cloud's scratch schema)
+// Optional:
+//   INSTALLED_HUB_GENERATION=legacy  the hub is a released 1.0.50/1.0.51 build (no containment, no server
+//                                    valuation): its own gaps are recorded as evidence, and the CLOUD's
+//                                    valuation of what it forwards is asserted
+//   HUB_TILL_STATE=<file>            the till's storage is loaded from and saved to this file, so one till
+//                                    carries across phases (and across a hub restart or upgrade)
+//   INSTALLED_HUB_PHASE=             accept (default) | outage: the cloud is down, the till trades through the
+//                                    hub on the LAN | hubdown: the hub is down, the till unlocks and sells
+//                                    offline | resume: hub and cloud are back (after a restart or an upgrade):
+//                                    the queued work arrives once, valued by a server
 const HUB = process.env.INSTALLED_HUB_URL
+const PHASE = process.env.INSTALLED_HUB_PHASE ?? "accept"
+const LEGACY_HUB = process.env.INSTALLED_HUB_GENERATION === "legacy"
+const STATE = process.env.HUB_TILL_STATE
 const STORE_FILE = process.env.INSTALLED_HUB_STORE
 const SRC = process.env.HUB_TILL_SRC?.replace(/\\/g, "/")
 const LABEL = process.env.HUB_TILL_LABEL ?? "till"
@@ -27,7 +40,7 @@ function evidence(what: string, data: unknown) {
 }
 
 class MemoryStorage {
-  private m = new Map<string, string>()
+  m = new Map<string, string>()
   get length() { return this.m.size }
   key(i: number) { return [...this.m.keys()][i] ?? null }
   getItem(k: string) { return this.m.has(k) ? this.m.get(k)! : null }
@@ -44,6 +57,11 @@ if (!ready) {
   const store = JSON.parse(readFileSync(STORE_FILE!, "utf8")) as { A: { tenantId: string; subdomain: string; driverCode: string; milkSyncId: string; staff: Record<string, string> }; B: { tenantId: string; subdomain: string } }
   const A = store.A
   const storage = new MemoryStorage()
+  if (STATE && existsSync(STATE)) for (const [k, v] of Object.entries(JSON.parse(readFileSync(STATE, "utf8")) as Record<string, string>)) storage.setItem(k, v)
+  const saveState = () => { if (STATE) writeFileSync(STATE, JSON.stringify(Object.fromEntries(storage.m))) }
+  /** Sales this run of phases made (kept in the till's state): id -> quantity. */
+  const itSales = () => JSON.parse(storage.getItem("it.sales") ?? "{}") as Record<string, { qty: number; phase: string }>
+  const rememberSale = (id: string, qty: number) => storage.setItem("it.sales", JSON.stringify({ ...itSales(), [id]: { qty, phase: PHASE } }))
   const events = new EventTarget()
   const g = globalThis as unknown as Record<string, unknown>
   g.localStorage = storage
@@ -96,26 +114,46 @@ if (!ready) {
     const end = Date.now() + ms
     for (;;) { const v = await read(); if (v) return v; if (Date.now() > end) return null; await new Promise((r) => setTimeout(r, 2000)) }
   }
-  const deviceId = `hub-it-${LABEL}-${randomUUID().slice(0, 6)}`
+  const deviceId = storage.getItem("lebanonpos.device-id.v1") ?? `hub-it-${LABEL}-${randomUUID().slice(0, 6)}`
   let owner = ""
+  /** A cost-hidden checkout on the till, with a forged cost in the till's cache (999). */
+  const sell = (qty: number) => {
+    const milk = localMilk()
+    const id = randomUUID()
+    const sale = d.sales.buildSale({
+      saleNumber: `S-HUB-${id.slice(0, 6)}`, paymentMethod: "Cash", subtotal: qty * 1.5, tax: 0, total: qty * 1.5,
+      items: [{ id: milk.id, productSyncId: milk.syncId, name: milk.name, barcode: milk.barcode ?? "", cost: 999, quantity: qty, unitPrice: 1.5, total: qty * 1.5, batchAllocations: [] }],
+    }, id)
+    expect(d.sales.checkoutLocalSale({ sale, lots: [{ productId: milk.id, productName: milk.name, barcode: milk.barcode ?? "", quantity: qty, fallbackUnitCost: milk.cost }], stock: [{ productId: milk.id, quantity: qty }] }).status).toBe("completed")
+    rememberSale(id, qty)
+    return id
+  }
+  const MILK_COST = 1
+  const cloudSale = (id: string) => prisma.sale.findFirst({ where: { tenantId: A.tenantId, id }, select: { cost: true, profit: true } })
 
   beforeAll(async () => {
     prisma = (await import("../src/lib/prisma.js")).default
     // The cloud database must be the seeded scratch store's.
     expect(await prisma.tenant.findUnique({ where: { id: A.tenantId }, select: { id: true } })).toBeTruthy()
-    storage.setItem("lebanonpos.api-url", HUB!)
-    storage.setItem("lebanonpos.connection-mode.v1", "CONNECT_TO_HUB")
-    storage.setItem("lebanonpos.store-subdomain.v1", A.subdomain)
-    storage.setItem("lebanonpos.tenant-id.v1", A.tenantId)
-    storage.setItem("lebanonpos.device-id.v1", deviceId)
-    storage.setItem("lebanonpos.users.v1", "[]")
+    if (!storage.getItem("lebanonpos.device-id.v1")) {
+      storage.setItem("lebanonpos.api-url", HUB!)
+      storage.setItem("lebanonpos.connection-mode.v1", "CONNECT_TO_HUB")
+      storage.setItem("lebanonpos.store-subdomain.v1", A.subdomain)
+      storage.setItem("lebanonpos.tenant-id.v1", A.tenantId)
+      storage.setItem("lebanonpos.device-id.v1", deviceId)
+      storage.setItem("lebanonpos.users.v1", "[]")
+    }
     d = { sync: await mod("sync.service"), security: await mod("security.service"), sales: await mod("sales.service"), batches: await mod("inventoryBatch.service"), adjust: await mod("inventoryAdjustment.service"), devices: await mod("deviceRegistry.service") }
-    owner = await login("1501")
-    expect(owner).toBeTruthy()
+    if (PHASE !== "hubdown") {
+      owner = await login("1501")
+      expect(owner).toBeTruthy()
+    }
   })
-  afterAll(async () => { await dispose(); await prisma?.$disconnect() })
+  afterAll(async () => { await dispose(); saveState(); await prisma?.$disconnect() })
 
-  describe(`installed hub candidate with a paired ${LABEL} till`, () => {
+  const itNew = LEGACY_HUB ? it.skip : it
+
+  if (PHASE === "accept") describe(`installed hub ${LEGACY_HUB ? "(released, older)" : "candidate"} with a paired ${LABEL} till`, () => {
     it("the hub runs and serves only its own store", async () => {
       const h = await call("GET", "/api/health")
       expect(h.status).toBe(200)
@@ -136,16 +174,20 @@ if (!ready) {
       evidence("pairing", { status: mine?.status ?? null, enrolled: !!mine?.enrolledAt, tillKeptCredential: !!storage.getItem("lebanonpos.device-credential.v1") })
       expect(mine?.status).toBe("APPROVED")
       const rana = await login("1504")
-      expect((await call("GET", "/api/device/list", undefined, rana)).status).toBe(403)
-      expect((await call("POST", "/api/device/generate-code", {}, rana)).status).toBe(403)
+      const cashier = { list: (await call("GET", "/api/device/list", undefined, rana)).status, generate: (await call("POST", "/api/device/generate-code", {}, rana)).status }
+      evidence("cashier device management", cashier)
+      if (!LEGACY_HUB) expect(cashier).toEqual({ list: 403, generate: 403 })
     })
 
     it("connected as the clerk: the hub sends no verifier and no cost; offline login works after a full pull", async () => {
       storage.setItem("lebanonpos.auth-token", await login("1503"))
       await d.sync.pullFromServer(true); await dispose()
       const users = JSON.parse(storage.getItem("lebanonpos.users.v1")!) as any[]
-      expect([...new Set(users.map((u) => u.pin))]).toEqual(["$2-withheld"])
-      expect(localMilk()?.cost).toBeUndefined()
+      evidence("sent to a cashier connection", { verifierWithheld: users.every((u) => u.pin === "$2-withheld"), costSent: localMilk()?.cost !== undefined })
+      if (!LEGACY_HUB) {
+        expect([...new Set(users.map((u) => u.pin))]).toEqual(["$2-withheld"])
+        expect(localMilk()?.cost).toBeUndefined()
+      }
       expect((await d.security.unlockWithPin("1504"))?.id).toBe(A.staff.rana); await dispose()
       await d.sync.pullFromServer(true); await dispose()
       expect((await unlockOffline("1504"))?.id).toBe(A.staff.rana)
@@ -154,23 +196,29 @@ if (!ready) {
 
     it("cost-hidden checkout through the hub: valued at the server's cost on the hub and, after forwarding, in the cloud", async () => {
       d.security.openShift(50)
-      const milk = localMilk()
-      const id = randomUUID()
-      const sale = d.sales.buildSale({
-        saleNumber: `S-HUB-${id.slice(0, 6)}`, paymentMethod: "Cash", subtotal: 3, tax: 0, total: 3,
-        items: [{ id: milk.id, productSyncId: milk.syncId, name: milk.name, barcode: milk.barcode ?? "", cost: 999, quantity: 2, unitPrice: 1.5, total: 3, batchAllocations: [] }],
-      }, id)
-      expect(d.sales.checkoutLocalSale({ sale, lots: [{ productId: milk.id, productName: milk.name, barcode: milk.barcode ?? "", quantity: 2, fallbackUnitCost: milk.cost }], stock: [{ productId: milk.id, quantity: 2 }] }).status).toBe("completed")
+      const id = sell(2)
       await flush()
       const onHub = ((await call("GET", "/api/sync/pull/full/sales?limit=500", undefined, owner)).body.items as any[]).find((s) => s.id === id)
-      const cloud = await inCloud(() => prisma.sale.findFirst({ where: { tenantId: A.tenantId, id }, select: { cost: true, profit: true } }))
+      const cloud = await inCloud(() => cloudSale(id))
       evidence("checkout", { tillQueue: queue().filter((o) => o.entity === "sale").map((o) => o.status), hub: onHub ? { cost: onHub.cost, profit: onHub.profit } : null, cloud: cloud ? { cost: Number((cloud as any).cost), profit: Number((cloud as any).profit) } : null })
-      expect(Number(onHub.cost)).toBe(2)
+      // An older hub records its till's figures; what it forwards is valued by the cloud.
+      if (!LEGACY_HUB) expect(Number(onHub.cost)).toBe(2)
       expect(cloud).toBeTruthy()
       expect(Number((cloud as any).cost)).toBe(2)
     })
 
-    it("permissions and Refused work: a cashier-connected till's adjustment is refused on the hub, kept, reviewed and applied by the manager on the hub, then forwarded once", async () => {
+    it("receiving with a forged cost through the hub: the cloud's lot is valued at the cloud's cost", async () => {
+      const milk = localMilk()
+      const id = `lot-hub-${randomUUID()}`
+      d.batches.receiveInventoryBatches([{ id, productId: milk.id, productSyncId: milk.syncId, productName: milk.name, barcode: milk.barcode ?? "", quantity: 4, unitCost: 999, unitPrice: 1.5 }])
+      await flush()
+      const cloud = await inCloud(() => prisma.inventoryBatch.findFirst({ where: { tenantId: A.tenantId, id }, select: { unitCost: true } }))
+      evidence("receive", { tillQueue: queue().filter((o) => o.action === "receive").map((o) => [o.status, o.error ?? null]), cloudUnitCost: cloud ? Number((cloud as any).unitCost) : null })
+      expect(cloud).toBeTruthy()
+      expect(Number((cloud as any).unitCost)).toBe(MILK_COST)
+    })
+
+    itNew("permissions and Refused work: a cashier-connected till's adjustment is refused on the hub, kept, reviewed and applied by the manager on the hub, then forwarded once", async () => {
       storage.setItem("lebanonpos.auth-token", await login("1504")) // Rana: no inventory.adjust
       d.adjust.recordStockAdjustment({ productId: localMilk().id, quantityChange: 3, reason: "Count Correction", note: "crate found" })
       await flush()
@@ -198,7 +246,7 @@ if (!ready) {
       storage.setItem("lebanonpos.auth-token", await login("1503"))
     })
 
-    it("customer and driver containment on the hub", async () => {
+    it("customer and driver containment on the hub (HTTP and WebSocket)", async () => {
       const driver = (await call("POST", "/api/auth/login", { pin: "1505", code: A.driverCode, tenantSubdomain: A.subdomain, role: "Driver" })).body.token
       const mobile = `7${Date.now().toString().slice(-7)}`
       expect((await call("POST", "/api/delivery/customer/signup", { tenantId: A.tenantId, name: `Rami ${mobile}`, mobile, pin: "4321" })).status).toBe(201)
@@ -218,10 +266,121 @@ if (!ready) {
         otherStoreSignupOnThisHub: otherStore.status,
       }
       evidence("containment", probes)
-      expect(probes).toMatchObject({ driverPush: 403, driverPull: 403, driverStatus: 403, driverSetup: 403, customerPull: 401, customerSetup: 403, customerCloudPull: 403, driverOrders: 200, customerOrders: 200 })
-      expect([401, 403]).toContain(probes.customerRefused)
-      expect(probes.otherStoreSignupOnThisHub).not.toBe(201)
+
+      // WebSocket: who may listen to what. Sync activity (what was sold, on which register) goes to
+      // staff only; a driver hears its store's delivery events; a customer only its own channel.
+      const { WebSocket: WS } = await import("ws")
+      const wsUrl = `${HUB!.replace(/^http/, "ws")}/ws`
+      const socket = async (token: string | null, origin?: string) => {
+        const ws = new WS(wsUrl, origin ? { headers: { Origin: origin } } : {})
+        const got: any[] = []
+        ws.on("message", (m) => got.push(JSON.parse(String(m))))
+        const opened = await new Promise<boolean>((r) => { ws.once("open", () => r(true)); ws.once("error", () => r(false)); ws.once("unexpected-response", () => r(false)) })
+        if (opened && token) { ws.send(JSON.stringify({ type: "auth", token })); await new Promise((r) => setTimeout(r, 400)) }
+        const subscribe = async (channel: string) => { const n = got.length; ws.send(JSON.stringify({ type: "subscribe", channel })); await new Promise((r) => setTimeout(r, 300)); return got.slice(n).map((x) => x.type).join(",") || "none" }
+        return { ws, got, opened, subscribe }
+      }
+      const staffWs = await socket(await login("1503"))
+      const driverWs = await socket(driver)
+      const customerWs = await socket(customer)
+      const anonWs = await socket(null)
+      const foreignOrigin = await socket(null, "http://evil.example")
+      const subs = {
+        driverToStaff: await driverWs.subscribe(`staff:${A.tenantId}`),
+        customerToTenant: await customerWs.subscribe(`tenant:${A.tenantId}`),
+        customerToStaff: await customerWs.subscribe(`staff:${A.tenantId}`),
+        anonToTenant: await anonWs.subscribe(`tenant:${A.tenantId}`),
+        staffToOtherStore: await staffWs.subscribe(`tenant:${store.B.tenantId}`),
+      }
+      // A till trades: who hears it?
+      sell(1)
+      await flush()
+      await new Promise((r) => setTimeout(r, 1500))
+      const heard = (c: { got: any[] }) => c.got.filter((x) => String(x.type).startsWith("sync:")).length
+      const ws = { foreignOriginOpened: foreignOrigin.opened, subs, syncEventsHeard: { staff: heard(staffWs), driver: heard(driverWs), customer: heard(customerWs), anonymous: heard(anonWs) } }
+      for (const c of [staffWs, driverWs, customerWs, anonWs, foreignOrigin]) c.ws.close()
+      evidence("websocket containment", ws)
+
+      if (!LEGACY_HUB) {
+        expect(probes).toMatchObject({ driverPush: 403, driverPull: 403, driverStatus: 403, driverSetup: 403, customerPull: 401, customerSetup: 403, customerCloudPull: 403, driverOrders: 200, customerOrders: 200 })
+        expect([401, 403]).toContain(probes.customerRefused)
+        expect(probes.otherStoreSignupOnThisHub).not.toBe(201)
+        expect(ws.foreignOriginOpened).toBe(false)
+        for (const v of Object.values(subs)) expect(v).toBe("subscribe:error")
+        expect(ws.syncEventsHeard.staff).toBeGreaterThan(0)
+        expect(ws.syncEventsHeard).toMatchObject({ driver: 0, customer: 0, anonymous: 0 })
+      }
       expect((jwt.decode(customer) as any)?.tenantId ?? A.tenantId).toBe(A.tenantId)
+    })
+  })
+
+  // ── Runtime phases: one till across a cloud outage, a hub outage, and a hub restart or upgrade ──
+  if (PHASE === "outage") describe(`cloud down: the ${LABEL} till trades through the hub on the LAN`, () => {
+    it("the hub takes the sale and keeps it for the cloud; the till's work is done", async () => {
+      expect((await call("GET", "/api/health")).status).toBe(200)
+      storage.setItem("lebanonpos.auth-token", await login("1503"))
+      expect((await d.security.unlockWithPin("1503"))?.id).toBe(A.staff.clerk); await dispose()
+      const id = sell(2)
+      await flush()
+      const onHub = ((await call("GET", "/api/sync/pull/full/sales?limit=500", undefined, owner)).body.items as any[]).find((s) => s.id === id)
+      await new Promise((r) => setTimeout(r, 6000)) // a bridge cycle against the stopped cloud
+      const inCloudNow = await cloudSale(id)
+      evidence("outage", { tillQueue: queue().filter((o) => o.entity === "sale").map((o) => o.status), onHub: !!onHub, hubCost: onHub ? Number(onHub.cost) : null, inCloud: !!inCloudNow })
+      expect(onHub).toBeTruthy()
+      expect(inCloudNow).toBeNull()
+      expect(queue().filter((o) => o.entity === "sale").every((o) => o.status === "Synced")).toBe(true)
+    })
+  })
+
+  if (PHASE === "hubdown") describe(`hub down: the paired ${LABEL} till works offline`, () => {
+    it("people who signed in on this till unlock offline; someone who never did cannot; a sale is queued", async () => {
+      expect(await realFetch(`${HUB}/api/health`).then(() => "up", () => "down")).toBe("down")
+      const clerk = await unlockOffline("1503")
+      const rana = await unlockOffline("1504")
+      const manager = await unlockOffline("1502") // never signed in on this till
+      offline = true
+      let id = ""
+      try {
+        expect((await d.security.unlockWithPin("1503"))?.id).toBe(A.staff.clerk)
+        id = sell(1)
+        await d.sync.flushSyncQueue().catch(() => undefined); await dispose()
+      } finally { offline = false }
+      const pending = queue().filter((o) => o.entity === "sale" && o.payload?.id === id).map((o) => o.status)
+      evidence("hub down", { clerk: clerk?.id === A.staff.clerk, rana: rana?.id === A.staff.rana, managerNeverSignedIn: manager?.id ?? null, offlineSaleQueue: pending })
+      expect(clerk?.id).toBe(A.staff.clerk)
+      expect(rana?.id).toBe(A.staff.rana)
+      expect(manager).toBeFalsy()
+      expect(pending.length).toBe(1)
+      expect(pending[0]).not.toBe("Synced")
+    })
+  })
+
+  if (PHASE === "resume") describe(`hub and cloud back (${LEGACY_HUB ? "older hub" : "after a restart or upgrade"}): the ${LABEL} till's work arrives once`, () => {
+    it("the till's token and pairing still hold, people sign in, and every sale of this run reaches the cloud once, valued by a server", async () => {
+      expect((await call("GET", "/api/health")).status).toBe(200)
+      // the till's connection token was issued before the restart/upgrade: it must still work
+      const before = queue().filter((o) => o.status !== "Synced").length
+      await flush()
+      const after = queue().filter((o) => o.status !== "Synced").map((o) => [o.entity, o.action, o.status, o.error ?? null])
+      const list = await call("GET", "/api/device/list", undefined, owner)
+      const mine = (list.body.devices ?? list.body ?? []).find((x: any) => x.deviceId === deviceId)
+      const online = { clerk: !!(await login("1503")), manager: !!(await login("1502")) }
+      const sales = itSales()
+      const hubSales = new Map(((await call("GET", "/api/sync/pull/full/sales?limit=500", undefined, owner)).body.items as any[]).map((s) => [s.id, s]))
+      const cloud: Record<string, unknown> = {}
+      for (const id of Object.keys(sales)) {
+        const c = await inCloud(() => cloudSale(id))
+        cloud[id] = c ? { cost: Number((c as any).cost), count: await prisma.sale.count({ where: { tenantId: A.tenantId, id } }) } : null
+      }
+      evidence("resume", { tillWaiting: before, tillStillWaiting: after, pairing: mine?.status ?? null, online, sales: Object.fromEntries(Object.entries(sales).map(([id, s]) => [id.slice(0, 8), { ...s, onHub: hubSales.has(id), hubCost: hubSales.has(id) ? Number(hubSales.get(id).cost) : null, cloud: cloud[id] }])) })
+      expect(after).toEqual([])
+      expect(mine?.status).toBe("APPROVED")
+      expect(online).toEqual({ clerk: true, manager: true })
+      for (const [id, s] of Object.entries(sales)) {
+        expect(hubSales.has(id)).toBe(true)
+        expect(cloud[id]).toEqual({ cost: s.qty * MILK_COST, count: 1 })
+      }
+      expect((await unlockOffline("1503"))?.id).toBe(A.staff.clerk)
     })
   })
 }

@@ -4,6 +4,7 @@
 //
 //   node scripts/it-hub.mjs start --exe <Titan POS.exe> --user-data-dir <scratch dir> --cloud http://127.0.0.1:<port>
 //   node scripts/it-hub.mjs stop  --user-data-dir <scratch dir>
+//   (start also takes --debug-port <n>: a DevTools port on 127.0.0.1 only, to drive the hub's own window)
 //
 // Why: the hub rewrites <userData>/.env on every launch with CLOUD_API_URL taken from the launch
 // environment (LBPOS_CLOUD_URL), defaulting to PRODUCTION. One restart without it points a test hub
@@ -78,7 +79,12 @@ const cloudUrl = cloud.origin
 fs.mkdirSync(userData, { recursive: true })
 
 const env = { ...process.env, LBPOS_CLOUD_URL: cloudUrl }
-const child = spawn(exe, [`--user-data-dir=${userData}`, "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1"], { env, detached: true, stdio: "ignore" })
+const debugPort = opt["debug-port"]
+if (debugPort !== undefined && !/^\d{4,5}$/.test(debugPort)) fail("--debug-port must be a port number")
+const child = spawn(exe, [
+  `--user-data-dir=${userData}`, "--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1",
+  ...(debugPort ? [`--remote-debugging-port=${debugPort}`, "--remote-debugging-address=127.0.0.1", "--remote-allow-origins=http://127.0.0.1"] : []),
+], { env, detached: true, stdio: "ignore" })
 child.unref()
 const state = { pid: child.pid, exe, cloud: cloudUrl, startedAt: new Date().toISOString() }
 fs.writeFileSync(stateFile, JSON.stringify(state, null, 2))

@@ -153,7 +153,9 @@ const syncOperationSchema = z.object({
   // as claimed in observe mode; never part of the operation identity.
   // SPRINT-2 C: `session` is the staff session the operation was completed under (a till); `relayed`
   // is what a hub recorded when it accepted the operation (a hub's cloud link). Both observed only.
-  ev: z.object({ v: z.number().int().optional(), offline: z.boolean().optional(), session: z.string().max(4096).optional(), relayed: z.record(z.unknown()).optional() }).passthrough().optional(),
+  // `valued: "server"` (a hub's cloud link only): the hub applied this operation under server
+  // valuation (docs/LEGACY-TILL-COMPAT.md); without it the cloud values the operation itself.
+  ev: z.object({ v: z.number().int().optional(), offline: z.boolean().optional(), session: z.string().max(4096).optional(), relayed: z.record(z.unknown()).optional(), valued: z.literal("server").optional() }).passthrough().optional(),
 })
 
 const syncPushSchema = z.object({
@@ -399,6 +401,8 @@ async function applyOnce(tenantId: string, op: { id: string; entity: string; act
           summary,
           payload: (op.payload ?? {}) as any,
           appliedAt: new Date(),
+          // applied under this server's valuation: its forwarded figures are this server's
+          serverValued: true,
           status: "Pending",
           syncedAt: null,
           lastAttemptAt: new Date(),
@@ -503,7 +507,9 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
   // SPRINT-1 upgrade gate: remember which clients trade, and with which sync schema. Recorded once
   // the device is approved and the account is known (an unapproved device cannot close the gate); never blocks the push.
   const pushSchema = clientSyncSchema(req as any)
-  const pushCostTrusted = req.auth!.userId === "cloud-bridge" || await can(req, "reports.cost")
+  // A hub's link is trusted per operation (below); any other account by its cost visibility.
+  const pushIsBridge = req.auth!.userId === "cloud-bridge"
+  const pushCostTrusted = !pushIsBridge && await can(req, "reports.cost")
   let retiredClient = false
   try {
     const schema = pushSchema
@@ -553,7 +559,11 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       // BEFORE the operation is applied, kept (Refused work) or forwarded. A hub would otherwise relay
       // the till's figures to the cloud, which takes its hub link's cost as sent (the deployed cloud
       // also needs them present: it values a missing line cost at 0 and requires lot and adjustment value).
-      if (!pushCostTrusted) op.payload = await withServerCost(tenantId, op.entity, op.action, op.payload)
+      // A hub's link: only an operation the hub marks as applied under server valuation keeps the
+      // hub's figures. An older hub (1.0.51 and before) and work it queued before an upgrade carry no
+      // mark: those figures may be a till's own, so this server values the operation instead.
+      const opCostTrusted = pushIsBridge ? (op as any).ev?.valued === "server" : pushCostTrusted
+      if (!opCostTrusted) op.payload = await withServerCost(tenantId, op.entity, op.action, op.payload)
 
       // Already applied here (a lost response, a client retry, a hub re-forward): acknowledge.
       const applied = await prisma.syncOperation.findFirst({ where: { id: op.id, tenantId, appliedAt: { not: null } }, select: { entity: true, action: true, payload: true } })
@@ -639,7 +649,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         continue
       }
 
-      const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema, costTrusted: pushCostTrusted }, async (tx) => {
+      const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema, costTrusted: opCostTrusted }, async (tx) => {
         // SPRINT-2 Phase B (observe): what this server knows about the operation, in the same
         // transaction (never an applied operation without its evidence row, or the reverse).
         if ((tx as any).operationEvidence) {

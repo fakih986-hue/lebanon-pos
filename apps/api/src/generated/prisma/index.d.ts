@@ -39512,6 +39512,7 @@ export namespace Prisma {
     syncedAt: Date | null
     error: string | null
     appliedAt: Date | null
+    serverValued: boolean | null
   }
 
   export type SyncOperationMaxAggregateOutputType = {
@@ -39527,6 +39528,7 @@ export namespace Prisma {
     syncedAt: Date | null
     error: string | null
     appliedAt: Date | null
+    serverValued: boolean | null
   }
 
   export type SyncOperationCountAggregateOutputType = {
@@ -39543,6 +39545,7 @@ export namespace Prisma {
     syncedAt: number
     error: number
     appliedAt: number
+    serverValued: number
     _all: number
   }
 
@@ -39568,6 +39571,7 @@ export namespace Prisma {
     syncedAt?: true
     error?: true
     appliedAt?: true
+    serverValued?: true
   }
 
   export type SyncOperationMaxAggregateInputType = {
@@ -39583,6 +39587,7 @@ export namespace Prisma {
     syncedAt?: true
     error?: true
     appliedAt?: true
+    serverValued?: true
   }
 
   export type SyncOperationCountAggregateInputType = {
@@ -39599,6 +39604,7 @@ export namespace Prisma {
     syncedAt?: true
     error?: true
     appliedAt?: true
+    serverValued?: true
     _all?: true
   }
 
@@ -39702,6 +39708,7 @@ export namespace Prisma {
     syncedAt: Date | null
     error: string | null
     appliedAt: Date | null
+    serverValued: boolean
     _count: SyncOperationCountAggregateOutputType | null
     _avg: SyncOperationAvgAggregateOutputType | null
     _sum: SyncOperationSumAggregateOutputType | null
@@ -39737,6 +39744,7 @@ export namespace Prisma {
     syncedAt?: boolean
     error?: boolean
     appliedAt?: boolean
+    serverValued?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
 
@@ -39754,6 +39762,7 @@ export namespace Prisma {
     syncedAt?: boolean
     error?: boolean
     appliedAt?: boolean
+    serverValued?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
 
@@ -39771,6 +39780,7 @@ export namespace Prisma {
     syncedAt?: boolean
     error?: boolean
     appliedAt?: boolean
+    serverValued?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["syncOperation"]>
 
@@ -39788,9 +39798,10 @@ export namespace Prisma {
     syncedAt?: boolean
     error?: boolean
     appliedAt?: boolean
+    serverValued?: boolean
   }
 
-  export type SyncOperationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "entity" | "action" | "summary" | "payload" | "status" | "attempts" | "createdAt" | "lastAttemptAt" | "syncedAt" | "error" | "appliedAt", ExtArgs["result"]["syncOperation"]>
+  export type SyncOperationOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "entity" | "action" | "summary" | "payload" | "status" | "attempts" | "createdAt" | "lastAttemptAt" | "syncedAt" | "error" | "appliedAt" | "serverValued", ExtArgs["result"]["syncOperation"]>
   export type SyncOperationInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -39824,6 +39835,11 @@ export namespace Prisma {
        * which tracks onward delivery to the cloud (Pending = to forward, Synced = forwarded).
        */
       appliedAt: Date | null
+      /**
+       * Applied under server valuation (1.0.52+): the figures it carries are this server's. A hub
+       * forwards it with ev.valued = "server"; the cloud values any operation without it itself.
+       */
+      serverValued: boolean
     }, ExtArgs["result"]["syncOperation"]>
     composites: {}
   }
@@ -40261,6 +40277,7 @@ export namespace Prisma {
     readonly syncedAt: FieldRef<"SyncOperation", 'DateTime'>
     readonly error: FieldRef<"SyncOperation", 'String'>
     readonly appliedAt: FieldRef<"SyncOperation", 'DateTime'>
+    readonly serverValued: FieldRef<"SyncOperation", 'Boolean'>
   }
     
 
@@ -49186,7 +49203,8 @@ export namespace Prisma {
     lastAttemptAt: 'lastAttemptAt',
     syncedAt: 'syncedAt',
     error: 'error',
-    appliedAt: 'appliedAt'
+    appliedAt: 'appliedAt',
+    serverValued: 'serverValued'
   };
 
   export type SyncOperationScalarFieldEnum = (typeof SyncOperationScalarFieldEnum)[keyof typeof SyncOperationScalarFieldEnum]
@@ -52662,6 +52680,7 @@ export namespace Prisma {
     syncedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     error?: StringNullableFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
+    serverValued?: BoolFilter<"SyncOperation"> | boolean
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }
 
@@ -52679,6 +52698,7 @@ export namespace Prisma {
     syncedAt?: SortOrderInput | SortOrder
     error?: SortOrderInput | SortOrder
     appliedAt?: SortOrderInput | SortOrder
+    serverValued?: SortOrder
     tenant?: TenantOrderByWithRelationInput
   }
 
@@ -52699,6 +52719,7 @@ export namespace Prisma {
     syncedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     error?: StringNullableFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
+    serverValued?: BoolFilter<"SyncOperation"> | boolean
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }, "id">
 
@@ -52716,6 +52737,7 @@ export namespace Prisma {
     syncedAt?: SortOrderInput | SortOrder
     error?: SortOrderInput | SortOrder
     appliedAt?: SortOrderInput | SortOrder
+    serverValued?: SortOrder
     _count?: SyncOperationCountOrderByAggregateInput
     _avg?: SyncOperationAvgOrderByAggregateInput
     _max?: SyncOperationMaxOrderByAggregateInput
@@ -52740,6 +52762,7 @@ export namespace Prisma {
     syncedAt?: DateTimeNullableWithAggregatesFilter<"SyncOperation"> | Date | string | null
     error?: StringNullableWithAggregatesFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableWithAggregatesFilter<"SyncOperation"> | Date | string | null
+    serverValued?: BoolWithAggregatesFilter<"SyncOperation"> | boolean
   }
 
   export type DeviceWhereInput = {
@@ -56865,6 +56888,7 @@ export namespace Prisma {
     syncedAt?: Date | string | null
     error?: string | null
     appliedAt?: Date | string | null
+    serverValued?: boolean
     tenant: TenantCreateNestedOneWithoutSyncOperationsInput
   }
 
@@ -56882,6 +56906,7 @@ export namespace Prisma {
     syncedAt?: Date | string | null
     error?: string | null
     appliedAt?: Date | string | null
+    serverValued?: boolean
   }
 
   export type SyncOperationUpdateInput = {
@@ -56897,6 +56922,7 @@ export namespace Prisma {
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    serverValued?: BoolFieldUpdateOperationsInput | boolean
     tenant?: TenantUpdateOneRequiredWithoutSyncOperationsNestedInput
   }
 
@@ -56914,6 +56940,7 @@ export namespace Prisma {
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    serverValued?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type SyncOperationCreateManyInput = {
@@ -56930,6 +56957,7 @@ export namespace Prisma {
     syncedAt?: Date | string | null
     error?: string | null
     appliedAt?: Date | string | null
+    serverValued?: boolean
   }
 
   export type SyncOperationUpdateManyMutationInput = {
@@ -56945,6 +56973,7 @@ export namespace Prisma {
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    serverValued?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type SyncOperationUncheckedUpdateManyInput = {
@@ -56961,6 +56990,7 @@ export namespace Prisma {
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    serverValued?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type DeviceCreateInput = {
@@ -60449,6 +60479,7 @@ export namespace Prisma {
     syncedAt?: SortOrder
     error?: SortOrder
     appliedAt?: SortOrder
+    serverValued?: SortOrder
   }
 
   export type SyncOperationAvgOrderByAggregateInput = {
@@ -60468,6 +60499,7 @@ export namespace Prisma {
     syncedAt?: SortOrder
     error?: SortOrder
     appliedAt?: SortOrder
+    serverValued?: SortOrder
   }
 
   export type SyncOperationMinOrderByAggregateInput = {
@@ -60483,6 +60515,7 @@ export namespace Prisma {
     syncedAt?: SortOrder
     error?: SortOrder
     appliedAt?: SortOrder
+    serverValued?: SortOrder
   }
 
   export type SyncOperationSumOrderByAggregateInput = {
@@ -65012,6 +65045,7 @@ export namespace Prisma {
     syncedAt?: Date | string | null
     error?: string | null
     appliedAt?: Date | string | null
+    serverValued?: boolean
   }
 
   export type SyncOperationUncheckedCreateWithoutTenantInput = {
@@ -65027,6 +65061,7 @@ export namespace Prisma {
     syncedAt?: Date | string | null
     error?: string | null
     appliedAt?: Date | string | null
+    serverValued?: boolean
   }
 
   export type SyncOperationCreateOrConnectWithoutTenantInput = {
@@ -66002,6 +66037,7 @@ export namespace Prisma {
     syncedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
     error?: StringNullableFilter<"SyncOperation"> | string | null
     appliedAt?: DateTimeNullableFilter<"SyncOperation"> | Date | string | null
+    serverValued?: BoolFilter<"SyncOperation"> | boolean
   }
 
   export type DeliveryOrderUpsertWithWhereUniqueWithoutTenantInput = {
@@ -75764,6 +75800,7 @@ export namespace Prisma {
     syncedAt?: Date | string | null
     error?: string | null
     appliedAt?: Date | string | null
+    serverValued?: boolean
   }
 
   export type DeliveryOrderCreateManyTenantInput = {
@@ -76796,6 +76833,7 @@ export namespace Prisma {
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    serverValued?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type SyncOperationUncheckedUpdateWithoutTenantInput = {
@@ -76811,6 +76849,7 @@ export namespace Prisma {
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    serverValued?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type SyncOperationUncheckedUpdateManyWithoutTenantInput = {
@@ -76826,6 +76865,7 @@ export namespace Prisma {
     syncedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
     appliedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    serverValued?: BoolFieldUpdateOperationsInput | boolean
   }
 
   export type DeliveryOrderUpdateWithoutTenantInput = {

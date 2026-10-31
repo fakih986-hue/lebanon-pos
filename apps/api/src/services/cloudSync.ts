@@ -350,12 +350,15 @@ async function pushToCloud(): Promise<void> {
     body:   JSON.stringify({
       operations: pending.map((op) => {
         const relayed = relayedOf.get(op.id)
+        // valued: this hub applied the operation under server valuation (an operation queued
+        // before an upgrade did not: the cloud values it itself).
+        const valued = (op as { serverValued?: boolean }).serverValued === true
         return {
           id:      op.id,
           entity:  op.entity,
           action:  op.action,
           payload: op.payload,
-          ...(relayed ? { ev: { v: 1, relayed } } : {}),
+          ...(relayed || valued ? { ev: { v: 1, ...(relayed ? { relayed } : {}), ...(valued ? { valued: "server" } : {}) } } : {}),
         }
       }),
     }),

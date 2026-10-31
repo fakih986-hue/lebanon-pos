@@ -40,6 +40,13 @@ equals typed digits. The server refuses to store it, or any other `$2…` that i
   till's. The deployed cloud (`e2fd79a`) takes its hub link's figures as sent: it would record a missing
   line cost as 0, and it requires lot and adjustment values. Found by the installed hub acceptance: the
   first candidate forwarded a till's forged cost to the cloud.
+- **A hub's figures are trusted per operation, not per hub.** Every operation this server applies is
+  marked `SyncOperation.serverValued`; the hub forwards it with `ev.valued = "server"`. The cloud keeps
+  a hub's figures only for marked operations and values every other operation from a hub link itself
+  (`withServerCost`): everything a 1.0.50/1.0.51 hub forwards, and work any hub queued before it was
+  upgraded (those rows predate the mark). Only the store's cloud key can send the mark, and leaving it
+  out only lowers trust. "Upgrade hubs together with the cloud" is therefore not needed for correct
+  cloud figures. The deployed cloud ignores the mark.
 
 - An adjustment's `valueImpact` and a count line's `valueImpact`/`totalValueImpact` are always quantity ×
   the server's product cost. Any submitted value is ignored, from any client.
@@ -72,6 +79,15 @@ What all three tills pass, connected with an account that may sell, refund, rece
   account receives no cost from `/api/products` or sync, including with an old schema header.
 - **No verifier ever reaches a staff token.** The placeholder can never be written back as a PIN.
 
+`apps/api/__tests__/hub-valuation.test.ts` (a hub and a cloud on two databases) covers the per-operation
+mark: this hub's figures are kept (a manager's purchase price too); an older hub's forged or stale
+figures, and work queued before an upgrade, are valued by the cloud. It also covers operation identity
+while valuation is replaced: exact resends and resends with other cost figures are the same operation
+(applied once, valuation unchanged, also after the server's cost moved); a changed quantity or price
+under the same id is refused (`OPERATION_ID_REUSED`) by the hub and by the cloud; a lost
+acknowledgement between hub and cloud is forwarded again and applied once. With the old rule (every
+hub link trusted) its two older-hub tests fail.
+
 ## Known limits (accepted, not fixed by the server)
 
 1. **Legacy SHA-256 server verifiers.** Some older staff records hold an unsalted SHA-256 verifier. The
@@ -88,10 +104,11 @@ What all three tills pass, connected with an account that may sell, refund, rece
    uniqueness has been enforced since `f5d3a6b`), or upgrade.
 4. **Till-side cost displays.** A cashier-connected old till shows no cost or profit locally. Only the
    server's figures, which are correct, were tested; the till's screens were not.
-5. **An older hub (1.0.50/1.0.51) in front of a master cloud.** The cloud takes its hub link's cost as
-   sent, and an older hub forwards its tills' own figures. Under the deployed server those tills are sent
-   real cost, so the figures are normally right; they are not re-checked. Upgrade hubs together with the
-   cloud release.
+5. **An older hub (1.0.50/1.0.51) in front of this cloud.** The cloud values what it forwards (above),
+   so a till's forged or stale cost never becomes the cloud's. Two consequences remain until the hub is
+   upgraded: the older hub's own records and screens keep its tills' figures, and a manager's real
+   purchase price relayed by it is recorded in the cloud at the cloud's product cost (the hub keeps
+   the manager's figure). The same applies to work a hub queued before its upgrade.
 6. **Attribution.** Old tills send no device credential and no staff session. Their work is attributed to
    the connecting account, and the actor is whatever they claim. The enforcement gate already refuses to
    switch on while any of them trades (`identityGate.ts`, reason `upgrade-needed`).
