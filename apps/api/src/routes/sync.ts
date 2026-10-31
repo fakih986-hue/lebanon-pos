@@ -503,6 +503,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
   // SPRINT-1 upgrade gate: remember which clients trade, and with which sync schema. Recorded once
   // the device is approved and the account is known (an unapproved device cannot close the gate); never blocks the push.
   const pushSchema = clientSyncSchema(req as any)
+  const pushCostTrusted = req.auth!.userId === "cloud-bridge" || await can(req, "reports.cost")
   let retiredClient = false
   try {
     const schema = pushSchema
@@ -633,7 +634,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         continue
       }
 
-      const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema }, async (tx) => {
+      const outcome = await applyOnce(tenantId, op, { deviceId: deviceId ?? null, userId: req.auth!.userId, syncSchema: pushSchema, costTrusted: pushCostTrusted }, async (tx) => {
         // SPRINT-2 Phase B (observe): what this server knows about the operation, in the same
         // transaction (never an applied operation without its evidence row, or the reverse).
         if ((tx as any).operationEvidence) {
@@ -914,7 +915,8 @@ router.post("/refused/:id/resolve", staffSync, async (req: AuthRequest, res: Ser
 })
 
 /** A manager applying refused work runs as themselves, with the sync schema the till pushed it with. */
-const reviewApplyCtx = (deviceId: string | null, userId: string, syncSchema?: number) => ({ deviceId, userId, syncSchema })
+// Refused work was pushed by an account that lacked a permission: its cost figures are not taken.
+const reviewApplyCtx = (deviceId: string | null, userId: string, syncSchema?: number) => ({ deviceId, userId, syncSchema, costTrusted: false })
 /** Evidence for work applied on a manager's review: the reviewer's account applied it; the actor is still only claimed. */
 const reviewApplyHook = (req: AuthRequest, tenantId: string, op: { id: string; entity: string; action: string; payload?: unknown }, reviewerId: string, deviceId: string | null) => async (tx: typeof prisma) => {
   if (!(tx as any).operationEvidence) return
@@ -1068,12 +1070,22 @@ export function withoutCost<T>(value: T): T {
   return value
 }
 
-export function redactVerifiers<T>(rows: T[], req: AuthRequest): T[] {
+/**
+ * COMPAT (1.0.50/1.0.51 tills, docs/LEGACY-TILL-COMPAT.md): those tills keep their OWN offline
+ * verifier through a full pull only when the server's staff record carries a bcrypt-looking pin
+ * ("$2…"); with no pin at all they drop it, and offline unlock stops after every full pull. Staff
+ * records therefore carry this placeholder instead of the verifier. It matches no PIN (not a bcrypt
+ * hash, not a SHA-256 hash, never typed digits) and reveals nothing, and every staff token gets the
+ * same one: no client version claim can recover a real verifier.
+ */
+export const WITHHELD_PIN = "$2-withheld"
+
+export function redactVerifiers<T>(rows: T[], req: AuthRequest, placeholder = false): T[] {
   if (req.auth?.userId === "cloud-bridge") return rows
   return rows.map((r) => {
     if (!r || typeof r !== "object" || !("pin" in (r as object))) return r
     const { pin: _pin, ...rest } = r as Record<string, unknown>
-    return rest as T
+    return (placeholder ? { ...rest, pin: WITHHELD_PIN } : rest) as T
   })
 }
 
@@ -1216,7 +1228,7 @@ router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => 
   const body = {
     serverTime: new Date().toISOString(),
     products: shapeProductsForSchema(products, clientSyncSchema(req as any)), sales: shapeSalesForSchema(sales, clientSyncSchema(req as any)), refunds: shapeRefundsForSchema(refunds, clientSyncSchema(req as any)), customers: redactVerifiers(customers, req), debtSales: shapeDebtSalesForSchema(debtSales, clientSyncSchema(req as any)), debtPayments,
-    suppliers, purchaseOrders, supplierPayments, users: redactVerifiers(users, req), shifts,
+    suppliers, purchaseOrders, supplierPayments, users: redactVerifiers(users, req, true), shifts,
     auditEvents, settings: settings ? [settings] : [], expenses, batches,
     adjustments, stockCounts: counts, dailyCloses, deliveryOrders,
     deletions: deletions.map((op) => ({
@@ -1360,7 +1372,7 @@ router.get("/pull/full/:entity", staffSync, async (req: AuthRequest, res: Server
         : entity === "products" ? shapeProductsForSchema(items, clientSyncSchema(req as any))
         : entity === "refunds" ? shapeRefundsForSchema(items, clientSyncSchema(req as any))
         : entity === "debt-sales" ? shapeDebtSalesForSchema(items, clientSyncSchema(req as any))
-        : entity === "users" || entity === "customers" ? redactVerifiers(items, req)
+        : entity === "users" || entity === "customers" ? redactVerifiers(items, req, entity === "users")
         : items),
       hasMore,
       nextCursor: nextCursor ?? null,
@@ -1444,8 +1456,12 @@ async function processOperation(
   payload?: Record<string, unknown>,
   db: typeof prisma = prisma,
   // POS-SYNC-AUTHORITY-2A — source attribution for the stock ledger (record-only).
-  source: { deviceId?: string | null; userId?: string | null; syncSchema?: number } = {}
+  source: { deviceId?: string | null; userId?: string | null; syncSchema?: number; costTrusted?: boolean } = {}
 ) {
+  // Cost a client sends is taken only from an account that can see cost (or a hub's link); anyone
+  // else was never sent cost, so whatever it sends (0, a stale value, a made-up one) is replaced by
+  // the server's own product cost (docs/LEGACY-TILL-COMPAT.md).
+  const costTrusted = source.costTrusted !== false
   // Helper: resolve a product ID from cross-device sync. The phone may use a
   // different local ID than the hub. Falls back to barcode lookup.
   const resolveProductId = async (idOrProduct: any): Promise<number> => {
@@ -1794,9 +1810,9 @@ async function processOperation(
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             total: item.total,
-            // A till without cost visibility sends no cost: the server's product cost is used.
-            cost: Number.isFinite(Number(item.cost)) && item.cost !== null && item.cost !== "" ? item.cost : Number(product?.cost ?? 0),
-            costFromServer: !(Number.isFinite(Number(item.cost)) && item.cost !== null && item.cost !== ""),
+            // A till without cost visibility sends no cost (or a 0 / stale one): the server's product cost is used.
+            cost: costTrusted && Number.isFinite(Number(item.cost)) && item.cost !== null && item.cost !== "" ? item.cost : Number(product?.cost ?? 0),
+            costFromServer: !(costTrusted && Number.isFinite(Number(item.cost)) && item.cost !== null && item.cost !== ""),
             stockPolicy: resolved.policy,
             stockPolicyConflict: resolved.conflict,
             stockPolicyRev: resolved.rev,
@@ -1853,7 +1869,7 @@ async function processOperation(
           for (const allocation of item.batchAllocations ?? []) {
             const quantity = Number(allocation.quantity ?? 0)
             if (quantity <= 0) continue
-            const sliceCost = Number.isFinite(Number(allocation.unitCost)) ? Number(allocation.unitCost) : undefined
+            const sliceCost = costTrusted && Number.isFinite(Number(allocation.unitCost)) ? Number(allocation.unitCost) : undefined
 
             if (!allocation.batchId || allocation.batchId === "legacy-stock") {
               // The client's local batch cache didn't think any real batch
@@ -2253,6 +2269,8 @@ async function processOperation(
           const { id: batchId, productSyncId: _ps, opening: _opening, ...batchData } = { ...item, productId } as Record<string, unknown>
           const isOpening = (item as any).opening === true
           const qty = Number((item as any).quantityRemaining ?? (item as any).initialQuantity ?? 0)
+          // A receiver without cost visibility was never sent cost: the lot is valued at the server's product cost.
+          if (!costTrusted && productId > 0) batchData.unitCost = Number((await db.product.findFirst({ where: { tenantId, id: productId }, select: { cost: true } }))?.cost) || 0
           // POS-SYNC-RECEIVE-1: the receive handler is authoritative for the
           // aggregate. The batch id (client-generated, stable) is the idempotency
           // anchor: increment Product.stock + record the Receive movement ONLY on
@@ -2306,12 +2324,11 @@ async function processOperation(
         const resolvedPid = await resolveProductId(adj)
         const { productSyncId: _ps, ...adjData } = adj as Record<string, unknown>
         const persisted: Record<string, unknown> = { ...adjData, ...(resolvedPid > 0 ? { productId: resolvedPid } : {}) }
-        // valueImpact is quantity × cost. A till that is not sent cost (no reports.cost) cannot work it
-        // out and sends null; the column is required, so the server values it from its own cost.
-        if (typeof adj.valueImpact !== "number" || !Number.isFinite(adj.valueImpact)) {
-          const product = resolvedPid > 0 ? await db.product.findFirst({ where: { tenantId, id: resolvedPid }, select: { cost: true } }) : null
-          persisted.valueImpact = (Number(adj.quantityChange) || 0) * (Number(product?.cost) || 0)
-        }
+        // valueImpact (quantity × cost) is derived, never an input: the server values every
+        // adjustment from its own product cost. A till without cost visibility sends null, 0 or a
+        // stale figure; any submitted value is ignored.
+        const adjProductCost = resolvedPid > 0 ? Number((await db.product.findFirst({ where: { tenantId, id: resolvedPid }, select: { cost: true } }))?.cost) || 0 : 0
+        persisted.valueImpact = (Number(adj.quantityChange) || 0) * adjProductCost
         // REFUND-REVIEW: adjustments (counts, write-offs, corrections) used to be
         // recorded here without ever changing server stock or lots — the next
         // hub-authoritative pull then silently reverted them on every device.
@@ -2346,7 +2363,7 @@ async function processOperation(
                   data: {
                     id: slice.batchId, tenantId, batchNumber: String(raw.batchNumber ?? slice.batchId), productId: resolvedPid,
                     productName: String(adj.productName ?? ""), barcode: String(adj.barcode ?? ""),
-                    initialQuantity: slice.quantity, quantityRemaining: slice.quantity, unitCost: slice.unitCost ?? 0, unitPrice: 0,
+                    initialQuantity: slice.quantity, quantityRemaining: slice.quantity, unitCost: costTrusted ? slice.unitCost ?? adjProductCost : adjProductCost, unitPrice: 0,
                     ...(raw.expiryDate ? { expiryDate: raw.expiryDate } : {}),
                   } as any,
                 })
@@ -2373,16 +2390,22 @@ async function processOperation(
       } else if (action === "count") {
         const data = payload as any
         const { lines: _l, ...sessionData } = data
-        const prismaLines = await Promise.all((data.lines ?? []).map(async (line: any) => ({
-          productId: await resolveProductId(line),
-          productName: line.productName ?? line.name,
-          barcode: line.barcode,
-          category: line.category ?? "",
-          expectedQuantity: line.expectedQuantity ?? 0,
-          countedQuantity: line.countedQuantity ?? null,
-          variance: line.variance ?? 0,
-          valueImpact: line.valueImpact ?? 0,
-        })))
+        // valueImpact is derived (variance × the server's product cost), never taken from the client.
+        const prismaLines = await Promise.all((data.lines ?? []).map(async (line: any) => {
+          const productId = await resolveProductId(line)
+          const cost = productId > 0 ? Number((await db.product.findFirst({ where: { tenantId, id: productId }, select: { cost: true } }))?.cost) || 0 : 0
+          return {
+            productId,
+            productName: line.productName ?? line.name,
+            barcode: line.barcode,
+            category: line.category ?? "",
+            expectedQuantity: line.expectedQuantity ?? 0,
+            countedQuantity: line.countedQuantity ?? null,
+            variance: line.variance ?? 0,
+            valueImpact: (Number(line.variance) || 0) * cost,
+          }
+        }))
+        if ("totalValueImpact" in sessionData) sessionData.totalValueImpact = prismaLines.reduce((sum: number, l: any) => sum + l.valueImpact, 0)
         await db.stockCountSession.upsert({
           where: { id: sessionData.id as string },
           update: sessionData,
@@ -2771,6 +2794,9 @@ async function hashStaffPayload(payload?: Record<string, unknown>) {
   const data = { ...(payload ?? {}) }
   const pin = typeof data.pin === "string" ? data.pin : ""
 
+  // A pin the server itself sent as WITHHELD_PIN (or any other "$2…" that is not a bcrypt hash)
+  // must never be stored: it would lock the person out.
+  if (pin.startsWith("$2") && !/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(pin)) throw new Error("Invalid PIN")
   if (pin && !pin.startsWith("$2") && !isSha256Base64(pin)) {
     data.pin = await bcrypt.hash(pin, 12)
   }

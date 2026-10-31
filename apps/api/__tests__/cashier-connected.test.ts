@@ -4,10 +4,11 @@ import type { AddressInfo } from "node:net"
 import { randomUUID } from "node:crypto"
 import jwt from "jsonwebtoken"
 
-// CASHIER-CONNECTED TILL (HOTFIX; the REAL 1.0.50 till services + real API + real Postgres). A till whose
-// sync connection is a CASHIER's account, while a MANAGER is unlocked on it locally: what happens to
-// work the server refuses because the connecting account lacks the permission. Evidence for the
-// containment release decision.
+// CASHIER-CONNECTED TILL (from the containment hotfix; THIS repository's till services + real API + real
+// Postgres). A till whose sync connection is a CASHIER's account, while a MANAGER is unlocked on it
+// locally: what happens to work the server refuses because the connecting account lacks the
+// permission. The released 1.0.50/1.0.51 till sources run their own acceptance against this server in
+// legacy-till-*.test.ts (docs/LEGACY-TILL-COMPAT.md).
 process.env.JWT_SECRET = process.env.JWT_SECRET || "cashier-connected-secret"
 
 class MemoryStorage {
@@ -222,10 +223,11 @@ describe("a cashier-connected till with a manager unlocked locally (1.0.50 till,
     expect((await prisma.syncOperation.findUnique({ where: { id: second.id } }))!.status).toBe("Dismissed")
   })
 
-  // MASTER DIFFERS from the deployed containment server: master withholds cost from staff tills without
-  // reports.cost, so a 1.0.50 till connected as a cashier has no cost offline. Open decision before
-  // master is released to stores that still run 1.0.50/1.0.51 tills.
-  it.fails("OPEN DECISION (master withholds cost): cost still delivered to a cashier-connected 1.0.50 till by sync", async () => {
+  // RESOLVED (docs/LEGACY-TILL-COMPAT.md): unlike the deployed containment server, this server sends no
+  // cost to a staff till without reports.cost. The released 1.0.50/1.0.51 tills were shown to sell,
+  // refund, receive, adjust and count without it, every movement valued from the server's own cost
+  // (legacy-till-*.test.ts); the hotfix's expectation "cost still delivered" is no longer the criterion.
+  it("cost is not delivered to a cashier-connected till, by the API or by sync", async () => {
     const cashier = storage.getItem("lebanonpos.auth-token")!
     const api = await realFetch(`${baseUrl}/api/products`, { headers: { Authorization: `Bearer ${cashier}` } })
     const items = (await api.json()) as any
@@ -233,7 +235,7 @@ describe("a cashier-connected till with a manager unlocked locally (1.0.50 till,
     const tillCost = (JSON.parse(storage.getItem("lebanonpos.products.v1")!) as any[]).find((x) => x.syncId === PRODUCT_SYNC)?.cost
     console.log("EVIDENCE cost:", JSON.stringify({ apiStatus: api.status, costOnApiProducts: p ? p.cost ?? "absent" : "product not listed", costInTillCache: tillCost }))
     expect(p?.cost).toBeUndefined()
-    expect(Number(tillCost)).toBe(1)
+    expect(tillCost).toBeUndefined()
   })
 })
 
@@ -258,17 +260,7 @@ describe("shared PIN on a 1.0.50 till against the hotfix server (409 AMBIGUOUS_P
     storage.removeItem("lebanonpos.pin-attempts.v1")
   })
 
-  // MASTER DIFFERS from the deployed containment server: master withholds staff PIN verifiers from staff
-  // tills, so this 1.0.50 offline fallback (and 1.0.50 offline unlock generally) no longer works. Open
-  // decision before master is released to stores that still run 1.0.50/1.0.51 tills.
-  it.fails("OPEN DECISION (master withholds verifiers): the 1.0.50 till falls back to its local verifier and signs in the MANAGER", async () => {
-    const s = await sec()
-    // What the pre-hotfix server produced: it resolved the shared PIN to the higher role, and the till cached that verifier.
-    const h = await s.hashPin("5199")
-    storage.setItem("lebanonpos.users.v1", JSON.stringify(cached().map((u) => u.id === HADI ? { ...u, pin: h, lastVerifiedPinVersion: u.pinVersion ?? 1 } : u)))
-    const who = await s.unlockWithPin("5199"); await dispose()
-    console.log("EVIDENCE shared PIN, manager unlocked here before:", JSON.stringify({ unlocked: who?.name ?? null, role: who?.role ?? null, syncTokenStillCashier: tokenUser() === RANA }))
-    expect(who?.id).toBe(HADI)
-    expect(tokenUser()).toBe(RANA)
-  })
+  // The released 1.0.50/1.0.51 tills do not know 409: with a cached manager verifier they fall back to it
+  // and sign in the manager. That is measured on their real source in legacy-till-*.test.ts ("shared
+  // PIN"), not here: this file runs this repository's till, which refuses.
 })

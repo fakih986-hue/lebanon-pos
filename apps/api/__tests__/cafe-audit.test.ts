@@ -224,11 +224,12 @@ describe("A. staff attribution and server authorization", () => {
     expect(r.status).toBe(200)
     const users = (r.body.users ?? []) as Array<Record<string, unknown>>
     expect(users.length).toBeGreaterThanOrEqual(3)
-    expect(users.some((u) => "pin" in u)).toBe(false)
+    // Staff records carry only the placeholder that matches no PIN (docs/LEGACY-TILL-COMPAT.md).
+    expect(users.every((u) => u.pin === "$2-withheld")).toBe(true)
     expect(users.find((u) => u.id === CASHIER_A)?.pinVersion).toBe(1) // versions still flow (offline invalidation)
     expect(((r.body.customers ?? []) as Array<Record<string, unknown>>).some((c) => "pin" in c)).toBe(false)
     const full = await call(cashierA, "GET", "/api/sync/pull/full/users")
-    expect(((full.body.items ?? []) as Array<Record<string, unknown>>).some((u) => "pin" in u)).toBe(false)
+    expect(((full.body.items ?? []) as Array<Record<string, unknown>>).every((u) => u.pin === "$2-withheld")).toBe(true)
   })
 
   it("the hub's sync connection (store cloud key) still receives verifiers to verify PINs for its tills", async () => {

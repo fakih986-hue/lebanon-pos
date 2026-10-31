@@ -95,7 +95,8 @@ describe("offline login after the server stopped sending PIN verifiers to staff 
     await dispose()
     const users = cached()
     expect(users.map((u) => u.name).sort()).toEqual(["Owner", "Rana", "Sami"])
-    expect(users.every((u) => u.pin == null || !String(u.pin).startsWith("$2"))).toBe(true)
+    // Only the placeholder that 1.0.50/1.0.51 tills need to keep their own verifier (docs/LEGACY-TILL-COMPAT.md).
+    expect(users.every((u) => u.pin === "$2-withheld")).toBe(true)
   })
 
   it("Rana signs in online once on this till; then, offline, her PIN still unlocks", async () => {

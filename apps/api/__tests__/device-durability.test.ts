@@ -570,7 +570,7 @@ describe("PIN reset reaches hubs (real Postgres)", () => {
     const tillRes = await realFetch(`${baseUrl}/api/sync/pull?since=${encodeURIComponent(since)}`, { headers: { Authorization: `Bearer ${token(TENANT)}` } })
     const tillPulled = ((await tillRes.json()) as { users?: Array<Record<string, unknown>> }).users?.find((u) => u.id === CASHIER)
     expect(tillPulled?.pinVersion).toBe(2)
-    expect(tillPulled && "pin" in tillPulled).toBe(false)
+    expect(tillPulled?.pin).toBe("$2-withheld") // a placeholder that matches no PIN (docs/LEGACY-TILL-COMPAT.md)
     await prisma.staffUser.delete({ where: { id: CASHIER } })
   })
 })
