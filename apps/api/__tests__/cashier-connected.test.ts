@@ -202,8 +202,9 @@ describe("a cashier-connected till with a manager unlocked locally (1.0.50 till,
     expect(body).not.toContain("eyJsecret")
   })
 
-  it("dismiss: a declined adjustment never applies, and the till's resend is rejected visibly", async () => {
+  it("dismiss: a declined adjustment never applies, the till is told who declined it and that nothing was undone; its local effect stays", async () => {
     const product = (JSON.parse(storage.getItem("lebanonpos.products.v1")!) as any[]).find((p) => p.syncId === PRODUCT_SYNC)
+    const localBefore = localStock()
     ;(await inv()).recordStockAdjustment({ productId: product.id, quantityChange: -2, reason: "Damaged" as any, note: "broken" })
     const y = await sync(); await y.flushSyncQueue(); await dispose()
     const second = queue().find((o) => o.entity === "inventory" && o.action === "adjust" && o.id !== opId)!
@@ -212,8 +213,12 @@ describe("a cashier-connected till with a manager unlocked locally (1.0.50 till,
     const tillEntry = await retryOnTill(second.id)
     console.log("EVIDENCE till resend after dismiss:", JSON.stringify({ tillStatus: tillEntry?.status, error: tillEntry?.error, serverStock: await serverStock() }))
     expect(tillEntry?.status).toBe("Rejected")
-    expect(String(tillEntry?.error)).toMatch(/DISMISSED/)
+    expect(String(tillEntry?.error)).toContain('DISMISSED: declined by Sami (manager) on review ("not damaged, found on the shelf").')
+    expect(String(tillEntry?.error)).toMatch(/nothing this register already did .* was undone/)
     expect(await serverStock()).toBe(15)
+    // The decline is NOT a reversal: the register's own -2 is still in effect locally (until its next full sync replaces stock with the server's).
+    console.log("EVIDENCE local effect after decline:", JSON.stringify({ localBefore, localAfterDecline: localStock(), serverStock: await serverStock() }))
+    expect(localStock()).toBe(localBefore - 2)
     expect((await prisma.syncOperation.findUnique({ where: { id: second.id } }))!.status).toBe("Dismissed")
   })
 

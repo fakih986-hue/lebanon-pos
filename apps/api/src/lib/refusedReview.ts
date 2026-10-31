@@ -42,6 +42,7 @@ export type Effect =
   | { kind: "debt-payment"; customer: string; amount: number }
   | { kind: "debt"; action: string; amount: number | null }
   | { kind: "sale"; saleNumber: string | null; total: number | null; lines: Array<{ name: string; quantity: number; unitPrice: number; catalogue: number | null }> }
+  | { kind: "money"; what: "expense" | "cash-in" | "cash-out" | "supplier-payment" | "refund"; amount: number | null; party: string | null }
   | { kind: "other" }
 
 const num = (v: unknown) => (v === null || v === undefined || v === "" || !Number.isFinite(Number(v)) ? null : Number(v))
@@ -89,6 +90,11 @@ export async function describeEffects(tenantId: string, entity: string, action: 
     }
     return [{ kind: "sale", saleNumber: typeof p.saleNumber === "string" ? p.saleNumber : null, total: num(p.total), lines }]
   }
+  // Money the register already moved locally (a decline on the server does not move it back).
+  if (entity === "expense") return [{ kind: "money", what: "expense", amount: num(p.amount), party: typeof p.vendor === "string" ? p.vendor : null }]
+  if (entity === "cash-movement") return [{ kind: "money", what: String(p.type ?? p.direction ?? "").toLowerCase().includes("in") ? "cash-in" : "cash-out", amount: num(p.amount), party: typeof p.reason === "string" ? p.reason : null }]
+  if (entity === "supplier-payment") return [{ kind: "money", what: "supplier-payment", amount: num(p.amount), party: typeof p.supplierName === "string" ? p.supplierName : null }]
+  if (entity === "refund") return [{ kind: "money", what: "refund", amount: num(p.total ?? p.amount), party: typeof p.saleNumber === "string" ? p.saleNumber : null }]
   return [{ kind: "other" }]
 }
 
