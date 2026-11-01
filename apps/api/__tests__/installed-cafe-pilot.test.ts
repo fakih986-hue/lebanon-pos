@@ -425,7 +425,8 @@ if (!ready) {
     it("stock and lots equal (the cloud's readiness check finds no difference); money, balances, closes, actors, approvers, reviewers, evidence and queues", async () => {
       const hubKey = await waitFor(async () => { const k = await prisma.hubKey.findFirst({ where: { tenantId: A.tenantId, status: "ACTIVE" } }); return k?.lastReportAt && Date.now() - new Date(k.lastReportAt).getTime() < 120_000 ? k : null })
       expect(hubKey).toBeTruthy()
-      const readiness = (await call(CLOUD!, "GET", "/api/sync/topology?to=direct", undefined, ownerPerson)).body.readiness.blockers.map((b: any) => b.code)
+      const cloudOwner = await login(CLOUD!, "1501", "person") // the cloud's own sign-in (the hub's tokens are the hub's)
+      const readiness = (await call(CLOUD!, "GET", "/api/sync/topology?to=direct", undefined, cloudOwner)).body.readiness.blockers.map((b: any) => b.code)
       expect(readiness).not.toContain("stock-unreconciled")
       expect(readiness).not.toContain("hub-unsent")
       // stock: the milk received (12) less what was sold and returned; the count corrected water by -1, the reviewed adjustment by -2

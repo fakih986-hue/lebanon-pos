@@ -124,7 +124,7 @@ still has to enroll and sign in.
   up to its limit (the hub restarts the forwarding count when it applies an operation). Found on the packaged
   hub: such a close stayed at the hub and never reached the cloud.
 
-## 7. Deferred (stated, not enforced in this batch)
+## 7. Deferred (stated, not enforced)
 
 - The ordering app's **customer** tokens and **driver** tokens: they have their own narrow routes and never
   carry staff permissions; not covered by staff sessions.
@@ -134,20 +134,14 @@ still has to enroll and sign in.
 - Platform owner tooling (cross-store) is outside store policy.
 - Monetary or percentage thresholds for approvals: none are invented; an action needs approval when the actor
   lacks its permission.
-- **Activation has no owner screen yet.** Reviewing the gate, retiring clients and switching the mode are API
-  calls at the cloud (`/api/sync/identity-gate`, `/api/sync/hub-registers/:id/retire`,
-  `/api/sync/clients/:id/retire`, `/api/sync/identity-mode`), made by a person signed in as themselves. A
-  store-run pilot needs a screen for this; the controlled pilot below is operated by IT.
-- Business records take their actor fields from the register's payload; only the sale's cashier is
-  rewritten to the session person. Another operation that names a different person is refused
-  (`IDENTITY_MISMATCH`); one that names nobody is applied with the actor field empty, and the verified person
-  is in its evidence. Registers on this build always name their user.
-- **One topology per store.** The hub is authoritative for stock and does not take the cloud's inventory
-  outside a restore. A register connected straight to the cloud in a store that has a hub makes sales the hub
-  never applies: on the packaged run the hub showed 19 Milk and the cloud 17 after a direct register sold 2
-  (closes agreed). Pre-existing design, not introduced by enforcement; the activation gate does not detect it.
+- **Delivery orders** change stock where they are handled (the cloud's delivery routes). In a hub store that
+  competes with the hub's stock; delivery is therefore not part of a hub-store pilot. The topology readiness
+  check does not look at delivery.
 - Permission refusals are answered as retryable errors (as in observe mode): a register resends a held
   operation up to its limit; the hub keeps one held entry, its first reason and the attempt count.
+
+Resolved in the operational-readiness batch (were listed here): activation has an owner screen (§15); one
+topology per store is enforced (§13); business records carry the authenticated actor (§14).
 
 ## 8. Offline limitations
 
@@ -184,40 +178,117 @@ technical reasons in the review list are replaced the same way.
 | Migration | Change |
 |---|---|
 | `20261102120000_staff_policy_version` | `Tenant.staffPolicyVersion INT DEFAULT 0`, `staffPolicyIssuedAt`, `staffPolicyIssuedBy` (additive) |
+| `20261103090000_store_topology` | `Tenant.storeTopology TEXT DEFAULT 'unset'`, `topologyHubId`, `topologyVersion INT DEFAULT 0`, `topologyChangedAt`, `topologyChangedBy`; `HubKey.hubId`, `hubLabel`, `lastReport`, `lastReportAt`; `SyncClient.queueReport`, `queueReportedAt` (additive; every existing store stays `unset`) |
+| `20261103100000_record_attribution` | `attribution JSONB` on Sale, SaleRefund, Expense, CashMovement, InventoryBatch, StockAdjustment, StockCountSession, SupplierPayment, PurchaseOrder, DebtSale, DebtPayment, DailyClose; `Shift.openAttribution`, `closeAttribution`; actor id/name columns where a record had none (`Sale.voidedById/voidedByName/voidedAt/voidAttribution`, `InventoryBatch.receivedById/Name`, `StockAdjustment.createdById/Name`, `StockCountSession.completedById/Name`, `SupplierPayment.recordedById`, `PurchaseOrder.createdById`, `DebtSale`/`DebtPayment.recordedById/Name`, `DailyClose.closedById`); `OperationEvidence.attribution` (additive; old rows stay NULL) |
 
 Earlier Sprint-2 migrations (20261101150000, 20261101170000, 20261101190000, 20261102090000) are unchanged.
+Order: the cloud is migrated first (it runs `prisma migrate deploy` at start); hubs migrate on their own start.
 
 | Client | Observe store | Enforcing store |
 |---|---|---|
-| Register on this build (schema 5) | As before | Signs people in with a server PIN check; sends device and session |
+| Register on this build (schema 5) | As before; reports its queue with each pull | Signs people in with a server PIN check; sends device, session and the seller's id |
 | Register 1.0.51 (schema ≤ 4) | Works as before | Refused at the boundary; its work kept and held; blocks activation until upgraded or retired |
-| Hub 1.0.51 | Works as before | Blocks activation (`hub-upgrade-needed`) |
-| Admin app (bundled with this build) | Person sign-in | Person sign-in carries the person's authority |
+| Register 1.0.51 in a hub store, connected to the cloud | Its work is held (`TOPOLOGY_USE_HUB`), kept on the register; it is not told why (no guidance) | Same |
+| Hub 1.0.51 | Works as before (no topology report: a store with it cannot change to a hub topology) | Blocks activation (`hub-upgrade-needed`) |
+| Hub from an earlier development build (no hub id) | Cannot enroll a key (`400`): update it | — |
+| Admin app (bundled with this build) | Person sign-in; Store security screen | Person sign-in carries the person's authority |
 | Token without `use` (issued before this build) | Account authority (as before) | Treated as a connection: no authority without a session |
+
+Mixed versions: the cloud must run this build before any hub or register does (the topology, report and
+queue routes are new); a hub on this build talking to an older cloud keeps working but cannot report.
 
 ## 12. Controlled test-store pilot checklist
 
-Disposable store only; production stays in observe.
+Disposable store only; production stays in observe. Every owner step is on **Store security** (`/admin/security`).
 
 1. Create a disposable store at the cloud; staff: owner, manager, cashier, one person without checkout.
-   Choose one topology for it: every register behind the hub, or every register connected to the cloud.
+   Decide its topology: every register behind one hub, or every register connected to the cloud.
 2. Install the development build on the hub machine and the registers (not over a real installation).
-3. Activate the hub; enroll the hub key (owner PIN on the hub).
-4. Pair and enroll every register; on each, sign in once (server PIN check). Enroll the hub's own screen if it
-   is used for selling or review.
-5. At the cloud, open the identity gate: resolve every blocker (upgrade, enroll, sign in) or retire it with a
-   note. Do not retire a register that still trades.
-6. Enable `enforce` at the cloud with a note. Confirm on the hub: status shows `enforce` and the same version.
-7. Walk the roles: cashier on the owner's connection and on her own; staff switch to the manager; person
-   without checkout; discounted checkout with approval; refund, void, payout with approval; receiving;
-   expense; daily close; review of held work (actor, approver, reviewer shown apart).
-8. Unplug the hub's internet (LAN only): sell, approve at the hub, confirm work waits; restart the hub; confirm
-   still `enforce`; reconnect; confirm forwarded once.
-9. Bring back an old register: confirm it is refused and its sale appears in review, not lost.
-10. Check the closes and stock at hub and cloud agree.
-11. At the end, lower to `observe` at the cloud (new version) and confirm the hub adopts it.
-12. Record every support reference seen; collect the hub log.
+3. Activate the hub; enroll the hub key (owner PIN on the hub). A second hub cannot enroll while this one is active.
+4. Pair and enroll every register; on each, sign in once (server PIN check) and let it sync.
+5. Store security → *Check* the chosen setup. Clear every item listed (close shifts, decide held work, let
+   registers and the hub sync, reconcile stock), retire registers no longer used (with a reason). Then
+   *Change the store's setup* (confirm, note).
+6. Store security → *Turn on full enforcement* (confirm, note). The server refuses it while anything stands in
+   the way and lists it. Confirm the hub shows the same policy version.
+7. Walk the roles (§3 matrix): cashier on the owner's connection and on her own; staff switch to the manager;
+   person without checkout; Espresso (no barcode) and scanned goods; discount and price override with approval;
+   refund, void, payout with approval; receiving and supplier payment; count and an adjustment held for review;
+   shift and daily close on two registers, with a correction; review at the hub (actor, approver, reviewer apart).
+8. Unplug the hub's internet (LAN only): sell, approve at the hub; restart the hub; still `enforce`; reconnect;
+   everything forwarded once.
+9. A register offline: routine sale accepted later as an offline claim; anything else held for review.
+10. Revoke a register with queued work: refused when it returns, its work kept on it.
+11. Connect a register straight to the cloud: told to use the hub, checkout stopped, its work held.
+12. Store security → *Check: registers to the cloud* only to read the stock comparison (no difference expected).
+13. Return to observe (new version); confirm the hub adopts it. Record every support reference seen.
 
 Externally blocked: the Windows installer/upgrade on a real machine and real-network (LAN, Wi-Fi) testing need
 an isolated machine; packaged tests used the build's unpacked application with isolated user data and a
 loopback test cloud.
+
+## 13. Store topology (one stock authority per store)
+
+`lib/topology.ts`. `unset` (every store before it existed: no rule), `direct` (registers connect to the cloud, the
+cloud keeps the stock) or `hub` (registers connect through one hub installation, which keeps the stock).
+
+| Who sends | Store `direct` | Store `hub` (this hub) | Store `hub` (another hub) |
+|---|---|---|---|
+| Register → cloud | Applied | Held `TOPOLOGY_USE_HUB` (kept on the register; live checkout refused before payment) | — |
+| Hub → cloud (forward) | Held `TOPOLOGY_NOT_HUB_STORE` (a reviewer may apply it: the cloud keeps the stock) | Applied | Held `TOPOLOGY_OTHER_HUB` |
+| Register → hub | Held `TOPOLOGY_NOT_THIS_HUB` at the hub; the hub stops forwarding | Applied | Held at that hub |
+
+- Read access stays (pull, reports). Every pull and status answer carries the verdict; the register shows it
+  (EN/AR), stops new checkouts before payment and pauses sending; its queue is kept.
+- Held topology work is applied only where the stock is kept: at the cloud of a hub store it can be declined,
+  or delivered by connecting the register to the hub (it resends; the hub applies and forwards; applied once).
+- REST stock writes (reconciliation repair, ledger initialization) follow the same rule.
+- One hub per store: enrolling a key from another hub installation is refused (`HUB_CONFLICT`) while a key is
+  active; the owner retires the old hub first. Key rotation by the same hub is unchanged.
+- Never switched automatically. `POST /api/sync/topology` (cloud only): settings.manage signed in as themselves,
+  `confirm: true`, a note, and the version looked at (`TOPOLOGY_STALE` otherwise). Refused (`TOPOLOGY_NOT_READY`)
+  while: shifts are open; work is held for review; a register connected to the cloud has unsent work, failed or
+  staged work, an unfinished journal, or has not confirmed its queue since its last activity (older registers
+  cannot: upgrade or retire); the outgoing or incoming hub has not sent a signed report in 15 minutes, has
+  unsent or held work, open shifts, or registers with unsent work; hub and cloud stock or open-lot quantities
+  differ for any product (listed). Hubs adopt the topology from their pull only when newer and keep it.
+- Enforcement needs a chosen topology (`topology-unset` blocker).
+
+## 14. Business records carry the authenticated actor
+
+`lib/attribution.ts`. The server writes, in the transaction that applies the operation, the actor (staff id and
+the name at the time) and `attribution` = { basis, approver?, reviewer?, opId } on the record itself:
+
+| basis | Meaning |
+|---|---|
+| `verified` | the person of a server-checked staff session (or a hub's signed record of one) |
+| `offline-claimed` | the person a register names on work it says it did offline (enforce: routine sale only) |
+| `claimed` | the person a register names (observe; not proven) |
+| `reviewed` | held work a reviewer applied: actor as checked when held, reviewer recorded apart |
+| `system` | made by the server itself (e.g. the store credit a refund creates) |
+| `unattributed` | nobody named, no session checked (observe) |
+
+Records: sale (seller), void (`voidedBy*`, the seller is never changed), refund, expense, cash movement, lot
+received, adjustment, count, supplier payment, purchase order, debt sale and payment, shift open/close, daily
+close. In enforce a missing actor is filled and a substituted one never stands; client copies of server-owned
+fields are dropped (and are not part of the command's identity). A hub signs the attribution it wrote; the cloud
+records the same people. Renaming or deactivating staff later does not rewrite records (names are snapshots).
+Records made before this existed keep NULL.
+
+## 15. Owner controls (Store security screen)
+
+`apps/admin` → `/admin/security`, EN/AR. Shows the store's setup and its version, each hub (enrolled or retired)
+with its last signed report, readiness for a change (the items and products concerned), the staff mode (observe,
+partial: checkout only, full enforcement) with what each protects and the offline limits, the cloud's and the
+hub's policy versions, what blocks full enforcement, and every register and hub ever seen (version, enrollment,
+its own queue report, retired with a reason). Retire and re-admit need a reason and record the person. Every
+decision is the server's; the screen sends the version looked at, so a stale screen or a second owner is refused
+and reloads. The dialog keeps keyboard focus (Tab/Shift+Tab wrap), Escape returns to its opener.
+
+## 16. Staff switch: sign-out never waits on the network
+
+The outgoing person is signed out on the register at once (also when storage cannot forget the session: it is
+forgotten in memory). Their queued work is sent first, bounded (8 s; a hanging response cannot extend it); then
+the server is told (5 s timeout). An app closed mid-switch finishes this at its next start (persisted marker);
+the server also ends the device's session when the next person signs in. Work arriving later keeps its own
+session and is held for review — never applied on the next person's authority. Approvals never carry over.

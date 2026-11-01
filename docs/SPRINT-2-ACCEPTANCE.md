@@ -160,6 +160,38 @@ label repeats "server-checked"; server-composed reasons stay English in Arabic; 
 a store with a hub must not also have registers connected straight to the cloud (stock diverged by the 2 units
 such a register sold).
 
+## Batch: operational readiness and controlled café pilot (2026-11-01; final dev candidate `dev-38bca9b`, never published)
+
+Design and limits: [STAFF-ENFORCEMENT.md](STAFF-ENFORCEMENT.md) §7, §11–§16. Tested commit
+`38bca9b19cf2757e4270c30577d3afb727eac64a` (fresh worktree `D:\tpdc11`, clean before and after, install and package
+exit 0, unsigned). Production stores stay in observe with topology `unset`; topology and enforcement were changed only
+on disposable stores in scratch schemas, at a loopback test cloud.
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Topology enforced: direct-cloud or one hub; direct register in a hub store held (checkout refused before payment, work kept, delivered once through the hub); other hub / unattested forwards held; hub that is not the store's refuses and stops forwarding; REST stock writes; no automatic switch | `store-topology.test.ts` (8); packaged `pilot-direct` (guidance on first download, sale held `TOPOLOGY_USE_HUB`, cloud stock unchanged, repair refused) | pass |
+| Second hub, readiness (open shifts, held work, register queues, signed hub report, stock and lots), stale decisions, audit, adoption only when newer | `store-topology.test.ts`, `owner-controls.test.ts` (3); browser at the cloud: readiness listed the owner's open shift and the never-reporting old till, then "ready" | pass |
+| Authoritative attribution on records (omitted, forged, renamed/deactivated, staff switch, approval, review, hub forwarding, offline/observe claims, history untouched) | `record-attribution.test.ts` (7), `staff-enforce.test.ts` (forwarded refund and reviewed payout name the same people at hub and cloud); packaged `pilot-resume` and `pilot-verify` | pass |
+| Owner control in the browser (EN and AR): setup, readiness, retire with reason, full enforcement, server refusal with blockers, lower to observe | cloud admin on the final build: retired "Old front till", changed setup to the hub (v1), turned on full enforcement (v1, hub adopted), later returned to observe (v2, hub adopted); first pass in English on the first build, second pass in Arabic on the final build | pass |
+| Review UX: reason/code split, support references apart, Shift+Tab wrap, focus after decisions, phone sidebar, AR | browser on the scratch cloud and on the final package's hub admin: Shift+Tab wraps, Escape returns focus, focus moves to the next item and to the heading when the list empties, stale decision reloads with a notice, phone sidebar 64 px with 311 px content, AR RTL without overflow, dialog 343 px | pass |
+| Staff switch without waiting on the network | desktop `staffSession.test.ts` (18): server down, hanging response (ended within the bound), storage failure, app closed mid-switch (finished at next start), approvals not inherited | pass |
+| Café pilot on the packaged hub (hub topology) | `installed-cafe-pilot.test.ts`, `D:\TitanPOS-it\batch62\evidence.txt`: every phase passed on the final package (see the matrix in the batch report) | pass |
+| Suites and typechecks | API 692 passed / 6 packaged-only skipped, exit 0; desktop 493, exit 0; typechecks api/desktop/admin/shared and `tsc -b` desktop/admin exit 0 | pass |
+| Negative controls | 14, each failing on its business assertion: `D:\TitanPOS-it\batch61\negctl.out` (12) and `negctl-2.out` rerun (2, patterns fixed) | pass |
+
+Defects found by the first café pilot (build of `9fe20f6`, not kept) and fixed together in `38bca9b`, then the whole
+pilot was repeated from scratch on the replacement package: the register sent a sale's and a refund's seller by name
+only, so every routine offline sale was held in an enforcing store; a cashier's lot-consuming checkout left a held
+"lot change" (an update the server ignores was gated as an inventory change); a register connected the wrong way was
+told only at its next poll, not on its first download; the owner screen showed "no hub" for the hub's policy version
+before a setup was chosen. Harness mistakes found and corrected (not product defects): an offline simulation that
+changed the register's address, a probe sale built through the register without a shift, a cloud check with a hub token.
+
+Remaining (not fixed): the `topology-unset` blocker's label ("Store setup") comes from the server in English on the
+Arabic screen; server-composed sentences and blocker details stay English in Arabic (the explanation beside them is
+translated); delivery orders change stock at the cloud and are not supported in a hub store (stated); NSIS
+installation/upgrade and real LAN/hardware testing need a disposable Windows machine.
+
 ## Plan by phase (to be filled with evidence as implemented)
 - **B — observe mode:** token kinds (`typ/iss/aud`) on new tokens with old tokens still accepted; `requireCloudKeyOrJwt` refuses non-staff tokens; envelope parsing; derived `actorId`; claimed-vs-derived mismatch audited; evidence labels; no behaviour change for legacy clients (mixed-version tests).
 - **C — devices and sessions:** enrollment with single-use manager-created code; cross-tenant enrollment refused; device credential can't enroll/approve another device; staff session bound to device (use on another device refused); actor substitution refused; staff switch issues a new session and clears approvals; revocation of staff and device; storage deletion and credential recovery on the till.
