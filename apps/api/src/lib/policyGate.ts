@@ -13,6 +13,8 @@ import type { PrismaClient } from "../generated/prisma/index.js"
 
 export const POLICY_GATE_WINDOW_DAYS = 14
 export const GATE_SCHEMA = 3
+/** Café batch: modifiers, recipes and ingredients (a drink made from a recipe needs every client on it). */
+export const CAFE_SCHEMA = 6
 
 export type GateBlocker = { id: string; label: string; syncSchema: number; lastSeenAt: string; source: "server" | "cloud" }
 
@@ -45,8 +47,8 @@ export async function recordSyncClient(db: Db, tenantId: string, clientKey: stri
 /** The message a retired, not-upgraded till gets instead of a checkout (before payment). */
 export const RETIRED_CLIENT_MESSAGE = "DEVICE_RETIRED: this till was retired by the store owner and runs an older version that cannot record this store's stock settings. The sale was not recorded and no payment should be taken. Update this till to the current version, or ask the owner to re-admit it, then try again."
 
-export async function localGateBlockers(db: Db, tenantId: string): Promise<GateBlocker[]> {
+export async function localGateBlockers(db: Db, tenantId: string, minSchema: number = GATE_SCHEMA): Promise<GateBlocker[]> {
   const since = new Date(Date.now() - POLICY_GATE_WINDOW_DAYS * 86_400_000)
-  const rows = await db.syncClient.findMany({ where: { tenantId, syncSchema: { lt: GATE_SCHEMA }, retiredAt: null, lastSeenAt: { gte: since } }, orderBy: { lastSeenAt: "desc" } })
+  const rows = await db.syncClient.findMany({ where: { tenantId, syncSchema: { lt: Math.max(GATE_SCHEMA, minSchema) }, retiredAt: null, lastSeenAt: { gte: since } }, orderBy: { lastSeenAt: "desc" } })
   return rows.map((r) => ({ id: r.id, label: r.label, syncSchema: r.syncSchema, lastSeenAt: r.lastSeenAt.toISOString(), source: "server" as const }))
 }

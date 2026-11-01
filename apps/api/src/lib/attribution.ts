@@ -67,6 +67,9 @@ export async function stampAttribution(db: Db, tenantId: string, op: { id: strin
       break
     }
     case "inventory/adjust": await one("stockAdjustment", { createdById: actorId, createdByName: actorName, attribution }); break
+    // café batch: a remake/waste event writes one adjustment per ingredient; a recipe revision is someone's decision
+    case "inventory/waste": if (id) await (db as any).stockAdjustment.updateMany({ where: { tenantId, wasteRef: id }, data: { createdById: actorId, createdByName: actorName, attribution } }); break
+    case "recipe/create": await one("recipeRevision", { createdById: actorId, createdByName: actorName, attribution }); break
     case "inventory/count": await one("stockCountSession", { completedById: actorId, completedByName: actorName, attribution }); break
     case "supplier-payment/payment": case "supplier-payment/create": await one("supplierPayment", { ...named({ recordedById: actorId, recordedBy: actorName ?? "" }), attribution }); break
     case "purchase-order/create": await one("purchaseOrder", { ...named({ createdById: actorId, createdBy: actorName ?? "" }), attribution }); break
@@ -92,6 +95,9 @@ export function namedActor(entity: string, action: string, payload: unknown): { 
     case "daily-close": return { id: str(p.closedById), name: str(p.closedBy) }
     case "supplier-payment": return { id: str(p.recordedById), name: str(p.recordedBy) }
     case "purchase-order": return { id: str(p.createdById), name: str(p.createdBy) }
+    // café batch: who saved a recipe revision, who recorded a remake/waste
+    case "recipe": return { id: str(p.createdById), name: str(p.createdByName) }
+    case "inventory": return action === "waste" ? { id: str(p.createdById), name: str(p.createdByName) } : { id: null, name: null }
     default: return { id: null, name: null }
   }
 }

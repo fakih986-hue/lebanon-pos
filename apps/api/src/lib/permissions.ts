@@ -98,8 +98,16 @@ export function requiredPermissionForOp(entity: string, action: string, payload:
     case "refund": return "sales.refund"
     // SPRINT-0: the catalogue. Creating a product happens during receiving too.
     case "product":
-      if (action === "create") return "inventory.receive"
+      // café batch: a drink made from a recipe, or one offered with options, is menu management
+      if (action === "create") {
+        const p = (Array.isArray(payload) ? payload : [payload]) as Array<Record<string, unknown> | null>
+        if (p.some((x) => x && (x.stockPolicy === "recipe" || (Array.isArray(x.modifierGroupIds) && x.modifierGroupIds.length > 0)))) return "inventory.manage"
+        return "inventory.receive"
+      }
       return "inventory.manage"
+    // café batch: the menu's modifier groups and drinks' recipes
+    case "modifier-group": return "inventory.manage"
+    case "recipe": return "inventory.manage"
     case "cash-movement": return "cash.manage"
     case "expense": return "accounting.manage"
     case "daily-close": return "accounting.manage"

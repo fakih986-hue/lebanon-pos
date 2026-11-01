@@ -20,6 +20,9 @@ import { DISMISS_OUTCOMES, moneyEffect, previewTokenOf, reviewCategory } from ".
 import { createHash } from "node:crypto"
 import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { LEGACY_REV } from "../lib/stockPolicy.js"
+import { consumeIngredient, consumeRecipeLine, IngredientShortError, knownDeltas, MenuRuleError, modifierProblems, ProductSetupError, RecipeHeldError, RESTORES_STOCK, type ConsumedIngredient } from "../lib/cafeStock.js"
+import { asStockUnit, checkGroup, checkRecipe, planReceive, purchaseConversion, toMilli, type ModifierGroup } from "../lib/cafeMenu.js"
+import { CAFE_SCHEMA } from "../lib/policyGate.js"
 import { claimedActor, observeEvidence, transportOf } from "../lib/evidence.js"
 import { attestedAttribution, attributionFor, namedActor, personOf, stampAttribution, stripServerAttribution, withoutServerAttribution, type Attribution } from "../lib/attribution.js"
 import { claimedActorOf, describeEffects, actorLimitations, redactSecrets } from "../lib/refusedReview.js"
@@ -115,6 +118,9 @@ export async function attachProductSyncIds(tenantId: string, data: { sales?: any
 }
 
 export function shapeProductsForSchema(rows: any[], schema: number): any[] {
+  // café batch: a client older than schema 6 cannot record a drink's recipe or keep an ingredient out of sale: it
+  // never receives either (so it cannot sell one)
+  if (schema < CAFE_SCHEMA) rows = rows.filter((p: any) => p?.stockPolicy !== "recipe" && p?.sellable !== false)
   if (schema >= 3) return rows
   // SPRINT-1: an older client knows only stock-counted products. A made-to-order product reaches it
   // with stock 0, so it cannot sell one (it would sell it from stock it does not have).
@@ -123,6 +129,8 @@ export function shapeProductsForSchema(rows: any[], schema: number): any[] {
 }
 const withoutLinePolicy = (sale: any) => Array.isArray(sale?.items) ? { ...sale, items: sale.items.map(({ stockPolicy: _p, stockPolicyConflict: _c, stockPolicyRev: _r, ...item }: any) => item) } : sale
 export function shapeSalesForSchema(rows: any[], schema: number): any[] {
+  // café batch: an older client knows "untracked" (no stock returns) — what a recipe line is for it
+  if (schema >= 3 && schema < CAFE_SCHEMA) rows = rows.map((sale: any) => Array.isArray(sale?.items) && sale.items.some((i: any) => i?.stockPolicy === "recipe") ? { ...sale, items: sale.items.map((i: any) => i?.stockPolicy === "recipe" ? { ...i, stockPolicy: "untracked" } : i) } : sale)
   if (schema >= 3) return rows
   if (schema >= 2) return rows.map(withoutLinePolicy)
   rows = rows.map(withoutLinePolicy)
@@ -167,6 +175,9 @@ const syncOperationSchema = z.object({
     "delivery-order",
     "held-sale",
     "cash-movement",
+    // café batch: the menu's modifier groups and drinks' recipe revisions
+    "modifier-group",
+    "recipe",
   ]),
   action: z.enum([
     "create",
@@ -180,6 +191,7 @@ const syncOperationSchema = z.object({
     "count",
     "void",
     "pin",
+    "waste",
   ]),
   payload: z.unknown().optional(),
   // SPRINT-2 envelope (v1): evidence sent by the client, outside the immutable command. Recorded
@@ -351,9 +363,11 @@ async function priceOverrideViolationFor(tenantId: string, payload: unknown): Pr
       ? await prisma.product.findFirst({ where: { tenantId, syncId }, select: { name: true, price: true, wholesalePrice: true } })
       : Number.isInteger(id) && id > 0 ? await prisma.product.findFirst({ where: { tenantId, id }, select: { name: true, price: true, wholesalePrice: true } }) : null
     if (!product) continue
-    const list = Number(product.price)
+    // café batch: plus the server's current delta of each option chosen (an option it does not know adds nothing)
+    const deltas = Number(await knownDeltas(prisma, tenantId, item))
+    const list = Number(product.price) + deltas
     const wholesale = Number(product.wholesalePrice ?? 0)
-    const floor = wholesale > 0 && p.customerId ? Math.min(list, wholesale) : list
+    const floor = wholesale > 0 && p.customerId ? Math.min(list, wholesale + deltas) : list
     const unit = Number(item.unitPrice)
     if (Number.isFinite(unit) && unit < floor - 0.005) {
       return `PRICE_OVERRIDE: "${product.name}" was sold at ${unit}, below its price ${floor}. A manager must approve price changes.`
@@ -522,7 +536,7 @@ async function applyOnce(tenantId: string, op: { id: string; entity: string; act
       await syncTestHooks.afterClaim?.(op.id)
       if (claim.appliedAt) return "duplicate" as const
 
-      await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, ctx)
+      await processOperation(tenantId, op.entity, op.action, op.payload as any, tx as typeof prisma, { ...ctx, live: op.id.startsWith("wt-") })
 
       // Applied (same transaction) and queued for onward delivery: the cloud sync bridge
       // forwards status Pending and marks it Synced once the cloud acknowledges it.
@@ -891,7 +905,10 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       const errorMessage = publicError(err, `sync push ${op.entity} ${op.action} ${op.id}`).message
 
       // Classify rejection errors — these are non-retryable business conflicts
-      const isRejected =
+      // café batch: a queued sale (or waste) short of an ingredient where the stock is kept is held for a manager's
+      // review (Held work) and stays on the register; a live checkout is refused before payment instead.
+      const heldShort = err instanceof IngredientShortError && !String(op.id).startsWith("wt-")
+      const isRejected = !heldShort && (
         // REFUND-INTEGRITY-1: refund/void rule violations are business
         // conflicts with a stable code prefix (e.g. "REFUND_EXCEEDS_REFUNDABLE: …").
         err instanceof RefundRuleError ||
@@ -909,9 +926,12 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         err instanceof StockPolicyGateError ||
         err instanceof StaleStaffError ||
         err instanceof InvalidPurchasePriceError ||
-        err instanceof CloseConflictError
+        err instanceof CloseConflictError ||
+        err instanceof MenuRuleError ||
+        err instanceof ProductSetupError ||
+        err instanceof IngredientShortError)
       // a close correction based on a close since corrected by someone else: kept for a manager's review
-      const opStatus = err instanceof CloseConflictError ? "Refused" : isRejected ? "Rejected" : "Failed"
+      const opStatus = err instanceof CloseConflictError || heldShort ? "Refused" : isRejected ? "Rejected" : "Failed"
 
       // Record the failure — but never on a row that was applied (it would stop its onward
       // delivery and misreport an applied operation as rejected), nor on another store's row.
@@ -927,7 +947,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         } else if (row.tenantId === tenantId && !row.appliedAt && !(err instanceof OperationIdReuseError) && !(err instanceof CheckoutCancelledError) && !(err instanceof DismissedOperationError)) {
           await prisma.syncOperation.updateMany({
             where: { id: op.id, tenantId, appliedAt: null, status: { notIn: ["Resolving", "Dismissed"] } },
-            data: { status: opStatus, attempts: isRejected ? 5 : { increment: 1 }, lastAttemptAt: new Date(), error: errorMessage },
+            data: { status: opStatus, attempts: isRejected ? 5 : { increment: 1 }, lastAttemptAt: new Date(), error: errorMessage, ...(heldShort ? { payload: (op.payload ?? {}) as any } : {}) },
           })
         }
       } catch (syncLogError) {
@@ -956,11 +976,11 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
 
 // ─── SPRINT-1: store-wide upgrade gate for stock-policy changes ───────────────
 /** This server's blockers, plus — on a hub with a cloud — the cloud's (unreachable cloud = blocked). */
-async function policyGateBlockers(tenantId: string, opts: { localOnly?: boolean } = {}): Promise<GateBlocker[]> {
-  const blockers = await localGateBlockers(prisma, tenantId)
+async function policyGateBlockers(tenantId: string, opts: { localOnly?: boolean; minSchema?: number } = {}): Promise<GateBlocker[]> {
+  const blockers = await localGateBlockers(prisma, tenantId, opts.minSchema)
   if (!opts.localOnly && ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")) {
     const { cloudPolicyGateBlockers } = await import("../services/cloudSync.js")
-    const cloud = await cloudPolicyGateBlockers()
+    const cloud = await cloudPolicyGateBlockers(opts.minSchema)
     if (cloud === null) blockers.push({ id: "cloud", label: "Cloud (not reachable: cannot confirm its tills are upgraded)", syncSchema: 0, lastSeenAt: new Date().toISOString(), source: "cloud" })
     else blockers.push(...(cloud as unknown as GateBlocker[]))
   }
@@ -969,7 +989,8 @@ async function policyGateBlockers(tenantId: string, opts: { localOnly?: boolean 
 
 router.get("/policy-gate", staffSync, async (req: AuthRequest, res: ServerResponse) => {
   // a hub asking (its bridge) gets this server's own clients: it adds them to its own
-  const blockers = await policyGateBlockers(req.auth!.tenantId, { localOnly: req.auth!.userId === "cloud-bridge" })
+  const minSchema = Number(req.query.minSchema)
+  const blockers = await policyGateBlockers(req.auth!.tenantId, { localOnly: req.auth!.userId === "cloud-bridge", ...(Number.isInteger(minSchema) && minSchema > 0 ? { minSchema } : {}) })
   json(res, { allowed: blockers.length === 0, blockers, windowDays: POLICY_GATE_WINDOW_DAYS })
 })
 
@@ -1073,6 +1094,8 @@ const REVIEW_PERMISSIONS = ["settings.manage", "sales.price_override", "inventor
 /** Permissions a reviewer must hold to decide about this operation (any one of them). */
 function reviewPermissionsFor(entity: string, action: string, payload: unknown, reason: string | null): string[] {
   if (reason?.startsWith("PRICE_OVERRIDE:")) return ["sales.price_override"]
+  // café batch: a sale held for an ingredient shortfall: whoever may correct stock applies it once it is counted
+  if (reason?.startsWith("INGREDIENT_SHORT:")) return ["inventory.adjust"]
   // work held by the store's topology: the owner's setup decides where it may change stock
   if (isTopologyHold(reason)) return ["settings.manage"]
   // A sale refused for missing identity: a manager decides (it may be applied under their authority).
@@ -1331,7 +1354,7 @@ router.post("/validate-stock", staffSync, async (req: AuthRequest, res: ServerRe
   for (const item of items) {
     const product = byId.get(item.productId)
     const available = product ? Number(product.stock) : 0
-    if (product && !product.archived && product.stockPolicy === "untracked") continue // made to order: no stock to check
+    if (product && !product.archived && (product.stockPolicy === "untracked" || product.stockPolicy === "recipe")) continue // made to order / from ingredients: no stock of its own
     if (!product || product.archived || available < item.quantity) {
       insufficientItems.push({
         productId: item.productId,
@@ -1420,7 +1443,7 @@ router.get("/sale-committed/:saleId", staffSync, async (req: AuthRequest, res: S
 // unlockWithPin), so withholding server hashes does not change what works offline.
 /** SPRINT-0: cost data a caller without reports.cost does not receive through sync (selling prices,
  *  including the wholesale price the till needs, stay). */
-const SYNC_COST_KEYS = new Set(["cost", "profit", "margin", "marginPct", "totalCost", "unitCost", "fallbackUnitCost", "valueImpact", "totalValueImpact", "costTotal", "costOfGoods", "returnedCost", "grossMargin", "netProfit", "costStatus"])
+const SYNC_COST_KEYS = new Set(["cost", "profit", "margin", "marginPct", "totalCost", "unitCost", "fallbackUnitCost", "valueImpact", "totalValueImpact", "costTotal", "costOfGoods", "returnedCost", "grossMargin", "netProfit", "costStatus", "purchasePrice"])
 export function withoutCost<T>(value: T): T {
   if (Array.isArray(value)) return value.map(withoutCost) as T
   if (value && typeof value === "object" && !(value instanceof Date) && !("toNumber" in (value as object))) {
@@ -1490,7 +1513,7 @@ router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => 
     products, sales, refunds, customers, debtSales, debtPayments,
     suppliers, purchaseOrders, supplierPayments, users, shifts,
     auditEvents, settings, expenses, batches, adjustments,
-    counts, dailyCloses, deliveryOrders, deletions,
+    counts, dailyCloses, deliveryOrders, deletions, modifierGroups, recipeRevisions,
   ] = await Promise.all([
     prisma.product.findMany({
       where: { tenantId, ...(sinceDate ? updatedFilter : {}) },
@@ -1594,6 +1617,9 @@ router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => 
       orderBy: { createdAt: "asc" },
       take: sinceDate ? 1000 : undefined,
     }),
+    // only for clients that can use them (schema 6)
+    clientSyncSchema(req as any) >= CAFE_SCHEMA ? (prisma as any).modifierGroup.findMany({ where: { tenantId, ...(sinceDate ? updatedFilter : {}) }, orderBy: { updatedAt: "desc" } }) : [],
+    clientSyncSchema(req as any) >= CAFE_SCHEMA ? (prisma as any).recipeRevision.findMany({ where: { tenantId, ...(createdFilter ? { createdAt: createdFilter } : {}) }, orderBy: { createdAt: "asc" } }) : [],
   ])
 
   if (clientSyncSchema(req as any) >= 3) await attachProductSyncIds(tenantId, { sales, refunds, batches, adjustments })
@@ -1604,6 +1630,8 @@ router.get("/pull", staffSync, async (req: AuthRequest, res: ServerResponse) => 
     suppliers, purchaseOrders, supplierPayments, users: redactVerifiers(users, req, true), shifts,
     auditEvents, settings: settings ? [settings] : [], expenses, batches,
     adjustments, stockCounts: counts, dailyCloses: await shapeDailyClosesForClient(dailyCloses, req as any, tenantId), deliveryOrders,
+    // café batch (schema 6): the menu's modifier groups and recipe revisions (older clients cannot use them)
+    ...(clientSyncSchema(req as any) >= CAFE_SCHEMA ? { modifierGroups, recipeRevisions } : {}),
     // SPRINT-2 hub batch: the store's staff policy (a hub adopts a newer version; registers cache it)
     staffPolicy: await storePolicy(tenantId),
     // the store's topology (a hub adopts a newer version) and what this register should do about it
@@ -1651,6 +1679,8 @@ const PULL_FULL_ENTITIES: Record<string, EntityConfig> = {
   shifts:            { cursorType: "string" },
   "audit-events":    { cursorType: "string" },
   "cash-movements":  { cursorType: "string" },
+  "modifier-groups": { cursorType: "string" },
+  "recipe-revisions": { cursorType: "string" },
 }
 
 const MODEL_MAP: Record<string, string> = {
@@ -1673,6 +1703,8 @@ const MODEL_MAP: Record<string, string> = {
   shifts:            "shift",
   "audit-events":    "auditEvent",
   "cash-movements":  "cashMovement",
+  "modifier-groups": "modifierGroup",
+  "recipe-revisions": "recipeRevision",
 }
 
 router.get("/pull/full/:entity", staffSync, async (req: AuthRequest, res: ServerResponse) => {
@@ -1972,7 +2004,9 @@ async function processOperation(
   source: { deviceId?: string | null; userId?: string | null; syncSchema?: number; costTrusted?: boolean
     /** SPRINT-2 (enforcing stores): who may decide a held line's stock policy for this operation: the
      *  verified session's person, or a manager's online approval. A name in the payload is not enough. */
-    resolutionAuthority?: { staffId: string | null; approved: string[] } } = {}
+    resolutionAuthority?: { staffId: string | null; approved: string[] }
+    /** café batch: a live checkout through a hub (before payment): a menu rule or a short ingredient refuses it */
+    live?: boolean } = {}
 ) {
   // Fields only this server writes (lib/attribution.ts): never taken from a client, on any create or update path.
   stripServerAttribution(payload)
@@ -2117,6 +2151,15 @@ async function processOperation(
           const policyIn = { stockPolicy: patch.stockPolicy, stockPolicyRev: patch.stockPolicyRev, stockPolicyParentRev: patch.stockPolicyParentRev }
           normalizeProductFields(patch)
           delete patch.stockPolicy
+          // café batch: a stock unit changes only while nothing is in stock (1000 g never becomes 1000 ml)
+          if ("stockUnit" in patch) {
+            const cur = syncId ? await db.product.findFirst({ where: { tenantId, syncId: syncId as string }, select: { id: true, name: true, stock: true, stockUnit: true } })
+              : id !== undefined ? await db.product.findFirst({ where: { tenantId, id: id as number }, select: { id: true, name: true, stock: true, stockUnit: true } }) : null
+            if (cur && cur.stockUnit !== patch.stockUnit) {
+              const openLots = await db.inventoryBatch.count({ where: { tenantId, productId: cur.id, status: "Open", quantityRemaining: { gt: 0 } } })
+              if (Number(cur.stock) !== 0 || openLots > 0) throw new ProductSetupError(`"${cur.name}" has stock in ${cur.stockUnit}: its unit can change only when its stock is zero.`)
+            }
+          }
           if (typeof policyIn.stockPolicy === "string") {
             const policySelect = { id: true, name: true, stockPolicy: true, stockPolicyRev: true, stockPolicyHistory: true }
             const cur = syncId
@@ -2125,7 +2168,9 @@ async function processOperation(
             if (cur) {
               const { data: policyData, branch } = applyPolicyChange(cur, policyIn)
               if (Object.keys(policyData).length > 0 && source.userId !== "cloud-bridge") {
-                const blockers = await policyGateBlockers(tenantId)
+                // café batch: a drink made from a recipe needs every till and hub on schema 6 (older ones cannot record it)
+                const cafe = policyIn.stockPolicy === "recipe" || cur.stockPolicy === "recipe"
+                const blockers = await policyGateBlockers(tenantId, cafe ? { minSchema: CAFE_SCHEMA } : {})
                 if (blockers.length > 0) throw new StockPolicyGateError(blockers)
               }
               Object.assign(patch, policyData)
@@ -2287,7 +2332,8 @@ async function processOperation(
 
           for (const p of planned) {
             // SPRINT-1: a made-to-order line never returns to stock (its policy when sold decides).
-            if ((sale?.items as any[] | undefined)?.find((it: any) => (it.lineId ?? legacyLineKey(it.productId)) === p.key)?.stockPolicy === "untracked") continue
+            // café batch: nor does a drink made from a recipe (its ingredients were used)
+            if (!RESTORES_STOCK((sale?.items as any[] | undefined)?.find((it: any) => (it.lineId ?? legacyLineKey(it.productId)) === p.key)?.stockPolicy)) continue
             await db.product.updateMany({
               where: { tenantId, id: p.productId },
               data: { stock: { increment: p.quantity }, updatedAt: new Date() },
@@ -2321,8 +2367,13 @@ async function processOperation(
           const productId = await resolveProductId(item)
           // SPRINT-1: the line's stock policy is the SERVER's product policy at sale time (a client
           // cannot declare a packaged item untracked to skip stock control).
-          const product = productId ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { name: true, stockPolicy: true, stockPolicyRev: true, stockPolicyHistory: true, cost: true } }) : null
+          const product = productId ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { name: true, syncId: true, stockPolicy: true, stockPolicyRev: true, stockPolicyHistory: true, cost: true, sellable: true, modifierGroupIds: true, recipeRev: true } }) : null
           const resolved = resolveLinePolicy(product, item, await authorizedResolution(db, tenantId, item, source.resolutionAuthority))
+          // café batch: the options chosen must be the product's and follow its groups' rules; an ingredient is not
+          // for sale. A live checkout is refused before payment; a queued (paid) sale is recorded with the conflict.
+          const problems = product ? await modifierProblems(db, tenantId, product, item) : []
+          const menuConflicts = [...(product && product.sellable === false ? ["not-sellable"] : []), ...new Set(problems.map((x) => x.code))]
+          if (menuConflicts.length && source.live) throw new MenuRuleError(`MODIFIERS_INVALID: "${product?.name ?? item.name}" cannot be sold this way (${menuConflicts.join(", ")}). Choose its options again.`)
           return {
             productId,
             productName: item.name,
@@ -2336,8 +2387,17 @@ async function processOperation(
             stockPolicy: resolved.policy,
             stockPolicyConflict: resolved.conflict,
             stockPolicyRev: resolved.rev,
+            // café batch: the line as sold (the register's snapshot of its options; the server's own record of the recipe below)
+            modifiers: Array.isArray(item.modifiers) && item.modifiers.length ? saleModifiers(item.modifiers) : undefined,
+            note: typeof item.note === "string" && item.note.trim() ? item.note.trim().slice(0, 200) : null,
+            basePrice: Number.isFinite(Number(item.basePrice)) && item.basePrice !== null && item.basePrice !== "" ? item.basePrice : null,
+            recipeRev: resolved.policy === "recipe" ? (typeof item.recipeRev === "string" && item.recipeRev ? item.recipeRev : null) : null,
+            modifierConflict: menuConflicts.length ? menuConflicts.join(",") : null,
+            _drink: product ? { name: product.name, syncId: product.syncId, recipeRev: product.recipeRev } : null,
           }
         }))
+        // café batch: drink facts used below (not columns)
+        const drinkOf = (prismaItems as any[]).map((i) => { const d = i._drink; delete i._drink; return d })
         // Lines whose cost the till did not send are valued by the server once their lots are known (below).
         const serverCosted = (prismaItems as any[]).map((i) => i.costFromServer === true)
         const productCosts = (prismaItems as any[]).map((i) => Number(i.cost) || 0)
@@ -2369,7 +2429,7 @@ async function processOperation(
         }
 
         // Decrement product stock
-        await decrementProductStock(db, tenantId, { byLinePolicy: true }, prismaItems.filter((i: any) => i.stockPolicy !== "untracked").map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
+        await decrementProductStock(db, tenantId, { byLinePolicy: true }, prismaItems.filter((i: any) => i.stockPolicy === "tracked").map((i: any) => ({ productId: i.productId, productName: i.productName, quantity: i.quantity })))
         // Atomic batch decrement — updateMany with quantityRemaining >= quantity is atomic.
         // REFUND-INTEGRITY-1: record the lots ACTUALLY consumed per line (including
         // FEFO-fallback lots the client never knew about, and any untracked
@@ -2382,7 +2442,7 @@ async function processOperation(
           const item = rawItems[i]
           const resolvedProductId = prismaItems[i]?.productId
           const applied = appliedByLine[i]
-          if (prismaItems[i]?.stockPolicy === "untracked") continue // no lots for made-to-order lines
+          if (prismaItems[i]?.stockPolicy !== "tracked") continue // no lots of their own for made-to-order or recipe lines
           for (const allocation of item.batchAllocations ?? []) {
             const quantity = Number(allocation.quantity ?? 0)
             if (quantity <= 0) continue
@@ -2446,12 +2506,56 @@ async function processOperation(
           }
         }
 
+        // café batch: a drink made from a recipe consumes its ingredients here, with the revision it was made with
+        // (never today's instead); its cost is what the lots taken cost. Its own stock is never touched.
+        const consumedByLine: ConsumedIngredient[][] = rawItems.map(() => [])
+        const recipeLines = (prismaItems as any[]).map((it) => it.stockPolicy === "recipe")
+        for (let i = 0; i < prismaItems.length; i++) {
+          if (!recipeLines[i]) continue
+          const it = prismaItems[i] as any
+          const drink = drinkOf[i] ?? { name: it.productName, syncId: null, recipeRev: null }
+          const r = await consumeRecipeLine(db, tenantId, drink, rawItems[i], { authority: source.resolutionAuthority })
+          consumedByLine[i] = r.consumed
+          it.recipeRev = r.rev
+          it.recipeConflict = r.conflict
+          it.costStatus = r.costStatus
+          it.consumption = r.consumed
+          const qty = Number(it.quantity) || 0
+          it.cost = qty > 0 ? Math.round((r.cost / qty) * 10000) / 10000 : 0
+          if (rawItems[i] && typeof rawItems[i] === "object") rawItems[i].cost = it.cost
+          for (const c of r.consumed) await recordMovement(c.productId, "Sale", -c.quantity, saleData.id as string, `${it.productName} (recipe)`)
+          if (r.conflict === "resolved" && r.resolution) {
+            await db.auditEvent.create({ data: {
+              tenantId, action: "sale.recipe_resolved", entity: "sale",
+              summary: `${saleData.saleNumber ?? saleData.id}: "${it.productName}" was made with a recipe this server never received. ${r.resolution.resolvedByName ?? "A manager"} recorded it as ${r.resolution.mode === "recorded" ? "made with the recipe recorded on the register" : "made with no ingredients recorded"}. Note: ${r.resolution.note}`,
+              metadata: { saleId: saleData.id, productId: it.productId, rev: r.rev, mode: r.resolution.mode, resolvedBy: r.resolution.resolvedBy, note: r.resolution.note },
+              userId: String(r.resolution.resolvedBy), userName: String(r.resolution.resolvedByName ?? ""), userRole: "Manager",
+            } })
+          } else if (r.conflict === "mismatch") {
+            await db.auditEvent.create({ data: {
+              tenantId, action: "sale.recipe_conflict", entity: "sale",
+              summary: `${saleData.saleNumber ?? saleData.id}: the register's ingredients for "${it.productName}" differ from recipe ${r.rev}. The recipe's quantities were taken; please check the register's copy.`,
+              metadata: { saleId: saleData.id, productId: it.productId, rev: r.rev, recorded: rawItems[i]?.consumption ?? null },
+              userId: "__system__", userName: "Sync", userRole: "Admin",
+            } })
+          }
+        }
+        for (const [i, it] of (prismaItems as any[]).entries()) {
+          if (!it.modifierConflict) continue
+          await db.auditEvent.create({ data: {
+            tenantId, action: "sale.modifier_conflict", entity: "sale",
+            summary: `${saleData.saleNumber ?? saleData.id}: "${it.productName}" was sold with options its menu does not allow now (${it.modifierConflict}). The sale is recorded as paid; please check the menu.`,
+            metadata: { saleId: saleData.id, productId: it.productId, line: i, conflict: it.modifierConflict, modifiers: it.modifiers },
+            userId: "__system__", userName: "Sync", userRole: "Admin",
+          } })
+        }
+
         // Server valuation of a line the till did not cost: the lots it consumed at their purchase
         // price, and the product cost for quantity no lot covers. Written back into the operation so a
         // hub forwards the figures it recorded.
-        if (serverCosted.some(Boolean)) {
+        if (serverCosted.some(Boolean) || recipeLines.some(Boolean)) {
           for (let i = 0; i < prismaItems.length; i++) {
-            if (!serverCosted[i]) continue
+            if (!serverCosted[i] || recipeLines[i]) continue
             const quantity = Number((prismaItems[i] as any).quantity) || 0
             const slices = appliedByLine[i]
             const covered = slices.reduce((sum, s) => sum + Number(s.quantity), 0)
@@ -2510,8 +2614,9 @@ async function processOperation(
             data: { status: "Consumed" },
           })
         }
-        // Record stock movements for audit trail
+        // Record stock movements for audit trail (a recipe drink's are its ingredients', recorded above)
         for (const item of prismaItems) {
+          if ((item as any).stockPolicy === "recipe") continue
           await recordMovement(item.productId, "Sale", -item.quantity, saleData.id as string)
         }
       }
@@ -2617,7 +2722,8 @@ async function processOperation(
         for (const p of planned) {
           // SPRINT-1: a financial refund of a made-to-order line (its policy when sold) restores
           // nothing physical: the drink was made and cannot go back on the shelf.
-          if ((saleItemFor(p.key) as any)?.stockPolicy === "untracked") continue
+          // café batch: the same for a drink made from a recipe: beans, milk and cups are not restored by a refund
+          if (!RESTORES_STOCK((saleItemFor(p.key) as any)?.stockPolicy)) continue
           await db.product.updateMany({
             where: { tenantId, id: p.productId },
             data: { stock: { increment: p.quantity }, updatedAt: new Date() },
@@ -2815,6 +2921,19 @@ async function processOperation(
           const price = purchasePrice((item as any).unitCost)
           if (price !== undefined) batchData.unitCost = price
           else if (productId > 0) batchData.unitCost = Number((await db.product.findFirst({ where: { tenantId, id: productId }, select: { cost: true } }))?.cost) || 0
+          // café batch: received in purchase units (2 kg, 3 packs of 50): the invoice price is kept as stated and the
+          // stock quantity and valuation are derived from it; a row that does not add up is refused, not guessed.
+          if ((item as any).purchaseUnit != null && (item as any).purchaseUnit !== "") {
+            const product = productId > 0 ? await db.product.findFirst({ where: { tenantId, id: productId }, select: { name: true, stockUnit: true } }) : null
+            const plan = planReceive({ stockUnit: product?.stockUnit ?? "unit", purchaseUnit: (item as any).purchaseUnit, packSize: (item as any).unitsPerPurchase, purchaseQuantity: (item as any).purchaseQuantity, purchasePrice: (item as any).purchasePrice })
+            if (!plan.ok) throw new ProductSetupError(`"${product?.name ?? "this product"}" cannot be received that way (${plan.reason}).`)
+            if (toMilli(qty) !== plan.stockMilli) throw new ProductSetupError(`"${product?.name ?? "this product"}": ${String((item as any).purchaseQuantity)} ${String((item as any).purchaseUnit)} is ${plan.stockMilli / 1000} ${product?.stockUnit ?? "unit"}, not ${qty}.`)
+            const conv = purchaseConversion(product?.stockUnit ?? "unit", (item as any).purchaseUnit, (item as any).unitsPerPurchase)
+            if (conv.ok) batchData.unitsPerPurchase = conv.unitsPerPurchase
+            if (plan.unitCostTT !== null) batchData.unitCost = plan.unitCostTT / 10000
+          } else {
+            for (const k of ["purchaseUnit", "purchaseQuantity", "unitsPerPurchase", "purchasePrice"]) delete batchData[k]
+          }
           // POS-SYNC-RECEIVE-1: the receive handler is authoritative for the
           // aggregate. The batch id (client-generated, stable) is the idempotency
           // anchor: increment Product.stock + record the Receive movement ONLY on
@@ -2844,6 +2963,38 @@ async function processOperation(
               await db.inventoryBatch.updateMany({ where: { id: batchId as string, tenantId }, data: meta as any })
             }
           }
+        }
+      } else if (action === "waste") {
+        // café batch: a remake or waste, recorded as stock leaving (one adjustment per ingredient, reason Remake/Waste),
+        // valued from the lots it takes. A drink consumes its recipe (the revision named, else its current one) with
+        // the options given; a stock item (an ingredient, a packaged item) is taken directly. Once per event id.
+        const w = payload as any
+        if (!w || typeof w.id !== "string" || !w.id) throw new ProductSetupError("a waste record needs an id.")
+        if (await db.stockAdjustment.findFirst({ where: { tenantId, wasteRef: w.id }, select: { id: true } })) break
+        const pid = await resolveProductId(w)
+        const product = pid > 0 ? await db.product.findFirst({ where: { tenantId, id: pid }, select: { id: true, syncId: true, name: true, stockPolicy: true, stockUnit: true, cost: true, recipeRev: true } }) : null
+        if (!product) throw new ProductSetupError("the wasted item is not known here.")
+        const reason = w.reason === "Remake" ? "Remake" : "Waste"
+        const opts = Array.isArray(w.modifiers) ? w.modifiers.map((m: any) => m?.name).filter(Boolean).join(", ") : ""
+        const what = `${Number(w.quantity) || 0} × ${product.name}${opts ? ` (${opts})` : ""}`
+        let taken: ConsumedIngredient[]
+        if (product.stockPolicy === "recipe") {
+          taken = (await consumeRecipeLine(db, tenantId, { name: product.name, syncId: product.syncId, recipeRev: product.recipeRev }, { ...w, recipeRev: w.recipeRev ?? product.recipeRev }, { useCurrent: true })).consumed
+        } else if (product.stockPolicy === "tracked") {
+          const milli = toMilli(w.quantity)
+          if (milli === null || milli <= 0) throw new ProductSetupError(`the quantity wasted must be a positive amount with at most 3 decimals.`)
+          taken = [await consumeIngredient(db, tenantId, { id: product.id, syncId: product.syncId ?? "", name: product.name, stockUnit: product.stockUnit, cost: product.cost }, milli, product.name)]
+        } else throw new ProductSetupError(`"${product.name}" keeps no stock: there is nothing to record as wasted.`)
+        for (const [i, c] of taken.entries()) {
+          const after = Number((await db.product.findFirst({ where: { tenantId, id: c.productId }, select: { stock: true } }))?.stock ?? 0)
+          const adjId = `${w.id}:${i}`
+          await db.stockAdjustment.create({ data: {
+            id: adjId, tenantId, adjustmentNumber: String(w.adjustmentNumber ?? w.id).slice(0, 40), productId: c.productId, productName: c.name, barcode: "",
+            quantityBefore: Math.round((after + c.quantity) * 1000) / 1000, quantityChange: -c.quantity, quantityAfter: after,
+            reason, note: typeof w.note === "string" ? w.note.slice(0, 300) : null, batchAllocations: c.allocations as any,
+            valueImpact: -(c.cost ?? 0), wasteRef: w.id, wasteOf: what,
+          } as any })
+          await recordMovement(c.productId, "WriteOff", -c.quantity, `waste:${w.id}`, `${reason}: ${what}`)
         }
       } else if (action === "update") {
         // REFUND-REVIEW: clients used to push their whole lot table here as
@@ -3089,6 +3240,65 @@ async function processOperation(
       }
       break
     }
+    case "modifier-group": {
+      // café batch: a group is saved whole (create or update are the same: an upsert by its stable id). Its options
+      // are archived, never removed (sales that chose them keep displaying them); the revision counts saves.
+      const g = payload as any
+      if (!g || typeof g.id !== "string" || !g.id) throw new ProductSetupError("a modifier group needs an id.")
+      const existing = await (db as any).modifierGroup.findUnique({ where: { id: g.id } })
+      if (existing && existing.tenantId !== tenantId) throw new TenantScopeError(`modifier group ${g.id} belongs to another store`)
+      const prior: any[] = Array.isArray(existing?.options) ? existing.options : []
+      const incoming: any[] = Array.isArray(g.options) ? g.options : []
+      // an option this server knows that the save leaves out stays, archived
+      const options = [
+        ...incoming.map((o: any) => ({
+          id: String(o?.id ?? ""), name: String(o?.name ?? "").trim(), nameAr: String(o?.nameAr ?? "").trim(),
+          priceDelta: Number(o?.priceDelta ?? 0), isDefault: o?.isDefault === true, available: o?.available !== false,
+          archived: o?.archived === true, sortOrder: Number.isFinite(Number(o?.sortOrder)) ? Number(o.sortOrder) : 0,
+        })),
+        ...prior.filter((o) => !incoming.some((x: any) => x?.id === o.id)).map((o) => ({ ...o, archived: true })),
+      ]
+      const def: ModifierGroup = { id: g.id, name: String(g.name ?? "").trim(), nameAr: String(g.nameAr ?? "").trim(), required: g.required === true, minSelect: Math.floor(Number(g.minSelect) || 0), maxSelect: Math.floor(Number(g.maxSelect) || 1), sortOrder: Math.floor(Number(g.sortOrder) || 0), archived: g.archived === true, options }
+      const problems = g.archived === true ? checkGroup(def).filter((x) => x !== "no-options") : checkGroup(def)
+      if (problems.length) throw new ProductSetupError(`modifier group "${def.name || g.id}" is not valid (${problems.join(", ")}).`)
+      const data = { name: def.name, nameAr: def.nameAr ?? "", required: !!def.required, minSelect: def.minSelect ?? 0, maxSelect: def.maxSelect ?? 1, sortOrder: def.sortOrder ?? 0, archived: !!def.archived, options: options as any }
+      if (existing) await (db as any).modifierGroup.update({ where: { id: g.id }, data: { ...data, revision: { increment: 1 } } })
+      else await (db as any).modifierGroup.create({ data: { ...data, id: g.id, tenantId } })
+      break
+    }
+    case "recipe": {
+      // café batch: a recipe revision is created once (immutable) and becomes the drink's current recipe when it was
+      // made on top of the current one; a revision made concurrently elsewhere is kept (sales made with it resolve)
+      // without moving the pointer, and the conflict is visible.
+      const r = payload as any
+      if (!r || typeof r.id !== "string" || !r.id || typeof r.productSyncId !== "string" || !r.productSyncId) throw new ProductSetupError("a recipe needs an id and its drink.")
+      const known = await (db as any).recipeRevision.findUnique({ where: { id: r.id } })
+      if (known) { if (known.tenantId !== tenantId) throw new TenantScopeError(`recipe ${r.id} belongs to another store`); break }
+      const drink = await db.product.findFirst({ where: { tenantId, syncId: r.productSyncId }, select: { id: true, name: true, syncId: true, recipeRev: true, stockPolicy: true } })
+      if (!drink) throw new RecipeHeldError(String(r.productName ?? r.productSyncId), r.id, "a drink this server does not know yet")
+      const lines = (Array.isArray(r.lines) ? r.lines : []).map((l: any) => ({
+        ingredientSyncId: String(l?.ingredientSyncId ?? ""), quantity: String(l?.quantity ?? ""),
+        ...(Array.isArray(l?.when) && l.when.length ? { when: l.when.map(String) } : {}),
+        ...(Array.isArray(l?.unless) && l.unless.length ? { unless: l.unless.map(String) } : {}),
+      }))
+      const ingredientIds = [...new Set(lines.map((l: any) => l.ingredientSyncId).filter(Boolean))] as string[]
+      const ingredients = await db.product.findMany({ where: { tenantId, syncId: { in: ingredientIds } }, select: { syncId: true, stockPolicy: true } })
+      // an ingredient this server has not received yet: retried until its product arrives (queue order)
+      const missing = ingredientIds.filter((id) => !ingredients.some((x) => x.syncId === id))
+      if (missing.length) throw new RecipeHeldError(drink.name, r.id, `an ingredient (${missing[0]}) this server does not know yet`)
+      const problems = checkRecipe({ id: r.id, yield: Number(r.yield ?? 1), lines }, (sid) => ingredients.some((x) => x.syncId === sid && x.stockPolicy === "tracked"), drink.syncId)
+      if (problems.length) throw new ProductSetupError(`the recipe of "${drink.name}" is not valid (${[...new Set(problems.map((x) => x.code))].join(", ")}).`)
+      await (db as any).recipeRevision.create({ data: { id: r.id, tenantId, productSyncId: drink.syncId, yield: Number(r.yield ?? 1), lines, note: String(r.note ?? "").slice(0, 300), parentRev: typeof r.parentRev === "string" && r.parentRev ? r.parentRev : null } })
+      const onTop = (r.parentRev ?? null) === (drink.recipeRev ?? null)
+      if (onTop) await db.product.updateMany({ where: { tenantId, id: drink.id }, data: { recipeRev: r.id, updatedAt: new Date() } as any })
+      else await db.auditEvent.create({ data: {
+        tenantId, action: "product.recipe_conflict", entity: "product",
+        summary: `"${drink.name}": a recipe change was made elsewhere at the same time as another one. It is kept (drinks made with it keep it), but the current recipe stays ${drink.recipeRev ?? "none"}; please check.`,
+        metadata: { productId: drink.id, rev: r.id, parentRev: r.parentRev ?? null, currentRev: drink.recipeRev },
+        userId: "__system__", userName: "Sync", userRole: "Admin",
+      } })
+      break
+    }
     case "cash-movement": {
       if (action === "create") {
         await db.cashMovement.upsert({
@@ -3118,11 +3328,13 @@ function validateSyncOperation(op: SyncOperationInput) {
     "supplier-payment": ["create", "payment"],
     staff: ["create", "update", "pin"],
     shift: ["open", "close"],
-    inventory: ["receive", "adjust", "count", "update"],
+    inventory: ["receive", "adjust", "count", "update", "waste"],
     settings: ["create", "update"],
     "delivery-order": ["create", "update"],
     "cash-movement": ["create"],
     "held-sale": ["create", "delete"],
+    "modifier-group": ["create", "update"],
+    recipe: ["create"],
   }
 
   if (!allowedActions[op.entity].includes(op.action)) {
@@ -3335,9 +3547,30 @@ async function authorizedResolution(db: typeof prisma, tenantId: string, item: a
   return { policy: r.policy }
 }
 
+/** café batch: the options snapshot a sale line keeps (ids, display names, price delta), nothing else. */
+function saleModifiers(raw: unknown[]): Array<Record<string, unknown>> {
+  return raw.filter((m: any) => m && typeof m.groupId === "string" && typeof m.optionId === "string").slice(0, 40).map((m: any) => ({
+    groupId: m.groupId, groupName: String(m.groupName ?? ""), groupNameAr: String(m.groupNameAr ?? ""),
+    optionId: m.optionId, name: String(m.name ?? ""), nameAr: String(m.nameAr ?? ""), priceDelta: Number(m.priceDelta) || 0,
+  }))
+}
+
 function normalizeProductFields(p: Record<string, unknown>) {
   if ("barcode" in p && (p.barcode == null || (typeof p.barcode === "string" && p.barcode.trim() === ""))) p.barcode = null
-  if ("stockPolicy" in p && p.stockPolicy !== "tracked" && p.stockPolicy !== "untracked") delete p.stockPolicy
+  if ("stockPolicy" in p && p.stockPolicy !== "tracked" && p.stockPolicy !== "untracked" && p.stockPolicy !== "recipe") delete p.stockPolicy
+  // café batch: ingredient and menu fields (the recipe pointer moves only with a recipe revision)
+  delete p.recipeRev
+  if ("sellable" in p) p.sellable = p.sellable !== false
+  if ("stockUnit" in p) p.stockUnit = asStockUnit(p.stockUnit)
+  if ("modifierGroupIds" in p) p.modifierGroupIds = Array.isArray(p.modifierGroupIds) ? [...new Set((p.modifierGroupIds as unknown[]).filter((x): x is string => typeof x === "string" && !!x))] : []
+  if ("purchaseUnit" in p || "unitsPerPurchase" in p) {
+    if (p.purchaseUnit == null || p.purchaseUnit === "") { p.purchaseUnit = null; p.unitsPerPurchase = null }
+    else {
+      const conv = purchaseConversion("stockUnit" in p ? p.stockUnit : "unit", p.purchaseUnit, p.unitsPerPurchase)
+      if ("stockUnit" in p && !conv.ok) throw new ProductSetupError(conv.reason === "pack-size" ? "a pack must hold a whole number of units (at least 1)." : `${String(p.purchaseUnit)} cannot be converted to ${String(p.stockUnit)}.`)
+      if (conv.ok) p.unitsPerPurchase = conv.unitsPerPurchase
+    }
+  }
   // The policy version and change time are server-owned (bumped below when the policy changes).
   delete p.stockPolicyVersion
   delete p.stockPolicyChangedAt

@@ -36,7 +36,8 @@ export async function recordStockMovement(db: Db, tenantId: string, m: MovementI
     orderBy: { createdAt: "desc" },
     select: { balance: true },
   })
-  const balance = (last?.balance ?? 0) + m.quantity
+  // advisory running balance, rounded like stock quantities (3 decimals) so decimal ingredient units cannot drift
+  const balance = Math.round(((last?.balance ?? 0) + m.quantity) * 1000) / 1000
   await sm.create({
     data: {
       tenantId,

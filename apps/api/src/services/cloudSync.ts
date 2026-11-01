@@ -328,10 +328,10 @@ async function syncLoop(): Promise<void> {
  * SPRINT-1 upgrade gate, seen from a hub: the cloud's own blockers (older direct tills or hubs).
  * [] when this hub has no cloud; null when the cloud cannot be asked (the change is then refused).
  */
-export async function cloudPolicyGateBlockers(): Promise<Array<Record<string, unknown>> | null> {
+export async function cloudPolicyGateBlockers(minSchema?: number): Promise<Array<Record<string, unknown>> | null> {
   if (!(CLOUD_API_URL && CLOUD_TENANT && CLOUD_API_KEY)) return []
   try {
-    const r = await fetchCloud("/api/sync/policy-gate")
+    const r = await fetchCloud(`/api/sync/policy-gate${minSchema ? `?minSchema=${minSchema}` : ""}`)
     if (!r.ok) return null
     const body = (await r.json()) as { blockers?: Array<Record<string, unknown>> }
     return (body.blockers ?? []).map((b) => ({ ...b, source: "cloud" }))
@@ -797,6 +797,34 @@ async function upsertPulledData(
   }
 
   // Products
+  // café batch: recipe revisions are immutable (inserted once); modifier groups follow the cloud unless this hub
+  // holds a later save of its own that the cloud has not applied yet (its revision is higher)
+  for (const r of data.recipeRevisions ?? []) {
+    await run("recipeRevision", async () => {
+      const { tenantId: _t, ...row } = r as any
+      const known = await (prisma as any).recipeRevision.findUnique({ where: { id: row.id }, select: { id: true } })
+      if (!known) await (prisma as any).recipeRevision.create({ data: { ...row, tenantId } })
+    })
+  }
+  for (const g of data.modifierGroups ?? []) {
+    await run("modifierGroup", async () => {
+      const { tenantId: _t, updatedAt: _u, ...row } = g as any
+      const local = await (prisma as any).modifierGroup.findUnique({ where: { id: row.id }, select: { revision: true } })
+      if (!local) await (prisma as any).modifierGroup.create({ data: { ...row, tenantId } })
+      else if (Number(row.revision ?? 0) >= Number(local.revision ?? 0)) await (prisma as any).modifierGroup.update({ where: { id: row.id }, data: row })
+    })
+  }
+  // A drink's current recipe: the cloud's when it is the same as, or follows from, this hub's (fast-forward); this
+  // hub's when the cloud's is an earlier revision of it (the cloud has not applied the hub's save yet).
+  const recipePointer = async (localRev: string | null | undefined, incomingRev: unknown): Promise<string | null | undefined> => {
+    if (typeof incomingRev !== "string" || !incomingRev || !localRev || localRev === incomingRev) return incomingRev as any
+    for (let rev: string | null = localRev, hops = 0; rev && hops < 200; hops++) {
+      if (rev === incomingRev) return localRev // the cloud's is an ancestor of ours: keep ours
+      rev = ((await (prisma as any).recipeRevision.findUnique({ where: { id: rev }, select: { parentRev: true } }))?.parentRev ?? null) as string | null
+    }
+    return incomingRev
+  }
+
   for (const p of data.products ?? []) {
     await run("product", async () => {
       // The incoming numeric id is Railway's local PK — it is NEVER adopted
@@ -813,10 +841,12 @@ async function upsertPulledData(
       if (incomingSyncId) {
         const bySync = await prisma.product.findFirst({
           where: { tenantId, syncId: incomingSyncId },
-          select: { id: true, stockPolicy: true, stockPolicyRev: true, stockPolicyHistory: true },
+          select: { id: true, stockPolicy: true, stockPolicyRev: true, stockPolicyHistory: true, recipeRev: true },
         })
         if (bySync) {
-          await prisma.product.update({ where: { id: bySync.id }, data: productMetadataPatch(withMergedPolicy(bySync, patch)) as any })
+          if ("recipeRev" in patch) patch.recipeRev = await recipePointer(bySync.recipeRev, patch.recipeRev)
+          const { recipeRev: _own, ...current } = bySync
+          await prisma.product.update({ where: { id: bySync.id }, data: productMetadataPatch(withMergedPolicy(current, patch)) as any })
           return
         }
       }
@@ -1224,7 +1254,7 @@ function fetchCloud(urlPath: string, init: RequestInit = {}): Promise<Response> 
       "x-tenant-id":   CLOUD_TENANT!,
       // REFUND-INTEGRITY-1: this hub understands sale line ids, sale lot
       // allocations and refund rates (schema 2), so the cloud may send them.
-      "x-titan-sync-schema": "5", // SPRINT-1: receives stockPolicy (product + sale line); SPRINT-2: 4 identity evidence, 5 staff enforcement (signs forwards, adopts the staff policy)
+      "x-titan-sync-schema": "6", // SPRINT-1: receives stockPolicy (product + sale line); SPRINT-2: 4 identity evidence, 5 staff enforcement (signs forwards, adopts the staff policy); café batch: 6 modifiers, recipes, ingredients
       "x-titan-unknown-cost": "1", // a daily close's unknown cost stays null (not 0)
       "x-titan-close-revisions": "1", // several closes per date, with their revisions (lib/dailyClose.ts)
       ...(init.headers as Record<string, string> | undefined),
@@ -1257,5 +1287,7 @@ interface PullResponse {
   stockCounts?:      AnyRecord[]
   dailyCloses?:      AnyRecord[]
   deliveryOrders?:   AnyRecord[]
+  modifierGroups?:   AnyRecord[]
+  recipeRevisions?:  AnyRecord[]
   deletions?:        Array<{ entity?: string; id?: string | number; saleNumber?: string }>
 }

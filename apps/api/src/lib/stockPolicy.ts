@@ -17,7 +17,7 @@ import { randomUUID } from "node:crypto"
  * adopts the cloud's current revision once the cloud has seen the hub's own, and keeps its own until
  * then (the cloud decides when it arrives). Histories are merged by revision id, never overwritten.
  */
-export type Policy = "tracked" | "untracked"
+export type Policy = "tracked" | "untracked" | "recipe"
 export type PolicyRev = { rev: string; policy: Policy; parentRev: string | null; at: string | null }
 export const INITIAL_REV = "initial"
 /**
@@ -27,8 +27,8 @@ export const INITIAL_REV = "initial"
  * every server it is forwarded to records the same.
  */
 export const LEGACY_REV = "legacy"
-export const asPolicy = (p: unknown): Policy => (p === "untracked" ? "untracked" : "tracked")
-const validPolicy = (p: unknown): p is Policy => p === "tracked" || p === "untracked"
+export const asPolicy = (p: unknown): Policy => (p === "untracked" || p === "recipe" ? p : "tracked")
+const validPolicy = (p: unknown): p is Policy => p === "tracked" || p === "untracked" || p === "recipe"
 
 type PolicyState = { stockPolicy: string; stockPolicyRev?: string | null; stockPolicyHistory?: unknown }
 

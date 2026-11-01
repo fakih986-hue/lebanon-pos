@@ -1,6 +1,7 @@
 import { Router } from "express"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import prisma from "../lib/prisma.js"
+import { Prisma } from "../generated/prisma/index.js"
 import { requireAuth, json, type AuthRequest } from "../middleware/auth.js"
 import { requirePermission, hideCostUnlessAllowed, can, actingPerson } from "../middleware/permission.js"
 import { effectivePermissions, shiftOpAllowed } from "../lib/permissions.js"
@@ -56,7 +57,7 @@ router.get("/low-stock", requireAuth, requirePermission("inventory.view", "repor
       },
       select: {
         id: true, name: true, barcode: true, category: true,
-        stock: true, cost: true, price: true,
+        stock: true, cost: true, price: true, stockUnit: true, sellable: true,
         reorderPoint: true, reorderQuantity: true, supplierName: true,
       },
       orderBy: { stock: "asc" },
@@ -297,13 +298,13 @@ router.get("/margin", requireAuth, requirePermission("reports.cost"), async (req
       where: { tenantId, status: "Completed", createdAt: { gte: since } },
       include: {
         items: {
-          select: { productId: true, productName: true, quantity: true, total: true, cost: true },
+          select: { productId: true, productName: true, quantity: true, total: true, cost: true, costStatus: true },
         },
       },
     })
 
     const productMap = new Map<number, {
-      name: string; category: string; totalRevenue: number; totalCost: number; totalQty: number
+      name: string; category: string; totalRevenue: number; totalCost: number; totalQty: number; incomplete?: boolean
     }>()
 
     const products = await prisma.product.findMany({
@@ -316,6 +317,9 @@ router.get("/margin", requireAuth, requirePermission("reports.cost"), async (req
       for (const item of sale.items) {
         const info = productInfo.get(item.productId)
         const existing = productMap.get(item.productId)
+        // café batch: a drink whose ingredient cost is not (fully) known has no margin to show
+        const incomplete = item.costStatus === "unknown" || item.costStatus === "partial"
+        if (existing && incomplete) existing.incomplete = true
         if (existing) {
           existing.totalRevenue += Number(item.total)
           existing.totalCost += Number(item.cost ?? 0) * item.quantity
@@ -327,6 +331,7 @@ router.get("/margin", requireAuth, requirePermission("reports.cost"), async (req
             totalRevenue: Number(item.total),
             totalCost: Number(item.cost ?? 0) * item.quantity,
             totalQty: item.quantity,
+            ...(incomplete ? { incomplete: true } : {}),
           })
         }
       }
@@ -339,9 +344,10 @@ router.get("/margin", requireAuth, requirePermission("reports.cost"), async (req
       quantity: v.totalQty,
       revenue: Math.round(v.totalRevenue * 100) / 100,
       cost: Math.round(v.totalCost * 100) / 100,
-      margin: Math.round((v.totalRevenue - v.totalCost) * 100) / 100,
-      marginPct: v.totalRevenue > 0 ? Math.round(((v.totalRevenue - v.totalCost) / v.totalRevenue) * 10000) / 100 : 0,
-    })).sort((a, b) => b.margin - a.margin)
+      margin: v.incomplete ? null : Math.round((v.totalRevenue - v.totalCost) * 100) / 100,
+      marginPct: v.incomplete ? null : v.totalRevenue > 0 ? Math.round(((v.totalRevenue - v.totalCost) / v.totalRevenue) * 10000) / 100 : 0,
+      costIncomplete: !!v.incomplete,
+    })).sort((a, b) => (b.margin ?? -Infinity) - (a.margin ?? -Infinity))
 
     const categories = new Map<string, { revenue: number; cost: number }>()
     for (const item of items) {
@@ -353,27 +359,111 @@ router.get("/margin", requireAuth, requirePermission("reports.cost"), async (req
 
     const totalRevenue = items.reduce((s, i) => s + i.revenue, 0)
     const totalCost = items.reduce((s, i) => s + i.cost, 0)
+    const incomplete = items.filter((i) => i.costIncomplete).length
+    const incompleteCategories = new Set(items.filter((i) => i.costIncomplete).map((i) => i.category))
 
     json(res, {
       period: `${days}d`,
       summary: {
         totalRevenue: Math.round(totalRevenue * 100) / 100,
         totalCost: Math.round(totalCost * 100) / 100,
-        totalMargin: Math.round((totalRevenue - totalCost) * 100) / 100,
-        marginPct: totalRevenue > 0 ? Math.round(((totalRevenue - totalCost) / totalRevenue) * 10000) / 100 : 0,
+        totalMargin: incomplete ? null : Math.round((totalRevenue - totalCost) * 100) / 100,
+        marginPct: incomplete ? null : totalRevenue > 0 ? Math.round(((totalRevenue - totalCost) / totalRevenue) * 10000) / 100 : 0,
+        costIncompleteProducts: incomplete,
       },
       byCategory: Array.from(categories.entries()).map(([name, v]) => ({
         category: name,
         revenue: Math.round(v.revenue * 100) / 100,
         cost: Math.round(v.cost * 100) / 100,
-        margin: Math.round((v.revenue - v.cost) * 100) / 100,
-        marginPct: v.revenue > 0 ? Math.round(((v.revenue - v.cost) / v.revenue) * 10000) / 100 : 0,
-      })).sort((a, b) => b.margin - a.margin),
+        margin: incompleteCategories.has(name) ? null : Math.round((v.revenue - v.cost) * 100) / 100,
+        marginPct: incompleteCategories.has(name) ? null : v.revenue > 0 ? Math.round(((v.revenue - v.cost) / v.revenue) * 10000) / 100 : 0,
+        costIncomplete: incompleteCategories.has(name),
+      })).sort((a, b) => (b.margin ?? -Infinity) - (a.margin ?? -Infinity)),
       byProduct: items,
     })
   } catch (err) {
     console.error("Margin report error:", err)
     json(res, { error: "Failed to generate margin report" }, 500)
+  }
+})
+
+// ── Café: drinks, options, ingredient cost, waste (café batch) ─────────
+// Revenue is split into the drinks' own price and their options; ingredient cost comes from the lots each sale
+// actually took (kept on the sale line, so later recipe or supplier price changes never rewrite it). A line whose
+// cost is unknown or partly unknown is counted apart, never as zero; a real zero cost is a known cost.
+// Cost, profit and waste value are only for staff who may see cost.
+router.get("/cafe", requireAuth, requirePermission("reports.view"), async (req: AuthRequest, res: ServerResponse) => {
+  try {
+    const tenantId = req.auth!.tenantId
+    const days = Math.min(90, Math.max(1, Number((req as any).query?.days) || 30))
+    const since = new Date(Date.now() - days * 86400000)
+    const showCost = await can(req, "reports.cost")
+    const lines = await prisma.saleItem.findMany({
+      where: { sale: { tenantId, status: { not: "Voided" }, createdAt: { gte: since } }, OR: [{ stockPolicy: "recipe" }, { modifiers: { not: Prisma.DbNull } }] },
+      select: { productId: true, productName: true, quantity: true, total: true, unitPrice: true, basePrice: true, cost: true, costStatus: true, stockPolicy: true, modifiers: true, recipeConflict: true, modifierConflict: true },
+    })
+    type Row = { productId: number; name: string; quantity: number; revenue: number; baseRevenue: number; modifierRevenue: number; cost: number; known: number; partial: number; unknown: number; conflicts: number }
+    const by = new Map<number, Row>()
+    const round2 = (n: number) => Math.round(n * 100) / 100
+    for (const l of lines) {
+      const r = by.get(l.productId) ?? { productId: l.productId, name: l.productName, quantity: 0, revenue: 0, baseRevenue: 0, modifierRevenue: 0, cost: 0, known: 0, partial: 0, unknown: 0, conflicts: 0 }
+      const qty = Number(l.quantity) || 0
+      const total = Number(l.total) || 0
+      // the options' share: (unit price − the product's own price) × quantity, when the line kept its base price
+      const mods = l.basePrice != null ? Math.max(0, (Number(l.unitPrice) - Number(l.basePrice)) * qty) : 0
+      r.quantity += qty; r.revenue += total; r.modifierRevenue += Math.min(mods, total); r.baseRevenue += total - Math.min(mods, total)
+      if (l.stockPolicy === "recipe") {
+        if (l.costStatus === "unknown") r.unknown += qty
+        else if (l.costStatus === "partial") { r.partial += qty; r.cost += Number(l.cost ?? 0) * qty }
+        else { r.known += qty; r.cost += Number(l.cost ?? 0) * qty }
+      }
+      if (l.recipeConflict || l.modifierConflict) r.conflicts += 1
+      by.set(l.productId, r)
+    }
+    const drinks = [...by.values()].map((r) => {
+      const complete = r.unknown === 0 && r.partial === 0
+      return {
+        productId: r.productId, name: r.name, quantity: r.quantity,
+        revenue: round2(r.revenue), baseRevenue: round2(r.baseRevenue), modifierRevenue: round2(r.modifierRevenue),
+        conflicts: r.conflicts,
+        ...(showCost ? {
+          ingredientCost: round2(r.cost),
+          costStatus: r.known + r.partial + r.unknown === 0 ? "none" : complete ? "known" : r.known === 0 && r.partial === 0 ? "unknown" : "partial",
+          unknownCostQuantity: r.unknown, partialCostQuantity: r.partial,
+          margin: complete && r.known > 0 ? round2(r.revenue - r.cost) : null,
+        } : {}),
+      }
+    }).sort((a, b) => b.revenue - a.revenue)
+    const waste = showCost ? await prisma.stockAdjustment.findMany({
+      where: { tenantId, createdAt: { gte: since }, wasteRef: { not: null } },
+      select: { wasteRef: true, reason: true, valueImpact: true, batchAllocations: true },
+    }) : []
+    const wasteBy = new Map<string, { events: Set<string>; cost: number; unknown: number }>()
+    for (const w of waste) {
+      const e = wasteBy.get(w.reason) ?? { events: new Set<string>(), cost: 0, unknown: 0 }
+      e.events.add(String(w.wasteRef)); e.cost += -Number(w.valueImpact || 0)
+      if ((Array.isArray(w.batchAllocations) ? w.batchAllocations as any[] : []).some((s) => s?.unitCost == null)) e.unknown += 1
+      wasteBy.set(w.reason, e)
+    }
+    json(res, {
+      period: `${days}d`,
+      summary: {
+        revenue: round2(drinks.reduce((s, d) => s + d.revenue, 0)),
+        baseRevenue: round2(drinks.reduce((s, d) => s + d.baseRevenue, 0)),
+        modifierRevenue: round2(drinks.reduce((s, d) => s + d.modifierRevenue, 0)),
+        ...(showCost ? {
+          ingredientCost: round2(drinks.reduce((s, d: any) => s + (d.ingredientCost ?? 0), 0)),
+          unknownCostQuantity: drinks.reduce((s, d: any) => s + (d.unknownCostQuantity ?? 0), 0),
+          partialCostQuantity: drinks.reduce((s, d: any) => s + (d.partialCostQuantity ?? 0), 0),
+          wasteCost: round2([...wasteBy.values()].reduce((s, w) => s + w.cost, 0)),
+        } : {}),
+      },
+      drinks,
+      ...(showCost ? { waste: [...wasteBy.entries()].map(([reason, w]) => ({ reason, events: w.events.size, cost: round2(w.cost), linesWithUnknownCost: w.unknown })) } : {}),
+    })
+  } catch (err) {
+    console.error("Cafe report error:", err)
+    json(res, { error: "Failed to generate the café report" }, 500)
   }
 })
 

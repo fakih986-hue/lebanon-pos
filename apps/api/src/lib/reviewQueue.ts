@@ -15,11 +15,13 @@ import { createHash } from "node:crypto"
 
 export type ReviewCategory =
   | "device-revoked" | "staff-deactivated" | "pin-reset-or-session-revoked" | "permission-missing" | "session-expired-or-ended"
-  | "offline-claim" | "hub-key-revoked" | "hub-unattested" | "approval-invalid" | "close-conflict" | "price-below-list" | "stale-staff" | "identity-missing" | "topology" | "other"
+  | "offline-claim" | "hub-key-revoked" | "hub-unattested" | "approval-invalid" | "close-conflict" | "price-below-list" | "stale-staff" | "identity-missing" | "topology" | "stock" | "other"
 
 export function reviewCategory(reason: string | null): ReviewCategory {
   const r = reason ?? ""
   if (/^TOPOLOGY_[A-Z_]+:/.test(r)) return "topology"
+  // café batch: not enough of an ingredient where the stock is kept (two registers offline sold the last of it)
+  if (/^INGREDIENT_SHORT:/.test(r)) return "stock"
   if (/^APPROVAL_INVALID:/.test(r)) return "approval-invalid"
   if (/^CLOSE_CONFLICT:/.test(r)) return "close-conflict"
   if (/^PRICE_OVERRIDE:/.test(r)) return "price-below-list"
