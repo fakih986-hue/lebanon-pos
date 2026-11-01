@@ -107,7 +107,8 @@ describe("online manager approval", () => {
     const a = await approve("refund", "create", p, "sales.refund", PINS.manager)
     expect(a.status).toBe(200)
     expect([a.body.approver.name, a.body.permission]).toEqual(["Maya", "sales.refund"])
-    for (const pin of Object.values(PINS)) expect(a.text).not.toContain(pin)
+    // a PIN as a value of its own (random ids may contain the same digits, e.g. "d5874051-…" contains 7405)
+    for (const pin of Object.values(PINS)) expect(a.text).not.toMatch(new RegExp(`(?<![0-9a-f])${pin}(?![0-9a-f])`, "i"))
     const op = refundOp(p, a.body.approvalId)
     expect((await push(op)).status).toBe("ok")
     // exact retry (lost response): acknowledged, applied once

@@ -142,6 +142,10 @@ still has to enroll and sign in.
   rewritten to the session person. Another operation that names a different person is refused
   (`IDENTITY_MISMATCH`); one that names nobody is applied with the actor field empty, and the verified person
   is in its evidence. Registers on this build always name their user.
+- **One topology per store.** The hub is authoritative for stock and does not take the cloud's inventory
+  outside a restore. A register connected straight to the cloud in a store that has a hub makes sales the hub
+  never applies: on the packaged run the hub showed 19 Milk and the cloud 17 after a direct register sold 2
+  (closes agreed). Pre-existing design, not introduced by enforcement; the activation gate does not detect it.
 - Permission refusals are answered as retryable errors (as in observe mode): a register resends a held
   operation up to its limit; the hub keeps one held entry, its first reason and the attempt count.
 
@@ -196,6 +200,7 @@ Earlier Sprint-2 migrations (20261101150000, 20261101170000, 20261101190000, 202
 Disposable store only; production stays in observe.
 
 1. Create a disposable store at the cloud; staff: owner, manager, cashier, one person without checkout.
+   Choose one topology for it: every register behind the hub, or every register connected to the cloud.
 2. Install the development build on the hub machine and the registers (not over a real installation).
 3. Activate the hub; enroll the hub key (owner PIN on the hub).
 4. Pair and enroll every register; on each, sign in once (server PIN check). Enroll the hub's own screen if it
