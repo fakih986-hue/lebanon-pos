@@ -406,6 +406,8 @@ router.get("/cafe", requireAuth, requirePermission("reports.view"), async (req: 
     const by = new Map<number, Row>()
     const round2 = (n: number) => Math.round(n * 100) / 100
     for (const l of lines) {
+      // a packaged line stored with an empty options list (JSON [] rather than NULL) is not a café line
+      if (l.stockPolicy !== "recipe" && !(Array.isArray(l.modifiers) && l.modifiers.length > 0)) continue
       const r = by.get(l.productId) ?? { productId: l.productId, name: l.productName, quantity: 0, revenue: 0, baseRevenue: 0, modifierRevenue: 0, cost: 0, known: 0, partial: 0, unknown: 0, conflicts: 0 }
       const qty = Number(l.quantity) || 0
       const total = Number(l.total) || 0

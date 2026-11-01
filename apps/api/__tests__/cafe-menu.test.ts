@@ -389,6 +389,8 @@ describe("café menu: waste, cost visibility, versions, reports", () => {
     const s = sale([{ id: pid[SID.esp], productSyncId: SID.esp, lineId: randomUUID(), name: "Espresso", barcode: "", quantity: 1, unitPrice: 2, total: 2, basePrice: 2, stockPolicy: "recipe", stockPolicyRev: "initial", recipeRev: REV.myst, modifiers: [], batchAllocations: [] }])
     expect((await push(rana, "sale", "create", s)).status).toBe("ok")
     expect((await prisma.saleItem.findFirst({ where: { saleId: s.id } }))!.costStatus).toBe("unknown")
+    // a hub's copy of a packaged line can carry an empty options list rather than none
+    expect((await prisma.saleItem.updateMany({ where: { sale: { tenantId: T }, productName: "Pepsi" }, data: { modifiers: [] } })).count).toBeGreaterThan(0)
     const rep = await call("GET", "/api/reports/cafe?days=1", undefined, { Authorization: `Bearer ${ownerPerson}` })
     expect(rep.status).toBe(200)
     const esp = rep.body.drinks.find((d: any) => d.name === "Espresso"), cap = rep.body.drinks.find((d: any) => d.name === "Cappuccino")
