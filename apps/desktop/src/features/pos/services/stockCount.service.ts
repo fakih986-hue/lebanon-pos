@@ -16,6 +16,8 @@ export type StockCountStatus = "Draft" | "Completed"
 
 export type StockCountLine = {
   productId: number
+  /** The product's stable identity (the numeric id differs at the hub and the cloud). */
+  productSyncId?: string
   productName: string
   barcode: string
   category: string
@@ -104,6 +106,7 @@ export function startStockCount() {
   const counts = getStockCounts()
   const lines = getProductsSync().map<StockCountLine>((product) => ({
     productId: product.id,
+    ...(product.syncId ? { productSyncId: product.syncId } : {}),
     productName: product.name,
     barcode: product.barcode ?? "",
     category: product.category,

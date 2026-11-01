@@ -38,6 +38,8 @@ export type StockAdjustment = {
   id: string
   adjustmentNumber: string
   productId: number
+  /** The product's stable identity: the numeric id is this device's and differs at the hub and the cloud. */
+  productSyncId?: string
   productName: string
   barcode: string
   quantityBefore: number
@@ -287,6 +289,8 @@ function applyStockAdjustment(
     id: adjustmentId,
     adjustmentNumber: createAdjustmentNumber(existingAdjustments.length),
     productId: product.id,
+    // the server matches the product by this (a forwarded adjustment's numeric id means another product at the cloud)
+    ...(product.syncId ? { productSyncId: product.syncId } : {}),
     productName: product.name,
     barcode: product.barcode ?? "",
     quantityBefore,
