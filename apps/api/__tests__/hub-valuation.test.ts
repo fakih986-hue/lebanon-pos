@@ -334,6 +334,39 @@ describe("daily close: the server's figures, or unknown — never a made-up zero
     expect((await closeOf(prisma, missing.payload.id))?.costStatus).toBe("incomplete")
   })
 
+  it("closing a date again: the newer close is the record on hub and cloud; the earlier one is kept in the audit", async () => {
+    const first = closeOp("2026-10-07", { costOfGoods: 1, returnedCost: 0, grossMargin: 2, netProfit: 2 })
+    expect((await asManager(first)).status).toBe("ok")
+    const again = closeOp("2026-10-07", { costOfGoods: 1, returnedCost: 0, grossMargin: 3, netProfit: 3 })
+    const r = await asManager(again)
+    expect(r.error ?? r.status).toBe("ok")
+    for (const db of [prisma]) {
+      const rows = await db.dailyClose.findMany({ where: { tenantId: TENANT, dateKey: "2026-10-07" }, select: { id: true, netProfit: true } })
+      expect(rows.map((x) => [x.id, Number(x.netProfit)])).toEqual([[again.payload.id, 3]])
+    }
+    const audit = await prisma.auditEvent.findFirst({ where: { tenantId: TENANT, action: "day.close.superseded" }, orderBy: { createdAt: "desc" } })
+    expect((audit?.metadata as any)?.previous).toMatchObject({ id: first.payload.id, dateKey: "2026-10-07" })
+    expect(Number((audit?.metadata as any)?.previous?.netProfit)).toBe(2)
+    await bridge.pushToCloudOnce()
+    expect((await opRow(again.id))?.status).toBe("Synced")
+    const cloudRows = await cloudPrisma.dailyClose.findMany({ where: { tenantId: TENANT, dateKey: "2026-10-07" }, select: { id: true } })
+    expect(cloudRows.map((x) => x.id)).toEqual([again.payload.id])
+    // an exact resend of the earlier close applies nothing
+    expect((await asManager(first)).status).toBe("ok")
+    expect((await prisma.dailyClose.findMany({ where: { tenantId: TENANT, dateKey: "2026-10-07" }, select: { id: true } })).map((x) => x.id)).toEqual([again.payload.id])
+  })
+
+  it("a hub pulling a close of a date it already closed keeps the one created later", async () => {
+    const { settleCloseOfDate } = await import("../src/lib/dailyClose.js")
+    const kept = await prisma.dailyClose.findFirst({ where: { tenantId: TENANT, dateKey: "2026-10-07" } })
+    const older = { id: randomUUID(), dateKey: "2026-10-07", createdAt: new Date(kept!.createdAt.getTime() - 60_000).toISOString() }
+    expect(await settleCloseOfDate(prisma, TENANT, older, (e) => e.createdAt < new Date(older.createdAt), "pull")).toBe(false)
+    expect(await prisma.dailyClose.count({ where: { tenantId: TENANT, id: kept!.id } })).toBe(1)
+    const newer = { id: randomUUID(), dateKey: "2026-10-07", createdAt: new Date(kept!.createdAt.getTime() + 60_000).toISOString() }
+    expect(await settleCloseOfDate(prisma, TENANT, newer, (e) => e.createdAt < new Date(newer.createdAt), "pull")).toBe(true)
+    expect(await prisma.dailyClose.count({ where: { tenantId: TENANT, id: kept!.id } })).toBe(0)
+  })
+
   it("pull: cost figures only with reports.cost; unknown and costStatus only to clients that understand them", async () => {
     const pull = async (token: string, caps: boolean) => {
       const res = await fetch(`${hubUrl}/api/sync/pull`, { headers: { Authorization: `Bearer ${token}`, "x-titan-sync-schema": "4", ...(caps ? { "x-titan-unknown-cost": "1" } : {}) } })

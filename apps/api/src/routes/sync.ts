@@ -10,6 +10,7 @@ const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
 import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "../lib/stockPolicy.js"
+import { settleCloseOfDate } from "../lib/dailyClose.js"
 import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { LEGACY_REV } from "../lib/stockPolicy.js"
 import { observeEvidence, transportOf } from "../lib/evidence.js"
@@ -2670,6 +2671,8 @@ async function processOperation(
           : { costOfGoods: null, returnedCost: null, grossMargin: null, netProfit: null, costStatus: "incomplete" }
         Object.assign(close, figures)
         if (submitted && typeof submitted === "object") for (const k of [...DAY_COST_KEYS, "costStatus"]) submitted[k] = close[k]
+        // closing a date again: this close replaces the earlier one (kept in the audit)
+        await settleCloseOfDate(db as any, tenantId, close, () => true, "push")
         await db.dailyClose.upsert({
           where: { id: close.id as string },
           update: close,

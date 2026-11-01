@@ -24,6 +24,7 @@ import fs   from "node:fs"
 import path from "node:path"
 import { randomUUID } from "node:crypto"
 import { dataDir } from "../lib/dataDir.js"
+import { settleCloseOfDate } from "../lib/dailyClose.js"
 import prisma from "../lib/prisma.js"
 import { recordStockMovementOnce } from "../lib/ledger.js"
 import { broadcastToTenant } from "../ws/index.js"
@@ -1121,13 +1122,16 @@ async function upsertPulledData(
 
   // Daily closes
   for (const dc of data.dailyCloses ?? []) {
-    await run("dailyClose", () =>
-      prisma.dailyClose.upsert({
+    await run("dailyClose", async () => {
+      // the same date closed again elsewhere: the close created later is the record (lib/dailyClose.ts)
+      const keep = await settleCloseOfDate(prisma, tenantId, dc as any, (existing) => existing.createdAt < new Date(String((dc as any).createdAt ?? 0)), "pull")
+      if (!keep) return
+      await prisma.dailyClose.upsert({
         where:  { id: (dc as any).id },
         create: { ...dc, tenantId } as any,
         update: dc as any,
       })
-    )
+    })
   }
 
   // Delivery orders — upsert header, recreate items
