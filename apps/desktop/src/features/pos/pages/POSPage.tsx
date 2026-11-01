@@ -49,6 +49,7 @@ import { cartFingerprint, checkoutViaHub, getPendingHubSale } from "../services/
 import ManagerApprovalDialog from "../../../components/ManagerApprovalDialog"
 import { withdrawManagerApproval, type ApprovalRequest } from "../services/approval.service"
 import { approvalGrantStatus, takeApprovalGrant, type ApprovalGrant } from "../lib/approvalGrants"
+import { checkoutApprovalNeeded, checkoutFingerprint as fingerprintOf, saleForCheckout } from "../lib/checkoutApproval"
 import { checkoutIdentityGate } from "../services/deviceSession.service"
 import PendingHubSaleBanner from "../components/PendingHubSaleBanner"
 import {
@@ -341,22 +342,9 @@ export default function POSPage() {
   // or a sale at cost). Selling at cost shows cost: offered with approval to cost-visible staff only.
   const canSellAtCost = canOverridePrice || (canAskApproval && userCan("reports.cost"))
   const canSetLinePrice = canOverridePrice || canAskApproval
-  const listFloor = (item: { id: number; price: number }) => {
-    const p = products.find((x) => x.id === item.id)
-    if (!p) return item.price
-    const wholesale = Number(p.wholesalePrice ?? 0)
-    return wholesale > 0 && selectedCustomer ? Math.min(p.price, wholesale) : p.price
-  }
-  const approvalNeeded: Permission[] = [
-    ...(discountTotal > 0 && !canApplyDiscount ? ["sales.discount" as const] : []),
-    ...(!canOverridePrice && (sellAtCost || items.some((item) => item.price < listFloor(item) - 0.005)) ? ["sales.price_override" as const] : []),
-  ]
+  const approvalNeeded: Permission[] = checkoutApprovalNeeded({ discountTotal, canDiscount: canApplyDiscount, canOverridePrice, sellAtCost, items, products, hasCustomer: Boolean(selectedCustomer) })
   const approvalHint = approvalNeeded.length ? t("approval.needed") : null
-  // what an approval at checkout is for: lines, prices, discount, tender, customer, payment
-  const checkoutFingerprint = JSON.stringify({
-    items: items.map((item) => [item.id, item.quantity, item.price]), discountTotal, subtotal, tax, total, sellAtCost,
-    paymentMethod, customer: selectedCustomer?.id ?? null, paidUsd: paidUsdAmount, paidLbp: paidLbpAmount,
-  })
+  const checkoutFingerprint = fingerprintOf({ items, discountTotal, subtotal, tax, total, sellAtCost, paymentMethod, customerId: selectedCustomer?.id ?? null, paidUsd: paidUsdAmount, paidLbp: paidLbpAmount })
   useEffect(() => {
     const kept = approvedSale.current
     if (!kept || kept.fingerprint === checkoutFingerprint) return
@@ -848,14 +836,12 @@ export default function POSPage() {
       let approvalId: string | undefined
       let approvedBy: string | undefined
       if (approvalNeeded.length) {
-        const pending = writeThrough ? getPendingHubSale() : null
-        if (pending && pending.fingerprint === hubFingerprint && pending.approvalId) {
+        const chosen = saleForCheckout({ built: sale, pending: writeThrough ? getPendingHubSale() : null, hubFingerprint, kept: approvedSale.current, fingerprint: checkoutFingerprint })
+        sale = chosen.sale
+        if (chosen.approvalId) {
           // sent before with its approval (the confirmation was lost): resent exactly, with the same one
-          sale = pending.sale
-          approvalId = pending.approvalId
+          approvalId = chosen.approvalId
         } else {
-          if (pending && pending.fingerprint === hubFingerprint) sale = pending.sale
-          else if (approvedSale.current?.fingerprint === checkoutFingerprint) sale = approvedSale.current.sale
           const userId = getCurrentUser()?.id ?? null
           const status = approvalGrantStatus("sale", "create", sale.id, approvalNeeded[0], userId, sale)
           const grant = status.status === "ok" && approvalNeeded.every((p) => (status.grant.permissions ?? [status.grant.permission]).includes(p)) ? status.grant : null

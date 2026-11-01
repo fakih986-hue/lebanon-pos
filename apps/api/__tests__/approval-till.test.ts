@@ -238,3 +238,109 @@ describe("manager approval on the register (its own services, real API)", () => 
     expect(d.grants.pendingApprovalCount()).toBe(0)
   })
 })
+
+// SPRINT-2 batch: checkout approval (Full POS and Simple POS share these services; POSPage decides with
+// lib/checkoutApproval). The sale is built once; the same sale is approved and sent.
+describe("checkout approval: a discount or a price below list by a cashier without the permission", () => {
+  const discounted = (over: Record<string, unknown> = {}) => {
+    const p = localProduct()
+    const id = randomUUID()
+    return d.sales.buildSale({ saleNumber: `S-CK-${id.slice(0, 6)}`, paymentMethod: "Cash", subtotal: 9, discountTotal: 1, tax: 0, total: 9,
+      tender: { currency: "USD", exchangeRate: 89500, paidUsd: 10, paidLbp: 0, paidTotalUsd: 10, paidTotalLbp: 895000, changeUsd: 1, changeLbp: 0, changeCurrency: "USD" },
+      items: [{ id: p.id, productSyncId: p.syncId, name: p.name, barcode: p.barcode ?? "", quantity: 2, unitPrice: 5, total: 10, batchAllocations: [] }], ...over }, id)
+  }
+  const checkout = (sale: any) => {
+    const p = localProduct()
+    return d.sales.checkoutLocalSale({ sale, lots: [{ productId: p.id, productName: p.name, barcode: p.barcode ?? "", quantity: sale.items[0].quantity, fallbackUnitCost: 0 }], stock: [{ productId: p.id, quantity: sale.items[0].quantity }] })
+  }
+  const ask = (sale: any, permissions: string[], pin = PIN.maya) => d.approval.requestManagerApproval({ entity: "sale", action: "create", payload: sale, permission: permissions[0], permissions, pin })
+  const opOf = (sale: any) => queue().find((o) => o.entity === "sale" && o.payload?.id === sale.id)!
+  const serverSale = (sale: any) => prisma.sale.findFirst({ where: { tenantId: T, id: sale.id }, select: { discountTotal: true, total: true, cashierId: true } })
+
+  it("approved: applied once with the cashier as actor and the manager as approver; wrong PIN and cancel change nothing", async () => {
+    const sale = discounted()
+    const wrong = await ask(sale, ["sales.discount"], "0000")
+    expect([wrong.ok, wrong.code]).toEqual([false, "INVALID_PIN"])
+    expect(d.grants.pendingApprovalCount()).toBe(0)
+    // cancelled at the register (staff walked away): withdrawn at the server too
+    const cancelled = await ask(sale, ["sales.discount"])
+    expect(cancelled.ok).toBe(true)
+    if (cancelled.ok) d.approval.withdrawManagerApproval(cancelled.grant)
+    await dispose()
+    expect(d.grants.pendingApprovalCount()).toBe(0)
+    if (cancelled.ok) expect((await prisma.managerApproval.findUnique({ where: { id: cancelled.grant.approvalId } }))?.cancelledAt).toBeTruthy()
+    // asked again for the SAME sale (same id): approved
+    const ok = await ask(sale, ["sales.discount"])
+    expect(ok.ok).toBe(true)
+    expect(d.security.getCurrentUser()?.id).toBe(RANA)
+    expect(checkout(sale).status).toBe("completed")
+    expect(opOf(sale).ev?.approval).toBe(ok.ok && ok.grant.approvalId)
+    await flush()
+    { const q = opOf(sale); expect([q.status, q.lastError ?? q.error ?? null]).toEqual(["Synced", null]) }
+    const s = await serverSale(sale)
+    expect([Number(s?.discountTotal), Number(s?.total)]).toEqual([1, 9])
+    const e = (await prisma.operationEvidence.findUnique({ where: { opId: opOf(sale).id } }))!
+    // the actor: the person of the server-checked session (this register names its cashier by name only)
+    expect([e.sessionStaffId, e.actorNameClaimed]).toEqual([RANA, "Rana"])
+    expect(e.approval).toMatchObject({ check: "valid", approverId: MAYA, permissions: ["sales.discount"], requestedById: RANA })
+    for (const pin of Object.values(PIN)) expect(JSON.stringify(e)).not.toContain(`"${pin}"`)
+  })
+
+  it("a sale changed after the approval, an approval past its lifetime, and a staff switch: refused and kept for review, never applied on it", async () => {
+    // changed: a $2 discount presented on a $1 approval (a modified register; POSPage drops it)
+    const sale = discounted()
+    expect((await ask(sale, ["sales.discount"])).ok).toBe(true)
+    const changed = { ...sale, discountTotal: 2, subtotal: 8, total: 8 }
+    expect(checkout(changed).status).toBe("completed")
+    // expired before it reached the server (the register was offline longer than the lifetime)
+    const late = discounted()
+    const lateGrant = await ask(late, ["sales.discount"])
+    expect(lateGrant.ok).toBe(true)
+    if (lateGrant.ok) await prisma.managerApproval.update({ where: { id: lateGrant.grant.approvalId }, data: { expiresAt: new Date(Date.now() - 1_000) } })
+    expect(checkout(late).status).toBe("completed")
+    // staff switch: the approval was for Rana; the register locks and she signs in again: it is gone
+    const switched = discounted()
+    expect((await ask(switched, ["sales.discount"])).ok).toBe(true)
+    d.security.lockSession()
+    expect(d.grants.pendingApprovalCount()).toBe(0)
+    expect((await d.security.unlockWithPin(PIN.rana))?.id).toBe(RANA); await dispose()
+    expect(checkout(switched).status).toBe("completed")
+    expect(opOf(switched).ev?.approval).toBeUndefined()
+    await flush()
+    // an approval that does not hold is final for the register; a missing permission stays retryable
+    for (const [x, status, why] of [[changed, "Rejected", /APPROVAL_INVALID: the manager approval presented is changed/], [late, "Rejected", /APPROVAL_INVALID: the manager approval presented is expired/], [switched, "Failed", /permission/i]] as const) {
+      const op = opOf(x)
+      expect([op.status, String(op.lastError ?? op.error)]).toEqual([status, expect.stringMatching(why)])
+      expect(await serverSale(x)).toBeNull()
+      expect((await prisma.syncOperation.findUnique({ where: { id: op.id } }))?.status).toBe("Refused")
+    }
+  })
+
+  it("write-through to the hub: repeated confirmation and a lost response apply the sale once on its approval, even after the lifetime", async () => {
+    const sale = discounted()
+    const g = await ask(sale, ["sales.discount"])
+    expect(g.ok).toBe(true)
+    const approvalId = g.ok ? g.grant.approvalId : ""
+    // the cashier taps Pay twice: two sends of the same sale with the same approval
+    const results = await Promise.all([d.sync.commitSaleToHub(sale, approvalId), d.sync.commitSaleToHub(sale, approvalId)])
+    expect(results.map((r: any) => r.status)).toEqual(["committed", "committed"])
+    // the confirmation was lost; the register resends after the approval's lifetime: the same sale, acknowledged
+    await prisma.managerApproval.update({ where: { id: approvalId }, data: { expiresAt: new Date(Date.now() - 60_000) } })
+    expect((await d.sync.commitSaleToHub(sale, approvalId)).status).toBe("committed")
+    expect(await prisma.sale.count({ where: { tenantId: T, id: sale.id } })).toBe(1)
+    expect(await prisma.syncOperation.count({ where: { tenantId: T, id: `wt-${sale.id}` } })).toBe(1)
+    await dispose()
+  })
+
+  it("sell at cost and a price below list: one approval with both permissions; without it the register refuses a sale at cost", async () => {
+    const atCost = discounted({ soldAtCost: true, discountTotal: 0, subtotal: 4, total: 4, tender: undefined, paymentMethod: "Card",
+      items: [{ id: localProduct().id, productSyncId: localProduct().syncId, name: "Tea box", barcode: "", quantity: 2, unitPrice: 2, total: 4, batchAllocations: [] }] })
+    expect(() => checkout(atCost)).toThrow(/Price override/)
+    const both = await ask(atCost, ["sales.price_override"])
+    expect(both.ok).toBe(true)
+    expect(checkout(atCost).status).toBe("completed")
+    await flush()
+    { const q = opOf(atCost); expect([q.status, q.lastError ?? q.error ?? null]).toEqual(["Synced", null]) }
+    expect(await prisma.sale.count({ where: { tenantId: T, id: atCost.id } })).toBe(1)
+  })
+})
