@@ -56,6 +56,12 @@ What each arrow can prove is listed in §1; the cloud's verification of a hub JW
 | 17 | Browser storage copied to another machine | Token + PIN verifiers copied work | Secure contexts: PoP key non-extractable, copy is useless; HTTP LAN: bearer copy works until revoked | HTTP LAN residual; offline verifiers (SHA-256 of 4–6 digits) brute-forceable from a copy |
 | 18 | XSS / modified local software | Full control | Same: running malicious script can use non-extractable keys and read tokens | Encryption at rest does not help against running code |
 
+## 3a. Attribution in observe mode (S4) — what is and is not proven
+The expected-failure probe S4 (`cafe-audit.test.ts`) stays red-by-design: in **observe mode** (every store's default) the server authorizes a register's operation by its **connection account** (the account the register connected to the store with) and records the cashier the command names. A register connected with a manager's account, or work a cashier queued that the register sends after a manager reconnects it, applies under the manager's permissions and is attributed to the named cashier. Observed in the packaged run of this batch: a cashier's refused daily close was applied when the register re-sent it under the owner's connection; its evidence says so (session person Rana, valid; connection account Owner; `observe-mode-not-enforced`, `connection-account-not-proven-actor`). Authenticated attribution holds only (a) in an enforcing store, for register sales (the actor is the verified session's person), and (b) for a manager approval (the approver's PIN checked by the server; the approval bound to the requesting session's person). Everywhere else the actor is a claim with the evidence recorded beside it; nothing in this batch should be read as authenticated attribution in observe mode.
+
+## 3b. Relayed approvals
+A hub's signature over a forwarded approval proves the hub said it checked the manager's PIN for that command and used it in time; the cloud verifies that the approval's digest is the digest of the command it received (a hub cannot attach an approval for one command to another), but it cannot verify the PIN check itself.
+
 ## 4. Defects found during Phase A (evidence)
 - **Fixed:** customer tokens accepted by `requireAuth`; sync push skipped all permission checks without a staff row (customer could change prices) — `b21e9d8`, tests `sprint2-identity.test.ts`.
 - **Fixed:** `crypto.randomUUID` used on HTTP LAN tills — `3300ae1`.
