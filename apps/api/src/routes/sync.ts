@@ -10,14 +10,14 @@ const IS_CLOUD = !["true", "1"].includes(process.env.IS_LOCAL_SERVER || "")
 
 import { decrementProductStock } from "../lib/inventory.js"
 import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "../lib/stockPolicy.js"
-import { settleCloseOfDate } from "../lib/dailyClose.js"
+import { CloseConflictError, closeScope, recordClose } from "../lib/dailyClose.js"
 import { verifyAttestation, type AttestationResult } from "../lib/hubAttestation.js"
-import { checkApproval, useApproval, type ApprovalSeen } from "../lib/approvals.js"
+import { checkApproval, relayedApprovalHolds, useApproval, type ApprovalSeen } from "../lib/approvals.js"
 import { DISMISS_OUTCOMES, moneyEffect, previewTokenOf, reviewCategory } from "../lib/reviewQueue.js"
 import { createHash } from "node:crypto"
 import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { LEGACY_REV } from "../lib/stockPolicy.js"
-import { observeEvidence, transportOf } from "../lib/evidence.js"
+import { claimedActor, observeEvidence, transportOf } from "../lib/evidence.js"
 import { claimedActorOf, describeEffects, actorLimitations, redactSecrets } from "../lib/refusedReview.js"
 import { checkDevice, checkSession, type SessionResult } from "../lib/credentials.js"
 import { identityGateBlockers, isHubServer } from "../lib/identityGate.js"
@@ -65,7 +65,21 @@ export const UNKNOWN_COST_HEADER = "x-titan-unknown-cost"
  * Older hubs and tills store a pulled daily close as it comes (non-null cost columns; history
  * printed with toFixed): they get no costStatus and no unknown figures (their own default applies).
  */
+/** Clients that keep several closes per date (scope, revision, corrections) send this header. */
+export const CLOSE_REVISIONS_HEADER = "x-titan-close-revisions"
+const CLOSE_REVISION_FIELDS = ["scope", "registerId", "shiftId", "revision", "revisionOf", "correction", "supersededById", "supersededAt"]
 export function shapeDailyClosesForClient(rows: any[], req: { headers?: Record<string, unknown> }): any[] {
+  // An older till or hub keeps one close per date (an older hub's database allows only one): it gets
+  // the close its reports would use — the latest current revision of that date — without the new fields.
+  if (req.headers?.[CLOSE_REVISIONS_HEADER] !== "1") {
+    const latest = new Map<string, any>()
+    for (const row of rows) {
+      if (row.supersededById) continue
+      const seen = latest.get(row.dateKey)
+      if (!seen || new Date(row.createdAt) > new Date(seen.createdAt)) latest.set(row.dateKey, row)
+    }
+    rows = rows.filter((row) => latest.get(row.dateKey) === row).map((row) => { const out = { ...row }; for (const k of CLOSE_REVISION_FIELDS) delete out[k]; return out })
+  }
   if (req.headers?.[UNKNOWN_COST_HEADER] === "1") return rows
   return rows.map((row) => {
     const { costStatus: _s, ...rest } = row
@@ -623,10 +637,15 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       const hubIdentity = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && attested?.check === "valid" ? attestedIdentity(attested.srv) : null
       // SPRINT-2 E: a manager's online approval, checked against the register that sent the operation. A
       // hub's forwarded operation carries the approval as the hub checked it (inside its attestation).
-      const approvalSeen: ApprovalSeen | null = pushKind !== "bridge" ? await checkApproval(tenantId, (op as any).ev?.approval, op, deviceSeen?.deviceId ?? null) : null
-      const relayedApproval = pushKind === "bridge" && attested?.check === "valid" ? (attested.srv?.approval as ApprovalSeen | undefined) : undefined
-      const approved: string[] = approvalSeen?.check === "valid" && approvalSeen.permission ? [approvalSeen.permission]
-        : relayedApproval?.check === "valid" && typeof relayedApproval.permission === "string" ? [relayedApproval.permission] : []
+      // The approval is for the person signed in when it was given: the verified session's person, else
+      // the person the command names (bound by the material digest).
+      const approvalSeen: ApprovalSeen | null = pushKind !== "bridge"
+        ? await checkApproval(tenantId, (op as any).ev?.approval, op, deviceSeen?.deviceId ?? null, { sessionStaffId: sessionSeen?.check === "valid" ? sessionSeen.staffId ?? null : null, claimedActorId: claimedActor(op.entity, op.action, op.payload).id })
+        : null
+      // A hub's approval: as the hub checked it and signed it, for THIS command (lib/approvals.ts).
+      const relayed = pushKind === "bridge" && attested?.check === "valid" ? relayedApprovalHolds(attested.srv?.approval as ApprovalSeen | undefined, op) : null
+      const approved: string[] = approvalSeen?.check === "valid" ? (approvalSeen.permissions?.length ? approvalSeen.permissions : approvalSeen.permission ? [approvalSeen.permission] : [])
+        : relayed?.holds ? relayed.permissions : []
       // SPRINT-2 enforcement (ordinary checkout, stores that enabled it): a register's sale needs this
       // store's enrolled device and a staff session; the actor is the session's person and the rules
       // run against THEIR permissions, not the connecting account's. Missing or invalid evidence is
@@ -680,7 +699,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             kind: tokenKind(req.auth), accountId: typeof req.auth!.userId === "string" ? req.auth!.userId : null,
             deviceId: deviceId ?? null, transport: transportOf(req as any),
             acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud",
-            envelope: (op as any).ev ?? null, device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null, attestation: attested, approval: approvalSeen,
+            envelope: (op as any).ev ?? null, device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null, attestation: attested, approval: approvalSeen, relayedApproval: relayed,
           })
           const heldEvidence = JSON.parse(JSON.stringify({ ...held, heldAt: new Date().toISOString() }))
           if (!row) {
@@ -708,7 +727,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             deviceId: deviceId ?? null, transport: transportOf(req as any),
             acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud",
             envelope: (op as any).ev ?? null,
-            device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null, attestation: attested, approval: approvalSeen,
+            device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null, attestation: attested, approval: approvalSeen, relayedApproval: relayed,
             enforced: !!gate && "basis" in gate && gate.basis === "session",
           })] })
         }
@@ -749,8 +768,10 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         err instanceof StockPolicyMismatchError ||
         err instanceof StockPolicyGateError ||
         err instanceof StaleStaffError ||
-        err instanceof InvalidPurchasePriceError
-      const opStatus = isRejected ? "Rejected" : "Failed"
+        err instanceof InvalidPurchasePriceError ||
+        err instanceof CloseConflictError
+      // a close correction based on a close since corrected by someone else: kept for a manager's review
+      const opStatus = err instanceof CloseConflictError ? "Refused" : isRejected ? "Rejected" : "Failed"
 
       // Record the failure — but never on a row that was applied (it would stop its onward
       // delivery and misreport an applied operation as rejected), nor on another store's row.
@@ -2753,7 +2774,9 @@ async function processOperation(
         // saleIds/refundIds: what the till counted (not columns). The cost figures are the server's
         // when it holds all of them; a cost-visible till's when it does not; otherwise unknown (null,
         // never 0). Written back so a hub forwards what it recorded.
-        const { saleIds, refundIds, ...close } = (payload ?? {}) as any
+        // correctsId: the close the register says this one corrects. Scope and revision are this server's
+        // to decide (lib/dailyClose.ts), never taken from the register.
+        const { saleIds, refundIds, correctsId, scope: _scope, revision: _rev, revisionOf: _of, correction: _cor, supersededById: _sup, supersededAt: _supAt, ...close } = (payload ?? {}) as any
         const valued = await dayCloseValuation(db, tenantId, Number(close.expenses) || 0, saleIds, refundIds)
         const stated = DAY_COST_KEYS.every((k) => close[k] !== null && close[k] !== undefined && close[k] !== "" && Number.isFinite(Number(close[k])))
         const figures = valued ? { ...valued, costStatus: "server" }
@@ -2761,13 +2784,9 @@ async function processOperation(
           : { costOfGoods: null, returnedCost: null, grossMargin: null, netProfit: null, costStatus: "incomplete" }
         Object.assign(close, figures)
         if (submitted && typeof submitted === "object") for (const k of [...DAY_COST_KEYS, "costStatus"]) submitted[k] = close[k]
-        // closing a date again: this close replaces the earlier one (kept in the audit)
-        await settleCloseOfDate(db as any, tenantId, close, () => true, "push")
-        await db.dailyClose.upsert({
-          where: { id: close.id as string },
-          update: close,
-          create: { ...close, tenantId } as any,
-        })
+        // another register or shift: a separate close; the same register and shift again: a linked
+        // correction (the corrected close is kept); the same close again: nothing changes
+        await recordClose(db as any, tenantId, close, closeScope(submitted), typeof correctsId === "string" && correctsId ? correctsId : null, source.userId === "cloud-bridge" ? "hub" : "push")
       }
       break
     }

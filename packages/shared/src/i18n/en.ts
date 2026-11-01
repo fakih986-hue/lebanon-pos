@@ -80,6 +80,7 @@ export const en = {
   "refused.cat.hub-key-revoked": "The hub's key was revoked",
   "refused.cat.hub-unattested": "Forwarded by a hub without a valid signature",
   "refused.cat.approval-invalid": "The manager approval did not hold",
+  "refused.cat.close-conflict": "A daily-close correction based on a close since corrected",
   "refused.cat.price-below-list": "Sold below the list price",
   "refused.cat.stale-staff": "An outdated staff change",
   "refused.cat.identity-missing": "Who did it is not proven",
@@ -527,6 +528,11 @@ export const en = {
   "approval.refund_summary": "Refund {amount} on {sale}",
   "approval.void_summary": "Void {sale} ({amount})",
   "approval.payout_summary": "Cash out {amount}: {reason}",
+  "approval.checkout_summary": "{sale} · total {total} · {reasons}",
+  "approval.reason_discount": "discount {amount}",
+  "approval.reason_price": "price below list",
+  "approval.cleared": "The sale changed, so the manager's approval no longer applies. Ask again at checkout.",
+  "approval.checkout_cancelled": "Approval cancelled. The sale is still here.",
   "approval.err.INVALID_PIN": "Wrong PIN. {remaining} attempts left on this register.",
   "approval.err.APPROVER_LACKS_PERMISSION": "This person is not allowed to approve this action.",
   "approval.err.APPROVER_INACTIVE": "This person is no longer an active staff member.",
@@ -538,6 +544,7 @@ export const en = {
   "approval.err.NOT_APPROVABLE": "This action cannot be approved by a manager.",
   "approval.err.SELF_APPROVAL": "The person signed in cannot approve their own action.",
   "pos.accounting.valuation_incomplete": "Valuation incomplete",
+  "pos.accounting.close_revision": "Corrected · revision {n} (earlier close kept)",
 
   /* POS - Payment Methods */
   "pos.payment.cash": "Cash",

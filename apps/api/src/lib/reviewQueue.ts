@@ -15,11 +15,12 @@ import { createHash } from "node:crypto"
 
 export type ReviewCategory =
   | "device-revoked" | "staff-deactivated" | "pin-reset-or-session-revoked" | "permission-missing" | "session-expired-or-ended"
-  | "offline-claim" | "hub-key-revoked" | "hub-unattested" | "approval-invalid" | "price-below-list" | "stale-staff" | "identity-missing" | "other"
+  | "offline-claim" | "hub-key-revoked" | "hub-unattested" | "approval-invalid" | "close-conflict" | "price-below-list" | "stale-staff" | "identity-missing" | "other"
 
 export function reviewCategory(reason: string | null): ReviewCategory {
   const r = reason ?? ""
   if (/^APPROVAL_INVALID:/.test(r)) return "approval-invalid"
+  if (/^CLOSE_CONFLICT:/.test(r)) return "close-conflict"
   if (/^PRICE_OVERRIDE:/.test(r)) return "price-below-list"
   if (/^STALE_STAFF:/.test(r)) return "stale-staff"
   if (/^HUB_UNSUPPORTED:/.test(r)) return /\(revoked\)/.test(r) ? "hub-key-revoked" : "hub-unattested"

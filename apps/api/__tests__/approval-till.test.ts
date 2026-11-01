@@ -147,7 +147,7 @@ describe("manager approval on the register (its own services, real API)", () => 
     const op = queue().find((o) => o.entity === "refund" && o.payload?.id === id)!
     expect(op.ev?.approval).toBe(ok.grant.approvalId)
     await flush()
-    expect(queue().find((o) => o.id === op.id)?.status).toBe("Synced")
+    { const q = queue().find((o) => o.id === op.id); expect([q?.status, q?.lastError ?? q?.error ?? null]).toEqual(["Synced", null]) }
     const e = (await prisma.operationEvidence.findUnique({ where: { opId: op.id } }))!
     // the actor: the person whose server-checked session it was made under (a refund names its cashier by name only)
     expect([e.sessionStaffId, e.actorNameClaimed, e.evidence]).toEqual([RANA, "Rana", "staff-session"])
@@ -180,8 +180,14 @@ describe("manager approval on the register (its own services, real API)", () => 
     const id = randomUUID()
     const approved = { [lineKey(sale)]: 1 }
     const payload = d.sales.refundApprovalPayload({ saleId: sale.id, quantities: approved, reason: "IT", id })
-    expect((await d.approval.requestManagerApproval({ entity: "refund", action: "create", payload, permission: "sales.refund", pin: PIN.maya })).ok).toBe(true)
-    d.sales.processRefund({ saleId: sale.id, quantities: { [lineKey(sale)]: 2 }, reason: "IT", id }) // a modified register
+    const granted = await d.approval.requestManagerApproval({ entity: "refund", action: "create", payload, permission: "sales.refund", pin: PIN.maya })
+    expect(granted.ok).toBe(true)
+    // this register refuses to record a refund other than the one approved (and drops the approval)
+    expect(() => d.sales.processRefund({ saleId: sale.id, quantities: { [lineKey(sale)]: 2 }, reason: "IT", id })).toThrow(/APPROVAL_CHANGED/)
+    expect(d.grants.pendingApprovalCount()).toBe(0)
+    // a modified register that skips that check: the server refuses it
+    if (granted.ok) d.grants.addApprovalGrant({ ...granted.grant, command: undefined })
+    d.sales.processRefund({ saleId: sale.id, quantities: { [lineKey(sale)]: 2 }, reason: "IT", id })
     await flush()
     const op = queue().find((o) => o.entity === "refund" && o.payload?.id === id)!
     expect(op.status).toBe("Rejected")

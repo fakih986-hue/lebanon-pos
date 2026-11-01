@@ -70,6 +70,8 @@ export type ObserveInput = {
   attestation?: AttestationResult | null
   /** SPRINT-2 E: a manager approval presented with the operation, as checked here. */
   approval?: ApprovalSeen | null
+  /** A hub's relayed approval as checked here: for this command (digest), used in time where checked. */
+  relayedApproval?: { holds: boolean; reason: string | null } | null
 }
 
 /** Fields of a hub's own evidence row that are carried to the cloud with a forwarded operation. */
@@ -84,6 +86,8 @@ export function pickRelayed(row: unknown): Record<string, unknown> | null {
   }
   return JSON.stringify(out).length <= 8192 ? out : null
 }
+
+const approvalRecord = (a: ApprovalSeen) => ({ id: a.id, check: a.check, approverId: a.approverId, approverName: a.approverName, permission: a.permission, permissions: a.permissions ?? (a.permission ? [a.permission] : []), requestedById: a.requestedById ?? null, materialDigest: a.materialDigest ?? null, issuedAt: a.issuedAt ?? null, expiresAt: a.expiresAt ?? null, consumedAt: a.consumedAt ?? null })
 
 /** The evidence row for one applied operation (observe mode). */
 export function observeEvidence(i: ObserveInput) {
@@ -137,7 +141,10 @@ export function observeEvidence(i: ObserveInput) {
     relayed,
     attestation: att?.check ?? null, attestationKid: att?.kid ?? null,
     // the approver is recorded apart from the actor; for a hub's operation, as the hub checked it
-    approval: i.approval ? { id: i.approval.id, check: i.approval.check, approverId: i.approval.approverId, approverName: i.approval.approverName, permission: i.approval.permission }
-      : relayed && relayed.approval && typeof relayed.approval === "object" ? relayed.approval : null,
+    // (no PIN, verifier or token: who approved what, for whom, when it was issued and used)
+    approval: i.approval ? approvalRecord(i.approval)
+      : relayed && relayed.approval && typeof relayed.approval === "object"
+        ? { ...(relayed.approval as Record<string, unknown>), hubCheck: (relayed.approval as Record<string, unknown>).check ?? null, check: i.relayedApproval ? (i.relayedApproval.holds ? "valid" : i.relayedApproval.reason ?? "invalid") : "unverified" }
+        : null,
   }
 }

@@ -80,6 +80,7 @@ export const ar = {
   "refused.cat.hub-key-revoked": "أُلغي مفتاح الخادم المحلي",
   "refused.cat.hub-unattested": "أرسله خادم محلي دون توقيع صالح",
   "refused.cat.approval-invalid": "موافقة المدير غير صالحة",
+  "refused.cat.close-conflict": "تصحيح إقفال يومي مبني على إقفال صُحِّح بعده",
   "refused.cat.price-below-list": "بيع بأقل من السعر",
   "refused.cat.stale-staff": "تعديل موظف قديم",
   "refused.cat.identity-missing": "هوية المنفّذ غير مثبتة",
@@ -527,6 +528,11 @@ export const ar = {
   "approval.refund_summary": "استرداد {amount} من {sale}",
   "approval.void_summary": "إبطال البيع {sale} ({amount})",
   "approval.payout_summary": "سحب نقدي {amount}: {reason}",
+  "approval.checkout_summary": "{sale} · الإجمالي {total} · {reasons}",
+  "approval.reason_discount": "خصم {amount}",
+  "approval.reason_price": "سعر أقل من سعر القائمة",
+  "approval.cleared": "تغيّرت البيعة، فلم تعد موافقة المدير صالحة. اطلبها مجدداً عند الدفع.",
+  "approval.checkout_cancelled": "أُلغيت الموافقة. البيعة ما زالت كما هي.",
   "approval.err.INVALID_PIN": "رمز خاطئ. تبقّى {remaining} محاولات على هذا الصندوق.",
   "approval.err.APPROVER_LACKS_PERMISSION": "هذا الشخص غير مسموح له بالموافقة على هذا الإجراء.",
   "approval.err.APPROVER_INACTIVE": "هذا الشخص لم يعد موظفًا نشطًا.",
@@ -538,6 +544,7 @@ export const ar = {
   "approval.err.NOT_APPROVABLE": "لا يمكن للمدير الموافقة على هذا الإجراء.",
   "approval.err.SELF_APPROVAL": "لا يمكن للشخص المسجّل الموافقة على إجرائه.",
   "pos.accounting.valuation_incomplete": "التقييم غير مكتمل",
+  "pos.accounting.close_revision": "مُصحَّح · المراجعة {n} (الإقفال السابق محفوظ)",
 
   /* POS - Payment Methods */
   "pos.payment.cash": "نقداً",

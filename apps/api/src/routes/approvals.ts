@@ -3,9 +3,10 @@
  *
  * POST /api/approvals              connection token + x-device-credential (an enrolled register of this
  *                                  store) [+ x-staff-session: the person at the register] + { entity,
- *                                  action, payload, permission, pin, approverId? }. The manager's PIN is
- *                                  checked now; they must hold `permission`, which must be one this
- *                                  action can be approved with. Returns a single-use approval id bound to
+ *                                  action, payload, permission | permissions[], pin, approverId? }. The
+ *                                  manager's PIN is checked now; they must hold every permission asked
+ *                                  for, each one this action can be approved with (a sale with a discount
+ *                                  and a price below list asks for both, in one approval). Returns a single-use approval id bound to
  *                                  this register, this record and its material values. The register's
  *                                  signed-in person and its connection are not changed.
  * POST /api/approvals/:id/cancel   same register: an unused approval is withdrawn (staff switch).
@@ -20,6 +21,7 @@ import prisma from "../lib/prisma.js"
 import { json, requireAuth, tokenKind, type AuthRequest } from "../middleware/auth.js"
 import { checkDevice, checkSession } from "../lib/credentials.js"
 import { verifyStaffPin } from "../lib/staffPin.js"
+import { claimedActor } from "../lib/evidence.js"
 import { APPROVABLE, APPROVAL_SECONDS, createApproval, materialOf } from "../lib/approvals.js"
 
 const router = Router()
@@ -30,7 +32,8 @@ const bodySchema = z.object({
   entity: z.string().min(1).max(40),
   action: z.string().min(1).max(40),
   payload: z.record(z.unknown()),
-  permission: z.string().min(1).max(60),
+  permission: z.string().min(1).max(60).optional(),
+  permissions: z.array(z.string().min(1).max(60)).min(1).max(4).optional(),
   pin: z.string().min(1).max(32),
   approverId: z.string().min(1).max(64).optional(),
 })
@@ -43,10 +46,13 @@ router.post("/", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   const tenantId = req.auth!.tenantId
   const parsed = bodySchema.safeParse(req.body)
   if (!parsed.success) { json(res, { error: "The action, its values, the permission and the manager's PIN are required.", code: "INVALID" }, 400); return }
-  const { entity, action, payload, permission, pin, approverId } = parsed.data
+  const { entity, action, payload, pin, approverId } = parsed.data
+  const permissions = [...new Set(parsed.data.permissions ?? (parsed.data.permission ? [parsed.data.permission] : []))]
+  if (!permissions.length) { json(res, { error: "The action, its values, the permission and the manager's PIN are required.", code: "INVALID" }, 400); return }
+  const permission = permissions.join(", ")
   const allowed = APPROVABLE[`${entity}:${action}`]
-  if (!allowed || !allowed.includes(permission)) { json(res, { error: "This action cannot be approved by a manager.", code: "NOT_APPROVABLE" }, 400); return }
-  const material = materialOf(entity, action, payload)
+  if (!allowed || !permissions.every((p) => allowed.includes(p))) { json(res, { error: "This action cannot be approved by a manager.", code: "NOT_APPROVABLE" }, 400); return }
+  const material = materialOf(entity, action, payload, permissions)
   if (!material || typeof material.id !== "string" || !material.id) { json(res, { error: "The record to approve has no id.", code: "INVALID" }, 400); return }
 
   const device = await checkDevice(header(req, "x-device-credential"), tenantId)
@@ -59,7 +65,10 @@ router.post("/", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
   if (failures >= MAX_FAILURES) { json(res, { error: `Too many wrong PINs on this register. Try again in ${LOCK_MINUTES} minutes.`, code: "APPROVAL_LOCKED" }, 429); return }
 
   const session = await checkSession(header(req, "x-staff-session"), tenantId, device.deviceId)
-  const requestedById = session.check === "valid" ? session.staffId : null
+  // the person the approval is for: the register's verified session, else the person the command names
+  // (a claim, recorded as such: sessionChecked false). Another person cannot use the approval.
+  const sessionStaffId = session.check === "valid" ? session.staffId : null
+  const requestedById = sessionStaffId ?? claimedActor(entity, action, payload).id
 
   const who = await verifyStaffPin(tenantId, pin, approverId)
   if (!who.ok) {
@@ -72,16 +81,16 @@ router.post("/", requireAuth, async (req: AuthRequest, res: ServerResponse) => {
     json(res, { error: "Wrong PIN.", code: "INVALID_PIN", remaining: Math.max(0, MAX_FAILURES - failures - 1) }, 401)
     return
   }
-  if (!who.staff.permissions.includes(permission as any)) {
+  if (!permissions.every((p) => who.staff.permissions.includes(p as any))) {
     await audit(tenantId, "approval.refused", `${who.staff.name} cannot approve ${entity} ${action} (${permission})`, { deviceId: device.deviceId, entity, action, recordId: material.id, approverId: who.staff.id })
     json(res, { error: `${who.staff.name} is not allowed to approve this (${permission}).`, code: "APPROVER_LACKS_PERMISSION" }, 403)
     return
   }
   if (requestedById && requestedById === who.staff.id) { json(res, { error: "The person signed in cannot approve their own action.", code: "SELF_APPROVAL" }, 403); return }
 
-  const approval = await createApproval({ tenantId, deviceId: device.deviceId, entity, action, payload, permission, approver: { id: who.staff.id, name: who.staff.name }, requestedById, sessionChecked: !!requestedById })
+  const approval = await createApproval({ tenantId, deviceId: device.deviceId, entity, action, payload, permissions, approver: { id: who.staff.id, name: who.staff.name }, requestedById, sessionChecked: !!sessionStaffId })
   await audit(tenantId, "approval.granted", `${who.staff.name} approved ${entity} ${action} ${material.id} on ${device.name || "a register"} (${permission}); PIN checked by this server`, { approvalId: approval.id, deviceId: device.deviceId, entity, action, recordId: material.id, approverId: who.staff.id, requestedById, material }, who.staff)
-  json(res, { approvalId: approval.id, expiresAt: approval.expiresAt.toISOString(), lifetimeSeconds: APPROVAL_SECONDS, permission, approver: { id: who.staff.id, name: who.staff.name }, material })
+  json(res, { approvalId: approval.id, expiresAt: approval.expiresAt.toISOString(), lifetimeSeconds: APPROVAL_SECONDS, permission: permissions[0], permissions, approver: { id: who.staff.id, name: who.staff.name }, material })
 })
 
 router.post("/:id/cancel", requireAuth, async (req: AuthRequest, res: ServerResponse) => {

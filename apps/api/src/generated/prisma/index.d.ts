@@ -37271,6 +37271,7 @@ export namespace Prisma {
     cashIn: Decimal | null
     cashOut: Decimal | null
     unsyncedCountAtClose: number | null
+    revision: number | null
   }
 
   export type DailyCloseSumAggregateOutputType = {
@@ -37286,6 +37287,7 @@ export namespace Prisma {
     cashIn: Decimal | null
     cashOut: Decimal | null
     unsyncedCountAtClose: number | null
+    revision: number | null
   }
 
   export type DailyCloseMinAggregateOutputType = {
@@ -37308,6 +37310,14 @@ export namespace Prisma {
     closedBy: string | null
     unsyncedCountAtClose: number | null
     createdAt: Date | null
+    scope: string | null
+    registerId: string | null
+    shiftId: string | null
+    revision: number | null
+    revisionOf: string | null
+    correction: string | null
+    supersededById: string | null
+    supersededAt: Date | null
   }
 
   export type DailyCloseMaxAggregateOutputType = {
@@ -37330,6 +37340,14 @@ export namespace Prisma {
     closedBy: string | null
     unsyncedCountAtClose: number | null
     createdAt: Date | null
+    scope: string | null
+    registerId: string | null
+    shiftId: string | null
+    revision: number | null
+    revisionOf: string | null
+    correction: string | null
+    supersededById: string | null
+    supersededAt: Date | null
   }
 
   export type DailyCloseCountAggregateOutputType = {
@@ -37352,6 +37370,14 @@ export namespace Prisma {
     closedBy: number
     unsyncedCountAtClose: number
     createdAt: number
+    scope: number
+    registerId: number
+    shiftId: number
+    revision: number
+    revisionOf: number
+    correction: number
+    supersededById: number
+    supersededAt: number
     _all: number
   }
 
@@ -37369,6 +37395,7 @@ export namespace Prisma {
     cashIn?: true
     cashOut?: true
     unsyncedCountAtClose?: true
+    revision?: true
   }
 
   export type DailyCloseSumAggregateInputType = {
@@ -37384,6 +37411,7 @@ export namespace Prisma {
     cashIn?: true
     cashOut?: true
     unsyncedCountAtClose?: true
+    revision?: true
   }
 
   export type DailyCloseMinAggregateInputType = {
@@ -37406,6 +37434,14 @@ export namespace Prisma {
     closedBy?: true
     unsyncedCountAtClose?: true
     createdAt?: true
+    scope?: true
+    registerId?: true
+    shiftId?: true
+    revision?: true
+    revisionOf?: true
+    correction?: true
+    supersededById?: true
+    supersededAt?: true
   }
 
   export type DailyCloseMaxAggregateInputType = {
@@ -37428,6 +37464,14 @@ export namespace Prisma {
     closedBy?: true
     unsyncedCountAtClose?: true
     createdAt?: true
+    scope?: true
+    registerId?: true
+    shiftId?: true
+    revision?: true
+    revisionOf?: true
+    correction?: true
+    supersededById?: true
+    supersededAt?: true
   }
 
   export type DailyCloseCountAggregateInputType = {
@@ -37450,6 +37494,14 @@ export namespace Prisma {
     closedBy?: true
     unsyncedCountAtClose?: true
     createdAt?: true
+    scope?: true
+    registerId?: true
+    shiftId?: true
+    revision?: true
+    revisionOf?: true
+    correction?: true
+    supersededById?: true
+    supersededAt?: true
     _all?: true
   }
 
@@ -37559,6 +37611,14 @@ export namespace Prisma {
     closedBy: string
     unsyncedCountAtClose: number | null
     createdAt: Date
+    scope: string
+    registerId: string | null
+    shiftId: string | null
+    revision: number
+    revisionOf: string | null
+    correction: string | null
+    supersededById: string | null
+    supersededAt: Date | null
     _count: DailyCloseCountAggregateOutputType | null
     _avg: DailyCloseAvgAggregateOutputType | null
     _sum: DailyCloseSumAggregateOutputType | null
@@ -37600,6 +37660,14 @@ export namespace Prisma {
     closedBy?: boolean
     unsyncedCountAtClose?: boolean
     createdAt?: boolean
+    scope?: boolean
+    registerId?: boolean
+    shiftId?: boolean
+    revision?: boolean
+    revisionOf?: boolean
+    correction?: boolean
+    supersededById?: boolean
+    supersededAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["dailyClose"]>
 
@@ -37623,6 +37691,14 @@ export namespace Prisma {
     closedBy?: boolean
     unsyncedCountAtClose?: boolean
     createdAt?: boolean
+    scope?: boolean
+    registerId?: boolean
+    shiftId?: boolean
+    revision?: boolean
+    revisionOf?: boolean
+    correction?: boolean
+    supersededById?: boolean
+    supersededAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["dailyClose"]>
 
@@ -37646,6 +37722,14 @@ export namespace Prisma {
     closedBy?: boolean
     unsyncedCountAtClose?: boolean
     createdAt?: boolean
+    scope?: boolean
+    registerId?: boolean
+    shiftId?: boolean
+    revision?: boolean
+    revisionOf?: boolean
+    correction?: boolean
+    supersededById?: boolean
+    supersededAt?: boolean
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["dailyClose"]>
 
@@ -37669,9 +37753,17 @@ export namespace Prisma {
     closedBy?: boolean
     unsyncedCountAtClose?: boolean
     createdAt?: boolean
+    scope?: boolean
+    registerId?: boolean
+    shiftId?: boolean
+    revision?: boolean
+    revisionOf?: boolean
+    correction?: boolean
+    supersededById?: boolean
+    supersededAt?: boolean
   }
 
-  export type DailyCloseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "dateKey" | "grossSales" | "refunds" | "netSales" | "costOfGoods" | "returnedCost" | "grossMargin" | "expenses" | "supplierPayments" | "netProfit" | "costStatus" | "cashIn" | "cashOut" | "note" | "closedBy" | "unsyncedCountAtClose" | "createdAt", ExtArgs["result"]["dailyClose"]>
+  export type DailyCloseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "dateKey" | "grossSales" | "refunds" | "netSales" | "costOfGoods" | "returnedCost" | "grossMargin" | "expenses" | "supplierPayments" | "netProfit" | "costStatus" | "cashIn" | "cashOut" | "note" | "closedBy" | "unsyncedCountAtClose" | "createdAt" | "scope" | "registerId" | "shiftId" | "revision" | "revisionOf" | "correction" | "supersededById" | "supersededAt", ExtArgs["result"]["dailyClose"]>
   export type DailyCloseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     tenant?: boolean | TenantDefaultArgs<ExtArgs>
   }
@@ -37712,6 +37804,24 @@ export namespace Prisma {
       closedBy: string
       unsyncedCountAtClose: number | null
       createdAt: Date
+      /**
+       * Which close this is (lib/dailyClose.ts): a date may have several — one per register and shift
+       * (`scope`; "store" for closes recorded before scopes, or by a register that sends none). Within a
+       * scope, a correction is a new revision linked to the one it corrects; the corrected close is kept
+       * (supersededById). Reports use the current revision of each scope (supersededById null).
+       */
+      scope: string
+      registerId: string | null
+      shiftId: string | null
+      revision: number
+      revisionOf: string | null
+      /**
+       * "correction" (the register named the close it corrects) or "re-close" (a register that cannot name
+       * it closed the same scope again); null for a first close.
+       */
+      correction: string | null
+      supersededById: string | null
+      supersededAt: Date | null
     }, ExtArgs["result"]["dailyClose"]>
     composites: {}
   }
@@ -38155,6 +38265,14 @@ export namespace Prisma {
     readonly closedBy: FieldRef<"DailyClose", 'String'>
     readonly unsyncedCountAtClose: FieldRef<"DailyClose", 'Int'>
     readonly createdAt: FieldRef<"DailyClose", 'DateTime'>
+    readonly scope: FieldRef<"DailyClose", 'String'>
+    readonly registerId: FieldRef<"DailyClose", 'String'>
+    readonly shiftId: FieldRef<"DailyClose", 'String'>
+    readonly revision: FieldRef<"DailyClose", 'Int'>
+    readonly revisionOf: FieldRef<"DailyClose", 'String'>
+    readonly correction: FieldRef<"DailyClose", 'String'>
+    readonly supersededById: FieldRef<"DailyClose", 'String'>
+    readonly supersededAt: FieldRef<"DailyClose", 'DateTime'>
   }
     
 
@@ -49061,6 +49179,7 @@ export namespace Prisma {
     materialDigest: number
     material: number
     permission: number
+    permissions: number
     approverId: number
     approverName: number
     requestedById: number
@@ -49124,6 +49243,7 @@ export namespace Prisma {
     materialDigest?: true
     material?: true
     permission?: true
+    permissions?: true
     approverId?: true
     approverName?: true
     requestedById?: true
@@ -49218,6 +49338,7 @@ export namespace Prisma {
     materialDigest: string
     material: JsonValue
     permission: string
+    permissions: string[]
     approverId: string
     approverName: string
     requestedById: string | null
@@ -49256,6 +49377,7 @@ export namespace Prisma {
     materialDigest?: boolean
     material?: boolean
     permission?: boolean
+    permissions?: boolean
     approverId?: boolean
     approverName?: boolean
     requestedById?: boolean
@@ -49277,6 +49399,7 @@ export namespace Prisma {
     materialDigest?: boolean
     material?: boolean
     permission?: boolean
+    permissions?: boolean
     approverId?: boolean
     approverName?: boolean
     requestedById?: boolean
@@ -49298,6 +49421,7 @@ export namespace Prisma {
     materialDigest?: boolean
     material?: boolean
     permission?: boolean
+    permissions?: boolean
     approverId?: boolean
     approverName?: boolean
     requestedById?: boolean
@@ -49319,6 +49443,7 @@ export namespace Prisma {
     materialDigest?: boolean
     material?: boolean
     permission?: boolean
+    permissions?: boolean
     approverId?: boolean
     approverName?: boolean
     requestedById?: boolean
@@ -49330,7 +49455,7 @@ export namespace Prisma {
     cancelledAt?: boolean
   }
 
-  export type ManagerApprovalOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "deviceId" | "entity" | "action" | "recordId" | "materialDigest" | "material" | "permission" | "approverId" | "approverName" | "requestedById" | "sessionChecked" | "createdAt" | "expiresAt" | "usedAt" | "usedByOpId" | "cancelledAt", ExtArgs["result"]["managerApproval"]>
+  export type ManagerApprovalOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "deviceId" | "entity" | "action" | "recordId" | "materialDigest" | "material" | "permission" | "permissions" | "approverId" | "approverName" | "requestedById" | "sessionChecked" | "createdAt" | "expiresAt" | "usedAt" | "usedByOpId" | "cancelledAt", ExtArgs["result"]["managerApproval"]>
 
   export type $ManagerApprovalPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "ManagerApproval"
@@ -49345,6 +49470,10 @@ export namespace Prisma {
       materialDigest: string
       material: Prisma.JsonValue
       permission: string
+      /**
+       * every permission approved (one approval may cover a discount and a price below list together)
+       */
+      permissions: string[]
       approverId: string
       approverName: string
       requestedById: string | null
@@ -49786,6 +49915,7 @@ export namespace Prisma {
     readonly materialDigest: FieldRef<"ManagerApproval", 'String'>
     readonly material: FieldRef<"ManagerApproval", 'Json'>
     readonly permission: FieldRef<"ManagerApproval", 'String'>
+    readonly permissions: FieldRef<"ManagerApproval", 'String[]'>
     readonly approverId: FieldRef<"ManagerApproval", 'String'>
     readonly approverName: FieldRef<"ManagerApproval", 'String'>
     readonly requestedById: FieldRef<"ManagerApproval", 'String'>
@@ -52887,7 +53017,15 @@ export namespace Prisma {
     note: 'note',
     closedBy: 'closedBy',
     unsyncedCountAtClose: 'unsyncedCountAtClose',
-    createdAt: 'createdAt'
+    createdAt: 'createdAt',
+    scope: 'scope',
+    registerId: 'registerId',
+    shiftId: 'shiftId',
+    revision: 'revision',
+    revisionOf: 'revisionOf',
+    correction: 'correction',
+    supersededById: 'supersededById',
+    supersededAt: 'supersededAt'
   };
 
   export type DailyCloseScalarFieldEnum = (typeof DailyCloseScalarFieldEnum)[keyof typeof DailyCloseScalarFieldEnum]
@@ -53071,6 +53209,7 @@ export namespace Prisma {
     materialDigest: 'materialDigest',
     material: 'material',
     permission: 'permission',
+    permissions: 'permissions',
     approverId: 'approverId',
     approverName: 'approverName',
     requestedById: 'requestedById',
@@ -56251,6 +56390,14 @@ export namespace Prisma {
     closedBy?: StringFilter<"DailyClose"> | string
     unsyncedCountAtClose?: IntNullableFilter<"DailyClose"> | number | null
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
+    scope?: StringFilter<"DailyClose"> | string
+    registerId?: StringNullableFilter<"DailyClose"> | string | null
+    shiftId?: StringNullableFilter<"DailyClose"> | string | null
+    revision?: IntFilter<"DailyClose"> | number
+    revisionOf?: StringNullableFilter<"DailyClose"> | string | null
+    correction?: StringNullableFilter<"DailyClose"> | string | null
+    supersededById?: StringNullableFilter<"DailyClose"> | string | null
+    supersededAt?: DateTimeNullableFilter<"DailyClose"> | Date | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
   }
 
@@ -56274,12 +56421,20 @@ export namespace Prisma {
     closedBy?: SortOrder
     unsyncedCountAtClose?: SortOrderInput | SortOrder
     createdAt?: SortOrder
+    scope?: SortOrder
+    registerId?: SortOrderInput | SortOrder
+    shiftId?: SortOrderInput | SortOrder
+    revision?: SortOrder
+    revisionOf?: SortOrderInput | SortOrder
+    correction?: SortOrderInput | SortOrder
+    supersededById?: SortOrderInput | SortOrder
+    supersededAt?: SortOrderInput | SortOrder
     tenant?: TenantOrderByWithRelationInput
   }
 
   export type DailyCloseWhereUniqueInput = Prisma.AtLeast<{
     id?: string
-    tenantId_dateKey?: DailyCloseTenantIdDateKeyCompoundUniqueInput
+    tenantId_dateKey_scope_revision?: DailyCloseTenantIdDateKeyScopeRevisionCompoundUniqueInput
     AND?: DailyCloseWhereInput | DailyCloseWhereInput[]
     OR?: DailyCloseWhereInput[]
     NOT?: DailyCloseWhereInput | DailyCloseWhereInput[]
@@ -56301,8 +56456,16 @@ export namespace Prisma {
     closedBy?: StringFilter<"DailyClose"> | string
     unsyncedCountAtClose?: IntNullableFilter<"DailyClose"> | number | null
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
+    scope?: StringFilter<"DailyClose"> | string
+    registerId?: StringNullableFilter<"DailyClose"> | string | null
+    shiftId?: StringNullableFilter<"DailyClose"> | string | null
+    revision?: IntFilter<"DailyClose"> | number
+    revisionOf?: StringNullableFilter<"DailyClose"> | string | null
+    correction?: StringNullableFilter<"DailyClose"> | string | null
+    supersededById?: StringNullableFilter<"DailyClose"> | string | null
+    supersededAt?: DateTimeNullableFilter<"DailyClose"> | Date | string | null
     tenant?: XOR<TenantScalarRelationFilter, TenantWhereInput>
-  }, "id" | "tenantId_dateKey">
+  }, "id" | "tenantId_dateKey_scope_revision">
 
   export type DailyCloseOrderByWithAggregationInput = {
     id?: SortOrder
@@ -56324,6 +56487,14 @@ export namespace Prisma {
     closedBy?: SortOrder
     unsyncedCountAtClose?: SortOrderInput | SortOrder
     createdAt?: SortOrder
+    scope?: SortOrder
+    registerId?: SortOrderInput | SortOrder
+    shiftId?: SortOrderInput | SortOrder
+    revision?: SortOrder
+    revisionOf?: SortOrderInput | SortOrder
+    correction?: SortOrderInput | SortOrder
+    supersededById?: SortOrderInput | SortOrder
+    supersededAt?: SortOrderInput | SortOrder
     _count?: DailyCloseCountOrderByAggregateInput
     _avg?: DailyCloseAvgOrderByAggregateInput
     _max?: DailyCloseMaxOrderByAggregateInput
@@ -56354,6 +56525,14 @@ export namespace Prisma {
     closedBy?: StringWithAggregatesFilter<"DailyClose"> | string
     unsyncedCountAtClose?: IntNullableWithAggregatesFilter<"DailyClose"> | number | null
     createdAt?: DateTimeWithAggregatesFilter<"DailyClose"> | Date | string
+    scope?: StringWithAggregatesFilter<"DailyClose"> | string
+    registerId?: StringNullableWithAggregatesFilter<"DailyClose"> | string | null
+    shiftId?: StringNullableWithAggregatesFilter<"DailyClose"> | string | null
+    revision?: IntWithAggregatesFilter<"DailyClose"> | number
+    revisionOf?: StringNullableWithAggregatesFilter<"DailyClose"> | string | null
+    correction?: StringNullableWithAggregatesFilter<"DailyClose"> | string | null
+    supersededById?: StringNullableWithAggregatesFilter<"DailyClose"> | string | null
+    supersededAt?: DateTimeNullableWithAggregatesFilter<"DailyClose"> | Date | string | null
   }
 
   export type CashMovementWhereInput = {
@@ -57217,6 +57396,7 @@ export namespace Prisma {
     materialDigest?: StringFilter<"ManagerApproval"> | string
     material?: JsonFilter<"ManagerApproval">
     permission?: StringFilter<"ManagerApproval"> | string
+    permissions?: StringNullableListFilter<"ManagerApproval">
     approverId?: StringFilter<"ManagerApproval"> | string
     approverName?: StringFilter<"ManagerApproval"> | string
     requestedById?: StringNullableFilter<"ManagerApproval"> | string | null
@@ -57238,6 +57418,7 @@ export namespace Prisma {
     materialDigest?: SortOrder
     material?: SortOrder
     permission?: SortOrder
+    permissions?: SortOrder
     approverId?: SortOrder
     approverName?: SortOrder
     requestedById?: SortOrderInput | SortOrder
@@ -57262,6 +57443,7 @@ export namespace Prisma {
     materialDigest?: StringFilter<"ManagerApproval"> | string
     material?: JsonFilter<"ManagerApproval">
     permission?: StringFilter<"ManagerApproval"> | string
+    permissions?: StringNullableListFilter<"ManagerApproval">
     approverId?: StringFilter<"ManagerApproval"> | string
     approverName?: StringFilter<"ManagerApproval"> | string
     requestedById?: StringNullableFilter<"ManagerApproval"> | string | null
@@ -57283,6 +57465,7 @@ export namespace Prisma {
     materialDigest?: SortOrder
     material?: SortOrder
     permission?: SortOrder
+    permissions?: SortOrder
     approverId?: SortOrder
     approverName?: SortOrder
     requestedById?: SortOrderInput | SortOrder
@@ -57310,6 +57493,7 @@ export namespace Prisma {
     materialDigest?: StringWithAggregatesFilter<"ManagerApproval"> | string
     material?: JsonWithAggregatesFilter<"ManagerApproval">
     permission?: StringWithAggregatesFilter<"ManagerApproval"> | string
+    permissions?: StringNullableListFilter<"ManagerApproval">
     approverId?: StringWithAggregatesFilter<"ManagerApproval"> | string
     approverName?: StringWithAggregatesFilter<"ManagerApproval"> | string
     requestedById?: StringNullableWithAggregatesFilter<"ManagerApproval"> | string | null
@@ -60751,6 +60935,14 @@ export namespace Prisma {
     closedBy: string
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
+    scope?: string
+    registerId?: string | null
+    shiftId?: string | null
+    revision?: number
+    revisionOf?: string | null
+    correction?: string | null
+    supersededById?: string | null
+    supersededAt?: Date | string | null
     tenant: TenantCreateNestedOneWithoutDailyClosesInput
   }
 
@@ -60774,6 +60966,14 @@ export namespace Prisma {
     closedBy: string
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
+    scope?: string
+    registerId?: string | null
+    shiftId?: string | null
+    revision?: number
+    revisionOf?: string | null
+    correction?: string | null
+    supersededById?: string | null
+    supersededAt?: Date | string | null
   }
 
   export type DailyCloseUpdateInput = {
@@ -60795,6 +60995,14 @@ export namespace Prisma {
     closedBy?: StringFieldUpdateOperationsInput | string
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    scope?: StringFieldUpdateOperationsInput | string
+    registerId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    revision?: IntFieldUpdateOperationsInput | number
+    revisionOf?: NullableStringFieldUpdateOperationsInput | string | null
+    correction?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededById?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     tenant?: TenantUpdateOneRequiredWithoutDailyClosesNestedInput
   }
 
@@ -60818,6 +61026,14 @@ export namespace Prisma {
     closedBy?: StringFieldUpdateOperationsInput | string
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    scope?: StringFieldUpdateOperationsInput | string
+    registerId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    revision?: IntFieldUpdateOperationsInput | number
+    revisionOf?: NullableStringFieldUpdateOperationsInput | string | null
+    correction?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededById?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type DailyCloseCreateManyInput = {
@@ -60840,6 +61056,14 @@ export namespace Prisma {
     closedBy: string
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
+    scope?: string
+    registerId?: string | null
+    shiftId?: string | null
+    revision?: number
+    revisionOf?: string | null
+    correction?: string | null
+    supersededById?: string | null
+    supersededAt?: Date | string | null
   }
 
   export type DailyCloseUpdateManyMutationInput = {
@@ -60861,6 +61085,14 @@ export namespace Prisma {
     closedBy?: StringFieldUpdateOperationsInput | string
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    scope?: StringFieldUpdateOperationsInput | string
+    registerId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    revision?: IntFieldUpdateOperationsInput | number
+    revisionOf?: NullableStringFieldUpdateOperationsInput | string | null
+    correction?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededById?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type DailyCloseUncheckedUpdateManyInput = {
@@ -60883,6 +61115,14 @@ export namespace Prisma {
     closedBy?: StringFieldUpdateOperationsInput | string
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    scope?: StringFieldUpdateOperationsInput | string
+    registerId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    revision?: IntFieldUpdateOperationsInput | number
+    revisionOf?: NullableStringFieldUpdateOperationsInput | string | null
+    correction?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededById?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type CashMovementCreateInput = {
@@ -61876,6 +62116,7 @@ export namespace Prisma {
     materialDigest: string
     material: JsonNullValueInput | InputJsonValue
     permission: string
+    permissions?: ManagerApprovalCreatepermissionsInput | string[]
     approverId: string
     approverName: string
     requestedById?: string | null
@@ -61897,6 +62138,7 @@ export namespace Prisma {
     materialDigest: string
     material: JsonNullValueInput | InputJsonValue
     permission: string
+    permissions?: ManagerApprovalCreatepermissionsInput | string[]
     approverId: string
     approverName: string
     requestedById?: string | null
@@ -61918,6 +62160,7 @@ export namespace Prisma {
     materialDigest?: StringFieldUpdateOperationsInput | string
     material?: JsonNullValueInput | InputJsonValue
     permission?: StringFieldUpdateOperationsInput | string
+    permissions?: ManagerApprovalUpdatepermissionsInput | string[]
     approverId?: StringFieldUpdateOperationsInput | string
     approverName?: StringFieldUpdateOperationsInput | string
     requestedById?: NullableStringFieldUpdateOperationsInput | string | null
@@ -61939,6 +62182,7 @@ export namespace Prisma {
     materialDigest?: StringFieldUpdateOperationsInput | string
     material?: JsonNullValueInput | InputJsonValue
     permission?: StringFieldUpdateOperationsInput | string
+    permissions?: ManagerApprovalUpdatepermissionsInput | string[]
     approverId?: StringFieldUpdateOperationsInput | string
     approverName?: StringFieldUpdateOperationsInput | string
     requestedById?: NullableStringFieldUpdateOperationsInput | string | null
@@ -61960,6 +62204,7 @@ export namespace Prisma {
     materialDigest: string
     material: JsonNullValueInput | InputJsonValue
     permission: string
+    permissions?: ManagerApprovalCreatepermissionsInput | string[]
     approverId: string
     approverName: string
     requestedById?: string | null
@@ -61981,6 +62226,7 @@ export namespace Prisma {
     materialDigest?: StringFieldUpdateOperationsInput | string
     material?: JsonNullValueInput | InputJsonValue
     permission?: StringFieldUpdateOperationsInput | string
+    permissions?: ManagerApprovalUpdatepermissionsInput | string[]
     approverId?: StringFieldUpdateOperationsInput | string
     approverName?: StringFieldUpdateOperationsInput | string
     requestedById?: NullableStringFieldUpdateOperationsInput | string | null
@@ -62002,6 +62248,7 @@ export namespace Prisma {
     materialDigest?: StringFieldUpdateOperationsInput | string
     material?: JsonNullValueInput | InputJsonValue
     permission?: StringFieldUpdateOperationsInput | string
+    permissions?: ManagerApprovalUpdatepermissionsInput | string[]
     approverId?: StringFieldUpdateOperationsInput | string
     approverName?: StringFieldUpdateOperationsInput | string
     requestedById?: NullableStringFieldUpdateOperationsInput | string | null
@@ -64842,9 +65089,11 @@ export namespace Prisma {
     total?: SortOrder
   }
 
-  export type DailyCloseTenantIdDateKeyCompoundUniqueInput = {
+  export type DailyCloseTenantIdDateKeyScopeRevisionCompoundUniqueInput = {
     tenantId: string
     dateKey: string
+    scope: string
+    revision: number
   }
 
   export type DailyCloseCountOrderByAggregateInput = {
@@ -64867,6 +65116,14 @@ export namespace Prisma {
     closedBy?: SortOrder
     unsyncedCountAtClose?: SortOrder
     createdAt?: SortOrder
+    scope?: SortOrder
+    registerId?: SortOrder
+    shiftId?: SortOrder
+    revision?: SortOrder
+    revisionOf?: SortOrder
+    correction?: SortOrder
+    supersededById?: SortOrder
+    supersededAt?: SortOrder
   }
 
   export type DailyCloseAvgOrderByAggregateInput = {
@@ -64882,6 +65139,7 @@ export namespace Prisma {
     cashIn?: SortOrder
     cashOut?: SortOrder
     unsyncedCountAtClose?: SortOrder
+    revision?: SortOrder
   }
 
   export type DailyCloseMaxOrderByAggregateInput = {
@@ -64904,6 +65162,14 @@ export namespace Prisma {
     closedBy?: SortOrder
     unsyncedCountAtClose?: SortOrder
     createdAt?: SortOrder
+    scope?: SortOrder
+    registerId?: SortOrder
+    shiftId?: SortOrder
+    revision?: SortOrder
+    revisionOf?: SortOrder
+    correction?: SortOrder
+    supersededById?: SortOrder
+    supersededAt?: SortOrder
   }
 
   export type DailyCloseMinOrderByAggregateInput = {
@@ -64926,6 +65192,14 @@ export namespace Prisma {
     closedBy?: SortOrder
     unsyncedCountAtClose?: SortOrder
     createdAt?: SortOrder
+    scope?: SortOrder
+    registerId?: SortOrder
+    shiftId?: SortOrder
+    revision?: SortOrder
+    revisionOf?: SortOrder
+    correction?: SortOrder
+    supersededById?: SortOrder
+    supersededAt?: SortOrder
   }
 
   export type DailyCloseSumOrderByAggregateInput = {
@@ -64941,6 +65215,7 @@ export namespace Prisma {
     cashIn?: SortOrder
     cashOut?: SortOrder
     unsyncedCountAtClose?: SortOrder
+    revision?: SortOrder
   }
 
   export type CashMovementCountOrderByAggregateInput = {
@@ -65454,6 +65729,7 @@ export namespace Prisma {
     materialDigest?: SortOrder
     material?: SortOrder
     permission?: SortOrder
+    permissions?: SortOrder
     approverId?: SortOrder
     approverName?: SortOrder
     requestedById?: SortOrder
@@ -68357,6 +68633,15 @@ export namespace Prisma {
     push?: string | string[]
   }
 
+  export type ManagerApprovalCreatepermissionsInput = {
+    set: string[]
+  }
+
+  export type ManagerApprovalUpdatepermissionsInput = {
+    set?: string[]
+    push?: string | string[]
+  }
+
   export type NestedStringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -69702,6 +69987,14 @@ export namespace Prisma {
     closedBy: string
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
+    scope?: string
+    registerId?: string | null
+    shiftId?: string | null
+    revision?: number
+    revisionOf?: string | null
+    correction?: string | null
+    supersededById?: string | null
+    supersededAt?: Date | string | null
   }
 
   export type DailyCloseUncheckedCreateWithoutTenantInput = {
@@ -69723,6 +70016,14 @@ export namespace Prisma {
     closedBy: string
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
+    scope?: string
+    registerId?: string | null
+    shiftId?: string | null
+    revision?: number
+    revisionOf?: string | null
+    correction?: string | null
+    supersededById?: string | null
+    supersededAt?: Date | string | null
   }
 
   export type DailyCloseCreateOrConnectWithoutTenantInput = {
@@ -70708,6 +71009,14 @@ export namespace Prisma {
     closedBy?: StringFilter<"DailyClose"> | string
     unsyncedCountAtClose?: IntNullableFilter<"DailyClose"> | number | null
     createdAt?: DateTimeFilter<"DailyClose"> | Date | string
+    scope?: StringFilter<"DailyClose"> | string
+    registerId?: StringNullableFilter<"DailyClose"> | string | null
+    shiftId?: StringNullableFilter<"DailyClose"> | string | null
+    revision?: IntFilter<"DailyClose"> | number
+    revisionOf?: StringNullableFilter<"DailyClose"> | string | null
+    correction?: StringNullableFilter<"DailyClose"> | string | null
+    supersededById?: StringNullableFilter<"DailyClose"> | string | null
+    supersededAt?: DateTimeNullableFilter<"DailyClose"> | Date | string | null
   }
 
   export type SyncOperationUpsertWithWhereUniqueWithoutTenantInput = {
@@ -80493,6 +80802,14 @@ export namespace Prisma {
     closedBy: string
     unsyncedCountAtClose?: number | null
     createdAt?: Date | string
+    scope?: string
+    registerId?: string | null
+    shiftId?: string | null
+    revision?: number
+    revisionOf?: string | null
+    correction?: string | null
+    supersededById?: string | null
+    supersededAt?: Date | string | null
   }
 
   export type SyncOperationCreateManyTenantInput = {
@@ -81488,6 +81805,14 @@ export namespace Prisma {
     closedBy?: StringFieldUpdateOperationsInput | string
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    scope?: StringFieldUpdateOperationsInput | string
+    registerId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    revision?: IntFieldUpdateOperationsInput | number
+    revisionOf?: NullableStringFieldUpdateOperationsInput | string | null
+    correction?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededById?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type DailyCloseUncheckedUpdateWithoutTenantInput = {
@@ -81509,6 +81834,14 @@ export namespace Prisma {
     closedBy?: StringFieldUpdateOperationsInput | string
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    scope?: StringFieldUpdateOperationsInput | string
+    registerId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    revision?: IntFieldUpdateOperationsInput | number
+    revisionOf?: NullableStringFieldUpdateOperationsInput | string | null
+    correction?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededById?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type DailyCloseUncheckedUpdateManyWithoutTenantInput = {
@@ -81530,6 +81863,14 @@ export namespace Prisma {
     closedBy?: StringFieldUpdateOperationsInput | string
     unsyncedCountAtClose?: NullableIntFieldUpdateOperationsInput | number | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    scope?: StringFieldUpdateOperationsInput | string
+    registerId?: NullableStringFieldUpdateOperationsInput | string | null
+    shiftId?: NullableStringFieldUpdateOperationsInput | string | null
+    revision?: IntFieldUpdateOperationsInput | number
+    revisionOf?: NullableStringFieldUpdateOperationsInput | string | null
+    correction?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededById?: NullableStringFieldUpdateOperationsInput | string | null
+    supersededAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type SyncOperationUpdateWithoutTenantInput = {

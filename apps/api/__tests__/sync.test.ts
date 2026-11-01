@@ -711,7 +711,6 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     ["shift", "open", "shift", { id: "shift-x", shiftNumber: "SHIFT-X" }],
     ["expense", "create", "expense", { id: "exp-x", expenseNumber: "EXP-X", vendor: "v", category: "c", amount: 5, paymentMethod: "Cash", recordedBy: "Admin" }],
     ["cash-movement", "create", "cashMovement", { id: "cm-x", type: "CashIn", amountUsd: 5, reason: "r", recordedByName: "Admin" }],
-    ["daily-close", "close", "dailyClose", { id: "dc-x", dateKey: "2026-07-11", grossSales: 5, netSales: 5, closedBy: "Admin" }],
     ["purchase-order", "create", "purchaseOrder", { id: "po-x", poNumber: "PO-X", supplierId: "sup1", supplierName: "s", total: 5, createdBy: "Admin" }],
     ["supplier-payment", "create", "supplierPayment", { id: "sp-x", supplierId: "sup1", supplierName: "s", amount: 5, method: "Cash", recordedBy: "Admin" }],
   ])("strips registerId/deviceId from %s payload — %s model has no such columns", async (entity, action, model, basePayload) => {
@@ -757,8 +756,8 @@ describe("POST /api/sync/push — sale stock integrity", () => {
     expect(upsertArgs.update.profitPercent2).toBe(35)
   })
 
-  it("accepts unsyncedCountAtClose on daily-close payload — DailyClose now has that column", async () => {
-    vi.mocked(prisma.dailyClose.upsert).mockResolvedValue({} as any)
+  it("a daily close is recorded under its register (scope), with unsyncedCountAtClose; the register cannot set its revision", async () => {
+    vi.mocked(prisma.dailyClose.create).mockResolvedValue({} as any)
 
     const res = await request("POST", "/api/sync/push", {
       token,
@@ -767,15 +766,17 @@ describe("POST /api/sync/push — sale stock integrity", () => {
           id: "op-dc",
           entity: "daily-close",
           action: "close",
-          payload: { id: "dc-1", dateKey: "2026-07-11", grossSales: 100, netSales: 100, closedBy: "Admin", unsyncedCountAtClose: 3 },
+          payload: { id: "dc-1", dateKey: "2026-07-11", grossSales: 100, netSales: 100, closedBy: "Admin", unsyncedCountAtClose: 3, registerId: "REG-001", deviceId: "DEV-ABC", revision: 7, supersededById: "x" },
         }],
       },
     })
 
     expect(res.status).toBe(200)
     expect(res.body.results[0].status).toBe("ok")
-    const upsertArgs = vi.mocked(prisma.dailyClose.upsert).mock.calls.at(-1)?.[0] as any
-    expect(upsertArgs.create.unsyncedCountAtClose).toBe(3)
+    const createArgs = vi.mocked(prisma.dailyClose.create).mock.calls.at(-1)?.[0] as any
+    expect(createArgs.data).toMatchObject({ unsyncedCountAtClose: 3, scope: "register:REG-001", registerId: "REG-001", shiftId: null, revision: 1 })
+    expect(createArgs.data).not.toHaveProperty("deviceId")
+    expect(createArgs.data).not.toHaveProperty("supersededById")
   })
 
   it.each([

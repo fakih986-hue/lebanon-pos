@@ -101,7 +101,7 @@ afterAll(async () => {
   for (const db of [prisma, cloudPrisma]) {
     for (const tenantId of [TENANT, OTHER]) {
       const where = { tenantId }
-      for (const m of ["operationEvidence", "staffSession", "syncOperation", "syncClient", "auditEvent", "expense", "saleItem", "sale", "stockMovement", "hubKey", "pairingCode", "device", "product", "staffUser"] as const) await (db as any)[m].deleteMany({ where }).catch(() => undefined)
+      for (const m of ["managerApproval", "cashMovement", "operationEvidence", "staffSession", "syncOperation", "syncClient", "auditEvent", "expense", "saleItem", "sale", "stockMovement", "hubKey", "pairingCode", "device", "product", "staffUser"] as const) await (db as any)[m].deleteMany({ where }).catch(() => undefined)
       await db.tenant.deleteMany({ where: { id: tenantId } }).catch(() => undefined)
     }
   }
@@ -275,5 +275,88 @@ describe("an enforcing store: attested hub sales", () => {
     expect(text).toContain(bare.id)
     for (const secret of [session.session, enrolled.credential, "BEGIN", "8201", "8202"]) expect(text).not.toContain(secret)
     expect(text).not.toMatch(/eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\./)
+  })
+})
+
+// SPRINT-2 batch: a manager approval is checked where the register's operation first arrives (the hub).
+// Forwarding may come much later; the hub signs the approval as it checked it (with the digest of what
+// was approved and when it was used) and the cloud checks that it was for the command it receives.
+describe("an approval consumed by the hub, forwarded after its lifetime", () => {
+  // Nour may sell, nothing else: a payout needs a manager's approval at the hub and in the cloud
+  const NOUR = randomUUID()
+  let nourSession = ""
+  beforeAll(async () => {
+    for (const db of [prisma, cloudPrisma]) await db.staffUser.create({ data: { id: NOUR, tenantId: TENANT, name: "Nour", mobile: `at-n-${TENANT.slice(0, 6)}`, pin: await bcrypt.hash("8203", 12), role: "Cashier", permissions: ["sales.checkout"] } as any })
+    nourSession = (await hub("POST", "/api/auth/staff-session", { pin: "8203" }, { "x-device-credential": enrolled.credential })).body.session
+  })
+  it("stays valid across a key rotation, a hub restart and duplicate delivery; an unused expired approval stays unusable; a hub approval for another command does not hold", async () => {
+    // (the cloud never sees a PIN: the manager's PIN is checked by the hub)
+    const nourConn = jwt.sign({ userId: NOUR, tenantId: TENANT, role: "Cashier", tokenVersion: 1 }, process.env.JWT_SECRET!, { expiresIn: "1h" })
+    const register = { Authorization: `Bearer ${nourConn}`, "x-device-credential": enrolled.credential, "x-staff-session": nourSession }
+    const payout = (amountUsd: number, reason: string) => ({ id: randomUUID(), type: "CashOut", direction: "Out", amountUsd, reason, note: "", recordedById: NOUR, recordedByName: "Nour", createdAt: new Date().toISOString() })
+    const approveAtHub = async (payload: Record<string, unknown>) => {
+      const a = await hub("POST", "/api/approvals", { entity: "cash-movement", action: "create", payload, permission: "cash.manage", pin: "8201" }, register)
+      expect(a.status).toBe(200)
+      return a.body.approvalId as string
+    }
+    const opFor = (payload: Record<string, unknown>, approval: string) => ({ id: randomUUID(), entity: "cash-movement", action: "create", payload, ev: { v: 1, session: nourSession, approval } })
+    const pushFromRegister = (op: any) => hub("POST", "/api/sync/push", { deviceId: "lan-till-9", operations: [op] }, register).then((r) => r.body.results[0])
+
+    const paid = payout(4, "Pay the plumber")
+    const approval = await approveAtHub(paid)
+    const op = opFor(paid, approval)
+    expect((await pushFromRegister(op)).status).toBe("ok")
+    // the hub cannot reach the cloud for longer than the approval's lifetime
+    await prisma.managerApproval.update({ where: { id: approval }, data: { expiresAt: new Date(Date.now() - 60_000) } })
+    // meanwhile the hub's key is rotated
+    const kidBefore = att.readHubKey()!.kid
+    expect((await hub("POST", "/api/setup/hub-key", { pin: "8201" })).status).toBe(200)
+    const kidAfter = att.readHubKey()!.kid
+    expect(kidAfter).not.toBe(kidBefore)
+    // and the hub restarts: a fresh bridge, its key from disk, the approval as recorded in its database
+    vi.resetModules()
+    const restarted = await import("../src/services/cloudSync.js")
+    await restarted.pushToCloudOnce()
+    expect((await prisma.syncOperation.findUnique({ where: { id: op.id } }))?.status).toBe("Synced")
+    const e = (await cloudEvidence(op.id))!
+    expect([e.attestation, e.attestationKid]).toEqual(["valid", kidAfter])
+    expect(e.approval).toMatchObject({ check: "valid", hubCheck: "valid", id: approval, approverId: OWNER, permissions: ["cash.manage"], requestedById: NOUR })
+    const seen = e.approval as Record<string, string>
+    expect(Date.parse(seen.consumedAt) <= Date.parse(seen.issuedAt) + 120_000).toBe(true)
+    expect(JSON.stringify(e)).not.toContain("8201")
+    expect(await cloudPrisma.cashMovement.count({ where: { tenantId: TENANT, id: paid.id } })).toBe(1)
+    // duplicate delivery (the cloud's acknowledgement was lost): acknowledged, applied once, one evidence row
+    await prisma.syncOperation.update({ where: { id: op.id }, data: { status: "Pending", syncedAt: null } })
+    await Promise.all([restarted.pushToCloudOnce(), restarted.pushToCloudOnce()])
+    expect((await prisma.syncOperation.findUnique({ where: { id: op.id } }))?.status).toBe("Synced")
+    expect(await cloudPrisma.cashMovement.count({ where: { tenantId: TENANT, id: paid.id } })).toBe(1)
+    expect(await cloudPrisma.operationEvidence.count({ where: { opId: op.id } })).toBe(1)
+    // the register's own exact retry after the lifetime (its acknowledgement was lost): acknowledged once
+    expect((await pushFromRegister(op)).status).toBe("ok")
+    expect(await prisma.cashMovement.count({ where: { tenantId: TENANT, id: paid.id } })).toBe(1)
+
+    // an approval never used within its lifetime stays unusable: refused, kept for review, nothing paid
+    const late = payout(5, "Pay the plumber")
+    const lateApproval = await approveAtHub(late)
+    await prisma.managerApproval.update({ where: { id: lateApproval }, data: { expiresAt: new Date(Date.now() - 1_000) } })
+    const lateOp = opFor(late, lateApproval)
+    const refused = await pushFromRegister(lateOp)
+    expect([refused.status, refused.error]).toEqual(["rejected", expect.stringMatching(/^APPROVAL_INVALID: the manager approval presented is expired/)])
+    expect((await prisma.syncOperation.findUnique({ where: { id: lateOp.id } }))?.status).toBe("Refused")
+    expect(await prisma.cashMovement.count({ where: { tenantId: TENANT, id: late.id } })).toBe(0)
+
+    // a hub whose signed approval is for another command: it does not hold in the cloud, and Nour may not
+    // pay out without it: refused and kept for the cloud's review with what the hub said
+    const other = payout(6, "Pay the electrician")
+    const otherApproval = await approveAtHub(other)
+    const otherOp = opFor(other, otherApproval)
+    expect((await pushFromRegister(otherOp)).status).toBe("ok")
+    const row = (await prisma.operationEvidence.findUnique({ where: { opId: otherOp.id } }))!
+    await prisma.operationEvidence.update({ where: { opId: otherOp.id }, data: { approval: { ...(row.approval as object), materialDigest: "0".repeat(64) } } })
+    await restarted.pushToCloudOnce()
+    const held = (await cloudOp(otherOp.id))!
+    expect([held.status, held.appliedAt]).toEqual(["Refused", null])
+    expect((held.heldEvidence as any)?.approval).toMatchObject({ check: "changed", hubCheck: "valid" })
+    expect(await cloudPrisma.cashMovement.count({ where: { tenantId: TENANT, id: other.id } })).toBe(0)
   })
 })

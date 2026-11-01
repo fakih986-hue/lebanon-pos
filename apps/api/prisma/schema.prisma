@@ -732,8 +732,23 @@ model DailyClose {
   closedBy        String
   unsyncedCountAtClose Int?
   createdAt       DateTime @default(now())
+  /// Which close this is (lib/dailyClose.ts): a date may have several — one per register and shift
+  /// (`scope`; "store" for closes recorded before scopes, or by a register that sends none). Within a
+  /// scope, a correction is a new revision linked to the one it corrects; the corrected close is kept
+  /// (supersededById). Reports use the current revision of each scope (supersededById null).
+  scope           String    @default("store")
+  registerId      String?
+  shiftId         String?
+  revision        Int       @default(1)
+  revisionOf      String?
+  /// "correction" (the register named the close it corrects) or "re-close" (a register that cannot name
+  /// it closed the same scope again); null for a first close.
+  correction      String?
+  supersededById  String?
+  supersededAt    DateTime?
 
-  @@unique([tenantId, dateKey])
+  @@unique([tenantId, dateKey, scope, revision])
+  @@index([tenantId, dateKey])
 }
 
 model CashMovement {
@@ -781,7 +796,7 @@ model SyncOperation {
 
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
-  @@index([tenantId, entity, status])
+  @@index([tenantId, entity, status])
   /// SPRINT-2 F: what this server knew when it held the operation for review (actor, device, session,
   /// approval and attestation checks, evidence label). Never a token or a PIN. Kept with the command.
   heldEvidence Json?
@@ -955,6 +970,8 @@ model ManagerApproval {
   materialDigest String
   material       Json
   permission     String
+  /// every permission approved (one approval may cover a discount and a price below list together)
+  permissions    String[]  @default([])
   approverId     String
   approverName   String
   requestedById  String?   // the person signed in on the register (session-checked when sessionChecked)

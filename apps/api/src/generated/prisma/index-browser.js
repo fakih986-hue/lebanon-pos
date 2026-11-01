@@ -581,7 +581,15 @@ exports.Prisma.DailyCloseScalarFieldEnum = {
   note: 'note',
   closedBy: 'closedBy',
   unsyncedCountAtClose: 'unsyncedCountAtClose',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  scope: 'scope',
+  registerId: 'registerId',
+  shiftId: 'shiftId',
+  revision: 'revision',
+  revisionOf: 'revisionOf',
+  correction: 'correction',
+  supersededById: 'supersededById',
+  supersededAt: 'supersededAt'
 };
 
 exports.Prisma.CashMovementScalarFieldEnum = {
@@ -735,6 +743,7 @@ exports.Prisma.ManagerApprovalScalarFieldEnum = {
   materialDigest: 'materialDigest',
   material: 'material',
   permission: 'permission',
+  permissions: 'permissions',
   approverId: 'approverId',
   approverName: 'approverName',
   requestedById: 'requestedById',

@@ -709,31 +709,46 @@ model DeliveryOrderItem {
 }
 
 model DailyClose {
-  id                   String   @id @default(uuid())
+  id                   String    @id @default(uuid())
   tenantId             String
-  tenant               Tenant   @relation(fields: [tenantId], references: [id])
+  tenant               Tenant    @relation(fields: [tenantId], references: [id])
   dateKey              String
-  grossSales           Decimal  @db.Decimal(18, 4)
-  refunds              Decimal  @default(0) @db.Decimal(18, 4)
-  netSales             Decimal  @db.Decimal(18, 4)
+  grossSales           Decimal   @db.Decimal(18, 4)
+  refunds              Decimal   @default(0) @db.Decimal(18, 4)
+  netSales             Decimal   @db.Decimal(18, 4)
   /// Cost figures: null = unknown (never stored as 0). costStatus says where they come from:
   /// "server" (computed here from the sales and refunds the close counted), "complete" (stated by a
   /// cost-visible till), "incomplete" (not known). Null costStatus: recorded before it existed.
-  costOfGoods          Decimal? @db.Decimal(18, 4)
-  returnedCost         Decimal? @db.Decimal(18, 4)
-  grossMargin          Decimal? @db.Decimal(18, 4)
-  expenses             Decimal  @default(0) @db.Decimal(18, 4)
-  supplierPayments     Decimal? @db.Decimal(18, 4)
-  netProfit            Decimal? @db.Decimal(18, 4)
+  costOfGoods          Decimal?  @db.Decimal(18, 4)
+  returnedCost         Decimal?  @db.Decimal(18, 4)
+  grossMargin          Decimal?  @db.Decimal(18, 4)
+  expenses             Decimal   @default(0) @db.Decimal(18, 4)
+  supplierPayments     Decimal?  @db.Decimal(18, 4)
+  netProfit            Decimal?  @db.Decimal(18, 4)
   costStatus           String?
-  cashIn               Decimal  @default(0) @db.Decimal(18, 4)
-  cashOut              Decimal  @default(0) @db.Decimal(18, 4)
-  note                 String   @default("")
+  cashIn               Decimal   @default(0) @db.Decimal(18, 4)
+  cashOut              Decimal   @default(0) @db.Decimal(18, 4)
+  note                 String    @default("")
   closedBy             String
   unsyncedCountAtClose Int?
-  createdAt            DateTime @default(now())
+  createdAt            DateTime  @default(now())
+  /// Which close this is (lib/dailyClose.ts): a date may have several — one per register and shift
+  /// (`scope`; "store" for closes recorded before scopes, or by a register that sends none). Within a
+  /// scope, a correction is a new revision linked to the one it corrects; the corrected close is kept
+  /// (supersededById). Reports use the current revision of each scope (supersededById null).
+  scope                String    @default("store")
+  registerId           String?
+  shiftId              String?
+  revision             Int       @default(1)
+  revisionOf           String?
+  /// "correction" (the register named the close it corrects) or "re-close" (a register that cannot name
+  /// it closed the same scope again); null for a first close.
+  correction           String?
+  supersededById       String?
+  supersededAt         DateTime?
 
-  @@unique([tenantId, dateKey])
+  @@unique([tenantId, dateKey, scope, revision])
+  @@index([tenantId, dateKey])
 }
 
 model CashMovement {
@@ -778,10 +793,9 @@ model SyncOperation {
   /// Applied under server valuation (1.0.52+): the figures it carries are this server's. A hub
   /// forwards it with ev.valued = "server"; the cloud values any operation without it itself.
   serverValued  Boolean   @default(false)
-
   /// SPRINT-2 F: what this server knew when it held the operation for review (actor, device, session,
   /// approval and attestation checks, evidence label). Never a token or a PIN. Kept with the command.
-  heldEvidence Json?
+  heldEvidence  Json?
 
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
@@ -956,6 +970,8 @@ model ManagerApproval {
   materialDigest String
   material       Json
   permission     String
+  /// every permission approved (one approval may cover a discount and a price below list together)
+  permissions    String[]  @default([])
   approverId     String
   approverName   String
   requestedById  String? // the person signed in on the register (session-checked when sessionChecked)

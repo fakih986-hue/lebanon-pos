@@ -335,37 +335,105 @@ describe("daily close: the server's figures, or unknown — never a made-up zero
     expect((await closeOf(prisma, missing.payload.id))?.costStatus).toBe("incomplete")
   })
 
-  it("closing a date again: the newer close is the record on hub and cloud; the earlier one is kept in the audit", async () => {
-    const first = closeOp("2026-10-07", { costOfGoods: 1, returnedCost: 0, grossMargin: 2, netProfit: 2 })
-    expect((await asManager(first)).status).toBe("ok")
-    const again = closeOp("2026-10-07", { costOfGoods: 1, returnedCost: 0, grossMargin: 3, netProfit: 3 })
-    const r = await asManager(again)
+  // A date is not one close (lib/dailyClose.ts): one per register and shift; within one, a correction
+  // is a linked revision and the corrected close is kept.
+  const rowsOf = (db: typeof prisma, dateKey: string) => db.dailyClose.findMany({ where: { tenantId: TENANT, dateKey }, orderBy: [{ scope: "asc" }, { revision: "asc" }], select: { id: true, scope: true, revision: true, revisionOf: true, correction: true, supersededById: true, netProfit: true } })
+  const shape = (rows: Awaited<ReturnType<typeof rowsOf>>) => rows.map((r) => [r.id, r.scope, r.revision, r.revisionOf, r.correction, r.supersededById, Number(r.netProfit)])
+
+  it("another register or shift is a separate close; the same one again is a linked correction (both kept); an exact retry changes nothing; hub and cloud agree", async () => {
+    const day = "2026-10-07"
+    const a1 = closeOp(day, { registerId: "REG-A", costOfGoods: 1, returnedCost: 0, grossMargin: 2, netProfit: 2 })
+    const b1 = closeOp(day, { registerId: "REG-B", costOfGoods: 1, returnedCost: 0, grossMargin: 5, netProfit: 5 })
+    const a2shift = closeOp(day, { registerId: "REG-A", shiftId: "SHIFT-2", costOfGoods: 1, returnedCost: 0, grossMargin: 6, netProfit: 6 })
+    for (const op of [a1, b1, a2shift]) expect((await asManager(op)).status).toBe("ok")
+    // register A closes again in the same (no) shift, naming the close it corrects
+    const a1fix = closeOp(day, { registerId: "REG-A", correctsId: a1.payload.id, costOfGoods: 1, returnedCost: 0, grossMargin: 3, netProfit: 3 })
+    const r = await asManager(a1fix)
     expect(r.error ?? r.status).toBe("ok")
-    for (const db of [prisma]) {
-      const rows = await db.dailyClose.findMany({ where: { tenantId: TENANT, dateKey: "2026-10-07" }, select: { id: true, netProfit: true } })
-      expect(rows.map((x) => [x.id, Number(x.netProfit)])).toEqual([[again.payload.id, 3]])
-    }
-    const audit = await prisma.auditEvent.findFirst({ where: { tenantId: TENANT, action: "day.close.superseded" }, orderBy: { createdAt: "desc" } })
-    expect((audit?.metadata as any)?.previous).toMatchObject({ id: first.payload.id, dateKey: "2026-10-07" })
-    expect(Number((audit?.metadata as any)?.previous?.netProfit)).toBe(2)
+    const expected = [
+      [a1.payload.id, "register:REG-A", 1, null, null, a1fix.payload.id, 2],
+      [a1fix.payload.id, "register:REG-A", 2, a1.payload.id, "correction", null, 3],
+      [a2shift.payload.id, "register:REG-A|shift:SHIFT-2", 1, null, null, null, 6],
+      [b1.payload.id, "register:REG-B", 1, null, null, null, 5],
+    ]
+    expect(shape(await rowsOf(prisma, day))).toEqual(expected)
+    const audit = await prisma.auditEvent.findFirst({ where: { tenantId: TENANT, action: "day.close.revised" }, orderBy: { createdAt: "desc" } })
+    expect(audit?.metadata).toMatchObject({ closeId: a1fix.payload.id, revision: 2, revisionOf: a1.payload.id, correction: "correction" })
+    // exact retries (lost acknowledgements) of the original and of the correction: nothing changes
+    for (const op of [a1, a1fix]) expect((await asManager(op)).status).toBe("ok")
+    expect(shape(await rowsOf(prisma, day))).toEqual(expected)
+    // forwarded: the cloud records the same closes, revisions and links
     await bridge.pushToCloudOnce()
-    expect((await opRow(again.id))?.status).toBe("Synced")
-    const cloudRows = await cloudPrisma.dailyClose.findMany({ where: { tenantId: TENANT, dateKey: "2026-10-07" }, select: { id: true } })
-    expect(cloudRows.map((x) => x.id)).toEqual([again.payload.id])
-    // an exact resend of the earlier close applies nothing
-    expect((await asManager(first)).status).toBe("ok")
-    expect((await prisma.dailyClose.findMany({ where: { tenantId: TENANT, dateKey: "2026-10-07" }, select: { id: true } })).map((x) => x.id)).toEqual([again.payload.id])
+    for (const op of [a1, b1, a2shift, a1fix]) expect((await opRow(op.id))?.status).toBe("Synced")
+    expect(shape(await rowsOf(cloudPrisma, day))).toEqual(expected)
   })
 
-  it("a hub pulling a close of a date it already closed keeps the one created later", async () => {
-    const { settleCloseOfDate } = await import("../src/lib/dailyClose.js")
-    const kept = await prisma.dailyClose.findFirst({ where: { tenantId: TENANT, dateKey: "2026-10-07" } })
-    const older = { id: randomUUID(), dateKey: "2026-10-07", createdAt: new Date(kept!.createdAt.getTime() - 60_000).toISOString() }
-    expect(await settleCloseOfDate(prisma, TENANT, older, (e) => e.createdAt < new Date(older.createdAt), "pull")).toBe(false)
-    expect(await prisma.dailyClose.count({ where: { tenantId: TENANT, id: kept!.id } })).toBe(1)
-    const newer = { id: randomUUID(), dateKey: "2026-10-07", createdAt: new Date(kept!.createdAt.getTime() + 60_000).toISOString() }
-    expect(await settleCloseOfDate(prisma, TENANT, newer, (e) => e.createdAt < new Date(newer.createdAt), "pull")).toBe(true)
-    expect(await prisma.dailyClose.count({ where: { tenantId: TENANT, id: kept!.id } })).toBe(0)
+  it("a correction based on a close someone has since corrected is refused and kept for review; nothing is replaced", async () => {
+    const day = "2026-10-07"
+    const before = shape(await rowsOf(prisma, day))
+    const a1 = before.find((x) => x[2] === 1 && x[1] === "register:REG-A")![0] as string
+    const stale = closeOp(day, { registerId: "REG-A", correctsId: a1, costOfGoods: 1, returnedCost: 0, grossMargin: 9, netProfit: 9 })
+    const r = await asManager(stale)
+    expect(r.status).toBe("rejected")
+    expect(r.error).toMatch(/^CLOSE_CONFLICT: .*kept for a manager's review; nothing was replaced/i)
+    expect(shape(await rowsOf(prisma, day))).toEqual(before)
+    expect((await opRow(stale.id))?.status).toBe("Refused")
+    const list = (await (await fetch(`${hubUrl}/api/sync/refused`, { headers: { Authorization: `Bearer ${adminToken}` } })).json()) as any
+    expect(list.operations.find((o: any) => o.id === stale.id)?.category).toBe("close-conflict")
+  })
+
+  it("an older register closing its own date again (it cannot name the close) is a linked re-close; concurrent corrections leave one current revision", async () => {
+    const day = "2026-10-08"
+    const first = closeOp(day, { registerId: "REG-OLD", costOfGoods: 1, returnedCost: 0, grossMargin: 1, netProfit: 1 })
+    expect((await asManager(first)).status).toBe("ok")
+    const again = closeOp(day, { registerId: "REG-OLD", costOfGoods: 1, returnedCost: 0, grossMargin: 2, netProfit: 2 })
+    expect((await asManager(again)).status).toBe("ok")
+    expect(shape(await rowsOf(prisma, day))).toEqual([
+      [first.payload.id, "register:REG-OLD", 1, null, null, again.payload.id, 1],
+      [again.payload.id, "register:REG-OLD", 2, first.payload.id, "re-close", null, 2],
+    ])
+    // two registers' corrections of the same close at the same moment: one becomes revision 3, the other
+    // is refused (based on a close the first one just corrected); two re-closes are serialized
+    const c1 = closeOp(day, { registerId: "REG-OLD", correctsId: again.payload.id, costOfGoods: 1, returnedCost: 0, grossMargin: 3, netProfit: 3 })
+    const c2 = closeOp(day, { registerId: "REG-OLD", correctsId: again.payload.id, costOfGoods: 1, returnedCost: 0, grossMargin: 4, netProfit: 4 })
+    const results = await Promise.all([asManager(c1), asManager(c2)])
+    expect(results.map((x) => x.status).sort()).toEqual(["ok", "rejected"])
+    const r1 = closeOp(day, { registerId: "REG-OLD", costOfGoods: 1, returnedCost: 0, grossMargin: 5, netProfit: 5 })
+    const r2 = closeOp(day, { registerId: "REG-OLD", costOfGoods: 1, returnedCost: 0, grossMargin: 6, netProfit: 6 })
+    expect((await Promise.all([asManager(r1), asManager(r2)])).map((x) => x.status)).toEqual(["ok", "ok"])
+    const rows = await rowsOf(prisma, day)
+    expect(rows.map((x) => x.revision)).toEqual([1, 2, 3, 4, 5])
+    expect(rows.filter((x) => !x.supersededById)).toHaveLength(1)
+    for (let i = 1; i < rows.length; i++) expect([rows[i].revisionOf, rows[i - 1].supersededById]).toEqual([rows[i - 1].id, rows[i].id])
+  })
+
+  it("a hub pulling the cloud's closes keeps every revision and its links; an older client gets the one close its reports use", async () => {
+    const { mirrorClose } = await import("../src/lib/dailyClose.js")
+    const day = "2026-10-09"
+    // closed and corrected at the cloud by another register (never through this hub)
+    const c1 = closeOp(day, { registerId: "REG-CLOUD", costOfGoods: 1, returnedCost: 0, grossMargin: 1, netProfit: 1 })
+    const c2 = closeOp(day, { registerId: "REG-CLOUD", correctsId: c1.payload.id, costOfGoods: 1, returnedCost: 0, grossMargin: 2, netProfit: 2 })
+    for (const op of [c1, c2]) expect((await asOlderHub(op)).status).toBe("ok")
+    const cloudRows = await cloudPrisma.dailyClose.findMany({ where: { tenantId: TENANT, dateKey: day }, orderBy: { revision: "asc" } })
+    // a pull since the first close carries only the second: the hub links the first itself
+    await mirrorClose(prisma, TENANT, { ...cloudRows[0], supersededById: null, supersededAt: null })
+    await mirrorClose(prisma, TENANT, cloudRows[1])
+    expect(shape(await rowsOf(prisma, day))).toEqual(shape(await rowsOf(cloudPrisma, day)))
+    // pulled twice: nothing changes
+    for (const row of cloudRows) await mirrorClose(prisma, TENANT, row)
+    expect(shape(await rowsOf(prisma, day))).toEqual(shape(await rowsOf(cloudPrisma, day)))
+    // an older till or hub (no x-titan-close-revisions): one close per date, the latest current one, no new fields
+    const pull = async (revisions: boolean) => {
+      const res = await fetch(`${hubUrl}/api/sync/pull`, { headers: { Authorization: `Bearer ${adminToken}`, "x-titan-sync-schema": "4", "x-titan-unknown-cost": "1", ...(revisions ? { "x-titan-close-revisions": "1" } : {}) } })
+      return ((await res.json()) as { dailyCloses: any[] }).dailyCloses
+    }
+    const old = (await pull(false)).filter((c) => c.dateKey === "2026-10-07")
+    expect(old).toHaveLength(1)
+    for (const k of ["scope", "revision", "revisionOf", "supersededById"]) expect(old[0]).not.toHaveProperty(k)
+    expect(old[0].supersededById).toBeUndefined()
+    const current = (await pull(true)).filter((c) => c.dateKey === "2026-10-07")
+    expect(current).toHaveLength(4)
+    expect(current.filter((c) => !c.supersededById)).toHaveLength(3)
   })
 
   it("pull: cost figures only with reports.cost; unknown and costStatus only to clients that understand them", async () => {
