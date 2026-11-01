@@ -911,6 +911,10 @@ model OperationEvidence {
   /// person entered a PIN.
   attestation         String?
   attestationKid      String?
+  /// SPRINT-2 E: a manager approval presented with the operation, as checked by the server that
+  /// received it from the register: { id, check, approverId, approverName, permission }. The actor stays
+  /// the person who did it; the approver is recorded separately.
+  approval            Json?
 
   @@index([tenantId, receivedAt])
   @@index([tenantId, evidence])
@@ -932,6 +936,34 @@ model HubKey {
   revokeNote   String?
 
   @@index([tenantId, status])
+}
+
+/// SPRINT-2 E: an online manager approval. The manager's PIN was checked by this server for ONE business
+/// record (entity, action, record id) with these material values, on this enrolled register, for this
+/// permission. Single use: the first operation that presents it within its lifetime uses it; only that
+/// same operation may present it again (an exact retry). Never stores the PIN.
+model ManagerApproval {
+  id             String    @id
+  tenantId       String
+  deviceId       String    // Device.id of the enrolled register that asked
+  entity         String
+  action         String
+  recordId       String
+  materialDigest String
+  material       Json
+  permission     String
+  approverId     String
+  approverName   String
+  requestedById  String?   // the person signed in on the register (session-checked when sessionChecked)
+  sessionChecked Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+  usedAt         DateTime?
+  usedByOpId     String?
+  cancelledAt    DateTime?
+
+  @@index([tenantId, deviceId])
+  @@index([tenantId, recordId])
 }
 
 /// SPRINT-2 C: a staff session — the server verified this staff member's PIN for this enrolled device

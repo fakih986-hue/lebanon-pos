@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { useSearchParams } from "react-router"
-import { AlertTriangle, ArrowDownUp, CheckCircle2, Download, Lock, Printer, ReceiptText, RotateCcw, Search, XCircle } from "lucide-react"
+import { AlertTriangle, ArrowDownUp, CheckCircle2, Download, Lock, Printer, ReceiptText, RotateCcw, Search, ShieldCheck, XCircle } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
 import { useDebounce } from "../../hooks/useDebounce"
@@ -16,10 +16,14 @@ import {
   getSaleRefundTotal, getSaleRefunds, parseReturnQuantity,
 } from "../../features/pos/lib/salesHelpers"
 import {
-  getPaymentMix, getRefunds, getSales, getSalesMetrics, previewRefund, processRefund, refundLineKeyOf, subscribeRefunds, subscribeSales, voidSale,
+  getPaymentMix, getRefunds, getSales, getSalesMetrics, previewRefund, processRefund, refundApprovalPayload, refundLineKeyOf, subscribeRefunds, subscribeSales, voidApprovalPayload, voidSale,
   type RefundItem, type Sale, type SalePaymentMethod, type SaleRefund,
 } from "../../features/pos/services/sales.service"
 import { userCan } from "../../features/pos/services/security.service"
+import ManagerApprovalDialog from "../../components/ManagerApprovalDialog"
+import type { ApprovalRequest } from "../../features/pos/services/approval.service"
+import type { ApprovalGrant } from "../../features/pos/lib/approvalGrants"
+import { createId } from "../../features/pos/lib/storage"
 import { getSettings } from "../../features/pos/services/settings.service"
 
 // Midnight Gold v2 — Receipts (DESIGN-SYSTEM §6–§8, Sell workspace). A filtered receipt table
@@ -94,6 +98,8 @@ export default function SalesPage() {
   const [refundStatus, setRefundStatus] = useState<{ tone: "ok" | "err" | "info"; text: string } | null>(null)
   const [pendingRefund, setPendingRefund] = useState<{ sale: Sale; refundTotal: number; refundItems: RefundItem[]; refundReason: string; quantities: Record<string, number> } | null>(null)
   const [voidSaleId, setVoidSaleId] = useState<string | null>(null)
+  // SPRINT-2 E: a refund or void that needs a manager's approval (the person signed in stays the actor)
+  const [approval, setApproval] = useState<{ request: Omit<ApprovalRequest, "pin" | "approverId">; summary: string; run: (grant: ApprovalGrant) => void } | null>(null)
   // Confirm can be pressed twice before the dialog closes: the ref is the lock (state updates late).
   const refundingRef = useRef(false)
 
@@ -162,7 +168,6 @@ export default function SalesPage() {
     return quantities
   }
   function handleRecordRefund(sale: Sale) {
-    if (!canRefund) { setRefundStatus({ tone: "err", text: t("pos.permission_required") }); return }
     const quantities = requestedQuantities(sale)
     if (Object.keys(quantities).length === 0) { setRefundStatus({ tone: "err", text: t("pos.sales.choose_item_qty") }); return }
     try {
@@ -183,12 +188,28 @@ export default function SalesPage() {
     if (!pendingRefund || refundingRef.current) return
     refundingRef.current = true
     const { sale, refundReason: reason, quantities } = pendingRefund
+    if (!canRefund) {
+      // a manager approves this refund (this record, these lines and this amount); the form stays as it is
+      const id = createId()
+      const payload = refundApprovalPayload({ saleId: sale.id, quantities, reason, id })
+      setPendingRefund(null)
+      refundingRef.current = false
+      setApproval({
+        request: { entity: "refund", action: "create", payload, permission: "sales.refund" },
+        summary: t("approval.refund_summary", { amount: formatCurrency(payload.total), sale: sale.saleNumber }),
+        run: (grant) => recordRefund(sale, quantities, reason, id, grant.approverName),
+      })
+      return
+    }
+    recordRefund(sale, quantities, reason)
+  }
+  function recordRefund(sale: Sale, quantities: Record<string, number>, reason: string, id?: string, approvedBy?: string) {
     try {
-      const refund = processRefund({ saleId: sale.id, quantities, reason })
+      const refund = processRefund({ saleId: sale.id, quantities, reason, ...(id ? { id } : {}) })
       setRefunds(getRefunds())
       setRefundQuantities({})
       setRefundReason("")
-      setRefundStatus({ tone: "ok", text: t("pos.sales.refund_recorded", { refund: refund.refundNumber }) })
+      setRefundStatus({ tone: "ok", text: `${approvedBy ? `${t("approval.granted", { name: approvedBy })} ` : ""}${t("pos.sales.refund_recorded", { refund: refund.refundNumber })}` })
     } catch (error) {
       // Nothing was issued: the refund rolled back, so no money should change hands.
       setRefundStatus({ tone: "err", text: describeError(error) })
@@ -197,8 +218,20 @@ export default function SalesPage() {
     }
   }
   function executeVoid(saleId: string) {
-    try { voidSale(saleId); setRefundStatus({ tone: "ok", text: t("rcpt.voided") }) } catch (error) { setRefundStatus({ tone: "err", text: describeError(error) }) }
     setVoidSaleId(null)
+    const sale = sales.find((x) => x.id === saleId)
+    if (!canVoid && sale) {
+      setApproval({
+        request: { entity: "sale", action: "void", payload: voidApprovalPayload(sale), permission: "sales.void" },
+        summary: t("approval.void_summary", { sale: sale.saleNumber, amount: formatCurrency(sale.total) }),
+        run: (grant) => recordVoid(saleId, grant.approverName),
+      })
+      return
+    }
+    recordVoid(saleId)
+  }
+  function recordVoid(saleId: string, approvedBy?: string) {
+    try { voidSale(saleId); setRefundStatus({ tone: "ok", text: `${approvedBy ? `${t("approval.granted", { name: approvedBy })} ` : ""}${t("rcpt.voided")}` }) } catch (error) { setRefundStatus({ tone: "err", text: describeError(error) }) }
   }
 
   const rate = settings.usdToLbpRate
@@ -332,7 +365,7 @@ export default function SalesPage() {
       </div>
 
       {receipt && (
-        <ReceiptDrawer key={receipt.id} sale={receipt} refunds={refunds} rate={rate} canRefund={canRefund} canReprint={canReprint} canVoid={canVoid}
+        <ReceiptDrawer key={receipt.id} sale={receipt} refunds={refunds} rate={rate} canRefund={canRefund} canReprint={canReprint} canVoid={canVoid} askManager
           quantities={refundQuantities} reason={refundReason} status={refundStatus}
           onClose={() => openReceipt(null)} onPrint={() => handlePrint(receipt)}
           onQuantity={(key, v) => setRefundQuantities((x) => ({ ...x, [key]: v }))} onReason={setRefundReason}
@@ -347,6 +380,10 @@ export default function SalesPage() {
           {pendingRefund?.sale.paymentMethod === "Debt" ? t("rcpt.refund_effect_debt") : t("rcpt.refund_effect", { method: t(`rcpt.refund_method.${pendingRefund ? getRefundMethod(pendingRefund.sale) : "Cash"}`) })}
         </p>
       </ConfirmLayer>
+      <ManagerApprovalDialog open={!!approval} request={approval?.request ?? null}
+        summary={<p style={{ fontWeight: 600, color: "var(--text)" }}>{approval?.summary}</p>}
+        onApproved={(grant) => { const a = approval; setApproval(null); a?.run(grant) }}
+        onCancel={() => setApproval(null)} />
       <ConfirmLayer open={voidSaleId !== null} title={t("pos.sales.void_sale_title")} confirmLabel={t("pos.void")} confirmDestructive
         onConfirm={() => { if (voidSaleId) executeVoid(voidSaleId) }} onCancel={() => setVoidSaleId(null)}>
         {(() => { const s = sales.find((x) => x.id === voidSaleId); return <p>{t("rcpt.void_text", { number: s?.saleNumber ?? "", total: formatCurrency(s?.total ?? 0) })}</p> })()}
@@ -366,8 +403,10 @@ function GroupRows({ label, summary, children }: { label: string; summary: strin
 }
 
 /** One receipt: lines, totals (USD, LBP at the sale's own rate, cash rounding as recorded), tender, refunds, returns and void. */
-function ReceiptDrawer({ sale, refunds, rate, canRefund, canReprint, canVoid, quantities, reason, status, onClose, onPrint, onQuantity, onReason, onRefund, onVoid }: {
+function ReceiptDrawer({ sale, refunds, rate, canRefund, canReprint, canVoid, askManager, quantities, reason, status, onClose, onPrint, onQuantity, onReason, onRefund, onVoid }: {
   sale: Sale; refunds: SaleRefund[]; rate: number; canRefund: boolean; canReprint: boolean; canVoid: boolean
+  /** SPRINT-2 E: without the permission, the action is offered with a manager's approval. */
+  askManager?: boolean
   quantities: Record<string, string>; reason: string; status: { tone: "ok" | "err" | "info"; text: string } | null
   onClose: () => void; onPrint: () => void; onQuantity: (key: string, v: string) => void; onReason: (v: string) => void; onRefund: () => void; onVoid: () => void
 }) {
@@ -386,7 +425,7 @@ function ReceiptDrawer({ sale, refunds, rate, canRefund, canReprint, canVoid, qu
     return { ...i, quantity: qty, total: i.unitPrice * qty }
   }).filter((i) => i.quantity > 0)
   const draftTotal = Math.min(Math.max(0, sale.total - refunded), getRefundTotal(sale, draft))
-  const refundBlocked = !canRefund ? t("rcpt.needs_refund") : !refundable ? t(sale.status === "Voided" ? "pos.refund.error_sale_voided" : "pos.sales.no_refundable_balance") : ""
+  const refundBlocked = !canRefund && !askManager ? t("rcpt.needs_refund") : !refundable ? t(sale.status === "Voided" ? "pos.refund.error_sale_voided" : "pos.sales.no_refundable_balance") : ""
   return (
     <Drawer open wide title={t("rcpt.receipt_title", { number: sale.saleNumber })} onClose={onClose}
       subtitle={<span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>{date.full(sale.createdAt)}
@@ -396,10 +435,11 @@ function ReceiptDrawer({ sale, refunds, rate, canRefund, canReprint, canVoid, qu
       footer={<>
         {canReprint ? <button type="button" className="mg2-btn" onClick={onPrint} data-autofocus><Printer size={16} />{t("pos.print")}</button> : null}
         <button type="button" className="mg2-btn" disabled={!!refundBlocked} aria-describedby={refundBlocked ? "rc-refund-why" : undefined} aria-expanded={returning} onClick={() => setReturning((r) => !r)}><RotateCcw size={16} />{t("rcpt.return_items")}</button>
-        {sale.status !== "Voided" && (canVoid
-          ? <button type="button" className="mg2-btn mg2-btn-danger" onClick={onVoid}><XCircle size={16} />{t("pos.void")}</button>
+        {sale.status !== "Voided" && (canVoid || askManager
+          ? <button type="button" className="mg2-btn mg2-btn-danger" onClick={onVoid}>{canVoid ? <XCircle size={16} /> : <ShieldCheck size={16} aria-hidden="true" />}{t("pos.void")}{!canVoid && <span className="sr-only"> — {t("approval.needed")}</span>}</button>
           : <span className="mg2-cap" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}><Lock size={14} aria-hidden="true" />{t("rcpt.needs_void")}</span>)}
       </>}>
+      {!refundBlocked && (!canRefund || !canVoid) && askManager && <p className="mg2-cap" style={{ margin: 0, display: "flex", gap: 6, alignItems: "center" }}><ShieldCheck size={14} aria-hidden="true" />{t("approval.needed")}</p>}
       {refundBlocked && <p className="mg2-cap" id="rc-refund-why" style={{ margin: 0, display: "flex", gap: 6, alignItems: "center" }}>{!canRefund && <Lock size={14} aria-hidden="true" />}{refundBlocked}</p>}
       {status && (
         <div className={`mg2-banner ${status.tone === "ok" ? "mg2-t-ok" : status.tone === "err" ? "mg2-t-err" : "mg2-t-info"}`} role={status.tone === "err" ? "alert" : "status"}>

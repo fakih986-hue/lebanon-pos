@@ -12,6 +12,7 @@ import { decrementProductStock } from "../lib/inventory.js"
 import { applyPolicyChange, resolveLinePolicy, StockPolicyMismatchError } from "../lib/stockPolicy.js"
 import { settleCloseOfDate } from "../lib/dailyClose.js"
 import { verifyAttestation, type AttestationResult } from "../lib/hubAttestation.js"
+import { checkApproval, useApproval, type ApprovalSeen } from "../lib/approvals.js"
 import { createHash } from "node:crypto"
 import { localGateBlockers, recordSyncClient, RETIRED_CLIENT_MESSAGE, StockPolicyGateError, POLICY_GATE_WINDOW_DAYS, type GateBlocker } from "../lib/policyGate.js"
 import { LEGACY_REV } from "../lib/stockPolicy.js"
@@ -173,7 +174,8 @@ const syncOperationSchema = z.object({
   // `valued: "server"` (a hub's cloud link only): the hub applied this operation under server
   // valuation (docs/LEGACY-TILL-COMPAT.md); without it the cloud values the operation itself.
   // SPRINT-2 D: `fwd.att` (a hub's cloud link only) is the hub's signed attestation (lib/hubAttestation.ts).
-  ev: z.object({ v: z.number().int().optional(), offline: z.boolean().optional(), session: z.string().max(4096).optional(), relayed: z.record(z.unknown()).optional(), valued: z.literal("server").optional(), fwd: z.object({ att: z.string().max(16384).optional() }).optional() }).passthrough().optional(),
+  // SPRINT-2 E: `approval` is a manager approval id (lib/approvals.ts) for this record and its values.
+  ev: z.object({ v: z.number().int().optional(), offline: z.boolean().optional(), session: z.string().max(4096).optional(), relayed: z.record(z.unknown()).optional(), valued: z.literal("server").optional(), approval: z.string().max(64).optional(), fwd: z.object({ att: z.string().max(16384).optional() }).optional() }).passthrough().optional(),
 })
 
 const syncPushSchema = z.object({
@@ -336,7 +338,7 @@ async function checkoutIdentity(tenantId: string, device: { check: string; devic
  * or, for a manager's review of refused work, the reviewing manager). null = a store-level relay,
  * whose operations were authorized where they were made.
  */
-function makeOpAuthorizer(tenantId: string, actorPermissions: string[] | null, actorId: string) {
+function makeOpAuthorizer(tenantId: string, actorPermissions: string[] | null, actorId: string, approved: string[] = []) {
   const permsOf = new Map<string, string[] | null>()
   async function staffPermissions(userId: string) {
     if (!permsOf.has(userId)) {
@@ -352,6 +354,8 @@ function makeOpAuthorizer(tenantId: string, actorPermissions: string[] | null, a
   const priceOverrideViolation = (payload: unknown) => priceOverrideViolationFor(tenantId, payload)
 
   async function authorizeOp(op: { entity: string; action: string; payload?: unknown }): Promise<string | null> {
+    // a manager's valid approval for THIS operation grants its permission for this operation only
+    if (actorPermissions && approved.length) actorPermissions = [...new Set([...actorPermissions, ...approved])]
     if (actorPermissions) {
       const required = requiredPermissionForOp(op.entity, op.action, op.payload)
       const anyOf = required == null ? [] : Array.isArray(required) ? required : [required]
@@ -372,7 +376,7 @@ function makeOpAuthorizer(tenantId: string, actorPermissions: string[] | null, a
       if (rule.kind === "shift-close" && !shiftOpAllowed("close", perms, rule.userId, await shiftOpener(op.payload))) {
         return "Only the person who opened this shift or a manager can close it"
       }
-      if (rule.kind === "permission" && rule.permission && !perms.includes(rule.permission)) return `The recorded staff member lacks ${rule.permission}`
+      if (rule.kind === "permission" && rule.permission && !perms.includes(rule.permission) && !approved.includes(rule.permission)) return `The recorded staff member lacks ${rule.permission}`
     }
     return null
   }
@@ -616,6 +620,12 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         ? await verifyAttestation(tenantId, (op as any).ev?.fwd?.att, { id: op.id, entity: op.entity, action: op.action, digest: commandDigest(op.entity, op.action, op.payload) })
         : null
       const hubIdentity = storeMode === "enforce-checkout" && op.entity === "sale" && op.action === "create" && attested?.check === "valid" ? attestedIdentity(attested.srv) : null
+      // SPRINT-2 E: a manager's online approval, checked against the register that sent the operation. A
+      // hub's forwarded operation carries the approval as the hub checked it (inside its attestation).
+      const approvalSeen: ApprovalSeen | null = pushKind !== "bridge" ? await checkApproval(tenantId, (op as any).ev?.approval, op, deviceSeen?.deviceId ?? null) : null
+      const relayedApproval = pushKind === "bridge" && attested?.check === "valid" ? (attested.srv?.approval as ApprovalSeen | undefined) : undefined
+      const approved: string[] = approvalSeen?.check === "valid" && approvalSeen.permission ? [approvalSeen.permission]
+        : relayedApproval?.check === "valid" && typeof relayedApproval.permission === "string" ? [relayedApproval.permission] : []
       // SPRINT-2 enforcement (ordinary checkout, stores that enabled it): a register's sale needs this
       // store's enrolled device and a staff session; the actor is the session's person and the rules
       // run against THEIR permissions, not the connecting account's. Missing or invalid evidence is
@@ -639,10 +649,13 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
       // tampered client can't bypass in-app limits. Only fires for a real staff
       // actor (actorPermissions != null) and only for mapped ops; everything
       // else passes through unchanged.
-      const denial = hubOutside ? hubOutside
+      const ruled = hubOutside ? hubOutside
         : gate && "refuse" in gate ? gate.refuse
-        : enforcedActor ? await makeOpAuthorizer(tenantId, enforcedActor.permissions, enforcedActor.id)(op)
+        : enforcedActor ? await makeOpAuthorizer(tenantId, enforcedActor.permissions, enforcedActor.id, approved)(op)
+        : approved.length ? await makeOpAuthorizer(tenantId, actorPermissions, req.auth!.userId, approved)(op)
         : await authorizeOp(op)
+      // an approval that does not hold is said so; the operation is kept for a manager's review
+      const denial = ruled && approvalSeen && approvalSeen.check !== "valid" ? `APPROVAL_INVALID: the manager approval presented is ${approvalSeen.check}; ${ruled}` : ruled
       if (denial) {
         try {
           await prisma.auditEvent.create({
@@ -671,7 +684,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         } catch (keepErr) { console.error("Failed to keep refused operation:", keepErr) }
         // A refused price is a money decision a manager settles (never retried); other refusals
         // stay retryable (the permission may be granted later).
-        results.push({ id: op.id, status: /^(PRICE_OVERRIDE|IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW|HUB_UNSUPPORTED):/.test(denial) ? "rejected" : "error", error: denial })
+        results.push({ id: op.id, status: /^(PRICE_OVERRIDE|IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW|HUB_UNSUPPORTED|APPROVAL_INVALID):/.test(denial) ? "rejected" : "error", error: denial })
         continue
       }
 
@@ -685,10 +698,12 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
             deviceId: deviceId ?? null, transport: transportOf(req as any),
             acceptedBy: ["true", "1"].includes(process.env.IS_LOCAL_SERVER || "") ? "hub" : "cloud",
             envelope: (op as any).ev ?? null,
-            device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null, attestation: attested,
+            device: deviceSeen, session: sessionSeen, relayed: (op as any).ev?.relayed ?? null, attestation: attested, approval: approvalSeen,
             enforced: !!gate && "basis" in gate && gate.basis === "session",
           })] })
         }
+        // the approval is used by this operation only (a concurrent other operation presenting it fails here)
+        if (approvalSeen?.check === "valid" && !(await useApproval(tx as any, approvalSeen.id, op.id))) throw new Error("APPROVAL_INVALID: the manager approval was used by another operation")
         // Enforced: the sale is recorded as made by the session's person (the payload's cashier
         // fields were written by the register). The stored operation itself is not changed.
         if (enforcedActor) {
@@ -848,6 +863,7 @@ function reviewPermissionsFor(entity: string, action: string, payload: unknown, 
   if (reason?.startsWith("PRICE_OVERRIDE:")) return ["sales.price_override"]
   // A sale refused for missing identity: a manager decides (it may be applied under their authority).
   if (/^(IDENTITY_REQUIRED|OFFLINE_REVIEW|SESSION_REVIEW|HUB_UNSUPPORTED):/.test(reason ?? "")) return ["sales.void", "settings.manage"]
+  // a failed approval: whoever may do the action itself decides
   const required = requiredPermissionForOp(entity, action, payload)
   const anyOf = required == null ? [] : Array.isArray(required) ? required : [required]
   return anyOf.length > 0 ? anyOf.map(String) : ["settings.manage"]

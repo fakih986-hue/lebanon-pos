@@ -42,7 +42,7 @@ router.post("/enroll", requireCloudOrJwtAuth, async (req: AuthRequest, res: Serv
   if (!who.ok) {
     await audit(tenantId, "hub.key.refused", `A hub key enrollment was refused: ${who.code === "AMBIGUOUS_PIN" ? "the PIN belongs to more than one person" : "wrong PIN"}`, { kid })
     if (who.code === "AMBIGUOUS_PIN") { json(res, { error: "This PIN belongs to more than one staff member. Choose who is authorizing.", code: "AMBIGUOUS_PIN", candidates: who.candidates }, 409); return }
-    json(res, { error: "Invalid credentials", code: "INVALID_PIN" }, 401); return
+    json(res, { error: "Invalid credentials", code: who.code === "INACTIVE" ? "INACTIVE" : "INVALID_PIN" }, 401); return
   }
   if (!who.staff.permissions.includes("settings.manage")) {
     await audit(tenantId, "hub.key.refused", `${who.staff.name} may not enroll a hub key (settings.manage)`, { kid, staffId: who.staff.id })

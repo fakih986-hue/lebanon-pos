@@ -28,6 +28,7 @@ import reportsRoutes from "./routes/reports.js"
 import inventoryRoutes from "./routes/inventory.js"
 import deviceRoutes from "./routes/device.js"
 import hubKeyRoutes from "./routes/hubKeys.js"
+import approvalRoutes from "./routes/approvals.js"
 import { errorHandler } from "./middleware/errorHandler.js"
 import {
   getCorsOptions,
@@ -80,6 +81,8 @@ app.use("/api/reports", reportsRoutes)
 app.use("/api/inventory", inventoryRoutes)
 app.use("/api/hub-keys", rateLimit({ windowMs: 60_000, max: 10, bucket: "hub-keys" }))
 app.use("/api/hub-keys", hubKeyRoutes)
+app.use("/api/approvals", rateLimit({ windowMs: 60_000, max: 30, bucket: "approvals" }))
+app.use("/api/approvals", approvalRoutes)
 app.use("/api", deviceRoutes)
 
 app.get("/api/health", async (_req: IncomingMessage, res: ServerResponse) => {

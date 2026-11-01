@@ -707,7 +707,8 @@ exports.Prisma.OperationEvidenceScalarFieldEnum = {
   sessionCheck: 'sessionCheck',
   relayed: 'relayed',
   attestation: 'attestation',
-  attestationKid: 'attestationKid'
+  attestationKid: 'attestationKid',
+  approval: 'approval'
 };
 
 exports.Prisma.HubKeyScalarFieldEnum = {
@@ -721,6 +722,27 @@ exports.Prisma.HubKeyScalarFieldEnum = {
   revokedAt: 'revokedAt',
   revokedById: 'revokedById',
   revokeNote: 'revokeNote'
+};
+
+exports.Prisma.ManagerApprovalScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  deviceId: 'deviceId',
+  entity: 'entity',
+  action: 'action',
+  recordId: 'recordId',
+  materialDigest: 'materialDigest',
+  material: 'material',
+  permission: 'permission',
+  approverId: 'approverId',
+  approverName: 'approverName',
+  requestedById: 'requestedById',
+  sessionChecked: 'sessionChecked',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  usedByOpId: 'usedByOpId',
+  cancelledAt: 'cancelledAt'
 };
 
 exports.Prisma.StaffSessionScalarFieldEnum = {
@@ -863,6 +885,7 @@ exports.Prisma.ModelName = {
   SyncClient: 'SyncClient',
   OperationEvidence: 'OperationEvidence',
   HubKey: 'HubKey',
+  ManagerApproval: 'ManagerApproval',
   StaffSession: 'StaffSession'
 };
 

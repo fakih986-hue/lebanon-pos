@@ -1,5 +1,6 @@
 import { putMany } from "./db"
 import { captureEnvelope, deviceHeadersFor, setStoreIdentityMode, type SyncEnvelope } from "../lib/deviceCredentials"
+import { takeApprovalGrant } from "../lib/approvalGrants"
 import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import type { ConnectionMode } from "./settings.service"
@@ -905,6 +906,17 @@ type EnqueueSyncInput = Pick<SyncOperation, "entity" | "action" | "summary" | "p
 
 let autoFlushTimer: number | undefined
 
+/**
+ * The envelope a new operation is created under. SPRINT-2 E: an operation for a record a manager
+ * approved on this register carries that approval's id (attached once; the server checks it).
+ */
+function envelopeFor(entity: string, action: string, payload: unknown): SyncEnvelope | undefined {
+  const ev = captureEnvelope(getApiUrl())
+  const recordId = (payload as { id?: unknown } | undefined)?.id
+  const grant = takeApprovalGrant(entity, action, typeof recordId === "string" ? recordId : null)
+  return grant ? { ...(ev ?? { v: 1 as const }), approval: grant.approvalId } : ev
+}
+
 function dispatchSyncChanged() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(SYNC_EVENT))
 }
@@ -1114,7 +1126,7 @@ export function stageSyncOperation(input: EnqueueSyncInput): SyncOperation {
   const operation: SyncOperation = {
     id: input.id ?? createId(), entity: input.entity, action: input.action, summary: input.summary,
     payload: input.payload, status: "Pending", attempts: 0, createdAt: new Date().toISOString(), staged: true,
-    ev: captureEnvelope(getApiUrl()),
+    ev: envelopeFor(input.entity, input.action, input.payload),
   }
   if (!persistQueue([operation, ...queue])) throw new SyncStorageError(operation.id)
   return operation
@@ -1636,7 +1648,7 @@ export async function enqueueSyncOperation(input: EnqueueSyncInput) {
     status: "Pending",
     attempts: 0,
     createdAt: new Date().toISOString(),
-    ev: captureEnvelope(getApiUrl()),
+    ev: envelopeFor(input.entity, input.action, input.payload),
   }
   // Never report "queued", and never send, unless it is on disk.
   if (!persistQueue([operation, ...getSyncQueue()])) return undefined

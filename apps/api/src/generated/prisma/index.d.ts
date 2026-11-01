@@ -194,6 +194,14 @@ export type OperationEvidence = $Result.DefaultSelection<Prisma.$OperationEviden
  */
 export type HubKey = $Result.DefaultSelection<Prisma.$HubKeyPayload>
 /**
+ * Model ManagerApproval
+ * SPRINT-2 E: an online manager approval. The manager's PIN was checked by this server for ONE business
+ * record (entity, action, record id) with these material values, on this enrolled register, for this
+ * permission. Single use: the first operation that presents it within its lifetime uses it; only that
+ * same operation may present it again (an exact retry). Never stores the PIN.
+ */
+export type ManagerApproval = $Result.DefaultSelection<Prisma.$ManagerApprovalPayload>
+/**
  * Model StaffSession
  * SPRINT-2 C: a staff session — the server verified this staff member's PIN for this enrolled device
  * at authTime. It proves nothing about later presence. Ended when the device switches person,
@@ -809,6 +817,16 @@ export class PrismaClient<
   get hubKey(): Prisma.HubKeyDelegate<ExtArgs, ClientOptions>;
 
   /**
+   * `prisma.managerApproval`: Exposes CRUD operations for the **ManagerApproval** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ManagerApprovals
+    * const managerApprovals = await prisma.managerApproval.findMany()
+    * ```
+    */
+  get managerApproval(): Prisma.ManagerApprovalDelegate<ExtArgs, ClientOptions>;
+
+  /**
    * `prisma.staffSession`: Exposes CRUD operations for the **StaffSession** model.
     * Example usage:
     * ```ts
@@ -1293,6 +1311,7 @@ export namespace Prisma {
     SyncClient: 'SyncClient',
     OperationEvidence: 'OperationEvidence',
     HubKey: 'HubKey',
+    ManagerApproval: 'ManagerApproval',
     StaffSession: 'StaffSession'
   };
 
@@ -1312,7 +1331,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient" | "operationEvidence" | "hubKey" | "staffSession"
+      modelProps: "tenant" | "staffUser" | "appSettings" | "product" | "sale" | "saleItem" | "saleTender" | "saleRefund" | "refundItem" | "customer" | "debtSale" | "debtPayment" | "supplier" | "purchaseOrder" | "purchaseOrderItem" | "supplierPayment" | "shift" | "auditEvent" | "expense" | "inventoryBatch" | "stockAdjustment" | "stockCountSession" | "stockCountLine" | "deliveryOrder" | "deliveryOrderItem" | "dailyClose" | "cashMovement" | "syncOperation" | "device" | "pairingCode" | "rateLimitEntry" | "stockMovement" | "syncClient" | "operationEvidence" | "hubKey" | "managerApproval" | "staffSession"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -3906,6 +3925,80 @@ export namespace Prisma {
           }
         }
       }
+      ManagerApproval: {
+        payload: Prisma.$ManagerApprovalPayload<ExtArgs>
+        fields: Prisma.ManagerApprovalFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ManagerApprovalFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManagerApprovalPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ManagerApprovalFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManagerApprovalPayload>
+          }
+          findFirst: {
+            args: Prisma.ManagerApprovalFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManagerApprovalPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ManagerApprovalFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManagerApprovalPayload>
+          }
+          findMany: {
+            args: Prisma.ManagerApprovalFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManagerApprovalPayload>[]
+          }
+          create: {
+            args: Prisma.ManagerApprovalCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManagerApprovalPayload>
+          }
+          createMany: {
+            args: Prisma.ManagerApprovalCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ManagerApprovalCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManagerApprovalPayload>[]
+          }
+          delete: {
+            args: Prisma.ManagerApprovalDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManagerApprovalPayload>
+          }
+          update: {
+            args: Prisma.ManagerApprovalUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManagerApprovalPayload>
+          }
+          deleteMany: {
+            args: Prisma.ManagerApprovalDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ManagerApprovalUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.ManagerApprovalUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManagerApprovalPayload>[]
+          }
+          upsert: {
+            args: Prisma.ManagerApprovalUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ManagerApprovalPayload>
+          }
+          aggregate: {
+            args: Prisma.ManagerApprovalAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateManagerApproval>
+          }
+          groupBy: {
+            args: Prisma.ManagerApprovalGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ManagerApprovalGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ManagerApprovalCountArgs<ExtArgs>
+            result: $Utils.Optional<ManagerApprovalCountAggregateOutputType> | number
+          }
+        }
+      }
       StaffSession: {
         payload: Prisma.$StaffSessionPayload<ExtArgs>
         fields: Prisma.StaffSessionFieldRefs
@@ -4111,6 +4204,7 @@ export namespace Prisma {
     syncClient?: SyncClientOmit
     operationEvidence?: OperationEvidenceOmit
     hubKey?: HubKeyOmit
+    managerApproval?: ManagerApprovalOmit
     staffSession?: StaffSessionOmit
   }
 
@@ -46523,6 +46617,7 @@ export namespace Prisma {
     relayed: number
     attestation: number
     attestationKid: number
+    approval: number
     _all: number
   }
 
@@ -46616,6 +46711,7 @@ export namespace Prisma {
     relayed?: true
     attestation?: true
     attestationKid?: true
+    approval?: true
     _all?: true
   }
 
@@ -46732,6 +46828,7 @@ export namespace Prisma {
     relayed: JsonValue | null
     attestation: string | null
     attestationKid: string | null
+    approval: JsonValue | null
     _count: OperationEvidenceCountAggregateOutputType | null
     _avg: OperationEvidenceAvgAggregateOutputType | null
     _sum: OperationEvidenceSumAggregateOutputType | null
@@ -46780,6 +46877,7 @@ export namespace Prisma {
     relayed?: boolean
     attestation?: boolean
     attestationKid?: boolean
+    approval?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -46809,6 +46907,7 @@ export namespace Prisma {
     relayed?: boolean
     attestation?: boolean
     attestationKid?: boolean
+    approval?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
@@ -46838,6 +46937,7 @@ export namespace Prisma {
     relayed?: boolean
     attestation?: boolean
     attestationKid?: boolean
+    approval?: boolean
   }, ExtArgs["result"]["operationEvidence"]>
 
   export type OperationEvidenceSelectScalar = {
@@ -46867,9 +46967,10 @@ export namespace Prisma {
     relayed?: boolean
     attestation?: boolean
     attestationKid?: boolean
+    approval?: boolean
   }
 
-  export type OperationEvidenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"opId" | "tenantId" | "entity" | "action" | "receivedAt" | "acceptedBy" | "transport" | "credentialKind" | "connectionAccountId" | "deviceIdClaimed" | "actorIdClaimed" | "actorNameClaimed" | "actorMatchesAccount" | "evidence" | "limitations" | "claimedAt" | "envelopeVersion" | "enrolledDeviceId" | "deviceCheck" | "sessionId" | "sessionStaffId" | "sessionAuthTime" | "sessionCheck" | "relayed" | "attestation" | "attestationKid", ExtArgs["result"]["operationEvidence"]>
+  export type OperationEvidenceOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"opId" | "tenantId" | "entity" | "action" | "receivedAt" | "acceptedBy" | "transport" | "credentialKind" | "connectionAccountId" | "deviceIdClaimed" | "actorIdClaimed" | "actorNameClaimed" | "actorMatchesAccount" | "evidence" | "limitations" | "claimedAt" | "envelopeVersion" | "enrolledDeviceId" | "deviceCheck" | "sessionId" | "sessionStaffId" | "sessionAuthTime" | "sessionCheck" | "relayed" | "attestation" | "attestationKid" | "approval", ExtArgs["result"]["operationEvidence"]>
 
   export type $OperationEvidencePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "OperationEvidence"
@@ -46911,6 +47012,12 @@ export namespace Prisma {
        */
       attestation: string | null
       attestationKid: string | null
+      /**
+       * SPRINT-2 E: a manager approval presented with the operation, as checked by the server that
+       * received it from the register: { id, check, approverId, approverName, permission }. The actor stays
+       * the person who did it; the approver is recorded separately.
+       */
+      approval: Prisma.JsonValue | null
     }, ExtArgs["result"]["operationEvidence"]>
     composites: {}
   }
@@ -47360,6 +47467,7 @@ export namespace Prisma {
     readonly relayed: FieldRef<"OperationEvidence", 'Json'>
     readonly attestation: FieldRef<"OperationEvidence", 'String'>
     readonly attestationKid: FieldRef<"OperationEvidence", 'String'>
+    readonly approval: FieldRef<"OperationEvidence", 'Json'>
   }
     
 
@@ -48783,6 +48891,1166 @@ export namespace Prisma {
      * Omit specific fields from the HubKey
      */
     omit?: HubKeyOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ManagerApproval
+   */
+
+  export type AggregateManagerApproval = {
+    _count: ManagerApprovalCountAggregateOutputType | null
+    _min: ManagerApprovalMinAggregateOutputType | null
+    _max: ManagerApprovalMaxAggregateOutputType | null
+  }
+
+  export type ManagerApprovalMinAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    deviceId: string | null
+    entity: string | null
+    action: string | null
+    recordId: string | null
+    materialDigest: string | null
+    permission: string | null
+    approverId: string | null
+    approverName: string | null
+    requestedById: string | null
+    sessionChecked: boolean | null
+    createdAt: Date | null
+    expiresAt: Date | null
+    usedAt: Date | null
+    usedByOpId: string | null
+    cancelledAt: Date | null
+  }
+
+  export type ManagerApprovalMaxAggregateOutputType = {
+    id: string | null
+    tenantId: string | null
+    deviceId: string | null
+    entity: string | null
+    action: string | null
+    recordId: string | null
+    materialDigest: string | null
+    permission: string | null
+    approverId: string | null
+    approverName: string | null
+    requestedById: string | null
+    sessionChecked: boolean | null
+    createdAt: Date | null
+    expiresAt: Date | null
+    usedAt: Date | null
+    usedByOpId: string | null
+    cancelledAt: Date | null
+  }
+
+  export type ManagerApprovalCountAggregateOutputType = {
+    id: number
+    tenantId: number
+    deviceId: number
+    entity: number
+    action: number
+    recordId: number
+    materialDigest: number
+    material: number
+    permission: number
+    approverId: number
+    approverName: number
+    requestedById: number
+    sessionChecked: number
+    createdAt: number
+    expiresAt: number
+    usedAt: number
+    usedByOpId: number
+    cancelledAt: number
+    _all: number
+  }
+
+
+  export type ManagerApprovalMinAggregateInputType = {
+    id?: true
+    tenantId?: true
+    deviceId?: true
+    entity?: true
+    action?: true
+    recordId?: true
+    materialDigest?: true
+    permission?: true
+    approverId?: true
+    approverName?: true
+    requestedById?: true
+    sessionChecked?: true
+    createdAt?: true
+    expiresAt?: true
+    usedAt?: true
+    usedByOpId?: true
+    cancelledAt?: true
+  }
+
+  export type ManagerApprovalMaxAggregateInputType = {
+    id?: true
+    tenantId?: true
+    deviceId?: true
+    entity?: true
+    action?: true
+    recordId?: true
+    materialDigest?: true
+    permission?: true
+    approverId?: true
+    approverName?: true
+    requestedById?: true
+    sessionChecked?: true
+    createdAt?: true
+    expiresAt?: true
+    usedAt?: true
+    usedByOpId?: true
+    cancelledAt?: true
+  }
+
+  export type ManagerApprovalCountAggregateInputType = {
+    id?: true
+    tenantId?: true
+    deviceId?: true
+    entity?: true
+    action?: true
+    recordId?: true
+    materialDigest?: true
+    material?: true
+    permission?: true
+    approverId?: true
+    approverName?: true
+    requestedById?: true
+    sessionChecked?: true
+    createdAt?: true
+    expiresAt?: true
+    usedAt?: true
+    usedByOpId?: true
+    cancelledAt?: true
+    _all?: true
+  }
+
+  export type ManagerApprovalAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ManagerApproval to aggregate.
+     */
+    where?: ManagerApprovalWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ManagerApprovals to fetch.
+     */
+    orderBy?: ManagerApprovalOrderByWithRelationInput | ManagerApprovalOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ManagerApprovalWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ManagerApprovals from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ManagerApprovals.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ManagerApprovals
+    **/
+    _count?: true | ManagerApprovalCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ManagerApprovalMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ManagerApprovalMaxAggregateInputType
+  }
+
+  export type GetManagerApprovalAggregateType<T extends ManagerApprovalAggregateArgs> = {
+        [P in keyof T & keyof AggregateManagerApproval]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateManagerApproval[P]>
+      : GetScalarType<T[P], AggregateManagerApproval[P]>
+  }
+
+
+
+
+  export type ManagerApprovalGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ManagerApprovalWhereInput
+    orderBy?: ManagerApprovalOrderByWithAggregationInput | ManagerApprovalOrderByWithAggregationInput[]
+    by: ManagerApprovalScalarFieldEnum[] | ManagerApprovalScalarFieldEnum
+    having?: ManagerApprovalScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ManagerApprovalCountAggregateInputType | true
+    _min?: ManagerApprovalMinAggregateInputType
+    _max?: ManagerApprovalMaxAggregateInputType
+  }
+
+  export type ManagerApprovalGroupByOutputType = {
+    id: string
+    tenantId: string
+    deviceId: string
+    entity: string
+    action: string
+    recordId: string
+    materialDigest: string
+    material: JsonValue
+    permission: string
+    approverId: string
+    approverName: string
+    requestedById: string | null
+    sessionChecked: boolean
+    createdAt: Date
+    expiresAt: Date
+    usedAt: Date | null
+    usedByOpId: string | null
+    cancelledAt: Date | null
+    _count: ManagerApprovalCountAggregateOutputType | null
+    _min: ManagerApprovalMinAggregateOutputType | null
+    _max: ManagerApprovalMaxAggregateOutputType | null
+  }
+
+  type GetManagerApprovalGroupByPayload<T extends ManagerApprovalGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ManagerApprovalGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ManagerApprovalGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ManagerApprovalGroupByOutputType[P]>
+            : GetScalarType<T[P], ManagerApprovalGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ManagerApprovalSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    entity?: boolean
+    action?: boolean
+    recordId?: boolean
+    materialDigest?: boolean
+    material?: boolean
+    permission?: boolean
+    approverId?: boolean
+    approverName?: boolean
+    requestedById?: boolean
+    sessionChecked?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    usedByOpId?: boolean
+    cancelledAt?: boolean
+  }, ExtArgs["result"]["managerApproval"]>
+
+  export type ManagerApprovalSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    entity?: boolean
+    action?: boolean
+    recordId?: boolean
+    materialDigest?: boolean
+    material?: boolean
+    permission?: boolean
+    approverId?: boolean
+    approverName?: boolean
+    requestedById?: boolean
+    sessionChecked?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    usedByOpId?: boolean
+    cancelledAt?: boolean
+  }, ExtArgs["result"]["managerApproval"]>
+
+  export type ManagerApprovalSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    entity?: boolean
+    action?: boolean
+    recordId?: boolean
+    materialDigest?: boolean
+    material?: boolean
+    permission?: boolean
+    approverId?: boolean
+    approverName?: boolean
+    requestedById?: boolean
+    sessionChecked?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    usedByOpId?: boolean
+    cancelledAt?: boolean
+  }, ExtArgs["result"]["managerApproval"]>
+
+  export type ManagerApprovalSelectScalar = {
+    id?: boolean
+    tenantId?: boolean
+    deviceId?: boolean
+    entity?: boolean
+    action?: boolean
+    recordId?: boolean
+    materialDigest?: boolean
+    material?: boolean
+    permission?: boolean
+    approverId?: boolean
+    approverName?: boolean
+    requestedById?: boolean
+    sessionChecked?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    usedByOpId?: boolean
+    cancelledAt?: boolean
+  }
+
+  export type ManagerApprovalOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tenantId" | "deviceId" | "entity" | "action" | "recordId" | "materialDigest" | "material" | "permission" | "approverId" | "approverName" | "requestedById" | "sessionChecked" | "createdAt" | "expiresAt" | "usedAt" | "usedByOpId" | "cancelledAt", ExtArgs["result"]["managerApproval"]>
+
+  export type $ManagerApprovalPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ManagerApproval"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      tenantId: string
+      deviceId: string
+      entity: string
+      action: string
+      recordId: string
+      materialDigest: string
+      material: Prisma.JsonValue
+      permission: string
+      approverId: string
+      approverName: string
+      requestedById: string | null
+      sessionChecked: boolean
+      createdAt: Date
+      expiresAt: Date
+      usedAt: Date | null
+      usedByOpId: string | null
+      cancelledAt: Date | null
+    }, ExtArgs["result"]["managerApproval"]>
+    composites: {}
+  }
+
+  type ManagerApprovalGetPayload<S extends boolean | null | undefined | ManagerApprovalDefaultArgs> = $Result.GetResult<Prisma.$ManagerApprovalPayload, S>
+
+  type ManagerApprovalCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ManagerApprovalFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ManagerApprovalCountAggregateInputType | true
+    }
+
+  export interface ManagerApprovalDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ManagerApproval'], meta: { name: 'ManagerApproval' } }
+    /**
+     * Find zero or one ManagerApproval that matches the filter.
+     * @param {ManagerApprovalFindUniqueArgs} args - Arguments to find a ManagerApproval
+     * @example
+     * // Get one ManagerApproval
+     * const managerApproval = await prisma.managerApproval.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ManagerApprovalFindUniqueArgs>(args: SelectSubset<T, ManagerApprovalFindUniqueArgs<ExtArgs>>): Prisma__ManagerApprovalClient<$Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ManagerApproval that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ManagerApprovalFindUniqueOrThrowArgs} args - Arguments to find a ManagerApproval
+     * @example
+     * // Get one ManagerApproval
+     * const managerApproval = await prisma.managerApproval.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ManagerApprovalFindUniqueOrThrowArgs>(args: SelectSubset<T, ManagerApprovalFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ManagerApprovalClient<$Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ManagerApproval that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManagerApprovalFindFirstArgs} args - Arguments to find a ManagerApproval
+     * @example
+     * // Get one ManagerApproval
+     * const managerApproval = await prisma.managerApproval.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ManagerApprovalFindFirstArgs>(args?: SelectSubset<T, ManagerApprovalFindFirstArgs<ExtArgs>>): Prisma__ManagerApprovalClient<$Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ManagerApproval that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManagerApprovalFindFirstOrThrowArgs} args - Arguments to find a ManagerApproval
+     * @example
+     * // Get one ManagerApproval
+     * const managerApproval = await prisma.managerApproval.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ManagerApprovalFindFirstOrThrowArgs>(args?: SelectSubset<T, ManagerApprovalFindFirstOrThrowArgs<ExtArgs>>): Prisma__ManagerApprovalClient<$Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ManagerApprovals that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManagerApprovalFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ManagerApprovals
+     * const managerApprovals = await prisma.managerApproval.findMany()
+     * 
+     * // Get first 10 ManagerApprovals
+     * const managerApprovals = await prisma.managerApproval.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const managerApprovalWithIdOnly = await prisma.managerApproval.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ManagerApprovalFindManyArgs>(args?: SelectSubset<T, ManagerApprovalFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ManagerApproval.
+     * @param {ManagerApprovalCreateArgs} args - Arguments to create a ManagerApproval.
+     * @example
+     * // Create one ManagerApproval
+     * const ManagerApproval = await prisma.managerApproval.create({
+     *   data: {
+     *     // ... data to create a ManagerApproval
+     *   }
+     * })
+     * 
+     */
+    create<T extends ManagerApprovalCreateArgs>(args: SelectSubset<T, ManagerApprovalCreateArgs<ExtArgs>>): Prisma__ManagerApprovalClient<$Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ManagerApprovals.
+     * @param {ManagerApprovalCreateManyArgs} args - Arguments to create many ManagerApprovals.
+     * @example
+     * // Create many ManagerApprovals
+     * const managerApproval = await prisma.managerApproval.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ManagerApprovalCreateManyArgs>(args?: SelectSubset<T, ManagerApprovalCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ManagerApprovals and returns the data saved in the database.
+     * @param {ManagerApprovalCreateManyAndReturnArgs} args - Arguments to create many ManagerApprovals.
+     * @example
+     * // Create many ManagerApprovals
+     * const managerApproval = await prisma.managerApproval.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ManagerApprovals and only return the `id`
+     * const managerApprovalWithIdOnly = await prisma.managerApproval.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ManagerApprovalCreateManyAndReturnArgs>(args?: SelectSubset<T, ManagerApprovalCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a ManagerApproval.
+     * @param {ManagerApprovalDeleteArgs} args - Arguments to delete one ManagerApproval.
+     * @example
+     * // Delete one ManagerApproval
+     * const ManagerApproval = await prisma.managerApproval.delete({
+     *   where: {
+     *     // ... filter to delete one ManagerApproval
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ManagerApprovalDeleteArgs>(args: SelectSubset<T, ManagerApprovalDeleteArgs<ExtArgs>>): Prisma__ManagerApprovalClient<$Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ManagerApproval.
+     * @param {ManagerApprovalUpdateArgs} args - Arguments to update one ManagerApproval.
+     * @example
+     * // Update one ManagerApproval
+     * const managerApproval = await prisma.managerApproval.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ManagerApprovalUpdateArgs>(args: SelectSubset<T, ManagerApprovalUpdateArgs<ExtArgs>>): Prisma__ManagerApprovalClient<$Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ManagerApprovals.
+     * @param {ManagerApprovalDeleteManyArgs} args - Arguments to filter ManagerApprovals to delete.
+     * @example
+     * // Delete a few ManagerApprovals
+     * const { count } = await prisma.managerApproval.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ManagerApprovalDeleteManyArgs>(args?: SelectSubset<T, ManagerApprovalDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ManagerApprovals.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManagerApprovalUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ManagerApprovals
+     * const managerApproval = await prisma.managerApproval.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ManagerApprovalUpdateManyArgs>(args: SelectSubset<T, ManagerApprovalUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ManagerApprovals and returns the data updated in the database.
+     * @param {ManagerApprovalUpdateManyAndReturnArgs} args - Arguments to update many ManagerApprovals.
+     * @example
+     * // Update many ManagerApprovals
+     * const managerApproval = await prisma.managerApproval.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more ManagerApprovals and only return the `id`
+     * const managerApprovalWithIdOnly = await prisma.managerApproval.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends ManagerApprovalUpdateManyAndReturnArgs>(args: SelectSubset<T, ManagerApprovalUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one ManagerApproval.
+     * @param {ManagerApprovalUpsertArgs} args - Arguments to update or create a ManagerApproval.
+     * @example
+     * // Update or create a ManagerApproval
+     * const managerApproval = await prisma.managerApproval.upsert({
+     *   create: {
+     *     // ... data to create a ManagerApproval
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ManagerApproval we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ManagerApprovalUpsertArgs>(args: SelectSubset<T, ManagerApprovalUpsertArgs<ExtArgs>>): Prisma__ManagerApprovalClient<$Result.GetResult<Prisma.$ManagerApprovalPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ManagerApprovals.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManagerApprovalCountArgs} args - Arguments to filter ManagerApprovals to count.
+     * @example
+     * // Count the number of ManagerApprovals
+     * const count = await prisma.managerApproval.count({
+     *   where: {
+     *     // ... the filter for the ManagerApprovals we want to count
+     *   }
+     * })
+    **/
+    count<T extends ManagerApprovalCountArgs>(
+      args?: Subset<T, ManagerApprovalCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ManagerApprovalCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ManagerApproval.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManagerApprovalAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ManagerApprovalAggregateArgs>(args: Subset<T, ManagerApprovalAggregateArgs>): Prisma.PrismaPromise<GetManagerApprovalAggregateType<T>>
+
+    /**
+     * Group by ManagerApproval.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ManagerApprovalGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ManagerApprovalGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ManagerApprovalGroupByArgs['orderBy'] }
+        : { orderBy?: ManagerApprovalGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ManagerApprovalGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetManagerApprovalGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ManagerApproval model
+   */
+  readonly fields: ManagerApprovalFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ManagerApproval.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ManagerApprovalClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ManagerApproval model
+   */
+  interface ManagerApprovalFieldRefs {
+    readonly id: FieldRef<"ManagerApproval", 'String'>
+    readonly tenantId: FieldRef<"ManagerApproval", 'String'>
+    readonly deviceId: FieldRef<"ManagerApproval", 'String'>
+    readonly entity: FieldRef<"ManagerApproval", 'String'>
+    readonly action: FieldRef<"ManagerApproval", 'String'>
+    readonly recordId: FieldRef<"ManagerApproval", 'String'>
+    readonly materialDigest: FieldRef<"ManagerApproval", 'String'>
+    readonly material: FieldRef<"ManagerApproval", 'Json'>
+    readonly permission: FieldRef<"ManagerApproval", 'String'>
+    readonly approverId: FieldRef<"ManagerApproval", 'String'>
+    readonly approverName: FieldRef<"ManagerApproval", 'String'>
+    readonly requestedById: FieldRef<"ManagerApproval", 'String'>
+    readonly sessionChecked: FieldRef<"ManagerApproval", 'Boolean'>
+    readonly createdAt: FieldRef<"ManagerApproval", 'DateTime'>
+    readonly expiresAt: FieldRef<"ManagerApproval", 'DateTime'>
+    readonly usedAt: FieldRef<"ManagerApproval", 'DateTime'>
+    readonly usedByOpId: FieldRef<"ManagerApproval", 'String'>
+    readonly cancelledAt: FieldRef<"ManagerApproval", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ManagerApproval findUnique
+   */
+  export type ManagerApprovalFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
+    /**
+     * Filter, which ManagerApproval to fetch.
+     */
+    where: ManagerApprovalWhereUniqueInput
+  }
+
+  /**
+   * ManagerApproval findUniqueOrThrow
+   */
+  export type ManagerApprovalFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
+    /**
+     * Filter, which ManagerApproval to fetch.
+     */
+    where: ManagerApprovalWhereUniqueInput
+  }
+
+  /**
+   * ManagerApproval findFirst
+   */
+  export type ManagerApprovalFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
+    /**
+     * Filter, which ManagerApproval to fetch.
+     */
+    where?: ManagerApprovalWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ManagerApprovals to fetch.
+     */
+    orderBy?: ManagerApprovalOrderByWithRelationInput | ManagerApprovalOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ManagerApprovals.
+     */
+    cursor?: ManagerApprovalWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ManagerApprovals from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ManagerApprovals.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ManagerApprovals.
+     */
+    distinct?: ManagerApprovalScalarFieldEnum | ManagerApprovalScalarFieldEnum[]
+  }
+
+  /**
+   * ManagerApproval findFirstOrThrow
+   */
+  export type ManagerApprovalFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
+    /**
+     * Filter, which ManagerApproval to fetch.
+     */
+    where?: ManagerApprovalWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ManagerApprovals to fetch.
+     */
+    orderBy?: ManagerApprovalOrderByWithRelationInput | ManagerApprovalOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ManagerApprovals.
+     */
+    cursor?: ManagerApprovalWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ManagerApprovals from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ManagerApprovals.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ManagerApprovals.
+     */
+    distinct?: ManagerApprovalScalarFieldEnum | ManagerApprovalScalarFieldEnum[]
+  }
+
+  /**
+   * ManagerApproval findMany
+   */
+  export type ManagerApprovalFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
+    /**
+     * Filter, which ManagerApprovals to fetch.
+     */
+    where?: ManagerApprovalWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ManagerApprovals to fetch.
+     */
+    orderBy?: ManagerApprovalOrderByWithRelationInput | ManagerApprovalOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ManagerApprovals.
+     */
+    cursor?: ManagerApprovalWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ManagerApprovals from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ManagerApprovals.
+     */
+    skip?: number
+    distinct?: ManagerApprovalScalarFieldEnum | ManagerApprovalScalarFieldEnum[]
+  }
+
+  /**
+   * ManagerApproval create
+   */
+  export type ManagerApprovalCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
+    /**
+     * The data needed to create a ManagerApproval.
+     */
+    data: XOR<ManagerApprovalCreateInput, ManagerApprovalUncheckedCreateInput>
+  }
+
+  /**
+   * ManagerApproval createMany
+   */
+  export type ManagerApprovalCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ManagerApprovals.
+     */
+    data: ManagerApprovalCreateManyInput | ManagerApprovalCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ManagerApproval createManyAndReturn
+   */
+  export type ManagerApprovalCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
+    /**
+     * The data used to create many ManagerApprovals.
+     */
+    data: ManagerApprovalCreateManyInput | ManagerApprovalCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ManagerApproval update
+   */
+  export type ManagerApprovalUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
+    /**
+     * The data needed to update a ManagerApproval.
+     */
+    data: XOR<ManagerApprovalUpdateInput, ManagerApprovalUncheckedUpdateInput>
+    /**
+     * Choose, which ManagerApproval to update.
+     */
+    where: ManagerApprovalWhereUniqueInput
+  }
+
+  /**
+   * ManagerApproval updateMany
+   */
+  export type ManagerApprovalUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ManagerApprovals.
+     */
+    data: XOR<ManagerApprovalUpdateManyMutationInput, ManagerApprovalUncheckedUpdateManyInput>
+    /**
+     * Filter which ManagerApprovals to update
+     */
+    where?: ManagerApprovalWhereInput
+    /**
+     * Limit how many ManagerApprovals to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ManagerApproval updateManyAndReturn
+   */
+  export type ManagerApprovalUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
+    /**
+     * The data used to update ManagerApprovals.
+     */
+    data: XOR<ManagerApprovalUpdateManyMutationInput, ManagerApprovalUncheckedUpdateManyInput>
+    /**
+     * Filter which ManagerApprovals to update
+     */
+    where?: ManagerApprovalWhereInput
+    /**
+     * Limit how many ManagerApprovals to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ManagerApproval upsert
+   */
+  export type ManagerApprovalUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
+    /**
+     * The filter to search for the ManagerApproval to update in case it exists.
+     */
+    where: ManagerApprovalWhereUniqueInput
+    /**
+     * In case the ManagerApproval found by the `where` argument doesn't exist, create a new ManagerApproval with this data.
+     */
+    create: XOR<ManagerApprovalCreateInput, ManagerApprovalUncheckedCreateInput>
+    /**
+     * In case the ManagerApproval was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ManagerApprovalUpdateInput, ManagerApprovalUncheckedUpdateInput>
+  }
+
+  /**
+   * ManagerApproval delete
+   */
+  export type ManagerApprovalDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
+    /**
+     * Filter which ManagerApproval to delete.
+     */
+    where: ManagerApprovalWhereUniqueInput
+  }
+
+  /**
+   * ManagerApproval deleteMany
+   */
+  export type ManagerApprovalDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ManagerApprovals to delete
+     */
+    where?: ManagerApprovalWhereInput
+    /**
+     * Limit how many ManagerApprovals to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ManagerApproval without action
+   */
+  export type ManagerApprovalDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ManagerApproval
+     */
+    select?: ManagerApprovalSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ManagerApproval
+     */
+    omit?: ManagerApprovalOmit<ExtArgs> | null
   }
 
 
@@ -50519,7 +51787,8 @@ export namespace Prisma {
     sessionCheck: 'sessionCheck',
     relayed: 'relayed',
     attestation: 'attestation',
-    attestationKid: 'attestationKid'
+    attestationKid: 'attestationKid',
+    approval: 'approval'
   };
 
   export type OperationEvidenceScalarFieldEnum = (typeof OperationEvidenceScalarFieldEnum)[keyof typeof OperationEvidenceScalarFieldEnum]
@@ -50539,6 +51808,30 @@ export namespace Prisma {
   };
 
   export type HubKeyScalarFieldEnum = (typeof HubKeyScalarFieldEnum)[keyof typeof HubKeyScalarFieldEnum]
+
+
+  export const ManagerApprovalScalarFieldEnum: {
+    id: 'id',
+    tenantId: 'tenantId',
+    deviceId: 'deviceId',
+    entity: 'entity',
+    action: 'action',
+    recordId: 'recordId',
+    materialDigest: 'materialDigest',
+    material: 'material',
+    permission: 'permission',
+    approverId: 'approverId',
+    approverName: 'approverName',
+    requestedById: 'requestedById',
+    sessionChecked: 'sessionChecked',
+    createdAt: 'createdAt',
+    expiresAt: 'expiresAt',
+    usedAt: 'usedAt',
+    usedByOpId: 'usedByOpId',
+    cancelledAt: 'cancelledAt'
+  };
+
+  export type ManagerApprovalScalarFieldEnum = (typeof ManagerApprovalScalarFieldEnum)[keyof typeof ManagerApprovalScalarFieldEnum]
 
 
   export const StaffSessionScalarFieldEnum: {
@@ -54421,6 +55714,7 @@ export namespace Prisma {
     relayed?: JsonNullableFilter<"OperationEvidence">
     attestation?: StringNullableFilter<"OperationEvidence"> | string | null
     attestationKid?: StringNullableFilter<"OperationEvidence"> | string | null
+    approval?: JsonNullableFilter<"OperationEvidence">
   }
 
   export type OperationEvidenceOrderByWithRelationInput = {
@@ -54450,6 +55744,7 @@ export namespace Prisma {
     relayed?: SortOrderInput | SortOrder
     attestation?: SortOrderInput | SortOrder
     attestationKid?: SortOrderInput | SortOrder
+    approval?: SortOrderInput | SortOrder
   }
 
   export type OperationEvidenceWhereUniqueInput = Prisma.AtLeast<{
@@ -54482,6 +55777,7 @@ export namespace Prisma {
     relayed?: JsonNullableFilter<"OperationEvidence">
     attestation?: StringNullableFilter<"OperationEvidence"> | string | null
     attestationKid?: StringNullableFilter<"OperationEvidence"> | string | null
+    approval?: JsonNullableFilter<"OperationEvidence">
   }, "opId">
 
   export type OperationEvidenceOrderByWithAggregationInput = {
@@ -54511,6 +55807,7 @@ export namespace Prisma {
     relayed?: SortOrderInput | SortOrder
     attestation?: SortOrderInput | SortOrder
     attestationKid?: SortOrderInput | SortOrder
+    approval?: SortOrderInput | SortOrder
     _count?: OperationEvidenceCountOrderByAggregateInput
     _avg?: OperationEvidenceAvgOrderByAggregateInput
     _max?: OperationEvidenceMaxOrderByAggregateInput
@@ -54548,6 +55845,7 @@ export namespace Prisma {
     relayed?: JsonNullableWithAggregatesFilter<"OperationEvidence">
     attestation?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
     attestationKid?: StringNullableWithAggregatesFilter<"OperationEvidence"> | string | null
+    approval?: JsonNullableWithAggregatesFilter<"OperationEvidence">
   }
 
   export type HubKeyWhereInput = {
@@ -54625,6 +55923,123 @@ export namespace Prisma {
     revokedAt?: DateTimeNullableWithAggregatesFilter<"HubKey"> | Date | string | null
     revokedById?: StringNullableWithAggregatesFilter<"HubKey"> | string | null
     revokeNote?: StringNullableWithAggregatesFilter<"HubKey"> | string | null
+  }
+
+  export type ManagerApprovalWhereInput = {
+    AND?: ManagerApprovalWhereInput | ManagerApprovalWhereInput[]
+    OR?: ManagerApprovalWhereInput[]
+    NOT?: ManagerApprovalWhereInput | ManagerApprovalWhereInput[]
+    id?: StringFilter<"ManagerApproval"> | string
+    tenantId?: StringFilter<"ManagerApproval"> | string
+    deviceId?: StringFilter<"ManagerApproval"> | string
+    entity?: StringFilter<"ManagerApproval"> | string
+    action?: StringFilter<"ManagerApproval"> | string
+    recordId?: StringFilter<"ManagerApproval"> | string
+    materialDigest?: StringFilter<"ManagerApproval"> | string
+    material?: JsonFilter<"ManagerApproval">
+    permission?: StringFilter<"ManagerApproval"> | string
+    approverId?: StringFilter<"ManagerApproval"> | string
+    approverName?: StringFilter<"ManagerApproval"> | string
+    requestedById?: StringNullableFilter<"ManagerApproval"> | string | null
+    sessionChecked?: BoolFilter<"ManagerApproval"> | boolean
+    createdAt?: DateTimeFilter<"ManagerApproval"> | Date | string
+    expiresAt?: DateTimeFilter<"ManagerApproval"> | Date | string
+    usedAt?: DateTimeNullableFilter<"ManagerApproval"> | Date | string | null
+    usedByOpId?: StringNullableFilter<"ManagerApproval"> | string | null
+    cancelledAt?: DateTimeNullableFilter<"ManagerApproval"> | Date | string | null
+  }
+
+  export type ManagerApprovalOrderByWithRelationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    recordId?: SortOrder
+    materialDigest?: SortOrder
+    material?: SortOrder
+    permission?: SortOrder
+    approverId?: SortOrder
+    approverName?: SortOrder
+    requestedById?: SortOrderInput | SortOrder
+    sessionChecked?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrderInput | SortOrder
+    usedByOpId?: SortOrderInput | SortOrder
+    cancelledAt?: SortOrderInput | SortOrder
+  }
+
+  export type ManagerApprovalWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: ManagerApprovalWhereInput | ManagerApprovalWhereInput[]
+    OR?: ManagerApprovalWhereInput[]
+    NOT?: ManagerApprovalWhereInput | ManagerApprovalWhereInput[]
+    tenantId?: StringFilter<"ManagerApproval"> | string
+    deviceId?: StringFilter<"ManagerApproval"> | string
+    entity?: StringFilter<"ManagerApproval"> | string
+    action?: StringFilter<"ManagerApproval"> | string
+    recordId?: StringFilter<"ManagerApproval"> | string
+    materialDigest?: StringFilter<"ManagerApproval"> | string
+    material?: JsonFilter<"ManagerApproval">
+    permission?: StringFilter<"ManagerApproval"> | string
+    approverId?: StringFilter<"ManagerApproval"> | string
+    approverName?: StringFilter<"ManagerApproval"> | string
+    requestedById?: StringNullableFilter<"ManagerApproval"> | string | null
+    sessionChecked?: BoolFilter<"ManagerApproval"> | boolean
+    createdAt?: DateTimeFilter<"ManagerApproval"> | Date | string
+    expiresAt?: DateTimeFilter<"ManagerApproval"> | Date | string
+    usedAt?: DateTimeNullableFilter<"ManagerApproval"> | Date | string | null
+    usedByOpId?: StringNullableFilter<"ManagerApproval"> | string | null
+    cancelledAt?: DateTimeNullableFilter<"ManagerApproval"> | Date | string | null
+  }, "id">
+
+  export type ManagerApprovalOrderByWithAggregationInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    recordId?: SortOrder
+    materialDigest?: SortOrder
+    material?: SortOrder
+    permission?: SortOrder
+    approverId?: SortOrder
+    approverName?: SortOrder
+    requestedById?: SortOrderInput | SortOrder
+    sessionChecked?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrderInput | SortOrder
+    usedByOpId?: SortOrderInput | SortOrder
+    cancelledAt?: SortOrderInput | SortOrder
+    _count?: ManagerApprovalCountOrderByAggregateInput
+    _max?: ManagerApprovalMaxOrderByAggregateInput
+    _min?: ManagerApprovalMinOrderByAggregateInput
+  }
+
+  export type ManagerApprovalScalarWhereWithAggregatesInput = {
+    AND?: ManagerApprovalScalarWhereWithAggregatesInput | ManagerApprovalScalarWhereWithAggregatesInput[]
+    OR?: ManagerApprovalScalarWhereWithAggregatesInput[]
+    NOT?: ManagerApprovalScalarWhereWithAggregatesInput | ManagerApprovalScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ManagerApproval"> | string
+    tenantId?: StringWithAggregatesFilter<"ManagerApproval"> | string
+    deviceId?: StringWithAggregatesFilter<"ManagerApproval"> | string
+    entity?: StringWithAggregatesFilter<"ManagerApproval"> | string
+    action?: StringWithAggregatesFilter<"ManagerApproval"> | string
+    recordId?: StringWithAggregatesFilter<"ManagerApproval"> | string
+    materialDigest?: StringWithAggregatesFilter<"ManagerApproval"> | string
+    material?: JsonWithAggregatesFilter<"ManagerApproval">
+    permission?: StringWithAggregatesFilter<"ManagerApproval"> | string
+    approverId?: StringWithAggregatesFilter<"ManagerApproval"> | string
+    approverName?: StringWithAggregatesFilter<"ManagerApproval"> | string
+    requestedById?: StringNullableWithAggregatesFilter<"ManagerApproval"> | string | null
+    sessionChecked?: BoolWithAggregatesFilter<"ManagerApproval"> | boolean
+    createdAt?: DateTimeWithAggregatesFilter<"ManagerApproval"> | Date | string
+    expiresAt?: DateTimeWithAggregatesFilter<"ManagerApproval"> | Date | string
+    usedAt?: DateTimeNullableWithAggregatesFilter<"ManagerApproval"> | Date | string | null
+    usedByOpId?: StringNullableWithAggregatesFilter<"ManagerApproval"> | string | null
+    cancelledAt?: DateTimeNullableWithAggregatesFilter<"ManagerApproval"> | Date | string | null
   }
 
   export type StaffSessionWhereInput = {
@@ -58779,6 +60194,7 @@ export namespace Prisma {
     relayed?: NullableJsonNullValueInput | InputJsonValue
     attestation?: string | null
     attestationKid?: string | null
+    approval?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUncheckedCreateInput = {
@@ -58808,6 +60224,7 @@ export namespace Prisma {
     relayed?: NullableJsonNullValueInput | InputJsonValue
     attestation?: string | null
     attestationKid?: string | null
+    approval?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUpdateInput = {
@@ -58837,6 +60254,7 @@ export namespace Prisma {
     relayed?: NullableJsonNullValueInput | InputJsonValue
     attestation?: NullableStringFieldUpdateOperationsInput | string | null
     attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
+    approval?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUncheckedUpdateInput = {
@@ -58866,6 +60284,7 @@ export namespace Prisma {
     relayed?: NullableJsonNullValueInput | InputJsonValue
     attestation?: NullableStringFieldUpdateOperationsInput | string | null
     attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
+    approval?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceCreateManyInput = {
@@ -58895,6 +60314,7 @@ export namespace Prisma {
     relayed?: NullableJsonNullValueInput | InputJsonValue
     attestation?: string | null
     attestationKid?: string | null
+    approval?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUpdateManyMutationInput = {
@@ -58924,6 +60344,7 @@ export namespace Prisma {
     relayed?: NullableJsonNullValueInput | InputJsonValue
     attestation?: NullableStringFieldUpdateOperationsInput | string | null
     attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
+    approval?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type OperationEvidenceUncheckedUpdateManyInput = {
@@ -58953,6 +60374,7 @@ export namespace Prisma {
     relayed?: NullableJsonNullValueInput | InputJsonValue
     attestation?: NullableStringFieldUpdateOperationsInput | string | null
     attestationKid?: NullableStringFieldUpdateOperationsInput | string | null
+    approval?: NullableJsonNullValueInput | InputJsonValue
   }
 
   export type HubKeyCreateInput = {
@@ -59044,6 +60466,153 @@ export namespace Prisma {
     revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     revokedById?: NullableStringFieldUpdateOperationsInput | string | null
     revokeNote?: NullableStringFieldUpdateOperationsInput | string | null
+  }
+
+  export type ManagerApprovalCreateInput = {
+    id: string
+    tenantId: string
+    deviceId: string
+    entity: string
+    action: string
+    recordId: string
+    materialDigest: string
+    material: JsonNullValueInput | InputJsonValue
+    permission: string
+    approverId: string
+    approverName: string
+    requestedById?: string | null
+    sessionChecked?: boolean
+    createdAt?: Date | string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
+    usedByOpId?: string | null
+    cancelledAt?: Date | string | null
+  }
+
+  export type ManagerApprovalUncheckedCreateInput = {
+    id: string
+    tenantId: string
+    deviceId: string
+    entity: string
+    action: string
+    recordId: string
+    materialDigest: string
+    material: JsonNullValueInput | InputJsonValue
+    permission: string
+    approverId: string
+    approverName: string
+    requestedById?: string | null
+    sessionChecked?: boolean
+    createdAt?: Date | string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
+    usedByOpId?: string | null
+    cancelledAt?: Date | string | null
+  }
+
+  export type ManagerApprovalUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    recordId?: StringFieldUpdateOperationsInput | string
+    materialDigest?: StringFieldUpdateOperationsInput | string
+    material?: JsonNullValueInput | InputJsonValue
+    permission?: StringFieldUpdateOperationsInput | string
+    approverId?: StringFieldUpdateOperationsInput | string
+    approverName?: StringFieldUpdateOperationsInput | string
+    requestedById?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionChecked?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usedByOpId?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ManagerApprovalUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    recordId?: StringFieldUpdateOperationsInput | string
+    materialDigest?: StringFieldUpdateOperationsInput | string
+    material?: JsonNullValueInput | InputJsonValue
+    permission?: StringFieldUpdateOperationsInput | string
+    approverId?: StringFieldUpdateOperationsInput | string
+    approverName?: StringFieldUpdateOperationsInput | string
+    requestedById?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionChecked?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usedByOpId?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ManagerApprovalCreateManyInput = {
+    id: string
+    tenantId: string
+    deviceId: string
+    entity: string
+    action: string
+    recordId: string
+    materialDigest: string
+    material: JsonNullValueInput | InputJsonValue
+    permission: string
+    approverId: string
+    approverName: string
+    requestedById?: string | null
+    sessionChecked?: boolean
+    createdAt?: Date | string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
+    usedByOpId?: string | null
+    cancelledAt?: Date | string | null
+  }
+
+  export type ManagerApprovalUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    recordId?: StringFieldUpdateOperationsInput | string
+    materialDigest?: StringFieldUpdateOperationsInput | string
+    material?: JsonNullValueInput | InputJsonValue
+    permission?: StringFieldUpdateOperationsInput | string
+    approverId?: StringFieldUpdateOperationsInput | string
+    approverName?: StringFieldUpdateOperationsInput | string
+    requestedById?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionChecked?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usedByOpId?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ManagerApprovalUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    tenantId?: StringFieldUpdateOperationsInput | string
+    deviceId?: StringFieldUpdateOperationsInput | string
+    entity?: StringFieldUpdateOperationsInput | string
+    action?: StringFieldUpdateOperationsInput | string
+    recordId?: StringFieldUpdateOperationsInput | string
+    materialDigest?: StringFieldUpdateOperationsInput | string
+    material?: JsonNullValueInput | InputJsonValue
+    permission?: StringFieldUpdateOperationsInput | string
+    approverId?: StringFieldUpdateOperationsInput | string
+    approverName?: StringFieldUpdateOperationsInput | string
+    requestedById?: NullableStringFieldUpdateOperationsInput | string | null
+    sessionChecked?: BoolFieldUpdateOperationsInput | boolean
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    usedByOpId?: NullableStringFieldUpdateOperationsInput | string | null
+    cancelledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type StaffSessionCreateInput = {
@@ -62224,6 +63793,7 @@ export namespace Prisma {
     relayed?: SortOrder
     attestation?: SortOrder
     attestationKid?: SortOrder
+    approval?: SortOrder
   }
 
   export type OperationEvidenceAvgOrderByAggregateInput = {
@@ -62333,6 +63903,67 @@ export namespace Prisma {
     revokedAt?: SortOrder
     revokedById?: SortOrder
     revokeNote?: SortOrder
+  }
+
+  export type ManagerApprovalCountOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    recordId?: SortOrder
+    materialDigest?: SortOrder
+    material?: SortOrder
+    permission?: SortOrder
+    approverId?: SortOrder
+    approverName?: SortOrder
+    requestedById?: SortOrder
+    sessionChecked?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrder
+    usedByOpId?: SortOrder
+    cancelledAt?: SortOrder
+  }
+
+  export type ManagerApprovalMaxOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    recordId?: SortOrder
+    materialDigest?: SortOrder
+    permission?: SortOrder
+    approverId?: SortOrder
+    approverName?: SortOrder
+    requestedById?: SortOrder
+    sessionChecked?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrder
+    usedByOpId?: SortOrder
+    cancelledAt?: SortOrder
+  }
+
+  export type ManagerApprovalMinOrderByAggregateInput = {
+    id?: SortOrder
+    tenantId?: SortOrder
+    deviceId?: SortOrder
+    entity?: SortOrder
+    action?: SortOrder
+    recordId?: SortOrder
+    materialDigest?: SortOrder
+    permission?: SortOrder
+    approverId?: SortOrder
+    approverName?: SortOrder
+    requestedById?: SortOrder
+    sessionChecked?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrder
+    usedByOpId?: SortOrder
+    cancelledAt?: SortOrder
   }
 
   export type StaffSessionCountOrderByAggregateInput = {

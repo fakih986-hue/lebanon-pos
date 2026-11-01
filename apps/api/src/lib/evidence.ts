@@ -23,6 +23,7 @@
 import type { TokenKind } from "../middleware/auth.js"
 import type { DeviceCheck, SessionResult } from "./credentials.js"
 import type { AttestationResult } from "./hubAttestation.js"
+import type { ApprovalSeen } from "./approvals.js"
 
 export type EvidenceLabel = "verified" | "hub-attested" | "staff-session" | "offline-claimed" | "legacy-claimed"
 
@@ -67,10 +68,12 @@ export type ObserveInput = {
   enforced?: boolean
   /** SPRINT-2 D: the relaying hub's attestation as checked here (a hub's cloud link only). */
   attestation?: AttestationResult | null
+  /** SPRINT-2 E: a manager approval presented with the operation, as checked here. */
+  approval?: ApprovalSeen | null
 }
 
 /** Fields of a hub's own evidence row that are carried to the cloud with a forwarded operation. */
-export const RELAYED_FIELDS = ["acceptedBy", "receivedAt", "transport", "credentialKind", "connectionAccountId", "deviceIdClaimed", "enrolledDeviceId", "deviceCheck", "sessionId", "sessionStaffId", "sessionAuthTime", "sessionCheck", "actorIdClaimed", "actorNameClaimed", "evidence", "limitations", "claimedAt"] as const
+export const RELAYED_FIELDS = ["approval", "acceptedBy", "receivedAt", "transport", "credentialKind", "connectionAccountId", "deviceIdClaimed", "enrolledDeviceId", "deviceCheck", "sessionId", "sessionStaffId", "sessionAuthTime", "sessionCheck", "actorIdClaimed", "actorNameClaimed", "evidence", "limitations", "claimedAt"] as const
 export function pickRelayed(row: unknown): Record<string, unknown> | null {
   if (!row || typeof row !== "object" || Array.isArray(row)) return null
   const out: Record<string, unknown> = {}
@@ -133,5 +136,8 @@ export function observeEvidence(i: ObserveInput) {
     sessionId: ses?.sessionId ?? null, sessionStaffId: ses?.staffId ?? null, sessionAuthTime: ses?.authTime ?? null, sessionCheck: ses?.check ?? null,
     relayed,
     attestation: att?.check ?? null, attestationKid: att?.kid ?? null,
+    // the approver is recorded apart from the actor; for a hub's operation, as the hub checked it
+    approval: i.approval ? { id: i.approval.id, check: i.approval.check, approverId: i.approval.approverId, approverName: i.approval.approverName, permission: i.approval.permission }
+      : relayed && relayed.approval && typeof relayed.approval === "object" ? relayed.approval : null,
   }
 }

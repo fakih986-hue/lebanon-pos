@@ -3,6 +3,7 @@ import { writeLocalWithIndexedDB } from "./storage.service"
 import { canUseStorage, createId } from "../lib/storage"
 import { getCurrentUser, getActiveShift, recordAuditEvent, userCan } from "./security.service"
 import { getRegisterId } from "./settings.service"
+import { approvalGrantFor } from "../lib/approvalGrants"
 
 const MOVEMENTS_KEY = "lebanonpos.cash-movements.v1"
 const MOVEMENTS_EVENT = "lebanonpos-cash-movements-changed"
@@ -49,6 +50,11 @@ export interface CreateCashMovementInput {
   id?: string
 }
 
+/** SPRINT-2 E: the movement a manager is asked to approve (its record id and material values). */
+export function cashMovementApprovalPayload(input: CreateCashMovementInput & { id: string }) {
+  return { id: input.id, type: input.type, direction: input.direction ?? TYPE_DIRECTION[input.type] ?? "Out", amountUsd: input.amountUsd, reason: input.reason.trim() }
+}
+
 export function getCashMovements(): CashMovement[] {
   if (!canUseStorage()) return []
   try {
@@ -60,8 +66,9 @@ export function getCashMovements(): CashMovement[] {
 export function createCashMovement(input: CreateCashMovementInput): CashMovement | null {
   assertCanWrite("create cash movement")
 
-  // Permission: cash in/out (drawer) — POS-PERMISSIONS-1 split from accounting.
-  if (!userCan("cash.manage")) return null
+  // Permission: cash in/out (drawer) — POS-PERMISSIONS-1 split from accounting. A manager's online
+  // approval for this movement (SPRINT-2 E, input.id chosen before it) stands in; the server checks it.
+  if (!userCan("cash.manage") && !approvalGrantFor("cash-movement", "create", input.id, "cash.manage", getCurrentUser()?.id ?? null)) return null
 
   // Validation
   if (input.amountUsd <= 0) return null

@@ -248,7 +248,7 @@ describe("cloud -> hub -> till: an offline hub's stale staff edits cannot undo a
       await cloudPrisma.staffUser.deleteMany({ where: { id: ADMIN } })
       await prisma.staffUser.updateMany({ where: { id: ADMIN }, data: { role: "Admin" } })
     }
-  })
+  }, 60_000) // several bcrypt(12) hashes and a hub-cloud push and two pulls: well over the 5 s default on a loaded machine
 })
 
 describe("applied once on this server (real Postgres)", () => {

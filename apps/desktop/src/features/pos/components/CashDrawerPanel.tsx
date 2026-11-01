@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ChevronDown, CircleDollarSign, Clock, HandCoins, Landmark, Lock } from "lucide-react"
+import { ChevronDown, CircleDollarSign, Clock, HandCoins, Landmark, Lock, ShieldCheck } from "lucide-react"
 import { canCloseShift, canOpenShift, getActiveShift, getShifts, openShift, closeShift, subscribeSecurity, userCan, type Shift } from "../services/security.service"
 import { formatCurrency, formatLbpCurrency, usdToLbp } from "../lib/currency"
 import { getSettings } from "../services/settings.service"
@@ -7,7 +7,10 @@ import { showToast } from "../services/toast.service"
 import { subscribeSales, subscribeRefunds } from "../services/sales.service"
 import { subscribeExpenses } from "../services/expense.service"
 import { subscribeSuppliers } from "../services/supplier.service"
-import { createCashMovement, subscribeCashMovements } from "../services/cashMovement.service"
+import { cashMovementApprovalPayload, createCashMovement, subscribeCashMovements, type CreateCashMovementInput } from "../services/cashMovement.service"
+import ManagerApprovalDialog from "../../../components/ManagerApprovalDialog"
+import type { ApprovalRequest } from "../services/approval.service"
+import { createId } from "../lib/storage"
 import { computeExpectedCash } from "../services/shift.service"
 import { useI18n } from "@lebanonpos/shared"
 
@@ -19,6 +22,8 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
   const [note, setNote] = useState("")
   const [showHistory, setShowHistory] = useState(false)
   const [drawerNote, setDrawerNote] = useState("")
+  // SPRINT-2 E: a payout by someone without cash.manage, waiting for a manager's approval
+  const [approval, setApproval] = useState<{ request: Omit<ApprovalRequest, "pin" | "approverId">; input: CreateCashMovementInput & { id: string } } | null>(null)
   const [renderTick, setRenderTick] = useState(0)
   const rate = getSettings().usdToLbpRate
 
@@ -71,18 +76,22 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
   }
 
   function handleOwnerDraw() {
-    if (!shift || !canDraw) return
+    if (!shift) return
     const amount = parseFloat(drawerNote)
     if (!amount || amount <= 0) { showToast(t("pos.drawer.invalid_amount"), "error"); return }
-    const result = createCashMovement({
-      type: "OwnerDraw",
-      amountUsd: amount,
-      reason: "Owner draw",
-      note: drawerNote,
-    })
+    const input = { id: createId("cashmv"), type: "OwnerDraw" as const, amountUsd: amount, reason: "Owner draw", note: drawerNote }
+    if (!canDraw) {
+      // a manager approves this payout (this record and amount); the amount stays typed if cancelled
+      setApproval({ input, request: { entity: "cash-movement", action: "create", payload: cashMovementApprovalPayload(input), permission: "cash.manage" } })
+      return
+    }
+    recordDraw(input)
+  }
+  function recordDraw(input: CreateCashMovementInput & { id: string }, approvedBy?: string) {
+    const result = createCashMovement(input)
     if (result) {
       setDrawerNote("")
-      showToast(t("pos.drawer.draw_recorded", { amount: formatCurrency(amount) }))
+      showToast(`${approvedBy ? `${t("approval.granted", { name: approvedBy })} ` : ""}${t("pos.drawer.draw_recorded", { amount: formatCurrency(input.amountUsd) })}`)
     }
   }
 
@@ -158,14 +167,19 @@ export default function CashDrawerPanel({ expanded, onToggle }: { expanded: bool
               {!canClose && <p id="drawer-close-why" className="text-[14px]" style={{ margin: 0, color: "var(--text-2)" }}>{t("pos.drawer.need_shift_manage")}</p>}
 
               {/* Owner Draw */}
-              {!canDraw ? <p className="text-[14px] pt-1" style={{ margin: 0, color: "var(--text-2)" }}>{t("pos.drawer.need_cash_manage")}</p> : <div className="flex gap-2 pt-1">
+              {!canDraw && <p className="text-[14px] pt-1" style={{ margin: 0, color: "var(--text-2)", display: "flex", gap: 6, alignItems: "center" }}><ShieldCheck size={14} aria-hidden="true" />{t("approval.needed")}</p>}
+              {<div className="flex gap-2 pt-1">
                 <input value={drawerNote} onChange={(e) => setDrawerNote(e.target.value)} placeholder={t("pos.drawer.owner_draw")} aria-label={t("pos.drawer.owner_draw")}
                   type="number" min="0" step="0.01"
                   className="input flex-1" style={{ minHeight: 44, fontSize: 14 }} />
                 <button type="button" onClick={handleOwnerDraw} className="mg2-btn" style={{ minHeight: 44 }}>
-                  <HandCoins size={13} /> {t("pos.drawer.draw")}
+                  {canDraw ? <HandCoins size={13} /> : <ShieldCheck size={13} aria-hidden="true" />} {canDraw ? t("pos.drawer.draw") : t("approval.ask")}
                 </button>
               </div>}
+              <ManagerApprovalDialog open={!!approval} request={approval?.request ?? null}
+                summary={<p style={{ fontWeight: 600, color: "var(--text)" }}>{approval ? t("approval.payout_summary", { amount: formatCurrency(approval.input.amountUsd), reason: approval.input.reason }) : ""}</p>}
+                onApproved={(grant) => { const a = approval; setApproval(null); if (a) recordDraw(a.input, grant.approverName) }}
+                onCancel={() => setApproval(null)} />
             </div>
           )}
 

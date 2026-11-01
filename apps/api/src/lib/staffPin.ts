@@ -12,20 +12,25 @@ export type VerifiedStaff = { id: string; name: string; role: string; permission
 export type PinCheck =
   | { ok: true; staff: VerifiedStaff }
   | { ok: false; code: "INVALID_PIN" }
+  | { ok: false; code: "INACTIVE"; name: string }
   | { ok: false; code: "AMBIGUOUS_PIN"; candidates: Array<{ id: string; name: string }> }
 
 const sha256 = (pin: string) => createHash("sha256").update(pin).digest("hex")
 
 export async function verifyStaffPin(tenantId: string, pin: string, staffId?: string): Promise<PinCheck> {
   const candidates = await prisma.staffUser.findMany({
-    where: { tenantId, active: true, role: { not: "Driver" }, ...(staffId ? { id: staffId } : {}) },
-    select: { id: true, name: true, role: true, pin: true, permissions: true, tokenVersion: true },
+    where: { tenantId, role: { not: "Driver" }, ...(staffId ? { id: staffId } : {}) },
+    select: { id: true, name: true, role: true, pin: true, permissions: true, tokenVersion: true, active: true },
   })
   const matched: typeof candidates = []
   for (const c of candidates) {
     if (!c.pin || c.pin === "$2-withheld") continue
     if (c.pin.startsWith("$2") ? await bcrypt.compare(pin, c.pin) : c.pin === sha256(pin)) matched.push(c)
   }
+  // a deactivated person's PIN is reported as such (never accepted), so the refusal is clear
+  const active = matched.filter((m) => m.active)
+  if (active.length === 0 && matched.length > 0) return { ok: false, code: "INACTIVE", name: matched[0].name }
+  matched.splice(0, matched.length, ...active)
   if (matched.length === 0) return { ok: false, code: "INVALID_PIN" }
   if (matched.length > 1) return { ok: false, code: "AMBIGUOUS_PIN", candidates: matched.map((m) => ({ id: m.id, name: m.name })) }
   const s = matched[0]

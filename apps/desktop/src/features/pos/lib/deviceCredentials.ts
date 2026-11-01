@@ -11,6 +11,8 @@
  *   work. A stored session is not a fresh PIN check: the server records when the PIN was checked.
  * - Every operation keeps the envelope it was created under (not the one current at push time).
  */
+import { clearApprovalGrants } from "./approvalGrants"
+
 const DEVICE_KEY = "lebanonpos.device-credential.v1"
 const SESSION_KEY = "lebanonpos.staff-session.v1"
 const UNLOCK_KEY = "lebanonpos.unlock-evidence.v1"
@@ -19,8 +21,9 @@ export type DeviceEnrollment = { credential: string; enrolledDeviceId: string; t
 export type StaffSessionRecord = { session: string; sessionId: string; staffId: string; staffName: string; authTime: string; expiresAt: string; apiUrl: string }
 /** How the current person was let in: the server checked the PIN, or only this till did. */
 export type UnlockEvidence = { userId: string; by: "server" | "local"; at: string }
-/** Sent with each operation, outside the operation itself (the server only records it). */
-export type SyncEnvelope = { v: 1; session?: string; offline?: true }
+/** Sent with each operation, outside the operation itself (the server only records it). `approval`:
+ *  a manager approval id for this operation's record (SPRINT-2 E; checked by the server). */
+export type SyncEnvelope = { v: 1; session?: string; offline?: true; approval?: string }
 
 /** Written by security.service on unlock (read here to avoid importing it). */
 const currentUser = () => { try { return localStorage.getItem("lebanonpos.current-user.v1") } catch { return null } }
@@ -53,6 +56,8 @@ export const setUnlockEvidence = (u: UnlockEvidence | null) => write(UNLOCK_KEY,
 export function clearPersonEvidence() {
   setStaffSession(null)
   setUnlockEvidence(null)
+  // a manager's approval was for the person signed in then: unused approvals go with them
+  clearApprovalGrants()
 }
 
 /**
