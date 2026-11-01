@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useLayoutEffect, useMemo, useRef, useState } from "react"
 import { ArrowLeft, Minus, Plus } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
@@ -32,7 +32,9 @@ export default function ModifierSheet({ product, groups, initial, mode, servings
   const overlayRef = useRef<HTMLDivElement>(null)
   const label = (x: { name: string; nameAr?: string }) => (locale === "ar" && x.nameAr ? x.nameAr : x.name)
 
-  useEffect(() => {
+  // a layout effect: the page behind is made usable again as the sheet closes, before the caller puts focus back in it
+  // (a passive cleanup could run after that, and focus on a still-inert scan field is silently dropped)
+  useLayoutEffect(() => {
     const marked: Element[] = []
     for (let node: Element | null = overlayRef.current; node && node !== document.body; node = node.parentElement) {
       for (const sibling of Array.from(node.parentElement?.children ?? [])) {
@@ -168,11 +170,12 @@ export default function ModifierSheet({ product, groups, initial, mode, servings
 
         {short && <div role="alert" className="mg2-t-err mg2-banner text-[14px] font-semibold">{servings === 0 ? t("pos.mod.cannot_make") : t("pos.mod.only_n", { n: servings ?? 0 })}</div>}
 
-        <div className="flex flex-wrap gap-3">
+        {/* stays in view while the groups scroll (a phone shows only a few groups): the price and Add are always reachable */}
+        <div className="flex gap-3" style={{ position: "sticky", bottom: "calc(-1 * clamp(16px, 4vw, 24px))", margin: "0 calc(-1 * clamp(16px, 4vw, 24px)) calc(-1 * clamp(16px, 4vw, 24px))", padding: "12px clamp(16px, 4vw, 24px) clamp(16px, 4vw, 24px)", background: "var(--surface)", borderTop: "1px solid var(--border)" }}>
           <button type="button" className="mg2-btn" style={{ flex: "0 0 auto", minHeight: 56 }} onClick={onCancel}>
-            <ArrowLeft size={18} className="mg2-dir" />{t("pos.v2.back")} <span className="mg2-kbd">Esc</span>
+            <ArrowLeft size={18} className="mg2-dir" />{t("pos.v2.back")} <span className="mg2-kbd hidden sm:inline">Esc</span>
           </button>
-          <button type="button" className="mg2-pay" style={{ flex: "1 1 220px", minHeight: 56, width: "auto", fontSize: 17, justifyContent: "space-between", opacity: complete ? 1 : 0.7 }}
+          <button type="button" className="mg2-pay" style={{ flex: "1 1 0", minWidth: 0, minHeight: 56, width: "auto", fontSize: 17, justifyContent: "space-between", opacity: complete ? 1 : 0.7 }}
             aria-disabled={!complete} onClick={confirm}>
             <span>{mode === "edit" ? t("pos.mod.update") : t("pos.mod.add")}</span>
             <span className="num" style={{ whiteSpace: "nowrap" }}>{formatCurrency(unitPrice * quantity)}</span>

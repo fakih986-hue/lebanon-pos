@@ -134,9 +134,12 @@ still has to enroll and sign in.
 - Platform owner tooling (cross-store) is outside store policy.
 - Monetary or percentage thresholds for approvals: none are invented; an action needs approval when the actor
   lacks its permission.
-- **Delivery orders** change stock where they are handled (the cloud's delivery routes). In a hub store that
-  competes with the hub's stock; delivery is therefore not part of a hub-store pilot. The topology readiness
-  check does not look at delivery.
+- **Delivery orders** change stock where they are handled (the cloud's delivery routes). Café batch: in a hub store
+  delivery is now refused at every boundary (new orders before anything is recorded, stock-changing status changes
+  by staff and drivers, driver acceptance, the ordering menu says so); orders accepted before the store became a hub
+  store are closed by a manager's explicit, audited "close without stock change". The readiness check refuses a
+  change to a hub store while delivery orders are open. A delivery order's stock is taken once and given back at
+  most once. Drinks made from recipes, made-to-order items and ingredients are not offered for delivery.
 - Permission refusals are answered as retryable errors (as in observe mode): a register resends a held
   operation up to its limit; the hub keeps one held entry, its first reason and the attempt count.
 

@@ -486,6 +486,9 @@ export default function POSPage() {
     // without options goes in directly when its ingredients can make it
     if (needsOptions(product)) {
       setOptionsFor({ product, mode: "add", initial: { selection: defaultSelection(groupsForProduct(product)), note: "", quantity: 1 } })
+      // the drink was found: the scan field is ready for the next item whether its options are added or cancelled
+      setScanCode("")
+      setSearch("")
       return
     }
     if (product.stockPolicy === "recipe") { addConfigured(product, [], "", 1, source); return }
