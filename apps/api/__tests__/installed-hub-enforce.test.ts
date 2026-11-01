@@ -76,8 +76,8 @@ if (!ready) {
     for (let i = 0; i < 3; i++) {
       storage.setItem("lebanonpos.sync-queue.v1", JSON.stringify(queue().map((op) => ({ ...op, status: op.status === "Failed" ? "Pending" : op.status, lastAttemptAt: "2000-01-01T00:00:00.000Z" }))))
       await d.sync.flushSyncQueue()
+      await dispose() // an automatic flush already in flight finishes before the next explicit one
     }
-    await dispose()
   }
   const call = async (base: string, method: string, path: string, body?: unknown, token?: string, headers: Record<string, string> = {}) => {
     const r = await realFetch(`${base}${path}`, { method, headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...headers }, body: body === undefined ? undefined : JSON.stringify(body) })
