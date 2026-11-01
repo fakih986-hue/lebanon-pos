@@ -49,8 +49,16 @@ export type SaleTender = {
 }
 
 export type SaleItem = Pick<Product, "id" | "name" | "barcode" | "cost"> & {
-  /** SPRINT-1: the product's stock policy when sold. Refunds/voids restore stock only for tracked lines. */
-  stockPolicy?: "tracked" | "untracked"
+  /** SPRINT-1: the product's stock policy when sold. Refunds/voids restore stock only for tracked lines.
+   *  Café batch: "recipe" = a drink made from ingredients (a refund returns money only). */
+  stockPolicy?: "tracked" | "untracked" | "recipe"
+  /** Café batch: the options chosen and preparation note (as sold), the product's own price, the recipe revision
+   *  and what this register recorded it consumed (the server keeps its own record of the lots taken). */
+  modifiers?: Array<{ groupId: string; groupName?: string; groupNameAr?: string; optionId: string; name: string; nameAr?: string; priceDelta: number }>
+  note?: string
+  basePrice?: number
+  recipeRev?: string | null
+  consumption?: Array<{ ingredientSyncId: string; quantity: number }>
   /** The product's policy version when sold (the server uses it to keep the sale-time policy). */
   stockPolicyVersion?: number
   /** The policy revision it was sold under (the server's record of that revision decides the policy). */
@@ -1053,7 +1061,11 @@ export function checkoutLocalSale(input: LocalCheckoutInput): LocalCheckoutResul
   // A manager's online approval of exactly this sale (SPRINT-2 E) stands in; the server checks it again.
   if (input.sale.soldAtCost && !userCan("sales.price_override") && !approvalGrantFor("sale", "create", input.sale.id, "sales.price_override", getCurrentUser()?.id ?? null, input.sale)) throw new PermissionError("Selling at cost needs the Price override permission.")
   const sale = input.sale
-  const slices = lotSlices(sale.items.flatMap((item) => item.batchAllocations ?? []))
+  // café batch: the lots a recipe drink's ingredients will take (they are in input.lots, not on a sale line):
+  // planned the same way the consumption below takes them, so recovery restores exactly what was taken
+  const lineProducts = new Set(sale.items.map((item) => item.id))
+  const ingredientSlices = [...consumeInventoryBatches(input.lots.filter((l) => !lineProducts.has(l.productId)), { dryRun: true }).values()].flat()
+  const slices = lotSlices([...sale.items.flatMap((item) => item.batchAllocations ?? []), ...ingredientSlices])
   const lotIds = slices.map((s) => s.batchId)
   const opId = `op-sale-${sale.id}`
   let entry: JournalEntry

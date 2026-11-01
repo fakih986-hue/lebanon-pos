@@ -66,12 +66,12 @@ export function getPendingHubSale(): PendingHubSale | null {
 
 /** What identifies "the same cart": lines, quantities, prices, payment and customer, total. */
 export function cartFingerprint(input: {
-  items: Array<{ id: number; quantity: number; unitPrice: number }>
+  items: Array<{ id: number; quantity: number; unitPrice: number; options?: string }>
   paymentMethod: string
   customerId?: string
   total: number
 }) {
-  const lines = input.items.map((i) => `${i.id}x${i.quantity}@${i.unitPrice}`).sort().join("|")
+  const lines = input.items.map((i) => `${i.id}${i.options ? `[${i.options}]` : ""}x${i.quantity}@${i.unitPrice}`).sort().join("|")
   return `${lines}#${input.paymentMethod}#${input.customerId ?? ""}#${input.total}`
 }
 

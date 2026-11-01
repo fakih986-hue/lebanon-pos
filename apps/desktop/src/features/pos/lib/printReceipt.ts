@@ -10,12 +10,14 @@ import { formatVatRate } from "./helpers"
 import type { Sale, SaleRefund } from "../services/sales.service"
 import type { AppSettings } from "../services/settings.service"
 import { getReceiptPrinter, receiptPageCss } from "./receiptPrinter"
+import { lineOptionsText } from "./lineOptions"
 
 /** One item: the full name on its own line (wraps, Arabic-aware), then quantity × price and the line total. */
-function itemBlock(name: string, barcode: string, quantity: number, unit: number, total: number) {
+function itemBlock(name: string, barcode: string, quantity: number, unit: number, total: number, options = "") {
   return `
     <div class="item">
       <div class="item-name" dir="auto">${escapeHtml(name)}</div>
+      ${options ? `<div class="item-code" dir="auto">${escapeHtml(options)}</div>` : ""}
       <div class="item-meta"><span>${formatNumber(quantity)} × ${formatCurrency(unit)}</span><strong>${formatCurrency(total)}</strong></div>
       ${barcode ? `<div class="item-code">${escapeHtml(barcode)}</div>` : ""}
     </div>`
@@ -71,7 +73,7 @@ export function printSaleReceipt(
   const grossSubtotal = getSaleGrossSubtotal(sale)
   const refundedTotal = getSaleRefundTotal(refunds, sale.id)
   const itemRows = (Array.isArray(sale.items) ? sale.items : [])
-    .map((item) => itemBlock((item as any).name ?? (item as any).productName ?? "Product", (item as any).barcode ?? "", item.quantity, item.unitPrice, item.total))
+    .map((item) => itemBlock((item as any).name ?? (item as any).productName ?? "Product", (item as any).barcode ?? "", item.quantity, item.unitPrice, item.total, lineOptionsText(item as any)))
     .join("")
 
   const receiptWindow = window.open("", "_blank", "width=420,height=720")
@@ -206,7 +208,7 @@ export function printTestReceipt(settings: AppSettings) {
 
 export function printLastSaleReceipt(lastSale: LastSaleSummary, settings: AppSettings) {
   const lineItems = (Array.isArray(lastSale.items) ? lastSale.items : [])
-    .map((item) => itemBlock((item as any).name ?? (item as any).productName ?? "Product", (item as any).barcode ?? "", item.quantity, item.price, item.price * item.quantity))
+    .map((item) => itemBlock((item as any).name ?? (item as any).productName ?? "Product", (item as any).barcode ?? "", item.quantity, item.price, item.price * item.quantity, lineOptionsText(item as any)))
     .join("")
   const tenderRows = lastSale.tender
     ? `

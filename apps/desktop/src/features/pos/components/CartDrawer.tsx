@@ -1,4 +1,5 @@
 import { useI18n } from "@lebanonpos/shared"
+import type { CartKey } from "../lib/lineOptions"
 import { AnimatePresence, motion } from "framer-motion"
 import {
   Eraser,
@@ -23,15 +24,15 @@ type DiscountMode = "USD" | "Percent"
 const MotionDiv = motion.div as any
 const MotionAside = motion.aside as any
 
-interface CartItem { id: number; name: string; price: number; quantity: number; stock: number }
+interface CartItem { id: number; name: string; price: number; quantity: number; stock: number; lineKey?: string; modifiers?: Array<{ name?: string; nameAr?: string }>; note?: string }
 
 interface Props {
   isOpen: boolean
   onClose: () => void
   items: CartItem[]
-  onIncreaseQty: (id: number) => void
-  onDecreaseQty: (id: number) => void
-  onRemoveItem: (id: number) => void
+  onIncreaseQty: (id: CartKey) => void
+  onDecreaseQty: (id: CartKey) => void
+  onRemoveItem: (id: CartKey) => void
   heldSales: HeldSale[]
   onResumeHeld: (sale: HeldSale) => void
   onDiscardHeld: (sale: HeldSale) => void
@@ -51,8 +52,9 @@ interface Props {
   discountValue: string
   onDiscountModeChange: (mode: DiscountMode) => void
   onDiscountValueChange: (value: string) => void
-  onSetQuantity: (id: number, qty: number) => void
-  onSetPrice: (id: number, price: number) => void
+  onSetQuantity: (id: CartKey, qty: number) => void
+  onSetPrice: (id: CartKey, price: number) => void
+  onEditItem?: (id: CartKey) => void
   saleNote: string
   onSaleNoteChange: (note: string) => void
   onHold: () => void
@@ -94,7 +96,7 @@ export default function CartDrawer({
   paymentMethod, onSelectPayment,
   paidUsd, paidLbp, onPaidUsdChange, onPaidLbpChange, onFillExactTender,
   discountMode, discountValue, onDiscountModeChange, onDiscountValueChange,
-  onSetQuantity, onSetPrice, saleNote, onSaleNoteChange,
+  onSetQuantity, onSetPrice, onEditItem, saleNote, onSaleNoteChange,
   onHold, onClean, onCompleteSale, onTenderEnter,
   itemCount, grossSubtotal, discountTotal, subtotal, tax, total, totalLbp, payableLbp, payableUsd, exchangeRate,
   paidTotalUsd, paidTotalLbp, cashChangeUsd, cashChangeLbp, cashStillDueUsd,
@@ -247,6 +249,7 @@ export default function CartDrawer({
               onRemoveItem={onRemoveItem}
               onSetQuantity={onSetQuantity}
               onSetPrice={onSetPrice}
+        onEditItem={onEditItem}
               saleNote={saleNote}
               onSaleNoteChange={onSaleNoteChange}
               vatRate={vatRate}

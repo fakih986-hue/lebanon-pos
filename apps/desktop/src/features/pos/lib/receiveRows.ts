@@ -10,8 +10,9 @@ import type { Product, ProductAccent } from "../types/product"
 import { createId } from "./storage"
 import { isCostAvailable, sumAvailable } from "./cost"
 import type { ReceiveRowResult } from "../services/receiveSubmission.service"
+import { planReceive, purchaseConversion } from "./cafeMenu"
 
-export type ReceiveRowMode = "matched" | "new" | "alias" | "variant" | "conflict"
+export type ReceiveRowMode = "matched" | "new" | "alias" | "variant" | "conflict" | "ingredient"
 export type BatchRow = {
   id: string; name: string; category: string; quantity: number
   /** Unit cost of this delivery. Undefined = none typed (empty input): no cost is sent and the
@@ -26,6 +27,20 @@ export type BatchRow = {
   parentProductId?: number; variantName?: string
   /** Why the last save did not accept this row (it stays in the grid). */
   saveError?: string
+  /** Café batch (mode "ingredient"): an existing stock item, bought in purchase units at an actual price per
+   *  purchase unit (its stock quantity and valuation are derived exactly), with the supplier's reference */
+  ingredientProductId?: number
+  stockUnit?: string
+  purchaseUnit?: string
+  purchaseQuantity?: number
+  purchasePrice?: number
+  packSize?: number
+  supplierReference?: string
+}
+
+/** Café batch: what an ingredient row adds to stock and its valuation (see lib/cafeMenu planReceive). */
+export function ingredientRowPlan(row: BatchRow) {
+  return planReceive({ stockUnit: row.stockUnit, purchaseUnit: row.purchaseUnit || row.stockUnit || "unit", packSize: row.packSize, purchaseQuantity: row.purchaseQuantity, purchasePrice: row.purchasePrice })
 }
 
 const accents: ProductAccent[] = ["emerald", "cyan", "amber", "rose", "violet", "indigo"]
@@ -44,6 +59,7 @@ export function createRow(defaults?: Partial<BatchRow>): BatchRow {
 
 /** A row nobody has started: it is ignored by Save and never reported as a problem. */
 export function isBlankRow(row: BatchRow) {
+  if (row.mode === "ingredient") return !row.ingredientProductId && !row.purchaseQuantity
   return !row.name.trim() && !row.barcode.trim() && !row.scannedBarcode.trim() && !row.quantity
 }
 
@@ -51,6 +67,7 @@ export function isBlankRow(row: BatchRow) {
 export type ReceiveRowOptions = { costRequired?: boolean }
 
 export function isRowReady(row: BatchRow, opts?: ReceiveRowOptions) {
+  if (row.mode === "ingredient") return !!row.ingredientProductId && ingredientRowPlan(row).ok && (!opts?.costRequired || row.purchasePrice !== undefined)
   if (opts?.costRequired && !isCostAvailable(row.cost)) return false
   // alias rows are ready once a target is picked + a scanned barcode + qty; the
   // name is mirrored from the target so it is always present.
@@ -63,6 +80,7 @@ export function isRowReady(row: BatchRow, opts?: ReceiveRowOptions) {
 export type RowProblem =
   | "needs_decision" | "missing_name" | "missing_barcode" | "missing_quantity"
   | "missing_target" | "missing_variant_name" | "negative_money" | "cost_missing"
+  | "unit_incompatible" | "pack_size"
 export type RowNotice = "cost_over_price" | "cost_up" | "cost_down"
 
 /** What blocks this row (errors) and what deserves a look (notices). Shown on the row at all times. */
@@ -70,6 +88,13 @@ export function rowProblems(row: BatchRow, product?: Product, opts?: ReceiveRowO
   const problems: RowProblem[] = []
   const notices: Array<{ key: RowNotice; pct?: number }> = []
   if (isBlankRow(row)) return { problems, notices }
+  if (row.mode === "ingredient") {
+    if (!row.ingredientProductId) problems.push("missing_target")
+    const plan = ingredientRowPlan(row)
+    if (!plan.ok) problems.push(plan.reason === "incompatible" ? "unit_incompatible" : plan.reason === "pack-size" ? "pack_size" : plan.reason === "price" ? "negative_money" : "missing_quantity")
+    if (opts?.costRequired && row.purchasePrice === undefined) problems.push("cost_missing")
+    return { problems, notices }
+  }
   if (row.mode === "new" && row.barcode.trim() && !row.decisionConfirmed && !row.name.trim()) problems.push("needs_decision")
   if (row.mode === "alias" && !row.targetProductId) problems.push("missing_target")
   if (row.mode === "variant") {
@@ -127,7 +152,10 @@ export function addScan(rows: BatchRow[], code: string, product: Product | undef
 
 /** Total cost of the rows, or undefined when any of them has no unit cost. */
 export function receiveRowsCost(rows: BatchRow[]): number | undefined {
-  return sumAvailable(rows.map((r) => (isCostAvailable(r.cost) ? r.quantity * r.cost : undefined)))
+  // an ingredient row's value is what the invoice says (purchase quantity × price per purchase unit)
+  return sumAvailable(rows.map((r) => r.mode === "ingredient"
+    ? (r.purchasePrice !== undefined && r.purchaseQuantity ? Math.round(r.purchaseQuantity * r.purchasePrice * 10000) / 10000 : undefined)
+    : isCostAvailable(r.cost) ? r.quantity * r.cost : undefined))
 }
 
 /** The receiveAndRecord entry for a ready row (identical to the page's previous mapping). */
@@ -138,6 +166,17 @@ export function toReceiveEntry(r: BatchRow) {
   return { ...fields, rowId: r.id }
 }
 function toReceiveFields(r: BatchRow) {
+  if (r.mode === "ingredient") {
+    const plan = ingredientRowPlan(r)
+    const conv = purchaseConversion(r.stockUnit, r.purchaseUnit || r.stockUnit || "unit", r.packSize)
+    return {
+      name: r.name, barcode: "", category: r.category, quantity: plan.ok ? plan.stockMilli / 1000 : 0,
+      cost: plan.ok && plan.unitCostTT !== null ? plan.unitCostTT / 10000 : undefined, price: 0, expiryDate: r.expiryDate,
+      receiveIntoProductId: r.ingredientProductId, purchaseUnit: r.purchaseUnit || r.stockUnit || "unit", purchaseQuantity: r.purchaseQuantity,
+      unitsPerPurchase: conv.ok ? conv.unitsPerPurchase : 1, ...(r.purchasePrice !== undefined ? { purchasePrice: r.purchasePrice } : {}),
+      ...(r.supplierReference ? { supplierReference: r.supplierReference.trim() } : {}),
+    }
+  }
   if (r.mode === "alias") {
     return { name: r.name, barcode: r.scannedBarcode, category: r.category, quantity: r.quantity, cost: r.cost, price: r.price, reorderPoint: r.reorderPoint, reorderQuantity: r.reorderQuantity, expiryDate: r.expiryDate, attachAliasToProductId: r.targetProductId }
   }

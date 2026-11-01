@@ -28,9 +28,15 @@ type ZReportData = XReportData & {
 }
 type MarginData = {
   period: string
-  summary: { totalRevenue: number; totalCost: number; totalMargin: number; marginPct: number }
-  byCategory: Array<{ category: string; revenue: number; cost: number; margin: number; marginPct: number }>
-  byProduct: Array<{ productId: number; name: string; category: string; quantity: number; revenue: number; cost: number; margin: number; marginPct: number }>
+  // café batch: null when some cost is unknown (never an invented margin)
+  summary: { totalRevenue: number; totalCost: number; totalMargin: number | null; marginPct: number | null; costIncompleteProducts?: number }
+  byCategory: Array<{ category: string; revenue: number; cost: number; margin: number | null; marginPct: number | null; costIncomplete?: boolean }>
+  byProduct: Array<{ productId: number; name: string; category: string; quantity: number; revenue: number; cost: number; margin: number | null; marginPct: number | null; costIncomplete?: boolean }>
+}
+type CafeData = {
+  summary: { revenue: number; baseRevenue: number; modifierRevenue: number; ingredientCost?: number; unknownCostQuantity?: number; partialCostQuantity?: number; wasteCost?: number }
+  drinks: Array<{ productId: number; name: string; quantity: number; revenue: number; baseRevenue: number; modifierRevenue: number; ingredientCost?: number; costStatus?: "known" | "partial" | "unknown" | "none"; margin?: number | null }>
+  waste?: Array<{ reason: string; events: number; cost: number }>
 }
 type DebtAgingData = {
   totalOutstanding: number
@@ -144,14 +150,19 @@ export function ReportsPage() {
     setZLoading(false)
   }, [closingCash, zNotes])
 
+  const [cafe, setCafe] = useState<CafeData | null>(null)
   const loadMargin = useCallback(async () => {
     setMarginLoading(true); setMarginError(null)
     try {
       const data = await api<MarginData>(`/api/reports/margin?days=${marginDays}`)
       setMargin(data)
+      // café batch: drinks' own price vs options, ingredient cost from the lots each sale took, waste
+      setCafe(await api<CafeData>(`/api/reports/cafe?days=${marginDays}`).catch(() => null))
     } catch (e) { setMarginError(e instanceof Error ? e.message : "Failed to load") }
     setMarginLoading(false)
   }, [marginDays])
+  const money = (v: number | null | undefined) => (v == null ? "—" : formatCurrency(v))
+  const pct = (v: number | null | undefined) => (v == null ? "—" : formatPct(v))
 
   const loadDebtAging = useCallback(async () => {
     setDebtLoading(true); setDebtError(null)
@@ -182,8 +193,8 @@ export function ReportsPage() {
   const marginStats = useMemo(() => margin ? {
     revenue: formatCurrency(margin.summary.totalRevenue),
     cost: formatCurrency(margin.summary.totalCost),
-    marginVal: formatCurrency(margin.summary.totalMargin),
-    marginPct: formatPct(margin.summary.marginPct),
+    marginVal: margin.summary.totalMargin == null ? "—" : formatCurrency(margin.summary.totalMargin),
+    marginPct: margin.summary.marginPct == null ? "—" : formatPct(margin.summary.marginPct),
   } : null, [margin])
 
   const debtStats = useMemo(() => debt ? {
@@ -361,7 +372,7 @@ export function ReportsPage() {
                       <span className="font-medium">{c.category}</span>
                       <div className="flex gap-4">
                         <span className="opacity-50">{formatCurrency(c.revenue)}</span>
-                        <span className={c.margin >= 0 ? "text-emerald-400" : "text-rose-400"}>{formatCurrency(c.margin)} ({formatPct(c.marginPct)})</span>
+                        <span className={c.margin == null ? "opacity-50" : c.margin >= 0 ? "text-emerald-400" : "text-rose-400"} title={c.costIncomplete ? t("admin.cafe.margin_incomplete") : undefined}>{money(c.margin)} ({pct(c.marginPct)})</span>
                       </div>
                     </div>
                   ))}
@@ -382,13 +393,43 @@ export function ReportsPage() {
                         <td className="py-2 pr-4">{p.quantity}</td>
                         <td className="py-2 pr-4">{formatCurrency(p.revenue)}</td>
                         <td className="py-2 pr-4">{formatCurrency(p.cost)}</td>
-                        <td className={`py-2 pr-4 ${p.margin >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{formatCurrency(p.margin)}</td>
-                        <td className="py-2">{formatPct(p.marginPct)}</td>
+                        <td className={`py-2 pr-4 ${p.margin == null ? "opacity-50" : p.margin >= 0 ? "text-emerald-400" : "text-rose-400"}`} title={p.costIncomplete ? t("admin.cafe.margin_incomplete") : undefined}>{money(p.margin)}</td>
+                        <td className="py-2">{pct(p.marginPct)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              {margin.summary.totalMargin == null && <p className="text-sm opacity-70" role="note">{t("admin.cafe.margin_incomplete")}</p>}
+              {cafe && (
+                <section className="data-card p-5 rounded-xl overflow-auto" aria-labelledby="cafe-report-title">
+                  <p id="cafe-report-title" className="font-semibold mb-3">{t("admin.cafe.title")}</p>
+                  {cafe.drinks.length === 0 ? <p className="text-sm opacity-50">{t("admin.cafe.empty")}</p> : (<>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                      <StatCard label={t("admin.cafe.base")} value={formatCurrency(cafe.summary.baseRevenue)} color="emerald" />
+                      <StatCard label={t("admin.cafe.options")} value={formatCurrency(cafe.summary.modifierRevenue)} color="indigo" />
+                      {cafe.summary.ingredientCost !== undefined && <StatCard label={t("admin.cafe.ingredient_cost")} value={formatCurrency(cafe.summary.ingredientCost)} color="rose" />}
+                      {cafe.summary.wasteCost !== undefined && <StatCard label={t("admin.cafe.waste")} value={formatCurrency(cafe.summary.wasteCost)} color="violet" />}
+                    </div>
+                    {(cafe.summary.unknownCostQuantity ?? 0) + (cafe.summary.partialCostQuantity ?? 0) > 0 && <p className="text-sm opacity-70 mb-3" role="note">{t("admin.cafe.unknown", { n: (cafe.summary.unknownCostQuantity ?? 0) + (cafe.summary.partialCostQuantity ?? 0) })}</p>}
+                    <table className="w-full text-sm">
+                      <thead><tr className="text-start opacity-50">
+                        <th className="pb-2 pr-4">{t("admin.cafe.drink")}</th><th className="pb-2 pr-4">{t("admin.cafe.qty")}</th><th className="pb-2 pr-4">{t("admin.cafe.base")}</th><th className="pb-2 pr-4">{t("admin.cafe.options")}</th>
+                        {cafe.summary.ingredientCost !== undefined && <><th className="pb-2 pr-4">{t("admin.cafe.ingredient_cost")}</th><th className="pb-2 pr-4">{t("admin.cafe.cost_status")}</th><th className="pb-2">{t("admin.margin_col")}</th></>}
+                      </tr></thead>
+                      <tbody>
+                        {cafe.drinks.map((d) => (
+                          <tr key={d.productId} className="border-t border-white/5">
+                            <td className="py-2 pr-4">{d.name}</td><td className="py-2 pr-4">{d.quantity}</td>
+                            <td className="py-2 pr-4">{formatCurrency(d.baseRevenue)}</td><td className="py-2 pr-4">{formatCurrency(d.modifierRevenue)}</td>
+                            {cafe.summary.ingredientCost !== undefined && <><td className="py-2 pr-4">{money(d.ingredientCost)}</td><td className="py-2 pr-4">{t(`admin.cafe.status.${d.costStatus ?? "none"}`)}</td><td className="py-2">{money(d.margin)}</td></>}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>)}
+                </section>
+              )}
             </div>
           )}
           {!margin && !marginLoading && <p className="text-sm opacity-50 py-8 text-center">{t("admin.select_period")}</p>}

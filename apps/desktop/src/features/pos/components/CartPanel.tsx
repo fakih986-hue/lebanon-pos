@@ -1,4 +1,5 @@
 import { useI18n } from "@lebanonpos/shared"
+import type { CartKey } from "../lib/lineOptions"
 import { Eraser, PauseCircle, PlayCircle, ShoppingCart, X } from "lucide-react"
 
 import CartBody from "./CartBody"
@@ -21,9 +22,9 @@ interface CartItem {
 
 interface Props {
   items: CartItem[]
-  onIncreaseQty: (id: number) => void
-  onDecreaseQty: (id: number) => void
-  onRemoveItem: (id: number) => void
+  onIncreaseQty: (id: CartKey) => void
+  onDecreaseQty: (id: CartKey) => void
+  onRemoveItem: (id: CartKey) => void
   heldSales: HeldSale[]
   onResumeHeld: (sale: HeldSale) => void
   onDiscardHeld: (sale: HeldSale) => void
@@ -43,8 +44,9 @@ interface Props {
   discountValue: string
   onDiscountModeChange: (mode: DiscountMode) => void
   onDiscountValueChange: (value: string) => void
-  onSetQuantity: (id: number, qty: number) => void
-  onSetPrice: (id: number, price: number) => void
+  onSetQuantity: (id: CartKey, qty: number) => void
+  onSetPrice: (id: CartKey, price: number) => void
+  onEditItem?: (id: CartKey) => void
   onHold: () => void
   onClean: () => void
   onCompleteSale: () => void
@@ -106,6 +108,7 @@ export default function CartPanel({
   onDiscountValueChange,
   onSetQuantity,
   onSetPrice,
+  onEditItem,
   saleNote,
   onSaleNoteChange,
   onHold,
@@ -244,6 +247,7 @@ export default function CartPanel({
         onRemoveItem={onRemoveItem}
         onSetQuantity={onSetQuantity}
         onSetPrice={onSetPrice}
+        onEditItem={onEditItem}
         saleNote={saleNote}
         onSaleNoteChange={onSaleNoteChange}
         vatRate={vatRate}

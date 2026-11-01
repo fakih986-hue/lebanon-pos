@@ -38,6 +38,15 @@ export type ProductReceiveInput = {
   // price/stock/barcode change). No pack conversion, no stock sharing.
   parentId?: number
   variantName?: string
+  // Café batch: receive into this existing stock item by id (ingredients have no barcode), with what the invoice
+  // said: purchase unit, quantity, units per purchase and the actual price per purchase unit. `stock` is the
+  // quantity in its stock unit (derived exactly), `cost` the valuation per stock unit.
+  receiveIntoProductId?: number
+  purchaseUnit?: string
+  purchaseQuantity?: number
+  unitsPerPurchase?: number
+  purchasePrice?: number
+  supplierReference?: string
 }
 
 export type ReceiveResult = {
@@ -146,7 +155,10 @@ function cleanProductPatch(patch: Partial<Product>) {
   } else if (typeof cleanPatch.barcode === "string") {
     cleanPatch.barcode = normalizeBarcode(cleanPatch.barcode)
   }
-  if ("stockPolicy" in cleanPatch && cleanPatch.stockPolicy !== "tracked" && cleanPatch.stockPolicy !== "untracked") delete cleanPatch.stockPolicy
+  if ("stockPolicy" in cleanPatch && cleanPatch.stockPolicy !== "tracked" && cleanPatch.stockPolicy !== "untracked" && cleanPatch.stockPolicy !== "recipe") delete cleanPatch.stockPolicy
+  // café batch: the recipe pointer moves only with a saved recipe revision (menu.service); units are checked there too
+  delete (cleanPatch as Record<string, unknown>).recipeRev
+  if ("modifierGroupIds" in cleanPatch) cleanPatch.modifierGroupIds = [...new Set((cleanPatch.modifierGroupIds ?? []).filter((x) => typeof x === "string" && x))]
 
   if (typeof cleanPatch.name === "string") {
     cleanPatch.name = normalizeName(cleanPatch.name)
@@ -198,7 +210,8 @@ export async function getProducts(): Promise<Product[]> {
  *  Management/inventory views use the unfiltered accessors and still see
  *  archived products (to restore/report them). */
 export function getSellableProducts(list: Product[]): Product[] {
-  return list.filter((p) => !p.archived)
+  // café batch: an ingredient is kept in stock but never offered for sale
+  return list.filter((p) => !p.archived && p.sellable !== false)
 }
 
 export function subscribeProducts(callback: (products: Product[]) => void) {
@@ -261,6 +274,37 @@ export function receiveProducts(
   }
 
   entries.forEach((entry, index) => {
+    // ── Café batch: a stock item received by id, in purchase units (no barcode needed) ──
+    if (entry.receiveIntoProductId != null) {
+      const targetIndex = nextProducts.findIndex((p) => p.id === entry.receiveIntoProductId)
+      if (targetIndex < 0) { reject(index, `Entry #${index + 1}: product not found`); return }
+      const target = nextProducts[targetIndex]
+      if ((target.stockPolicy ?? "tracked") !== "tracked") { reject(index, `"${target.name}" keeps no stock`); return }
+      if (!(entry.stock > 0)) { reject(index, `Entry #${index + 1}: quantity must be greater than 0`); return }
+      nextProducts[targetIndex] = {
+        ...target,
+        stock: Math.round((Number(target.stock) + entry.stock) * 1000) / 1000,
+        ...(isCostAvailable(entry.cost) ? { cost: entry.cost } : {}),
+        supplierId: entry.supplierId ?? target.supplierId,
+        supplierName: entry.supplierName ?? target.supplierName,
+      }
+      batchInputs.push({
+        ...lotIds(index),
+        productId: target.id,
+        productSyncId: target.syncId ?? undefined,
+        productName: target.name,
+        barcode: target.barcode ?? "",
+        quantity: entry.stock,
+        ...(isCostAvailable(entry.cost) ? { unitCost: entry.cost } : {}),
+        unitPrice: Number(target.price) || 0,
+        expiryDate: entry.expiryDate,
+        supplierId: entry.supplierId,
+        supplierName: entry.supplierName,
+        ...(entry.purchaseUnit ? { purchaseUnit: entry.purchaseUnit, purchaseQuantity: entry.purchaseQuantity, unitsPerPurchase: entry.unitsPerPurchase, ...(entry.purchasePrice !== undefined ? { purchasePrice: entry.purchasePrice } : {}) } : {}),
+        ...(entry.supplierReference ? { supplierReference: entry.supplierReference } : {}),
+      })
+      return
+    }
     const barcode = normalizeBarcode(entry.barcode)
     const name = normalizeName(entry.name)
     const category = normalizeName(entry.category)
@@ -598,8 +642,16 @@ export function createProduct(input: {
   /** Optional: blank or absent = no barcode (stored as null). */
   barcode?: string | null
   category: string
-  /** SPRINT-1: "untracked" for made-to-order items (no stock, no lots). Default "tracked". */
-  stockPolicy?: "tracked" | "untracked"
+  /** SPRINT-1: "untracked" for made-to-order items (no stock, no lots). Default "tracked".
+   *  Café batch: "recipe" for a drink made from ingredients (no stock of its own). */
+  stockPolicy?: "tracked" | "untracked" | "recipe"
+  /** Café batch: false = an ingredient (never offered for sale); its stock unit and how it is bought. */
+  sellable?: boolean
+  stockUnit?: "unit" | "g" | "ml"
+  purchaseUnit?: "unit" | "pack" | "g" | "kg" | "ml" | "L" | null
+  unitsPerPurchase?: number | null
+  /** Café batch: the modifier groups offered with it, in order. */
+  modifierGroupIds?: string[]
   accent?: ProductAccent
   parentId?: number | null
   variantName?: string
@@ -620,10 +672,13 @@ export function createProduct(input: {
 }): Product | undefined {
   assertCanWrite("create product")
   if (!userCan("inventory.receive")) throw new PermissionError("Creating a product needs the Receive stock or Manage inventory permission.")
+  // café batch: a drink made from a recipe, or offered with options, is menu management (the server checks the same)
+  if ((input.stockPolicy === "recipe" || (input.modifierGroupIds?.length ?? 0) > 0) && !userCan("inventory.manage")) throw new PermissionError("Adding a drink to the menu needs the Manage inventory permission.")
   const currentProducts = getProductsSync()
   const normalizedBarcode = normalizeBarcode(input.barcode ?? "")
   const inputAliases = normalizeBarcodeList(input.barcodeAliases).filter((b) => b !== normalizedBarcode)
-  const untracked = input.stockPolicy === "untracked"
+  // no stock of its own: made to order, or made from ingredients (its recipe consumes them)
+  const untracked = input.stockPolicy === "untracked" || input.stockPolicy === "recipe"
 
   // Check for barcode conflicts — primary AND aliases, incoming primary + aliases
   const conflictCandidates = [normalizedBarcode, ...inputAliases].filter(Boolean)
@@ -652,7 +707,12 @@ export function createProduct(input: {
     stock: untracked ? 0 : input.stock,
     // No barcode = null (several products may have none; "" would collide on the server).
     barcode: normalizedBarcode || null,
-    stockPolicy: untracked ? "untracked" : "tracked",
+    stockPolicy: input.stockPolicy === "recipe" ? "recipe" : untracked ? "untracked" : "tracked",
+    // café batch: ingredient and menu fields (defaults: sellable, counted in units, no options)
+    sellable: input.sellable !== false,
+    stockUnit: input.stockUnit ?? "unit",
+    ...(input.purchaseUnit ? { purchaseUnit: input.purchaseUnit, unitsPerPurchase: input.unitsPerPurchase ?? 1 } : {}),
+    modifierGroupIds: [...new Set(input.modifierGroupIds ?? [])],
     category: normalizeName(input.category),
     accent: input.accent ?? chooseAccent(input.category, nextId),
     parentId: input.parentId ?? null,

@@ -4,7 +4,7 @@
 // the sale), and which sale is approved and sent (built once: the same sale, never a rebuilt one).
 import type { Permission } from "../services/security.service"
 
-type Line = { id: number; quantity: number; price: number }
+type Line = { id: number; quantity: number; price: number; modifiers?: Array<{ optionId?: string; priceDelta?: number }>; note?: string }
 type ProductPrice = { id: number; price: number; wholesalePrice?: number | null }
 
 /**
@@ -14,8 +14,10 @@ type ProductPrice = { id: number; price: number; wholesalePrice?: number | null 
 export function listFloor(item: Line, products: ProductPrice[], hasCustomer: boolean): number {
   const p = products.find((x) => x.id === item.id)
   if (!p) return item.price
+  // café batch: plus the options' price changes (as the server: the product's price + the chosen options' deltas)
+  const deltas = (item.modifiers ?? []).reduce((s, m) => s + (Number(m.priceDelta) || 0), 0)
   const wholesale = Number(p.wholesalePrice ?? 0)
-  return wholesale > 0 && hasCustomer ? Math.min(p.price, wholesale) : p.price
+  return (wholesale > 0 && hasCustomer ? Math.min(p.price, wholesale) : p.price) + deltas
 }
 
 /** The permissions this sale needs that the person signed in does not hold. */
@@ -35,7 +37,7 @@ export function checkoutFingerprint(i: {
   paymentMethod: string; customerId: string | null; paidUsd: number; paidLbp: number
 }): string {
   return JSON.stringify({
-    items: i.items.map((item) => [item.id, item.quantity, item.price]), discountTotal: i.discountTotal, subtotal: i.subtotal, tax: i.tax, total: i.total,
+    items: i.items.map((item) => [item.id, item.quantity, item.price, (item.modifiers ?? []).map((m) => m.optionId).join(","), item.note ?? ""]), discountTotal: i.discountTotal, subtotal: i.subtotal, tax: i.tax, total: i.total,
     sellAtCost: i.sellAtCost, paymentMethod: i.paymentMethod, customer: i.customerId, paidUsd: i.paidUsd, paidLbp: i.paidLbp,
   })
 }

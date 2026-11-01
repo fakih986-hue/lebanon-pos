@@ -11,8 +11,16 @@ import { getPolicyGate, retireSyncClient, type PolicyGateBlocker } from "../../s
 import { showToast } from "../../services/toast.service"
 import type { Product } from "../../types/product"
 import { Drawer, Field } from "./BackOffice"
+import RecipeEditor from "./RecipeEditor"
+import { PURCHASE_UNITS, purchaseConversion, type PurchaseUnit, type StockUnit } from "../../lib/cafeMenu"
+import { getModifierGroups } from "../../services/menu.service"
 
-type Errors = Partial<Record<"name" | "category" | "barcode" | "aliases" | "price" | "cost" | "reorderPoint" | "reorderQuantity" | "stock" | "variantName", string>>
+/** Café batch: what a product is (docs/CAFE-IMPLEMENTATION-PLAN.md) — its stock policy and whether it is for sale. */
+type Kind = "packaged" | "recipe" | "untracked" | "ingredient"
+const kindOf = (p?: Product): Kind => !p ? "packaged" : p.sellable === false ? "ingredient" : p.stockPolicy === "recipe" ? "recipe" : p.stockPolicy === "untracked" ? "untracked" : "packaged"
+const policyOf = (k: Kind) => (k === "recipe" ? "recipe" : k === "untracked" ? "untracked" : "tracked") as "tracked" | "untracked" | "recipe"
+
+type Errors = Partial<Record<"name" | "category" | "barcode" | "aliases" | "price" | "cost" | "reorderPoint" | "reorderQuantity" | "stock" | "variantName" | "purchaseUnit", string>>
 const code = (v: string) => v.trim().replace(/\s+/g, "")
 const splitAliases = (v: string) => Array.from(new Set(v.split(/[\n,]+/).map(code).filter(Boolean)))
 
@@ -40,7 +48,13 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
   const [supplierId, setSupplierId] = useState(p?.supplierId ?? "")
   const [image, setImage] = useState(p?.image ?? "")
   const [stock, setStock] = useState("0")
-  const [trackStock, setTrackStock] = useState(p ? p.stockPolicy !== "untracked" : true)
+  const [kind, setKind] = useState<Kind>(kindOf(p))
+  const trackStock = kind === "packaged" || kind === "ingredient"
+  const [stockUnit, setStockUnit] = useState<StockUnit>((p?.stockUnit as StockUnit) ?? "unit")
+  const [purchaseUnit, setPurchaseUnit] = useState<PurchaseUnit | "">((p?.purchaseUnit as PurchaseUnit) ?? "")
+  const [packSize, setPackSize] = useState(String(p?.unitsPerPurchase ?? ""))
+  const [groupIds, setGroupIds] = useState<string[]>(p?.modifierGroupIds ?? [])
+  const allGroups = getModifierGroups().filter((g) => !g.archived || groupIds.includes(g.id))
   const [isParent, setIsParent] = useState(!!p?.isParent)
   const [variantName, setVariantName] = useState(p?.variantName ?? "")
   const [errors, setErrors] = useState<Errors>({})
@@ -50,7 +64,7 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
   const [gate, setGate] = useState<null | { state: "checking" | "offline" } | { state: "blocked"; blockers: PolicyGateBlocker[] }>(null)
   const [retireNote, setRetireNote] = useState("")
   const [retireMsg, setRetireMsg] = useState("")
-  const policyChanged = mode !== "create" && !!p && (p.stockPolicy ?? "tracked") !== (trackStock ? "tracked" : "untracked")
+  const policyChanged = mode !== "create" && !!p && (p.stockPolicy ?? "tracked") !== policyOf(kind)
   const imageRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLDivElement>(null)
   // New variant row (edit mode)
@@ -79,6 +93,11 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
       const n = Number(v); if (v.trim() !== "" && (!Number.isFinite(n) || n < 0)) e[k] = t("inv.err.non_negative")
     }
     if (mode === "create" && trackStock) { const n = Number(stock); if (!Number.isFinite(n) || n < 0) e.stock = t("inv.err.non_negative") }
+    // café batch: a purchase unit must convert to the stock unit (kg→g, L→ml, packs of n units)
+    if (kind === "ingredient" && purchaseUnit) {
+      const conv = purchaseConversion(stockUnit, purchaseUnit, packSize)
+      if (!conv.ok) e.purchaseUnit = conv.reason === "pack-size" ? t("inv.err.pack_size") : t("inv.err.unit_incompatible", { from: t(`unit.${purchaseUnit}`), to: t(`unit.${stockUnit}`) })
+    }
     if (p?.parentId && !variantName.trim()) e.variantName = t("inv.err.variant_name")
     return e
   }
@@ -87,7 +106,8 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
     if (saving) return
     if (policyChanged) {
       setGate({ state: "checking" }); setRetireMsg("")
-      const g = await getPolicyGate()
+      // a drink made from a recipe needs every till and hub on the café version (schema 6)
+      const g = await getPolicyGate(policyOf(kind) === "recipe" || p?.stockPolicy === "recipe" ? 6 : undefined)
       if (!g.reachable) { setGate({ state: "offline" }); return }
       if (!g.allowed) { setGate({ state: "blocked", blockers: g.blockers }); return }
       setGate(null)
@@ -101,7 +121,7 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
     const r = await retireSyncClient(b, note)
     if (!r.ok) { setRetireMsg(t("inv.gate.retire_failed", { error: r.error ?? "" })); return }
     setRetireMsg(t("inv.gate.retired", { label: b.label })); setRetireNote("")
-    const g = await getPolicyGate()
+    const g = await getPolicyGate(policyOf(kind) === "recipe" || p?.stockPolicy === "recipe" ? 6 : undefined)
     setGate(!g.reachable ? { state: "offline" } : g.allowed ? null : { state: "blocked", blockers: g.blockers })
   }
 
@@ -121,7 +141,12 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
       supplierId: supplier?.id ?? "", supplierName: supplier?.name ?? "",
       barcodeAliases: splitAliases(aliases).filter((a) => a !== code(barcode)),
       image: image || undefined,
-      stockPolicy: trackStock ? "tracked" as const : "untracked" as const,
+      stockPolicy: policyOf(kind),
+      // café batch: an ingredient is not for sale; its unit and how it is bought; options offered with it
+      sellable: kind !== "ingredient",
+      stockUnit: kind === "ingredient" ? stockUnit : "unit" as const,
+      ...(kind === "ingredient" && purchaseUnit ? { purchaseUnit, unitsPerPurchase: (purchaseConversion(stockUnit, purchaseUnit, packSize) as { unitsPerPurchase?: number }).unitsPerPurchase ?? 1 } : { purchaseUnit: null, unitsPerPurchase: null }),
+      modifierGroupIds: kind === "ingredient" ? [] : groupIds,
     }
     setSaving(true)
     try {
@@ -209,10 +234,44 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
           <Field label={t("inv.field.reorder_point")} error={errors.reorderPoint} help={t("inv.reorder_point_help")}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={reorderPoint} onChange={(e) => setReorderPoint(e.target.value)} />}</Field>
           <Field label={t("inv.field.reorder_qty")} error={errors.reorderQuantity}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={reorderQuantity} onChange={(e) => setReorderQuantity(e.target.value)} />}</Field>
         </div>
-        <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontWeight: 600 }}>
-          <input type="checkbox" className="mg2-check" checked={trackStock} onChange={(e) => setTrackStock(e.target.checked)} />
-          <span>{t("inv.track_stock")}<span className="mg2-cap" style={{ display: "block", fontWeight: 400 }}>{trackStock ? t("inv.track_stock_on_help") : t("inv.track_stock_off_help")}</span></span>
-        </label>
+        <fieldset className="mg2-card" style={{ padding: 12, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+          <legend className="mg2-cap" style={{ padding: "0 4px" }}>{t("inv.kind")}</legend>
+          {(["packaged", "recipe", "untracked", "ingredient"] as const).map((k) => (
+            <label key={k} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontWeight: 600, minHeight: 32 }}>
+              <input type="radio" name="product-kind" className="mg2-check" checked={kind === k} onChange={() => setKind(k)} />
+              <span>{t(`inv.kind.${k}`)}<span className="mg2-cap" style={{ display: "block", fontWeight: 400 }}>{t(`inv.kind.${k}_help`)}</span></span>
+            </label>
+          ))}
+        </fieldset>
+        {kind === "ingredient" && (
+          <div className="mg2-grid2">
+            <Field label={t("inv.field.stock_unit")} help={mode === "edit" && p && p.stock !== 0 ? t("inv.stock_unit_locked") : t("inv.stock_unit_help")}>{(a) => (
+              <select {...a} className="mg2-select" value={stockUnit} disabled={mode === "edit" && !!p && p.stock !== 0} onChange={(e) => { setStockUnit(e.target.value as StockUnit); setPurchaseUnit("") }}>
+                {(["unit", "g", "ml"] as const).map((u) => <option key={u} value={u}>{t(`unit.${u}`)}</option>)}
+              </select>
+            )}</Field>
+            <Field label={t("inv.field.purchase_unit")} error={errors.purchaseUnit} help={purchaseUnit && purchaseConversion(stockUnit, purchaseUnit, packSize).ok ? t("inv.conversion", { from: `1 ${t(`unit.${purchaseUnit}`)}`, to: `${formatNumber((purchaseConversion(stockUnit, purchaseUnit, packSize) as { unitsPerPurchase: number }).unitsPerPurchase)} ${t(`unit.${stockUnit}`)}` }) : undefined}>{(a) => (
+              <select {...a} className="mg2-select" value={purchaseUnit} onChange={(e) => setPurchaseUnit(e.target.value as PurchaseUnit | "")}>
+                <option value="">{t("inv.same_as_stock_unit")}</option>
+                {PURCHASE_UNITS[stockUnit].map((u) => <option key={u} value={u}>{t(`unit.${u}`)}</option>)}
+              </select>
+            )}</Field>
+            {purchaseUnit === "pack" && <Field label={t("inv.field.pack_size")}>{(a) => <input {...a} className="mg2-input num" type="number" min="1" step="1" dir="ltr" value={packSize} onChange={(e) => setPackSize(e.target.value)} />}</Field>}
+          </div>
+        )}
+        {kind !== "ingredient" && allGroups.length > 0 && (
+          <fieldset className="mg2-card" style={{ padding: 12, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+            <legend className="mg2-cap" style={{ padding: "0 4px" }}>{t("inv.options_offered")}</legend>
+            {allGroups.map((g) => (
+              <label key={g.id} style={{ display: "flex", gap: 10, alignItems: "center", minHeight: 32 }}>
+                <input type="checkbox" className="mg2-check" checked={groupIds.includes(g.id)} onChange={(e) => setGroupIds((ids) => e.target.checked ? [...ids, g.id] : ids.filter((x) => x !== g.id))} />
+                <span>{g.name} <span className="mg2-cap">· {g.required ? t("pos.mod.required") : t("pos.mod.optional")}</span></span>
+              </label>
+            ))}
+          </fieldset>
+        )}
+        {mode === "edit" && p && kind === "recipe" && p.stockPolicy === "recipe" && <RecipeEditor product={p} products={products} />}
+        {kind === "recipe" && (mode === "create" || p?.stockPolicy !== "recipe") && <p className="mg2-cap" role="status" style={{ margin: 0 }}>{t("inv.recipe_after_save")}</p>}
         {policyChanged && gate && (
           <div role={gate.state === "checking" ? "status" : "alert"} className="mg2-cap" style={{ display: "flex", flexDirection: "column", gap: 6, color: gate.state === "checking" ? "var(--text-2)" : "var(--v2-err)" }}>
             <span>{gate.state === "checking" ? t("inv.gate.checking") : gate.state === "offline" ? t("inv.gate.offline") : t("inv.gate.blocked")}</span>
@@ -229,7 +288,7 @@ export default function ProductEditorDrawer({ mode, product, products, categorie
           </div>
         )}
         {!trackStock ? null : mode === "create" ? (
-          <Field label={t("inv.field.opening_stock")} error={errors.stock} help={t("inv.opening_stock_help")}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step="1" dir="ltr" value={stock} onChange={(e) => setStock(e.target.value)} />}</Field>
+          <Field label={kind === "ingredient" ? t("inv.field.opening_stock_in", { unit: t(`unit.${stockUnit}`) }) : t("inv.field.opening_stock")} error={errors.stock} help={t("inv.opening_stock_help")}>{(a) => <input {...a} className="mg2-input num" type="number" min="0" step={kind === "ingredient" ? "any" : "1"} dir="ltr" value={stock} onChange={(e) => setStock(e.target.value)} />}</Field>
         ) : p && !p.isParent ? (
           <p className="mg2-cap" style={{ margin: 0 }}>{t("inv.stock_not_here", { n: formatNumber(p.stock) })}</p>
         ) : null}

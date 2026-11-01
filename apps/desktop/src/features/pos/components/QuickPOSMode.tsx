@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent, type RefObject } from "react"
+import { cartKeyOf, lineOptionsText, type CartKey } from "../lib/lineOptions"
 import { AnimatePresence, motion } from "framer-motion"
 const MotionDiv = motion.div as any
 const MotionSpan = motion.span as any
@@ -25,7 +26,7 @@ import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency, formatNumber } from "../lib/currency"
 import type { Product } from "../types/product"
 
-type CartItem = Product & { quantity: number }
+type CartItem = Product & { quantity: number; lineKey?: string; modifiers?: Array<{ name?: string; nameAr?: string }>; note?: string }
 type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
 type CustomerLedger = { id: string; name: string; mobile: string; balance: number }
 
@@ -44,9 +45,11 @@ type Props = {
   scanCaptureInputRef: RefObject<HTMLInputElement | null>
   onScanCapture: (event: ChangeEvent<HTMLInputElement>) => void
   items: CartItem[]
-  onIncreaseQty: (id: number) => void
-  onDecreaseQty: (id: number) => void
-  onRemoveItem: (id: number) => void
+  onIncreaseQty: (id: CartKey) => void
+  onDecreaseQty: (id: CartKey) => void
+  onRemoveItem: (id: CartKey) => void
+  /** Café batch: change a configured line's options */
+  onEditItem?: (id: CartKey) => void
   onCleanSale: () => void
   onExit: () => void
   itemCount: number
@@ -105,7 +108,7 @@ export default function QuickPOSMode({
   scanInputRef, scanCode, onScanCodeChange, onQuickAdd,
   scannerStatus, cameraActive, cameraEngine, onStartCamera,
   videoRef, scanCaptureInputRef, onScanCapture,
-  items, onIncreaseQty, onDecreaseQty, onRemoveItem,
+  items, onIncreaseQty, onDecreaseQty, onRemoveItem, onEditItem,
   onCleanSale, onExit,
   itemCount, total, totalLbp, exchangeRate,
   paymentMethod, onSelectPayment,
@@ -120,7 +123,7 @@ export default function QuickPOSMode({
   hasDiscount, canApplyDiscount, discountTotal, grossSubtotal,
   payableLbp = totalLbp, payableUsd = total, canOverridePrice = false, approvalHint = null,
 }: Props) {
-  const { t, dir } = useI18n()
+  const { t, locale, dir } = useI18n()
   const usdRef = useRef<HTMLInputElement>(null)
   const lbpRef = useRef<HTMLInputElement>(null)
   const [discountOpen, setDiscountOpen] = useState(false)
@@ -249,22 +252,22 @@ export default function QuickPOSMode({
               ) : (
                 <div className="space-y-1.5">
                   {items.map((item, i) => (
-                    <MotionDiv key={item.id} layout
+                    <MotionDiv key={cartKeyOf(item)} layout
                       initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 16, height: 0, marginBottom: 0 }}
                       transition={{ duration: 0.18, delay: i * 0.02 }}
                       className="flex flex-wrap items-center gap-3 rounded-xl px-4 py-3 sm:flex-nowrap"
                       style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-                      <div className="min-w-0 flex-1 basis-full sm:basis-auto"><p className="break-words text-[16px] font-semibold leading-snug" style={{ margin: 0, color: "var(--text)" }}>{item.name}</p><p className="num" style={{ margin: 0, color: "var(--text-2)" }}>{item.quantity} × {formatCurrency(item.price)}</p></div>
+                      <div className="min-w-0 flex-1 basis-full sm:basis-auto"><p className="break-words text-[16px] font-semibold leading-snug" style={{ margin: 0, color: "var(--text)" }}>{item.name}</p>{lineOptionsText(item, locale) ? <p className="break-words text-[13px]" dir="auto" style={{ margin: 0, color: "var(--text-2)" }}>{lineOptionsText(item, locale)}</p> : null}<p className="num" style={{ margin: 0, color: "var(--text-2)" }}>{item.quantity} × {formatCurrency(item.price)}</p>{item.lineKey && onEditItem ? <button type="button" className="mg2-btn mg2-btn-ghost" style={{ minHeight: 40, marginTop: 4 }} onClick={() => onEditItem(cartKeyOf(item))} aria-label={t("pos.mod.edit_line", { name: item.name })}>{t("pos.mod.edit")}</button> : null}</div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <button type="button" onClick={() => onDecreaseQty(item.id)}
+                        <button type="button" onClick={() => onDecreaseQty(cartKeyOf(item))}
                           aria-label={`Decrease ${item.name}`}
                           className="flex h-12 w-12 items-center justify-center rounded-lg transition active:scale-90"
                           style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
                           <Minus size={14} />
                         </button>
                         <span className="w-8 text-center text-[16px] font-semibold tabular-nums" style={{ color: "var(--text)" }}>{item.quantity}</span>
-                        <button type="button" onClick={() => onIncreaseQty(item.id)}
+                        <button type="button" onClick={() => onIncreaseQty(cartKeyOf(item))}
                           aria-label={`Increase ${item.name}`}
                           className="flex h-12 w-12 items-center justify-center rounded-lg transition active:scale-90"
                           style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
@@ -274,7 +277,7 @@ export default function QuickPOSMode({
                       <span className="w-20 shrink-0 text-end text-[16px] font-semibold tabular-nums ms-auto sm:ms-0" style={{ color: "var(--text)" }}>
                         {formatCurrency(item.price * item.quantity)}
                       </span>
-                      <button type="button" onClick={() => onRemoveItem(item.id)}
+                      <button type="button" onClick={() => onRemoveItem(cartKeyOf(item))}
                         aria-label={t("pos.v2.remove_item", { name: item.name })}
                         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition hover:opacity-70"
                         style={{ color: "var(--text-2)" }}>

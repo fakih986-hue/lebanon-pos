@@ -14,6 +14,8 @@ type Props = {
   wholesale?: boolean
   cartQuantity?: number
   searchQuery?: string
+  /** Café batch: a recipe drink's servings from the ingredients in stock (null: not a recipe drink) */
+  servings?: number | null
 }
 
 /* Category accent ramp (Midnight Gold): muted hues that sit calmly on dark
@@ -54,10 +56,13 @@ const ProductCard = memo(function ProductCard({
   wholesale,
   cartQuantity = 0,
   searchQuery,
+  servings,
 }: Props) {
   const { t } = useI18n()
-  const untracked      = product.stockPolicy === "untracked"
-  const outOfStock     = !untracked && product.stock <= 0
+  // café batch: a recipe drink has no stock of its own; it is out when its ingredients cannot make one
+  const recipeDrink    = product.stockPolicy === "recipe"
+  const untracked      = product.stockPolicy === "untracked" || (recipeDrink && (servings ?? 0) > 0)
+  const outOfStock     = recipeDrink ? (servings ?? 0) <= 0 : !untracked && product.stock <= 0
   const lowStock       = !untracked && !outOfStock && product.stock <= 5
   const accent         = accents[product.accent] ?? accents.emerald
   const effectivePrice = wholesale && product.wholesalePrice != null

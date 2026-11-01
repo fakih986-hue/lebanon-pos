@@ -19,19 +19,22 @@ import {
   formatVatRate,
 } from "../lib/helpers"
 import type { CustomerLedger } from "../services/customer.service"
+import { cartKeyOf, lineOptionsText, type CartKey } from "../lib/lineOptions"
 
 type PaymentMethod = "Cash" | "Card" | "Wallet" | "Debt"
 type DiscountMode = "USD" | "Percent"
 
-interface CartItem { id: number; name: string; price: number; quantity: number; stock: number }
+interface CartItem { id: number; name: string; price: number; quantity: number; stock: number; lineKey?: string; modifiers?: Array<{ name?: string; nameAr?: string }>; note?: string }
 
 interface Props {
   items: CartItem[]
-  onIncreaseQty: (id: number) => void
-  onDecreaseQty: (id: number) => void
-  onRemoveItem: (id: number) => void
-  onSetQuantity: (id: number, qty: number) => void
-  onSetPrice: (id: number, price: number) => void
+  onIncreaseQty: (id: CartKey) => void
+  onDecreaseQty: (id: CartKey) => void
+  onRemoveItem: (id: CartKey) => void
+  onSetQuantity: (id: CartKey, qty: number) => void
+  onSetPrice: (id: CartKey, price: number) => void
+  /** Café batch: change a configured line's options */
+  onEditItem?: (id: CartKey) => void
   saleNote: string
   onSaleNoteChange: (note: string) => void
   vatRate: number
@@ -87,7 +90,7 @@ interface Props {
 
 export default function CartBody({
   items, onIncreaseQty, onDecreaseQty, onRemoveItem,
-  onSetQuantity, onSetPrice,
+  onSetQuantity, onSetPrice, onEditItem,
   saleNote, onSaleNoteChange,
   vatRate, customers, selectedCustomerId, onSelectCustomer, selectedCustomer,
   paymentMethod, onSelectPayment,
@@ -103,7 +106,7 @@ export default function CartBody({
 }: Props) {
   const [discountOpen, setDiscountOpen] = useState(false)
   const [saleNoteOpen, setSaleNoteOpen] = useState(false)
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
 
   const isCash = paymentMethod === "Cash"
   const lbp = t("pos.v2.lbp")
@@ -122,17 +125,19 @@ export default function CartBody({
         <div className="space-y-2">
           {items.map((item) => (
             <CartItemCard
-              key={item.id}
+              key={cartKeyOf(item)}
               name={item.name}
               quantity={item.quantity}
               unitPrice={item.price}
               totalPrice={item.price * item.quantity}
               atCost={sellAtCost}
-              onIncrease={() => onIncreaseQty(item.id)}
-              onDecrease={() => onDecreaseQty(item.id)}
-              onRemove={() => onRemoveItem(item.id)}
-              onSetQuantity={(qty) => onSetQuantity(item.id, qty)}
-              onSetPrice={canSetLinePrice ? (price) => onSetPrice(item.id, price) : undefined}
+              onIncrease={() => onIncreaseQty(cartKeyOf(item))}
+              onDecrease={() => onDecreaseQty(cartKeyOf(item))}
+              onRemove={() => onRemoveItem(cartKeyOf(item))}
+              onSetQuantity={(qty) => onSetQuantity(cartKeyOf(item), qty)}
+              onSetPrice={canSetLinePrice ? (price) => onSetPrice(cartKeyOf(item), price) : undefined}
+              detail={lineOptionsText(item, locale) || undefined}
+              onEdit={item.lineKey && onEditItem ? () => onEditItem(cartKeyOf(item)) : undefined}
             />
           ))}
         </div>

@@ -19,6 +19,12 @@ import CartDrawer from "../components/CartDrawer"
 import CartPanel from "../components/CartPanel"
 
 import VariantPicker from "../components/VariantPicker"
+import ModifierSheet from "../components/ModifierSheet"
+import WasteDialog from "../components/WasteDialog"
+import { cartShortage, configuredLine, consumptionPayload, defaultSelection, groupsForProduct, ingredientCheckoutLines, needsOptions, servingsFor, subscribeMenu, type CafeLine } from "../services/menu.service"
+import { lineConfigKey, priceWithModifiers, type LineModifier, type Selection } from "../lib/cafeMenu"
+import { cartKeyOf, type CartKey } from "../lib/lineOptions"
+import { getProductsSync } from "../services/product.service"
 import QuickPOSMode from "../components/QuickPOSMode"
 import KeyboardShortcutsModal from "../components/KeyboardShortcutsModal"
 import PaymentReviewDialog from "../components/PaymentReviewDialog"
@@ -60,7 +66,7 @@ import {
 import { recordAuditEvent, userCan, getActiveShift, getCurrentUser, subscribeSecurity, type Permission } from "../services/security.service"
 import { showToast } from "../services/toast.service"
 import { consumeInventoryBatches } from "../services/inventoryBatch.service"
-import { getApiUrl, getConnectionMode, pullFromServer, nextDocumentReference, getSyncStatus, serverSupportsMadeToOrder, getTopologyGuidance } from "../services/sync.service"
+import { getApiUrl, getConnectionMode, pullFromServer, nextDocumentReference, getSyncStatus, serverSupportsMadeToOrder, serverSupportsCafeMenu, getTopologyGuidance } from "../services/sync.service"
 import { createId } from "../lib/storage"
 
 import type { Product } from "../types/product"
@@ -73,7 +79,14 @@ type DiscountMode = "USD" | "Percent"
 
 type CartItem = Product & {
   quantity: number
+  /** Café batch: a configured drink's line (its options, note and price decide it; same configuration = same line) */
+  lineKey?: string
+  modifiers?: LineModifier[]
+  note?: string
+  basePrice?: number
 }
+/** Café batch: cart lines as the menu service reads them (recipe drinks and their options) */
+const cafeLines = (items: CartItem[]): CafeLine[] => items.map((i) => ({ productId: i.id, quantity: i.quantity, stockPolicy: i.stockPolicy, recipeRev: i.recipeRev ?? null, modifiers: i.modifiers }))
 
 export default function POSPage() {
   const { t, dir } = useI18n()
@@ -98,6 +111,15 @@ export default function POSPage() {
 
   // --- Local state ---
   const [items, setItems] = useState<CartItem[]>([])
+  // café batch: the cart as of this render, for handlers that check ingredients before changing it
+  const itemsRef = useRef<CartItem[]>(items)
+  itemsRef.current = items
+  // the drink whose options are being chosen (a new line, or an existing line being changed)
+  const [optionsFor, setOptionsFor] = useState<null | { product: Product; mode: "add" | "edit"; lineKey?: CartKey; initial: { selection: Selection[]; note: string; quantity: number } }>(null)
+  const lastConfigured = useRef<null | { productId: number; selection: Selection[]; note: string }>(null)
+  const [menuVersion, setMenuVersion] = useState(0)
+  const [wasteOpen, setWasteOpen] = useState(false)
+  useEffect(() => subscribeMenu(() => setMenuVersion((v) => v + 1)), [])
   const [selectedCustomerId, setSelectedCustomerId] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [search, setSearch] = useState("")
@@ -308,9 +330,12 @@ export default function POSPage() {
   const hasDiscount = discountTotal > 0
   const cartQuantities = useMemo(() => {
     const map: Record<number, number> = {}
-    for (const item of items) map[item.id] = item.quantity
+    for (const item of items) map[item.id] = (map[item.id] ?? 0) + item.quantity
     return map
   }, [items])
+  // café batch: what each recipe drink's ingredients in stock can still make (ingredients are not in `products`)
+  const allProducts = useMemo(() => getProductsSync(), [products, menuVersion])
+  const servingsById = useMemo(() => new Map(products.filter((p) => p.stockPolicy === "recipe").map((p) => [p.id, servingsFor(p, [], allProducts)])), [products, allProducts, menuVersion])
   const paidUsdAmount = parseMoney(paidUsd)
   const paidLbpAmount = parseMoney(paidLbp)
   const tenderMode: TenderMode = paidLbpAmount > 0 ? (paidUsdAmount > 0 ? "Mixed" : "LBP") : "USD"
@@ -362,6 +387,51 @@ export default function POSPage() {
   // --- Cart operations ---
   // SPRINT-1: the stock limit applies to tracked items only (made-to-order items have none).
   const stockLimit = (p: { stock: number; stockPolicy?: string }) => p.stockPolicy === "untracked" ? Number.POSITIVE_INFINITY : p.stock
+  /**
+   * Café batch: put a configured drink in the cart (or change an existing line: `replaceKey`). The same
+   * configuration merges into its line; the whole cart's ingredients must be in stock here.
+   */
+  function addConfigured(product: Product, selection: Selection[], note: string, quantity: number, source = "options", replaceKey?: CartKey): boolean {
+    const line = configuredLine(product, selection, note, quantity)
+    const base = sellAtCost ? product.cost : selectedCustomer?.isWholesale && product.wholesalePrice != null ? Number(product.wholesalePrice) : product.price
+    const price = sellAtCost ? product.cost : priceWithModifiers(base, line.modifiers)
+    const key = lineConfigKey(product.id, line.modifiers, line.note, price)
+    const current = itemsRef.current
+    const at = replaceKey !== undefined ? current.findIndex((i) => cartKeyOf(i) === replaceKey) : -1
+    const rest = replaceKey !== undefined ? current.filter((i) => cartKeyOf(i) !== replaceKey) : current
+    const same = rest.find((i) => i.lineKey === key)
+    const entry: CartItem = { ...product, quantity, price, lineKey: key, modifiers: line.modifiers, note: line.note || undefined, basePrice: line.basePrice, recipeRev: line.recipeRev }
+    const next = same
+      ? rest.map((i) => (i === same ? { ...i, quantity: i.quantity + quantity } : i))
+      : at >= 0 ? [...rest.slice(0, at), entry, ...rest.slice(at)] : [...rest, entry]
+    const short = cartShortage(cafeLines(next), allProducts)
+    if (short) {
+      playErrorBuzz()
+      const message = t("pos.status.ingredient_short", { ingredient: short.ingredient, n: formatNumber(short.inStock), unit: t(`unit.${short.unit}`) })
+      setScannerStatus(message)
+      showToast(message, "error")
+      return false
+    }
+    setItems(next)
+    lastConfigured.current = { productId: product.id, selection, note: line.note }
+    playScanBlip()
+    setScannerStatus(t(replaceKey !== undefined ? "pos.mod.updated" : "pos.status.added_by", { name: product.name, source: sourceLabel(source) }))
+    return true
+  }
+  /** Café batch: the last configured drink again, as it was chosen. */
+  function repeatLastDrink() {
+    const last = lastConfigured.current
+    const product = last ? products.find((p) => p.id === last.productId) : undefined
+    if (!last || !product) return
+    addConfigured(product, last.selection, last.note, 1, "repeat")
+  }
+  function editLine(key: CartKey) {
+    const item = itemsRef.current.find((i) => cartKeyOf(i) === key)
+    const product = item ? products.find((p) => p.id === item.id) : undefined
+    if (!item || !product) return
+    setOptionsFor({ product, mode: "edit", lineKey: key, initial: { selection: (item.modifiers ?? []).map((m) => ({ groupId: m.groupId, optionId: m.optionId })), note: item.note ?? "", quantity: item.quantity } })
+  }
+
   function addItem(product: Product) {
     if (stockLimit(product) <= 0) return
     const effectivePrice = sellAtCost
@@ -370,11 +440,11 @@ export default function POSPage() {
       ? Number(product.wholesalePrice)
       : product.price
     setItems((currentItems) => {
-      const existingItem = currentItems.find((item) => item.id === product.id)
+      const existingItem = currentItems.find((item) => item.id === product.id && !item.lineKey)
       if (existingItem) {
         if (existingItem.quantity >= stockLimit(product)) return currentItems
         return currentItems.map((item) =>
-          item.id === product.id
+          item === existingItem
             ? { ...item, quantity: item.quantity + 1, price: effectivePrice }
             : item
         )
@@ -391,9 +461,11 @@ export default function POSPage() {
         currentItems.map((item) => {
           const product = products.find((p) => p.id === item.id)
           if (!product) return item
-          const normalPrice = selectedCustomer?.isWholesale && product.wholesalePrice != null
+          const normalBase = selectedCustomer?.isWholesale && product.wholesalePrice != null
             ? Number(product.wholesalePrice)
             : product.price
+          // café batch: a configured line's normal price includes its options
+          const normalPrice = item.modifiers?.length ? priceWithModifiers(normalBase, item.modifiers) : normalBase
           return { ...item, price: next ? product.cost : normalPrice }
         })
       )
@@ -409,7 +481,14 @@ export default function POSPage() {
         return
       }
     }
-    const cartItem = items.find((item) => item.id === product.id)
+    // café batch: a drink with options opens its sheet (required choices are never skipped); a recipe drink
+    // without options goes in directly when its ingredients can make it
+    if (needsOptions(product)) {
+      setOptionsFor({ product, mode: "add", initial: { selection: defaultSelection(groupsForProduct(product)), note: "", quantity: 1 } })
+      return
+    }
+    if (product.stockPolicy === "recipe") { addConfigured(product, [], "", 1, source); return }
+    const cartItem = items.find((item) => item.id === product.id && !item.lineKey)
     // SPRINT-1: made-to-order (untracked) items have no stock limit.
     const tracked = product.stockPolicy !== "untracked"
     if (tracked && product.stock <= 0) {
@@ -481,41 +560,43 @@ export default function POSPage() {
     })
   }, [])
 
-  const increaseQuantity = useCallback(function increaseQuantity(id: number) {
-    setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.id === id && item.quantity < stockLimit(item)
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      )
-    )
+  // Café batch: lines are keyed by their configuration (a drink with options) or their product. A drink's
+  // quantity goes up only while the cart's ingredients are in stock here.
+  const changeQuantity = useCallback(function changeQuantity(key: CartKey, quantityOf: (item: CartItem) => number) {
+    const current = itemsRef.current
+    const target = current.find((item) => cartKeyOf(item) === key)
+    if (!target) return
+    const quantity = Math.min(quantityOf(target), stockLimit(target))
+    const next = current.map((item) => (item === target ? { ...item, quantity } : item)).filter((item) => item.quantity > 0)
+    if (target.stockPolicy === "recipe" && quantity > target.quantity) {
+      const short = cartShortage(cafeLines(next))
+      if (short) {
+        playErrorBuzz()
+        setScannerStatus(t("pos.status.ingredient_short", { ingredient: short.ingredient, n: formatNumber(short.inStock), unit: t(`unit.${short.unit}`) }))
+        return
+      }
+    }
+    setItems(next)
+  }, [t])
+  const increaseQuantity = useCallback(function increaseQuantity(key: CartKey) {
+    changeQuantity(key, (item) => item.quantity + 1)
+  }, [changeQuantity])
+
+  const decreaseQuantity = useCallback(function decreaseQuantity(key: CartKey) {
+    changeQuantity(key, (item) => item.quantity - 1)
+  }, [changeQuantity])
+
+  const removeItem = useCallback(function removeItem(key: CartKey) {
+    setItems((currentItems) => currentItems.filter((item) => cartKeyOf(item) !== key))
   }, [])
 
-  const decreaseQuantity = useCallback(function decreaseQuantity(id: number) {
-    setItems((currentItems) =>
-      currentItems
-        .map((item) =>
-          item.id === id ? { ...item, quantity: item.quantity - 1 } : item
-        )
-        .filter((item) => item.quantity > 0)
-    )
-  }, [])
+  const setItemQuantity = useCallback(function setItemQuantity(key: CartKey, qty: number) {
+    changeQuantity(key, () => qty)
+  }, [changeQuantity])
 
-  const removeItem = useCallback(function removeItem(id: number) {
-    setItems((currentItems) => currentItems.filter((item) => item.id !== id))
-  }, [])
-
-  const setItemQuantity = useCallback(function setItemQuantity(id: number, qty: number) {
+  const setItemPrice = useCallback(function setItemPrice(key: CartKey, price: number) {
     setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.id === id ? { ...item, quantity: Math.min(qty, stockLimit(item)) } : item
-      ).filter((item) => item.quantity > 0)
-    )
-  }, [])
-
-  const setItemPrice = useCallback(function setItemPrice(id: number, price: number) {
-    setItems((currentItems) =>
-      currentItems.map((item) => item.id === id ? { ...item, price } : item)
+      currentItems.map((item) => cartKeyOf(item) === key ? { ...item, price } : item)
     )
   }, [])
 
@@ -780,6 +861,13 @@ export default function POSPage() {
 
     // SPRINT-1: an older hub or cloud cannot record made-to-order lines (it would reject the sale
     // after payment). Refuse here, before any money is taken.
+    // café batch: drinks made from recipes or sold with options need a hub or cloud that records them (schema 6)
+    if (items.some((item) => item.stockPolicy === "recipe" || (item.modifiers?.length ?? 0) > 0) && !(await serverSupportsCafeMenu())) {
+      playErrorBuzz()
+      setScannerStatus(t("pos.err.server_too_old"))
+      showToast(t("pos.err.server_too_old"), "error")
+      return
+    }
     if (items.some((item) => item.stockPolicy === "untracked") && !(await serverSupportsMadeToOrder())) {
       playErrorBuzz()
       setScannerStatus(t("pos.err.server_too_old"))
@@ -790,12 +878,15 @@ export default function POSPage() {
     const saleId = createId() // client-generated UUID → hub commit is idempotent
 
     // SPRINT-1: only tracked items consume lots and stock; made-to-order lines record money and cost only.
-    const trackedItems = items.filter((item) => item.stockPolicy !== "untracked")
-    const cartInputs = trackedItems.map((item) => ({
+    const trackedItems = items.filter((item) => (item.stockPolicy ?? "tracked") === "tracked")
+    // café batch: a recipe drink takes its ingredients' lots and stock here (FEFO, like packaged items), so an
+    // interrupted checkout gives them back exactly once (businessJournal); the server records its own consumption
+    const ingredientLines = ingredientCheckoutLines(cafeLines(items), allProducts)
+    const cartInputs = [...trackedItems.map((item) => ({
       productId: item.id, productName: item.name, barcode: item.barcode ?? "",
       quantity: item.quantity, fallbackUnitCost: item.cost,
-    }))
-    const stockLines = trackedItems.map((item) => ({ productId: item.id, quantity: item.quantity }))
+    })), ...ingredientLines.lots]
+    const stockLines = [...trackedItems.map((item) => ({ productId: item.id, quantity: item.quantity })), ...ingredientLines.stock]
 
 
     try {
@@ -803,20 +894,37 @@ export default function POSPage() {
       // that writes/enqueues nothing — so no local state changes before we
       // know the sale is actually allowed.
       const dryAlloc = consumeInventoryBatches(cartInputs, { dryRun: true })
+      // café batch: an ingredient's estimated cost per stock unit here (its lots by FEFO); the server values it
+      const ingredientUnitCost = (syncId: string) => {
+        const p = allProducts.find((x) => x.syncId === syncId)
+        const a = p ? dryAlloc.get(p.id) ?? [] : []
+        const q = a.reduce((sum, x) => sum + x.quantity, 0)
+        return q > 0 ? a.reduce((sum, x) => sum + x.unitCost * x.quantity, 0) / q : Number(p?.cost) || 0
+      }
       const saleItems = items.map((item) => {
-        const untrackedLine = item.stockPolicy === "untracked"
+        const recipeLine = item.stockPolicy === "recipe"
+        const untrackedLine = item.stockPolicy === "untracked" || recipeLine
         const allocations = untrackedLine ? [] : dryAlloc.get(item.id) ?? []
         const allocatedQuantity = allocations.reduce((sum, a) => sum + a.quantity, 0)
         const allocatedCost = allocations.reduce((sum, a) => sum + a.unitCost * a.quantity, 0)
-        const unitCost = allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost
+        const product = recipeLine || item.lineKey ? allProducts.find((p) => p.id === item.id) : undefined
+        const made = product ? configuredLine(product, (item.modifiers ?? []).map((m) => ({ groupId: m.groupId, optionId: m.optionId })), item.note ?? "", item.quantity) : null
+        const recipeCost = recipeLine && made ? made.consumption.reduce((sum, c) => sum + (c.milli / 1000) * ingredientUnitCost(c.ingredientSyncId), 0) / Math.max(1, item.quantity) : null
+        const unitCost = recipeCost ?? (allocatedQuantity > 0 ? allocatedCost / allocatedQuantity : item.cost)
         return {
           // No cost visibility on this till (SPRINT-0): no cost is sent; the server uses the product's.
           id: item.id, productSyncId: item.syncId, name: item.name, barcode: item.barcode ?? "", cost: Number.isFinite(unitCost) ? unitCost : (undefined as unknown as number),
-          stockPolicy: untrackedLine ? "untracked" as const : "tracked" as const,
+          stockPolicy: recipeLine ? "recipe" as const : untrackedLine ? "untracked" as const : "tracked" as const,
           stockPolicyVersion: item.stockPolicyVersion ?? 1,
           stockPolicyRev: item.stockPolicyRev ?? "initial",
           quantity: item.quantity, unitPrice: item.price,
           total: item.price * item.quantity, batchAllocations: allocations,
+          // café batch: the line as sold (options snapshot, note, the product's own price) and, for a recipe
+          // drink, the revision it was made with and what this register recorded it consumed
+          ...(item.modifiers?.length ? { modifiers: item.modifiers } : {}),
+          ...(item.note ? { note: item.note } : {}),
+          ...(item.lineKey || recipeLine ? { basePrice: item.basePrice ?? product?.price } : {}),
+          ...(recipeLine ? { recipeRev: made?.recipeRev ?? item.recipeRev ?? null, consumption: consumptionPayload(made?.consumption ?? []) } : {}),
         }
       })
       const tender: SaleTender | undefined =
@@ -840,7 +948,7 @@ export default function POSPage() {
         items: saleItems,
       }
       let sale: Sale = buildSale(saleInput, saleId) // throws if no open shift
-      const hubFingerprint = cartFingerprint({ items: items.map((item) => ({ id: item.id, quantity: item.quantity, unitPrice: item.price })), paymentMethod, customerId: selectedCustomer?.id, total })
+      const hubFingerprint = cartFingerprint({ items: items.map((item) => ({ id: item.id, quantity: item.quantity, unitPrice: item.price, options: [...(item.modifiers ?? []).map((m) => m.optionId), item.note ?? ""].join(",") })), paymentMethod, customerId: selectedCustomer?.id, total })
 
       // -- SPRINT-2 E: a manager's online approval for exactly this sale --
       let approvalId: string | undefined
@@ -900,7 +1008,7 @@ export default function POSPage() {
           })
         } finally { setIsValidatingStock(false) }
         if (outcome.status === "rejected") {
-          setScannerStatus(/Insufficient stock/i.test(outcome.error)
+          setScannerStatus(/Insufficient stock|INGREDIENT_SHORT/i.test(outcome.error)
             ? t("pos.status.hub_out_of_stock")
             : t("pos.status.hub_rejected", { error: outcome.error }))
           playErrorBuzz(); pullFromServer().catch(() => {}); return
@@ -1035,6 +1143,7 @@ export default function POSPage() {
                 onIncreaseQty={increaseQuantity}
                 onDecreaseQty={decreaseQuantity}
                 onRemoveItem={removeItem}
+                onEditItem={editLine}
                 onCleanSale={cleanSale}
                 onExit={() => setQuickMode(false)}
                 itemCount={itemCount}
@@ -1125,6 +1234,16 @@ export default function POSPage() {
                   selectedCategory={selectedCategory}
                   onAddToCart={(p) => addProductToSale(p, "favorites")}
                 />
+                {/* café batch: the last configured drink again, and remakes/waste (a stock event, not a sale) */}
+                {(lastConfigured.current || products.some((p) => p.stockPolicy === "recipe")) && (
+                  <div className="flex flex-wrap gap-2 px-1 pb-2">
+                    {lastConfigured.current && (() => {
+                      const last = products.find((p) => p.id === lastConfigured.current?.productId)
+                      return last ? <button type="button" className="mg2-btn" style={{ minHeight: 44 }} onClick={repeatLastDrink}>{t("pos.mod.repeat_last", { name: last.name })}</button> : null
+                    })()}
+                    <button type="button" className="mg2-btn mg2-btn-ghost" style={{ minHeight: 44 }} onClick={() => setWasteOpen(true)}>{t("waste.open")}</button>
+                  </div>
+                )}
 
                 <div
                   ref={productListRef}
@@ -1142,6 +1261,7 @@ export default function POSPage() {
                       wholesale={!!(selectedCustomer?.isWholesale)}
                       cartQuantities={cartQuantities}
                       searchQuery={debouncedSearch}
+                      servings={servingsById}
                     />
                   ) : (
                     <EmptyState
@@ -1192,6 +1312,7 @@ export default function POSPage() {
           onIncreaseQty={increaseQuantity}
           onDecreaseQty={decreaseQuantity}
           onRemoveItem={removeItem}
+          onEditItem={editLine}
           onSetQuantity={setItemQuantity}
           onSetPrice={setItemPrice}
           saleNote={saleNote}
@@ -1256,6 +1377,7 @@ export default function POSPage() {
           onIncreaseQty={increaseQuantity}
           onDecreaseQty={decreaseQuantity}
           onRemoveItem={removeItem}
+          onEditItem={editLine}
           onSetQuantity={setItemQuantity}
           onSetPrice={setItemPrice}
           saleNote={saleNote}
@@ -1323,6 +1445,30 @@ export default function POSPage() {
           <p>{confirmAction.message}</p>
         </ConfirmDialog>
       )}
+
+      {optionsFor ? (
+        <ModifierSheet
+          key={`${optionsFor.product.id}:${String(optionsFor.lineKey ?? "new")}`}
+          product={optionsFor.product}
+          groups={groupsForProduct(optionsFor.product)}
+          initial={optionsFor.initial}
+          mode={optionsFor.mode}
+          servingsWith={(ids) => servingsFor(optionsFor.product, ids, allProducts)}
+          onConfirm={(r) => {
+            if (!addConfigured(optionsFor.product, r.selection, r.note, r.quantity, "options", optionsFor.mode === "edit" ? optionsFor.lineKey : undefined)) return
+            setOptionsFor(null)
+            window.requestAnimationFrame(() => scanInputRef.current?.focus())
+          }}
+          // nothing changes in the cart; focus goes back where the cashier was scanning
+          onCancel={() => { setOptionsFor(null); window.requestAnimationFrame(() => scanInputRef.current?.focus()) }}
+        />
+      ) : null}
+
+      {wasteOpen ? (
+        <WasteDialog products={allProducts}
+          onDone={(message) => { setWasteOpen(false); setScannerStatus(message); showToast(message); window.requestAnimationFrame(() => scanInputRef.current?.focus()) }}
+          onCancel={() => { setWasteOpen(false); window.requestAnimationFrame(() => scanInputRef.current?.focus()) }} />
+      ) : null}
 
       {variantPickerProduct ? (
         <VariantPicker

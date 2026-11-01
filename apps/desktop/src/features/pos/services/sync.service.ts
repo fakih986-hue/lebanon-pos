@@ -81,7 +81,8 @@ async function isServerReachable(): Promise<boolean> {
 // x-titan-unknown-cost: this till keeps a daily close's unknown cost as unknown (null), not 0.
 // x-titan-close-revisions: this till keeps several closes per date (register, shift) and their revisions.
 // Schema 5: this till understands the store's staff policy "enforce" (every action is the signed-in person's).
-const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "5", "x-titan-unknown-cost": "1", "x-titan-close-revisions": "1" }
+// café batch: schema 6 = receives modifier groups, recipe revisions, recipe drinks and ingredients
+const SYNC_SCHEMA_HEADERS = { "x-titan-sync-schema": "6", "x-titan-unknown-cost": "1", "x-titan-close-revisions": "1" }
 
 /**
  * A rejected refund (or void) is a money conflict: the customer may already
@@ -245,6 +246,9 @@ const PULL_TARGETS: Record<string, { key: string; event: string }> = {
   dailyCloses:      { key: "lebanonpos.daily-closes.v1",          event: "lebanonpos-daily-closes-changed" },
   deliveryOrders:   { key: "lebanonpos.delivery-orders.v1",       event: "lebanonpos-delivery-changed" },
   cashMovements:    { key: "lebanonpos.cash-movements.v1",        event: "lebanonpos-cash-movements-changed" },
+  // café batch: the menu (menu.service)
+  modifierGroups:   { key: "lebanonpos.modifier-groups.v1",       event: "lebanonpos-menu-changed" },
+  recipeRevisions:  { key: "lebanonpos.recipe-revisions.v1",      event: "lebanonpos-menu-changed" },
 }
 
 const DELETE_TARGETS: Record<string, Array<{ key: string; event: string }>> = {
@@ -883,10 +887,11 @@ export type SyncEntity =
   | "expense" | "daily-close" | "supplier" | "purchase-order"
   | "supplier-payment" | "staff" | "shift" | "inventory" | "settings"
   | "delivery-order" | "held-sale" | "cash-movement"
+  | "modifier-group" | "recipe"
 
 export type SyncAction =
   | "create" | "update" | "delete" | "receive"
-  | "payment" | "close" | "open" | "adjust" | "count" | "void" | "pin"
+  | "payment" | "close" | "open" | "adjust" | "count" | "void" | "pin" | "waste"
 
 export type SyncOperationStatus = "Pending" | "Synced" | "Failed" | "Rejected"
 
@@ -1418,6 +1423,12 @@ export async function serverSupportsMadeToOrder(): Promise<boolean> {
   try { return Number(localStorage.getItem(SERVER_SCHEMA_KEY)) >= 3 } catch { return false }
 }
 
+/** Café batch: whether the hub or cloud records drinks with options and recipes (schema 6); last answer offline. */
+export async function serverSupportsCafeMenu(): Promise<boolean> {
+  await serverSupportsMadeToOrder().catch(() => false)
+  try { return Number(localStorage.getItem(SERVER_SCHEMA_KEY)) >= 6 } catch { return false }
+}
+
 // ─── SPRINT-1: store-wide upgrade gate and held sales ─────────────────────────
 
 export type PolicyGateBlocker = { id: string; label: string; syncSchema: number; lastSeenAt: string; source: "server" | "cloud" }
@@ -1428,11 +1439,12 @@ export type PolicyGate = { allowed: boolean; blockers: PolicyGateBlocker[]; reac
  * older version can still trade (it could not say which setting it sold under). Offline (or no
  * server) = not allowed: the check cannot be made.
  */
-export async function getPolicyGate(): Promise<PolicyGate> {
+export async function getPolicyGate(minSchema?: number): Promise<PolicyGate> {
   const apiUrl = getApiUrl(), token = getAuthToken()
   if (!apiUrl || !token) return { allowed: false, blockers: [], reachable: false }
   try {
-    const res = await fetch(`${apiUrl}/api/sync/policy-gate`, { cache: "no-store", headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()), ...SYNC_SCHEMA_HEADERS }, signal: AbortSignal.timeout(6000) })
+    // café batch: a drink made from a recipe needs every till and hub on schema 6
+    const res = await fetch(`${apiUrl}/api/sync/policy-gate${minSchema ? `?minSchema=${minSchema}` : ""}`, { cache: "no-store", headers: { Authorization: `Bearer ${token}`, ...deviceHeadersFor(getApiUrl()), ...SYNC_SCHEMA_HEADERS }, signal: AbortSignal.timeout(6000) })
     if (!res.ok) return { allowed: false, blockers: [], reachable: false }
     const body = await res.json()
     return { allowed: !!body.allowed, blockers: Array.isArray(body.blockers) ? body.blockers : [], reachable: true }
@@ -1453,7 +1465,9 @@ export async function retireSyncClient(blocker: PolicyGateBlocker, note: string)
 
 export function isHeldError(error: string | undefined | null): boolean {
   // also: held by the store's topology (connected where its stock is not kept): kept, never given up on
-  return typeof error === "string" && (error.startsWith("STOCK_POLICY_HELD:") || /^TOPOLOGY_[A-Z_]+:/.test(error))
+  // café batch: a recipe revision the server has not received yet, or an ingredient short where the stock is kept
+  // (held for a manager there): kept and resent, never given up on
+  return typeof error === "string" && (error.startsWith("STOCK_POLICY_HELD:") || error.startsWith("RECIPE_HELD:") || error.startsWith("INGREDIENT_SHORT:") || /^TOPOLOGY_[A-Z_]+:/.test(error))
 }
 
 export type PolicyHeldSale = {
@@ -1469,6 +1483,9 @@ export type PolicyHeldSale = {
   productName: string | null
   revision: string | null
   lines: Array<{ name: string; quantity: number; stockPolicy: string; stockPolicyRev: string | null; held: boolean }>
+  /** Why it is held: an unknown stock setting, an unknown recipe revision (café batch), not enough of an ingredient
+   *  where the stock is kept (held for a manager there), or the store's topology */
+  kind: "stock-policy" | "recipe" | "ingredient" | "topology"
 }
 
 /** Sales this till has taken payment for that the server is holding (see isHeldError). */
@@ -1482,8 +1499,9 @@ export function getPolicyHeldSales(): PolicyHeldSale[] {
     return {
       operationId: op.id, saleId: String(sale.id ?? ""), saleNumber: String(sale.saleNumber ?? sale.id ?? ""), createdAt: String(sale.createdAt ?? op.createdAt),
       cashier: String(sale.cashier ?? ""), total: Number(sale.total ?? 0), paymentMethod: String(sale.paymentMethod ?? ""), tender: sale.tender ?? null,
-      reason: error.replace(/^STOCK_POLICY_HELD:\s*/, ""), productName, revision,
-      lines: items.map((i) => ({ name: String(i.name ?? ""), quantity: Number(i.quantity ?? 0), stockPolicy: i.stockPolicy === "untracked" ? "untracked" : "tracked", stockPolicyRev: typeof i.stockPolicyRev === "string" ? i.stockPolicyRev : null, held: !i.stockPolicyResolution && i.name === productName })),
+      reason: error.replace(/^(STOCK_POLICY_HELD|RECIPE_HELD|INGREDIENT_SHORT):\s*/, ""), productName, revision,
+      kind: error.startsWith("RECIPE_HELD:") ? "recipe" as const : error.startsWith("INGREDIENT_SHORT:") ? "ingredient" as const : /^TOPOLOGY_/.test(error) ? "topology" as const : "stock-policy" as const,
+      lines: items.map((i) => ({ name: String(i.name ?? ""), quantity: Number(i.quantity ?? 0), stockPolicy: i.stockPolicy === "untracked" || i.stockPolicy === "recipe" ? i.stockPolicy : "tracked", stockPolicyRev: typeof i.stockPolicyRev === "string" ? i.stockPolicyRev : null, held: !i.stockPolicyResolution && !i.recipeResolution && i.name === productName })),
     }
   })
 }
@@ -1517,6 +1535,30 @@ export function resolvePolicyHeldSale(operationId: string, policy: "tracked" | "
       writeLocalWithIndexedDB("lebanonpos.sales.v1", next)
     }
   } catch { /* the queued sale carries the decision either way */ }
+  dispatchSyncChanged()
+  scheduleAutoFlush()
+  return true
+}
+
+/**
+ * Café batch: a drink sold with a recipe revision the server never received (RECIPE_HELD). A manager decides on
+ * this register: "recorded" = made with the ingredients this register recorded, "none" = record no ingredients.
+ * The decision travels with the sale (audited by the server, which accepts it only from a manager).
+ */
+export function resolveRecipeHeldSale(operationId: string, mode: "recorded" | "none", note: string, manager: { id: string; name: string }): boolean {
+  let done = false
+  const at = new Date().toISOString()
+  updateQueueOps((op) => {
+    if (op.id !== operationId || !(op.error ?? "").startsWith("RECIPE_HELD:")) return op
+    const productName = (op.error ?? "").match(/"([^"]+)"/)?.[1] ?? null
+    const sale = { ...((op.payload ?? {}) as any) }
+    sale.items = (Array.isArray(sale.items) ? sale.items : []).map((i: any) => i.name === productName && i.stockPolicy === "recipe" && !i.recipeResolution
+      ? { ...i, recipeResolution: { mode, note, resolvedBy: manager.id, resolvedByName: manager.name, at } }
+      : i)
+    done = true
+    return { ...op, payload: sale, status: "Pending" as const, error: undefined }
+  })
+  if (!done) return false
   dispatchSyncChanged()
   scheduleAutoFlush()
   return true
@@ -2130,6 +2172,8 @@ const FULL_PULL_ENTITY_MAP: Record<string, string> = {
   shifts: "shifts",
   auditEvents: "audit-events",
   cashMovements: "cash-movements",
+  modifierGroups: "modifier-groups",
+  recipeRevisions: "recipe-revisions",
 }
 
 /**

@@ -738,6 +738,19 @@ export type ReceiveEntry = {
   // POS-RECEIVE-VARIANT-1B: create as a variant linked to this parent.
   parentId?: number
   variantName?: string
+  // Café batch: an existing stock item received by id in purchase units (see product.service receiveProducts)
+  receiveIntoProductId?: number
+  purchaseUnit?: string
+  purchaseQuantity?: number
+  unitsPerPurchase?: number
+  purchasePrice?: number
+  supplierReference?: string
+}
+
+/** What a received line is worth: an ingredient line's invoice value, else quantity × unit cost (undefined: no cost). */
+function lineValue(e: Pick<ReceiveEntry, "quantity" | "cost" | "receiveIntoProductId" | "purchaseQuantity" | "purchasePrice">): number | undefined {
+  if (e.receiveIntoProductId != null && e.purchasePrice !== undefined && e.purchaseQuantity) return Math.round(e.purchaseQuantity * e.purchasePrice * 10000) / 10000
+  return isCostAvailable(e.cost) ? e.quantity * e.cost : undefined
 }
 
 /** Fixed ids of a submission's finance effects (absent without a submission: fresh ids). */
@@ -757,12 +770,12 @@ export function receiveFinanceIds(submissionId: string) {
 export function recordReceiveFinance(
   submissionId: string | undefined,
   context: ReceivingContext | undefined,
-  received: Array<Pick<ReceiveEntry, "name" | "barcode" | "quantity" | "cost" | "price">>,
+  received: Array<Pick<ReceiveEntry, "name" | "barcode" | "quantity" | "cost" | "price" | "receiveIntoProductId" | "purchaseUnit" | "purchaseQuantity" | "purchasePrice">>,
 ): ReceiveFinance {
   const method = context?.paymentMethod ?? "On Account"
   // A supplier invoice is never recorded with a missing (NaN) or invented total: the Receive page
   // requires a unit cost on every line when a supplier is chosen; this refuses anything else.
-  const totalCost = sumAvailable(received.map((e) => (isCostAvailable(e.cost) ? e.quantity * e.cost : undefined)))
+  const totalCost = sumAvailable(received.map(lineValue))
   if (context?.supplierId && totalCost === undefined) {
     return {
       purchaseOrder: { status: "failed", error: "a received line has no unit cost: no purchase order recorded" },
@@ -785,8 +798,10 @@ export function recordReceiveFinance(
       paymentMethod: method,
       paidAmount: 0,
       items: received.map(e => ({
-        name: e.name, barcode: e.barcode, quantity: e.quantity,
-        unitCost: e.cost as number, unitPrice: e.price, total: e.quantity * (e.cost as number),
+        // café batch: an ingredient line is recorded as invoiced (purchase quantity at its price per purchase unit)
+        ...(e.receiveIntoProductId != null && e.purchaseUnit && e.purchasePrice !== undefined && e.purchaseQuantity
+          ? { name: `${e.name} (${e.purchaseUnit})`, barcode: e.barcode, quantity: e.purchaseQuantity, unitCost: e.purchasePrice, unitPrice: e.price, total: lineValue(e) as number }
+          : { name: e.name, barcode: e.barcode, quantity: e.quantity, unitCost: e.cost as number, unitPrice: e.price, total: e.quantity * (e.cost as number) }),
       })),
     })
     const orders = getPurchaseOrders()
@@ -908,7 +923,8 @@ export function snapshotStockBefore(entries: ReceiveEntry[], products: typeof im
   const all = products.getProductsSync()
   const out: Record<string, number> = {}
   for (const e of entries) {
-    const p = e.attachAliasToProductId != null ? all.find((x) => x.id === e.attachAliasToProductId) : products.findProductByBarcode(e.barcode)
+    const byId = e.attachAliasToProductId ?? e.receiveIntoProductId
+    const p = byId != null ? all.find((x) => x.id === byId) : products.findProductByBarcode(e.barcode)
     if (p) out[String(p.id)] = p.stock
   }
   return out
@@ -959,6 +975,9 @@ export function runReceiveSteps(
         image: e.image,
         parentId: e.parentId,
         variantName: e.variantName,
+        receiveIntoProductId: e.receiveIntoProductId,
+        purchaseUnit: e.purchaseUnit, purchaseQuantity: e.purchaseQuantity, unitsPerPurchase: e.unitsPerPurchase, purchasePrice: e.purchasePrice,
+        supplierReference: e.supplierReference,
       })),
       {
         submissionId: sub,
@@ -999,7 +1018,7 @@ export function runReceiveSteps(
     batchesCreated: plan.lots.length,
     poNumber: finance.purchaseOrder.number,
     paymentRecorded: finance.payment.status === "recorded",
-    totalValue: sumAvailable(received.map((e) => (isCostAvailable(e.cost) ? e.quantity * e.cost : undefined))),
+    totalValue: sumAvailable(received.map(lineValue)),
     units: received.reduce((s, e) => s + e.quantity, 0),
   }
   if (sub) commitReceiveSubmission(sub, results, summaryRecord, finance, opts?.recovered ? { recovered: true } : undefined)

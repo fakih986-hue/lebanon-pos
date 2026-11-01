@@ -1,5 +1,5 @@
 import { memo, useRef, useState, useLayoutEffect } from "react"
-import { Minus, Plus, Trash2 } from "lucide-react"
+import { Minus, Pencil, Plus, Trash2 } from "lucide-react"
 
 import { useI18n } from "@lebanonpos/shared"
 import { formatCurrency } from "../lib/currency"
@@ -15,12 +15,15 @@ type Props = {
   onRemove: () => void
   onSetQuantity: (qty: number) => void
   onSetPrice?: (price: number) => void
+  /** Café batch: the line's options and note (shown under the name), and changing them */
+  detail?: string
+  onEdit?: () => void
 }
 
 const CartItemCard = memo(function CartItemCard({
   name, quantity, unitPrice, totalPrice, atCost,
   onIncrease, onDecrease, onRemove,
-  onSetQuantity, onSetPrice,
+  onSetQuantity, onSetPrice, detail, onEdit,
 }: Props) {
   const { t } = useI18n()
   const [editingQty, setEditingQty] = useState(false)
@@ -92,6 +95,15 @@ const CartItemCard = memo(function CartItemCard({
             onKeyDown={expandable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleName() } } : undefined}>
             {name}
           </p>
+          {detail ? (
+            <p className="mt-0.5 break-words text-[12px] leading-snug" dir="auto" style={{ color: "var(--text-2)", margin: 0 }}>{detail}</p>
+          ) : null}
+          {onEdit ? (
+            <button type="button" onClick={onEdit} className="mt-1 inline-flex items-center gap-1 rounded-md px-1.5 text-[12px] font-semibold hover:underline"
+              style={{ minHeight: 28, color: "var(--brand-text)" }} aria-label={t("pos.mod.edit_line", { name })}>
+              <Pencil size={12} />{t("pos.mod.edit")}
+            </button>
+          ) : null}
 
           {editingPrice && onSetPrice ? (
             <div className="mt-1 flex items-center gap-1">

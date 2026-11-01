@@ -7,6 +7,7 @@ import {
 } from "lucide-react"
 import { useI18n } from "@lebanonpos/shared"
 
+import IngredientReceiveRows from "./IngredientReceiveRows"
 import { Badge, Drawer, PageHeader, SkeletonRows, StockNav, type Tone } from "../../features/pos/components/backoffice/BackOffice"
 import { renderCode128Svg } from "../../features/pos/lib/barcode"
 import {
@@ -54,6 +55,7 @@ const PROBLEM_KEY: Record<RowProblem, string> = {
   needs_decision: "inv.rcv.p.needs_decision", missing_name: "inv.rcv.p.missing_name", missing_barcode: "inv.rcv.p.missing_barcode",
   missing_quantity: "inv.rcv.p.missing_quantity", missing_target: "inv.rcv.p.missing_target", missing_variant_name: "inv.rcv.p.missing_variant_name",
   negative_money: "inv.rcv.p.negative_money", cost_missing: "inv.rcv.p.cost_missing",
+  unit_incompatible: "inv.rcv.p.unit_incompatible", pack_size: "inv.rcv.p.pack_size",
 }
 function escapeHtml(v: string) { return v.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;") }
 const num = (v: string) => { const n = Number(v); return Number.isFinite(n) ? n : 0 }
@@ -161,7 +163,7 @@ export default function ProductReceivePage() {
   const rowOpts = { costRequired: !!supplier }
   const ready = started.filter((r) => isRowReady(r, rowOpts))
   const problemRows = started.filter((r) => !isRowReady(r, rowOpts))
-  const units = ready.reduce((s, r) => s + r.quantity, 0)
+  const units = ready.reduce((s, r) => s + (r.mode === "ingredient" ? 0 : r.quantity), 0)
   // Undefined (shown "Not available") when a ready row has no unit cost.
   const cost = receiveRowsCost(ready)
   const labelsCount = rows.reduce((s, r) => s + (r.barcode.trim() && r.name.trim() ? Math.max(0, r.labels) : 0), 0)
@@ -558,7 +560,7 @@ export default function ProductReceivePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.flatMap((r) => {
+                  {rows.filter((r) => r.mode !== "ingredient").flatMap((r) => {
                     const st = isBlankRow(r) ? null : rowState(r)
                     const { notices } = rowProblems(r, productFor(r))
                     const open = expanded.has(r.id) || pickerRowId === r.id
@@ -674,6 +676,9 @@ export default function ProductReceivePage() {
                   })}
                 </tbody>
               </table>
+              <IngredientReceiveRows rows={rows.filter((r) => r.mode === "ingredient")} products={products} problemKey={PROBLEM_KEY} costRequired={!!supplier}
+                onAdd={(r) => setRows((rs) => [...rs, r])}
+                onUpdate={update} onRemove={removeRow} />
             </div>
             <datalist id="rcv-categories">{categories.map((c) => <option key={c} value={c} />)}</datalist>
 

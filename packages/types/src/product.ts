@@ -24,8 +24,20 @@ export type Product = {
   /** Optional. A product without one has barcode null; identity is syncId (SPRINT-1). */
   barcode: string | null
   barcodeAliases?: string[]
-  /** SPRINT-1: "tracked" (default: stock + lots) or "untracked" (made to order: no stock, no lots). */
-  stockPolicy?: "tracked" | "untracked"
+  /** SPRINT-1: "tracked" (default: stock + lots) or "untracked" (made to order: no stock, no lots).
+   *  Café batch: "recipe" = a drink made from ingredients (no stock of its own; its recipe consumes ingredient lots). */
+  stockPolicy?: "tracked" | "untracked" | "recipe"
+  /** Café batch: false = an ingredient (kept in stock, received and counted, never offered for sale). */
+  sellable?: boolean
+  /** Café batch: the unit its stock, lots, counts and recipes use. */
+  stockUnit?: "unit" | "g" | "ml"
+  /** Café batch: how it is usually bought, and how many stock units one purchase unit holds. */
+  purchaseUnit?: "unit" | "pack" | "g" | "kg" | "ml" | "L" | null
+  unitsPerPurchase?: number | string | null
+  /** Café batch: the modifier groups offered with it, in order. */
+  modifierGroupIds?: string[]
+  /** Café batch: the current recipe revision of a "recipe" drink (server-owned pointer). */
+  recipeRev?: string | null
   /** Server-owned: +1 on every stock-policy change; a sale line carries the version it was sold under. */
   stockPolicyVersion?: number
   /** SPRINT-1: current stock-policy revision id ("initial" = as created). Minted once by whoever changes the policy. */

@@ -102,7 +102,8 @@ export async function inspectReceiveSubmission(id: string): Promise<SubmissionEf
     const accepted = productsDone ? res?.accepted !== false : null
     const created = all.find((p) => p.syncId === `${sub.id}-p${i}`)
     const lotInput = plan?.lots.find((l) => l.id === lotId(sub.id, i))
-    const existing = e.attachAliasToProductId != null ? all.find((p) => p.id === e.attachAliasToProductId) : products.findProductByBarcode(e.barcode) ?? undefined
+    const byId = e.attachAliasToProductId ?? e.receiveIntoProductId
+    const existing = byId != null ? all.find((p) => p.id === byId) : products.findProductByBarcode(e.barcode) ?? undefined
     const productId = lotInput?.productId ?? created?.id ?? existing?.id
     // The product as this delivery wrote it: same numeric id AND same syncId. After a store switch
     // or a pull, numeric ids can belong to other products (the demo catalogue starts at 1).

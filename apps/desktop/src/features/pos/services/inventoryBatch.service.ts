@@ -114,6 +114,12 @@ export type InventoryBatch = {
   purchaseOrderNumber?: string
   receivedAt: string
   status: "Open" | "Consumed" | "Expired"
+  /** Café batch: the invoice's purchase unit, quantity, units per purchase and price per purchase unit */
+  purchaseUnit?: string
+  purchaseQuantity?: number
+  unitsPerPurchase?: number
+  purchasePrice?: number
+  supplierReference?: string
 }
 
 export type ReceiveBatchInput = {
@@ -131,6 +137,13 @@ export type ReceiveBatchInput = {
   supplierId?: string
   supplierName?: string
   purchaseOrderNumber?: string
+  /** Café batch: bought in purchase units at an actual price per purchase unit (kept as stated; the quantity and
+   *  unitCost above are derived from it), and the supplier's reference */
+  purchaseUnit?: string
+  purchaseQuantity?: number
+  unitsPerPurchase?: number
+  purchasePrice?: number
+  supplierReference?: string
   /** Fixed lot and movement ids (receiving submissions): a lot with this id is never written twice. */
   id?: string
   movementId?: string
@@ -260,6 +273,8 @@ export function receiveInventoryBatches(entries: ReceiveBatchInput[], opts?: { o
       supplierId: entry.supplierId,
       supplierName: entry.supplierName,
       purchaseOrderNumber: entry.purchaseOrderNumber,
+      ...(entry.purchaseUnit ? { purchaseUnit: entry.purchaseUnit, purchaseQuantity: entry.purchaseQuantity, unitsPerPurchase: entry.unitsPerPurchase, ...(entry.purchasePrice !== undefined ? { purchasePrice: entry.purchasePrice } : {}) } : {}),
+      ...(entry.supplierReference ? { supplierReference: entry.supplierReference } : {}),
       receivedAt: now,
       status: "Open",
     }))

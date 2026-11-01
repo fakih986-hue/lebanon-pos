@@ -52,6 +52,7 @@ export type ReceiveEntryRecord = {
   rowId?: string; name: string; barcode: string; category: string; quantity: number; cost?: number; price: number
   reorderPoint?: number; reorderQuantity?: number; expiryDate?: string
   attachAliasToProductId?: number; parentId?: number; variantName?: string
+  receiveIntoProductId?: number; purchaseUnit?: string; purchaseQuantity?: number; unitsPerPurchase?: number; purchasePrice?: number; supplierReference?: string
 }
 
 /**

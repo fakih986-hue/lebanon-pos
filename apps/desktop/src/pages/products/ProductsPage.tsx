@@ -12,6 +12,7 @@ import CatalogCleanupPanel from "../../features/pos/components/CatalogCleanupPan
 import { Badge, Drawer, EmptyState, FilterChip, PageHeader, SkeletonRows, StockNav } from "../../features/pos/components/backoffice/BackOffice"
 import ProductDetailsDrawer from "../../features/pos/components/backoffice/ProductDetailsDrawer"
 import ProductEditorDrawer from "../../features/pos/components/backoffice/ProductEditorDrawer"
+import MenuOptionsDrawer from "../../features/pos/components/backoffice/MenuOptionsDrawer"
 import { downloadCsv } from "../../features/pos/lib/csv"
 import { formatCurrency, formatNumber } from "../../features/pos/lib/currency"
 import { formatCost, isCostAvailable, sumAvailable } from "../../features/pos/lib/cost"
@@ -69,7 +70,7 @@ export default function ProductsPage() {
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [detailId, setDetailId] = useState<number | null>(params.get("product") ? Number(params.get("product")) : null)
   const [editor, setEditor] = useState<{ mode: "create" } | { mode: "edit"; id: number } | null>(null)
-  const [tool, setTool] = useState<null | "import" | "cleanup" | "categories" | "alerts" | "menu">(null)
+  const [tool, setTool] = useState<null | "import" | "cleanup" | "categories" | "alerts" | "menu" | "options">(null)
   const [bulk, setBulk] = useState<null | "category" | "price">(null)
   const [bulkCategory, setBulkCategory] = useState("")
   const [bulkField, setBulkField] = useState<"price" | "cost">("price")
@@ -111,7 +112,7 @@ export default function ProductsPage() {
       : p.archived ? false
       : v === "all" ? true
       : v === "low" ? lowIds.has(p.id)
-      : v === "out" ? !p.isParent && p.stockPolicy !== "untracked" && p.stock <= 0
+      : v === "out" ? !p.isParent && (p.stockPolicy ?? "tracked") === "tracked" && p.stock <= 0
       : v === "expiring" ? expiringIds.has(p.id)
       : v === "nobarcode" ? noBarcodeIds.has(p.id)
       : !!p.barcode && duplicateSet.has(p.barcode)
@@ -222,6 +223,7 @@ export default function ProductsPage() {
         {tool === "menu" && (
           <div className="mg2-card" style={{ marginTop: 8, padding: 6, display: "flex", flexWrap: "wrap", gap: 6 }}>
             {canManage && <button type="button" className="mg2-btn mg2-btn-ghost" onClick={() => setTool("import")}>{t("inv.tools.import")}</button>}
+            {canManage && <button type="button" className="mg2-btn mg2-btn-ghost" onClick={() => setTool("options")}>{t("menu.title")}</button>}
             {canManage && <button type="button" className="mg2-btn mg2-btn-ghost" onClick={() => setTool("cleanup")}>{t("inv.tools.cleanup")}</button>}
             {canManage && <button type="button" className="mg2-btn mg2-btn-ghost" onClick={() => setTool("categories")}>{t("inv.tools.categories")}</button>}
             <button type="button" className="mg2-btn mg2-btn-ghost" onClick={() => setTool("alerts")}>{t("inv.tools.alerts", { n: reorder.length })}</button>
@@ -319,7 +321,7 @@ export default function ProductsPage() {
                   const soon = lots.filter((b) => { const n = daysToExpiry(b.expiryDate); return n !== null && n <= 30 }).length
                   const m = margin(p)
                   const reorderAt = p.reorderPoint ?? 10
-                  const stockTone = p.isParent || p.stockPolicy === "untracked" ? null : p.stock <= 0 ? "err" : p.stock <= reorderAt ? "warn" : null
+                  const stockTone = p.isParent || (p.stockPolicy ?? "tracked") !== "tracked" ? null : p.stock <= 0 ? "err" : p.stock <= reorderAt ? "warn" : null
                   return (
                     <tr key={p.id} aria-selected={selected.has(p.id) || detailId === p.id} onClick={() => setDetailId(p.id)}>
                       <td onClick={(e) => e.stopPropagation()}>
@@ -343,9 +345,10 @@ export default function ProductsPage() {
                       <td className="num">
                         {p.isParent ? <span style={{ color: "var(--text-3)" }}>—</span>
                           : p.stockPolicy === "untracked" ? <Badge tone="muted">{t("inv.not_tracked")}</Badge>
+                          : p.stockPolicy === "recipe" ? <Badge tone="muted">{t("inv.kind.recipe")}</Badge>
                           : stockTone === "err" ? <Badge tone="err" icon={<XCircle size={13} aria-hidden="true" />}>{t("inv.stock_out", { n: formatNumber(p.stock) })}</Badge>
                           : stockTone === "warn" ? <Badge tone="warn" icon={<AlertTriangle size={13} aria-hidden="true" />}>{t("inv.stock_low", { n: formatNumber(p.stock) })}</Badge>
-                          : formatNumber(p.stock)}
+                          : <>{formatNumber(p.stock)}{p.sellable === false ? <> {t(`unit.${p.stockUnit ?? "unit"}`)} <Badge tone="muted">{t("inv.kind.ingredient")}</Badge></> : null}</>}
                       </td>
                       <td className="end p3" style={{ color: "var(--text-2)" }}>
                         {lots.length === 0 ? <span style={{ color: "var(--text-3)" }}>{p.stock > 0 ? t("inv.lots_untracked") : "—"}</span>
@@ -375,6 +378,7 @@ export default function ProductsPage() {
           onClose={() => setEditor(null)}
           onSaved={(p) => { setEditor(null); setDetailId(p.id) }} />
       )}
+      {tool === "options" && <MenuOptionsDrawer onClose={() => setTool(null)} />}
       {tool === "import" && <BulkImportModal products={products} onClose={() => setTool(null)} onImported={() => getProducts().then(setProducts)} />}
       {tool === "cleanup" && <CatalogCleanupPanel products={products} onClose={() => setTool(null)} onChanged={() => getProducts().then(setProducts)} onEditProduct={(p) => { setTool(null); setEditor({ mode: "edit", id: p.id }) }} />}
       <Drawer open={tool === "categories"} title={t("inv.tools.categories")} onClose={() => setTool(null)}>

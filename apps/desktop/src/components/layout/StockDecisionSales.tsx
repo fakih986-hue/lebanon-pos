@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useI18n } from "@lebanonpos/shared"
-import { getPolicyHeldSales, resolvePolicyHeldSale, subscribeSync, type PolicyHeldSale } from "../../features/pos/services/sync.service"
+import { getPolicyHeldSales, resolvePolicyHeldSale, resolveRecipeHeldSale, subscribeSync, type PolicyHeldSale } from "../../features/pos/services/sync.service"
 import { getCurrentUser, recordAuditEvent, userCan } from "../../features/pos/services/security.service"
 
 /**
@@ -33,6 +33,20 @@ export default function StockDecisionSales() {
     setMessage((m) => ({ ...m, [sale.operationId]: { text: t("sync.held.resolved", { policy: t(`sync.held.policy.${policy}`) }), error: false } }))
   }
 
+  // café batch: a drink made with a recipe revision the server never received — a manager records how it was made
+  function decideRecipe(sale: PolicyHeldSale, mode: "recorded" | "none") {
+    const note = (notes[sale.operationId] ?? "").trim()
+    if (!user || !canDecide) { setMessage((m) => ({ ...m, [sale.operationId]: { text: t("sync.held.need_manager"), error: true } })); return }
+    if (note.length < 3) { setMessage((m) => ({ ...m, [sale.operationId]: { text: t("sync.held.note_required"), error: true } })); return }
+    if (!resolveRecipeHeldSale(sale.operationId, mode, note, { id: user.id, name: user.name })) return
+    recordAuditEvent({
+      action: "sale.recipe_resolved", entity: "sale",
+      summary: `${sale.saleNumber}: "${sale.productName ?? ""}" recorded as ${mode === "recorded" ? "made with the recipe recorded on this register" : "made with no ingredients recorded"} by ${user.name} (its recipe revision never reached the server). Already paid ${sale.total.toFixed(2)}. Note: ${note}`,
+      metadata: { saleId: sale.saleId, productName: sale.productName ?? "", mode, note, total: sale.total },
+    })
+    setMessage((m) => ({ ...m, [sale.operationId]: { text: t(`sync.held.recipe_resolved.${mode}`), error: false } }))
+  }
+
   return (
     <section className="mb-3 flex flex-col gap-2" role="alert" aria-label={t("sync.held.title")}>
       <p className="text-[13px] font-semibold" style={{ color: "var(--v2-err)" }}>{t("sync.held.title")}</p>
@@ -43,11 +57,25 @@ export default function StockDecisionSales() {
           <div key={sale.operationId} className="rounded-lg p-2 text-[12px] flex flex-col gap-1" style={{ background: "var(--surface-2)", color: "var(--text-2)" }}>
             <p className="font-semibold" style={{ color: "var(--text)" }}>{t("sync.held.sale", { number: sale.saleNumber, time: new Date(sale.createdAt).toLocaleString(), cashier: sale.cashier })}</p>
             <p>{t("sync.held.paid", { amount: sale.total.toFixed(2), method: sale.paymentMethod })}</p>
-            <p>{t("sync.held.help", { product: sale.productName ?? "" })}</p>
-            <p>{t("sync.held.product", { name: sale.productName ?? "" })}</p>
-            <p dir="ltr">{sale.revision ? t("sync.held.revision", { rev: sale.revision }) : t("sync.held.revision_none")}</p>
-            {line && <p>{t("sync.held.till_recorded", { policy: t(`sync.held.policy.${line.stockPolicy}`) })}</p>}
-            {canDecide ? (
+            {sale.kind === "ingredient" ? <p>{t("sync.held.ingredient", { reason: sale.reason })}</p>
+              : sale.kind === "recipe" ? <p>{t("sync.held.recipe_help", { product: sale.productName ?? "" })}</p>
+              : sale.kind === "topology" ? <p>{sale.reason}</p>
+              : <>
+                <p>{t("sync.held.help", { product: sale.productName ?? "" })}</p>
+                <p>{t("sync.held.product", { name: sale.productName ?? "" })}</p>
+                <p dir="ltr">{sale.revision ? t("sync.held.revision", { rev: sale.revision }) : t("sync.held.revision_none")}</p>
+                {line && <p>{t("sync.held.till_recorded", { policy: t(`sync.held.policy.${line.stockPolicy}`) })}</p>}
+              </>}
+            {sale.kind === "ingredient" || sale.kind === "topology" ? null : canDecide && sale.kind === "recipe" ? (
+              <>
+                <input className="mg2-input" style={{ minHeight: 32, fontSize: 12 }} aria-label={t("sync.held.note")} placeholder={t("sync.held.note")}
+                  value={notes[sale.operationId] ?? ""} onChange={(e) => setNotes((n) => ({ ...n, [sale.operationId]: e.target.value }))} />
+                <div className="flex flex-wrap gap-1">
+                  <button type="button" className="mg2-btn" style={{ minHeight: 32, fontSize: 12 }} onClick={() => decideRecipe(sale, "recorded")}>{t("sync.held.recipe_recorded")}</button>
+                  <button type="button" className="mg2-btn" style={{ minHeight: 32, fontSize: 12 }} onClick={() => decideRecipe(sale, "none")}>{t("sync.held.recipe_none")}</button>
+                </div>
+              </>
+            ) : canDecide ? (
               <>
                 <input className="mg2-input" style={{ minHeight: 32, fontSize: 12 }} aria-label={t("sync.held.note")} placeholder={t("sync.held.note")}
                   value={notes[sale.operationId] ?? ""} onChange={(e) => setNotes((n) => ({ ...n, [sale.operationId]: e.target.value }))} />
