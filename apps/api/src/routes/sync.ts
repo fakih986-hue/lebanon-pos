@@ -740,7 +740,7 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
         // "Refused" row (never forwarded, never pruned) that a manager can list. The till keeps
         // its own copy too. A later push of the same op, once permitted, applies it normally.
         try {
-          const row = await prisma.syncOperation.findUnique({ where: { id: op.id }, select: { tenantId: true, appliedAt: true, heldEvidence: true } })
+          const row = await prisma.syncOperation.findUnique({ where: { id: op.id }, select: { tenantId: true, appliedAt: true, heldEvidence: true, status: true, error: true } })
           const error = `${denial} (pushed by account ${req.auth!.userId}${deviceId ? `, device ${deviceId}` : ""})`
           // SPRINT-2 F: what this server knew when it held it (kept with the command; no tokens)
           const { opId: _o, tenantId: _t, ...held } = observeEvidence({
@@ -756,8 +756,9 @@ router.post("/push", staffSync, async (req: AuthRequest, res: ServerResponse) =>
               data: { id: op.id, tenantId, entity: op.entity, action: op.action, summary: `${op.action} ${op.entity}`, payload: (op.payload ?? {}) as any, status: "Refused", attempts: 1, lastAttemptAt: new Date(), error, heldEvidence },
             })
           } else if (row.tenantId === tenantId && !row.appliedAt) {
-            // never reopens work a manager is resolving or has declined; the first held evidence is kept
-            await prisma.syncOperation.updateMany({ where: { id: op.id, tenantId, appliedAt: null, status: { notIn: ["Resolving", "Dismissed"] } }, data: { status: "Refused", attempts: { increment: 1 }, lastAttemptAt: new Date(), error, ...(row.heldEvidence ? {} : { heldEvidence }) } })
+            // never reopens work a manager is resolving or has declined; the first held evidence and the reason
+            // it was first held for are kept (a later delivery, e.g. after the session ended, must not hide the cause)
+            await prisma.syncOperation.updateMany({ where: { id: op.id, tenantId, appliedAt: null, status: { notIn: ["Resolving", "Dismissed"] } }, data: { status: "Refused", attempts: { increment: 1 }, lastAttemptAt: new Date(), error: row.status === "Refused" && row.error ? row.error : error, ...(row.heldEvidence ? {} : { heldEvidence }) } })
           }
         } catch (keepErr) { console.error("Failed to keep refused operation:", keepErr) }
         // A refused price is a money decision a manager settles (never retried); other refusals

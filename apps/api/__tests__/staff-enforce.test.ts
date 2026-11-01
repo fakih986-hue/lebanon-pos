@@ -300,6 +300,17 @@ describe("enforced at the hub: the session's person, never the connection", () =
     expect(list.some((o) => o.id === old.id && o.category === "identity-missing")).toBe(true)
   })
 
+  it("a held operation resent after its session ended keeps the reason it was first held for (the reviewer sees the real cause)", async () => {
+    const rana = await session(PIN.rana)
+    const draw = opOf("cash-movement", "create", { id: randomUUID(), type: "CashOut", direction: "Out", amountUsd: 2, reason: "Pay", note: "", recordedById: RANA, recordedByName: "Rana", createdAt: new Date().toISOString() }, { v: 1, session: rana })
+    expect((await push(draw)).error).toMatch(/permission/i)
+    expect((await hub("POST", "/api/auth/staff-session/end", { session: rana }, { "x-device-credential": front.credential })).body.ended).toBe(true)
+    expect((await push(draw)).error).toMatch(/^SESSION_REVIEW:/) // what the register is told now
+    const listed = ((await hub("GET", "/api/sync/refused", undefined, { Authorization: `Bearer ${ownerPerson}` })).body.operations as any[]).find((o) => o.id === draw.id)
+    expect([listed?.category, listed?.attempts]).toEqual(["permission-missing", 2])
+    expect(listed?.reason).toMatch(/permission/i)
+  })
+
   it("REST: the acting person decides — a cashier's session on the owner's connection is not the owner", async () => {
     const rana = await session(PIN.rana)
     const maya = await session(PIN.maya)
