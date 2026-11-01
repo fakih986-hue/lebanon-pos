@@ -259,3 +259,21 @@ including `consumption` costs and lot invoice prices, are removed for staff with
 - Orders accepted before the store became a hub store are closed through an explicit, audited manager decision, with
   no cloud stock change.
 - Readiness blocks changing to a hub store while delivery orders are open.
+
+### Acceptance (2026-11-02, dev candidate `dev-06e545c`, never published)
+
+Evidence and the requirement matrix: [SPRINT-2-ACCEPTANCE.md](SPRINT-2-ACCEPTANCE.md), "Batch: café drink modifiers,
+recipes and ingredient stock". In short:
+
+- A full café day passed on the final package (hub topology, loopback test cloud), from receiving through close and resume.
+  - Hub and cloud agree line by line.
+  - Lots are identical and waste is the same on both sides.
+  - An offline sale kept its recipe revision.
+- Policies chosen:
+  - an offline shortfall is held for review under the existing negative-stock policy (never lost, never charged twice);
+  - drink refunds and voids give no ingredients back; remakes and waste are recorded explicitly.
+- Known limits:
+  - offline ingredient oversell (held, not prevented);
+  - older registers (schema < 6) do not see recipe drinks or ingredients, so upgrade the cloud first, then the hub, then
+    the registers;
+  - server-composed sentences stay English in Arabic.

@@ -192,6 +192,46 @@ Arabic screen; server-composed sentences and blocker details stay English in Ara
 translated); delivery orders change stock at the cloud and are not supported in a hub store (stated); NSIS
 installation/upgrade and real LAN/hardware testing need a disposable Windows machine.
 
+## Batch: café drink modifiers, recipes and ingredient stock (2026-11-02; final dev candidate `dev-06e545c`, never published)
+
+Design and limits: [CAFE-IMPLEMENTATION-PLAN.md](CAFE-IMPLEMENTATION-PLAN.md) "Café menu, modifiers, recipes and ingredient
+stock — design" and its acceptance subsection; delivery boundary in [STAFF-ENFORCEMENT.md](STAFF-ENFORCEMENT.md) §7. Tested commit
+`06e545c785223b31e84ec712627b3fcf42c0f39e` (fresh worktree `D:\tpdc17`, clean before and after, install and package exit 0,
+unsigned). Sync schema 6. Production stores untouched; every runtime test used disposable stores in scratch schemas and a
+loopback test cloud.
+
+| Requirement | Evidence | Status |
+|---|---|---|
+| Delivery closed in hub stores at every boundary (order page, API, status changes, stock); existing orders recoverable (close without stock); stock taken once; readiness blocker | `cafe-menu.test.ts` delivery cases; negative controls "a hub store takes delivery orders", "stock taken again on each active status" | pass |
+| Product kinds without forced barcodes or fake stock: packaged tracked, recipe drink, made-to-order untracked, ingredient not for sale | `cafe-menu.test.ts`; packaged `day-setup` (menu, units, refused kg→ml) | pass |
+| Modifier groups (required/optional, single/multiple, min/max, defaults, price changes, availability, archive, stable ids, snapshots); register options sheet, repeat, edit, price before adding, receipts, Escape keeps the cart | `cafe-rules.test.ts` (7), desktop `cafeMenu.test.ts` (8), `cafe-menu.test.ts`; browser on the packaged hub (phone, tablet, desktop; EN/AR; Simple POS and full register) | pass |
+| Recipes and units: g/ml/units, purchase conversion, 3-dp quantities and 4-dp money (no drift), yield, option additions/substitutions, immutable revisions, sale-time snapshot, incompatible units refused, lots stay the source | `cafe-rules.test.ts`, `cafe-menu.test.ts`; negative controls "today's recipe instead of the sold revision", "2 kg = 1999 g accepted", "register and server rules drift" | pass |
+| Consumption at commit; drink refunds/voids never restore ingredients; packaged returns unchanged; remake/waste explicit and permission-controlled; interrupted checkout compensated once | `cafe-menu.test.ts`, desktop `cafeMenu.test.ts`; negative controls "refund restores stock", "waste applied again when resent", "interrupted checkout keeps ingredient lots" | pass |
+| Server authority and offline: options, revision, price floor with option deltas, approvals bound to options, duplicates; unknown revision held (never today's recipe), resolvable by a manager; offline shortfall held for review (existing negative-stock policy); never charged twice | `cafe-menu.test.ts`; packaged `day-offline`, `day-revise`, `day-reconnect` (offline sale kept revision 1 while revision 2 was current; resend "ok", nothing doubled) | pass |
+| Ingredient receiving: purchase vs stock unit, invoice price kept apart, conversion preview, lot/expiry/supplier reference, per-row results with the receiving recovery journal | `cafe-menu.test.ts` receiving cases; desktop receive tests; packaged `day-setup` (beans 2 kg at 18.37 → 2000 g, 0.0184/g) | pass |
+| Cost and reports: drink cost from actual lots, snapshot; base vs option revenue; ingredient, waste and unknown cost; no NaN or invented margins; cost-hidden staff get none; packaged lines not counted as drinks | `cafe-menu.test.ts` (report, 403 for a cashier); packaged café report: revenue 32 (base 26, options 6), ingredient cost 6.88, waste 1.54, all known; hub report the same | pass |
+| Mixed versions: older registers do not receive recipe drinks or ingredients, see recipe lines as made to order; recipe policy change gated while an older register trades | `cafe-menu.test.ts`; negative control "an older register receives recipe drinks" | pass |
+| Café day on the final package (hub topology): setup, sell with options, refused choices, approved discount (approval invalid once an option changes), drink refund, remake/waste, cloud outage, offline till, revision while offline, reconnect, count and close, resume | `installed-cafe-day.test.ts`, `D:\TitanPOS-it\batch74\evidence.txt`, `compare-1.out` (5 sales, 10 lines, 0 differences, lots identical, 9 waste adjustments both sides), `check-ids*.out` | pass |
+| Suites and typechecks | API 719 passed / 7 skipped (6 packaged-only + the café-day harness), exit 0; desktop 501, exit 0; typechecks api, desktop (`tsconfig.app.json`) and admin exit 0 | pass |
+| Negative controls | 22, each failing on its business assertion: `D:\TitanPOS-it\batch71\negctl*.out`, `batch72\negctl-3.out`, `negctl-4`, plus 2 in this batch (hub keeps its consumption on a pull; packaged lines out of the café report) | pass |
+
+Defects found and fixed in this batch (beyond the new features): local refund/void and sale normalisation treated recipe lines
+as tracked stock; the cart's stock limit made a recipe drink 0 (pressing + dropped the line); favourites and low-stock lists
+excluded only untracked items; local decimal drift in stock and lots; adjustments and counts named their product only by the
+register's local id, so a forwarded adjustment moved another product at the cloud (pre-existing); a register joining a hub
+triggered a restore that overwrote the hub's stock with the cloud's (pre-existing); product screens invented 100 % margins and
+$0.00 unit costs, misplaced signs in RTL and said "1 units"; operations written by raw SQL on a hub were stamped in local time,
+so recipes could reach the cloud before their drinks; a hub pull cleared a drink's recipe pointer when the cloud had none yet; a
+live checkout naming an unknown revision was left "unconfirmed" instead of refused before payment; the scan field kept the
+drink's name after its options sheet opened; on phones the options sheet's Add button needed scrolling; a hub pull replaced a
+recipe line's consumption with the cloud's (other servers' product ids); the café report counted packaged lines stored with an
+empty options list.
+
+Remaining (not fixed): an offline register can oversell ingredients (the sale is held for review under the existing
+negative-stock policy, never lost); older registers' adjustments without a sync id still resolve by local id; server-composed
+sentences stay English in Arabic; option names are joined with a Latin comma in Arabic; held operations keep the existing retry
+cap of 5 before needing review; NSIS installation/upgrade and real LAN/hardware need a disposable Windows machine.
+
 ## Plan by phase (to be filled with evidence as implemented)
 - **B — observe mode:** token kinds (`typ/iss/aud`) on new tokens with old tokens still accepted; `requireCloudKeyOrJwt` refuses non-staff tokens; envelope parsing; derived `actorId`; claimed-vs-derived mismatch audited; evidence labels; no behaviour change for legacy clients (mixed-version tests).
 - **C — devices and sessions:** enrollment with single-use manager-created code; cross-tenant enrollment refused; device credential can't enroll/approve another device; staff session bound to device (use on another device refused); actor substitution refused; staff switch issues a new session and clears approvals; revocation of staff and device; storage deletion and credential recovery on the till.
