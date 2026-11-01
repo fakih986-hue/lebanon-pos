@@ -111,6 +111,19 @@ still has to enroll and sign in.
   checked online), `claimed` / `legacy-claimed` (named by the register, not proven), offline-claimed sales
   carry `limitations` saying so.
 
+### Staff switches and late delivery
+
+- Locking the register or switching person drops the session on the register at once; the register then
+  sends the work queued under it **before** telling the server the session ended (bounded; if the server
+  cannot be reached the work stays queued). Found on the packaged hub: an approved void and payout queued a
+  moment before a staff switch arrived after the sign-out and were held as `SESSION_REVIEW`.
+- Work that still arrives after its session ended or expired is held (`SESSION_REVIEW`), never applied on
+  the next person's authority. A held operation keeps the reason it was **first** held for when the register
+  resends it, so the reviewer sees the real cause.
+- Work a manager applies on review at the hub is forwarded to the cloud even if the register had resent it
+  up to its limit (the hub restarts the forwarding count when it applies an operation). Found on the packaged
+  hub: such a close stayed at the hub and never reached the cloud.
+
 ## 7. Deferred (stated, not enforced in this batch)
 
 - The ordering app's **customer** tokens and **driver** tokens: they have their own narrow routes and never
@@ -121,6 +134,16 @@ still has to enroll and sign in.
 - Platform owner tooling (cross-store) is outside store policy.
 - Monetary or percentage thresholds for approvals: none are invented; an action needs approval when the actor
   lacks its permission.
+- **Activation has no owner screen yet.** Reviewing the gate, retiring clients and switching the mode are API
+  calls at the cloud (`/api/sync/identity-gate`, `/api/sync/hub-registers/:id/retire`,
+  `/api/sync/clients/:id/retire`, `/api/sync/identity-mode`), made by a person signed in as themselves. A
+  store-run pilot needs a screen for this; the controlled pilot below is operated by IT.
+- Business records take their actor fields from the register's payload; only the sale's cashier is
+  rewritten to the session person. Another operation that names a different person is refused
+  (`IDENTITY_MISMATCH`); one that names nobody is applied with the actor field empty, and the verified person
+  is in its evidence. Registers on this build always name their user.
+- Permission refusals are answered as retryable errors (as in observe mode): a register resends a held
+  operation up to its limit; the hub keeps one held entry, its first reason and the attempt count.
 
 ## 8. Offline limitations
 
